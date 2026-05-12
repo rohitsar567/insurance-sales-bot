@@ -368,8 +368,24 @@ async def upload_policy(file: UploadFile = File(...)):
     try:
         from rag.ingest import chunk_pages, get_chroma_collection, read_pdf_pages
         from backend.providers.local_embeddings import LocalEmbeddings as _Emb
+        from backend.security import check_upload, rate_limiter
 
         pages = read_pdf_pages(out_path)
+        # Run 4-gate security check (mechanics + content + injection + rate limit)
+        full_text = "\n".join(t for _, t in pages)
+        verdict = check_upload(
+            content=contents,
+            extracted_text=full_text,
+            page_count=len(pages),
+            session_id="anonymous",  # v1: no session; v2 wires session_id
+        )
+        if not verdict.accepted:
+            out_path.unlink(missing_ok=True)
+            raise HTTPException(
+                400,
+                f"Upload rejected by security gates: {', '.join(verdict.reasons[:3])}",
+            )
+
         chunks = list(chunk_pages(pages))
         if not chunks:
             raise HTTPException(400, "Could not extract any text from the PDF (scanned image-only?).")
@@ -400,6 +416,8 @@ async def upload_policy(file: UploadFile = File(...)):
         except Exception:
             pass
         collection.add(ids=ids, documents=texts, embeddings=vectors, metadatas=metadatas)
+        # Update rate-limit ledger after successful index
+        rate_limiter.record_upload("anonymous", len(chunks))
     except HTTPException:
         raise
     except Exception as e:
@@ -411,6 +429,60 @@ async def upload_policy(file: UploadFile = File(...)):
         chunks_added=len(chunks),
         pages_indexed=len(pages),
         elapsed_ms=int((_time.time() - t0) * 1000),
+    )
+
+
+class ScorecardSubScore(BaseModel):
+    name: str
+    score: int
+    summary: str
+    signals: list[str]
+
+
+class ScorecardResponse(BaseModel):
+    policy_id: str
+    policy_name: str
+    insurer_slug: str
+    overall_score: int
+    grade: str
+    one_liner: str
+    sub_scores: list[ScorecardSubScore]
+    data_completeness_pct: float
+    methodology_link: str
+
+
+@app.get("/api/policies/{policy_id}/scorecard", response_model=ScorecardResponse)
+async def policy_scorecard(policy_id: str):
+    """Compute the 6-sub-score A-F scorecard for an extracted policy.
+
+    See docs/scorecard-methodology.md for the field-to-score mapping.
+    """
+    import json as _json
+    from pathlib import Path as _Path
+
+    from backend.scorecard import build_scorecard
+
+    # Look up policy from DuckDB (or extracted JSON file)
+    extracted_path = settings.EXTRACTED_DIR / f"{policy_id}.json"
+    if not extracted_path.exists():
+        raise HTTPException(404, f"No extracted data for policy_id={policy_id}")
+
+    try:
+        policy = _json.loads(extracted_path.read_text())
+    except Exception as e:
+        raise HTTPException(500, f"Could not load extracted policy: {e}")
+
+    sc = build_scorecard(policy)
+    return ScorecardResponse(
+        policy_id=sc.policy_id,
+        policy_name=sc.policy_name,
+        insurer_slug=sc.insurer_slug,
+        overall_score=sc.overall_score,
+        grade=sc.grade,
+        one_liner=sc.one_liner,
+        sub_scores=[ScorecardSubScore(**s.__dict__) for s in sc.sub_scores],
+        data_completeness_pct=sc.data_completeness_pct,
+        methodology_link=sc.methodology_link,
     )
 
 
