@@ -117,4 +117,73 @@ Every meaningful technical and product decision, with alternatives considered an
 
 ---
 
+---
+
+## D-005 (revised) — Frontend stack: Next.js + FastAPI (was: Streamlit)
+
+**Date:** 2026-05-13 (revised mid-build)
+**Status:** Locked
+**Alternatives considered:** Streamlit (original v1 pick) · Gradio · Chainlit · Reflex · Next.js + FastAPI
+**Chose:** **Next.js 14 (App Router) frontend + FastAPI backend**
+**Reasoning for revision:** User unlocked the constraint mid-build ("use whatever is best"). Streamlit is fast-to-demo but signals "prototype" to a BFSI reviewer. Next.js + FastAPI signals "production-pattern, white-labelable to a bank." Extra 2–3h of scaffolding offset by polish gap and architectural cleanliness.
+**Revisit at scale:** Same stack. Standard production pattern for AI products in 2026.
+**Risk:** FE/BE auth + CORS + dual deploy adds complexity. Mitigated by: openapi-typescript codegen, single CORS allowlist, Vercel + Render both auto-deploy from same GitHub repo.
+
+---
+
+## D-011 — Embeddings provider: Voyage AI (Anthropic's partner)
+
+**Date:** 2026-05-13
+**Status:** Pending — awaiting Voyage API key confirmation
+**Alternatives considered:** OpenAI text-embedding-3-small · Voyage voyage-3 · Sarvam embeddings (if API exists) · BGE-m3 local · Cohere embed-v3
+**Chose:** **Voyage voyage-3**; fallback **BGE-m3 local** if no Voyage key
+**Reasoning:** User confirmed they have Anthropic, not OpenAI — rules out OpenAI embeddings. Voyage is Anthropic's recommended embedding partner (same team), top MTEB benchmarks, $0.12/1M tokens (well under $50 signup credit). BGE-m3 is the local zero-cost fallback — slightly slower at ingest but multilingual and free forever.
+**Revisit at scale:** Re-benchmark Sarvam embeddings when their API exposes them; potentially route by language (Voyage for English, Sarvam for Indic).
+
+---
+
+## D-012 — Backend deployment: Render
+
+**Date:** 2026-05-13
+**Status:** Locked
+**Alternatives considered:** Render · Fly.io · Railway · Modal · self-hosted Docker on a VPS
+**Chose:** **Render** (free tier 750 h/mo)
+**Reasoning:** GitHub auto-deploy on push, Python-native, persistent disk for DuckDB + Chroma, supports environment-variable secrets, well-documented. Fly.io was close second (better global routing) but more setup overhead.
+**Revisit at scale:** Migrate to dedicated cloud (AWS / GCP) when v2 needs multi-region or auth.
+
+---
+
+## D-013 — Frontend UI library: Tailwind CSS + shadcn/ui
+
+**Date:** 2026-05-13
+**Status:** Locked
+**Alternatives considered:** Tailwind + shadcn/ui · MUI · Chakra UI · Mantine · plain CSS
+**Chose:** **Tailwind + shadcn/ui**
+**Reasoning:** shadcn components are copy-paste primitives that produce beautiful, accessible UIs in hours. Tailwind utility classes give fine-grained control. Combined: fastest path to "looks like a real product" in a 1-day build.
+**Revisit at scale:** Same stack.
+
+---
+
+## D-014 — Grader LLM: Claude Haiku 4.5
+
+**Date:** 2026-05-13
+**Status:** Locked
+**Alternatives considered:** GPT-4o-mini (rejected — user has Anthropic, not OpenAI) · Claude Haiku 4.5 · Claude Sonnet 4.6 · Sarvam-M held out
+**Chose:** **Claude Haiku 4.5**
+**Reasoning:** Avoids circular eval (don't grade Sarvam-M responses with Sarvam-M — biased toward its own style). Haiku is cheap, fast, strong enough for binary semantic-match grading. Sonnet would also work but Haiku has the right cost/latency profile for a grader running 50+ times per eval pass.
+**Revisit at scale:** Consider Claude Sonnet for nuanced grading (semantic similarity with rubric); add Anthropic's own eval/grading tools if they ship them.
+
+---
+
+## D-015 — API contract: REST with OpenAPI-driven TS codegen
+
+**Date:** 2026-05-13
+**Status:** Locked
+**Alternatives considered:** REST + manual TypeScript types · REST + `openapi-typescript` codegen · tRPC (Node-only, doesn't fit Python BE) · GraphQL · gRPC
+**Chose:** **REST + `openapi-typescript` codegen from FastAPI's auto-generated OpenAPI**
+**Reasoning:** FastAPI ships an OpenAPI schema out of the box. `openapi-typescript` turns it into TypeScript types for the Next.js frontend — single source of truth, types update on backend change. Simpler than GraphQL for our request/response shape.
+**Revisit at scale:** Same. If real-time streaming becomes the dominant pattern (e.g. streaming TTS), add a WebSocket route alongside REST.
+
+---
+
 *Entries added as we go. Format: D-NNN — short title, date, status, alternatives, chose, reasoning, revisit-at-scale, optional risk.*
