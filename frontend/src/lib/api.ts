@@ -137,6 +137,35 @@ export type UploadResponse = {
   elapsed_ms: number;
 };
 
+export type ScorecardSubScore = {
+  name: string;
+  score: number;
+  summary: string;
+  signals: string[];
+};
+
+export type ScorecardResponse = {
+  policy_id: string;
+  policy_name: string;
+  insurer_slug: string;
+  overall_score: number;
+  grade: string;
+  one_liner: string;
+  sub_scores: ScorecardSubScore[];
+  data_completeness_pct: number;
+  methodology_link: string;
+};
+
+export async function getScorecard(policy_id: string): Promise<ScorecardResponse> {
+  const resp = await fetch(`${BACKEND_URL}/api/policies/${encodeURIComponent(policy_id)}/scorecard`);
+  if (!resp.ok) {
+    const t = await resp.text();
+    throw new Error(`scorecard failed: ${resp.status} ${t}`);
+  }
+  return resp.json();
+}
+
+
 export async function uploadPolicy(file: File): Promise<UploadResponse> {
   const fd = new FormData();
   fd.append("file", file);

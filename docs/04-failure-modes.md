@@ -172,6 +172,14 @@ Reply to user
 
 Run-time. Auditable. Tested.
 
+### F-16 — Translation cascade introduces drift after faithfulness gate
+
+**Description:** Indic queries use the cascade: Sarvam translates Hinglish → English, DeepSeek reasons → English answer, faithfulness gates run on English answer, Sarvam translates English answer → Hinglish. **Faithfulness does NOT re-verify the final Hinglish output.** If Sarvam corrupts the translation (drops a citation, changes a number, invents a benefit), we wouldn't catch it.
+**Detection v1:** None automated. Manual spot-check of bilingual eval set.
+**Mitigation v1:** Sarvam translator system prompt explicitly forbids changing numbers/citations + caps at 60 words; preserves `[Source: ...]` tags.
+**Mitigation v2:** Back-translate Hinglish→English; compare against original English; block if cosine similarity < 0.85.
+**Status:** Accepted limitation for v1.
+
 ## 3. Open mitigations (this document tracks status)
 
 | # | Mitigation | Owner | Status |

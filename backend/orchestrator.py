@@ -262,19 +262,42 @@ async def handle_turn(
         for c in chunks
     ]
 
-    # 7. INDIC CASCADE — translate the English reply back into Hinglish/Hindi
-    # so the user hears it in their language. Citations stay intact (the
-    # translation prompt preserves them).
+    # 7. INDIC CASCADE — translate the English reply back into Hinglish/Hindi,
+    # then run THREE drift checks. If any catches drift, revert to the English
+    # reply (user sees correct facts even if not in their preferred language).
+    #   Gate-A: regex anchors        — numbers, citations, currency
+    #   Gate-B: Groq Llama LLM-judge — semantic faithfulness in Hinglish
+    #   Gate-C: back-translate-cosine — Hinglish → EN via Sarvam, compare to original EN
     final_brain_tag = f"{pick.provider.name}::{pick.reason}"
     if language == "indic" and not blocked and reply:
         try:
             from backend.translator import translate_to_indic
-            reply_indic = await translate_to_indic(reply, target_lang="hi-IN")
+            from backend.translation_check import (
+                check_translation_drift,
+                check_hinglish_faithfulness,
+                check_back_translation,
+            )
+
+            english_reply = reply
+            reply_indic = await translate_to_indic(english_reply, target_lang="hi-IN")
             if reply_indic and reply_indic.strip():
-                reply = reply_indic
-                final_brain_tag = f"cascade::sarvam-trans+{pick.provider.name}+sarvam-trans"
+                # Run all 3 drift checks; short-circuit on the first failure
+                drift_a = check_translation_drift(english_reply, reply_indic)
+                if drift_a.drift_detected:
+                    final_brain_tag = f"cascade::drift-anchor-fallback+{pick.provider.name}"
+                else:
+                    drift_b = await check_hinglish_faithfulness(english_reply, reply_indic)
+                    if drift_b.drift_detected:
+                        final_brain_tag = f"cascade::drift-llmjudge-fallback+{pick.provider.name}"
+                    else:
+                        drift_c = await check_back_translation(english_reply, reply_indic, min_cosine=0.80)
+                        if drift_c.drift_detected:
+                            final_brain_tag = f"cascade::drift-cosine-fallback+{pick.provider.name}"
+                        else:
+                            reply = reply_indic
+                            final_brain_tag = f"cascade::sarvam-trans+{pick.provider.name}+sarvam-trans"
         except Exception:
-            pass  # if translation fails, return English; better than nothing
+            pass  # if any step fails, return English — better than mis-translated
 
     return TurnResult(
         reply_text=reply,
