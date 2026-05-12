@@ -111,6 +111,34 @@ class TTSRequest(BaseModel):
     speaker: Optional[str] = None
 
 
+class PolicyEntry(BaseModel):
+    name: str
+    source_url: str = ""  # PDF URL, verified at download time
+
+
+class InsurerCoverage(BaseModel):
+    slug: str
+    name: str
+    home_url: str  # insurer's main website (manually curated, verified)
+    policy_count: int
+    sample_policies: list[PolicyEntry]
+
+
+class CoverageResponse(BaseModel):
+    total_chunks: int
+    total_policies: int
+    total_insurers: int
+    insurers: list[InsurerCoverage]
+
+
+class UploadResponse(BaseModel):
+    policy_id: str
+    policy_name: str
+    chunks_added: int
+    pages_indexed: int
+    elapsed_ms: int
+
+
 # ---------- app ----------
 
 app = FastAPI(
@@ -224,6 +252,165 @@ async def chat(req: ChatRequest):
         faithfulness_passed=turn.faithfulness_passed,
         faithfulness_reasons=turn.faithfulness_reasons,
         blocked=turn.blocked,
+    )
+
+
+@app.get("/api/coverage", response_model=CoverageResponse)
+async def coverage():
+    """What policies/insurers are indexed in the corpus.
+
+    Drives the UI's "what's covered" panel — sets user expectations + reduces
+    over-refusals from off-corpus queries.
+    """
+    try:
+        from rag.retrieve import get_collection
+        coll = get_collection()
+        total = coll.count()
+    except Exception:
+        total = 0
+
+    # Insurer metadata — names + home URLs are curated + verified
+    # (see eval/verified_urls.json + tools/verify_urls.py)
+    insurer_meta = {
+        "aditya-birla":  ("Aditya Birla Health Insurance", "https://www.adityabirlacapital.com/healthinsurance"),
+        "bajaj-allianz": ("Bajaj Allianz General Insurance", "https://www.bajajallianz.com/"),
+        "care-health":   ("Care Health Insurance", "https://www.careinsurance.com/"),
+        "hdfc-ergo":     ("HDFC ERGO General Insurance", "https://www.hdfcergo.com/"),
+        "icici-lombard": ("ICICI Lombard General Insurance", "https://www.icicilombard.com/"),
+        "manipalcigna":  ("ManipalCigna Health Insurance", "https://www.manipalcigna.com/"),
+        "new-india":     ("New India Assurance", "https://www.newindia.co.in/"),
+        "niva-bupa":     ("Niva Bupa Health Insurance", "https://www.nivabupa.com/"),
+        "star-health":   ("Star Health & Allied Insurance", "https://www.starhealth.in/"),
+        "tata-aig":      ("Tata AIG General Insurance", "https://www.tataaig.com/"),
+        "user-upload":   ("Your uploaded policies", ""),
+    }
+
+    # policy -> source_url (verified at download time)
+    policy_urls: dict[tuple[str, str], str] = {}
+    by_insurer: dict[str, dict] = {}
+    if total > 0:
+        try:
+            res = coll.get(limit=10000, include=["metadatas"])
+            for m in res.get("metadatas", []):
+                slug = m.get("insurer_slug", "unknown")
+                name = m.get("policy_name", "")
+                url = m.get("source_url", "")
+                if slug not in by_insurer:
+                    by_insurer[slug] = {"policies": set(), "chunks": 0}
+                by_insurer[slug]["policies"].add(name)
+                by_insurer[slug]["chunks"] += 1
+                if url and (slug, name) not in policy_urls:
+                    policy_urls[(slug, name)] = url
+        except Exception:
+            pass
+
+    insurers_out = []
+    total_policies = 0
+    for slug, info in sorted(by_insurer.items()):
+        policy_names = sorted(info["policies"])
+        total_policies += len(policy_names)
+        name, home_url = insurer_meta.get(slug, (slug, ""))
+        sample_entries = [
+            PolicyEntry(name=p, source_url=policy_urls.get((slug, p), ""))
+            for p in policy_names[:8]
+        ]
+        insurers_out.append(
+            InsurerCoverage(
+                slug=slug,
+                name=name,
+                home_url=home_url,
+                policy_count=len(policy_names),
+                sample_policies=sample_entries,
+            )
+        )
+
+    return CoverageResponse(
+        total_chunks=total,
+        total_policies=total_policies,
+        total_insurers=len(insurers_out),
+        insurers=insurers_out,
+    )
+
+
+@app.post("/api/upload-policy", response_model=UploadResponse)
+async def upload_policy(file: UploadFile = File(...)):
+    """Accept a user-uploaded PDF policy doc, chunk + embed it, add to Chroma.
+
+    Note: in v1 demo this appends to the shared corpus (single-tenant).
+    Production would isolate by session/user.
+    """
+    import re
+    import tempfile
+    import time as _time
+    from pathlib import Path as _PathLib
+
+    t0 = _time.time()
+    contents = await file.read()
+    if not contents.startswith(b"%PDF"):
+        raise HTTPException(400, "File does not look like a PDF (magic bytes wrong).")
+    if len(contents) > 25 * 1024 * 1024:
+        raise HTTPException(413, "PDF too large (>25 MB). Use a smaller file.")
+
+    # Slugify filename for policy_id
+    raw = file.filename or "user_upload.pdf"
+    stem = _PathLib(raw).stem
+    slug = re.sub(r"[^a-zA-Z0-9]+", "-", stem.lower()).strip("-")[:80] or "user-upload"
+    policy_id = f"user-upload__{slug}"
+    policy_name = stem.replace("_", " ").replace("-", " ").title()
+
+    # Save to disk so ingest can read with pdfplumber
+    user_dir = settings.CORPUS_DIR / "user-upload"
+    user_dir.mkdir(parents=True, exist_ok=True)
+    out_path = user_dir / f"{slug}.pdf"
+    out_path.write_bytes(contents)
+
+    # Ingest just this one file
+    try:
+        from rag.ingest import chunk_pages, get_chroma_collection, read_pdf_pages
+        from backend.providers.local_embeddings import LocalEmbeddings as _Emb
+
+        pages = read_pdf_pages(out_path)
+        chunks = list(chunk_pages(pages))
+        if not chunks:
+            raise HTTPException(400, "Could not extract any text from the PDF (scanned image-only?).")
+
+        embedder = _Emb()
+        texts = [c["text"] for c in chunks]
+        vectors = await embedder.embed(texts, input_type="document")
+
+        ids = [f"{policy_id}::chunk{c['chunk_idx']}" for c in chunks]
+        metadatas = [
+            {
+                "policy_id": policy_id,
+                "insurer_slug": "user-upload",
+                "policy_name": policy_name,
+                "doc_type": "user_upload",
+                "source_url": "",
+                "page_start": c["page_start"],
+                "page_end": c["page_end"],
+                "chunk_idx": c["chunk_idx"],
+                "local_path": str(out_path),
+            }
+            for c in chunks
+        ]
+        collection = get_chroma_collection()
+        # Remove any existing chunks under this policy_id (re-upload case)
+        try:
+            collection.delete(where={"policy_id": policy_id})
+        except Exception:
+            pass
+        collection.add(ids=ids, documents=texts, embeddings=vectors, metadatas=metadatas)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, f"Indexing failed: {type(e).__name__}: {e}")
+
+    return UploadResponse(
+        policy_id=policy_id,
+        policy_name=policy_name,
+        chunks_added=len(chunks),
+        pages_indexed=len(pages),
+        elapsed_ms=int((_time.time() - t0) * 1000),
     )
 
 

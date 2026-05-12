@@ -26,7 +26,19 @@ from rag.retrieve import RetrievedChunk, format_for_llm_context, retrieve
 
 # ---------- intent classification (v1: keyword heuristics) ----------
 
-COMPARISON_KEYWORDS = ("compare", "comparison", "vs", "versus", "between", "better")
+# Fact-find triggers: conversational openers where the user is seeking advice,
+# not asking a specific factual question about a known policy. These should
+# bypass retrieval+faithfulness entirely and start the discovery flow.
+FACT_FIND_TRIGGERS = (
+    "looking for", "i want", "i need", "help me find", "advice",
+    "first time", "new health insurance", "buy health insurance",
+    "should i get", "shopping for", "thinking about getting",
+    "want to buy", "best policy for me", "what do you recommend",
+    "i don't have", "no policy", "no insurance",
+    "hi", "hello", "hey", "namaste",
+)
+
+COMPARISON_KEYWORDS = ("compare", "comparison", "vs", "versus", "between policy", "which is better")
 RECOMMEND_KEYWORDS = ("recommend", "should i", "which one", "best for", "suit me")
 INDIC_KEYWORDS = (
     # Devanagari letters
@@ -37,7 +49,10 @@ INDIC_KEYWORDS = (
 
 
 def classify_intent(query: str) -> str:
-    q = query.lower()
+    q = query.lower().strip()
+    # Greeting / advice-seeking openers → fact-find flow
+    if any(kw in q for kw in FACT_FIND_TRIGGERS) and len(q.split()) < 25:
+        return "fact_find"
     if any(kw in q for kw in COMPARISON_KEYWORDS):
         return "comparison"
     if any(kw in q for kw in RECOMMEND_KEYWORDS):
@@ -107,6 +122,36 @@ async def handle_turn(
     # 1. Classify
     intent = classify_intent(user_text)
     language = detect_language(user_text)
+
+    # 1a. Fact-find branch — conversational openers / advice-seeking queries
+    # bypass retrieval + faithfulness; we ask the next discovery question.
+    if intent == "fact_find":
+        from backend.needs_finder import Profile, next_question
+        profile = Profile()
+        if user_profile:
+            for k, v in user_profile.items():
+                if hasattr(profile, k):
+                    setattr(profile, k, v)
+        q = next_question(profile, language=language)
+        if q is not None:
+            opener_en = "Happy to help. " if "hi" not in user_text.lower()[:3] else "Hi! "
+            opener_hi = "मदद के लिए तैयार हूँ। "
+            reply = (opener_hi + q.prompt_hi) if language == "indic" else (opener_en + q.prompt_en)
+        else:
+            reply = ("Great — sounds like you've thought through your needs. "
+                     "Want to ask about a specific policy, or have me compare a few for your profile?")
+        return TurnResult(
+            reply_text=reply,
+            citations=[],
+            retrieved_chunk_ids=[],
+            brain_used="needs_finder::fact_find",
+            intent=intent,
+            language=language,
+            latency_ms=int((time.time() - t0) * 1000),
+            raw_reply=reply,
+            faithfulness_passed=True,
+            blocked=False,
+        )
 
     # 2. Retrieve
     chunks: list[RetrievedChunk] = await retrieve(

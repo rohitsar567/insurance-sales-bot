@@ -26,6 +26,9 @@ export type ChatResponse = {
   latency_ms: number;
   session_id: string;
   audio_base64?: string | null;
+  faithfulness_passed?: boolean;
+  faithfulness_reasons?: string[];
+  blocked?: boolean;
 };
 
 export type ChatMessage = {
@@ -97,6 +100,54 @@ export async function getHealth(): Promise<{
 }> {
   const resp = await fetch(`${BACKEND_URL}/api/health`);
   if (!resp.ok) throw new Error(`health failed: ${resp.status}`);
+  return resp.json();
+}
+
+export type PolicyEntry = {
+  name: string;
+  source_url: string;
+};
+
+export type CoverageInsurer = {
+  slug: string;
+  name: string;
+  home_url: string;
+  policy_count: number;
+  sample_policies: PolicyEntry[];
+};
+
+export type CoverageResponse = {
+  total_chunks: number;
+  total_policies: number;
+  total_insurers: number;
+  insurers: CoverageInsurer[];
+};
+
+export async function getCoverage(): Promise<CoverageResponse> {
+  const resp = await fetch(`${BACKEND_URL}/api/coverage`);
+  if (!resp.ok) throw new Error(`coverage failed: ${resp.status}`);
+  return resp.json();
+}
+
+export type UploadResponse = {
+  policy_id: string;
+  policy_name: string;
+  chunks_added: number;
+  pages_indexed: number;
+  elapsed_ms: number;
+};
+
+export async function uploadPolicy(file: File): Promise<UploadResponse> {
+  const fd = new FormData();
+  fd.append("file", file);
+  const resp = await fetch(`${BACKEND_URL}/api/upload-policy`, {
+    method: "POST",
+    body: fd,
+  });
+  if (!resp.ok) {
+    const t = await resp.text();
+    throw new Error(`upload failed: ${resp.status} ${t}`);
+  }
   return resp.json();
 }
 
