@@ -46,9 +46,14 @@ export default function Page() {
   const [showPremium, setShowPremium] = useState(false);
   const [sessionId, setSessionId] = useState<string | undefined>();
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
+  const [handsFree, setHandsFree] = useState(false);  // VAD auto-cutoff mode
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const vadFrameRef = useRef<number | null>(null);
+  const silenceStartRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -115,6 +120,7 @@ export default function Page() {
       audioChunksRef.current = [];
       recorder.ondataavailable = (ev) => { if (ev.data.size > 0) audioChunksRef.current.push(ev.data); };
       recorder.onstop = async () => {
+        stopVAD();
         stream.getTracks().forEach((t) => t.stop());
         const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType || "audio/webm" });
         setRecording(false);
@@ -130,10 +136,64 @@ export default function Page() {
       };
       recorder.start();
       setRecording(true);
+
+      // Hands-free / VAD auto-cutoff mode: listen for ~1.5s of silence
+      // (RMS level below threshold) and auto-stop the recording. Falls back
+      // gracefully if AudioContext unsupported.
+      if (handsFree) {
+        try {
+          const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+          const audioCtx = new AC();
+          const source = audioCtx.createMediaStreamSource(stream);
+          const analyser = audioCtx.createAnalyser();
+          analyser.fftSize = 1024;
+          source.connect(analyser);
+          audioContextRef.current = audioCtx;
+          analyserRef.current = analyser;
+          silenceStartRef.current = null;
+          const buf = new Uint8Array(analyser.fftSize);
+          const SILENCE_THRESHOLD = 0.018;       // RMS threshold (0-1 scale)
+          const SILENCE_DURATION_MS = 1500;
+          const tick = () => {
+            if (!analyserRef.current) return;
+            analyser.getByteTimeDomainData(buf);
+            let sumSquares = 0;
+            for (let i = 0; i < buf.length; i++) {
+              const v = (buf[i] - 128) / 128;
+              sumSquares += v * v;
+            }
+            const rms = Math.sqrt(sumSquares / buf.length);
+            const now = Date.now();
+            if (rms < SILENCE_THRESHOLD) {
+              if (silenceStartRef.current === null) silenceStartRef.current = now;
+              else if (now - silenceStartRef.current > SILENCE_DURATION_MS) {
+                stopRecording();
+                return;
+              }
+            } else {
+              silenceStartRef.current = null;
+            }
+            vadFrameRef.current = requestAnimationFrame(tick);
+          };
+          vadFrameRef.current = requestAnimationFrame(tick);
+        } catch (err) {
+          console.warn("VAD setup failed; falling back to manual stop", err);
+        }
+      }
     } catch (e) {
       console.error(e);
       pushAssistant(`Sorry — mic permission denied or unavailable.`);
     }
+  }
+  function stopVAD() {
+    if (vadFrameRef.current !== null) cancelAnimationFrame(vadFrameRef.current);
+    vadFrameRef.current = null;
+    silenceStartRef.current = null;
+    if (audioContextRef.current) {
+      audioContextRef.current.close().catch(() => {});
+      audioContextRef.current = null;
+    }
+    analyserRef.current = null;
   }
   function stopRecording() { mediaRecorderRef.current?.stop(); }
 
@@ -254,6 +314,9 @@ export default function Page() {
             <div className="flex items-center gap-3">
               <label className="flex items-center gap-1.5 cursor-pointer">
                 <input type="checkbox" checked={returnAudio} onChange={(e) => setReturnAudio(e.target.checked)} className="w-3.5 h-3.5 accent-[var(--primary)]" /> Voice reply
+              </label>
+              <label className="flex items-center gap-1.5 cursor-pointer" title="Hands-free voice — auto-submits when you stop speaking">
+                <input type="checkbox" checked={handsFree} onChange={(e) => setHandsFree(e.target.checked)} className="w-3.5 h-3.5 accent-[var(--primary)]" /> Hands-free
               </label>
               <label className="flex items-center gap-1.5">
                 Lang:
