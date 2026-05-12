@@ -50,9 +50,11 @@ LOG_DIR = settings.CORPUS_DIR.parent.parent / "logs"
 LOG_DIR.mkdir(exist_ok=True)
 HALLUCINATION_LOG = LOG_DIR / "hallucinations.jsonl"
 
-# Tunables — these become evaluable parameters in the eval harness
-MIN_TOP_SCORE = 0.25  # below this we refuse outright (Voyage cosine similarity)
-MIN_AVG_SCORE = 0.20  # average of top 5 must be above this
+# Tunables — these become evaluable parameters in the eval harness.
+# BGE-small returns higher cosine similarity than Voyage, so the floors are
+# higher here than they would be for Voyage. Re-tune if changing embedding model.
+MIN_TOP_SCORE = 0.40  # below this we refuse outright (BGE-small cosine similarity)
+MIN_AVG_SCORE = 0.30  # average of top 5 must be above this
 
 
 @dataclass

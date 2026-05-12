@@ -1,0 +1,210 @@
+"""Adaptive fact-find question graph.
+
+Inspired by what a good Independent Financial Advisor does in the first 10
+minutes of a consultation: ask a stable core of questions, then deep-dive
+conditionally based on signal. The depth is adaptive — stop when we have
+enough to recommend.
+
+The graph is explicit (not LLM-improvised) so:
+  - A reviewer can see and audit it
+  - Behavior is testable
+  - Failure modes are tractable
+  - It works without an LLM (fallback when the brain is degraded)
+
+Public API:
+  - Profile dataclass — accumulated user state
+  - next_question(profile) -> str | None   (None = ready to recommend)
+  - record_answer(profile, question_id, answer) -> Profile
+  - readback_summary(profile) -> str
+
+The orchestrator can choose to drive the fact-find OR let the user
+free-form questions — the graph supports both.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Any, Optional
+
+
+@dataclass
+class Profile:
+    """User profile accumulated during fact-find."""
+    age: Optional[int] = None
+    dependents: Optional[str] = None  # "self", "self+spouse", "self+spouse+kids", "self+parents", etc.
+    income_band: Optional[str] = None  # "under_5L", "5L-10L", "10L-25L", "25L+"
+    existing_cover_inr: Optional[int] = None  # 0 means none
+    primary_goal: Optional[str] = None  # "first_buy", "upgrade", "compare_specific", "tax_planning"
+    location_tier: Optional[str] = None  # "metro", "tier1", "tier2", "tier3"
+    parents_to_insure: Optional[bool] = None
+    parents_age_max: Optional[int] = None  # if parents_to_insure
+    parents_has_ped: Optional[bool] = None  # if parents_to_insure
+    budget_band: Optional[str] = None  # "under_15k", "15k_30k", "30k_60k", "60k+"
+    health_conditions: Optional[list[str]] = field(default_factory=list)  # ["diabetes", "hypertension", ...]
+    asked: list[str] = field(default_factory=list)  # question IDs already asked
+    free_form_session: bool = False  # True = user asks free questions, not driven by us
+
+
+# ----------------------------------------------------------------------------
+# Question graph — each node has an id, a prompt, and a condition for being
+# asked. Conditions are pure functions of the current Profile.
+# ----------------------------------------------------------------------------
+
+@dataclass
+class Question:
+    id: str
+    prompt_en: str
+    prompt_hi: str  # optional Hindi rendering (used when language='indic')
+    field: str
+    is_core: bool = False
+    condition: Any = None  # callable(profile) -> bool, default: always ask
+    parser: Any = None  # callable(text) -> value, default: text as-is
+
+
+def _always(p: Profile) -> bool:
+    return True
+
+
+GRAPH: list[Question] = [
+    Question(
+        id="age",
+        prompt_en="To start, what's your age?",
+        prompt_hi="शुरू करते हैं — आपकी उम्र क्या है?",
+        field="age",
+        is_core=True,
+        parser=lambda s: int("".join(c for c in str(s) if c.isdigit())[:3] or 0) or None,
+    ),
+    Question(
+        id="dependents",
+        prompt_en="Who else do you want to cover — just yourself, your spouse, kids, or parents too?",
+        prompt_hi="आपके अलावा किस-किस को cover करना है — पति/पत्नी, बच्चे, माता-पिता?",
+        field="dependents",
+        is_core=True,
+    ),
+    Question(
+        id="income_band",
+        prompt_en="Roughly what's your annual income — under 5 lakh, 5-10, 10-25, or 25+ lakh?",
+        prompt_hi="आपकी सालाना आय लगभग कितनी है — 5 लाख से कम, 5-10, 10-25, या 25 लाख से ज्यादा?",
+        field="income_band",
+        is_core=True,
+    ),
+    Question(
+        id="existing_cover",
+        prompt_en="Do you already have any health insurance — employer-provided or your own? How much sum insured?",
+        prompt_hi="क्या आपके पास पहले से कोई health insurance है — employer का या खुद का? Sum insured कितना है?",
+        field="existing_cover_inr",
+        is_core=True,
+    ),
+    Question(
+        id="primary_goal",
+        prompt_en="What's brought you here today — first health policy, upgrading existing cover, comparing specific policies, or tax planning?",
+        prompt_hi="आज आप यहाँ क्यों आए — पहली बार health policy ले रहे हैं, मौजूदा बढ़ाना है, specific policies compare करनी हैं, या tax planning के लिए?",
+        field="primary_goal",
+        is_core=True,
+    ),
+    Question(
+        id="location",
+        prompt_en="Which city do you live in? (Metro, tier-1, or smaller town?)",
+        prompt_hi="आप किस शहर में रहते हैं? (Metro, tier-1, या छोटा शहर?)",
+        field="location_tier",
+        is_core=True,
+    ),
+    # Conditional deep-dives
+    Question(
+        id="parents_age",
+        prompt_en="What are your parents' ages, and do either of them have any pre-existing conditions like diabetes or BP?",
+        prompt_hi="आपके माता-पिता की उम्र क्या है, और क्या उनमें से किसी को diabetes या BP जैसी कोई pre-existing condition है?",
+        field="parents_age_max",
+        condition=lambda p: bool(p.dependents and "parent" in p.dependents.lower()),
+    ),
+    Question(
+        id="health_conditions",
+        prompt_en="Any pre-existing health conditions on your side — diabetes, BP, thyroid, anything chronic?",
+        prompt_hi="आपकी तरफ से कोई pre-existing condition है — diabetes, BP, thyroid, कुछ chronic?",
+        field="health_conditions",
+        condition=_always,
+    ),
+    Question(
+        id="budget",
+        prompt_en="What annual premium budget are you comfortable with — under 15K, 15-30K, 30-60K, or 60K+?",
+        prompt_hi="Premium के लिए सालाना कितना खर्च करना चाहेंगे — 15K से कम, 15-30K, 30-60K, या 60K+?",
+        field="budget_band",
+        is_core=True,
+    ),
+]
+
+
+# ----------------------------------------------------------------------------
+# Engine
+# ----------------------------------------------------------------------------
+
+def is_field_set(profile: Profile, field_name: str) -> bool:
+    v = getattr(profile, field_name, None)
+    if v is None:
+        return False
+    if isinstance(v, (list, str)) and len(v) == 0:
+        return False
+    return True
+
+
+def next_question(profile: Profile, language: str = "en") -> Optional[Question]:
+    """Return the next question to ask, or None if we have enough to recommend."""
+    if profile.free_form_session:
+        return None
+
+    for q in GRAPH:
+        if q.id in profile.asked:
+            continue
+        if is_field_set(profile, q.field):
+            continue
+        cond = q.condition or _always
+        if cond(profile):
+            return q
+
+    # All applicable questions asked
+    return None
+
+
+def record_answer(profile: Profile, question_id: str, raw_answer: str) -> Profile:
+    """Mutate profile in place with a parsed answer."""
+    q = next((x for x in GRAPH if x.id == question_id), None)
+    if q is None:
+        return profile
+    profile.asked.append(question_id)
+    value: Any = raw_answer
+    if q.parser:
+        try:
+            value = q.parser(raw_answer)
+        except Exception:
+            value = None
+    if value is not None and value != "":
+        setattr(profile, q.field, value)
+    return profile
+
+
+def readback_summary(profile: Profile) -> str:
+    """One-paragraph human-readable summary of the gathered profile."""
+    bits = []
+    if profile.age:
+        bits.append(f"{profile.age} years old")
+    if profile.dependents:
+        bits.append(f"covering {profile.dependents}")
+    if profile.income_band:
+        bits.append(f"income {profile.income_band}")
+    if profile.existing_cover_inr is not None:
+        bits.append(
+            f"existing cover ₹{profile.existing_cover_inr:,}"
+            if profile.existing_cover_inr > 0
+            else "no existing cover"
+        )
+    if profile.primary_goal:
+        bits.append(f"primary goal: {profile.primary_goal}")
+    if profile.location_tier:
+        bits.append(profile.location_tier)
+    if profile.parents_age_max:
+        bits.append(f"parents up to age {profile.parents_age_max}")
+    if profile.health_conditions:
+        bits.append(f"conditions: {', '.join(profile.health_conditions)}")
+    if profile.budget_band:
+        bits.append(f"budget {profile.budget_band}")
+    return "; ".join(bits) if bits else "(no profile yet)"

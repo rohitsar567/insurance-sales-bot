@@ -1,0 +1,109 @@
+{
+  "policy_id": "care-health__care-classic__wordings",
+  "insurer_name": "Care Health Insurance Limited",
+  "insurer_slug": "care-health",
+  "policy_name": "Care Classic",
+  "policy_type": null,
+  "uin_code": "CHIHLIP22071V012122",
+  "min_entry_age_years": null,
+  "max_entry_age_years": null,
+  "max_renewal_age_years": null,
+  "min_child_entry_age_days": null,
+  "family_composition_allowed": null,
+  "residency_requirement": null,
+  "sum_insured_options_inr": null,
+  "premium_payment_modes": null,
+  "premium_range_indicative_inr": null,
+  "premium_payment_term_years": null,
+  "grace_period_days": 30,
+  "free_look_period_days": null,
+  "initial_waiting_period_days": null,
+  "pre_existing_disease_waiting_months": 36,
+  "specific_disease_waiting_months": null,
+  "specific_diseases_listed": null,
+  "maternity_waiting_months": 36,
+  "sub_limits_waiting_notes": null,
+  "inpatient_hospitalization": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Sum Insured as specified in the Policy Schedule",
+    "notes": "Hospitalization must be for a minimum period of 24 consecutive hours."
+  },
+  "pre_hospitalization_days": 60,
+  "post_hospitalization_days": 90,
+  "day_care_treatments": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Sum Insured as specified in the Policy Schedule",
+    "notes": "Treatment must not exceed 24 consecutive hours."
+  },
+  "domiciliary_treatment": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Amount specified against this Benefit in the Policy Schedule",
+    "notes": "Domiciliary Hospitalization must continue for a period exceeding 3 consecutive days."
+  },
+  "ayush_coverage": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Sum Insured as specified in the Policy Schedule",
+    "notes": "Treatment must be rendered from a registered Medical Practitioner."
+  },
+  "maternity_coverage": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Amount specified against this Benefit in the Policy Schedule",
+    "notes": "Waiting period of 36 months from the date of first inception of the policy."
+  },
+  "newborn_coverage": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Baby born during the Policy Period and is aged up to 90 days",
+    "notes": null
+  },
+  "organ_donor_expenses": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Limit specified against this Benefit in the Policy Schedule",
+    "notes": "Organ donor must be an eligible donor in accordance with The Transplantation of Human Organs Act, 1994."
+  },
+  "ambulance_cover": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Amount specified against this Benefit in the Policy Schedule",
+    "notes": "Ambulance transportation must be offered by a Hospital or by an Ambulance service provider."
+  },
+  "critical_illness_cover": null,
+  "restoration_benefit": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Unlimited Automatic Recharge",
+    "notes": "Recharge shall be utilized only after the base Sum Insured, 'No Claims Bonus' and 'Additional Sum Insured for Accidental Hospitalization' has been completely exhausted."
+  },
+  "no_claim_bonus_pct": 25.0,
+  "no_claim_bonus_cap_pct": 150.0,
+  "preventive_health_checkup": null,
+  "room_rent_capping": "1% of SI per day or Single Private AC Room",
+  "icu_capping": "2% of SI per day or no limit",
+  "copayment_pct": 20.0,
+  "copayment_trigger_notes": "Applicable if Age of Insured Person or eldest Insured Person (in case of Floater) is 61 Years or above.",
+  "disease_wise_sub_limits": null,
+  "deductible_amount_inr": null,
+  "geographic_coverage": null,
+  "worldwide_emergency_cover": null,
+  "network_hospital_count": null,
+  "cashless_treatment_supported": true,
+  "permanent_exclusions": null,
+  "temporary_exclusions": null,
+  "notable_exclusions_summary": null,
+  "claim_settlement_ratio_pct": null,
+  "claim_process_summary": null,
+  "tat_cashless_authorization_hours": null,
+  "available_riders": null,
+  "top_rider_examples": null,
+  "rider_premium_indicative_inr": null,
+  "source_pdf_path": null,
+  "source_pdf_url": null,
+  "last_updated_date": null,
+  "extraction_confidence_pct": null
+}

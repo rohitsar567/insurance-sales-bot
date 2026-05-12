@@ -1,0 +1,109 @@
+{
+  "policy_id": "aditya-birla__group-activ-health__wordings",
+  "insurer_name": "Aditya Birla Health Insurance Co. Ltd.",
+  "insurer_slug": "aditya-birla",
+  "policy_name": "Group Activ Health",
+  "policy_type": "group",
+  "uin_code": "ADIHLGP26041V052526",
+  "min_entry_age_years": null,
+  "max_entry_age_years": null,
+  "max_renewal_age_years": null,
+  "min_child_entry_age_days": 90,
+  "family_composition_allowed": null,
+  "residency_requirement": null,
+  "sum_insured_options_inr": null,
+  "premium_payment_modes": [
+    "monthly",
+    "annual"
+  ],
+  "premium_range_indicative_inr": null,
+  "premium_payment_term_years": 1,
+  "grace_period_days": 15,
+  "free_look_period_days": null,
+  "initial_waiting_period_days": null,
+  "pre_existing_disease_waiting_months": 36,
+  "specific_disease_waiting_months": 36,
+  "specific_diseases_listed": null,
+  "maternity_waiting_months": null,
+  "sub_limits_waiting_notes": null,
+  "inpatient_hospitalization": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Reasonable and Customary Charges",
+    "notes": "Includes room rent, ICU charges, operation theatre expenses, medical practitioner fees, medicines, and diagnostic tests."
+  },
+  "pre_hospitalization_days": null,
+  "post_hospitalization_days": null,
+  "day_care_treatments": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Medical treatment and/or surgical procedure under General or Local Anaesthesia in a Hospital/Day Care Centre in less than 24 hrs",
+    "notes": null
+  },
+  "domiciliary_treatment": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Medical treatment for an illness/disease/injury which in the normal course would require care and treatment at a Hospital but is actually taken while confined at home",
+    "notes": null
+  },
+  "ayush_coverage": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Medical Expenses for medically required AYUSH Treatments undergone as an In-patient Treatment or Day Care Treatment",
+    "notes": "Comfort treatment involving steam bath/sauna/oil massages are excluded."
+  },
+  "maternity_coverage": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Medical treatment expenses traceable to childbirth (including complicated deliveries and caesarean sections incurred during hospitalization); expenses towards lawful medical termination of pregnancy during the policy period.",
+    "notes": null
+  },
+  "newborn_coverage": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Baby born during the Policy Period and is Aged upto 90 days",
+    "notes": null
+  },
+  "organ_donor_expenses": null,
+  "ambulance_cover": null,
+  "critical_illness_cover": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Cover for specified critical illnesses like Cancer, Myocardial Infarction, Stroke, etc.",
+    "notes": "Detailed definitions of each critical illness are provided in the policy document."
+  },
+  "restoration_benefit": null,
+  "no_claim_bonus_pct": null,
+  "no_claim_bonus_cap_pct": null,
+  "preventive_health_checkup": null,
+  "room_rent_capping": null,
+  "icu_capping": null,
+  "copayment_pct": null,
+  "copayment_trigger_notes": null,
+  "disease_wise_sub_limits": null,
+  "deductible_amount_inr": null,
+  "geographic_coverage": null,
+  "worldwide_emergency_cover": null,
+  "network_hospital_count": null,
+  "cashless_treatment_supported": true,
+  "permanent_exclusions": [
+    "Cosmetic surgery",
+    "Self-inflicted injury",
+    "War",
+    "Non-medical expenses",
+    "Experimental treatments"
+  ],
+  "temporary_exclusions": null,
+  "notable_exclusions_summary": "Exclusions include cosmetic surgery, self-inflicted injury, war, non-medical expenses, and experimental treatments. Pre-existing diseases are covered after 36 months.",
+  "claim_settlement_ratio_pct": null,
+  "claim_process_summary": "Claims must be made in accordance with the procedure set out in the policy document. Cashless facility is available at Network Providers.",
+  "tat_cashless_authorization_hours": null,
+  "available_riders": null,
+  "top_rider_examples": null,
+  "rider_premium_indicative_inr": null,
+  "source_pdf_path": null,
+  "source_pdf_url": "https://www.adityabirlacapital.com/healthinsurance/downloads",
+  "last_updated_date": null,
+  "extraction_confidence_pct": 85.0,
+  "deductive_amount_inr": null
+}

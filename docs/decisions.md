@@ -214,4 +214,27 @@ Every meaningful technical and product decision, with alternatives considered an
 
 ---
 
+---
+
+## D-017 — Regulatory corpus acquisition deferred (Akamai bot protection)
+
+**Date:** 2026-05-13
+**Status:** Deferred to v2
+**Context:** 17 IRDAI + government regulatory PDF URLs identified by research agent. 14 of 17 on `irdai.gov.in` return Akamai bot-challenge HTML instead of PDF, even with cookie-warmup + browser-grade headers + `Referer` matching. 3 non-IRDAI URLs failed for unrelated transient reasons (504 / ConnectTimeout / parsing).
+**Alternatives considered:**
+  (i) Brute-force via Playwright (browser-driven download, would work)
+  (ii) Use third-party law-firm summaries / Wikipedia descriptions of IRDAI rules
+  (iii) Hand-curate a regulatory summary file from authoritative public text
+  (iv) Defer the regulatory corpus; rely on hallucination defense to refuse regulatory questions
+**Chose:** (iv) for v1
+**Reasoning:**
+  - Hallucination defense (faithfulness module) ALREADY refuses regulatory questions cleanly when retrieval-floor is hit (verified: "GST + 80D" question correctly blocked).
+  - (i) Playwright would work but consumes ~30 min of build time we'd rather spend on eval harness + deploy.
+  - (ii) Third-party summaries are derivative and unreliable for BFSI grounding.
+  - (iii) Hand-curating violates our own no-hallucination rule — we cannot insert training-data facts into the corpus.
+**Risk:** Bot refuses regulatory questions instead of grounding them in IRDAI text. This is the *safer* failure mode — refusal vs. hallucination.
+**Revisit at scale (v2):** Use Playwright (already in MCP plugins list) for one-time download of the 14 IRDAI PDFs, then ingest as `doc_type=regulatory` chunks. Build a periodic refresh job.
+
+---
+
 *Entries added as we go. Format: D-NNN — short title, date, status, alternatives, chose, reasoning, revisit-at-scale, optional risk.*

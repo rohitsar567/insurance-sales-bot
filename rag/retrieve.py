@@ -18,7 +18,7 @@ import chromadb
 from chromadb.config import Settings as ChromaSettings
 
 from backend.config import settings
-from backend.providers.voyage_embeddings import VoyageEmbeddings
+from backend.providers.local_embeddings import LocalEmbeddings as VoyageEmbeddings  # alias kept
 
 
 @dataclass

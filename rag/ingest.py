@@ -29,7 +29,7 @@ import pdfplumber
 from chromadb.config import Settings as ChromaSettings
 
 from backend.config import settings
-from backend.providers.voyage_embeddings import VoyageEmbeddings
+from backend.providers.local_embeddings import LocalEmbeddings as ActiveEmbeddings
 
 ROOT = settings.CORPUS_DIR.parent.parent  # project root
 
@@ -177,7 +177,7 @@ def load_manifest() -> dict:
 async def ingest_one(
     pdf_path: Path,
     manifest_entry: dict,
-    embedder: VoyageEmbeddings,
+    embedder: ActiveEmbeddings,
     collection,
 ):
     policy_id = policy_id_for(pdf_path)
@@ -240,7 +240,7 @@ async def main():
     pdfs = discover_pdfs()
     manifest = load_manifest()
     collection = get_chroma_collection()
-    embedder = VoyageEmbeddings()
+    embedder = ActiveEmbeddings()
 
     print(f"Ingesting {len(pdfs)} PDFs into Chroma at {settings.VECTORS_DIR}\n")
 
