@@ -46,8 +46,9 @@ ENV/
 # Streamlit
 .streamlit/secrets.toml
 
-# Vector DB persistence — too large to commit; rebuilt from corpus
-rag/vectors/
+# Vector DB persistence — committed so deploy starts ready-to-serve (no boot-time re-ingest)
+# rag/vectors/  -- intentionally not gitignored
+# rag/policies.duckdb -- intentionally not gitignored
 
 # Raw PDFs — large; do commit a subset later for reproducibility
 # (keeping commented out — we WILL commit the corpus we acquire so deploy works)
