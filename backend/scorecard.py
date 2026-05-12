@@ -318,7 +318,52 @@ def compute_data_completeness(p: dict) -> float:
     return round(filled / max(1, len(SCORED_FIELDS)) * 100, 1)
 
 
-def build_scorecard(policy: dict, insurer_reviews: Optional[dict] = None) -> Scorecard:
+def _profile_tuned_weights(profile: Optional[dict]) -> dict[str, float]:
+    """Return a per-sub-score weight dict adapted to the buyer profile.
+
+    The base weights (`WEIGHTS`) reflect a typical buyer. A 25-year-old
+    cares more about waiting periods + claim experience than about renewal
+    protection. A 55-year-old cares more about renewal + claim than about
+    bonuses. A buyer with parents to cover cares most about coverage breadth
+    and network. We renormalise so weights sum to 1.0.
+
+    See docs/scorecard-methodology.md §6 for the v2 plan; this is the v1
+    implementation.
+    """
+    if not profile:
+        return WEIGHTS
+    w = dict(WEIGHTS)
+
+    age = profile.get("age")
+    if isinstance(age, int):
+        if age < 30:
+            w["Waiting-Period Friction"] += 0.04
+            w["Claim Experience"] += 0.02
+            w["Renewal Protection"] -= 0.04
+            w["Bonus & Loyalty"] -= 0.02
+        elif age >= 50:
+            w["Renewal Protection"] += 0.06
+            w["Claim Experience"] += 0.02
+            w["Bonus & Loyalty"] -= 0.04
+            w["Waiting-Period Friction"] -= 0.04
+
+    if profile.get("parents_to_insure"):
+        w["Coverage Breadth"] += 0.04
+        w["Claim Experience"] += 0.04  # network matters more for elderly hospital access
+        w["Bonus & Loyalty"] -= 0.04
+        w["Cost Predictability"] -= 0.04
+
+    if profile.get("budget_band") in ("under_15k", "15k_30k"):
+        w["Cost Predictability"] += 0.04
+        w["Bonus & Loyalty"] -= 0.02
+        w["Waiting-Period Friction"] -= 0.02
+
+    # Normalise so sum is exactly 1.0
+    total = sum(w.values())
+    return {k: v / total for k, v in w.items()}
+
+
+def build_scorecard(policy: dict, insurer_reviews: Optional[dict] = None, profile: Optional[dict] = None) -> Scorecard:
     subs = [
         score_coverage_breadth(policy),
         score_cost_predictability(policy),
@@ -327,7 +372,8 @@ def build_scorecard(policy: dict, insurer_reviews: Optional[dict] = None) -> Sco
         score_renewal_protection(policy),
         score_bonuses(policy),
     ]
-    overall = clamp(sum(WEIGHTS[s.name] * s.score for s in subs))
+    weights = _profile_tuned_weights(profile)
+    overall = clamp(sum(weights[s.name] * s.score for s in subs))
     letter, one_liner = grade_for(overall)
     return Scorecard(
         policy_id=policy.get("policy_id", ""),

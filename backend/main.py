@@ -469,7 +469,12 @@ class ScorecardResponse(BaseModel):
 
 
 @app.get("/api/policies/{policy_id}/scorecard", response_model=ScorecardResponse)
-async def policy_scorecard(policy_id: str):
+async def policy_scorecard(
+    policy_id: str,
+    age: Optional[int] = None,
+    parents_to_insure: Optional[bool] = None,
+    budget_band: Optional[str] = None,
+):
     """Compute the 6-sub-score A-F scorecard for an extracted policy.
 
     Now also pulls insurer-level reviews (IRDAI claim ratio + complaints) into
@@ -500,7 +505,12 @@ async def policy_scorecard(policy_id: str):
             except Exception:
                 pass
 
-    sc = build_scorecard(policy, insurer_reviews=insurer_reviews)
+    profile: dict = {}
+    if age is not None: profile["age"] = age
+    if parents_to_insure is not None: profile["parents_to_insure"] = parents_to_insure
+    if budget_band is not None: profile["budget_band"] = budget_band
+
+    sc = build_scorecard(policy, insurer_reviews=insurer_reviews, profile=profile or None)
     return ScorecardResponse(
         policy_id=sc.policy_id,
         policy_name=sc.policy_name,

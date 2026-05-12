@@ -136,3 +136,4 @@ rag/corpus/star-health/star-cardiac-care-platinum__wordings.pdf filter=lfs diff=
 rag/corpus/star-health/star-cardiac-care__wordings.pdf filter=lfs diff=lfs merge=lfs -text
 rag/corpus/star-health/star-comprehensive__wordings.pdf filter=lfs diff=lfs merge=lfs -text
 rag/corpus/star-health/star-hospital-cash__brochure.pdf filter=lfs diff=lfs merge=lfs -text
+rag/corpus/regulatory/irdai-health-insurance-regulations-2016.pdf filter=lfs diff=lfs merge=lfs -text
