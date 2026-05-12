@@ -1,0 +1,40 @@
+{
+  "generated_at": "2026-05-12T21:18:43Z",
+  "total_chunks": 2,
+  "chunks": [
+    {
+      "chunk_id": "aditya-birla__activ-secure-cancer-secure__brochure::chunk0",
+      "policy_id": "aditya-birla__activ-secure-cancer-secure__brochure",
+      "insurer_slug": "aditya-birla",
+      "policy_name": "Activ Secure - Cancer Secure",
+      "doc_type": "brochure",
+      "page_start": 1,
+      "page_end": 4,
+      "topics": [
+        "waiting_period",
+        "coverage_scope",
+        "exclusions",
+        "claim_process",
+        "sum_insured",
+        "critical_illness",
+        "ncb"
+      ]
+    },
+    {
+      "chunk_id": "aditya-birla__activ-secure-cancer-secure__brochure::chunk1",
+      "policy_id": "aditya-birla__activ-secure-cancer-secure__brochure",
+      "insurer_slug": "aditya-birla",
+      "policy_name": "Activ Secure - Cancer Secure",
+      "doc_type": "brochure",
+      "page_start": 4,
+      "page_end": 4,
+      "topics": [
+        "coverage_scope",
+        "exclusions",
+        "claim_process",
+        "sum_insured",
+        "critical_illness"
+      ]
+    }
+  ]
+}

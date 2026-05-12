@@ -1,0 +1,120 @@
+```json
+{
+  "policy_id": "aditya-birla__activ-health-individual__wordings",
+  "insurer_name": "Aditya Birla Health Insurance Co. Limited",
+  "insurer_slug": "aditya-birla",
+  "policy_name": "Activ Health",
+  "policy_type": "health",
+  "uin_code": "ADIHLIP24102V052324",
+  "min_entry_age_years": null,
+  "max_entry_age_years": null,
+  "max_renewal_age_years": 999,
+  "min_child_entry_age_days": 91,
+  "family_composition_allowed": ["self", "spouse", "dependent_children"],
+  "residency_requirement": "Indian resident only",
+  "sum_insured_options_inr": null,
+  "premium_payment_modes": null,
+  "premium_range_indicative_inr": null,
+  "premium_payment_term_years": 1,
+  "grace_period_days": null,
+  "free_look_period_days": 30,
+  "initial_waiting_period_days": 30,
+  "pre_existing_disease_waiting_months": 48,
+  "specific_disease_waiting_months": null,
+  "specific_diseases_listed": null,
+  "maternity_waiting_months": null,
+  "sub_limits_waiting_notes": null,
+  "inpatient_hospitalization": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "As per Policy Schedule / Product Benefit Table",
+    "notes": "Includes room rent, ICU charges, operation theatre expenses, medical practitioners' fees, medicines, and diagnostic procedures."
+  },
+  "pre_hospitalization_days": null,
+  "post_hospitalization_days": null,
+  "day_care_treatments": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "As per Policy Schedule / Product Benefit Table",
+    "notes": "Treatment under 24 hours due to technological advancement."
+  },
+  "domiciliary_treatment": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "As per Policy Schedule / Product Benefit Table",
+    "notes": "Covered if hospitalization is not possible due to patient's condition or lack of hospital beds."
+  },
+  "ayush_coverage": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "As per Policy Schedule / Product Benefit Table",
+    "notes": "Coverage for Ayurveda, Yoga, Unani, Siddha, and Homeopathy treatments in AYUSH hospitals or day care centers."
+  },
+  "maternity_coverage": null,
+  "newborn_coverage": null,
+  "organ_donor_expenses": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "As per Policy Schedule / Product Benefit Table",
+    "notes": "Coverage for organ donor's medical expenses related to harvesting the organ for the insured."
+  },
+  "ambulance_cover": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "As per Policy Schedule / Product Benefit Table",
+    "notes": "Coverage for ambulance transportation to the nearest hospital in case of emergency."
+  },
+  "critical_illness_cover": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "17 critical illnesses covered",
+    "notes": "Includes cancer, myocardial infarction, stroke, kidney failure, and others as specified in the policy."
+  },
+  "restoration_benefit": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Reload of Sum Insured once per policy year",
+    "notes": "Sum Insured is reloaded once exhausted, subject to policy conditions."
+  },
+  "no_claim_bonus_pct": null,
+  "no_claim_bonus_cap_pct": null,
+  "preventive_health_checkup": null,
+  "room_rent_capping": null,
+  "icu_capping": null,
+  "copayment_pct": null,
+  "copayment_trigger_notes": null,
+  "disease_wise_sub_limits": {
+    "cataract": "Rs 40,000 per eye (Zone I), Rs 30,000 (Zone II), Rs 20,000 (Zone III)",
+    "angioplasty": "Rs 3,00,000 (Zone I), Rs 2,50,000 (Zone II), Rs 2,00,000 (Zone III)",
+    "knee_replacement": "Rs 3,00,000 (Zone I), Rs 2,50,000 (Zone II), Rs 2,00,000 (Zone III)",
+    "hip_replacement": "Rs 3,00,000 (Zone I), Rs 2,50,000 (Zone II), Rs 2,00,000 (Zone III)",
+    "cholecystectomy": "Rs 60,000 (Zone I), Rs 45,000 (Zone II), Rs 35,000 (Zone III)",
+    "hysterectomy": "Rs 60,000 (Zone I), Rs 45,000 (Zone II), Rs 35,000 (Zone III)"
+  },
+  "deductible_amount_inr": null,
+  "geographic_coverage": "India",
+  "worldwide_emergency_cover": null,
+  "network_hospital_count": null,
+  "cashless_treatment_supported": true,
+  "permanent_exclusions": [
+    "cosmetic surgery",
+    "self-inflicted injury",
+    "war",
+    "alcohol or drug abuse",
+    "HIV/AIDS",
+    "congenital anomalies"
+  ],
+  "temporary_exclusions": null,
+  "notable_exclusions_summary": "Excludes cosmetic surgery, self-inflicted injuries, war-related injuries, alcohol or drug abuse consequences, HIV/AIDS, and congenital anomalies.",
+  "claim_settlement_ratio_pct": null,
+  "claim_process_summary": "Claims can be filed via cashless or reimbursement. Pre-authorization is required for cashless claims. Contact the insurer's helpline or portal for assistance.",
+  "tat_cashless_authorization_hours": null,
+  "available_riders": null,
+  "top_rider_examples": null,
+  "rider_premium_indicative_inr": null,
+  "source_pdf_path": null,
+  "source_pdf_url": null,
+  "last_updated_date": null,
+  "extraction_confidence_pct": 85
+}
+```

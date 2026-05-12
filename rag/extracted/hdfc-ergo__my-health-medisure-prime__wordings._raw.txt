@@ -1,0 +1,162 @@
+```json
+{
+  "policy_id": "hdfc-ergo__my-health-medisure-prime__wordings",
+  "insurer_name": "L & T General Insurance Company Limited",
+  "insurer_slug": "l-t-general",
+  "policy_name": "my:health Medisure Prime Insurance",
+  "policy_type": null,
+  "uin_code": null,
+  "min_entry_age_years": null,
+  "max_entry_age_years": null,
+  "max_renewal_age_years": null,
+  "min_child_entry_age_days": 91,
+  "family_composition_allowed": ["individual", "family_floater"],
+  "residency_requirement": "Indian resident only",
+  "sum_insured_options_inr": null,
+  "premium_payment_modes": null,
+  "premium_range_indicative_inr": null,
+  "premium_payment_term_years": 1,
+  "grace_period_days": 15,
+  "free_look_period_days": null,
+  "initial_waiting_period_days": 30,
+  "pre_existing_disease_waiting_months": 24,
+  "specific_disease_waiting_months": 24,
+  "specific_diseases_listed": [
+    "Cataract",
+    "Hysterectomy for Menorrhagia or Fibromyoma",
+    "Knee Replacement Surgery (other than caused by an accident)",
+    "Arthritis",
+    "Rheumatism",
+    "Joint Replacement Surgery (other than caused by accident)",
+    "Prolapse of Intervertebral discs (other than caused by accident)",
+    "Varicose Veins and Varicose Ulcers",
+    "Hernia",
+    "Stones in the urinary uro-genital and biliary systems",
+    "Benign Prostate Hypertrophy",
+    "Hydrocele",
+    "Congenital internal anomaly",
+    "Fistula in anus",
+    "Piles",
+    "Pilonidal sinus",
+    "Chronic Suppurative Otitis Media (CSOM)",
+    "Deviated Nasal Septum",
+    "Sinusitis and related disorders",
+    "Surgery on tonsils/Adenoids",
+    "gastric and duodenal ulcer",
+    "any type of Cysts/Nodules/Polyps",
+    "any type of Breast lumps",
+    "Hypertension",
+    "Diabetes and related complications"
+  ],
+  "maternity_waiting_months": 48,
+  "sub_limits_waiting_notes": "Critical Illness cover has a waiting period of 30 days from the commencement of the first Policy.",
+  "inpatient_hospitalization": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Sum Insured",
+    "notes": "Covers room rent, ICU rent, surgeon fees, operation theater costs, diagnostic tests, medicines, blood, oxygen, and prosthetic devices."
+  },
+  "pre_hospitalization_days": 60,
+  "post_hospitalization_days": 90,
+  "day_care_treatments": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Sum Insured",
+    "notes": "Treatment or surgery under General or Local Anaesthesia in a hospital/day care centre for less than 24 hours."
+  },
+  "domiciliary_treatment": {
+    "covered": false,
+    "limit_inr": null,
+    "limit_text": null,
+    "notes": "Excluded from coverage."
+  },
+  "ayush_coverage": {
+    "covered": false,
+    "limit_inr": null,
+    "limit_text": null,
+    "notes": "Excluded from coverage."
+  },
+  "maternity_coverage": {
+    "covered": true,
+    "limit_inr": 50000,
+    "limit_text": "5% of Sum Insured or ₹25,000 for normal delivery, 10% of Sum Insured or ₹50,000 for Cesarean Section",
+    "notes": "Coverage is limited to 2 deliveries or terminations during the lifetime of an Insured/Insured Person. Pre-post natal expenses are included."
+  },
+  "newborn_coverage": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Within the limit of Sum Insured under Maternity Cover",
+    "notes": "Coverage for the new born baby up to 90 days from birth, including vaccination expenses."
+  },
+  "organ_donor_expenses": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Sum Insured",
+    "notes": "Coverage for donor expenses in case of major organ transplant."
+  },
+  "ambulance_cover": {
+    "covered": true,
+    "limit_inr": 1500,
+    "limit_text": "₹1500 per claim",
+    "notes": "Reimbursement for ambulance transportation to the Hospital/Nursing Home."
+  },
+  "critical_illness_cover": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Additional Sum Insured equivalent to the Hospitalisation Sum Insured",
+    "notes": "Covers 9 critical illnesses: Cancer, Kidney Failure, Multiple Sclerosis, Primary Pulmonary Arterial Hypertension, Major Organ/Bone marrow Transplant, Aorta Graft Surgery, Open Chest CABG, First Heart Attack, Stroke."
+  },
+  "restoration_benefit": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Original Sum Insured",
+    "notes": "Sum Insured is reinstated once during the Policy period for hospitalization due to Accident."
+  },
+  "no_claim_bonus_pct": null,
+  "no_claim_bonus_cap_pct": null,
+  "preventive_health_checkup": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Every 2 continuous policy years",
+    "notes": "Comprehensive Health Check-Up for Insured Persons above 45 years."
+  },
+  "room_rent_capping": null,
+  "icu_capping": null,
+  "copayment_pct": null,
+  "copayment_trigger_notes": null,
+  "disease_wise_sub_limits": null,
+  "deductible_amount_inr": null,
+  "geographic_coverage": null,
+  "worldwide_emergency_cover": null,
+  "network_hospital_count": null,
+  "cashless_treatment_supported": true,
+  "permanent_exclusions": [
+    "Pre-existing diseases within 24 months of continuous coverage",
+    "Cosmetic surgery unless part of treatment for cancer or burns",
+    "Dental treatment unless necessitated due to an accident",
+    "Birth control procedures and hormone replacement therapy",
+    "Vitamins and tonics unless part of treatment",
+    "Artificial life maintenance",
+    "Treatment for general debility, ageing, convalescence",
+    "Genetic disorder and stem cell implantation/surgery",
+    "HIV/AIDS and sexually transmitted diseases",
+    "War, nuclear risks, and criminal acts"
+  ],
+  "temporary_exclusions": [
+    "First 30 days for any disease contracted (except accidental injuries)",
+    "Specific diseases for the first 24 months of continuous coverage",
+    "Maternity expenses for the first 48 months of continuous coverage"
+  ],
+  "notable_exclusions_summary": "Pre-existing diseases are excluded for the first 24 months. Specific diseases like cataract, hernia, and joint replacement are excluded for the first 24 months. Maternity is excluded for the first 48 months. Cosmetic surgery, dental treatments (unless due to accident), and birth control procedures are permanently excluded.",
+  "claim_settlement_ratio_pct": null,
+  "claim_process_summary": "Cashless facility available at Network Hospitals. For reimbursement, submit claim form, hospital bills, discharge summary, and other relevant documents within 30 days of discharge. Pre-authorization required for planned hospitalization within 72 hours and for emergency hospitalization within 24 hours.",
+  "tat_cashless_authorization_hours": 6,
+  "available_riders": null,
+  "top_rider_examples": null,
+  "rider_premium_indicative_inr": null,
+  "source_pdf_path": null,
+  "source_pdf_url": null,
+  "last_updated_date": null,
+  "extraction_confidence_pct": 90
+}
+```

@@ -1,0 +1,102 @@
+```json
+{
+  "policy_id": "bajaj-allianz__global-health-care__wordings",
+  "insurer_name": "Bajaj Allianz General Insurance Co. Ltd.",
+  "insurer_slug": "bajaj-allianz",
+  "policy_name": "Global Health Care Policy",
+  "policy_type": "individual",
+  "uin_code": "BAJHLIP23209V022223",
+  "min_entry_age_years": null,
+  "max_entry_age_years": 65,
+  "max_renewal_age_years": 999,
+  "min_child_entry_age_days": 90,
+  "family_composition_allowed": ["spouse", "children", "parents/parents-in-law"],
+  "residency_requirement": "Indian resident only",
+  "sum_insured_options_inr": [3750000, 5600000, 7500000, 11200000, 18750000, 37500000],
+  "premium_payment_modes": ["annual"],
+  "premium_range_indicative_inr": null,
+  "premium_payment_term_years": 1,
+  "grace_period_days": null,
+  "free_look_period_days": null,
+  "initial_waiting_period_days": null,
+  "pre_existing_disease_waiting_months": 36,
+  "specific_disease_waiting_months": null,
+  "specific_diseases_listed": null,
+  "maternity_waiting_months": null,
+  "sub_limits_waiting_notes": null,
+  "inpatient_hospitalization": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Up to Sum Insured",
+    "notes": "Room rent and boarding expenses as provided by the Hospital/Nursing Home without any sub limit"
+  },
+  "pre_hospitalization_days": 60,
+  "post_hospitalization_days": 180,
+  "day_care_treatments": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Up to Sum Insured",
+    "notes": "List of Day Care Procedures is as given in the Annexure I of Policy wordings"
+  },
+  "domiciliary_treatment": null,
+  "ayush_coverage": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Up to Sum Insured",
+    "notes": "Hospitalized for not less than 24 hrs, in an Ayush Hospital which is a government Hospital or in any institute recognized by government and/or accredited by Quality Council of India/National Accreditation Board on Health"
+  },
+  "maternity_coverage": null,
+  "newborn_coverage": null,
+  "organ_donor_expenses": {
+    "covered": true,
+    "limit_inr": 500000,
+    "limit_text": "INR 500,000",
+    "notes": "Expenses towards organ donor’s treatment for harvesting of the donated organ"
+  },
+  "ambulance_cover": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Up to Sum Insured",
+    "notes": "Local (Road) Ambulance"
+  },
+  "critical_illness_cover": null,
+  "restoration_benefit": null,
+  "no_claim_bonus_pct": null,
+  "no_claim_bonus_cap_pct": null,
+  "preventive_health_checkup": {
+    "covered": true,
+    "limit_inr": 5000,
+    "limit_text": "INR 5,000",
+    "notes": "Annual Preventive Health Check-up"
+  },
+  "room_rent_capping": "At Actual",
+  "icu_capping": "At Actual",
+  "copayment_pct": null,
+  "copayment_trigger_notes": null,
+  "disease_wise_sub_limits": null,
+  "deductible_amount_inr": null,
+  "geographic_coverage": "domestic",
+  "worldwide_emergency_cover": null,
+  "network_hospital_count": null,
+  "cashless_treatment_supported": true,
+  "permanent_exclusions": [
+    "cosmetic surgery",
+    "self-inflicted injury",
+    "war",
+    "Act of Terrorism",
+    "Unproven/Experimental Treatment"
+  ],
+  "temporary_exclusions": null,
+  "notable_exclusions_summary": "Exclusions include cosmetic surgery, self-inflicted injury, war, Act of Terrorism, and Unproven/Experimental Treatment.",
+  "claim_settlement_ratio_pct": null,
+  "claim_process_summary": "Claims can be filed for cashless treatment at Network Providers or reimbursement for Non-Network Providers. Contact details: Sales - 1800 209 0144 / Service - 1800 209 5858 (Toll Free No.).",
+  "tat_cashless_authorization_hours": null,
+  "available_riders": null,
+  "top_rider_examples": null,
+  "rider_premium_indicative_inr": null,
+  "source_pdf_path": null,
+  "source_pdf_url": null,
+  "last_updated_date": null,
+  "extraction_confidence_pct": 85
+}
+```

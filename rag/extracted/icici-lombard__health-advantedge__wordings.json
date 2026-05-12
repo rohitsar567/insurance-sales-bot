@@ -1,0 +1,106 @@
+{
+  "policy_id": "icici-lombard__health-advantedge__wordings",
+  "insurer_name": "ICICI Lombard General Insurance Company Limited",
+  "insurer_slug": "icici-lombard",
+  "policy_name": "Health AdvantEdge",
+  "policy_type": null,
+  "uin_code": "ICIHLIP24182V042324",
+  "min_entry_age_years": null,
+  "max_entry_age_years": null,
+  "max_renewal_age_years": null,
+  "min_child_entry_age_days": 91,
+  "family_composition_allowed": null,
+  "residency_requirement": null,
+  "sum_insured_options_inr": [
+    400000,
+    500000
+  ],
+  "premium_payment_modes": null,
+  "premium_range_indicative_inr": null,
+  "premium_payment_term_years": 1,
+  "grace_period_days": 30,
+  "free_look_period_days": null,
+  "initial_waiting_period_days": null,
+  "pre_existing_disease_waiting_months": 48,
+  "specific_disease_waiting_months": 24,
+  "specific_diseases_listed": [
+    "bariatric surgery"
+  ],
+  "maternity_waiting_months": null,
+  "sub_limits_waiting_notes": null,
+  "inpatient_hospitalization": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Room rent charges capped at 1% of Annual Sum Insured for policies up to Rs. 4 Lakhs, no capping for Rs. 5 Lakhs and above",
+    "notes": null
+  },
+  "pre_hospitalization_days": 60,
+  "post_hospitalization_days": 180,
+  "day_care_treatments": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Covered up to Annual Sum Insured",
+    "notes": "Day Care treatment requires hospitalization as an inpatient for less than 24 hours in a Hospital."
+  },
+  "domiciliary_treatment": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Covered for at least 3 consecutive days",
+    "notes": "Excludes certain conditions like asthma, bronchitis, tonsillitis, etc."
+  },
+  "ayush_coverage": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Covered up to Annual Sum Insured",
+    "notes": "Treatment must be at a registered AYUSH Hospital or AYUSH Day Care Centre."
+  },
+  "maternity_coverage": null,
+  "newborn_coverage": null,
+  "organ_donor_expenses": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Covered up to Annual Sum Insured",
+    "notes": "Organ donation must conform to the Transplantation of Human Organs Act 1994."
+  },
+  "ambulance_cover": {
+    "covered": true,
+    "limit_inr": 10000,
+    "limit_text": "1% of Annual Sum Insured maximum up to INR 10,000",
+    "notes": "Road ambulance services only; air ambulance covered separately up to Annual Sum Insured."
+  },
+  "critical_illness_cover": null,
+  "restoration_benefit": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Reset up to 100% of Annual Sum Insured for policies less than Rs. 10 Lakhs (once) and unlimited for Rs. 10 Lakhs and above",
+    "notes": "Not available for the first claim made during the Policy Year."
+  },
+  "no_claim_bonus_pct": null,
+  "no_claim_bonus_cap_pct": null,
+  "preventive_health_checkup": null,
+  "room_rent_capping": "1% of Annual Sum Insured for policies up to Rs. 4 Lakhs, no capping for Rs. 5 Lakhs and above",
+  "icu_capping": "2% of Annual Sum Insured for policies up to Rs. 4 Lakhs, no capping for Rs. 5 Lakhs and above",
+  "copayment_pct": null,
+  "copayment_trigger_notes": null,
+  "disease_wise_sub_limits": null,
+  "deductible_amount_inr": null,
+  "geographic_coverage": null,
+  "worldwide_emergency_cover": null,
+  "network_hospital_count": null,
+  "cashless_treatment_supported": true,
+  "permanent_exclusions": null,
+  "temporary_exclusions": [
+    "bariatric surgery"
+  ],
+  "notable_exclusions_summary": null,
+  "claim_settlement_ratio_pct": null,
+  "claim_process_summary": null,
+  "tat_cashless_authorization_hours": null,
+  "available_riders": null,
+  "top_rider_examples": null,
+  "rider_premium_indicative_inr": null,
+  "source_pdf_path": null,
+  "source_pdf_url": null,
+  "last_updated_date": null,
+  "extraction_confidence_pct": 85.0
+}

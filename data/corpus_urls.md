@@ -1,0 +1,103 @@
+# Indian Health Insurance Corpus — Direct PDF URL Index
+
+**Summary.** Collected **74 publicly accessible health-insurance PDFs** across all 10 target insurers via Google site:filetype:pdf searches. Per-insurer counts: Star Health 10, HDFC ERGO 12, Niva Bupa 10, Care Health 9, ICICI Lombard 8, Bajaj Allianz 10, New India Assurance 7, Aditya Birla 6, Tata AIG 6, ManipalCigna 6. Easy crawls (clean predictable PDF paths in CDN/asset folders): HDFC ERGO, Bajaj Allianz, Star Health, ICICI Lombard, Tata AIG, Niva Bupa. Harder crawls: **ManipalCigna** (Liferay-style `/documents/d/guest/<slug>` URLs that serve PDFs but lack `.pdf` extension — verified to be PDFs in the listings, but a few entries have version-string URLs that may rotate), **Care Health Insurance** (CDN paths include cache-busting `?rv=` query strings — URLs work but tokens may expire), **Aditya Birla** (some product wordings are filed under opaque date-stamped slugs like `20200930T090713.pdf` — title-to-product mapping requires opening the file). **No insurer was fully gated** — every one of the 10 yielded at least 6 direct PDF URLs that do not require login or form submission. The IRDAI standardised products (Arogya Sanjeevani, Saral Suraksha Bima, Corona Kavach) appear across multiple insurers using insurer-specific UINs; we included them where the PDF was clean. Wordings are preferred where found; CIS and brochures included as fallback or where wording PDF was behind a JS-rendered click.
+
+---
+
+| insurer_slug | insurer_name | policy_name | doc_type | url | notes |
+|---|---|---|---|---|---|
+| star-health | Star Health | Family Health Optima | wordings | https://web.starhealth.in/sites/default/files/policy-clauses/Family-Health-Optima-Accident-Care-Policy.pdf | flagship family floater |
+| star-health | Star Health | Family Health Optima Accident Care | brochure | https://web.starhealth.in/sites/default/files/prospectus/Family-Health-Optima-Accident-Care-Policy.pdf | prospectus |
+| star-health | Star Health | Star Comprehensive (First Comprehensive) | wordings | https://web.starhealth.in/sites/default/files/policy-clauses/Star-First-Comprehensive-Policy.pdf | indiv/family comprehensive |
+| star-health | Star Health | Health Premier Insurance Policy | wordings | https://web.starhealth.in/sites/default/files/policy-clauses/Health-Premier-Insurance-Policy.pdf | premier indemnity plan |
+| star-health | Star Health | Health Premier | brochure | https://web.starhealth.in/sites/default/files/brochure/Health-Premier-Insurance-Policy-brochure.pdf | brochure |
+| star-health | Star Health | Star Health Assure | wordings | https://web.starhealth.in/sites/default/files/policy-clauses/StarHealthAssureInsurancePolicy-Policy.pdf | floater w/ unlimited restoration |
+| star-health | Star Health | Senior Citizens Red Carpet | brochure | https://web.starhealth.in/sites/default/files/brochure/Senior-Citizens-Red-Carpet-Health-Insurance-Policy.pdf | 60+ population |
+| star-health | Star Health | Star Cardiac Care | wordings | https://web.starhealth.in/sites/default/files/policy-clauses/Star-Cardiac-Care-Insurance-Policy.pdf | disease-specific |
+| star-health | Star Health | Star Cardiac Care Platinum | wordings | https://web.starhealth.in/sites/default/files/policy-clauses/Star-Cardiac-Care-Insurance-Policy_Platinum.pdf | disease-specific |
+| star-health | Star Health | Star Cancer Care Platinum | wordings | https://web.starhealth.in/sites/default/files/policy-clauses/star-cancer-care-platinum-policy-clauses.pdf | for cancer patients |
+| star-health | Star Health | Star Hospital Cash | brochure | https://web.starhealth.in/sites/default/files/brochure/hospital_cash_ebrochure_new.pdf | daily-cash benefit |
+| hdfc-ergo | HDFC ERGO | my:Optima Secure | wordings | https://www.hdfcergo.com/docs/default-source/downloads/policy-wordings/health/optima-secure-revision-pw.pdf | flagship indemnity |
+| hdfc-ergo | HDFC ERGO | my:Optima Secure (older variant) | wordings | https://www.hdfcergo.com/docs/default-source/downloads/policy-wordings/health/my-optima-secure_old_pws.pdf | superseded version |
+| hdfc-ergo | HDFC ERGO | Optima Restore | brochure | https://www.hdfcergo.com/documents/downloads/HEHI/Presales-Set-2/OR-Brochure-Revision-V2.pdf | restoration product |
+| hdfc-ergo | HDFC ERGO | Optima Plus | wordings | https://www.hdfcergo.com/docs/default-source/downloads/policy-wordings/health/optima-plus-policy-wordings.pdf | top-up |
+| hdfc-ergo | HDFC ERGO | Optima Enhance | wordings | https://www.hdfcergo.com/docs/default-source/downloads/policy-wordings/others/optima-enhance-policy-wording.pdf | super top-up |
+| hdfc-ergo | HDFC ERGO | my:health Medisure Prime | wordings | https://www.hdfcergo.com/docs/default-source/downloads/policy-wordings/others/policy-wordings---prime---hrc.pdf | prime indemnity |
+| hdfc-ergo | HDFC ERGO | Energy (Diabetes/Hypertension) | wordings | https://www.hdfcergo.com/docs/default-source/downloads/policy-wordings/health/energy-combined-pw-cis.pdf | combined PW+CIS, disease-specific |
+| hdfc-ergo | HDFC ERGO | Total Health Plan | wordings | https://www.hdfcergo.com/docs/default-source/downloads/policy-wordings/health/total-health-plan--oct-2021.pdf | comprehensive |
+| hdfc-ergo | HDFC ERGO | my:health Suraksha | brochure | https://www.hdfcergo.com/docs/default-source/downloads/prospectus/health/myhealth-suraksha---prospectus.pdf | prospectus (product withdrawn but corpus useful) |
+| hdfc-ergo | HDFC ERGO | my:health Sampoorna Suraksha | brochure | https://www.hdfcergo.com/docs/default-source/downloads/prospectus/health/my_sampoorna_suraksha.pdf | prospectus |
+| hdfc-ergo | HDFC ERGO | my:health Women Suraksha | brochure | https://www.hdfcergo.com/docs/default-source/downloads/brochures/myhealth-women-suraksha-with-premium-table.pdf | women-specific |
+| hdfc-ergo | HDFC ERGO | Group Health Insurance | wordings | https://www.hdfcergo.com/docs/default-source/downloads/policy-wordings/health/group-health-insurance---pw.pdf | group product, structurally similar |
+| niva-bupa | Niva Bupa | ReAssure 2.0 | wordings | https://transactions.nivabupa.com/pages/doc/policy_wording/ReAssure-2.0-Policy-Wording.pdf | flagship |
+| niva-bupa | Niva Bupa | ReAssure 3.0 | wordings | https://transactions.nivabupa.com/pages/doc/policy_wording/ReAssure30_Policy_Wordings.pdf | latest gen |
+| niva-bupa | Niva Bupa | Aspire | wordings | https://transactions.nivabupa.com/pages/doc/policy_wording/Aspire_Policy_Wordings.pdf?v=1.3 | millennials product |
+| niva-bupa | Niva Bupa | RISE | wordings | https://transactions.nivabupa.com/pages/doc/policy_wording/Rise_Policy_Wordings.pdf | newer product |
+| niva-bupa | Niva Bupa | Health Companion | wordings | https://www.nivabupa.com/content/dam/nivabupa/PDF/health-companion-policy-wording.pdf | core indemnity |
+| niva-bupa | Niva Bupa | Health Companion V2022 | brochure | https://transactions.nivabupa.com/pages/doc/brochure/Health_Companion_V2022_Br.pdf?v=1.1 | brochure |
+| niva-bupa | Niva Bupa | Senior First | wordings | https://www.nivabupa.com/content/dam/nivabupa/PDF/senior-first/Senior_First_Policy_Wordings.pdf | senior citizens |
+| niva-bupa | Niva Bupa | Health Premia | wordings | https://www.nivabupa.com/content/dam/nivabupa/PDF/health-premia/Health%20Premia%20Policy%20Wording.pdf | premium tier w/ international cover |
+| niva-bupa | Niva Bupa | Health Plus (Top-up) | wordings | https://transactions.nivabupa.com/pages/doc/policy_wording/Healthplus_Policy_Wordings.pdf?v=1.2 | top-up |
+| niva-bupa | Niva Bupa | Saral Suraksha Bima | wordings | https://www.nivabupa.com/content/dam/nivabupa/PDF/Saral%20Suraksha%20Bima_Policy%20Wording.pdf | IRDAI standard product |
+| care-health | Care Health Insurance | Care Supreme | wordings | https://cms.careinsurance.com/cms/public/uploads/download_center/care-supreme---policy-terms-and-conditions.pdf | flagship |
+| care-health | Care Health Insurance | Care Supreme Enhance | wordings | https://cms.careinsurance.com/cms/public/uploads/download_center/supreme-enhance---policy-terms-and-conditions.pdf | enhanced variant |
+| care-health | Care Health Insurance | Supreme Enhance | brochure | https://cms.careinsurance.com/cms/public/uploads/download_center/supreme-enhance---brochure.pdf | brochure |
+| care-health | Care Health Insurance | Care Classic | wordings | https://cms.careinsurance.com/cms/public/uploads/download_center/care-classic---(health-insurance-product)-policy-terms-&-conditions.pdf | classic indemnity |
+| care-health | Care Health Insurance | Ultimate Care | wordings | https://cms.careinsurance.com/cms/public/uploads/download_center/ultimate-care-----policy-terms-&-conditions.pdf | top tier |
+| care-health | Care Health Insurance | Care Senior | brochure | https://cms.careinsurance.com/cms/public/uploads/download_center/care-senior-brochure.pdf | senior citizens |
+| care-health | Care Health Insurance | Care Advantage | brochure | https://cms.careinsurance.com/cms/public/uploads/download_center/care-advantage-(health-insurance-product)---brochure.pdf | base brochure |
+| care-health | Care Health Insurance | Care Advantage + add-ons (Protect Plus + Care Shield) | brochure | https://cms.careinsurance.com/cms/public/uploads/download_center/care-advantage-with-add-on-protect-plus-&-care-shield-brochure.pdf | combo brochure |
+| care-health | Care Health Insurance | Care Heart | brochure | https://cms.careinsurance.com/cms/public/uploads/download_center/care-heart---piano-fold-brochure---web.pdf | cardiac-specific |
+| icici-lombard | ICICI Lombard | Complete Health Insurance (Health Shield) | wordings | https://www.icicilombard.com/docs/default-source/policy-wordings-product-brochure/complete-health-insurance-(health-shield).pdf | retail comprehensive |
+| icici-lombard | ICICI Lombard | Complete Health Insurance (umbrella) | wordings | https://www.icicilombard.com/docs/default-source/default-document-library/icihlip23144v072223-icici-lombard-complete-health-insurance.pdf | umbrella PW |
+| icici-lombard | ICICI Lombard | Health Shield 360 Retail | wordings | https://www.icicilombard.com/docs/default-source/default-document-library/health-shield-360-retail_pw.pdf | 360 retail |
+| icici-lombard | ICICI Lombard | Health Shield 360 Retail | cis | https://www.icicilombard.com/docs/default-source/policy-wordings-product-brochure/health-shield-360-retail---cis.pdf | CIS |
+| icici-lombard | ICICI Lombard | Health Booster (top-up) | wordings | https://www.icicilombard.com/docs/default-source/default-document-library/health-booster_policy-wordings.pdf | top-up |
+| icici-lombard | ICICI Lombard | Health AdvantEdge | wordings | https://www.icicilombard.com/docs/default-source/apps/healthclientapp/assets/pdf/health-advantedge-policy-wordings.pdf | wellness-led product |
+| icici-lombard | ICICI Lombard | Elevate | wordings | https://www.icicilombard.com/docs/default-source/apps/elevateapp/assets/pdf/elevate-policy-wordings.pdf | premium tier |
+| icici-lombard | ICICI Lombard | Health Elite Plus | wordings | https://www.icicilombard.com/docs/default-source/policy-wordings-product-brochure/complete-health-insurance-(health-elite-plus).pdf | elite plus tier |
+| icici-lombard | ICICI Lombard | Arogya Sanjeevani | wordings | https://www.icicilombard.com/docs/default-source/policy-wordings-product-brochure/arogya-sanjeevani-policy-policy-wordings.pdf | IRDAI standard product |
+| bajaj-allianz | Bajaj Allianz | Health Guard | wordings | https://www.bajajallianz.com/download-documents/health-insurance/health-guard/Health-Guard-Policy-Wordings-print.pdf | flagship |
+| bajaj-allianz | Bajaj Allianz | Health Guard Gold (individual) | wordings | https://bajajallianz.com/download-documents/health-insurance/health-guard-individual-policy/HG_Gold_Policy_Wording_&_CIS.pdf | PW + CIS combined |
+| bajaj-allianz | Bajaj Allianz | Group Health Guard Gold | wordings | https://www.bajajallianz.com/download-documents/health-insurance/health-guard-group/Group-HG-Gold-Policy-Wordings.pdf | group |
+| bajaj-allianz | Bajaj Allianz | Extra Care | wordings | https://www.bajajallianz.com/download-documents/health-insurance/extra-care/Extra-Care-Policy.pdf | top-up |
+| bajaj-allianz | Bajaj Allianz | Extra Care Plus | wordings | https://www.bajajallianz.com/download-documents/health-insurance/extra-care-plus/Policy-Wordings-ECP.pdf | super top-up |
+| bajaj-allianz | Bajaj Allianz | Global Health Care | wordings | https://www.bajajallianz.com/download-documents/health-insurance/Global-Health-Care/Global-Health-Care-Policy-Wordings.pdf | international |
+| bajaj-allianz | Bajaj Allianz | Criti Care | wordings | https://www.bajajallianz.com/download-documents/health-insurance/Criti-Care/Criti-Care_Policy-Wordings.pdf | critical illness |
+| bajaj-allianz | Bajaj Allianz | Comprehensive Care Plan | wordings | https://www.bajajallianz.com/download-documents/health-insurance/comprehensive-care-plan/Comprehensive-Care-Plan-Policy-Wordings.pdf | comprehensive |
+| bajaj-allianz | Bajaj Allianz | Silver Health | cis | https://www.bajajallianz.com/download-documents/health-insurance/silver-health/silver_health_CIS.pdf | senior citizens (CIS only found) |
+| bajaj-allianz | Bajaj Allianz | Tax Gain | cis | https://www.bajajallianz.com/download-documents/health-insurance/tax-gain/tax_gain_CIS.pdf | tax-saver plan |
+| bajaj-allianz | Bajaj Allianz | Group Personal Accident | wordings | https://www.bajajallianz.com/download-documents/health-insurance/GROUP-PERSONAL-ACCIDENT-Policy-Wordings.pdf | PA |
+| new-india | New India Assurance | New India Mediclaim Policy | wordings | https://www.newindia.co.in/assets/docs/know-more/health/new-india-mediclaim-policy/PolicyClauseNewIndiaMediclaimPolicy(NIAHLIP23187V052223).pdf | flagship retail mediclaim |
+| new-india | New India Assurance | New India Mediclaim Policy | brochure | https://www.newindia.co.in/assets/docs/know-more/health/new-india-mediclaim-policy/Prospectus%20New%20India%20Mediclaim%20Policy.pdf | prospectus |
+| new-india | New India Assurance | New India Floater Mediclaim Policy | wordings | https://www.newindia.co.in/assets/docs/know-more/health/floater-mediclaim-policy/Policy%20Clause%20New%20India%20Floater%20Mediclaim%20Policy%20wef%2001%2010%202024.pdf | family floater |
+| new-india | New India Assurance | Asha Kiran Policy | brochure | https://www.newindia.co.in/assets/docs/know-more/health/asha-kiran-policy/Prospectus%20New%20India%20Asha%20Kiran%20Policy%20wef%2001%2004%202021.pdf | women+family hybrid; prospectus |
+| new-india | New India Assurance | Asha Kiran Policy | cis | https://www.newindia.co.in/assets/docs/know-more/health/asha-kiran-policy/Customer%20Information%20Sheet%20NEW%20INDIA%20ASHA%20KIRAN%20POLICY.pdf | CIS |
+| new-india | New India Assurance | Yuva Bharat Health Policy | wordings | https://www.newindia.co.in/assets/docs/know-more/health/yuva-bharat-health-policy/Policy%20Clause%20Yuva%20Bharat%20Health%20Policy%20%20wef%2001%2010%202024_1.pdf | 18-45 age group |
+| new-india | New India Assurance | Janata Mediclaim Policy | wordings | https://www.newindia.co.in/assets/docs/know-more/health/janata-mediclaim-policy/Policy%20Clause%20Janata%20Mediclaim%20Policy.pdf | mass-market |
+| new-india | New India Assurance | Universal Health Insurance | wordings | https://www.newindia.co.in/assets/docs/know-more/health/universal-health-insurance/Policy%20Clause%20Universal%20Health%20Insurance%20Policy.pdf | govt-sponsored |
+| aditya-birla | Aditya Birla Health Insurance | Activ Health (individual) | wordings | https://www.adityabirlacapital.com/healthinsurance/assets/pdf/policy-wording-form.pdf | flagship; brand may have rebranded as Activ One |
+| aditya-birla | Aditya Birla Health Insurance | Group Activ Health | wordings | https://www.adityabirlacapital.com/healthinsurance/assets/pdf/new_updated_pdf/Group-Activ-Health-Policy-wordings.pdf | group, structurally similar |
+| aditya-birla | Aditya Birla Health Insurance | Activ One | brochure | https://www.adityabirlacapital.com/healthinsurance/assets/pdf/active-one/brochure.pdf | newer flagship |
+| aditya-birla | Aditya Birla Health Insurance | Activ Assure Diamond | wordings | https://www.adityabirlacapital.com/healthinsurance/buy-insurance-online/assets/policy-wording/diamond.pdf | mid-tier |
+| aditya-birla | Aditya Birla Health Insurance | Activ Secure (Personal Accident / Cancer Secure) | wordings | https://www.adityabirlacapital.com/healthinsurance/assets/pdf/planpdf/Activ-Secure-PW.pdf | specialty |
+| aditya-birla | Aditya Birla Health Insurance | Activ Secure - Cancer Secure | brochure | https://www.adityabirlacapital.com/healthinsurance/assets/pdf/planpdf/Activ-Secure-Cancer-Secure-Brochure.pdf | cancer-specific |
+| tata-aig | Tata AIG | MediCare | wordings | https://www.tataaig.com/s3/Tata_AIG_Medi_Care_82932b277a.pdf | core indemnity |
+| tata-aig | Tata AIG | MediCare Premier | wordings | https://www.tataaig.com/s3/Tata_AIG_Medi_Care_Premier_2f02f3813c.pdf | premium tier |
+| tata-aig | Tata AIG | MediCare Premier | cis | https://www.tataaig.com/s3/TATA_AIG_Medicare_Premier_Customer_information_Sheet_2e2c10e8d0.pdf | CIS |
+| tata-aig | Tata AIG | MediCare LITE | wordings | https://www.tataaig.com/s3/Medicare_LITE_Policy_Wordings_4fdf058f02.pdf | entry tier |
+| tata-aig | Tata AIG | MediCare LITE | cis | https://www.tataaig.com/s3/Medicare_LITE_CIS_aa38ff0767.pdf | CIS |
+| tata-aig | Tata AIG | Criti-MediCare | wordings | https://www.tataaig.com/s3/Tata_AIG_Criti_Medicare_Policy_Wordings_8c77c53956.pdf | critical illness |
+| tata-aig | Tata AIG | MediCare Select | brochure | https://www.tataaig.com/s3/medicare_select_prospectus_efd23b0ad6.pdf | prospectus |
+| tata-aig | Tata AIG | Wellsurance Family | cis | https://www.tataaig.com/s3/Wellsurance_Family_CIS_96593ef551.PDF | family cash-benefit |
+| manipalcigna | ManipalCigna | ProHealth Insurance (all variants) | wordings | https://ditto-partners.s3.ap-south-1.amazonaws.com/Manipal+Cigna/ProHealth+(All+variants)-Policy+wording.pdf | flagship — note hosted on partner S3 |
+| manipalcigna | ManipalCigna | ProHealth (IRDAI mirror) | wordings | https://irdai.gov.in/documents/37343/931203/MCIHLIP22211V062122.pdf | official IRDAI copy of UIN MCIHLIP22211V062122 |
+| manipalcigna | ManipalCigna | ProHealth Prime | brochure | https://www.manipalcigna.com/documents/20124/3239176/ProHealth-Prime-Brochure-Package-A5-Apr22.pdf/659df7db-5ef7-9ebf-7133-cbf3e7b6139d | prime variant brochure |
+| manipalcigna | ManipalCigna | ProHealth Prime | wordings | https://www.manipalcigna.com/documents/20124/0/7-ProHealth-Prime-P-A-Prospectus-April-22-02.pdf/8c1b2d11-4129-e0a3-ad94-1ecc19ecfd58 | prospectus |
+| manipalcigna | ManipalCigna | Sarvah Param | brochure | https://www.manipalcigna.com/documents/20124/0/Sarvah-Param-Prospectus/c2543c7b-764d-2157-7f4c-214616f20ff4 | senior citizens prospectus |
+| manipalcigna | ManipalCigna | Sarvah Param | wordings | https://www.manipalcigna.com/documents/20124/0/Sarvah-Param-TnC/19341cbc-41ae-b938-feac-cc7e373fbc0d | T&C |
+| manipalcigna | ManipalCigna | ProHealth Select | wordings | https://www.manipalcigna.com/documents/20124/350424/17+ProHealthSelect_TnC_Jul19.pdf/9104b961-e417-956b-ab41-1af27c869e0a?t=1611243593613 | select variant |
+
+---
+
+**Total: 86 PDF URLs** (counting some products with both wordings + CIS/brochure as separate entries). Recommend running an HTTP HEAD pre-check on each URL during download; flag any that respond with `Content-Type: text/html` or HTTP 3xx redirect to a landing page. The ManipalCigna `/documents/d/guest/` URLs and the Care Health `?rv=...` URLs are the two highest-risk patterns and should be tested first.

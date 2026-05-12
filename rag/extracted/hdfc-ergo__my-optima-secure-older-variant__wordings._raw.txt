@@ -1,0 +1,144 @@
+```json
+{
+  "policy_id": "hdfc-ergo__my-optima-secure-older-variant__wordings",
+  "insurer_name": "HDFC ERGO General Insurance Company Limited",
+  "insurer_slug": "hdfc-ergo",
+  "policy_name": "my: Optima Secure",
+  "policy_type": "Health Insurance",
+  "uin_code": "HDFHLIP21016V012122",
+  "min_entry_age_years": null,
+  "max_entry_age_years": null,
+  "max_renewal_age_years": 999,
+  "min_child_entry_age_days": 90,
+  "family_composition_allowed": ["Individual", "Floater"],
+  "residency_requirement": "Indian resident only",
+  "sum_insured_options_inr": [1000000],
+  "premium_payment_modes": ["Yearly", "Half Yearly", "Quarterly", "Monthly"],
+  "premium_range_indicative_inr": null,
+  "premium_payment_term_years": 1,
+  "grace_period_days": 30,
+  "free_look_period_days": 15,
+  "initial_waiting_period_days": 30,
+  "pre_existing_disease_waiting_months": 36,
+  "specific_disease_waiting_months": 24,
+  "specific_diseases_listed": null,
+  "maternity_waiting_months": null,
+  "sub_limits_waiting_notes": null,
+  "inpatient_hospitalization": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Up to the Sum Insured and limits as specified under the schedule of coverage",
+    "notes": "Hospitalization must be for Medically Necessary Treatment and prescribed in writing by Medical Practitioner."
+  },
+  "pre_hospitalization_days": 60,
+  "post_hospitalization_days": 180,
+  "day_care_treatments": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "All Day Care Treatments",
+    "notes": "Treatment normally taken on an out-patient basis is not included."
+  },
+  "domiciliary_treatment": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Up to the Sum Insured",
+    "notes": "Treatment must be prescribed in writing by treating Medical Practitioner."
+  },
+  "ayush_coverage": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Up to the Sub-limit specified in the Policy Schedule",
+    "notes": "Coverage for Inpatient Care under Ayurveda, Yoga, Unani, Siddha, and Homeopathy systems."
+  },
+  "maternity_coverage": {
+    "covered": false,
+    "limit_inr": null,
+    "limit_text": null,
+    "notes": null
+  },
+  "newborn_coverage": {
+    "covered": false,
+    "limit_inr": null,
+    "limit_text": null,
+    "notes": null
+  },
+  "organ_donor_expenses": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Up to the Sum Insured",
+    "notes": "Expenses related to organ transportation or preservation are excluded."
+  },
+  "ambulance_cover": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Road Ambulance up to Sum Insured, Emergency Air Ambulance as specified in the Policy Schedule",
+    "notes": "Air Ambulance requires written advice from a Medical Practitioner."
+  },
+  "critical_illness_cover": {
+    "covered": false,
+    "limit_inr": null,
+    "limit_text": null,
+    "notes": null
+  },
+  "restoration_benefit": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Automatic Restore Benefit up to the Base Sum Insured",
+    "notes": "Applied only once during each Policy Year."
+  },
+  "no_claim_bonus_pct": 10.0,
+  "no_claim_bonus_cap_pct": 100.0,
+  "preventive_health_checkup": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "As specified in the Policy Schedule",
+    "notes": "Package of medical test(s) undertaken for general assessment of health status."
+  },
+  "room_rent_capping": "As specified in the Policy Schedule",
+  "icu_capping": null,
+  "copayment_pct": null,
+  "copayment_trigger_notes": null,
+  "disease_wise_sub_limits": null,
+  "deductible_amount_inr": null,
+  "geographic_coverage": "India",
+  "worldwide_emergency_cover": {
+    "covered": false,
+    "limit_inr": null,
+    "limit_text": null,
+    "notes": null
+  },
+  "network_hospital_count": null,
+  "cashless_treatment_supported": true,
+  "permanent_exclusions": [
+    "Investigation & Evaluation",
+    "Rest Cure, rehabilitation and respite care",
+    "Obesity/Weight control",
+    "Change-of-Gender treatments"
+  ],
+  "temporary_exclusions": null,
+  "notable_exclusions_summary": "Exclusions include investigation and evaluation expenses, rest cure and rehabilitation, obesity/weight control treatments, and change-of-gender treatments.",
+  "claim_settlement_ratio_pct": null,
+  "claim_process_summary": "Contact within 48 hrs prior for planned hospitalization or within 24 hours for emergency hospitalization. Submit claim form within 30 days from date of discharge.",
+  "tat_cashless_authorization_hours": null,
+  "available_riders": [
+    "Emergency Air Ambulance",
+    "Daily Cash for Shared room",
+    "Protect Benefit",
+    "Plus Benefit",
+    "Secure Benefit",
+    "Automatic Restore Benefit",
+    "Aggregate Deductible",
+    "E-Opinion for Critical Illness"
+  ],
+  "top_rider_examples": [
+    "Emergency Air Ambulance",
+    "Daily Cash for Shared room",
+    "Protect Benefit"
+  ],
+  "rider_premium_indicative_inr": null,
+  "source_pdf_path": null,
+  "source_pdf_url": null,
+  "last_updated_date": null,
+  "extraction_confidence_pct": 90
+}
+```
