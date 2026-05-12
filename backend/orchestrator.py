@@ -78,19 +78,23 @@ class BrainPick:
 
 
 def pick_brain(intent: str, language: str) -> BrainPick:
-    """Route to the right brain per Doc decisions.md D-016.
+    """Route to the right brain per Doc decisions.md D-016 (revised 2026-05-13).
 
-    v1 heuristic (will be refined by gold eval results):
-      - Indic queries -> Sarvam-M (it's the Indic-strongest)
-      - Simple QA in English -> Sarvam-M (it's primary)
-      - Comparison/recommendation -> OpenRouter DeepSeek-V3 (strongest reasoning)
-      - (Llama-3.3-70B reserved for grader; used as fallback if DeepSeek fails)
+    Rebalanced from eval signal:
+      - Indic queries -> Sarvam-M (Indic + cultural context + BFSI vocab — its
+        genuine strength; the Sarvam-first narrative belongs here)
+      - Comparison/recommendation -> DeepSeek-V3 (SOTA open-source reasoning)
+      - Simple English QA -> DeepSeek-V3 (eval showed Sarvam-M at 37.5%
+        factual on this slice vs Llama at 100%; DeepSeek is stronger still
+        with citation-discipline as bonus)
+      - Llama-3.3-70B reserved as grader AND cross-check rescue brain
     """
     if language == "indic":
         return BrainPick(SarvamLLM(), "indic-query")
     if intent in ("comparison", "recommendation"):
         return BrainPick(OpenRouterLLM(), f"complex-{intent}")
-    return BrainPick(SarvamLLM(), "simple-qa")
+    # English simple QA → DeepSeek-V3 (was Sarvam-M; rebalanced from eval data)
+    return BrainPick(OpenRouterLLM(), "simple-qa")
 
 
 # ---------- main entrypoint ----------
@@ -204,29 +208,30 @@ async def handle_turn(
     )
 
     # 5a. CROSS-CHECK RETRY — if faithfulness blocked AND the failure isn't
-    # Gate 1 (no evidence at all), try a DIFFERENT-FAMILY brain. The most
-    # common Sarvam-M failure mode is over-confident cross-policy citations
-    # (e.g. answering about "Activ Health" but citing "Activ Secure" chunks).
-    # A fresh DeepSeek-V3 pass with the same chunks tends to handle this
-    # better. Capped at ONE retry — no loops.
+    # Gate 1 (no evidence at all), try a DIFFERENT-FAMILY brain. Picks the
+    # opposite family of whatever the primary was:
+    #   primary Sarvam-M → cross-check DeepSeek-V3
+    #   primary DeepSeek-V3 → cross-check Sarvam-M
+    # Capped at ONE retry — no loops.
     blocked = False
-    retry_used = False
     if not verdict.passed:
         gate1_failure = any("gate1_retrieval" in r for r in verdict.reasons)
-        primary_was_sarvam = pick.provider.name == "sarvam-m"
-        if (not gate1_failure) and primary_was_sarvam:
+        if not gate1_failure:
+            # Pick the OTHER family for the rescue pass
+            primary_name = pick.provider.name
             try:
-                secondary = OpenRouterLLM()
-                retry_used = True
+                if primary_name == "sarvam-m":
+                    secondary = OpenRouterLLM()
+                else:
+                    secondary = SarvamLLM()
                 second = await secondary.chat(messages=messages, temperature=0.1, max_tokens=1500)
                 second_reply = strip_think_tags(second.text)
                 second_verdict = await check_faithfulness(
                     reply=second_reply, chunks=chunks, user_text=user_text, run_llm_judge=True,
                 )
                 if second_verdict.passed:
-                    # Use the second-brain reply
                     reply = second_reply
-                    pick = BrainPick(secondary, f"crosscheck-rescued-{pick.provider.name}")
+                    pick = BrainPick(secondary, f"crosscheck-rescued-{primary_name}")
                     verdict = second_verdict
                 else:
                     blocked = True
