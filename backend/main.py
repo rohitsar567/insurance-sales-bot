@@ -219,7 +219,16 @@ async def chat(req: ChatRequest):
     audio_b64 = None
     if req.return_audio and turn.reply_text:
         try:
-            audio = await get_tts().synthesize(turn.reply_text, language_code=req.tts_language_code)
+            from backend.voice_format import tts_preprocess
+            # Send a CLEANED version of the reply to TTS — strip markdown,
+            # citations, expand acronyms, truncate. The text in the chat
+            # bubble remains the full structured reply.
+            spoken = tts_preprocess(
+                turn.reply_text,
+                language="indic" if req.tts_language_code.startswith("hi") else "en",
+                max_words=55,
+            )
+            audio = await get_tts().synthesize(spoken, language_code=req.tts_language_code)
             audio_b64 = base64.b64encode(audio).decode("utf-8")
         except Exception as e:
             # Don't fail the whole turn if TTS hiccups — log + return text only
