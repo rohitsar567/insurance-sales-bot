@@ -15,7 +15,7 @@ import uuid
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -342,7 +342,10 @@ async def coverage():
 
 
 @app.post("/api/upload-policy", response_model=UploadResponse)
-async def upload_policy(file: UploadFile = File(...)):
+async def upload_policy(
+    request: Request,
+    file: UploadFile = File(...),
+):
     """Accept a user-uploaded PDF policy doc, chunk + embed it, add to Chroma.
 
     Note: in v1 demo this appends to the shared corpus (single-tenant).
@@ -380,13 +383,15 @@ async def upload_policy(file: UploadFile = File(...)):
         from backend.security import check_upload, rate_limiter
 
         pages = read_pdf_pages(out_path)
-        # Run 4-gate security check (mechanics + content + injection + rate limit)
+        # Run 5-gate security check (mechanics + content + injection + per-session + per-IP rate limit)
         full_text = "\n".join(t for _, t in pages)
+        client_ip = (request.client.host if request and request.client else "") or request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
         verdict = check_upload(
             content=contents,
             extracted_text=full_text,
             page_count=len(pages),
-            session_id="anonymous",  # v1: no session; v2 wires session_id
+            session_id="anonymous",
+            ip=client_ip,
         )
         if not verdict.accepted:
             out_path.unlink(missing_ok=True)
@@ -394,6 +399,9 @@ async def upload_policy(file: UploadFile = File(...)):
                 400,
                 f"Upload rejected by security gates: {', '.join(verdict.reasons[:3])}",
             )
+        # Successful pass — record IP-level upload for rate-limit ledger
+        from backend.security import record_ip_upload
+        record_ip_upload(client_ip)
 
         chunks = list(chunk_pages(pages))
         if not chunks:
@@ -464,14 +472,13 @@ class ScorecardResponse(BaseModel):
 async def policy_scorecard(policy_id: str):
     """Compute the 6-sub-score A-F scorecard for an extracted policy.
 
-    See docs/scorecard-methodology.md for the field-to-score mapping.
+    Now also pulls insurer-level reviews (IRDAI claim ratio + complaints) into
+    the Claim Experience sub-score. See docs/scorecard-methodology.md.
     """
     import json as _json
-    from pathlib import Path as _Path
 
     from backend.scorecard import build_scorecard
 
-    # Look up policy from DuckDB (or extracted JSON file)
     extracted_path = settings.EXTRACTED_DIR / f"{policy_id}.json"
     if not extracted_path.exists():
         raise HTTPException(404, f"No extracted data for policy_id={policy_id}")
@@ -481,7 +488,19 @@ async def policy_scorecard(policy_id: str):
     except Exception as e:
         raise HTTPException(500, f"Could not load extracted policy: {e}")
 
-    sc = build_scorecard(policy)
+    # Load insurer reviews if present so the Claim Experience sub-score
+    # uses authoritative IRDAI data, not just the (mostly-null) per-policy fields.
+    insurer_reviews = None
+    slug = policy.get("insurer_slug")
+    if slug:
+        rp = settings.CORPUS_DIR.parent.parent / "data" / "reviews" / f"{slug}.json"
+        if rp.exists():
+            try:
+                insurer_reviews = _json.loads(rp.read_text())
+            except Exception:
+                pass
+
+    sc = build_scorecard(policy, insurer_reviews=insurer_reviews)
     return ScorecardResponse(
         policy_id=sc.policy_id,
         policy_name=sc.policy_name,
@@ -492,6 +511,84 @@ async def policy_scorecard(policy_id: str):
         sub_scores=[ScorecardSubScore(**s.__dict__) for s in sc.sub_scores],
         data_completeness_pct=sc.data_completeness_pct,
         methodology_link=sc.methodology_link,
+    )
+
+
+class ReviewsResponse(BaseModel):
+    insurer_slug: str
+    insurer_name: str
+    aggregate_score: dict
+    claim_metrics: dict
+    aggregator_ratings: dict
+    reddit_sentiment: dict
+    youtube_coverage: dict
+    in_news: list
+    trustpilot: dict
+    last_updated: str
+
+
+@app.get("/api/insurers/{insurer_slug}/reviews", response_model=ReviewsResponse)
+async def get_reviews(insurer_slug: str):
+    """Aggregated reviews + claim metrics for an insurer.
+
+    Data sourced from IRDAI annual report + PolicyBazaar/InsuranceDekho +
+    Reddit r/IndianFinance + YouTube finance creators (Ditto et al) +
+    news mentions. Per-insurer JSON at data/reviews/<slug>.json — see
+    data/reviews/INDEX.md for leaderboard.
+    """
+    import json
+    p = settings.CORPUS_DIR.parent.parent / "data" / "reviews" / f"{insurer_slug}.json"
+    if not p.exists():
+        raise HTTPException(404, f"No reviews for insurer={insurer_slug}")
+    try:
+        d = json.loads(p.read_text())
+        return ReviewsResponse(**d)
+    except Exception as e:
+        raise HTTPException(500, f"Failed to load reviews: {e}")
+
+
+class PremiumEstimateRequest(BaseModel):
+    age: int = Field(..., ge=0, le=120)
+    sum_insured_inr: int = Field(..., ge=100000, le=100000000)
+    city_tier: str = Field("metro", pattern="^(metro|tier1|tier2)$")
+    smoker: bool = False
+    family_size: int = Field(1, ge=1, le=8)
+    policy_id: Optional[str] = None
+
+
+class PremiumEstimateResponse(BaseModel):
+    policy_id: str
+    point_estimate_inr: int
+    low_inr: int
+    high_inr: int
+    methodology: str
+    sources: list[str]
+    is_illustrative: bool = True
+    disclaimer: str = (
+        "Illustrative range only — actual premium depends on underwriting + "
+        "medical history + risk factors. Confirm with the insurer before purchase."
+    )
+
+
+@app.post("/api/premium/estimate", response_model=PremiumEstimateResponse)
+async def premium_estimate(req: PremiumEstimateRequest):
+    """Illustrative premium calculator — rules-based estimate from curated public data."""
+    from backend.premium_calculator import estimate as _estimate
+    e = _estimate(
+        age=req.age,
+        sum_insured_inr=req.sum_insured_inr,
+        city_tier=req.city_tier,
+        smoker=req.smoker,
+        family_size=req.family_size,
+        policy_id=req.policy_id,
+    )
+    return PremiumEstimateResponse(
+        policy_id=e.policy_id,
+        point_estimate_inr=e.point_estimate_inr,
+        low_inr=e.low_inr,
+        high_inr=e.high_inr,
+        methodology=e.methodology,
+        sources=e.sources or [],
     )
 
 

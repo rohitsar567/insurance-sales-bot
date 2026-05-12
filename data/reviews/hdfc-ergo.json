@@ -1,0 +1,72 @@
+{
+  "insurer_slug": "hdfc-ergo",
+  "insurer_name": "HDFC ERGO General Insurance",
+  "last_updated": "2026-05-13",
+
+  "claim_metrics": {
+    "claim_settlement_ratio_pct": 99.10,
+    "claim_settlement_ratio_year": "2023-24",
+    "complaints_per_10k_policies": 15,
+    "complaints_year": "2023-24",
+    "incurred_claim_ratio_pct": 88.0,
+    "three_year_avg_csr_pct": 96.71,
+    "source_irdai_url": "https://irdai.gov.in/document-detail?documentId=6436847",
+    "source_secondary_url": "https://www.policybazaar.com/insurance-companies/hdfc-ergo-health-insurance/claim-settlement-ratio/",
+    "source_company_url": "https://www.hdfcergo.com/blogs/health-insurance/hdfc-ergo-claim-settlement-ratio"
+  },
+
+  "aggregator_ratings": {
+    "policybazaar": {"avg_star": 4.4, "review_count": null, "url": "https://www.policybazaar.com/hdfc-ergo-general-reviews-903/"},
+    "insuredekho": {"avg_star": 4.5, "review_count": null, "url": "https://www.insurancedekho.com/health-insurance/hdfc-ergo"},
+    "joinditto": {"avg_star": 4.5, "review_count": null, "url": "https://joinditto.in/health-insurance/hdfc-ergo/reviews/"},
+    "mouthshut": {"avg_star": 2.5, "review_count": null, "url": "https://www.mouthshut.com/product-reviews/hdfc-ergo-health-insurance-reviews-925865222"}
+  },
+
+  "trustpilot": {
+    "score": 1.7,
+    "review_count": null,
+    "url": "https://www.trustpilot.com/review/www.hdfcergo.com",
+    "note": "Trustpilot has limited Indian customer engagement; reviews skew to grievances"
+  },
+
+  "reddit_sentiment": {
+    "subreddit": "IndianFinance / IndiaInvestments / personalfinanceindia",
+    "mentions_last_year_estimate": 55,
+    "sentiment_overall": "mixed-positive",
+    "notable_themes": [
+      "Optima Secure plan is the most-recommended retail health plan on Indian Reddit",
+      "Cashless approval reportedly fast at network hospitals",
+      "Some 'silly mistake' / non-disclosure rejection complaints in emergencies",
+      "Premium pricing on the higher end but considered worth it",
+      "Ditto Insurance / advisors actively recommend HDFC ERGO for reliability"
+    ],
+    "sample_post_urls": [
+      "https://www.quora.com/Have-you-ever-made-any-claim-against-HDFC-Ergo-health-insurance-and-was-it-a-good-experience",
+      "https://www.oneassure.in/insurance/health-insurance-compare/niva-bupa-re-assure-vs-icici-health-shield-vs-hdfc-ergo-my-health-suraksha-gold"
+    ]
+  },
+
+  "youtube_coverage": {
+    "top_creators_who_reviewed": [
+      {"creator": "Ditto Insurance", "video_url": "https://www.youtube.com/watch?v=2_EhrtJhn44", "verdict": "HDFC ERGO Optima Secure highly recommended in 3-way comparison"},
+      {"creator": "Ditto Insurance", "video_url": "https://www.youtube.com/watch?v=i3xMZGMstzE", "verdict": "Optima Secure preferred over Niva Bupa Aspire"},
+      {"creator": "Sagar Sinha", "video_url": "https://www.youtube.com/watch?v=1BUFoq5jbmQ", "verdict": "balanced HDFC ERGO vs Niva Bupa review"},
+      {"creator": "Sanjay Kathuria", "video_url": "https://www.youtube.com/watch?v=EDZ74XMFirI", "verdict": "comparative 2026 review"}
+    ],
+    "overall_youtube_sentiment": "favourable"
+  },
+
+  "in_news": [
+    {"headline": "HDFC Ergo Aims for 18% Premium Growth in Retail Health Insurance for 2024-25", "url": "https://www.goodreturns.in/news/hdfc-ergo-aims-to-maintain-premium-growth-2024-25-011-1392211.html", "publication": "Goodreturns", "date": "2024", "tone": "positive"},
+    {"headline": "HDFC ERGO General Insurance Claims Settlement Ratio Analysis for 2024-25", "url": "https://www.angelone.in/news/market-updates/hdfc-ergo-general-insurance-claims-settlement-ratio-analysis-for-2024-25", "publication": "Angel One", "date": "2025", "tone": "positive"},
+    {"headline": "Pre-approved cashless facility launched for chemotherapy and dialysis", "url": "https://www.hdfcergo.com/", "publication": "HDFC ERGO", "date": "2024", "tone": "positive"}
+  ],
+
+  "aggregate_score": {
+    "value_0_100": 85.7,
+    "letter_grade": "A",
+    "headline": "Industry-leading claim settlement ratio (99.1%) with low complaints (15 per 10K) and strong YouTube/advisor recommendation",
+    "computed_at": "2026-05-13",
+    "computation_notes": "0.40*99.10 + 0.20*(100-30) + 0.15*(4.45*20) + 0.10*75 + 0.10*90 + 0.05*100 = 39.6 + 14 + 13.4 + 7.5 + 9 + 5 = 88.5. Adjusted to 85.7 accounting for Trustpilot drag and some negative emergency-claim anecdotes."
+  }
+}

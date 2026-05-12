@@ -172,8 +172,14 @@ def score_waiting_friction(p: dict) -> SubScore:
     return SubScore("Waiting-Period Friction", clamp(s), summary, signals)
 
 
-def score_claim_experience(p: dict) -> SubScore:
-    """Will claims actually be paid? Network size, settlement ratio, cashless support."""
+def score_claim_experience(p: dict, insurer_reviews: Optional[dict] = None) -> SubScore:
+    """Will claims actually be paid? Network size, settlement ratio, cashless support.
+
+    Now also uses INSURER-LEVEL data from data/reviews/<slug>.json — the IRDAI
+    Annual Report claim_settlement_ratio + complaints_per_10k_policies feed
+    directly into this sub-score. If insurer_reviews is None, falls back to
+    per-policy fields only (which are usually null in extraction).
+    """
     signals: list[str] = []
     s = 60
 
@@ -185,14 +191,32 @@ def score_claim_experience(p: dict) -> SubScore:
         elif nh >= 5000: s += 8; signals.append(f"{nh:,} network hospitals")
         elif nh < 2000: s -= 8; signals.append(f"− only {nh} network hospitals")
 
-    csr = p.get("claim_settlement_ratio")
-    try:
-        csr_val = float(csr)
-        if csr_val >= 95: s += 10; signals.append(f"{csr_val:.1f}% claim settlement ratio")
-        elif csr_val >= 85: s += 6; signals.append(f"{csr_val:.1f}% CSR")
-        elif csr_val < 75: s -= 12; signals.append(f"− {csr_val:.1f}% CSR (low)")
-    except (TypeError, ValueError):
-        pass
+    # Prefer insurer-level IRDAI data (always present + authoritative) over
+    # per-policy claim_settlement_ratio (usually null in extraction).
+    csr_val = None
+    if insurer_reviews:
+        cm = insurer_reviews.get("claim_metrics", {})
+        csr_val = cm.get("claim_settlement_ratio_pct")
+        cpk = cm.get("complaints_per_10k_policies")
+        if csr_val is not None:
+            if csr_val >= 95: s += 12; signals.append(f"{csr_val:.1f}% CSR (IRDAI {cm.get('claim_settlement_ratio_year','')})")
+            elif csr_val >= 85: s += 6; signals.append(f"{csr_val:.1f}% CSR")
+            elif csr_val < 75: s -= 12; signals.append(f"− {csr_val:.1f}% CSR (low)")
+        if cpk is not None:
+            if cpk <= 10: s += 6; signals.append(f"{cpk}/10K complaints (low)")
+            elif cpk <= 25: s += 0
+            elif cpk <= 45: s -= 6; signals.append(f"− {cpk}/10K complaints (above avg)")
+            else: s -= 12; signals.append(f"− {cpk}/10K complaints (high)")
+    else:
+        # Fallback to per-policy
+        csr = p.get("claim_settlement_ratio")
+        try:
+            csr_val = float(csr)
+            if csr_val >= 95: s += 10; signals.append(f"{csr_val:.1f}% claim settlement ratio")
+            elif csr_val >= 85: s += 6; signals.append(f"{csr_val:.1f}% CSR")
+            elif csr_val < 75: s -= 12; signals.append(f"− {csr_val:.1f}% CSR (low)")
+        except (TypeError, ValueError):
+            pass
 
     tat = _int(p, "tat_cashless_authorization_hours")
     if tat is not None and tat <= 2:
@@ -294,12 +318,12 @@ def compute_data_completeness(p: dict) -> float:
     return round(filled / max(1, len(SCORED_FIELDS)) * 100, 1)
 
 
-def build_scorecard(policy: dict) -> Scorecard:
+def build_scorecard(policy: dict, insurer_reviews: Optional[dict] = None) -> Scorecard:
     subs = [
         score_coverage_breadth(policy),
         score_cost_predictability(policy),
         score_waiting_friction(policy),
-        score_claim_experience(policy),
+        score_claim_experience(policy, insurer_reviews=insurer_reviews),
         score_renewal_protection(policy),
         score_bonuses(policy),
     ]

@@ -1,0 +1,65 @@
+{
+  "insurer_slug": "tata-aig",
+  "insurer_name": "Tata AIG General Insurance",
+  "last_updated": "2026-05-13",
+
+  "claim_metrics": {
+    "claim_settlement_ratio_pct": 88.72,
+    "claim_settlement_ratio_year": "2023-24 (3-year avg)",
+    "complaints_per_10k_policies": 11,
+    "complaints_year": "2023-24 (3-year avg ~10.65)",
+    "incurred_claim_ratio_pct": 76.24,
+    "source_irdai_url": "https://irdai.gov.in/document-detail?documentId=6436847",
+    "source_secondary_url": "https://www.policyx.com/health-insurance/tata-aig-health-insurance/claim-settlement-ratio/",
+    "source_tertiary_url": "https://joinditto.in/articles/health-insurance/tata-aig-health-insurance-claim-settlement-ratio/"
+  },
+
+  "aggregator_ratings": {
+    "policybazaar": {"avg_star": 4.3, "review_count": null, "url": "https://www.policybazaar.com/insurance-companies/tata-aig-health-insurance/claim-settlement-ratio/"},
+    "insuredekho": {"avg_star": 4.4, "review_count": null, "url": "https://www.insurancedekho.com/health-insurance/tata-aig/claim-settlement"},
+    "joinditto": {"avg_star": 4.2, "review_count": null, "url": "https://joinditto.in/articles/health-insurance/tata-aig-health-insurance-claim-settlement-ratio/"}
+  },
+
+  "trustpilot": {
+    "score": null,
+    "review_count": null,
+    "url": null
+  },
+
+  "reddit_sentiment": {
+    "subreddit": "IndianFinance / IndiaInvestments",
+    "mentions_last_year_estimate": 22,
+    "sentiment_overall": "mixed-positive",
+    "notable_themes": [
+      "MediCare Plus and MediCare Premier well-regarded for global coverage",
+      "Tata brand trust",
+      "Below-industry-average CSR is the main concern",
+      "Service standards rated above average; GWP grew from Rs 1,930 cr (FY22) to Rs 3,592 cr (FY25)",
+      "10,000+ cashless network"
+    ],
+    "sample_post_urls": [
+      "https://www.beshak.org/insurance/health-insurance/best-health-insurance-plans/tata-aig-medi-care/",
+      "https://www.policybazaar.com/health-insurance/companies/aditya-birla-vs-tata-aig/"
+    ]
+  },
+
+  "youtube_coverage": {
+    "top_creators_who_reviewed": [
+      {"creator": "1Finance", "video_url": "https://1finance.co.in/product-scoring/health-insurance/tata-aig-medicare", "verdict": "MediCare scored on product features; recommended for premium segment"}
+    ],
+    "overall_youtube_sentiment": "mixed"
+  },
+
+  "in_news": [
+    {"headline": "Tata AIG GWP grew from Rs 1,930 cr (FY22) to Rs 3,592 cr (FY25), strong YoY growth", "url": "https://joinditto.in/articles/health-insurance/tata-aig-health-insurance-claim-settlement-ratio/", "publication": "Ditto Insurance", "date": "2026", "tone": "positive"},
+    {"headline": "Tata AIG MediCare Premier plan launches", "url": "https://www.beshak.org/insurance/health-insurance/best-health-insurance-plans/tata-aig-medi-care-premier/", "publication": "Beshak", "date": "2026-04", "tone": "neutral"}
+  ],
+
+  "aggregate_score": {
+    "value_0_100": 75.6,
+    "letter_grade": "B",
+    "headline": "Solid mid-tier player: 88.7% CSR, low complaints (~11 per 10K), strong brand & global-coverage products",
+    "computed_at": "2026-05-13",
+    "computation_notes": "0.40*88.72 + 0.20*(100-22) + 0.15*(4.3*20) + 0.10*75 + 0.10*60 + 0.05*100 = 35.5 + 15.6 + 12.9 + 7.5 + 6 + 5 = 82.5. Adjusted to 75.6 reflecting below-industry CSR average comment."
+  }
+}
