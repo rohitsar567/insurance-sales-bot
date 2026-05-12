@@ -10,7 +10,9 @@ import {
   getHealth,
   getScorecard,
   postChat,
+  postPremiumEstimate,
   postTranscribe,
+  PremiumEstimateResponse,
   ScorecardResponse,
   uploadPolicy,
 } from "@/lib/api";
@@ -41,6 +43,7 @@ export default function Page() {
   const [health, setHealth] = useState<{ status: string; missing: string[] } | null>(null);
   const [coverage, setCoverage] = useState<CoverageResponse | null>(null);
   const [showCoverage, setShowCoverage] = useState(false);
+  const [showPremium, setShowPremium] = useState(false);
   const [sessionId, setSessionId] = useState<string | undefined>();
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
 
@@ -163,10 +166,16 @@ export default function Page() {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => { setShowPremium(!showPremium); setShowCoverage(false); }}
+              className={`text-xs px-3 py-1.5 rounded-lg border transition ${showPremium ? "border-[var(--primary)] bg-[var(--accent)]" : "border-[var(--border)] hover:border-[var(--primary)]"}`}
+            >
+              Premium calculator
+            </button>
             {coverage && (
               <button
-                onClick={() => setShowCoverage(!showCoverage)}
-                className="text-xs px-3 py-1.5 rounded-lg border border-[var(--border)] hover:border-[var(--primary)] transition"
+                onClick={() => { setShowCoverage(!showCoverage); setShowPremium(false); }}
+                className={`text-xs px-3 py-1.5 rounded-lg border transition ${showCoverage ? "border-[var(--primary)] bg-[var(--accent)]" : "border-[var(--border)] hover:border-[var(--primary)]"}`}
               >
                 {coverage.total_policies} policies · {coverage.total_insurers} insurers
               </button>
@@ -175,6 +184,7 @@ export default function Page() {
           </div>
         </div>
         {showCoverage && coverage && <CoveragePanel coverage={coverage} onClose={() => setShowCoverage(false)} />}
+        {showPremium && <PremiumCalculatorPanel onClose={() => setShowPremium(false)} />}
       </header>
 
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-4 sm:py-6 flex flex-col">
@@ -261,6 +271,129 @@ export default function Page() {
       <footer className="border-t border-[var(--border)] py-3 px-6 text-center text-xs text-[var(--muted-foreground)]">
         Sarvam-M · Sarvam Saarika STT · Sarvam Bulbul TTS · Voyage-prepared embeddings · Llama-3.3-70B grader · DeepSeek-V3 fallback brain. Advisory only — verify with the insurer before purchase.
       </footer>
+    </div>
+  );
+}
+
+function PremiumCalculatorPanel({ onClose }: { onClose: () => void }) {
+  const [age, setAge] = useState(35);
+  const [sumInsured, setSumInsured] = useState(1000000);
+  const [cityTier, setCityTier] = useState<"metro" | "tier1" | "tier2">("metro");
+  const [smoker, setSmoker] = useState(false);
+  const [familySize, setFamilySize] = useState(2);
+  const [estimate, setEstimate] = useState<PremiumEstimateResponse | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setBusy(true);
+      postPremiumEstimate({ age, sum_insured_inr: sumInsured, city_tier: cityTier, smoker, family_size: familySize })
+        .then(setEstimate)
+        .catch(() => setEstimate(null))
+        .finally(() => setBusy(false));
+    }, 200); // debounce
+    return () => clearTimeout(handler);
+  }, [age, sumInsured, cityTier, smoker, familySize]);
+
+  const fmtINR = (v: number) => `₹${v.toLocaleString("en-IN")}`;
+  const siDisplay = sumInsured >= 10000000 ? `${sumInsured / 10000000} cr` : `${sumInsured / 100000} L`;
+
+  return (
+    <div className="border-t border-[var(--border)] bg-[var(--muted)] animate-fade-up">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-5">
+        <div className="flex items-baseline justify-between mb-3">
+          <div>
+            <h2 className="text-sm font-semibold">Illustrative premium calculator</h2>
+            <p className="text-xs text-[var(--muted-foreground)]">
+              Indicative annual premium range from public quote data. Not a binding quote — actual depends on underwriting.
+            </p>
+          </div>
+          <button onClick={onClose} className="text-xs text-[var(--muted-foreground)] hover:underline">close</button>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+          <div className="space-y-4">
+            <div>
+              <label className="flex items-center justify-between text-xs mb-1">
+                <span className="font-medium">Age</span>
+                <span className="font-mono">{age}</span>
+              </label>
+              <input
+                type="range" min={18} max={80} step={1}
+                value={age}
+                onChange={(e) => setAge(parseInt(e.target.value))}
+                className="w-full accent-[var(--primary)]"
+              />
+            </div>
+            <div>
+              <label className="flex items-center justify-between text-xs mb-1">
+                <span className="font-medium">Sum insured</span>
+                <span className="font-mono">{siDisplay}</span>
+              </label>
+              <input
+                type="range" min={300000} max={20000000} step={100000}
+                value={sumInsured}
+                onChange={(e) => setSumInsured(parseInt(e.target.value))}
+                className="w-full accent-[var(--primary)]"
+              />
+              <div className="flex gap-1 mt-1 text-[10px] text-[var(--muted-foreground)]">
+                {[500000, 1000000, 2500000, 5000000, 10000000].map((s) => (
+                  <button key={s} onClick={() => setSumInsured(s)} className="hover:text-[var(--primary)]">
+                    {s >= 10000000 ? `${s/10000000} cr` : `${s/100000} L`}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="flex items-center justify-between text-xs mb-1">
+                <span className="font-medium">Family covered</span>
+                <span className="font-mono">{familySize} {familySize === 1 ? "person" : "people"}</span>
+              </label>
+              <input
+                type="range" min={1} max={6} step={1}
+                value={familySize}
+                onChange={(e) => setFamilySize(parseInt(e.target.value))}
+                className="w-full accent-[var(--primary)]"
+              />
+            </div>
+            <div className="flex items-center gap-3 flex-wrap text-xs">
+              <span className="font-medium">City tier:</span>
+              {(["metro", "tier1", "tier2"] as const).map((t) => (
+                <button key={t} onClick={() => setCityTier(t)}
+                  className={`px-2 py-1 rounded-md border text-[11px] ${cityTier === t ? "border-[var(--primary)] bg-[var(--accent)]" : "border-[var(--border)]"}`}>
+                  {t}
+                </button>
+              ))}
+            </div>
+            <label className="flex items-center gap-2 text-xs cursor-pointer">
+              <input type="checkbox" checked={smoker} onChange={(e) => setSmoker(e.target.checked)} className="w-3.5 h-3.5 accent-[var(--primary)]" />
+              <span>Smoker / tobacco user</span>
+            </label>
+          </div>
+          <div className="bg-[var(--card)] rounded-xl border border-[var(--border)] p-5 flex flex-col justify-center">
+            {busy && <div className="text-xs text-[var(--muted-foreground)]">Estimating…</div>}
+            {!busy && estimate && (
+              <>
+                <div className="text-[10px] uppercase tracking-wide text-[var(--muted-foreground)] font-semibold">Indicative annual premium</div>
+                <div className="text-3xl font-bold mt-1">
+                  {fmtINR(estimate.low_inr)} <span className="text-[var(--muted-foreground)] text-base font-normal">–</span> {fmtINR(estimate.high_inr)}
+                </div>
+                <div className="text-xs text-[var(--muted-foreground)] mt-1">point estimate {fmtINR(estimate.point_estimate_inr)}</div>
+                <div className="mt-3 pt-3 border-t border-[var(--border)] text-[10px] text-[var(--muted-foreground)]">
+                  {estimate.methodology}
+                </div>
+                {estimate.sources.length > 0 && (
+                  <div className="mt-1 text-[10px] text-[var(--muted-foreground)]">
+                    Source anchor: <a href={estimate.sources[0]} target="_blank" rel="noopener" className="hover:text-[var(--primary)] underline">verified URL</a>
+                  </div>
+                )}
+                <div className="mt-2 text-[10px] text-amber-700 dark:text-amber-300">
+                  ⚠ {estimate.disclaimer}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

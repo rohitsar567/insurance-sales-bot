@@ -87,12 +87,33 @@ INJECTION_PATTERNS = [
 DANGEROUS_PDF_FEATURES = [
     (rb"/JavaScript", "embedded_javascript"),
     (rb"/JS ", "javascript_action"),
+    (rb"/JS\n", "javascript_action_newline"),
     (rb"/Launch", "launch_action"),
     (rb"/EmbeddedFile", "embedded_file"),
     (rb"/OpenAction", "openaction_trigger"),
     (rb"/SubmitForm", "form_submission"),
     (rb"/AA<<", "auto_actions"),
+    (rb"/RichMedia", "rich_media_embed"),
+    (rb"/Movie", "movie_embed"),
+    (rb"/Sound", "sound_embed"),
+    (rb"/GoToR", "external_goto_action"),
 ]
+
+# Magic-byte signatures for executables hidden inside PDFs.
+# A PDF should NEVER contain these in its body.
+EXECUTABLE_SIGNATURES = [
+    (b"MZ\x90\x00", "windows_pe_executable"),    # Windows PE (.exe, .dll)
+    (b"\x7fELF", "linux_elf_executable"),         # Linux ELF
+    (b"\xcf\xfa\xed\xfe", "macos_macho"),         # macOS Mach-O
+    (b"\xca\xfe\xba\xbe", "java_class_or_macho"), # Java class file or Mach-O fat
+    (b"#!/", "shell_script_shebang"),             # Shell script
+    (b"<script", "html_script_tag"),              # HTML/JS payload
+    (b"<?php", "php_payload"),
+]
+
+# Per-IP rate limit (memory; v2 → Redis)
+ip_uploads: dict[str, list[float]] = defaultdict(list)
+IP_UPLOADS_PER_HOUR = 10
 
 
 # Per-session rate-limit state (in-memory; resets on restart).
@@ -126,7 +147,11 @@ rate_limiter = RateLimit()
 
 
 def gate_pdf_mechanics(content: bytes) -> list[str]:
-    """Gate 1 — bytes-level PDF checks."""
+    """Gate 1 — bytes-level PDF checks. Now ALSO scans for executable
+    signatures hidden inside PDF body (Windows PE, Linux ELF, Mach-O,
+    shell scripts, HTML/JS payloads, PHP). A real insurance policy PDF
+    never contains these byte patterns.
+    """
     reasons: list[str] = []
     if not content.startswith(b"%PDF"):
         reasons.append("not_a_pdf_magic_bytes")
@@ -136,13 +161,38 @@ def gate_pdf_mechanics(content: bytes) -> list[str]:
     if len(content) < 5_000:
         reasons.append("file_too_small_5kb")
 
-    # Look for dangerous PDF features in the first ~2 MB (catches most)
-    head = content[:2_000_000]
+    # Verify the trailing %%EOF is present (well-formed PDF)
+    if b"%%EOF" not in content[-256:]:
+        reasons.append("malformed_pdf_missing_eof")
+
+    # Look for dangerous PDF features in the WHOLE file (not just first 2MB)
     for needle, label in DANGEROUS_PDF_FEATURES:
-        if needle in head:
+        if needle in content:
             reasons.append(f"dangerous_pdf_feature: {label}")
 
+    # Scan for embedded executables / payloads
+    for sig, label in EXECUTABLE_SIGNATURES:
+        # Don't check the first 8 bytes (false positive on PDF magic)
+        if sig in content[8:]:
+            reasons.append(f"embedded_executable: {label}")
+
     return reasons
+
+
+def gate_ip_rate_limit(ip: str) -> list[str]:
+    """Gate 5 — per-IP rate limit on top of per-session."""
+    if not ip:
+        return []
+    now = time.time()
+    ip_uploads[ip] = [t for t in ip_uploads[ip] if now - t < 3600]
+    if len(ip_uploads[ip]) >= IP_UPLOADS_PER_HOUR:
+        return ["rate_limit_per_ip_per_hour"]
+    return []
+
+
+def record_ip_upload(ip: str):
+    if ip:
+        ip_uploads[ip].append(time.time())
 
 
 def gate_content_quality(text: str, page_count: int) -> list[str]:
@@ -187,10 +237,12 @@ def check_upload(
     extracted_text: str,
     page_count: int,
     session_id: str = "anonymous",
+    ip: str = "",
 ) -> UploadVerdict:
-    """Run all 4 gates. Return verdict with reasons (empty if accepted)."""
+    """Run all 5 gates. Return verdict with reasons (empty if accepted)."""
     reasons: list[str] = []
     reasons.extend(gate_rate_limit(session_id))
+    reasons.extend(gate_ip_rate_limit(ip))
     reasons.extend(gate_pdf_mechanics(content))
     reasons.extend(gate_content_quality(extracted_text, page_count))
     reasons.extend(gate_prompt_injection(extracted_text))

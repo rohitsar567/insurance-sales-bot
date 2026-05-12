@@ -165,6 +165,41 @@ export async function getScorecard(policy_id: string): Promise<ScorecardResponse
   return resp.json();
 }
 
+export type PremiumEstimateRequest = {
+  age: number;
+  sum_insured_inr: number;
+  city_tier?: "metro" | "tier1" | "tier2";
+  smoker?: boolean;
+  family_size?: number;
+  policy_id?: string | null;
+};
+
+export type PremiumEstimateResponse = {
+  policy_id: string;
+  point_estimate_inr: number;
+  low_inr: number;
+  high_inr: number;
+  methodology: string;
+  sources: string[];
+  is_illustrative: boolean;
+  disclaimer: string;
+};
+
+export async function postPremiumEstimate(req: PremiumEstimateRequest): Promise<PremiumEstimateResponse> {
+  const resp = await fetch(`${BACKEND_URL}/api/premium/estimate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      ...req,
+      city_tier: req.city_tier ?? "metro",
+      smoker: req.smoker ?? false,
+      family_size: req.family_size ?? 1,
+    }),
+  });
+  if (!resp.ok) throw new Error(`premium estimate failed: ${resp.status}`);
+  return resp.json();
+}
+
 
 export async function uploadPolicy(file: File): Promise<UploadResponse> {
   const fd = new FormData();

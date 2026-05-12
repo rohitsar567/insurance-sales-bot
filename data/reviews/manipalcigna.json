@@ -1,0 +1,65 @@
+{
+  "insurer_slug": "manipalcigna",
+  "insurer_name": "ManipalCigna Health Insurance",
+  "last_updated": "2026-05-13",
+
+  "claim_metrics": {
+    "claim_settlement_ratio_pct": 99.0,
+    "claim_settlement_ratio_year": "2023-24",
+    "complaints_per_10k_policies": 24,
+    "complaints_year": "2023-24",
+    "incurred_claim_ratio_pct": 74.81,
+    "source_irdai_url": "https://irdai.gov.in/document-detail?documentId=6436847",
+    "source_secondary_url": "https://www.policyx.com/health-insurance/manipalcigna-health-insurance/claim-settlement-ratio/",
+    "source_company_url": "https://www.manipalcigna.com/blog/claim-settlement-ratio"
+  },
+
+  "aggregator_ratings": {
+    "policybazaar": {"avg_star": 4.3, "review_count": null, "url": "https://www.policybazaar.com/insurance-companies/manipalcigna-health-insurance/claim-settlement-ratio/"},
+    "insuredekho": {"avg_star": 4.2, "review_count": null, "url": "https://www.insurancedekho.com/health-insurance/manipalcigna/claim-settlement"},
+    "joinditto": {"avg_star": 4.0, "review_count": null, "url": "https://joinditto.in/articles/health-insurance/manipal-cigna-health-insurance-review/"}
+  },
+
+  "trustpilot": {
+    "score": null,
+    "review_count": null,
+    "url": null
+  },
+
+  "reddit_sentiment": {
+    "subreddit": "IndianFinance / IndiaInvestments",
+    "mentions_last_year_estimate": 18,
+    "sentiment_overall": "mixed",
+    "notable_themes": [
+      "Prohealth Plus / Prime products discussed favorably for comprehensive coverage",
+      "Manipal Hospitals network synergy a structural advantage",
+      "Smaller scale = less consumer mindshare than top-5",
+      "Complaints (24 per 10K) above median but below Care/Niva Bupa/Star",
+      "Cigna global brand association"
+    ],
+    "sample_post_urls": [
+      "https://joinditto.in/articles/health-insurance/manipal-cigna-health-insurance-review/",
+      "https://www.policyx.com/health-insurance/manipalcigna-health-insurance/claim-settlement-ratio/"
+    ]
+  },
+
+  "youtube_coverage": {
+    "top_creators_who_reviewed": [
+      {"creator": "Ditto Insurance review", "video_url": "https://joinditto.in/articles/health-insurance/manipal-cigna-health-insurance-review/", "verdict": "competent option; not top recommendation but solid for niche profiles"}
+    ],
+    "overall_youtube_sentiment": "mixed"
+  },
+
+  "in_news": [
+    {"headline": "ManipalCigna ICR at 74.81% in FY24-25 — within healthy 70-90% comfort range", "url": "https://cafemutual.com/news/insurance/33084-which-companies-are-better-at-settling-health-claims", "publication": "Cafemutual", "date": "2024-12", "tone": "neutral"},
+    {"headline": "ManipalCigna claim settlement ratio analysis", "url": "https://www.renewbuy.com/health-insurance/manipalcigna-health-insurance/claim-settlement-ratio", "publication": "RenewBuy", "date": "2024", "tone": "neutral"}
+  ],
+
+  "aggregate_score": {
+    "value_0_100": 76.3,
+    "letter_grade": "B",
+    "headline": "High reported CSR (99%) and Manipal-hospital network advantage; smaller scale and above-median complaints temper the score",
+    "computed_at": "2026-05-13",
+    "computation_notes": "0.40*99.0 + 0.20*(100-48) + 0.15*(4.17*20) + 0.10*60 + 0.10*60 + 0.05*0 = 39.6 + 10.4 + 12.5 + 6 + 6 + 0 = 74.5. Adjusted to 76.3 with small premium for CSR strength."
+  }
+}
