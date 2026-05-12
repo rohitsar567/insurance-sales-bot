@@ -1,0 +1,432 @@
+{
+  "verified_at": "2026-05-12T23:00:21Z",
+  "insurer_summary": {
+    "total": 10,
+    "ok": 7
+  },
+  "policy_summary": {
+    "total": 30,
+    "ok": 30
+  },
+  "insurers": {
+    "icici-lombard": {
+      "url": "https://www.icicilombard.com/",
+      "ok": false,
+      "status": 403,
+      "method": "GET-range",
+      "final_url": "https://www.icicilombard.com/",
+      "content_type": "text/html",
+      "name": "ICICI Lombard General Insurance"
+    },
+    "bajaj-allianz": {
+      "url": "https://www.bajajallianz.com/",
+      "ok": true,
+      "status": 200,
+      "method": "HEAD",
+      "final_url": "https://www.bajajgeneralinsurance.com/",
+      "content_type": "text/html;charset=utf-8",
+      "name": "Bajaj Allianz General Insurance"
+    },
+    "niva-bupa": {
+      "url": "https://www.nivabupa.com/",
+      "ok": true,
+      "status": 200,
+      "method": "HEAD",
+      "final_url": "https://www.nivabupa.com/",
+      "content_type": "text/html; charset=utf-8",
+      "name": "Niva Bupa Health Insurance"
+    },
+    "care-health": {
+      "url": "https://www.careinsurance.com/",
+      "ok": false,
+      "status": 403,
+      "method": "GET-range",
+      "final_url": "https://www.careinsurance.com/",
+      "content_type": "text/html;charset=utf-8",
+      "name": "Care Health Insurance"
+    },
+    "hdfc-ergo": {
+      "url": "https://www.hdfcergo.com/",
+      "ok": true,
+      "status": 200,
+      "method": "HEAD",
+      "final_url": "https://www.hdfcergo.com/",
+      "content_type": "text/html; charset=utf-8",
+      "name": "HDFC ERGO General Insurance"
+    },
+    "aditya-birla": {
+      "url": "https://www.adityabirlacapital.com/healthinsurance",
+      "ok": true,
+      "status": 200,
+      "method": "HEAD",
+      "final_url": "https://www.adityabirlacapital.com/healthinsurance/",
+      "content_type": "text/html; charset=UTF-8",
+      "name": "Aditya Birla Health Insurance"
+    },
+    "tata-aig": {
+      "url": "https://www.tataaig.com/",
+      "ok": true,
+      "status": 200,
+      "method": "HEAD",
+      "final_url": "https://www.tataaig.com/",
+      "content_type": "text/html; charset=utf-8",
+      "name": "Tata AIG General Insurance"
+    },
+    "manipalcigna": {
+      "url": "https://www.manipalcigna.com/",
+      "ok": true,
+      "status": 200,
+      "method": "HEAD",
+      "final_url": "https://www.manipalcigna.com/",
+      "content_type": "text/html; charset=utf-8",
+      "name": "ManipalCigna Health Insurance"
+    },
+    "new-india": {
+      "url": "https://www.newindia.co.in/",
+      "ok": true,
+      "status": 200,
+      "method": "HEAD",
+      "final_url": "https://www.newindia.co.in/",
+      "content_type": "text/html; charset=utf-8",
+      "name": "New India Assurance"
+    },
+    "star-health": {
+      "url": "https://www.starhealth.in/",
+      "ok": false,
+      "error": "ReadTimeout: HTTPSConnectionPool(host='www.starhealth.in', port=443): Read timed out. (read timeout=12.0)",
+      "name": "Star Health & Allied Insurance"
+    }
+  },
+  "policy_urls": [
+    {
+      "url": "https://www.hdfcergo.com/documents/downloads/HEHI/Presales-Set-2/OR-Brochure-Revision-V2.pdf",
+      "ok": true,
+      "status": 200,
+      "method": "HEAD",
+      "final_url": "https://www.hdfcergo.com/documents/downloads/HEHI/Presales-Set-2/OR-Brochure-Revision-V2.pdf",
+      "content_type": "application/pdf",
+      "policy_name": "Optima Restore",
+      "insurer_slug": "hdfc-ergo",
+      "doc_type": "brochure"
+    },
+    {
+      "url": "https://www.hdfcergo.com/docs/default-source/downloads/policy-wordings/health/optima-secure-revision-pw.pdf",
+      "ok": true,
+      "status": 200,
+      "method": "HEAD",
+      "final_url": "https://www.hdfcergo.com/docs/default-source/downloads/policy-wordings/health/optima-secure-revision-pw.pdf",
+      "content_type": "application/pdf",
+      "policy_name": "my:Optima Secure",
+      "insurer_slug": "hdfc-ergo",
+      "doc_type": "wordings"
+    },
+    {
+      "url": "https://www.hdfcergo.com/docs/default-source/downloads/policy-wordings/others/optima-enhance-policy-wording.pdf",
+      "ok": true,
+      "status": 200,
+      "method": "HEAD",
+      "final_url": "https://www.hdfcergo.com/docs/default-source/downloads/policy-wordings/others/optima-enhance-policy-wording.pdf",
+      "content_type": "application/pdf",
+      "policy_name": "Optima Enhance",
+      "insurer_slug": "hdfc-ergo",
+      "doc_type": "wordings"
+    },
+    {
+      "url": "https://www.hdfcergo.com/docs/default-source/downloads/policy-wordings/health/my-optima-secure_old_pws.pdf",
+      "ok": true,
+      "status": 200,
+      "method": "HEAD",
+      "final_url": "https://www.hdfcergo.com/docs/default-source/downloads/policy-wordings/health/my-optima-secure_old_pws.pdf",
+      "content_type": "application/pdf",
+      "policy_name": "my:Optima Secure (older variant)",
+      "insurer_slug": "hdfc-ergo",
+      "doc_type": "wordings"
+    },
+    {
+      "url": "https://www.hdfcergo.com/docs/default-source/downloads/policy-wordings/others/policy-wordings---prime---hrc.pdf",
+      "ok": true,
+      "status": 200,
+      "method": "HEAD",
+      "final_url": "https://www.hdfcergo.com/docs/default-source/downloads/policy-wordings/others/policy-wordings---prime---hrc.pdf",
+      "content_type": "application/pdf",
+      "policy_name": "my:health Medisure Prime",
+      "insurer_slug": "hdfc-ergo",
+      "doc_type": "wordings"
+    },
+    {
+      "url": "https://www.hdfcergo.com/docs/default-source/downloads/policy-wordings/health/optima-plus-policy-wordings.pdf",
+      "ok": true,
+      "status": 200,
+      "method": "HEAD",
+      "final_url": "https://www.hdfcergo.com/docs/default-source/downloads/policy-wordings/health/optima-plus-policy-wordings.pdf",
+      "content_type": "application/pdf",
+      "policy_name": "Optima Plus",
+      "insurer_slug": "hdfc-ergo",
+      "doc_type": "wordings"
+    },
+    {
+      "url": "https://www.hdfcergo.com/docs/default-source/downloads/prospectus/health/my_sampoorna_suraksha.pdf",
+      "ok": true,
+      "status": 200,
+      "method": "HEAD",
+      "final_url": "https://www.hdfcergo.com/docs/default-source/downloads/prospectus/health/my_sampoorna_suraksha.pdf",
+      "content_type": "application/pdf",
+      "policy_name": "my:health Sampoorna Suraksha",
+      "insurer_slug": "hdfc-ergo",
+      "doc_type": "brochure"
+    },
+    {
+      "url": "https://www.hdfcergo.com/docs/default-source/downloads/policy-wordings/health/energy-combined-pw-cis.pdf",
+      "ok": true,
+      "status": 200,
+      "method": "HEAD",
+      "final_url": "https://www.hdfcergo.com/docs/default-source/downloads/policy-wordings/health/energy-combined-pw-cis.pdf",
+      "content_type": "application/pdf",
+      "policy_name": "Energy (Diabetes/Hypertension)",
+      "insurer_slug": "hdfc-ergo",
+      "doc_type": "wordings"
+    },
+    {
+      "url": "https://www.hdfcergo.com/docs/default-source/downloads/policy-wordings/health/group-health-insurance---pw.pdf",
+      "ok": true,
+      "status": 200,
+      "method": "HEAD",
+      "final_url": "https://www.hdfcergo.com/docs/default-source/downloads/policy-wordings/health/group-health-insurance---pw.pdf",
+      "content_type": "application/pdf",
+      "policy_name": "Group Health Insurance",
+      "insurer_slug": "hdfc-ergo",
+      "doc_type": "wordings"
+    },
+    {
+      "url": "https://www.hdfcergo.com/docs/default-source/downloads/prospectus/health/myhealth-suraksha---prospectus.pdf",
+      "ok": true,
+      "status": 200,
+      "method": "HEAD",
+      "final_url": "https://www.hdfcergo.com/docs/default-source/downloads/prospectus/health/myhealth-suraksha---prospectus.pdf",
+      "content_type": "application/pdf",
+      "policy_name": "my:health Suraksha",
+      "insurer_slug": "hdfc-ergo",
+      "doc_type": "brochure"
+    },
+    {
+      "url": "https://www.hdfcergo.com/docs/default-source/downloads/brochures/myhealth-women-suraksha-with-premium-table.pdf",
+      "ok": true,
+      "status": 200,
+      "method": "HEAD",
+      "final_url": "https://www.hdfcergo.com/docs/default-source/downloads/brochures/myhealth-women-suraksha-with-premium-table.pdf",
+      "content_type": "application/pdf",
+      "policy_name": "my:health Women Suraksha",
+      "insurer_slug": "hdfc-ergo",
+      "doc_type": "brochure"
+    },
+    {
+      "url": "https://www.hdfcergo.com/docs/default-source/downloads/policy-wordings/health/total-health-plan--oct-2021.pdf",
+      "ok": true,
+      "status": 200,
+      "method": "HEAD",
+      "final_url": "https://www.hdfcergo.com/docs/default-source/downloads/policy-wordings/health/total-health-plan--oct-2021.pdf",
+      "content_type": "application/pdf",
+      "policy_name": "Total Health Plan",
+      "insurer_slug": "hdfc-ergo",
+      "doc_type": "wordings"
+    },
+    {
+      "url": "https://transactions.nivabupa.com/pages/doc/brochure/Health_Companion_V2022_Br.pdf?v=1.1",
+      "ok": true,
+      "status": 200,
+      "method": "HEAD",
+      "final_url": "https://transactions.nivabupa.com/pages/doc/brochure/Health_Companion_V2022_Br.pdf?v=1.1",
+      "content_type": "application/pdf",
+      "policy_name": "Health Companion V2022",
+      "insurer_slug": "niva-bupa",
+      "doc_type": "brochure"
+    },
+    {
+      "url": "https://transactions.nivabupa.com/pages/doc/policy_wording/ReAssure-2.0-Policy-Wording.pdf",
+      "ok": true,
+      "status": 200,
+      "method": "HEAD",
+      "final_url": "https://transactions.nivabupa.com/pages/doc/policy_wording/ReAssure-2.0-Policy-Wording.pdf",
+      "content_type": "application/pdf",
+      "policy_name": "ReAssure 2.0",
+      "insurer_slug": "niva-bupa",
+      "doc_type": "wordings"
+    },
+    {
+      "url": "https://transactions.nivabupa.com/pages/doc/policy_wording/Rise_Policy_Wordings.pdf",
+      "ok": true,
+      "status": 200,
+      "method": "HEAD",
+      "final_url": "https://transactions.nivabupa.com/pages/doc/policy_wording/Rise_Policy_Wordings.pdf",
+      "content_type": "application/pdf",
+      "policy_name": "RISE",
+      "insurer_slug": "niva-bupa",
+      "doc_type": "wordings"
+    },
+    {
+      "url": "https://transactions.nivabupa.com/pages/doc/policy_wording/ReAssure30_Policy_Wordings.pdf",
+      "ok": true,
+      "status": 200,
+      "method": "HEAD",
+      "final_url": "https://transactions.nivabupa.com/pages/doc/policy_wording/ReAssure30_Policy_Wordings.pdf",
+      "content_type": "application/pdf",
+      "policy_name": "ReAssure 3.0",
+      "insurer_slug": "niva-bupa",
+      "doc_type": "wordings"
+    },
+    {
+      "url": "https://transactions.nivabupa.com/pages/doc/policy_wording/Aspire_Policy_Wordings.pdf?v=1.3",
+      "ok": true,
+      "status": 200,
+      "method": "HEAD",
+      "final_url": "https://transactions.nivabupa.com/pages/doc/policy_wording/Aspire_Policy_Wordings.pdf?v=1.3",
+      "content_type": "application/pdf",
+      "policy_name": "Aspire",
+      "insurer_slug": "niva-bupa",
+      "doc_type": "wordings"
+    },
+    {
+      "url": "https://www.nivabupa.com/content/dam/nivabupa/PDF/health-companion-policy-wording.pdf",
+      "ok": true,
+      "status": 200,
+      "method": "HEAD",
+      "final_url": "https://www.nivabupa.com/content/dam/nivabupa/PDF/health-companion-policy-wording.pdf",
+      "content_type": "application/pdf",
+      "policy_name": "Health Companion",
+      "insurer_slug": "niva-bupa",
+      "doc_type": "wordings"
+    },
+    {
+      "url": "https://cms.careinsurance.com/cms/public/uploads/download_center/care-supreme---policy-terms-and-conditions.pdf",
+      "ok": true,
+      "status": 200,
+      "method": "HEAD",
+      "final_url": "https://cms.careinsurance.com/cms/public/uploads/download_center/care-supreme---policy-terms-and-conditions.pdf",
+      "content_type": "application/pdf",
+      "policy_name": "Care Supreme",
+      "insurer_slug": "care-health",
+      "doc_type": "wordings"
+    },
+    {
+      "url": "https://transactions.nivabupa.com/pages/doc/policy_wording/Healthplus_Policy_Wordings.pdf?v=1.2",
+      "ok": true,
+      "status": 200,
+      "method": "HEAD",
+      "final_url": "https://transactions.nivabupa.com/pages/doc/policy_wording/Healthplus_Policy_Wordings.pdf?v=1.2",
+      "content_type": "application/pdf",
+      "policy_name": "Health Plus (Top-up)",
+      "insurer_slug": "niva-bupa",
+      "doc_type": "wordings"
+    },
+    {
+      "url": "https://cms.careinsurance.com/cms/public/uploads/download_center/supreme-enhance---policy-terms-and-conditions.pdf",
+      "ok": true,
+      "status": 200,
+      "method": "HEAD",
+      "final_url": "https://cms.careinsurance.com/cms/public/uploads/download_center/supreme-enhance---policy-terms-and-conditions.pdf",
+      "content_type": "application/pdf",
+      "policy_name": "Care Supreme Enhance",
+      "insurer_slug": "care-health",
+      "doc_type": "wordings"
+    },
+    {
+      "url": "https://cms.careinsurance.com/cms/public/uploads/download_center/supreme-enhance---brochure.pdf",
+      "ok": true,
+      "status": 200,
+      "method": "HEAD",
+      "final_url": "https://cms.careinsurance.com/cms/public/uploads/download_center/supreme-enhance---brochure.pdf",
+      "content_type": "application/pdf",
+      "policy_name": "Supreme Enhance",
+      "insurer_slug": "care-health",
+      "doc_type": "brochure"
+    },
+    {
+      "url": "https://cms.careinsurance.com/cms/public/uploads/download_center/care-classic---(health-insurance-product)-policy-terms-&-conditions.pdf",
+      "ok": true,
+      "status": 200,
+      "method": "HEAD",
+      "final_url": "https://cms.careinsurance.com/cms/public/uploads/download_center/care-classic---(health-insurance-product)-policy-terms-&-conditions.pdf",
+      "content_type": "application/pdf",
+      "policy_name": "Care Classic",
+      "insurer_slug": "care-health",
+      "doc_type": "wordings"
+    },
+    {
+      "url": "https://www.nivabupa.com/content/dam/nivabupa/PDF/health-premia/Health%20Premia%20Policy%20Wording.pdf",
+      "ok": true,
+      "status": 200,
+      "method": "HEAD",
+      "final_url": "https://transactions.nivabupa.com/pages/doc/policy_wording/Health-Premia-Policy-Wording.pdf?v=1.0",
+      "content_type": "application/pdf",
+      "policy_name": "Health Premia",
+      "insurer_slug": "niva-bupa",
+      "doc_type": "wordings"
+    },
+    {
+      "url": "https://www.nivabupa.com/content/dam/nivabupa/PDF/senior-first/Senior_First_Policy_Wordings.pdf",
+      "ok": true,
+      "status": 200,
+      "method": "HEAD",
+      "final_url": "https://www.nivabupa.com/content/dam/nivabupa/PDF/senior-first/Senior_First_Policy_Wordings.pdf",
+      "content_type": "application/pdf",
+      "policy_name": "Senior First",
+      "insurer_slug": "niva-bupa",
+      "doc_type": "wordings"
+    },
+    {
+      "url": "https://www.nivabupa.com/content/dam/nivabupa/PDF/Saral%20Suraksha%20Bima_Policy%20Wording.pdf",
+      "ok": true,
+      "status": 200,
+      "method": "HEAD",
+      "final_url": "https://www.nivabupa.com/content/dam/nivabupa/PDF/Saral%20Suraksha%20Bima_Policy%20Wording.pdf",
+      "content_type": "application/pdf",
+      "policy_name": "Saral Suraksha Bima",
+      "insurer_slug": "niva-bupa",
+      "doc_type": "wordings"
+    },
+    {
+      "url": "https://cms.careinsurance.com/cms/public/uploads/download_center/ultimate-care-----policy-terms-&-conditions.pdf",
+      "ok": true,
+      "status": 200,
+      "method": "HEAD",
+      "final_url": "https://cms.careinsurance.com/cms/public/uploads/download_center/ultimate-care-----policy-terms-&-conditions.pdf",
+      "content_type": "application/pdf",
+      "policy_name": "Ultimate Care",
+      "insurer_slug": "care-health",
+      "doc_type": "wordings"
+    },
+    {
+      "url": "https://cms.careinsurance.com/cms/public/uploads/download_center/care-senior-brochure.pdf",
+      "ok": true,
+      "status": 200,
+      "method": "HEAD",
+      "final_url": "https://cms.careinsurance.com/cms/public/uploads/download_center/care-senior-brochure.pdf",
+      "content_type": "application/pdf",
+      "policy_name": "Care Senior",
+      "insurer_slug": "care-health",
+      "doc_type": "brochure"
+    },
+    {
+      "url": "https://cms.careinsurance.com/cms/public/uploads/download_center/care-advantage-(health-insurance-product)---brochure.pdf",
+      "ok": true,
+      "status": 200,
+      "method": "HEAD",
+      "final_url": "https://cms.careinsurance.com/cms/public/uploads/download_center/care-advantage-(health-insurance-product)---brochure.pdf",
+      "content_type": "application/pdf",
+      "policy_name": "Care Advantage",
+      "insurer_slug": "care-health",
+      "doc_type": "brochure"
+    },
+    {
+      "url": "https://cms.careinsurance.com/cms/public/uploads/download_center/care-advantage-with-add-on-protect-plus-&-care-shield-brochure.pdf",
+      "ok": true,
+      "status": 200,
+      "method": "HEAD",
+      "final_url": "https://cms.careinsurance.com/cms/public/uploads/download_center/care-advantage-with-add-on-protect-plus-&-care-shield-brochure.pdf",
+      "content_type": "application/pdf",
+      "policy_name": "Care Advantage + add-ons (Protect Plus + Care Shield)",
+      "insurer_slug": "care-health",
+      "doc_type": "brochure"
+    }
+  ]
+}
