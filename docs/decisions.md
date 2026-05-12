@@ -164,14 +164,42 @@ Every meaningful technical and product decision, with alternatives considered an
 
 ---
 
-## D-014 — Grader LLM: Claude Haiku 4.5
+## D-014 (revised, locked) — Grader LLM: Groq Llama-3.3-70B-versatile
+
+**Date:** 2026-05-13 (locked)
+**Status:** Locked — user signed up for Groq, key in `.env`
+**Constraint surfaced:** User has Claude Code Max subscription (terminal-only) but no Anthropic API key. Cannot call Claude from deployed app code.
+**Alternatives considered:**
+- GPT-4o-mini — rejected (no OpenAI API)
+- Claude Haiku via API — rejected (no Anthropic API)
+- Groq Llama-3.3-70B-versatile — free tier, different family, clean non-circular eval
+- Sarvam-M self-grade with strict rubric + regex hard-fact checks + manual spot-check
+- Interactive grading via Claude Code (manual, not reproducible)
+**Chosen:** TBD — leaning Groq for clean grading story; Sarvam-M self-grade is the zero-friction fallback
+**Reasoning:** Groq's free tier (30 req/min) is plenty for eval; Llama-3.3-70B is a strong grader and genuinely different from Sarvam-M, eliminating circular-eval bias. Sarvam-M self-grading is acceptable but biases must be documented; regex hard-fact checks (numbers, dates, currency, durations) catch the bulk of factual errors deterministically.
+**Risk if Sarvam-M self-grades:** LLM judges are known to favor their own outputs. Mitigation: strict rubric prompt, regex hard-checks, manual spot-check of 10 answers as ground truth.
+**Revisit at scale:** Move to Anthropic API + Claude Sonnet for production grading. Add LLM-judge calibration suite.
+
+---
+
+## D-016 — Brain (generation LLM): Sarvam-M primary + Llama-3.3-70B / DeepSeek-V3 fallback router
 
 **Date:** 2026-05-13
-**Status:** Locked
-**Alternatives considered:** GPT-4o-mini (rejected — user has Anthropic, not OpenAI) · Claude Haiku 4.5 · Claude Sonnet 4.6 · Sarvam-M held out
-**Chose:** **Claude Haiku 4.5**
-**Reasoning:** Avoids circular eval (don't grade Sarvam-M responses with Sarvam-M — biased toward its own style). Haiku is cheap, fast, strong enough for binary semantic-match grading. Sonnet would also work but Haiku has the right cost/latency profile for a grader running 50+ times per eval pass.
-**Revisit at scale:** Consider Claude Sonnet for nuanced grading (semantic similarity with rubric); add Anthropic's own eval/grading tools if they ship them.
+**Status:** Locked (architecture); winners per query type determined empirically by gold Q&A eval
+**Alternatives considered:** Sarvam-M only · Sarvam-M + Llama-3.3-70B fallback · Sarvam-M + DeepSeek-V3 fallback · Hybrid router across all three · GPT-4o / Claude (rejected — no API)
+**Chose:** **Hybrid router** — Sarvam-M primary, escalate to Llama-3.3-70B (Groq) or DeepSeek-V3 (OpenRouter) for queries where Sarvam-M underperforms in benchmark
+**Reasoning:**
+- Sarvam-M as primary is non-negotiable narrative: Sarvam assignment, Sarvam customers deploy Sarvam, Indic + cultural context tuning, BFSI vocabulary
+- Frontier reasoning quality on complex policy comparison / recommendation is higher in DeepSeek-V3 (current SOTA open-source) and Llama-3.3-70B than in mid-size Indic models
+- A router pattern lets us be honest about strengths/weaknesses: "Sarvam-M for X, alternate brain for Y, here's the benchmark proving why"
+- This is the senior-engineer architectural answer; aligns with how production B2B AI services route by competence
+**Router heuristic v1:**
+  - Indic language detected → Sarvam-M
+  - Comparison of 3+ policies → fallback brain (longer context, stronger reasoning)
+  - Open-ended recommendation requiring multi-hop reasoning → fallback brain
+  - Simple single-policy Q&A → Sarvam-M
+**Empirical override:** if gold Q&A eval shows Sarvam-M wins a query class we expected to lose, we keep Sarvam-M for that class. Data > heuristic.
+**Revisit at scale:** Add additional candidate models (Gemini 2.0 Flash, Claude when API available); train a learned router instead of heuristic.
 
 ---
 
