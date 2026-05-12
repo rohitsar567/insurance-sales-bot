@@ -54,9 +54,13 @@ COPY --from=frontend-builder /app/frontend/out ./frontend/out
 ENV PORT=7860
 EXPOSE 7860
 
+# Copy entrypoint and make it executable
+COPY entrypoint.sh ./entrypoint.sh
+RUN chmod +x ./entrypoint.sh
+
 # Use a non-root user (HF Spaces recommends this for Docker spaces)
 RUN useradd -m -u 1000 user && chown -R user:user /app
 USER user
 
-# Start the FastAPI app
-CMD ["sh", "-c", "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT} --log-level info"]
+# Start: entrypoint validates Chroma + (re-)ingests if needed, then runs uvicorn
+CMD ["sh", "/app/entrypoint.sh"]

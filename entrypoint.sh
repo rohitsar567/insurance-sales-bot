@@ -23,19 +23,32 @@ if [ -d "/data" ] && [ -w "/data" ]; then
     ln -sf /data/policies.duckdb /app/rag/policies.duckdb
 fi
 
-# Ingest if Chroma collection is empty
-echo "[entrypoint] checking if Chroma needs to be built..."
+# Validate Chroma is readable + populated; rebuild if not.
+echo "[entrypoint] validating Chroma vector store..."
 python -c "
 import sys
 sys.path.insert(0, '/app')
-from rag.retrieve import get_collection
-c = get_collection()
-n = c.count()
-print(f'[entrypoint] Chroma chunks: {n}')
-sys.exit(0 if n > 0 else 1)
-" && echo "[entrypoint] Chroma already populated — skipping ingest" || (
-    echo "[entrypoint] Chroma empty — running ingest (~5 min one-time)..."
-    python -m rag.ingest 2>&1 | tail -20
+try:
+    from rag.retrieve import get_collection
+    c = get_collection()
+    n = c.count()
+    if n <= 0:
+        print(f'[entrypoint] Chroma is empty')
+        sys.exit(1)
+    # Smoke test: do an actual retrieval to surface any deserialization bug
+    res = c.get(limit=1, include=['metadatas'])
+    if not res.get('ids'):
+        print(f'[entrypoint] Chroma reports {n} chunks but get() returns empty')
+        sys.exit(1)
+    print(f'[entrypoint] Chroma OK: {n} chunks, sample policy: {res[\"metadatas\"][0].get(\"policy_id\")}')
+    sys.exit(0)
+except Exception as e:
+    print(f'[entrypoint] Chroma load FAILED: {type(e).__name__}: {e}')
+    sys.exit(1)
+" || (
+    echo "[entrypoint] Wiping vector store and re-ingesting from corpus..."
+    rm -rf /app/rag/vectors/* 2>/dev/null || true
+    python -m rag.ingest 2>&1 | tail -30
 )
 
 # Start the server
