@@ -202,10 +202,41 @@ async def handle_turn(
         user_text=user_text,
         run_llm_judge=True,
     )
+
+    # 5a. CROSS-CHECK RETRY — if faithfulness blocked AND the failure isn't
+    # Gate 1 (no evidence at all), try a DIFFERENT-FAMILY brain. The most
+    # common Sarvam-M failure mode is over-confident cross-policy citations
+    # (e.g. answering about "Activ Health" but citing "Activ Secure" chunks).
+    # A fresh DeepSeek-V3 pass with the same chunks tends to handle this
+    # better. Capped at ONE retry — no loops.
     blocked = False
+    retry_used = False
     if not verdict.passed:
-        blocked = True
-        reply = verdict.suggested_reply or "I don't have grounded evidence for that. Could you rephrase?"
+        gate1_failure = any("gate1_retrieval" in r for r in verdict.reasons)
+        primary_was_sarvam = pick.provider.name == "sarvam-m"
+        if (not gate1_failure) and primary_was_sarvam:
+            try:
+                secondary = OpenRouterLLM()
+                retry_used = True
+                second = await secondary.chat(messages=messages, temperature=0.1, max_tokens=1500)
+                second_reply = strip_think_tags(second.text)
+                second_verdict = await check_faithfulness(
+                    reply=second_reply, chunks=chunks, user_text=user_text, run_llm_judge=True,
+                )
+                if second_verdict.passed:
+                    # Use the second-brain reply
+                    reply = second_reply
+                    pick = BrainPick(secondary, f"crosscheck-rescued-{pick.provider.name}")
+                    verdict = second_verdict
+                else:
+                    blocked = True
+                    reply = verdict.suggested_reply or "I don't have grounded evidence for that. Could you rephrase?"
+            except Exception:
+                blocked = True
+                reply = verdict.suggested_reply or "I don't have grounded evidence for that. Could you rephrase?"
+        else:
+            blocked = True
+            reply = verdict.suggested_reply or "I don't have grounded evidence for that. Could you rephrase?"
 
     # 6. Citations (derived from retrieved chunks)
     citations = [
