@@ -8,8 +8,10 @@ import {
   CoverageResponse,
   getCoverage,
   getHealth,
+  getScorecard,
   postChat,
   postTranscribe,
+  ScorecardResponse,
   uploadPolicy,
 } from "@/lib/api";
 
@@ -356,6 +358,9 @@ function Message({ m }: { m: DisplayMessage }) {
       } ${m.blocked ? "ring-1 ring-amber-300" : ""}`}>
         <div className="text-sm sm:text-base whitespace-pre-wrap leading-relaxed">{m.content}</div>
         {m.audioUrl && <audio controls src={m.audioUrl} className="mt-2 w-full max-w-xs" style={{ height: 32 }} />}
+        {m.citations && m.citations.length > 0 && !isUser && (
+          <ScorecardBadgesForCitations citations={m.citations} />
+        )}
         {m.citations && m.citations.length > 0 && (
           <div className="mt-3 pt-3 border-t border-[var(--border)] space-y-1.5">
             <div className="text-[10px] uppercase tracking-wide text-[var(--muted-foreground)] font-semibold">Sources</div>
@@ -369,6 +374,132 @@ function Message({ m }: { m: DisplayMessage }) {
           </div>
         )}
         {m.brain && (<div className="mt-2 text-[10px] text-[var(--muted-foreground)] opacity-60">{m.brain} · {m.latencyMs}ms</div>)}
+      </div>
+    </div>
+  );
+}
+
+function gradeColor(grade: string): string {
+  const map: Record<string, string> = {
+    A: "bg-emerald-500 text-white",
+    B: "bg-teal-500 text-white",
+    C: "bg-amber-500 text-white",
+    D: "bg-orange-500 text-white",
+    F: "bg-red-500 text-white",
+  };
+  return map[grade] || "bg-stone-400 text-white";
+}
+
+function ScorecardBadgesForCitations({ citations }: { citations: Citation[] }) {
+  const [cards, setCards] = useState<Record<string, ScorecardResponse | null>>({});
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  // Unique top 3 policy_ids from citations (preserve order, dedupe)
+  const seen = new Set<string>();
+  const topPolicies = citations
+    .filter((c) => {
+      if (seen.has(c.policy_id)) return false;
+      seen.add(c.policy_id);
+      return true;
+    })
+    .slice(0, 3);
+
+  useEffect(() => {
+    for (const c of topPolicies) {
+      if (cards[c.policy_id] !== undefined) continue;
+      getScorecard(c.policy_id)
+        .then((s) => setCards((prev) => ({ ...prev, [c.policy_id]: s })))
+        .catch(() => setCards((prev) => ({ ...prev, [c.policy_id]: null })));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [citations.map((c) => c.policy_id).join("|")]);
+
+  const ready = topPolicies.filter((c) => cards[c.policy_id]);
+  if (ready.length === 0) return null;
+
+  return (
+    <div className="mt-3 pt-3 border-t border-[var(--border)] space-y-2">
+      <div className="text-[10px] uppercase tracking-wide text-[var(--muted-foreground)] font-semibold">
+        Policy Scorecards
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {ready.map((c) => {
+          const sc = cards[c.policy_id]!;
+          const isOpen = expanded === c.policy_id;
+          const lowData = sc.data_completeness_pct < 50;
+          return (
+            <button
+              key={c.policy_id}
+              onClick={() => setExpanded(isOpen ? null : c.policy_id)}
+              className={`text-xs px-2.5 py-1 rounded-lg border transition flex items-center gap-2 ${
+                isOpen
+                  ? "border-[var(--primary)] bg-[var(--accent)]"
+                  : "border-[var(--border)] bg-[var(--card)] hover:border-[var(--primary)]"
+              }`}
+              title={`${sc.policy_name} · ${sc.one_liner}`}
+            >
+              <span className={`inline-flex items-center justify-center w-5 h-5 rounded font-bold text-[11px] ${gradeColor(sc.grade)}`}>
+                {sc.grade}
+              </span>
+              <span className="font-medium truncate max-w-[140px]">{sc.policy_name}</span>
+              <span className="opacity-60">{sc.overall_score}</span>
+              {lowData && <span title="extraction was incomplete" className="opacity-50">⚠</span>}
+            </button>
+          );
+        })}
+      </div>
+      {expanded && cards[expanded] && (
+        <ScorecardCard sc={cards[expanded]!} />
+      )}
+    </div>
+  );
+}
+
+function ScorecardCard({ sc }: { sc: ScorecardResponse }) {
+  return (
+    <div className="mt-2 rounded-xl border border-[var(--border)] bg-[var(--card)] p-3 text-xs animate-fade-up">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <span className={`inline-flex items-center justify-center w-7 h-7 rounded-lg font-bold ${gradeColor(sc.grade)}`}>
+            {sc.grade}
+          </span>
+          <div>
+            <div className="font-semibold text-sm">{sc.policy_name}</div>
+            <div className="text-[var(--muted-foreground)] text-[11px]">{sc.one_liner}</div>
+          </div>
+        </div>
+        <div className="text-right">
+          <div className="text-lg font-semibold">{sc.overall_score}<span className="text-[var(--muted-foreground)] text-xs">/100</span></div>
+          <div className="text-[10px] text-[var(--muted-foreground)]">data {sc.data_completeness_pct.toFixed(0)}% complete</div>
+        </div>
+      </div>
+      <div className="space-y-1.5 mt-3">
+        {sc.sub_scores.map((s) => (
+          <div key={s.name}>
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="font-medium">{s.name}</span>
+              <span className="text-[var(--muted-foreground)]">{s.score} · {s.summary}</span>
+            </div>
+            <div className="h-1.5 rounded-full bg-[var(--muted)] overflow-hidden">
+              <div
+                className={`h-full ${s.score >= 70 ? "bg-emerald-500" : s.score >= 55 ? "bg-amber-500" : "bg-red-400"}`}
+                style={{ width: `${Math.max(2, s.score)}%` }}
+              />
+            </div>
+            {s.signals && s.signals.length > 0 && (
+              <ul className="mt-1 ml-1 space-y-0.5">
+                {s.signals.slice(0, 4).map((sig, i) => (
+                  <li key={i} className="text-[10px] text-[var(--muted-foreground)]">
+                    · {sig}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ))}
+      </div>
+      <div className="mt-2 pt-2 border-t border-[var(--border)] text-[10px] text-[var(--muted-foreground)]">
+        Methodology: 24 of 48 schema fields drive this grade. Rules-based, no LLM-in-the-loop.
       </div>
     </div>
   );
