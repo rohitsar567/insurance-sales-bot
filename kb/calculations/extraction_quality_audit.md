@@ -1,0 +1,70 @@
+# Calculations — Extraction Quality Audit
+
+_Computed from `rag/extracted/*.json` (11 files)._
+
+How often each of the 48 schema fields actually got populated by extraction. Low-completeness fields are the ones to harden in v2 (better prompts, or LLM router).
+
+| Field | Populated | % |
+| --- | --- | --- |
+| `policy_id` | 11/11 | 100% |
+| `insurer_name` | 11/11 | 100% |
+| `insurer_slug` | 11/11 | 100% |
+| `policy_name` | 11/11 | 100% |
+| `policy_type` | 1/11 | 9% |
+| `uin_code` | 10/11 | 91% |
+| `min_entry_age_years` | 0/11 | 0% |
+| `max_entry_age_years` | 2/11 | 18% |
+| `max_renewal_age_years` | 2/11 | 18% |
+| `min_child_entry_age_days` | 3/11 | 27% |
+| `family_composition_allowed` | 0/11 | 0% |
+| `residency_requirement` | 1/11 | 9% |
+| `sum_insured_options_inr` | 4/11 | 36% |
+| `premium_payment_modes` | 1/11 | 9% |
+| `premium_range_indicative_inr` | 1/11 | 9% |
+| `premium_payment_term_years` | 3/11 | 27% |
+| `grace_period_days` | 5/11 | 45% |
+| `free_look_period_days` | 3/11 | 27% |
+| `initial_waiting_period_days` | 6/11 | 55% |
+| `pre_existing_disease_waiting_months` | 11/11 | 100% |
+| `specific_disease_waiting_months` | 8/11 | 73% |
+| `specific_diseases_listed` | 4/11 | 36% |
+| `maternity_waiting_months` | 1/11 | 9% |
+| `sub_limits_waiting_notes` | 1/11 | 9% |
+| `inpatient_hospitalization` | 10/11 | 91% |
+| `pre_hospitalization_days` | 7/11 | 64% |
+| `post_hospitalization_days` | 7/11 | 64% |
+| `day_care_treatments` | 9/11 | 82% |
+| `domiciliary_treatment` | 8/11 | 73% |
+| `ayush_coverage` | 8/11 | 73% |
+| `maternity_coverage` | 3/11 | 27% |
+| `newborn_coverage` | 4/11 | 36% |
+| `organ_donor_expenses` | 7/11 | 64% |
+| `ambulance_cover` | 9/11 | 82% |
+| `critical_illness_cover` | 3/11 | 27% |
+| `restoration_benefit` | 7/11 | 64% |
+| `no_claim_bonus_pct` | 6/11 | 55% |
+| `no_claim_bonus_cap_pct` | 7/11 | 64% |
+| `preventive_health_checkup` | 7/11 | 64% |
+| `room_rent_capping` | 8/11 | 73% |
+| `icu_capping` | 5/11 | 45% |
+| `copayment_pct` | 4/11 | 36% |
+| `copayment_trigger_notes` | 5/11 | 45% |
+| `disease_wise_sub_limits` | 2/11 | 18% |
+| `deductible_amount_inr` | 0/11 | 0% |
+| `geographic_coverage` | 0/11 | 0% |
+| `worldwide_emergency_cover` | 3/11 | 27% |
+| `network_hospital_count` | 0/11 | 0% |
+| `cashless_treatment_supported` | 10/11 | 91% |
+| `permanent_exclusions` | 5/11 | 45% |
+| `temporary_exclusions` | 1/11 | 9% |
+| `notable_exclusions_summary` | 2/11 | 18% |
+| `claim_settlement_ratio_pct` | 0/11 | 0% |
+| `claim_process_summary` | 3/11 | 27% |
+| `tat_cashless_authorization_hours` | 2/11 | 18% |
+| `available_riders` | 4/11 | 36% |
+| `top_rider_examples` | 1/11 | 9% |
+| `rider_premium_indicative_inr` | 0/11 | 0% |
+| `source_pdf_path` | 0/11 | 0% |
+| `source_pdf_url` | 2/11 | 18% |
+| `last_updated_date` | 0/11 | 0% |
+| `extraction_confidence_pct` | 6/11 | 55% |
