@@ -99,6 +99,9 @@ class ChatResponse(BaseModel):
     latency_ms: int
     session_id: str
     audio_base64: Optional[str] = None
+    faithfulness_passed: bool = True
+    faithfulness_reasons: list[str] = Field(default_factory=list)
+    blocked: bool = False
 
 
 class TTSRequest(BaseModel):
@@ -203,6 +206,9 @@ async def chat(req: ChatRequest):
         "latency_ms": turn.latency_ms,
         "retrieved_chunk_ids": turn.retrieved_chunk_ids,
         "citation_count": len(turn.citations),
+        "faithfulness_passed": turn.faithfulness_passed,
+        "faithfulness_reasons": turn.faithfulness_reasons,
+        "blocked": turn.blocked,
     })
 
     return ChatResponse(
@@ -214,6 +220,9 @@ async def chat(req: ChatRequest):
         latency_ms=turn.latency_ms,
         session_id=session_id,
         audio_base64=audio_b64,
+        faithfulness_passed=turn.faithfulness_passed,
+        faithfulness_reasons=turn.faithfulness_reasons,
+        blocked=turn.blocked,
     )
 
 

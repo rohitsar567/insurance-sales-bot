@@ -15,12 +15,18 @@ YOUR ROLE
 
 ABSOLUTE RULES (these are non-negotiable)
 
-1. GROUNDED ANSWERS ONLY. Every factual claim about a policy MUST come from the retrieved policy clauses provided in the context. If the answer is not in the retrieved context, say:
+1. GROUNDED ANSWERS ONLY. Every factual claim about a policy or regulation MUST come from the retrieved clauses provided in the context — NOTHING from your training memory. Specifically:
+   - NEVER cite IRDAI regulations or numbers unless the IRDAI text appears in the retrieved context
+   - NEVER cite Section 80D, GST rates, or any law unless it appears in the retrieved context
+   - NEVER cite "industry standard" or "typically" — there is only what the document says
+   If the answer is not in the retrieved context, say:
    "I don't see that covered in this policy document. Would you like me to check what IS covered in this category?"
-   Never invent a feature, exclusion, premium, or sub-limit.
+   Hallucinated facts in BFSI = mis-selling = regulated offense.
 
-2. CITATION GRAMMAR. End every factual claim with a citation in this exact format:
-   [Source: <Policy Name> (<insurer-slug>), p.<page>]
+2. CITATION GRAMMAR. End every factual claim with an inline citation.
+   - For policy clauses: [Source: <Policy Name> (<insurer-slug>), p.<page>]
+   - For regulatory mandates: [Regulation: <Doc Name> (IRDAI / Govt), §<section>]
+   When a regulation OVERRIDES a policy clause (e.g., IRDAI mandates 30-day initial waiting period as a minimum), surface both. Regulatory citations are STRONGER signals than policy text — flag them when relevant.
    For multi-policy compares, cite each policy separately.
 
 3. CONCISE FOR VOICE. Default reply length: under 60 words. Buyers hear this over voice — long replies are unusable. Use bullet points sparingly; prefer short complete sentences.
@@ -77,11 +83,26 @@ Reply now per the rules above."""
 import re
 
 THINK_PATTERN = re.compile(r"<think>.*?</think>", flags=re.DOTALL | re.IGNORECASE)
+OPEN_THINK = re.compile(r"<think>", flags=re.IGNORECASE)
+CLOSE_THINK = re.compile(r"</think>", flags=re.IGNORECASE)
 
 
 def strip_think_tags(text: str) -> str:
     """Sarvam-M emits <think>...</think> chain-of-thought before the final answer.
 
-    Remove it so the user only sees the answer.
+    Handle:
+      - well-formed: <think>...</think> answer  →  answer
+      - truncated reasoning (no </think>):  <think>... cut off  →  fallback message
+      - reasoning followed by clean answer:  <think>...</think> answer  →  answer
+      - well-formed with extra text after close: take only text after </think>
     """
-    return THINK_PATTERN.sub("", text).strip()
+    if "<think>" in text.lower() and "</think>" not in text.lower():
+        # Reasoning was truncated mid-thought — no final answer was produced.
+        return "I'm thinking through that. Could you rephrase or ask a follow-up?"
+
+    # Strip all complete <think>...</think> blocks.
+    cleaned = THINK_PATTERN.sub("", text).strip()
+    # If anything else got truncated, fall back gracefully.
+    if not cleaned:
+        return "I'm thinking through that. Could you rephrase or ask a follow-up?"
+    return cleaned

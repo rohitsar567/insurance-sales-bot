@@ -12,9 +12,10 @@ For each user turn:
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
+from backend.faithfulness import check_faithfulness, FaithfulnessVerdict
 from backend.persona import build_messages, strip_think_tags
 from backend.providers.base import ChatMessage, LLMProvider
 from backend.providers.groq_llm import GroqLLM
@@ -89,6 +90,9 @@ class TurnResult:
     language: str
     latency_ms: int
     raw_reply: str
+    faithfulness_passed: bool = True
+    faithfulness_reasons: list[str] = field(default_factory=list)
+    blocked: bool = False
 
 
 async def handle_turn(
@@ -125,17 +129,40 @@ async def handle_turn(
     messages = [ChatMessage(role=m["role"], content=m["content"]) for m in messages_dict]
 
     try:
-        llm_result = await pick.provider.chat(messages=messages, temperature=0.2, max_tokens=512)
+        llm_result = await pick.provider.chat(messages=messages, temperature=0.2, max_tokens=1500)
     except Exception as e:
         # Fallback to Groq Llama if primary brain fails
         fallback = GroqLLM()
-        llm_result = await fallback.chat(messages=messages, temperature=0.2, max_tokens=512)
+        llm_result = await fallback.chat(messages=messages, temperature=0.2, max_tokens=1500)
         pick = BrainPick(fallback, f"fallback-after-{type(e).__name__}")
+
+    # Detect truncated <think> reasoning — if so, retry with Groq (no reasoning tags)
+    if "<think>" in llm_result.text.lower() and "</think>" not in llm_result.text.lower():
+        try:
+            fallback = GroqLLM()
+            llm_result = await fallback.chat(messages=messages, temperature=0.2, max_tokens=1500)
+            pick = BrainPick(fallback, "fallback-truncated-reasoning")
+        except Exception:
+            pass
 
     raw = llm_result.text
     reply = strip_think_tags(raw)
 
-    # 5. Citations (derived from retrieved chunks — bot's text may reference subset)
+    # 5. FAITHFULNESS GATE — every reply runs through 4-gate verification.
+    #    If any gate fails, replace the reply with a safe refusal. The original
+    #    blocked reply is logged to logs/hallucinations.jsonl for audit.
+    verdict: FaithfulnessVerdict = await check_faithfulness(
+        reply=reply,
+        chunks=chunks,
+        user_text=user_text,
+        run_llm_judge=True,
+    )
+    blocked = False
+    if not verdict.passed:
+        blocked = True
+        reply = verdict.suggested_reply or "I don't have grounded evidence for that. Could you rephrase?"
+
+    # 6. Citations (derived from retrieved chunks)
     citations = [
         {
             "policy_id": c.policy_id,
@@ -158,4 +185,7 @@ async def handle_turn(
         language=language,
         latency_ms=int((time.time() - t0) * 1000),
         raw_reply=raw,
+        faithfulness_passed=verdict.passed,
+        faithfulness_reasons=verdict.reasons,
+        blocked=blocked,
     )
