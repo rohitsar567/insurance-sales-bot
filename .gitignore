@@ -1,0 +1,68 @@
+# Secrets — NEVER COMMIT
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+secrets/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual envs
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Vector DB persistence — too large to commit; rebuilt from corpus
+rag/vectors/
+
+# Raw PDFs — large; do commit a subset later for reproducibility
+# (keeping commented out — we WILL commit the corpus we acquire so deploy works)
+# rag/corpus/
+
+# Eval outputs
+eval/results_*.json
+eval/results_*.html
+
+# Logs
+*.log
+logs/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+Thumbs.db
