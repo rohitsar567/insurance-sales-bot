@@ -46,6 +46,12 @@ ENV/
 # Streamlit
 .streamlit/secrets.toml
 
+# Next.js
+.next/
+frontend/node_modules/
+frontend/.next/
+frontend/.env.local
+
 # Vector DB persistence — committed so deploy starts ready-to-serve (no boot-time re-ingest)
 # rag/vectors/  -- intentionally not gitignored
 # rag/policies.duckdb -- intentionally not gitignored

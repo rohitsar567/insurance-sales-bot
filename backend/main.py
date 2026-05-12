@@ -17,7 +17,8 @@ from typing import Optional
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from backend.config import settings
@@ -240,11 +241,35 @@ async def tts(req: TTSRequest):
     return JSONResponse({"audio_base64": base64.b64encode(audio).decode("utf-8")})
 
 
-@app.get("/")
-async def root():
+@app.get("/api")
+async def api_root():
     return {
         "service": "Insurance Sales Portfolio Expert API",
         "version": "0.1.0",
         "docs": "/docs",
         "health": "/api/health",
     }
+
+
+# ---- Static frontend (served alongside /api on the same port for HF Spaces) ----
+# The Next.js frontend is statically exported during the Docker build to
+# /app/frontend/out. In local dev, this directory may not exist — we still
+# want the backend to start cleanly.
+import os
+from pathlib import Path as _Path
+
+_FRONTEND_DIR = _Path(__file__).resolve().parent.parent / "frontend" / "out"
+if _FRONTEND_DIR.exists():
+    # Serve the built site as the catch-all. /api/* routes registered above
+    # take precedence because they are matched first.
+    app.mount("/", StaticFiles(directory=str(_FRONTEND_DIR), html=True), name="static")
+else:
+    @app.get("/")
+    async def root():
+        return {
+            "service": "Insurance Sales Portfolio Expert API",
+            "version": "0.1.0",
+            "frontend": "not built — run `cd frontend && npm run build`",
+            "docs": "/docs",
+            "health": "/api/health",
+        }

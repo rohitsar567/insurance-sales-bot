@@ -1,3 +1,15 @@
+---
+title: Insurance Sales Portfolio Expert
+emoji: 🏥
+colorFrom: teal
+colorTo: blue
+sdk: docker
+app_port: 7860
+pinned: false
+license: mit
+short_description: Voice-first AI advisor for Indian health insurance · Sarvam AI
+---
+
 # Insurance Sales Portfolio Expert
 
 A voice-first AI advisor for Indian health insurance buyers, over a curated corpus of policies from 10 leading insurers. Built as a take-home assignment for Sarvam AI.

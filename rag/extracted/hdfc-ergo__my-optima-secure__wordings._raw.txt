@@ -1,0 +1,101 @@
+```json
+{
+  "policy_id": "hdfc-ergo__my-optima-secure__wordings",
+  "insurer_name": "HDFC ERGO General Insurance Company Limited",
+  "insurer_slug": "hdfc-ergo",
+  "policy_name": "my: Optima Secure",
+  "policy_type": null,
+  "uin_code": "HDFHLIP25041V062425",
+  "min_entry_age_years": null,
+  "max_entry_age_years": null,
+  "max_renewal_age_years": null,
+  "min_child_entry_age_days": 90,
+  "family_composition_allowed": ["individual", "family_floater"],
+  "residency_requirement": null,
+  "sum_insured_options_inr": null,
+  "premium_payment_modes": ["annual", "monthly"],
+  "premium_range_indicative_inr": null,
+  "premium_payment_term_years": 1,
+  "grace_period_days": 30,
+  "free_look_period_days": null,
+  "initial_waiting_period_days": null,
+  "pre_existing_disease_waiting_months": 36,
+  "specific_disease_waiting_months": null,
+  "specific_diseases_listed": null,
+  "maternity_waiting_months": null,
+  "sub_limits_waiting_notes": null,
+  "inpatient_hospitalization": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Sum Insured specified in the Policy Schedule",
+    "notes": "Room rent limit shall be ‘At Actuals’ unless otherwise specified in the Policy Schedule."
+  },
+  "pre_hospitalization_days": 60,
+  "post_hospitalization_days": 180,
+  "day_care_treatments": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "All Day Care Treatments",
+    "notes": "Treatment normally taken on an out-patient basis is not included."
+  },
+  "domiciliary_treatment": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Sum Insured specified in the Policy Schedule",
+    "notes": "Treatment must be prescribed in writing by treating Medical Practitioner."
+  },
+  "ayush_coverage": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Sub-limit specified in the Policy Schedule",
+    "notes": "Only for Inpatient Care under Ayurveda, Yoga and Naturopathy, Unani, Siddha and Homeopathy systems."
+  },
+  "maternity_coverage": null,
+  "newborn_coverage": null,
+  "organ_donor_expenses": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Sum Insured specified in the Policy Schedule",
+    "notes": "Only for organ donor’s Hospitalization for harvesting of the donated organ where an Insured Person is the recipient."
+  },
+  "ambulance_cover": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Sum Insured specified in the Policy Schedule",
+    "notes": "Only for road Ambulance if the Insured Person is required to be transferred to the nearest Hospital for Emergency Care."
+  },
+  "critical_illness_cover": null,
+  "restoration_benefit": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "100% of the Base Sum Insured",
+    "notes": "Only once during the Policy Year unless specified otherwise in the Policy Schedule."
+  },
+  "no_claim_bonus_pct": 10.0,
+  "no_claim_bonus_cap_pct": null,
+  "preventive_health_checkup": null,
+  "room_rent_capping": "At Actuals unless otherwise specified in the Policy Schedule",
+  "icu_capping": "At Actuals unless otherwise specified in the Policy Schedule",
+  "copayment_pct": null,
+  "copayment_trigger_notes": null,
+  "disease_wise_sub_limits": null,
+  "deductible_amount_inr": null,
+  "geographic_coverage": null,
+  "worldwide_emergency_cover": null,
+  "network_hospital_count": null,
+  "cashless_treatment_supported": true,
+  "permanent_exclusions": null,
+  "temporary_exclusions": null,
+  "notable_exclusions_summary": null,
+  "claim_settlement_ratio_pct": null,
+  "claim_process_summary": null,
+  "tat_cashless_authorization_hours": null,
+  "available_riders": ["Emergency Air Ambulance", "Daily Cash for Shared Room", "Protect Benefit", "Plus Benefit", "Secure Benefit", "Automatic Restore Benefit", "Aggregate Deductible", "E-Opinion for Critical Illness"],
+  "top_rider_examples": ["Emergency Air Ambulance", "Daily Cash for Shared Room", "Protect Benefit"],
+  "rider_premium_indicative_inr": null,
+  "source_pdf_path": null,
+  "source_pdf_url": null,
+  "last_updated_date": null,
+  "extraction_confidence_pct": 85
+}
+```

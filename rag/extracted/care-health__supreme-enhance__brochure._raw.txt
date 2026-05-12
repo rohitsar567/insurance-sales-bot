@@ -1,0 +1,101 @@
+```json
+{
+  "policy_id": "care-health__supreme-enhance__brochure",
+  "insurer_name": "Care Health Insurance Limited",
+  "insurer_slug": "care-health",
+  "policy_name": "Supreme Enhance",
+  "policy_type": null,
+  "uin_code": "CHIHLIP25036V012425",
+  "min_entry_age_years": 18,
+  "max_entry_age_years": null,
+  "max_renewal_age_years": 999,
+  "min_child_entry_age_days": 90,
+  "family_composition_allowed": ["self", "spouse", "children", "parents"],
+  "residency_requirement": null,
+  "sum_insured_options_inr": [200000, 500000, 1000000, 2000000, 4500000, 5000000, 7000000, 8500000, 9000000, 9300000, 9500000],
+  "premium_payment_modes": null,
+  "premium_range_indicative_inr": null,
+  "premium_payment_term_years": 1,
+  "grace_period_days": null,
+  "free_look_period_days": 30,
+  "initial_waiting_period_days": 30,
+  "pre_existing_disease_waiting_months": 36,
+  "specific_disease_waiting_months": 24,
+  "specific_diseases_listed": null,
+  "maternity_waiting_months": null,
+  "sub_limits_waiting_notes": null,
+  "inpatient_hospitalization": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Up to Sum Insured",
+    "notes": null
+  },
+  "pre_hospitalization_days": 60,
+  "post_hospitalization_days": 90,
+  "day_care_treatments": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Up to Sum Insured",
+    "notes": null
+  },
+  "domiciliary_treatment": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Up to Sum Insured",
+    "notes": "Treatment at home for a period exceeding 3 consecutive days"
+  },
+  "ayush_coverage": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Up to Sum Insured",
+    "notes": null
+  },
+  "maternity_coverage": null,
+  "newborn_coverage": null,
+  "organ_donor_expenses": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Up to Sum Insured",
+    "notes": null
+  },
+  "ambulance_cover": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Up to SI per year",
+    "notes": "Air ambulance cover available as optional benefit"
+  },
+  "critical_illness_cover": null,
+  "restoration_benefit": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Unlimited times in a Policy Year for unrelated or same illness",
+    "notes": null
+  },
+  "no_claim_bonus_pct": 10.0,
+  "no_claim_bonus_cap_pct": 100.0,
+  "preventive_health_checkup": null,
+  "room_rent_capping": "Most Economical Single Pvt Room",
+  "icu_capping": "No Limit",
+  "copayment_pct": null,
+  "copayment_trigger_notes": null,
+  "disease_wise_sub_limits": null,
+  "deductible_amount_inr": 500000,
+  "geographic_coverage": null,
+  "worldwide_emergency_cover": null,
+  "network_hospital_count": null,
+  "cashless_treatment_supported": true,
+  "permanent_exclusions": null,
+  "temporary_exclusions": null,
+  "notable_exclusions_summary": null,
+  "claim_settlement_ratio_pct": null,
+  "claim_process_summary": "Cashless treatment available at network hospitals; reimbursement for others",
+  "tat_cashless_authorization_hours": null,
+  "available_riders": ["Air Ambulance", "Unlimited Care"],
+  "top_rider_examples": ["Air Ambulance", "Unlimited Care"],
+  "rider_premium_indicative_inr": null,
+  "source_pdf_path": null,
+  "source_pdf_url": null,
+  "last_updated_date": null,
+  "extraction_confidence_pct": 85
+}
+```
