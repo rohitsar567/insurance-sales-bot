@@ -1,0 +1,110 @@
+```json
+{
+  "policy_id": "hdfc-ergo__optima-restore__brochure",
+  "insurer_name": "HDFC ERGO General Insurance Company Limited",
+  "insurer_slug": "hdfc-ergo",
+  "policy_name": "Optima Restore",
+  "policy_type": null,
+  "uin_code": "HDHHLIP21322V062021",
+  "min_entry_age_years": null,
+  "max_entry_age_years": 65,
+  "max_renewal_age_years": 999,
+  "min_child_entry_age_days": 91,
+  "family_composition_allowed": ["individual", "floater"],
+  "residency_requirement": null,
+  "sum_insured_options_inr": [300000, 500000, 1000000, 1500000, 2000000, 2500000, 5000000],
+  "premium_payment_modes": null,
+  "premium_range_indicative_inr": null,
+  "premium_payment_term_years": 1,
+  "grace_period_days": null,
+  "free_look_period_days": null,
+  "initial_waiting_period_days": 30,
+  "pre_existing_disease_waiting_months": 36,
+  "specific_disease_waiting_months": 24,
+  "specific_diseases_listed": ["cataract", "hernia", "hysterectomy", "joint replacement"],
+  "maternity_waiting_months": null,
+  "sub_limits_waiting_notes": null,
+  "inpatient_hospitalization": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Covered upto sum insured",
+    "notes": null
+  },
+  "pre_hospitalization_days": 60,
+  "post_hospitalization_days": 180,
+  "day_care_treatments": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "All Day Care Treatments Covered",
+    "notes": null
+  },
+  "domiciliary_treatment": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Covered upto sum insured",
+    "notes": null
+  },
+  "ayush_coverage": null,
+  "maternity_coverage": null,
+  "newborn_coverage": null,
+  "organ_donor_expenses": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Covered upto sum insured",
+    "notes": null
+  },
+  "ambulance_cover": {
+    "covered": true,
+    "limit_inr": 2000,
+    "limit_text": "Upto Rs. 2,000 / Hospitalisation",
+    "notes": null
+  },
+  "critical_illness_cover": null,
+  "restoration_benefit": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Equal to 100% of Basic Sum Insured",
+    "notes": "Restored only once in a Policy Year"
+  },
+  "no_claim_bonus_pct": 50.0,
+  "no_claim_bonus_cap_pct": 100.0,
+  "preventive_health_checkup": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Upto Rs. 5000 for sum insured of Rs 5 lakhs and once every year on sum insured of Rs 10 lakhs & above",
+    "notes": "Available once in 2 years on sum insured of Rs 5 lakhs and once every year on sum insured of Rs 10 lakhs & above"
+  },
+  "room_rent_capping": "No sub-limit on room rent",
+  "icu_capping": null,
+  "copayment_pct": null,
+  "copayment_trigger_notes": null,
+  "disease_wise_sub_limits": null,
+  "deductible_amount_inr": null,
+  "geographic_coverage": null,
+  "worldwide_emergency_cover": null,
+  "network_hospital_count": 10000,
+  "cashless_treatment_supported": true,
+  "permanent_exclusions": [
+    "Any treatment within first 30 days of cover except any accidental injury",
+    "Abuse of intoxicant or hallucinogenic substance like drugs and alcohol",
+    "Pregnancy, dental treatment, external aids and appliances",
+    "Hospitalization due to war or an act of war or due to nuclear, chemical or biological weapon and radiation of any kind",
+    "Non-allopathic treatment, congenital external diseases, cosmetic surgery"
+  ],
+  "temporary_exclusions": [
+    "Pre-existing diseases/conditions will be covered after a waiting period of 3 years",
+    "2 years exclusion for specific diseases like cataract, hernia, hysterectomy, joint replacement etc."
+  ],
+  "notable_exclusions_summary": "Exclusions include pre-existing diseases (3-year waiting period), specific diseases like cataract and hernia (2-year waiting period), pregnancy, dental treatment, non-allopathic treatment, cosmetic surgery, and hospitalization due to war or radiation.",
+  "claim_settlement_ratio_pct": null,
+  "claim_process_summary": null,
+  "tat_cashless_authorization_hours": null,
+  "available_riders": null,
+  "top_rider_examples": null,
+  "rider_premium_indicative_inr": null,
+  "source_pdf_path": null,
+  "source_pdf_url": null,
+  "last_updated_date": null,
+  "extraction_confidence_pct": 85
+}
+```

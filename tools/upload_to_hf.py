@@ -1,0 +1,83 @@
+"""One-shot uploader to Hugging Face Space.
+
+Pushes the entire repo (minus build artifacts, .venv, node_modules, etc.) to
+huggingface.co/spaces/rohitsar567/InsuranceBot. Uses the official
+huggingface_hub API which handles LFS automatically for large files like the
+Chroma vector store and Tata AIG PDF.
+
+Run:
+  python tools/upload_to_hf.py
+"""
+
+from __future__ import annotations
+
+import os
+import sys
+from pathlib import Path
+
+from dotenv import load_dotenv
+from huggingface_hub import HfApi
+
+ROOT = Path(__file__).resolve().parent.parent
+load_dotenv(ROOT / ".env")
+
+REPO_ID = "rohitsar567/InsuranceBot"
+REPO_TYPE = "space"
+
+# Everything we DON'T want shipped to the Space.
+IGNORE = [
+    ".git/**",
+    ".venv/**",
+    "venv/**",
+    "**/__pycache__/**",
+    "**/*.pyc",
+    "node_modules/**",
+    "frontend/node_modules/**",
+    "frontend/.next/**",
+    "frontend/out/**",  # rebuilt inside Docker
+    ".env",
+    ".env.local",
+    "**/.DS_Store",
+    "logs/**",
+    "*.log",
+    ".dockerignore",  # only needed at build time; HF doesn't use it
+]
+
+
+def main():
+    token = os.environ.get("HF_TOKEN", "")
+    if not token:
+        print("ERROR: HF_TOKEN not in environment (or .env)")
+        return 1
+
+    api = HfApi(token=token)
+    print(f"Uploading {ROOT} -> https://huggingface.co/spaces/{REPO_ID}")
+    print("(this can take a few minutes — LFS handles the chroma db + large files)")
+
+    api.upload_folder(
+        folder_path=str(ROOT),
+        repo_id=REPO_ID,
+        repo_type=REPO_TYPE,
+        ignore_patterns=IGNORE,
+        commit_message="Deploy v1 — single-Docker FastAPI + Next.js + RAG + voice + faithfulness",
+    )
+
+    print()
+    print("✓ Upload complete.")
+    print(f"  Space:    https://huggingface.co/spaces/{REPO_ID}")
+    print(f"  Embed:    https://rohitsar567-insurancebot.hf.space")
+    print()
+    print("Next:")
+    print("  1. Open the Space URL")
+    print("  2. Go to Settings -> Variables and Secrets")
+    print("  3. Add 4 SECRETS (not variables):")
+    print("       SARVAM_API_KEY")
+    print("       VOYAGE_API_KEY")
+    print("       GROQ_API_KEY")
+    print("       OPENROUTER_API_KEY")
+    print("  4. Build starts automatically; ~10-15 min for first build")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

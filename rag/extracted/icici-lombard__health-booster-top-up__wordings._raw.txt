@@ -1,0 +1,111 @@
+```json
+{
+  "policy_id": "icici-lombard__health-booster-top-up__wordings",
+  "insurer_name": "ICICI Lombard General Insurance Company Limited",
+  "insurer_slug": "icici-lombard",
+  "policy_name": "Health Booster",
+  "policy_type": "health",
+  "uin_code": "ICIHLIP22100V032122",
+  "min_entry_age_years": null,
+  "max_entry_age_years": 60,
+  "max_renewal_age_years": 999,
+  "min_child_entry_age_days": null,
+  "family_composition_allowed": ["individual", "floater"],
+  "residency_requirement": "Indian resident only",
+  "sum_insured_options_inr": null,
+  "premium_payment_modes": null,
+  "premium_range_indicative_inr": null,
+  "premium_payment_term_years": 1,
+  "grace_period_days": 30,
+  "free_look_period_days": null,
+  "initial_waiting_period_days": null,
+  "pre_existing_disease_waiting_months": 48,
+  "specific_disease_waiting_months": null,
+  "specific_diseases_listed": null,
+  "maternity_waiting_months": null,
+  "sub_limits_waiting_notes": null,
+  "inpatient_hospitalization": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Up to Annual Sum Insured",
+    "notes": "Covers room rent, ICU charges, medical practitioners fees, nursing charges, diagnostics procedures, anesthesia, blood, oxygen, surgical appliances, medicines, drugs and consumables, intravenous fluids, blood transfusion, injection administration charges, operation theatre charges, cost of prosthetics and other devices or equipment if implanted internally during a Surgical Procedure."
+  },
+  "pre_hospitalization_days": 60,
+  "post_hospitalization_days": 90,
+  "day_care_treatments": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Up to Annual Sum Insured",
+    "notes": "Includes intravenous chemotherapy, radiotherapy, hemodialysis or any other procedure which require a period of specialized observation or care after completion of the procedure where such procedure is undertaken by an Insured person as an In-patient Hospitalization for a continuous period of less than 24 hours."
+  },
+  "domiciliary_treatment": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Up to Annual Sum Insured",
+    "notes": "Excludes pre or post hospitalization Medical Expenses and treatment of certain diseases like Asthma, Bronchitis, Chronic Nephritis and Chronic Nephritic/Nephrotic Syndrome, Diarrhoea and all types of Dysenteries including Gastro-enteritis, Diabetes Mellitus and Insipidus, Epilepsy, Hypertension, Influenza, Cough and Cold, Pyrexia of unknown origin for less than 10 days, Tonsillitis and Upper Respiratory Tract Infection including Laryngitis and Pharyngitis, Arthritis, Gout and Rheumatism."
+  },
+  "ayush_coverage": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Up to Annual Sum Insured",
+    "notes": "Only when the treatment has been undergone in a AYUSH Hospital or AYUSH day care centre."
+  },
+  "maternity_coverage": null,
+  "newborn_coverage": null,
+  "organ_donor_expenses": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Up to Annual Sum Insured",
+    "notes": "Only for the donor for the organ transplant surgery, provided the organ donated is for Your use and You have been Medically Advised to undergo an organ transplant. Pre & post medical expenses or any other medical treatment for the donor consequent on the harvesting are not covered."
+  },
+  "ambulance_cover": {
+    "covered": true,
+    "limit_inr": 5000,
+    "limit_text": "1% of Sum Insured, maximum up to 5,000 Rs. per Hospitalization",
+    "notes": "For ambulance services offered by a Hospital or by an ambulance service provider for necessary transportation to the nearest Hospital in case of a life threatening emergency condition."
+  },
+  "critical_illness_cover": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "12 critical illnesses listed",
+    "notes": "Available only for adult members aged maximum up to 60 years. No Claim under this Extension shall be admissible in case any of the Critical Illnesses is a consequence of or arises out of any Pre-Existing Condition(s)/ Disease."
+  },
+  "restoration_benefit": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "100% of Sum Insured once in a policy year",
+    "notes": "For plans with Deductible ₹ 3lacs and above, reset up to 100% of the Sum insured once in a policy year in case the Sum insured including accrued Additional Sum Insured (if any) is insufficient as a result of previous claims in that policy year."
+  },
+  "no_claim_bonus_pct": 10.0,
+  "no_claim_bonus_cap_pct": 50.0,
+  "preventive_health_checkup": {
+    "covered": true,
+    "limit_inr": null,
+    "limit_text": "Maximum of 2 coupons per year for floater policies",
+    "notes": "Complimentary health check-up coupons provided to the insured for every Policy Year, on issuance or upon renewal of the Policy."
+  },
+  "room_rent_capping": null,
+  "icu_capping": null,
+  "copayment_pct": null,
+  "copayment_trigger_notes": null,
+  "disease_wise_sub_limits": null,
+  "deductive_amount_inr": null,
+  "geographic_coverage": "India",
+  "worldwide_emergency_cover": null,
+  "network_hospital_count": null,
+  "cashless_treatment_supported": true,
+  "permanent_exclusions": null,
+  "temporary_exclusions": null,
+  "notable_exclusions_summary": null,
+  "claim_settlement_ratio_pct": null,
+  "claim_process_summary": "For Reimbursement Claims: Payment of admissible claim or communication of non admissibility of claim within 14 days after submission of complete set of documents & information. For Cashless Claims: Response within 4 hours of the actual receipt of pre authorization request with approval, rejection, or query seeking further information.",
+  "tat_cashless_authorization_hours": 4.0,
+  "available_riders": ["Hospital Daily Cash", "Convalescence Benefit", "Personal Accident Cover", "Temporary Total Disablement (TTD) Rehabilitation Cover", "Repatriation of Remains", "Critical Illness Cover"],
+  "top_rider_examples": ["Personal Accident Cover", "Critical Illness Cover"],
+  "rider_premium_indicative_inr": null,
+  "source_pdf_path": null,
+  "source_pdf_url": null,
+  "last_updated_date": null,
+  "extraction_confidence_pct": 85.0
+}
+```

@@ -1,13 +1,13 @@
 ---
 title: Insurance Sales Portfolio Expert
 emoji: 🏥
-colorFrom: teal
-colorTo: blue
+colorFrom: blue
+colorTo: indigo
 sdk: docker
 app_port: 7860
 pinned: false
 license: mit
-short_description: Voice-first AI advisor for Indian health insurance · Sarvam AI
+short_description: Voice AI advisor for Indian health insurance
 ---
 
 # Insurance Sales Portfolio Expert

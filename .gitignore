@@ -52,9 +52,10 @@ frontend/node_modules/
 frontend/.next/
 frontend/.env.local
 
-# Vector DB persistence — committed so deploy starts ready-to-serve (no boot-time re-ingest)
-# rag/vectors/  -- intentionally not gitignored
-# rag/policies.duckdb -- intentionally not gitignored
+# Vector DB persistence — too large for git (sqlite > 10MB HF limit).
+# Rebuilt at container startup from corpus PDFs in ~5 min.
+rag/vectors/
+# rag/policies.duckdb -- intentionally not gitignored (small)
 
 # Raw PDFs — large; do commit a subset later for reproducibility
 # (keeping commented out — we WILL commit the corpus we acquire so deploy works)
