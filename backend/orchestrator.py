@@ -78,23 +78,15 @@ class BrainPick:
 
 
 def pick_brain(intent: str, language: str) -> BrainPick:
-    """Route to the right brain per Doc decisions.md D-016 (revised 2026-05-13).
+    """Route to the right brain per Doc decisions.md D-016 (rev 2026-05-13).
 
-    Rebalanced from eval signal:
-      - Indic queries -> Sarvam-M (Indic + cultural context + BFSI vocab — its
-        genuine strength; the Sarvam-first narrative belongs here)
-      - Comparison/recommendation -> DeepSeek-V3 (SOTA open-source reasoning)
-      - Simple English QA -> DeepSeek-V3 (eval showed Sarvam-M at 37.5%
-        factual on this slice vs Llama at 100%; DeepSeek is stronger still
-        with citation-discipline as bonus)
-      - Llama-3.3-70B reserved as grader AND cross-check rescue brain
+    English: DeepSeek-V3 always (reasoning quality > Sarvam-M for English Q&A).
+    Indic: handled in handle_turn via translation cascade (Sarvam translates
+    in, DeepSeek reasons, Sarvam translates back). This function returns the
+    REASONING brain in both cases; the Indic in/out translation is done
+    separately by translator.py.
     """
-    if language == "indic":
-        return BrainPick(SarvamLLM(), "indic-query")
-    if intent in ("comparison", "recommendation"):
-        return BrainPick(OpenRouterLLM(), f"complex-{intent}")
-    # English simple QA → DeepSeek-V3 (was Sarvam-M; rebalanced from eval data)
-    return BrainPick(OpenRouterLLM(), "simple-qa")
+    return BrainPick(OpenRouterLLM(), f"reasoning-{intent}")
 
 
 # ---------- main entrypoint ----------
@@ -127,7 +119,20 @@ async def handle_turn(
     intent = classify_intent(user_text)
     language = detect_language(user_text)
 
-    # 1a. Fact-find branch — conversational openers / advice-seeking queries
+    # 1a. INDIC CASCADE — translate Indic query → English, reason in DeepSeek,
+    # translate answer back. Capture original-language user_text for logging.
+    original_user_text = user_text
+    translated_query = None
+    if language == "indic":
+        try:
+            from backend.translator import translate_to_english
+            translated_query = await translate_to_english(user_text)
+            if translated_query and translated_query.strip() and translated_query != user_text:
+                user_text = translated_query  # use English for retrieval + reasoning
+        except Exception:
+            pass  # fall through with original; if Sarvam translator fails, DeepSeek can still try
+
+    # 1b. Fact-find branch — conversational openers / advice-seeking queries
     # bypass retrieval + faithfulness; we ask the next discovery question.
     if intent == "fact_find":
         from backend.needs_finder import Profile, next_question
@@ -257,11 +262,25 @@ async def handle_turn(
         for c in chunks
     ]
 
+    # 7. INDIC CASCADE — translate the English reply back into Hinglish/Hindi
+    # so the user hears it in their language. Citations stay intact (the
+    # translation prompt preserves them).
+    final_brain_tag = f"{pick.provider.name}::{pick.reason}"
+    if language == "indic" and not blocked and reply:
+        try:
+            from backend.translator import translate_to_indic
+            reply_indic = await translate_to_indic(reply, target_lang="hi-IN")
+            if reply_indic and reply_indic.strip():
+                reply = reply_indic
+                final_brain_tag = f"cascade::sarvam-trans+{pick.provider.name}+sarvam-trans"
+        except Exception:
+            pass  # if translation fails, return English; better than nothing
+
     return TurnResult(
         reply_text=reply,
         citations=citations,
         retrieved_chunk_ids=[c.chunk_id for c in chunks],
-        brain_used=f"{pick.provider.name}::{pick.reason}",
+        brain_used=final_brain_tag,
         intent=intent,
         language=language,
         latency_ms=int((time.time() - t0) * 1000),
