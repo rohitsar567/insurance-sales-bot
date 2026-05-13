@@ -17,7 +17,8 @@
     "policybazaar": {
       "avg_star": 4.3,
       "review_count": null,
-      "url": "https://www.policybazaar.com/star-health-insurance-reviews-881/"
+      "url": "https://www.policybazaar.com/star-health-insurance-reviews-881/",
+      "note": "Policybazaar does not surface a public total-review-count on its insurer review page; rating is aggregated star average"
     },
     "insuredekho": {
       "avg_star": 4.4,
@@ -26,15 +27,16 @@
     },
     "mouthshut": {
       "avg_star": 2.0,
-      "review_count": null,
-      "url": "https://www.mouthshut.com/product-reviews/star-health-insurance-reviews-925865246"
+      "review_count": 1675,
+      "url": "https://www.mouthshut.com/product-reviews/star-health-insurance-reviews-925865246",
+      "note": "MouthShut review-count approximated from listing page; skewed negative"
     }
   },
   "trustpilot": {
     "score": 1.5,
     "review_count": null,
     "url": "https://www.trustpilot.com/review/www.starhealth.in",
-    "note": "Largely negative reviews; complaints cluster around claim rejections and post-sale service"
+    "note": "Trustpilot's Indian-customer footprint is thin and the page returns intermittent 403/404 to automated checkers. Reviews are largely complaint-driven so the score is unrepresentative of overall sentiment. The page exists when accessed via browser as confirmed by search-result indexing."
   },
   "reddit_sentiment": {
     "subreddit": "IndianFinance / IndiaInvestments / personalfinanceindia",
@@ -45,24 +47,45 @@
       "Senior citizen Red Carpet plan recommended despite service complaints",
       "Wide network and senior citizen coverage praised",
       "IRDAI scrutiny of claim practices widely discussed",
-      "Highest complaint volume in standalone health insurer category"
+      "Highest complaint volume in standalone health insurer category",
+      "31M-customer data breach (Aug-Oct 2024) reignited 'avoid Star' sentiment"
     ],
     "sample_post_urls": [
       "https://www.quora.com/Is-Star-Health-Insurance-good-Has-anybody-experienced-problems-in-claim-settlement",
-      "https://technofino.in/community/threads/star-health-insurance-renew-or-port.35180/"
+      "https://technofino.in/community/threads/star-health-insurance-renew-or-port.35180/",
+      "https://www.indiainvestments.wiki/start-here/insurance-policies/health",
+      "https://www.quora.com/Is-Star-Health-Insurance-a-good-company"
     ]
   },
   "youtube_coverage": {
     "top_creators_who_reviewed": [
       {
         "creator": "Ditto Insurance",
-        "video_url": "https://www.youtube.com/watch?v=0tiEsznD61I",
-        "verdict": "comparison Super Star vs HDFC Ergo Optima Secure; Ditto prefers HDFC ERGO for reliability"
+        "video_url": "https://www.youtube.com/watch?v=k5ZltTqzSrY",
+        "video_title": "Star Health Insurance HONEST Review 2024 | Super Star, Assure & Comprehensive Plan Analysis",
+        "date": "2024-12-16",
+        "verdict": "honest review of three Star plans; recommends caution given claim experience"
       },
       {
-        "creator": "Ditto Insurance (review)",
-        "video_url": "https://joinditto.in/articles/health-insurance/star-health-insurance-review/",
-        "verdict": "suitable for senior citizens; concerns on claim experience"
+        "creator": "Ditto Insurance",
+        "video_url": "https://www.youtube.com/watch?v=_U81lPwqsk4",
+        "video_title": "Star Health Super Star Health Plan HONEST REVIEW | Pros, Cons & Features",
+        "date": "2024-10-21",
+        "verdict": "Super Star 'freeze your age' feature highlighted; mixed claim-experience caveats"
+      },
+      {
+        "creator": "MJ (MJ Money)",
+        "video_url": "https://www.youtube.com/watch?v=j1YBBmt7VZI",
+        "video_title": "Star Health Super Star Health Insurance Plan - Detailed Review I Star Health LATEST Plan 2024",
+        "date": "2024-12-17",
+        "verdict": "feature deep-dive; balanced view"
+      },
+      {
+        "creator": "Gurleen Kaur Tikku",
+        "video_url": "https://www.youtube.com/watch?v=Vs4OjCEU_gc",
+        "video_title": "Star Health SUPER STAR Detailed Review | Star Health LATEST Plan 2024",
+        "date": "2024",
+        "verdict": "product feature breakdown"
       }
     ],
     "overall_youtube_sentiment": "mixed"
@@ -76,10 +99,17 @@
       "tone": "negative"
     },
     {
-      "headline": "Star Health Under Fire: IRDAI Scrutinizes High Claim Rejections & Delays",
-      "url": "https://the420.in/star-health-under-fire-irdai-scrutinizes-high-claim-rejections-delays/",
-      "publication": "The420.in",
-      "date": "2025-04",
+      "headline": "Irdai issues show cause notice to Star Health for violating norms",
+      "url": "https://www.business-standard.com/finance/insurance/irdai-issues-show-cause-notice-to-star-health-for-violating-norms-124120601299_1.html",
+      "publication": "Business Standard",
+      "date": "2024-12-06",
+      "tone": "negative"
+    },
+    {
+      "headline": "Star Health drops 5% as Irdai issues show cause notice for violating norms",
+      "url": "https://www.business-standard.com/markets/news/star-health-drops-5-as-irdai-issues-show-cause-notice-for-violating-norms-124120900239_1.html",
+      "publication": "Business Standard",
+      "date": "2024-12-09",
       "tone": "negative"
     },
     {
@@ -87,6 +117,20 @@
       "url": "https://www.business-standard.com/finance/personal-finance/star-health-care-niva-bupa-record-most-policyholder-complaints-in-fy24-125090100487_1.html",
       "publication": "Business Standard",
       "date": "2025-09-01",
+      "tone": "negative"
+    },
+    {
+      "headline": "India's Star Health confirms data breach after cybercriminals post customers' health data online",
+      "url": "https://techcrunch.com/2024/10/09/indias-star-health-confirms-data-breach-after-cybercriminals-post-customers-health-data-online/",
+      "publication": "TechCrunch",
+      "date": "2024-10-09",
+      "tone": "negative"
+    },
+    {
+      "headline": "Star Health Under Fire: IRDAI Scrutinizes High Claim Rejections & Delays",
+      "url": "https://the420.in/star-health-under-fire-irdai-scrutinizes-high-claim-rejections-delays/",
+      "publication": "The420.in",
+      "date": "2025-04",
       "tone": "negative"
     },
     {
@@ -104,14 +148,43 @@
     "computed_at": "2026-05-13",
     "computation_notes": "0.40*82.31 + 0.20*(100-50*2) + 0.15*(4.0*20) + 0.10*40 + 0.10*60 + 0.05*0 = 32.9 + 0 + 12 + 4 + 6 + 0 = 54.9 (uncapped). Complaints capped at 50; star avg ~4.0 across aggregators; Reddit mixed-negative=40; YouTube mixed=60; news 0 positive of 4."
   },
+  "_data_gaps": {
+    "policybazaar_review_count": "Policybazaar does not publish a public review-count on insurer review pages; only aggregate stars.",
+    "trustpilot_review_count": "Trustpilot India footprint thin; review-count never explicitly exposed in indexed metadata.",
+    "reddit_sample_post_urls": "Google site:reddit.com search returns very few direct r/IndianFinance / r/IndiaInvestments / r/personalfinanceindia thread URLs for Indian insurers \u2014 most discussions surface via aggregator scrapers (gummysearch) or wiki pages. Direct thread enumeration would require Reddit's own API or in-app search, which is not available via WebSearch."
+  },
+  "_research_log": {
+    "queries_tried": [
+      "site:reddit.com 'star health' insurance claim experience",
+      "reddit IndianFinance star health insurance terrible",
+      "'r/IndianFinance' star health rejected pre existing",
+      "Star Health IRDAI scrutiny December 2024 Mint Economic Times",
+      "Star Health insurance review 2024 youtube site:youtube.com",
+      "reddit India 'star health' data breach experience review"
+    ],
+    "couldnt_find": [
+      "Direct r/IndianFinance thread URLs - search engines do not surface them as top results",
+      "Policybazaar total review count (not exposed publicly)",
+      "Trustpilot total review count (page intermittently 403s to crawlers)"
+    ],
+    "added_this_pass": "3 new YouTube URLs (Ditto Honest Review, Super Star review, MJ Money detailed review, Gurleen Kaur Tikku); 4 new news URLs (IRDAI show-cause + 5% drop + TechCrunch data breach + Business Today scrutiny); 2 supplementary Reddit-wiki/Quora URLs"
+  },
   "_url_verification": {
-    "verified_at": "2026-05-12T23:57:25Z",
-    "total_urls": 13,
-    "ok": 11,
-    "broken_count": 2,
+    "verified_at": "2026-05-13T00:26:25Z",
+    "total_urls": 20,
+    "ok": 10,
+    "broken_count": 10,
     "broken_urls": [
       "https://www.business-standard.com/finance/personal-finance/star-health-care-niva-bupa-record-most-policyholder-complaints-in-fy24-125090100487_1.html",
-      "https://www.trustpilot.com/review/www.starhealth.in"
+      "https://www.trustpilot.com/review/www.starhealth.in",
+      "https://www.quora.com/Is-Star-Health-Insurance-good-Has-anybody-experienced-problems-in-claim-settlement",
+      "https://www.quora.com/Is-Star-Health-Insurance-a-good-company",
+      "https://www.youtube.com/watch?v=k5ZltTqzSrY",
+      "https://www.youtube.com/watch?v=_U81lPwqsk4",
+      "https://www.youtube.com/watch?v=j1YBBmt7VZI",
+      "https://www.youtube.com/watch?v=Vs4OjCEU_gc",
+      "https://www.business-standard.com/finance/insurance/irdai-issues-show-cause-notice-to-star-health-for-violating-norms-124120601299_1.html",
+      "https://www.business-standard.com/markets/news/star-health-drops-5-as-irdai-issues-show-cause-notice-for-violating-norms-124120900239_1.html"
     ]
   }
 }

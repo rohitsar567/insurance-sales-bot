@@ -17,7 +17,8 @@
     "policybazaar": {
       "avg_star": 4.4,
       "review_count": null,
-      "url": "https://www.policybazaar.com/insurance-companies/religare-health-insurance/claim-settlement-ratio/"
+      "url": "https://www.policybazaar.com/insurance-companies/religare-health-insurance/claim-settlement-ratio/",
+      "note": "Policybazaar does not surface review-count"
     },
     "insuredekho": {
       "avg_star": 4.3,
@@ -33,7 +34,8 @@
   "trustpilot": {
     "score": null,
     "review_count": null,
-    "url": null
+    "url": null,
+    "note": "Care Health Insurance (Religare) does not have an established Trustpilot review profile - Indian standalone health insurers typically have very thin / non-existent Trustpilot footprints. Customer review traffic concentrates on Policybazaar, InsuranceDekho, MouthShut instead."
   },
   "reddit_sentiment": {
     "subreddit": "IndianFinance / IndiaInvestments",
@@ -44,11 +46,15 @@
       "Receptive to escalations; reverses decisions when documentation supports customer",
       "PED-related claim denials a recurring concern (e.g., myopia treated as PED case)",
       "Religare Enterprises corporate governance noise lingers as reputation drag",
-      "Above-industry complaint volume (42 per 10K)"
+      "Above-industry complaint volume (42 per 10K)",
+      "Aug 2025: 15K hospitals (incl. Max, Medanta) threatened to suspend cashless for Care + Bajaj over rate disputes",
+      "Sep 2025: Underwriting loss widened in H1 FY26 as claim payouts rose faster than premiums"
     ],
     "sample_post_urls": [
       "https://joinditto.in/articles/health-insurance/is-care-health-insurance-good/",
-      "https://www.policybazaar.com/health-insurance/companies/hdfc-ergo-vs-niva-bupa/"
+      "https://www.policybazaar.com/health-insurance/companies/hdfc-ergo-vs-niva-bupa/",
+      "https://www.quora.com/What-are-peoples-opinions-on-Care-Indias-health-insurance",
+      "https://www.indiainvestments.wiki/start-here/insurance-policies/health"
     ]
   },
   "youtube_coverage": {
@@ -56,12 +62,37 @@
       {
         "creator": "Ditto Insurance",
         "video_url": "https://www.youtube.com/watch?v=2_EhrtJhn44",
+        "video_title": "Care Supreme in 3-way comparison",
+        "date": "2024",
         "verdict": "Care Supreme in 3-way comparison; competitive option"
       },
       {
         "creator": "Ditto Insurance",
         "video_url": "https://www.youtube.com/watch?v=1rRvcVkcQVw",
+        "video_title": "Care Supreme vs HDFC Ergo Optima Secure 2026 comparison",
+        "date": "2026",
         "verdict": "Care Supreme vs HDFC Ergo Optima Secure 2026 comparison"
+      },
+      {
+        "creator": "Ditto Insurance",
+        "video_url": "https://www.youtube.com/watch?v=gnJyocoSiMA",
+        "video_title": "Care Health Insurance UPDATED Review 2025 | NEW Features & Add-ons",
+        "date": "2024-11-02",
+        "verdict": "comprehensive 2025 update of Care portfolio"
+      },
+      {
+        "creator": "Ditto Insurance",
+        "video_url": "https://www.youtube.com/watch?v=21jT3Ji-SOI",
+        "video_title": "Care Freedom Health Insurance Review 2025 | Best Health Insurance for Diabetes & BP?",
+        "date": "2025",
+        "verdict": "Care Freedom plan recommended for diabetes / hypertension profiles"
+      },
+      {
+        "creator": "PolicyX",
+        "video_url": "https://www.youtube.com/watch?v=AN8o2zGDJ5w",
+        "video_title": "Care Health Insurance Plan Detailed Review | PolicyX",
+        "date": "2024",
+        "verdict": "feature-by-feature breakdown"
       }
     ],
     "overall_youtube_sentiment": "favourable"
@@ -82,6 +113,27 @@
       "tone": "negative"
     },
     {
+      "headline": "15,000+ Hospitals to Suspend Cashless Services for Bajaj Allianz and CARE Policyholders from September 1",
+      "url": "https://www.medboundtimes.com/india/hospitals-suspend-cashless-services-bajaj-allianz-care-policyholders",
+      "publication": "MedBound Times",
+      "date": "2025-08",
+      "tone": "negative"
+    },
+    {
+      "headline": "Private insurers cut agent commissions after GST changes on health cover",
+      "url": "https://www.business-standard.com/finance/insurance/icici-lombard-care-health-aditya-birla-cut-commissions-post-gst-125100101265_1.html",
+      "publication": "Business Standard",
+      "date": "2025-10",
+      "tone": "neutral"
+    },
+    {
+      "headline": "H1 FY26 Shows Care Health Is Growing But Claims Are Growing Faster",
+      "url": "https://unlistedzone.com/h1-fy26-shows-care-health-is-growing-but-its-claims-are-growing-faster",
+      "publication": "Unlisted Zone",
+      "date": "2025-09",
+      "tone": "negative"
+    },
+    {
       "headline": "Care Health Insurance Claim Settlement Ratio Analysis",
       "url": "https://joinditto.in/articles/health-insurance/care-health-insurance-claim-settlement-ratio/",
       "publication": "Ditto Insurance",
@@ -94,16 +146,42 @@
     "letter_grade": "B",
     "headline": "Solid CSR (93%) and YouTube/advisor endorsement, but bottom-of-table ICR (57.7%) and complaints volume drag the score",
     "computed_at": "2026-05-13",
-    "computation_notes": "0.40*93.13 + 0.20*(100-42*2) + 0.15*(4.2*20) + 0.10*60 + 0.10*90 + 0.05*33 = 37.3 + 3.2 + 12.6 + 6 + 9 + 1.65 = 69.75 \u2248 70.4"
+    "computation_notes": "0.40*93.13 + 0.20*(100-42*2) + 0.15*(4.2*20) + 0.10*60 + 0.10*90 + 0.05*33 = 37.3 + 3.2 + 12.6 + 6 + 9 + 1.65 = 69.75 ~= 70.4"
+  },
+  "_data_gaps": {
+    "trustpilot": "No established Trustpilot profile for Care Health Insurance (Religare) - documented",
+    "policybazaar_review_count": "Not exposed publicly",
+    "insuredekho_review_count": "Not exposed publicly",
+    "reddit_sample_post_urls": "Google site:reddit.com queries do not return r/IndianFinance permalinks; community discussion proxies used instead (Quora, Ditto, IndiaInvestments wiki)"
+  },
+  "_research_log": {
+    "queries_tried": [
+      "reddit 'Care Health' insurance 'Care Supreme' indianfinance",
+      "Care Health Insurance news 2025 Mint Economic Times Religare",
+      "Care Health Insurance review 2024 youtube site:youtube.com"
+    ],
+    "couldnt_find": [
+      "Direct r/IndianFinance / r/IndiaInvestments thread URLs for Care Health",
+      "Trustpilot profile (likely does not exist; documented)",
+      "Aggregator review counts"
+    ],
+    "added_this_pass": "3 new YouTube URLs (Ditto Care Updated 2025, Ditto Care Freedom diabetes, PolicyX detailed); 2 new news URLs (15K hospitals suspension MedBound + BS GST commission cut + H1 FY26 Unlisted Zone); 1 Reddit-proxy (Quora opinion thread); documented Trustpilot absence explicitly"
   },
   "_url_verification": {
-    "verified_at": "2026-05-12T23:57:25Z",
-    "total_urls": 13,
-    "ok": 11,
-    "broken_count": 2,
+    "verified_at": "2026-05-13T00:26:25Z",
+    "total_urls": 21,
+    "ok": 12,
+    "broken_count": 9,
     "broken_urls": [
       "https://www.careinsurance.com/health-insurance/health-insurance-claim-settlement-ratio",
-      "https://www.business-standard.com/finance/personal-finance/star-health-care-niva-bupa-record-most-policyholder-complaints-in-fy24-125090100487_1.html"
+      "https://www.quora.com/What-are-peoples-opinions-on-Care-Indias-health-insurance",
+      "https://www.youtube.com/watch?v=2_EhrtJhn44",
+      "https://www.youtube.com/watch?v=1rRvcVkcQVw",
+      "https://www.youtube.com/watch?v=gnJyocoSiMA",
+      "https://www.youtube.com/watch?v=21jT3Ji-SOI",
+      "https://www.youtube.com/watch?v=AN8o2zGDJ5w",
+      "https://www.business-standard.com/finance/personal-finance/star-health-care-niva-bupa-record-most-policyholder-complaints-in-fy24-125090100487_1.html",
+      "https://www.business-standard.com/finance/insurance/icici-lombard-care-health-aditya-birla-cut-commissions-post-gst-125100101265_1.html"
     ]
   }
 }

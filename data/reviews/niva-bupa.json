@@ -16,7 +16,8 @@
     "policybazaar": {
       "avg_star": 4.4,
       "review_count": null,
-      "url": "https://www.policybazaar.com/max-bupa-health-general-reviews-477/"
+      "url": "https://www.policybazaar.com/max-bupa-health-general-reviews-477/",
+      "note": "Policybazaar does not surface a public total-review-count"
     },
     "insuredekho": {
       "avg_star": 4.3,
@@ -24,9 +25,10 @@
       "url": "https://www.insurancedekho.com/health-insurance/niva-bupa-health-insurance/user-reviews"
     },
     "mouthshut": {
-      "avg_star": 2.0,
+      "avg_star": 1.41,
       "review_count": null,
-      "url": "https://www.mouthshut.com/product-reviews/niva-bupa-health-insurance-reviews-925608449"
+      "url": "https://www.mouthshut.com/product-reviews/niva-bupa-health-insurance-reviews-925608449",
+      "note": "MouthShut rating 1.41/5; review count not exposed publicly; platform skews negative"
     },
     "justdial": {
       "avg_star": 3.5,
@@ -38,7 +40,7 @@
     "score": 1.8,
     "review_count": null,
     "url": "https://www.trustpilot.com/review/nivabupa.com",
-    "note": "Complaints around refunds and policy onboarding"
+    "note": "Indian Trustpilot footprint is small; Niva Bupa page page returns 403/404 to automated crawlers but is reachable in-browser. Reviews skew to complaints around refunds and policy onboarding."
   },
   "reddit_sentiment": {
     "subreddit": "IndianFinance / IndiaInvestments / personalfinanceindia",
@@ -49,19 +51,47 @@
       "Bupa global parent brand association = trust signal",
       "App quality and customer service complaints common",
       "Higher than industry-average complaint volume (42.85 per 10K)",
-      "Recently listed on Indian stock market (Nov 2024) \u2014 growing scale"
+      "Recently listed on Indian stock market (Nov 2024) - growing scale",
+      "Aug-Sep 2025 viral LinkedIn case: Rs 61 lakh leukaemia claim denial reignited 'biggest scam' sentiment",
+      "Mumbai Consumer Commission ordered Niva Bupa to pay Rs 66.5 lakh for wrongful cancer-claim denial (2025)"
     ],
     "sample_post_urls": [
       "https://www.quora.com/Has-anyone-taken-Niva-Bupa-health-insurance-in-India-How-reliable-is-it",
-      "https://www.policybazaar.com/health-insurance/companies/hdfc-ergo-vs-niva-bupa/"
+      "https://www.policybazaar.com/health-insurance/companies/hdfc-ergo-vs-niva-bupa/",
+      "https://insurancesabha.com/t/niva-bupa-reviews-complaints-csr-2026/26/2",
+      "https://www.beshak.org/forum/post/niva-bupa-claim-settlement-in-recent-times/",
+      "https://www.indiainvestments.wiki/start-here/insurance-policies/health"
     ]
   },
   "youtube_coverage": {
     "top_creators_who_reviewed": [
       {
         "creator": "Ditto Insurance",
+        "video_url": "https://www.youtube.com/watch?v=U1kNh-rRuXo",
+        "video_title": "Should You Buy Niva Bupa ReAssure 2.0 Health Insurance in 2025? SUPER HONEST Review",
+        "date": "2025",
+        "verdict": "honest review; recommended for premium plans despite complaint volume"
+      },
+      {
+        "creator": "Ditto Insurance",
         "video_url": "https://www.youtube.com/watch?v=2_EhrtJhn44",
-        "verdict": "ReAssure 2.0 vs HDFC Ergo vs Care comparison; recommended for premium plans"
+        "video_title": "ReAssure 2.0 vs HDFC Ergo vs Care comparison",
+        "date": "2024",
+        "verdict": "3-way comparison; ReAssure 2.0 recommended for premium plans"
+      },
+      {
+        "creator": "Gurleen Kaur Tikku",
+        "video_url": "https://www.youtube.com/watch?v=ZjjIteHHGqI",
+        "video_title": "Niva Bupa Aspire VS Niva Bupa ReAssure 2.0 | Niva Bupa Health Insurance REVIEW",
+        "date": "2024",
+        "verdict": "intra-product comparison"
+      },
+      {
+        "creator": "Insurance Impact",
+        "video_url": "https://www.youtube.com/watch?v=892Pbg3XNg4",
+        "video_title": "Niva Bupa ReAssure 2.0 vs Aspire - Choose Wisely Or Regret Later",
+        "date": "2024",
+        "verdict": "decision-framework video"
       },
       {
         "creator": "Sagar Sinha",
@@ -92,6 +122,34 @@
       "tone": "positive"
     },
     {
+      "headline": "Insurance firm faces social media backlash over Rs 61 lakh 'claim denial'",
+      "url": "https://www.business-standard.com/finance/personal-finance/insurance-firm-faces-social-media-backlash-over-61-lakh-claim-denial-125090101059_1.html",
+      "publication": "Business Standard",
+      "date": "2025-09-01",
+      "tone": "negative"
+    },
+    {
+      "headline": "Mumbai Consumer Commission Orders Niva Bupa To Pay Rs 66.50 Lakh For Wrongfully Denying Cancer Treatment Claim",
+      "url": "https://www.livelaw.in/consumer-cases/mumbai-consumer-commission-orders-niva-bupa-to-pay-6650-lakh-for-wrongfully-denying-cancer-treatment-claim-311849",
+      "publication": "Live Law",
+      "date": "2025",
+      "tone": "negative"
+    },
+    {
+      "headline": "Rs 61 Lakh Health Insurance Claim Denied: Family's Ordeal Sparks Outrage",
+      "url": "https://www.outlookmoney.com/insurance/rs-61-lakh-health-insurance-claim-denied-familys-ordeal-sparks-outrage",
+      "publication": "Outlook Money",
+      "date": "2025-09",
+      "tone": "negative"
+    },
+    {
+      "headline": "Niva Bupa Responds to Rs 61 Lakh Claim Row, Says Costs Escalated Beyond Estimate",
+      "url": "https://www.outlookmoney.com/insurance/those-labelling-health-insurance-sector-as-scam-are-highly-irresponsible-misleading-niva-bupa",
+      "publication": "Outlook Money",
+      "date": "2025-09",
+      "tone": "neutral"
+    },
+    {
       "headline": "Star Health, CARE, Niva Bupa record most policyholder complaints in FY24",
       "url": "https://www.business-standard.com/finance/personal-finance/star-health-care-niva-bupa-record-most-policyholder-complaints-in-fy24-125090100487_1.html",
       "publication": "Business Standard",
@@ -113,14 +171,44 @@
     "computed_at": "2026-05-13",
     "computation_notes": "0.40*91.62 + 0.20*(100-43*2) + 0.15*(4.0*20) + 0.10*60 + 0.10*90 + 0.05*50 = 36.6 + 2.8 + 12 + 6 + 9 + 2.5 = 68.9. Adjusted +6.9 for IPO success, Bupa global brand strength, and Ditto/YouTube favorability."
   },
+  "_data_gaps": {
+    "policybazaar_review_count": "Not exposed publicly on Policybazaar insurer page",
+    "mouthshut_review_count": "Niva Bupa MouthShut page does not surface count in indexable metadata",
+    "trustpilot_review_count": "Trustpilot intermittently 403s automated checkers",
+    "reddit_sample_post_urls": "Google site:reddit.com search did not return r/IndianFinance / r/IndiaInvestments / r/personalfinanceindia thread permalinks as top results. Used Insurance Sabha, Beshak forum, Quora, and IndiaInvestments wiki as community-discussion proxies."
+  },
+  "_research_log": {
+    "queries_tried": [
+      "site:reddit.com 'Niva Bupa' health insurance review",
+      "reddit india 'Niva Bupa' claim experience indianfinance",
+      "reddit Niva Bupa claim denied cancer 61 lakh",
+      "Niva Bupa IPO November 2024 listing Mint Economic Times",
+      "Niva Bupa Aspire ReAssure review 2024 site:youtube.com",
+      "'r/IndianFinance' OR 'r/personalfinanceindia' Niva Bupa ReAssure recommendation"
+    ],
+    "couldnt_find": [
+      "Direct r/IndianFinance / r/IndiaInvestments / r/personalfinanceindia thread URLs",
+      "Mouthshut review count for Niva Bupa",
+      "Policybazaar total review count"
+    ],
+    "added_this_pass": "4 new YouTube URLs (Ditto 2025 ReAssure honest review, Ditto 3-way comparison, Gurleen Kaur Tikku Aspire vs ReAssure, Insurance Impact ReAssure vs Aspire); 5 new news URLs (Rs 61 lakh claim row x3 + Live Law Mumbai consumer commission + Niva Bupa response); 3 supplementary community URLs (Insurance Sabha, Beshak forum, IndiaInvestments wiki)"
+  },
   "_url_verification": {
-    "verified_at": "2026-05-12T23:57:25Z",
-    "total_urls": 17,
-    "ok": 14,
-    "broken_count": 3,
+    "verified_at": "2026-05-13T00:26:25Z",
+    "total_urls": 27,
+    "ok": 16,
+    "broken_count": 11,
     "broken_urls": [
       "https://www.trustpilot.com/review/nivabupa.com",
+      "https://www.quora.com/Has-anyone-taken-Niva-Bupa-health-insurance-in-India-How-reliable-is-it",
+      "https://www.youtube.com/watch?v=U1kNh-rRuXo",
+      "https://www.youtube.com/watch?v=2_EhrtJhn44",
+      "https://www.youtube.com/watch?v=ZjjIteHHGqI",
+      "https://www.youtube.com/watch?v=892Pbg3XNg4",
+      "https://www.youtube.com/watch?v=1BUFoq5jbmQ",
+      "https://www.youtube.com/watch?v=EDZ74XMFirI",
       "https://www.business-standard.com/markets/news/niva-bupa-shares-make-positive-debut-on-bourses-list-at-6-premium-124111400326_1.html",
+      "https://www.business-standard.com/finance/personal-finance/insurance-firm-faces-social-media-backlash-over-61-lakh-claim-denial-125090101059_1.html",
       "https://www.business-standard.com/finance/personal-finance/star-health-care-niva-bupa-record-most-policyholder-complaints-in-fy24-125090100487_1.html"
     ]
   }

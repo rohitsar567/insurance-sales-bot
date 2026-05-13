@@ -1,22 +1,96 @@
 {
-  "verified_at": "2026-05-12T23:57:25Z",
+  "verified_at": "2026-05-13T00:26:25Z",
   "per_insurer": {
     "aditya-birla": {
-      "total": 9,
-      "ok": 9,
-      "broken": 0,
-      "broken_list": []
+      "total": 19,
+      "ok": 13,
+      "broken": 6,
+      "broken_list": [
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[0].video_url",
+          "url": "https://www.youtube.com/watch?v=d5CIAwrpEdQ",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[1].video_url",
+          "url": "https://www.youtube.com/watch?v=Wb0fvhzzJxQ",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[2].video_url",
+          "url": "https://www.youtube.com/watch?v=6cIHkBY8Z7k",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[3].video_url",
+          "url": "https://www.youtube.com/watch?v=4LTtX0is2GE",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[4].video_url",
+          "url": "https://www.youtube.com/watch?v=o5sx-H8_5-M",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "in_news.[3].url",
+          "url": "https://www.business-standard.com/finance/insurance/icici-lombard-care-health-aditya-birla-cut-commissions-post-gst-125100101265_1.html",
+          "status": 403,
+          "error": null
+        }
+      ]
     },
     "bajaj-allianz": {
-      "total": 11,
-      "ok": 11,
-      "broken": 0,
-      "broken_list": []
+      "total": 21,
+      "ok": 15,
+      "broken": 6,
+      "broken_list": [
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[0].video_url",
+          "url": "https://www.youtube.com/watch?v=DWeVo13Y9ms",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[1].video_url",
+          "url": "https://www.youtube.com/watch?v=A6KxeOHMPVw",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[2].video_url",
+          "url": "https://www.youtube.com/watch?v=d1--TiPtLw4",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "in_news.[2].url",
+          "url": "https://www.business-standard.com/finance/personal-finance/why-15-200-hospitals-stopped-cashless-care-for-bajaj-allianz-policyholders-125082500103_1.html",
+          "status": 403,
+          "error": null
+        },
+        {
+          "path": "in_news.[3].url",
+          "url": "https://www.business-standard.com/finance/personal-finance/cashless-crisis-averted-for-bajaj-allianz-customers-money-lessons-for-you-125090100132_1.html",
+          "status": 403,
+          "error": null
+        },
+        {
+          "path": "in_news.[5].url",
+          "url": "https://www.business-standard.com/content/press-releases-ani/bajaj-allianz-launches-state-wise-health-insurance-policies-tailored-to-regional-needs-125061901143_1.html",
+          "status": 403,
+          "error": null
+        }
+      ]
     },
     "care-health": {
-      "total": 13,
-      "ok": 11,
-      "broken": 2,
+      "total": 21,
+      "ok": 12,
+      "broken": 9,
       "broken_list": [
         {
           "path": "claim_metrics.source_company_url",
@@ -25,30 +99,126 @@
           "error": null
         },
         {
+          "path": "reddit_sentiment.sample_post_urls.[2]",
+          "url": "https://www.quora.com/What-are-peoples-opinions-on-Care-Indias-health-insurance",
+          "status": 403,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[0].video_url",
+          "url": "https://www.youtube.com/watch?v=2_EhrtJhn44",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[1].video_url",
+          "url": "https://www.youtube.com/watch?v=1rRvcVkcQVw",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[2].video_url",
+          "url": "https://www.youtube.com/watch?v=gnJyocoSiMA",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[3].video_url",
+          "url": "https://www.youtube.com/watch?v=21jT3Ji-SOI",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[4].video_url",
+          "url": "https://www.youtube.com/watch?v=AN8o2zGDJ5w",
+          "status": 429,
+          "error": null
+        },
+        {
           "path": "in_news.[1].url",
           "url": "https://www.business-standard.com/finance/personal-finance/star-health-care-niva-bupa-record-most-policyholder-complaints-in-fy24-125090100487_1.html",
+          "status": 403,
+          "error": null
+        },
+        {
+          "path": "in_news.[3].url",
+          "url": "https://www.business-standard.com/finance/insurance/icici-lombard-care-health-aditya-birla-cut-commissions-post-gst-125100101265_1.html",
           "status": 403,
           "error": null
         }
       ]
     },
     "hdfc-ergo": {
-      "total": 17,
-      "ok": 16,
-      "broken": 1,
+      "total": 25,
+      "ok": 15,
+      "broken": 10,
       "broken_list": [
         {
           "path": "trustpilot.url",
           "url": "https://www.trustpilot.com/review/www.hdfcergo.com",
           "status": 403,
           "error": null
+        },
+        {
+          "path": "reddit_sentiment.sample_post_urls.[0]",
+          "url": "https://www.quora.com/Have-you-ever-made-any-claim-against-HDFC-Ergo-health-insurance-and-was-it-a-good-experience",
+          "status": 403,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[0].video_url",
+          "url": "https://www.youtube.com/watch?v=R4ehMh3z9UA",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[1].video_url",
+          "url": "https://www.youtube.com/watch?v=Ozq71VRTZUA",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[2].video_url",
+          "url": "https://www.youtube.com/watch?v=2_EhrtJhn44",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[3].video_url",
+          "url": "https://www.youtube.com/watch?v=i3xMZGMstzE",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[4].video_url",
+          "url": "https://www.youtube.com/watch?v=YEMmxjbl2Yw",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[5].video_url",
+          "url": "https://www.youtube.com/watch?v=1BUFoq5jbmQ",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[6].video_url",
+          "url": "https://www.youtube.com/watch?v=EDZ74XMFirI",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "in_news.[0].url",
+          "url": "https://www.goodreturns.in/news/hdfc-ergo-aims-to-maintain-premium-growth-2024-25-011-1392211.html",
+          "status": 403,
+          "error": null
         }
       ]
     },
     "icici-lombard": {
-      "total": 10,
-      "ok": 7,
-      "broken": 3,
+      "total": 21,
+      "ok": 12,
+      "broken": 9,
       "broken_list": [
         {
           "path": "claim_metrics.source_company_url",
@@ -57,13 +227,49 @@
           "error": null
         },
         {
+          "path": "youtube_coverage.top_creators_who_reviewed.[1].video_url",
+          "url": "https://www.youtube.com/watch?v=0EJI00BQqCA",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[2].video_url",
+          "url": "https://www.youtube.com/watch?v=TjvNNK62oyE",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[3].video_url",
+          "url": "https://www.youtube.com/watch?v=ca2bRF_JoLI",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[4].video_url",
+          "url": "https://www.youtube.com/watch?v=ve6sHV2BCM8",
+          "status": 429,
+          "error": null
+        },
+        {
           "path": "in_news.[0].url",
-          "url": "https://www.icicilombard.com/investor-relations",
+          "url": "https://www.business-standard.com/companies/quarterly-results/icici-lombard-net-profit-up-29-in-q1fy26-125071501318_1.html",
           "status": 403,
           "error": null
         },
         {
           "path": "in_news.[2].url",
+          "url": "https://www.business-standard.com/finance/insurance/icici-lombard-care-health-aditya-birla-cut-commissions-post-gst-125100101265_1.html",
+          "status": 403,
+          "error": null
+        },
+        {
+          "path": "_url_verification.broken_urls.[1]",
+          "url": "https://www.icicilombard.com/investor-relations",
+          "status": 403,
+          "error": null
+        },
+        {
+          "path": "_url_verification.broken_urls.[2]",
           "url": "https://www.icicilombard.com/docs/default-source/financial-information/annualreport2024.pdf",
           "status": 403,
           "error": null
@@ -71,33 +277,142 @@
       ]
     },
     "manipalcigna": {
-      "total": 8,
-      "ok": 8,
-      "broken": 0,
-      "broken_list": []
+      "total": 17,
+      "ok": 11,
+      "broken": 6,
+      "broken_list": [
+        {
+          "path": "reddit_sentiment.sample_post_urls.[2]",
+          "url": "https://joinditto.in/articles/health-insurance/manipal-cigna-health-insurance-plans-2026/",
+          "status": 404,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[0].video_url",
+          "url": "https://www.youtube.com/watch?v=Yb6zub6V-LY",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[1].video_url",
+          "url": "https://www.youtube.com/watch?v=DzhGiVxJPKQ",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[2].video_url",
+          "url": "https://www.youtube.com/watch?v=jUNmj0lKKjs",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[3].video_url",
+          "url": "https://www.youtube.com/watch?v=uiANfhN1kyM",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "in_news.[2].url",
+          "url": "https://www.business-standard.com/content/press-releases-ani/manipalcigna-launches-sarvah-the-complete-health-insurance-plan-with-special-focus-on-bharat-s-missing-middle-124101900282_1.html",
+          "status": 403,
+          "error": null
+        }
+      ]
     },
     "new-india": {
-      "total": 8,
-      "ok": 7,
-      "broken": 1,
+      "total": 15,
+      "ok": 9,
+      "broken": 6,
       "broken_list": [
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[0].video_url",
+          "url": "https://www.youtube.com/watch?v=OE_844nkUDE",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[1].video_url",
+          "url": "https://www.youtube.com/watch?v=f27o4K47nKU",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[2].video_url",
+          "url": "https://www.youtube.com/watch?v=7um6_5Zmt0M",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[3].video_url",
+          "url": "https://www.youtube.com/watch?v=IOlBJxGwraU",
+          "status": 429,
+          "error": null
+        },
         {
           "path": "in_news.[1].url",
           "url": "https://www.business-standard.com/companies/news/new-india-assurance-q3fy24-results-net-profit-falls-4-38-to-rs-715-crore-124020901758_1.html",
+          "status": 403,
+          "error": null
+        },
+        {
+          "path": "in_news.[3].url",
+          "url": "https://www.business-standard.com/finance/insurance/new-india-assurance-increases-premiums-on-health-insurance-by-10-124073001522_1.html",
           "status": 403,
           "error": null
         }
       ]
     },
     "niva-bupa": {
-      "total": 17,
-      "ok": 14,
-      "broken": 3,
+      "total": 27,
+      "ok": 16,
+      "broken": 11,
       "broken_list": [
         {
           "path": "trustpilot.url",
           "url": "https://www.trustpilot.com/review/nivabupa.com",
           "status": 403,
+          "error": null
+        },
+        {
+          "path": "reddit_sentiment.sample_post_urls.[0]",
+          "url": "https://www.quora.com/Has-anyone-taken-Niva-Bupa-health-insurance-in-India-How-reliable-is-it",
+          "status": 403,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[0].video_url",
+          "url": "https://www.youtube.com/watch?v=U1kNh-rRuXo",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[1].video_url",
+          "url": "https://www.youtube.com/watch?v=2_EhrtJhn44",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[2].video_url",
+          "url": "https://www.youtube.com/watch?v=ZjjIteHHGqI",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[3].video_url",
+          "url": "https://www.youtube.com/watch?v=892Pbg3XNg4",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[4].video_url",
+          "url": "https://www.youtube.com/watch?v=1BUFoq5jbmQ",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[5].video_url",
+          "url": "https://www.youtube.com/watch?v=EDZ74XMFirI",
+          "status": 429,
           "error": null
         },
         {
@@ -108,6 +423,12 @@
         },
         {
           "path": "in_news.[2].url",
+          "url": "https://www.business-standard.com/finance/personal-finance/insurance-firm-faces-social-media-backlash-over-61-lakh-claim-denial-125090101059_1.html",
+          "status": 403,
+          "error": null
+        },
+        {
+          "path": "in_news.[6].url",
           "url": "https://www.business-standard.com/finance/personal-finance/star-health-care-niva-bupa-record-most-policyholder-complaints-in-fy24-125090100487_1.html",
           "status": 403,
           "error": null
@@ -115,9 +436,9 @@
       ]
     },
     "star-health": {
-      "total": 13,
-      "ok": 11,
-      "broken": 2,
+      "total": 20,
+      "ok": 10,
+      "broken": 10,
       "broken_list": [
         {
           "path": "claim_metrics.source_secondary_url",
@@ -130,23 +451,228 @@
           "url": "https://www.trustpilot.com/review/www.starhealth.in",
           "status": 403,
           "error": null
+        },
+        {
+          "path": "reddit_sentiment.sample_post_urls.[0]",
+          "url": "https://www.quora.com/Is-Star-Health-Insurance-good-Has-anybody-experienced-problems-in-claim-settlement",
+          "status": 403,
+          "error": null
+        },
+        {
+          "path": "reddit_sentiment.sample_post_urls.[3]",
+          "url": "https://www.quora.com/Is-Star-Health-Insurance-a-good-company",
+          "status": 403,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[0].video_url",
+          "url": "https://www.youtube.com/watch?v=k5ZltTqzSrY",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[1].video_url",
+          "url": "https://www.youtube.com/watch?v=_U81lPwqsk4",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[2].video_url",
+          "url": "https://www.youtube.com/watch?v=j1YBBmt7VZI",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[3].video_url",
+          "url": "https://www.youtube.com/watch?v=Vs4OjCEU_gc",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "in_news.[1].url",
+          "url": "https://www.business-standard.com/finance/insurance/irdai-issues-show-cause-notice-to-star-health-for-violating-norms-124120601299_1.html",
+          "status": 403,
+          "error": null
+        },
+        {
+          "path": "in_news.[2].url",
+          "url": "https://www.business-standard.com/markets/news/star-health-drops-5-as-irdai-issues-show-cause-notice-for-violating-norms-124120900239_1.html",
+          "status": 403,
+          "error": null
         }
       ]
     },
     "tata-aig": {
-      "total": 9,
-      "ok": 9,
-      "broken": 0,
-      "broken_list": []
+      "total": 17,
+      "ok": 12,
+      "broken": 5,
+      "broken_list": [
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[1].video_url",
+          "url": "https://www.youtube.com/watch?v=Drg-E3bxekU",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[2].video_url",
+          "url": "https://www.youtube.com/watch?v=hNSQlPwFGdY",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[3].video_url",
+          "url": "https://www.youtube.com/watch?v=696mpVFVehU",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "youtube_coverage.top_creators_who_reviewed.[4].video_url",
+          "url": "https://www.youtube.com/watch?v=VJg8lnc3wwQ",
+          "status": 429,
+          "error": null
+        },
+        {
+          "path": "in_news.[3].url",
+          "url": "https://www.business-standard.com/finance/personal-finance/hospital-bill-shock-tata-aig-is-third-insurer-to-exit-max-cashless-network-125092800816_1.html",
+          "status": 403,
+          "error": null
+        }
+      ]
     }
   },
-  "total_urls": 95,
+  "total_urls": 172,
   "broken_urls": [
+    {
+      "insurer": "aditya-birla",
+      "path": "youtube_coverage.top_creators_who_reviewed.[0].video_url",
+      "url": "https://www.youtube.com/watch?v=d5CIAwrpEdQ",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "aditya-birla",
+      "path": "youtube_coverage.top_creators_who_reviewed.[1].video_url",
+      "url": "https://www.youtube.com/watch?v=Wb0fvhzzJxQ",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "aditya-birla",
+      "path": "youtube_coverage.top_creators_who_reviewed.[2].video_url",
+      "url": "https://www.youtube.com/watch?v=6cIHkBY8Z7k",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "aditya-birla",
+      "path": "youtube_coverage.top_creators_who_reviewed.[3].video_url",
+      "url": "https://www.youtube.com/watch?v=4LTtX0is2GE",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "aditya-birla",
+      "path": "youtube_coverage.top_creators_who_reviewed.[4].video_url",
+      "url": "https://www.youtube.com/watch?v=o5sx-H8_5-M",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "aditya-birla",
+      "path": "in_news.[3].url",
+      "url": "https://www.business-standard.com/finance/insurance/icici-lombard-care-health-aditya-birla-cut-commissions-post-gst-125100101265_1.html",
+      "status": 403,
+      "error": null
+    },
+    {
+      "insurer": "bajaj-allianz",
+      "path": "youtube_coverage.top_creators_who_reviewed.[0].video_url",
+      "url": "https://www.youtube.com/watch?v=DWeVo13Y9ms",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "bajaj-allianz",
+      "path": "youtube_coverage.top_creators_who_reviewed.[1].video_url",
+      "url": "https://www.youtube.com/watch?v=A6KxeOHMPVw",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "bajaj-allianz",
+      "path": "youtube_coverage.top_creators_who_reviewed.[2].video_url",
+      "url": "https://www.youtube.com/watch?v=d1--TiPtLw4",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "bajaj-allianz",
+      "path": "in_news.[2].url",
+      "url": "https://www.business-standard.com/finance/personal-finance/why-15-200-hospitals-stopped-cashless-care-for-bajaj-allianz-policyholders-125082500103_1.html",
+      "status": 403,
+      "error": null
+    },
+    {
+      "insurer": "bajaj-allianz",
+      "path": "in_news.[3].url",
+      "url": "https://www.business-standard.com/finance/personal-finance/cashless-crisis-averted-for-bajaj-allianz-customers-money-lessons-for-you-125090100132_1.html",
+      "status": 403,
+      "error": null
+    },
+    {
+      "insurer": "bajaj-allianz",
+      "path": "in_news.[5].url",
+      "url": "https://www.business-standard.com/content/press-releases-ani/bajaj-allianz-launches-state-wise-health-insurance-policies-tailored-to-regional-needs-125061901143_1.html",
+      "status": 403,
+      "error": null
+    },
     {
       "insurer": "care-health",
       "path": "claim_metrics.source_company_url",
       "url": "https://www.careinsurance.com/health-insurance/health-insurance-claim-settlement-ratio",
       "status": 403,
+      "error": null
+    },
+    {
+      "insurer": "care-health",
+      "path": "reddit_sentiment.sample_post_urls.[2]",
+      "url": "https://www.quora.com/What-are-peoples-opinions-on-Care-Indias-health-insurance",
+      "status": 403,
+      "error": null
+    },
+    {
+      "insurer": "care-health",
+      "path": "youtube_coverage.top_creators_who_reviewed.[0].video_url",
+      "url": "https://www.youtube.com/watch?v=2_EhrtJhn44",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "care-health",
+      "path": "youtube_coverage.top_creators_who_reviewed.[1].video_url",
+      "url": "https://www.youtube.com/watch?v=1rRvcVkcQVw",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "care-health",
+      "path": "youtube_coverage.top_creators_who_reviewed.[2].video_url",
+      "url": "https://www.youtube.com/watch?v=gnJyocoSiMA",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "care-health",
+      "path": "youtube_coverage.top_creators_who_reviewed.[3].video_url",
+      "url": "https://www.youtube.com/watch?v=21jT3Ji-SOI",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "care-health",
+      "path": "youtube_coverage.top_creators_who_reviewed.[4].video_url",
+      "url": "https://www.youtube.com/watch?v=AN8o2zGDJ5w",
+      "status": 429,
       "error": null
     },
     {
@@ -157,9 +683,79 @@
       "error": null
     },
     {
+      "insurer": "care-health",
+      "path": "in_news.[3].url",
+      "url": "https://www.business-standard.com/finance/insurance/icici-lombard-care-health-aditya-birla-cut-commissions-post-gst-125100101265_1.html",
+      "status": 403,
+      "error": null
+    },
+    {
       "insurer": "hdfc-ergo",
       "path": "trustpilot.url",
       "url": "https://www.trustpilot.com/review/www.hdfcergo.com",
+      "status": 403,
+      "error": null
+    },
+    {
+      "insurer": "hdfc-ergo",
+      "path": "reddit_sentiment.sample_post_urls.[0]",
+      "url": "https://www.quora.com/Have-you-ever-made-any-claim-against-HDFC-Ergo-health-insurance-and-was-it-a-good-experience",
+      "status": 403,
+      "error": null
+    },
+    {
+      "insurer": "hdfc-ergo",
+      "path": "youtube_coverage.top_creators_who_reviewed.[0].video_url",
+      "url": "https://www.youtube.com/watch?v=R4ehMh3z9UA",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "hdfc-ergo",
+      "path": "youtube_coverage.top_creators_who_reviewed.[1].video_url",
+      "url": "https://www.youtube.com/watch?v=Ozq71VRTZUA",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "hdfc-ergo",
+      "path": "youtube_coverage.top_creators_who_reviewed.[2].video_url",
+      "url": "https://www.youtube.com/watch?v=2_EhrtJhn44",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "hdfc-ergo",
+      "path": "youtube_coverage.top_creators_who_reviewed.[3].video_url",
+      "url": "https://www.youtube.com/watch?v=i3xMZGMstzE",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "hdfc-ergo",
+      "path": "youtube_coverage.top_creators_who_reviewed.[4].video_url",
+      "url": "https://www.youtube.com/watch?v=YEMmxjbl2Yw",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "hdfc-ergo",
+      "path": "youtube_coverage.top_creators_who_reviewed.[5].video_url",
+      "url": "https://www.youtube.com/watch?v=1BUFoq5jbmQ",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "hdfc-ergo",
+      "path": "youtube_coverage.top_creators_who_reviewed.[6].video_url",
+      "url": "https://www.youtube.com/watch?v=EDZ74XMFirI",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "hdfc-ergo",
+      "path": "in_news.[0].url",
+      "url": "https://www.goodreturns.in/news/hdfc-ergo-aims-to-maintain-premium-growth-2024-25-011-1392211.html",
       "status": 403,
       "error": null
     },
@@ -172,22 +768,141 @@
     },
     {
       "insurer": "icici-lombard",
+      "path": "youtube_coverage.top_creators_who_reviewed.[1].video_url",
+      "url": "https://www.youtube.com/watch?v=0EJI00BQqCA",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "icici-lombard",
+      "path": "youtube_coverage.top_creators_who_reviewed.[2].video_url",
+      "url": "https://www.youtube.com/watch?v=TjvNNK62oyE",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "icici-lombard",
+      "path": "youtube_coverage.top_creators_who_reviewed.[3].video_url",
+      "url": "https://www.youtube.com/watch?v=ca2bRF_JoLI",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "icici-lombard",
+      "path": "youtube_coverage.top_creators_who_reviewed.[4].video_url",
+      "url": "https://www.youtube.com/watch?v=ve6sHV2BCM8",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "icici-lombard",
       "path": "in_news.[0].url",
-      "url": "https://www.icicilombard.com/investor-relations",
+      "url": "https://www.business-standard.com/companies/quarterly-results/icici-lombard-net-profit-up-29-in-q1fy26-125071501318_1.html",
       "status": 403,
       "error": null
     },
     {
       "insurer": "icici-lombard",
       "path": "in_news.[2].url",
+      "url": "https://www.business-standard.com/finance/insurance/icici-lombard-care-health-aditya-birla-cut-commissions-post-gst-125100101265_1.html",
+      "status": 403,
+      "error": null
+    },
+    {
+      "insurer": "icici-lombard",
+      "path": "_url_verification.broken_urls.[1]",
+      "url": "https://www.icicilombard.com/investor-relations",
+      "status": 403,
+      "error": null
+    },
+    {
+      "insurer": "icici-lombard",
+      "path": "_url_verification.broken_urls.[2]",
       "url": "https://www.icicilombard.com/docs/default-source/financial-information/annualreport2024.pdf",
       "status": 403,
+      "error": null
+    },
+    {
+      "insurer": "manipalcigna",
+      "path": "reddit_sentiment.sample_post_urls.[2]",
+      "url": "https://joinditto.in/articles/health-insurance/manipal-cigna-health-insurance-plans-2026/",
+      "status": 404,
+      "error": null
+    },
+    {
+      "insurer": "manipalcigna",
+      "path": "youtube_coverage.top_creators_who_reviewed.[0].video_url",
+      "url": "https://www.youtube.com/watch?v=Yb6zub6V-LY",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "manipalcigna",
+      "path": "youtube_coverage.top_creators_who_reviewed.[1].video_url",
+      "url": "https://www.youtube.com/watch?v=DzhGiVxJPKQ",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "manipalcigna",
+      "path": "youtube_coverage.top_creators_who_reviewed.[2].video_url",
+      "url": "https://www.youtube.com/watch?v=jUNmj0lKKjs",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "manipalcigna",
+      "path": "youtube_coverage.top_creators_who_reviewed.[3].video_url",
+      "url": "https://www.youtube.com/watch?v=uiANfhN1kyM",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "manipalcigna",
+      "path": "in_news.[2].url",
+      "url": "https://www.business-standard.com/content/press-releases-ani/manipalcigna-launches-sarvah-the-complete-health-insurance-plan-with-special-focus-on-bharat-s-missing-middle-124101900282_1.html",
+      "status": 403,
+      "error": null
+    },
+    {
+      "insurer": "new-india",
+      "path": "youtube_coverage.top_creators_who_reviewed.[0].video_url",
+      "url": "https://www.youtube.com/watch?v=OE_844nkUDE",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "new-india",
+      "path": "youtube_coverage.top_creators_who_reviewed.[1].video_url",
+      "url": "https://www.youtube.com/watch?v=f27o4K47nKU",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "new-india",
+      "path": "youtube_coverage.top_creators_who_reviewed.[2].video_url",
+      "url": "https://www.youtube.com/watch?v=7um6_5Zmt0M",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "new-india",
+      "path": "youtube_coverage.top_creators_who_reviewed.[3].video_url",
+      "url": "https://www.youtube.com/watch?v=IOlBJxGwraU",
+      "status": 429,
       "error": null
     },
     {
       "insurer": "new-india",
       "path": "in_news.[1].url",
       "url": "https://www.business-standard.com/companies/news/new-india-assurance-q3fy24-results-net-profit-falls-4-38-to-rs-715-crore-124020901758_1.html",
+      "status": 403,
+      "error": null
+    },
+    {
+      "insurer": "new-india",
+      "path": "in_news.[3].url",
+      "url": "https://www.business-standard.com/finance/insurance/new-india-assurance-increases-premiums-on-health-insurance-by-10-124073001522_1.html",
       "status": 403,
       "error": null
     },
@@ -200,6 +915,55 @@
     },
     {
       "insurer": "niva-bupa",
+      "path": "reddit_sentiment.sample_post_urls.[0]",
+      "url": "https://www.quora.com/Has-anyone-taken-Niva-Bupa-health-insurance-in-India-How-reliable-is-it",
+      "status": 403,
+      "error": null
+    },
+    {
+      "insurer": "niva-bupa",
+      "path": "youtube_coverage.top_creators_who_reviewed.[0].video_url",
+      "url": "https://www.youtube.com/watch?v=U1kNh-rRuXo",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "niva-bupa",
+      "path": "youtube_coverage.top_creators_who_reviewed.[1].video_url",
+      "url": "https://www.youtube.com/watch?v=2_EhrtJhn44",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "niva-bupa",
+      "path": "youtube_coverage.top_creators_who_reviewed.[2].video_url",
+      "url": "https://www.youtube.com/watch?v=ZjjIteHHGqI",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "niva-bupa",
+      "path": "youtube_coverage.top_creators_who_reviewed.[3].video_url",
+      "url": "https://www.youtube.com/watch?v=892Pbg3XNg4",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "niva-bupa",
+      "path": "youtube_coverage.top_creators_who_reviewed.[4].video_url",
+      "url": "https://www.youtube.com/watch?v=1BUFoq5jbmQ",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "niva-bupa",
+      "path": "youtube_coverage.top_creators_who_reviewed.[5].video_url",
+      "url": "https://www.youtube.com/watch?v=EDZ74XMFirI",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "niva-bupa",
       "path": "in_news.[0].url",
       "url": "https://www.business-standard.com/markets/news/niva-bupa-shares-make-positive-debut-on-bourses-list-at-6-premium-124111400326_1.html",
       "status": 403,
@@ -208,6 +972,13 @@
     {
       "insurer": "niva-bupa",
       "path": "in_news.[2].url",
+      "url": "https://www.business-standard.com/finance/personal-finance/insurance-firm-faces-social-media-backlash-over-61-lakh-claim-denial-125090101059_1.html",
+      "status": 403,
+      "error": null
+    },
+    {
+      "insurer": "niva-bupa",
+      "path": "in_news.[6].url",
       "url": "https://www.business-standard.com/finance/personal-finance/star-health-care-niva-bupa-record-most-policyholder-complaints-in-fy24-125090100487_1.html",
       "status": 403,
       "error": null
@@ -225,7 +996,98 @@
       "url": "https://www.trustpilot.com/review/www.starhealth.in",
       "status": 403,
       "error": null
+    },
+    {
+      "insurer": "star-health",
+      "path": "reddit_sentiment.sample_post_urls.[0]",
+      "url": "https://www.quora.com/Is-Star-Health-Insurance-good-Has-anybody-experienced-problems-in-claim-settlement",
+      "status": 403,
+      "error": null
+    },
+    {
+      "insurer": "star-health",
+      "path": "reddit_sentiment.sample_post_urls.[3]",
+      "url": "https://www.quora.com/Is-Star-Health-Insurance-a-good-company",
+      "status": 403,
+      "error": null
+    },
+    {
+      "insurer": "star-health",
+      "path": "youtube_coverage.top_creators_who_reviewed.[0].video_url",
+      "url": "https://www.youtube.com/watch?v=k5ZltTqzSrY",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "star-health",
+      "path": "youtube_coverage.top_creators_who_reviewed.[1].video_url",
+      "url": "https://www.youtube.com/watch?v=_U81lPwqsk4",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "star-health",
+      "path": "youtube_coverage.top_creators_who_reviewed.[2].video_url",
+      "url": "https://www.youtube.com/watch?v=j1YBBmt7VZI",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "star-health",
+      "path": "youtube_coverage.top_creators_who_reviewed.[3].video_url",
+      "url": "https://www.youtube.com/watch?v=Vs4OjCEU_gc",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "star-health",
+      "path": "in_news.[1].url",
+      "url": "https://www.business-standard.com/finance/insurance/irdai-issues-show-cause-notice-to-star-health-for-violating-norms-124120601299_1.html",
+      "status": 403,
+      "error": null
+    },
+    {
+      "insurer": "star-health",
+      "path": "in_news.[2].url",
+      "url": "https://www.business-standard.com/markets/news/star-health-drops-5-as-irdai-issues-show-cause-notice-for-violating-norms-124120900239_1.html",
+      "status": 403,
+      "error": null
+    },
+    {
+      "insurer": "tata-aig",
+      "path": "youtube_coverage.top_creators_who_reviewed.[1].video_url",
+      "url": "https://www.youtube.com/watch?v=Drg-E3bxekU",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "tata-aig",
+      "path": "youtube_coverage.top_creators_who_reviewed.[2].video_url",
+      "url": "https://www.youtube.com/watch?v=hNSQlPwFGdY",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "tata-aig",
+      "path": "youtube_coverage.top_creators_who_reviewed.[3].video_url",
+      "url": "https://www.youtube.com/watch?v=696mpVFVehU",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "tata-aig",
+      "path": "youtube_coverage.top_creators_who_reviewed.[4].video_url",
+      "url": "https://www.youtube.com/watch?v=VJg8lnc3wwQ",
+      "status": 429,
+      "error": null
+    },
+    {
+      "insurer": "tata-aig",
+      "path": "in_news.[3].url",
+      "url": "https://www.business-standard.com/finance/personal-finance/hospital-bill-shock-tata-aig-is-third-insurer-to-exit-max-cashless-network-125092800816_1.html",
+      "status": 403,
+      "error": null
     }
   ],
-  "ok_urls": 103
+  "ok_urls": 125
 }

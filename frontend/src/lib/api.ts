@@ -198,6 +198,68 @@ export type CompareResponse = {
   field_order: string[];
 };
 
+export type MarketplacePolicy = {
+  policy_id: string;
+  policy_name: string;
+  insurer_slug: string;
+  insurer_name: string;
+  insurer_home_url: string;
+  source_pdf_url: string;
+  grade: string;
+  overall_score: number;
+  one_liner: string;
+  data_completeness_pct: number;
+  min_entry_age?: number | null;
+  max_entry_age?: number | null;
+  max_renewal_age?: number | null;
+  sum_insured_options: number[];
+  pre_existing_disease_waiting_months?: number | null;
+  initial_waiting_period_days?: number | null;
+  maternity_waiting_months?: number | null;
+  copayment_pct?: number | null;
+  network_hospital_count?: number | null;
+  no_claim_bonus_pct?: number | null;
+  ayush_coverage?: boolean | null;
+  maternity_coverage?: boolean | null;
+  cashless_treatment_supported?: boolean | null;
+  room_rent_capping?: string | null;
+};
+
+export type MarketplaceResponse = {
+  policies: MarketplacePolicy[];
+  total: number;
+  insurers_indexed: number;
+};
+
+export type InsurerReviews = {
+  insurer_slug: string;
+  insurer_name: string;
+  aggregate_score: { value_0_100?: number; letter_grade?: string; headline?: string };
+  claim_metrics: {
+    claim_settlement_ratio_pct?: number;
+    claim_settlement_ratio_year?: string;
+    complaints_per_10k_policies?: number;
+    complaints_year?: string;
+    source_irdai_url?: string;
+  };
+  aggregator_ratings: Record<string, { avg_star?: number; review_count?: number; url?: string }>;
+  reddit_sentiment: { sentiment_overall?: string; notable_themes?: string[] };
+  youtube_coverage: { overall_youtube_sentiment?: string; top_creators_who_reviewed?: Array<{ creator?: string; video_url?: string; verdict?: string }> };
+  in_news?: Array<{ headline?: string; url?: string; publication?: string; date?: string; tone?: string }>;
+};
+
+export async function getInsurerReviews(slug: string): Promise<InsurerReviews> {
+  const resp = await fetch(`${BACKEND_URL}/api/insurers/${slug}/reviews`);
+  if (!resp.ok) throw new Error(`reviews failed: ${resp.status}`);
+  return resp.json();
+}
+
+export async function getMarketplace(): Promise<MarketplaceResponse> {
+  const resp = await fetch(`${BACKEND_URL}/api/policies/all`);
+  if (!resp.ok) throw new Error(`marketplace failed: ${resp.status}`);
+  return resp.json();
+}
+
 export async function getCompare(policy_ids: string[]): Promise<CompareResponse> {
   const url = new URL(`${BACKEND_URL}/api/policies/compare`);
   for (const id of policy_ids) url.searchParams.append("policy_ids", id);

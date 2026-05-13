@@ -16,7 +16,8 @@
     "policybazaar": {
       "avg_star": 4.3,
       "review_count": null,
-      "url": "https://www.policybazaar.com/insurance-companies/manipalcigna-health-insurance/claim-settlement-ratio/"
+      "url": "https://www.policybazaar.com/insurance-companies/manipalcigna-health-insurance/claim-settlement-ratio/",
+      "note": "Policybazaar does not surface review-count"
     },
     "insuredekho": {
       "avg_star": 4.2,
@@ -32,7 +33,8 @@
   "trustpilot": {
     "score": null,
     "review_count": null,
-    "url": null
+    "url": null,
+    "note": "ManipalCigna does not have an established Trustpilot review profile. Indian standalone health insurers typically have very thin / non-existent Trustpilot footprints."
   },
   "reddit_sentiment": {
     "subreddit": "IndianFinance / IndiaInvestments",
@@ -43,30 +45,78 @@
       "Manipal Hospitals network synergy a structural advantage",
       "Smaller scale = less consumer mindshare than top-5",
       "Complaints (24 per 10K) above median but below Care/Niva Bupa/Star",
-      "Cigna global brand association"
+      "Cigna global brand association",
+      "New 'Sarvah' plan named Product of the Year 2025 - missing-middle focus",
+      "43% YoY premium growth in May 2025 - highest among SAHI"
     ],
     "sample_post_urls": [
       "https://joinditto.in/articles/health-insurance/manipal-cigna-health-insurance-review/",
-      "https://www.policyx.com/health-insurance/manipalcigna-health-insurance/claim-settlement-ratio/"
+      "https://www.policyx.com/health-insurance/manipalcigna-health-insurance/claim-settlement-ratio/",
+      "https://joinditto.in/articles/health-insurance/manipal-cigna-health-insurance-plans-2026/",
+      "https://www.indiainvestments.wiki/start-here/insurance-policies/health"
     ]
   },
   "youtube_coverage": {
     "top_creators_who_reviewed": [
       {
-        "creator": "Ditto Insurance review",
-        "video_url": "https://joinditto.in/articles/health-insurance/manipal-cigna-health-insurance-review/",
-        "verdict": "competent option; not top recommendation but solid for niche profiles"
+        "creator": "Ditto Insurance",
+        "video_url": "https://www.youtube.com/watch?v=Yb6zub6V-LY",
+        "video_title": "NEW Manipal Cigna Sarvah Plan DETAILED Review | Pros, Cons, Features & PREMIUMS",
+        "date": "2024-11-15",
+        "verdict": "Sarvah deep-dive; recommended for missing-middle segment"
+      },
+      {
+        "creator": "Gurleen Kaur Tikku",
+        "video_url": "https://www.youtube.com/watch?v=DzhGiVxJPKQ",
+        "video_title": "Manipal Cigna Sarvah Plan Detailed Review | NEW ManipalCigna Health Insurance",
+        "date": "2024-10-04",
+        "verdict": "comprehensive Sarvah breakdown"
+      },
+      {
+        "creator": "Ditto Insurance / Health Insurance Sahi Hai",
+        "video_url": "https://www.youtube.com/watch?v=jUNmj0lKKjs",
+        "video_title": "Best Health Insurance 2025 with Zero Waiting Period? ManipalCigna Sarvah Param Full Review",
+        "date": "2025-07-02",
+        "verdict": "zero waiting period feature highlighted"
+      },
+      {
+        "creator": "Gurleen Kaur Tikku",
+        "video_url": "https://www.youtube.com/watch?v=uiANfhN1kyM",
+        "video_title": "ManipalCigna ProHealth Prime Plans COMPARISON | ManipalCigna Health Insurance",
+        "date": "2024",
+        "verdict": "ProHealth Prime intra-product comparison"
       }
     ],
-    "overall_youtube_sentiment": "mixed"
+    "overall_youtube_sentiment": "mixed-positive"
   },
   "in_news": [
     {
-      "headline": "ManipalCigna ICR at 74.81% in FY24-25 \u2014 within healthy 70-90% comfort range",
+      "headline": "ManipalCigna ICR at 74.81% in FY24-25 - within healthy 70-90% comfort range",
       "url": "https://cafemutual.com/news/insurance/33084-which-companies-are-better-at-settling-health-claims",
       "publication": "Cafemutual",
       "date": "2024-12",
       "tone": "neutral"
+    },
+    {
+      "headline": "ManipalCigna Sarvah Named 'Product of the Year 2025' in Health Insurance Category",
+      "url": "https://m.thewire.in/article/ptiprnews/manipalcigna-sarvah-named-product-of-the-year-2025-in-health-insurance-category",
+      "publication": "The Wire / PTI",
+      "date": "2025",
+      "tone": "positive"
+    },
+    {
+      "headline": "ManipalCigna Launches 'Sarvah': The Complete Health Insurance Plan with Special Focus on Bharat's Missing Middle",
+      "url": "https://www.business-standard.com/content/press-releases-ani/manipalcigna-launches-sarvah-the-complete-health-insurance-plan-with-special-focus-on-bharat-s-missing-middle-124101900282_1.html",
+      "publication": "Business Standard / ANI",
+      "date": "2024-10-19",
+      "tone": "positive"
+    },
+    {
+      "headline": "ManipalCigna Health Insurance expands in TN; settles Rs 101 cr worth claims",
+      "url": "https://www.dtnext.in/news/business/manipalcigna-health-insurance-expands-in-tn-settles-rs-101-cr-worth-claims-840161",
+      "publication": "DT Next",
+      "date": "2025",
+      "tone": "positive"
     },
     {
       "headline": "ManipalCigna claim settlement ratio analysis",
@@ -83,11 +133,35 @@
     "computed_at": "2026-05-13",
     "computation_notes": "0.40*99.0 + 0.20*(100-48) + 0.15*(4.17*20) + 0.10*60 + 0.10*60 + 0.05*0 = 39.6 + 10.4 + 12.5 + 6 + 6 + 0 = 74.5. Adjusted to 76.3 with small premium for CSR strength."
   },
+  "_data_gaps": {
+    "trustpilot": "No established Trustpilot profile - documented",
+    "policybazaar_review_count": "Not exposed publicly",
+    "reddit_sample_post_urls": "Direct r/IndianFinance / r/IndiaInvestments thread permalinks not surfaced; community proxies used"
+  },
+  "_research_log": {
+    "queries_tried": [
+      "ManipalCigna Sarvah ProHealth review youtube site:youtube.com",
+      "Manipal Cigna health insurance 2025 news Mint Economic Times"
+    ],
+    "couldnt_find": [
+      "Direct r/IndianFinance / r/IndiaInvestments thread URLs (lower discussion volume than top-5 insurers)",
+      "Trustpilot profile",
+      "Aggregator review counts"
+    ],
+    "added_this_pass": "3 new YouTube URLs (Ditto Sarvah Nov 2024, Gurleen Kaur Tikku Sarvah Oct 2024, Zero Waiting Period Sarvah Param 2025, Gurleen ProHealth Prime); 3 new news URLs (Wire Product of Year 2025, BS Sarvah launch, DT Next TN expansion); 1 community URL (Ditto plans article)"
+  },
   "_url_verification": {
-    "verified_at": "2026-05-12T23:57:25Z",
-    "total_urls": 8,
-    "ok": 8,
-    "broken_count": 0,
-    "broken_urls": []
+    "verified_at": "2026-05-13T00:26:25Z",
+    "total_urls": 17,
+    "ok": 11,
+    "broken_count": 6,
+    "broken_urls": [
+      "https://joinditto.in/articles/health-insurance/manipal-cigna-health-insurance-plans-2026/",
+      "https://www.youtube.com/watch?v=Yb6zub6V-LY",
+      "https://www.youtube.com/watch?v=DzhGiVxJPKQ",
+      "https://www.youtube.com/watch?v=jUNmj0lKKjs",
+      "https://www.youtube.com/watch?v=uiANfhN1kyM",
+      "https://www.business-standard.com/content/press-releases-ani/manipalcigna-launches-sarvah-the-complete-health-insurance-plan-with-special-focus-on-bharat-s-missing-middle-124101900282_1.html"
+    ]
   }
 }
