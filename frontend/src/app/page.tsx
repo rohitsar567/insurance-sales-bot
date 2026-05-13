@@ -28,7 +28,7 @@ import {
   uploadPolicy,
   UserProfile,
 } from "@/lib/api";
-import { translate, UILang, StringKey } from "@/lib/i18n";
+import { translate, UILang, StringKey, GLOSSARY } from "@/lib/i18n";
 
 type DisplayMessage = ChatMessage & {
   id: string;
@@ -99,10 +99,24 @@ export default function Page() {
     getCoverage()
       .then(setCoverage)
       .catch(() => setCoverage(null));
+    // Initial marketplace pull — no session yet, uses generic baseline scoring
     getMarketplace()
       .then(setMarketplace)
       .catch(() => setMarketplace(null));
   }, []);
+
+  // Re-fetch marketplace WITH session_id whenever profile completeness flips
+  // to personalised — backend re-scores each card against the user's profile,
+  // so grades reflect "this policy for THIS buyer" rather than the generic
+  // baseline. Without this useEffect, the cards stay generic even after
+  // profile is saved.
+  useEffect(() => {
+    if (sessionId && profileCompleteness?.is_personalized) {
+      getMarketplace(sessionId)
+        .then(setMarketplace)
+        .catch(() => {}); // keep prior data on transient errors
+    }
+  }, [sessionId, profileCompleteness?.is_personalized]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -1288,6 +1302,36 @@ const INSURER_COLOR: Record<string, string> = {
   "tata-aig":      "bg-slate-700",
 };
 
+// Jargon — inline component that wraps a term and shows an info popover
+// on click with a plain-language explanation. Bilingual via uiLang.
+function Jargon({ term, children, uiLang }: { term: keyof typeof GLOSSARY; children: React.ReactNode; uiLang: UILang }) {
+  const [open, setOpen] = useState(false);
+  const entry = GLOSSARY[term];
+  if (!entry) return <>{children}</>;
+  const lang = uiLang === "hi" ? "hi" : "en";
+  const { title, body } = entry[lang];
+  return (
+    <span className="inline-flex items-center gap-0.5 relative">
+      {children}
+      <button
+        onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
+        className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border border-[var(--muted-foreground)] text-[8px] text-[var(--muted-foreground)] hover:text-[var(--primary)] hover:border-[var(--primary)] ml-0.5"
+        aria-label={`Explain ${String(term)}`}
+        type="button"
+      >
+        ?
+      </button>
+      {open && (
+        <span className="absolute z-50 top-full mt-1 left-0 w-64 bg-[var(--card)] border border-[var(--border)] rounded-lg shadow-lg p-2.5 text-left animate-fade-up" onClick={(e) => e.stopPropagation()}>
+          <span className="block text-[11px] font-semibold text-[var(--foreground)] mb-1">{title}</span>
+          <span className="block text-[10px] text-[var(--muted-foreground)] leading-snug">{body}</span>
+          <button onClick={() => setOpen(false)} className="absolute top-1 right-1.5 text-[var(--muted-foreground)] hover:text-[var(--foreground)] text-xs">×</button>
+        </span>
+      )}
+    </span>
+  );
+}
+
 function insurerInitials(name: string): string {
   return name.split(" ").map((w) => w[0]).filter(Boolean).join("").slice(0, 2).toUpperCase();
 }
@@ -1751,9 +1795,9 @@ function PolicyCard({
         </div>
         <p className="text-xs text-[var(--muted-foreground)] mb-3 line-clamp-2">{isPersonalized ? oneLiner : t("card.score_locked_msg")}</p>
         <div className="grid grid-cols-2 gap-2 text-xs">
-          <Stat label={t("stat.sum_insured_up_to")} value={siDisplay} />
-          <Stat label={t("stat.ped_waiting")} value={policy.pre_existing_disease_waiting_months ? `${policy.pre_existing_disease_waiting_months} mo` : "—"} />
-          <Stat label={t("stat.ayush")} value={policy.ayush_coverage === true ? "Yes" : policy.ayush_coverage === false ? "No" : "—"} />
+          <Stat label={<Jargon term="SI" uiLang={t("header.title").includes("स्व") ? "hi" : "en"}>{t("stat.sum_insured_up_to")}</Jargon>} value={siDisplay} />
+          <Stat label={<Jargon term="PED" uiLang={t("header.title").includes("स्व") ? "hi" : "en"}>{t("stat.ped_waiting")}</Jargon>} value={policy.pre_existing_disease_waiting_months ? `${policy.pre_existing_disease_waiting_months} mo` : "—"} />
+          <Stat label={<Jargon term="AYUSH" uiLang={t("header.title").includes("स्व") ? "hi" : "en"}>{t("stat.ayush")}</Jargon>} value={policy.ayush_coverage === true ? "Yes" : policy.ayush_coverage === false ? "No" : "—"} />
           <Stat label={t("stat.network")} value={policy.network_hospital_count ? `${(policy.network_hospital_count / 1000).toFixed(0)}K+` : "—"} />
         </div>
       </button>
@@ -1849,11 +1893,31 @@ function MethodologyExpander() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({ label, value, jargon, uiLang, sourceQuote }: { label: React.ReactNode; value: string; jargon?: keyof typeof GLOSSARY; uiLang?: UILang; sourceQuote?: string }) {
+  const [showSrc, setShowSrc] = useState(false);
   return (
-    <div>
-      <div className="text-[10px] text-[var(--muted-foreground)] uppercase tracking-wide">{label}</div>
+    <div className="relative">
+      <div className="text-[10px] text-[var(--muted-foreground)] uppercase tracking-wide flex items-center gap-1">
+        {jargon && uiLang ? <Jargon term={jargon} uiLang={uiLang}>{label}</Jargon> : <span>{label}</span>}
+        {sourceQuote && (
+          <button
+            onClick={(e) => { e.stopPropagation(); setShowSrc(!showSrc); }}
+            className="text-[8px] px-1 py-0.5 rounded border border-[var(--border)] text-[var(--muted-foreground)] hover:text-[var(--primary)] hover:border-[var(--primary)]"
+            type="button"
+            title={uiLang === "hi" ? "स्रोत देखें" : "View source"}
+          >
+            src
+          </button>
+        )}
+      </div>
       <div className="text-xs font-semibold">{value}</div>
+      {showSrc && sourceQuote && (
+        <div className="absolute z-50 top-full mt-1 left-0 w-72 bg-[var(--card)] border border-[var(--border)] rounded-lg shadow-lg p-2.5 animate-fade-up">
+          <div className="text-[10px] font-semibold text-[var(--muted-foreground)] mb-1 uppercase tracking-wide">{uiLang === "hi" ? "स्रोत (PDF से उद्धरण)" : "Source (PDF excerpt)"}</div>
+          <div className="text-[11px] text-[var(--foreground)] leading-snug italic">&ldquo;{sourceQuote}&rdquo;</div>
+          <button onClick={() => setShowSrc(false)} className="absolute top-1 right-1.5 text-[var(--muted-foreground)] hover:text-[var(--foreground)] text-xs">×</button>
+        </div>
+      )}
     </div>
   );
 }
@@ -2106,7 +2170,18 @@ function PolicyDetailModal({ policy, onClose }: { policy: MarketplacePolicy; onC
             <h4 className="text-sm font-semibold mb-2">Key terms</h4>
             <div className="grid grid-cols-2 gap-3 text-xs">
               <Stat label="Sum insured up to" value={siDisplay} />
-              <Stat label="Entry age" value={policy.min_entry_age && policy.max_entry_age ? `${policy.min_entry_age}-${policy.max_entry_age}` : "—"} />
+              <Stat label="Entry age" value={(() => {
+                if (!policy.min_entry_age && !policy.max_entry_age) return "—";
+                // min_entry_age is sometimes stored in DAYS (infant cover, e.g., 91 days)
+                // and max_entry_age in YEARS (e.g., 65). Detect: if min > 18, it's years;
+                // if min <= 18 and looks like a day-count (≥30), label as days.
+                const min = policy.min_entry_age;
+                const max = policy.max_entry_age;
+                const minStr = min ? (min >= 30 && min <= 365 ? `${min} days` : `${min} yrs`) : "—";
+                const maxStr = max ? `${max} yrs` : "—";
+                if (min && max) return `${minStr} – ${maxStr}`;
+                return min ? minStr : maxStr;
+              })()} />
               <Stat label="Renewal up to" value={policy.max_renewal_age ? (policy.max_renewal_age >= 99 ? "Lifelong" : `${policy.max_renewal_age}`) : "—"} />
               <Stat label="Initial waiting" value={policy.initial_waiting_period_days ? `${policy.initial_waiting_period_days} days` : "—"} />
               <Stat label="Pre-existing waiting" value={policy.pre_existing_disease_waiting_months ? `${policy.pre_existing_disease_waiting_months} months` : "—"} />

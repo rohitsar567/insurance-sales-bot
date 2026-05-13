@@ -754,10 +754,31 @@ def _merge_curated(extracted: dict, curated: dict | None) -> dict:
 
 
 @app.get("/api/policies/all", response_model=MarketplaceResponse)
-async def policies_all():
-    """The marketplace data feed — every extracted policy + scorecard + filterable fields."""
+async def policies_all(session_id: Optional[str] = None):
+    """The marketplace data feed — every extracted policy + scorecard + filterable fields.
+
+    When session_id is provided AND the session has a profile populated to
+    ≥0.6 completeness, every policy is scored against THAT profile (dynamic
+    per-user grade). Otherwise we score with the generic baseline weights.
+    """
     import json as _json
-    from backend.scorecard import build_scorecard
+    from backend.scorecard import build_scorecard, profile_completeness as _completeness
+    from backend.session_state import get_session as _get_sess
+
+    # Pull user profile if we have one
+    user_profile_dict: Optional[dict] = None
+    if session_id:
+        sess = _get_sess(session_id)
+        p = sess.profile
+        profile_dict = {
+            "age": p.age, "dependents": p.dependents, "income_band": p.income_band,
+            "existing_cover_inr": p.existing_cover_inr, "primary_goal": p.primary_goal,
+            "location_tier": p.location_tier, "parents_to_insure": p.parents_to_insure,
+            "parents_age_max": p.parents_age_max, "parents_has_ped": p.parents_has_ped,
+            "health_conditions": p.health_conditions, "budget_band": p.budget_band,
+        }
+        if _completeness(profile_dict) >= 0.6:
+            user_profile_dict = profile_dict
 
     corpus_url_index = _build_corpus_url_index()
     curated_facts = _load_curated_facts()
@@ -806,7 +827,7 @@ async def policies_all():
             if rp.exists():
                 try: ir = _json.loads(rp.read_text())
                 except Exception: pass
-        sc = build_scorecard(data, insurer_reviews=ir)
+        sc = build_scorecard(data, insurer_reviews=ir, profile=user_profile_dict)
 
         si = data.get("sum_insured_options") or []
         if isinstance(si, list):
@@ -880,7 +901,7 @@ async def policies_all():
                     ir = _json.loads(rp.read_text())
                 except Exception:
                     pass
-        sc = build_scorecard(data, insurer_reviews=ir)
+        sc = build_scorecard(data, insurer_reviews=ir, profile=user_profile_dict)
         si = data.get("sum_insured_options") or []
         if isinstance(si, list):
             si = [int(x) for x in si if isinstance(x, (int, float)) or (isinstance(x, str) and x.isdigit())]

@@ -262,8 +262,12 @@ export async function getInsurerReviews(slug: string): Promise<InsurerReviews> {
   return resp.json();
 }
 
-export async function getMarketplace(): Promise<MarketplaceResponse> {
-  const resp = await fetch(`${BACKEND_URL}/api/policies/all`);
+export async function getMarketplace(session_id?: string): Promise<MarketplaceResponse> {
+  // When session_id is passed AND its profile is complete enough, the backend
+  // re-scores every policy with the user's profile — cards reveal personalised
+  // grades. Without session_id, grades use the generic baseline.
+  const qs = session_id ? `?session_id=${encodeURIComponent(session_id)}` : "";
+  const resp = await fetch(`${BACKEND_URL}/api/policies/all${qs}`);
   if (!resp.ok) throw new Error(`marketplace failed: ${resp.status}`);
   return resp.json();
 }
