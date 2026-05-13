@@ -60,7 +60,7 @@
 | bajaj-allianz | Bajaj Allianz | Health Guard | wordings | https://www.bajajallianz.com/download-documents/health-insurance/health-guard/Health-Guard-Policy-Wordings-print.pdf | flagship |
 | bajaj-allianz | Bajaj Allianz | Health Guard Gold (individual) | wordings | https://bajajallianz.com/download-documents/health-insurance/health-guard-individual-policy/HG_Gold_Policy_Wording_&_CIS.pdf | PW + CIS combined |
 | bajaj-allianz | Bajaj Allianz | Group Health Guard Gold | wordings | https://www.bajajallianz.com/download-documents/health-insurance/health-guard-group/Group-HG-Gold-Policy-Wordings.pdf | group |
-| bajaj-allianz | Bajaj Allianz | Extra Care | wordings | https://www.bajajallianz.com/download-documents/health-insurance/extra-care/Extra-Care-Policy.pdf | top-up |
+| bajaj-allianz | Bajaj Allianz | Extra Care | wordings | https://www.bajajgeneralinsurance.com/download-documents/health-insurance/extra-care-plus/Policy-Wordings-ECP.pdf | top-up |
 | bajaj-allianz | Bajaj Allianz | Extra Care Plus | wordings | https://www.bajajallianz.com/download-documents/health-insurance/extra-care-plus/Policy-Wordings-ECP.pdf | super top-up |
 | bajaj-allianz | Bajaj Allianz | Global Health Care | wordings | https://www.bajajallianz.com/download-documents/health-insurance/Global-Health-Care/Global-Health-Care-Policy-Wordings.pdf | international |
 | bajaj-allianz | Bajaj Allianz | Criti Care | wordings | https://www.bajajallianz.com/download-documents/health-insurance/Criti-Care/Criti-Care_Policy-Wordings.pdf | critical illness |
@@ -72,7 +72,7 @@
 | new-india | New India Assurance | New India Mediclaim Policy | brochure | https://www.newindia.co.in/assets/docs/know-more/health/new-india-mediclaim-policy/Prospectus%20New%20India%20Mediclaim%20Policy.pdf | prospectus |
 | new-india | New India Assurance | New India Floater Mediclaim Policy | wordings | https://www.newindia.co.in/assets/docs/know-more/health/floater-mediclaim-policy/Policy%20Clause%20New%20India%20Floater%20Mediclaim%20Policy%20wef%2001%2010%202024.pdf | family floater |
 | new-india | New India Assurance | Asha Kiran Policy | brochure | https://www.newindia.co.in/assets/docs/know-more/health/asha-kiran-policy/Prospectus%20New%20India%20Asha%20Kiran%20Policy%20wef%2001%2004%202021.pdf | women+family hybrid; prospectus |
-| new-india | New India Assurance | Asha Kiran Policy | cis | https://www.newindia.co.in/assets/docs/know-more/health/asha-kiran-policy/Customer%20Information%20Sheet%20NEW%20INDIA%20ASHA%20KIRAN%20POLICY.pdf | CIS |
+| new-india | New India Assurance | Asha Kiran Policy | cis | http://www.newindia.co.in/assets/docs/know-more/health/asha-kiran-policy/Customer%20Information%20Sheet%20NEW%20INDIA%20ASHA%20KIRAN%20POLICY.pdf | CIS |
 | new-india | New India Assurance | Yuva Bharat Health Policy | wordings | https://www.newindia.co.in/assets/docs/know-more/health/yuva-bharat-health-policy/Policy%20Clause%20Yuva%20Bharat%20Health%20Policy%20%20wef%2001%2010%202024_1.pdf | 18-45 age group |
 | new-india | New India Assurance | Janata Mediclaim Policy | wordings | https://www.newindia.co.in/assets/docs/know-more/health/janata-mediclaim-policy/Policy%20Clause%20Janata%20Mediclaim%20Policy.pdf | mass-market |
 | new-india | New India Assurance | Universal Health Insurance | wordings | https://www.newindia.co.in/assets/docs/know-more/health/universal-health-insurance/Policy%20Clause%20Universal%20Health%20Insurance%20Policy.pdf | govt-sponsored |
@@ -91,9 +91,9 @@
 | tata-aig | Tata AIG | MediCare Select | brochure | https://www.tataaig.com/s3/medicare_select_prospectus_efd23b0ad6.pdf | prospectus |
 | tata-aig | Tata AIG | Wellsurance Family | cis | https://www.tataaig.com/s3/Wellsurance_Family_CIS_96593ef551.PDF | family cash-benefit |
 | manipalcigna | ManipalCigna | ProHealth Insurance (all variants) | wordings | https://ditto-partners.s3.ap-south-1.amazonaws.com/Manipal+Cigna/ProHealth+(All+variants)-Policy+wording.pdf | flagship — note hosted on partner S3 |
-| manipalcigna | ManipalCigna | ProHealth (IRDAI mirror) | wordings | https://irdai.gov.in/documents/37343/931203/MCIHLIP22211V062122.pdf | official IRDAI copy of UIN MCIHLIP22211V062122 |
-| manipalcigna | ManipalCigna | ProHealth Prime | brochure | https://www.manipalcigna.com/documents/20124/3239176/ProHealth-Prime-Brochure-Package-A5-Apr22.pdf/659df7db-5ef7-9ebf-7133-cbf3e7b6139d | prime variant brochure |
-| manipalcigna | ManipalCigna | ProHealth Prime | wordings | https://www.manipalcigna.com/documents/20124/0/7-ProHealth-Prime-P-A-Prospectus-April-22-02.pdf/8c1b2d11-4129-e0a3-ad94-1ecc19ecfd58 | prospectus |
+| manipalcigna | ManipalCigna | ProHealth (IRDAI mirror) | wordings | https://irdai.gov.in/documents/37343/931203/MCIHLIP22211V062122.pdf/b3a179da-4a2e-b4f2-27db-11779ec9a3cf?version=1.1&t=1668851771621&download=true | official IRDAI copy of UIN MCIHLIP22211V062122 |
+| manipalcigna | ManipalCigna | ProHealth Prime | brochure | https://www.manipalcigna.com/documents/20124/0/ProHealthPrime-Protect-and-Advantage-Accordion/8aa36945-b0a9-1037-e9c4-579b9a44149e | prime variant brochure |
+| manipalcigna | ManipalCigna | ProHealth Prime | wordings | https://www.manipalcigna.com/documents/20124/0/ProHealthPrime-Rider-P-A-Plan-Prospectus/bad30bd2-2394-7a8d-4072-8d73b2b7b3fa | prospectus |
 | manipalcigna | ManipalCigna | Sarvah Param | brochure | https://www.manipalcigna.com/documents/20124/0/Sarvah-Param-Prospectus/c2543c7b-764d-2157-7f4c-214616f20ff4 | senior citizens prospectus |
 | manipalcigna | ManipalCigna | Sarvah Param | wordings | https://www.manipalcigna.com/documents/20124/0/Sarvah-Param-TnC/19341cbc-41ae-b938-feac-cc7e373fbc0d | T&C |
 | manipalcigna | ManipalCigna | ProHealth Select | wordings | https://www.manipalcigna.com/documents/20124/350424/17+ProHealthSelect_TnC_Jul19.pdf/9104b961-e417-956b-ab41-1af27c869e0a?t=1611243593613 | select variant |

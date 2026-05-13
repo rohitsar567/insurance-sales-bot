@@ -1,0 +1,457 @@
+{
+  "https://web.starhealth.in/sites/default/files/brochure/Health-Premier-Insurance-Policy-brochure.pdf": {
+    "reason": "Akamai bot manager rejects all automated clients; PDF downloads + opens in user-facing browsers; local copy exists in data/policies/star-health/",
+    "status": 200,
+    "title": "[pdf]",
+    "ts": "2026-05-13T18:00:58+0530",
+    "verdict": "ALIVE_AKAMAI_BLOCKED"
+  },
+  "https://web.starhealth.in/sites/default/files/brochure/Senior-Citizens-Red-Carpet-Health-Insurance-Policy.pdf": {
+    "reason": "Akamai bot manager rejects all automated clients; PDF downloads + opens in user-facing browsers; local copy exists in data/policies/star-health/",
+    "status": 200,
+    "title": "[pdf]",
+    "ts": "2026-05-13T18:00:58+0530",
+    "verdict": "ALIVE_AKAMAI_BLOCKED"
+  },
+  "https://web.starhealth.in/sites/default/files/brochure/hospital_cash_ebrochure_new.pdf": {
+    "reason": "Akamai bot manager rejects all automated clients; PDF downloads + opens in user-facing browsers; local copy exists in data/policies/star-health/",
+    "status": 200,
+    "title": "[pdf]",
+    "ts": "2026-05-13T18:00:58+0530",
+    "verdict": "ALIVE_AKAMAI_BLOCKED"
+  },
+  "https://web.starhealth.in/sites/default/files/policy-clauses/Family-Health-Optima-Accident-Care-Policy.pdf": {
+    "reason": "Akamai bot manager rejects all automated clients; PDF downloads + opens in user-facing browsers; local copy exists in data/policies/star-health/",
+    "status": 200,
+    "title": "[pdf]",
+    "ts": "2026-05-13T18:00:58+0530",
+    "verdict": "ALIVE_AKAMAI_BLOCKED"
+  },
+  "https://web.starhealth.in/sites/default/files/policy-clauses/Health-Premier-Insurance-Policy.pdf": {
+    "reason": "Akamai bot manager rejects all automated clients; PDF downloads + opens in user-facing browsers; local copy exists in data/policies/star-health/",
+    "status": 200,
+    "title": "[pdf]",
+    "ts": "2026-05-13T18:00:58+0530",
+    "verdict": "ALIVE_AKAMAI_BLOCKED"
+  },
+  "https://web.starhealth.in/sites/default/files/policy-clauses/Star-Cardiac-Care-Insurance-Policy.pdf": {
+    "reason": "Akamai bot manager rejects all automated clients; PDF downloads + opens in user-facing browsers; local copy exists in data/policies/star-health/",
+    "status": 200,
+    "title": "[pdf]",
+    "ts": "2026-05-13T18:00:58+0530",
+    "verdict": "ALIVE_AKAMAI_BLOCKED"
+  },
+  "https://web.starhealth.in/sites/default/files/policy-clauses/Star-Cardiac-Care-Insurance-Policy_Platinum.pdf": {
+    "reason": "Akamai bot manager rejects all automated clients; PDF downloads + opens in user-facing browsers; local copy exists in data/policies/star-health/",
+    "status": 200,
+    "title": "[pdf]",
+    "ts": "2026-05-13T18:00:58+0530",
+    "verdict": "ALIVE_AKAMAI_BLOCKED"
+  },
+  "https://web.starhealth.in/sites/default/files/policy-clauses/Star-First-Comprehensive-Policy.pdf": {
+    "reason": "Akamai bot manager rejects all automated clients; PDF downloads + opens in user-facing browsers; local copy exists in data/policies/star-health/",
+    "status": 200,
+    "title": "[pdf]",
+    "ts": "2026-05-13T18:00:58+0530",
+    "verdict": "ALIVE_AKAMAI_BLOCKED"
+  },
+  "https://web.starhealth.in/sites/default/files/policy-clauses/StarHealthAssureInsurancePolicy-Policy.pdf": {
+    "reason": "Akamai bot manager rejects all automated clients; PDF downloads + opens in user-facing browsers; local copy exists in data/policies/star-health/",
+    "status": 200,
+    "title": "[pdf]",
+    "ts": "2026-05-13T18:00:58+0530",
+    "verdict": "ALIVE_AKAMAI_BLOCKED"
+  },
+  "https://web.starhealth.in/sites/default/files/policy-clauses/star-cancer-care-platinum-policy-clauses.pdf": {
+    "reason": "Akamai bot manager rejects all automated clients; PDF downloads + opens in user-facing browsers; local copy exists in data/policies/star-health/",
+    "status": 200,
+    "title": "[pdf]",
+    "ts": "2026-05-13T18:00:58+0530",
+    "verdict": "ALIVE_AKAMAI_BLOCKED"
+  },
+  "https://web.starhealth.in/sites/default/files/prospectus/Family-Health-Optima-Accident-Care-Policy.pdf": {
+    "reason": "Akamai bot manager rejects all automated clients; PDF downloads + opens in user-facing browsers; local copy exists in data/policies/star-health/",
+    "status": 200,
+    "title": "[pdf]",
+    "ts": "2026-05-13T18:00:58+0530",
+    "verdict": "ALIVE_AKAMAI_BLOCKED"
+  },
+  "https://www.business-standard.com/companies/news/new-india-assurance-q3fy24-results-net-profit-falls-4-38-to-rs-715-crore-124020901758_1.html": {
+    "reason": "",
+    "status": 200,
+    "title": "New India Assurance Q3FY24 results: Net profit falls 4.38% to Rs 715 crore | Company News - Business Standard",
+    "ts": "2026-05-13T17:32:18+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.business-standard.com/companies/quarterly-results/icici-lombard-net-profit-up-29-in-q1fy26-125071501318_1.html": {
+    "reason": "",
+    "status": 200,
+    "title": "ICICI Lombard Q1FY26 results: Net profit rises 29% to \u20b9747 crore | Company Results - Business Standard",
+    "ts": "2026-05-13T17:32:06+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.business-standard.com/content/press-releases-ani/bajaj-allianz-launches-state-wise-health-insurance-policies-tailored-to-regional-needs-125061901143_1.html": {
+    "reason": "",
+    "status": 200,
+    "title": "Bajaj Allianz Launches State-Wise Health Insurance Policies Tailored to Regional Needs",
+    "ts": "2026-05-13T17:32:15+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.business-standard.com/content/press-releases-ani/manipalcigna-launches-sarvah-the-complete-health-insurance-plan-with-special-focus-on-bharat-s-missing-middle-124101900282_1.html": {
+    "reason": "",
+    "status": 200,
+    "title": "ManipalCigna Launches 'Sarvah': The Complete Health Insurance Plan with Special Focus on Bharat's Missing Middle",
+    "ts": "2026-05-13T17:31:54+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.business-standard.com/finance/insurance/icici-lombard-care-health-aditya-birla-cut-commissions-post-gst-125100101265_1.html": {
+    "reason": "",
+    "status": 200,
+    "title": "Private insurers cut agent commissions after GST changes on health cover | Insurance News - Business Standard",
+    "ts": "2026-05-13T17:32:04+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.business-standard.com/finance/insurance/irdai-issues-show-cause-notice-to-star-health-for-violating-norms-124120601299_1.html": {
+    "reason": "",
+    "status": 200,
+    "title": "Irdai issues show cause notice to Star Health for violating norms | Insurance - Business Standard",
+    "ts": "2026-05-13T17:32:16+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.business-standard.com/finance/insurance/new-india-assurance-increases-premiums-on-health-insurance-by-10-124073001522_1.html": {
+    "reason": "",
+    "status": 200,
+    "title": "New India Assurance increases premiums on health insurance by 10% | Insurance - Business Standard",
+    "ts": "2026-05-13T17:32:19+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.business-standard.com/finance/personal-finance/cashless-crisis-averted-for-bajaj-allianz-customers-money-lessons-for-you-125090100132_1.html": {
+    "reason": "",
+    "status": 200,
+    "title": "Cashless crisis averted for Bajaj Allianz customers: Money lessons for you | Personal Finance - Business Standard",
+    "ts": "2026-05-13T17:32:14+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.business-standard.com/finance/personal-finance/hospital-bill-shock-tata-aig-is-third-insurer-to-exit-max-cashless-network-125092800816_1.html": {
+    "reason": "",
+    "status": 200,
+    "title": "Hospital bill shock: Tata AIG is third insurer to exit Max cashless network | Personal Finance - Business Standard",
+    "ts": "2026-05-13T17:31:56+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.business-standard.com/finance/personal-finance/insurance-firm-faces-social-media-backlash-over-61-lakh-claim-denial-125090101059_1.html": {
+    "reason": "",
+    "status": 200,
+    "title": "Insurance firm faces social media backlash over \u20b961 lakh 'claim denial' | Personal Finance - Business Standard",
+    "ts": "2026-05-13T17:32:01+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.business-standard.com/finance/personal-finance/star-health-care-niva-bupa-record-most-policyholder-complaints-in-fy24-125090100487_1.html": {
+    "reason": "",
+    "status": 200,
+    "title": "Star Health, CARE, Niva Bupa record most policyholder complaints in FY24 | Personal Finance - Business Standard",
+    "ts": "2026-05-13T17:32:01+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.business-standard.com/finance/personal-finance/why-15-200-hospitals-stopped-cashless-care-for-bajaj-allianz-policyholders-125082500103_1.html": {
+    "reason": "",
+    "status": 200,
+    "title": "Why 15,200 hospitals stopped cashless care for Bajaj Allianz policyholders | Personal Finance - Business Standard",
+    "ts": "2026-05-13T17:32:14+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.business-standard.com/markets/news/niva-bupa-shares-make-positive-debut-on-bourses-list-at-6-premium-124111400326_1.html": {
+    "reason": "",
+    "status": 200,
+    "title": "Niva Bupa shares make positive debut on bourses; list at 6% premium | News on Markets - Business Standard",
+    "ts": "2026-05-13T17:32:00+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.business-standard.com/markets/news/star-health-drops-5-as-irdai-issues-show-cause-notice-for-violating-norms-124120900239_1.html": {
+    "reason": "",
+    "status": 200,
+    "title": "Star Health drops 5% as Irdai issues show cause notice for violating norms | News on Markets - Business Standard",
+    "ts": "2026-05-13T17:32:17+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.careinsurance.com/health-insurance/health-insurance-claim-settlement-ratio": {
+    "reason": "",
+    "status": 200,
+    "title": "What is Claim Settlement Ratio in Health Insurance? | Care Health Insurance",
+    "ts": "2026-05-13T17:32:12+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.careinsurance.com/product/care-supreme": {
+    "reason": "",
+    "status": 200,
+    "title": "Care Supreme - Get 7x Health Coverage Starting from \u20b917/Day",
+    "ts": "2026-05-13T17:31:47+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.icicilombard.com/docs/default-source/apps/elevateapp/assets/pdf/elevate-policy-wordings.pdf": {
+    "reason": "ct=application/pdf",
+    "status": 200,
+    "title": "[pdf]",
+    "ts": "2026-05-13T17:40:02+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.icicilombard.com/docs/default-source/apps/healthclientapp/assets/pdf/health-advantedge-policy-wordings.pdf": {
+    "reason": "ct=application/pdf",
+    "status": 200,
+    "title": "[pdf]",
+    "ts": "2026-05-13T17:40:02+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.icicilombard.com/docs/default-source/default-document-library/health-booster_policy-wordings.pdf": {
+    "reason": "ct=application/pdf",
+    "status": 200,
+    "title": "[pdf]",
+    "ts": "2026-05-13T17:40:02+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.icicilombard.com/docs/default-source/default-document-library/health-shield-360-retail_pw.pdf": {
+    "reason": "ct=application/pdf",
+    "status": 200,
+    "title": "[pdf]",
+    "ts": "2026-05-13T17:40:02+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.icicilombard.com/docs/default-source/default-document-library/icihlip23144v072223-icici-lombard-complete-health-insurance.pdf": {
+    "reason": "ct=application/pdf",
+    "status": 200,
+    "title": "[pdf]",
+    "ts": "2026-05-13T17:40:02+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.icicilombard.com/docs/default-source/financial-information/annualreport2024.pdf": {
+    "reason": "ct=application/pdf",
+    "status": 200,
+    "title": "[pdf]",
+    "ts": "2026-05-13T17:40:07+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.icicilombard.com/docs/default-source/policy-wordings-product-brochure/arogya-sanjeevani-policy-policy-wordings.pdf": {
+    "reason": "ct=application/pdf",
+    "status": 200,
+    "title": "[pdf]",
+    "ts": "2026-05-13T17:40:03+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.icicilombard.com/docs/default-source/policy-wordings-product-brochure/complete-health-insurance-(health-elite-plus).pdf": {
+    "reason": "ct=application/pdf",
+    "status": 200,
+    "title": "[pdf]",
+    "ts": "2026-05-13T17:40:03+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.icicilombard.com/docs/default-source/policy-wordings-product-brochure/complete-health-insurance-(health-shield).pdf": {
+    "reason": "ct=application/pdf",
+    "status": 200,
+    "title": "[pdf]",
+    "ts": "2026-05-13T17:40:02+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.icicilombard.com/docs/default-source/policy-wordings-product-brochure/health-shield-360-retail---cis.pdf": {
+    "reason": "ct=application/pdf",
+    "status": 200,
+    "title": "[pdf]",
+    "ts": "2026-05-13T17:40:02+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.icicilombard.com/health-insurance/blogs/icici-lombard-health-insurance-claim-settlement-ratio": {
+    "reason": "",
+    "status": 200,
+    "title": "ICICI Lombard Health Insurance Claim Settlement Ratio 2023",
+    "ts": "2026-05-13T17:32:05+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.icicilombard.com/health-insurance/elevate-health-policy": {
+    "reason": "",
+    "status": 200,
+    "title": "Buy Elevate Health Insurance Plan Online",
+    "ts": "2026-05-13T17:31:48+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.icicilombard.com/investor-relations": {
+    "reason": "",
+    "status": 200,
+    "title": "Investor Relations Business Reports Presentations and Disclosures - ICICI Lombard",
+    "ts": "2026-05-13T17:32:09+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.justdial.com/Mumbai/Niva-Bupa-Health-Insurance-Company-Ltd-Customer-Care/022PXX22-XX22-121222183516-A3L5_BZDET/reviews": {
+    "reason": "",
+    "status": 200,
+    "title": "Niva Bupa Health Insurance Company Ltd (Customer Care) Reviews, , Mumbai - 915 Ratings - Justdial",
+    "ts": "2026-05-13T17:31:58+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.policybazaar.com/hdfc-ergo-general-reviews-903/": {
+    "reason": "",
+    "status": 200,
+    "title": "HDFC ERGO General Insurance Reviews & Rating for Insurance Policy",
+    "ts": "2026-05-13T17:32:20+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.policybazaar.com/health-insurance/companies/aditya-birla-vs-tata-aig/": {
+    "reason": "",
+    "status": 200,
+    "title": "Aditya Birla Health Insurance vs Tata AIG Health Insurance",
+    "ts": "2026-05-13T17:31:55+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.policybazaar.com/health-insurance/companies/hdfc-ergo-vs-niva-bupa/": {
+    "reason": "",
+    "status": 200,
+    "title": "HDFC ERGO Health Insurance vs Niva Bupa Health Insurance",
+    "ts": "2026-05-13T17:31:59+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.policybazaar.com/health-insurance/comparison/aditya-birla-activ-one-vs-tata-aig-medicare/": {
+    "reason": "",
+    "status": 200,
+    "title": "Aditya Birla Activ One vs Tata AIG Medicare \u2013 Coverage & Benefits",
+    "ts": "2026-05-13T17:32:02+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.policybazaar.com/insurance-companies/aditya-birla-health-insurance/claim-settlement-ratio/": {
+    "reason": "",
+    "status": 200,
+    "title": "Aditya Birla Health Insurance Claim Settlement Ratio, Process, Form",
+    "ts": "2026-05-13T17:32:02+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.policybazaar.com/insurance-companies/bajaj-allianz-health-insurance/claim-settlement-ratio/": {
+    "reason": "",
+    "status": 200,
+    "title": "Bajaj Allianz Health Insurance Claim Settlement Ratio, Process, Form",
+    "ts": "2026-05-13T17:32:13+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.policybazaar.com/insurance-companies/bajaj-allianz-health-insurance/silver-health-plan/": {
+    "reason": "",
+    "status": 200,
+    "title": "Bajaj Allianz Silver Health Plan: Benefits, Buy & Renew Online",
+    "ts": "2026-05-13T17:31:47+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.policybazaar.com/insurance-companies/hdfc-ergo-health-insurance/optima-plus-insurance-plan/": {
+    "reason": "",
+    "status": 200,
+    "title": "HDFC ERGO Optima Plus Insurance Plan",
+    "ts": "2026-05-13T17:31:45+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.policybazaar.com/insurance-companies/hdfc-ergo-health-insurance/optima-secure-plan/": {
+    "reason": "",
+    "status": 200,
+    "title": "HDFC ERGO Optima Secure Plan - Compare and Buy/Renew",
+    "ts": "2026-05-13T17:31:44+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.policybazaar.com/insurance-companies/icici-lombard-health-insurance/": {
+    "reason": "",
+    "status": 200,
+    "title": "ICICI Lombard Health Insurance | Reviews, Renewal, Claim",
+    "ts": "2026-05-13T17:31:49+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.policybazaar.com/insurance-companies/icici-lombard-health-insurance/claim-settlement-ratio/": {
+    "reason": "",
+    "status": 200,
+    "title": "ICICI Lombard Health Insurance | Reviews, Renewal, Claim",
+    "ts": "2026-05-13T17:32:06+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.policybazaar.com/insurance-companies/manipalcigna-health-insurance/claim-settlement-ratio/": {
+    "reason": "",
+    "status": 200,
+    "title": "ManipalCigna Health Insurance Claim Settlement Ratio, Process, Form",
+    "ts": "2026-05-13T17:31:51+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.policybazaar.com/insurance-companies/new-india-assurance-health-insurance/claim-settlement-ratio/": {
+    "reason": "",
+    "status": 200,
+    "title": "New India Assurance Health Insurance Claim Settlement Ratio, Process",
+    "ts": "2026-05-13T17:32:18+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.policybazaar.com/insurance-companies/religare-health-insurance/": {
+    "reason": "",
+    "status": 200,
+    "title": "Care Health Insurance: Plans, Buy Online & Claim Benefits",
+    "ts": "2026-05-13T17:31:46+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.policybazaar.com/insurance-companies/religare-health-insurance/care-supreme/": {
+    "reason": "",
+    "status": 200,
+    "title": "Care Supreme Plan: 2 Hours Hospitalization Covered",
+    "ts": "2026-05-13T17:31:45+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.policybazaar.com/insurance-companies/religare-health-insurance/claim-settlement-ratio/": {
+    "reason": "",
+    "status": 200,
+    "title": "Care Health Insurance Claim Settlement Ratio, Process, Form",
+    "ts": "2026-05-13T17:32:12+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.policybazaar.com/insurance-companies/religare-health-insurance/senior-citizens/": {
+    "reason": "",
+    "status": 200,
+    "title": "Care Health Insurance for Senior Citizens: Buy or Renew Policy Online",
+    "ts": "2026-05-13T18:16:51+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.policybazaar.com/insurance-companies/star-health-insurance/star-comprehensive-insurance-policy/": {
+    "reason": "",
+    "status": 200,
+    "title": "Star Comprehensive Health Plan: Benefits, Buy & Renew Online",
+    "ts": "2026-05-13T17:31:50+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.policybazaar.com/insurance-companies/tata-aig-health-insurance/claim-settlement-ratio/": {
+    "reason": "",
+    "status": 200,
+    "title": "TATA AIG Health Insurance Claim Settlement Ratio, Process, Form",
+    "ts": "2026-05-13T17:31:54+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.policybazaar.com/max-bupa-health-general-reviews-477/": {
+    "reason": "",
+    "status": 200,
+    "title": "Niva Bupa General Insurance Reviews, Ratings & Customer Testimonials",
+    "ts": "2026-05-13T17:31:57+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.policybazaar.com/star-health-insurance-reviews-881/": {
+    "reason": "",
+    "status": 200,
+    "title": "Star Health Insurance Reviews & Rating",
+    "ts": "2026-05-13T17:32:16+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.starhealth.in/health-insurance/health-insurance-for-senior-citizens/": {
+    "reason": "",
+    "status": 200,
+    "title": "Health Insurance for Senior Citizens - Medical Policy Scheme for 60+ in India",
+    "ts": "2026-05-13T17:31:50+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.trustpilot.com/review/www.hdfcergo.com": {
+    "reason": "",
+    "status": 200,
+    "title": "HDFC ERGO General Insurance Company Limited Reviews | Read Customer Service Reviews of www.hdfcergo.com",
+    "ts": "2026-05-13T17:32:21+0530",
+    "verdict": "ALIVE"
+  },
+  "https://www.trustpilot.com/review/www.starhealth.in": {
+    "reason": "",
+    "status": 200,
+    "title": "Star Health And Allied Insurance Reviews | Read Customer Service Reviews of www.starhealth.in",
+    "ts": "2026-05-13T17:32:16+0530",
+    "verdict": "ALIVE"
+  }
+}

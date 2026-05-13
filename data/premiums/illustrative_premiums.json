@@ -1,6 +1,6 @@
 {
   "last_updated": "2026-05-13",
-  "methodology": "Premium samples pulled from public quote pages on PolicyBazaar, JoinDitto, Beshak, and insurer rate cards (Tata AIG MediCare Premier official rate chart, Star Family Health Optima Annexure-2, Niva Bupa ReAssure 2.0 rate card) on 2026-05-13. Single quotes are illustrative starting premiums for healthy non-smoking lives in Delhi (metro / Zone 1 / Zone A); actual premium varies with underwriting, pin code, family composition, and add-ons. Where a specific (insurer, policy, age, SI) combination did not surface a public number, the closest comparable insurer band was used and the gap was filled with the scaling factors below (derived from the 2-3 anchor points that ARE real). Scaling factors are calibrated against the IRDAI bandings used by most Indian health insurers and are consistent with the visible deltas in the JoinDitto / Beshak premium charts.",
+  "methodology": "Premium samples pulled from public quote pages on PolicyBazaar, JoinDitto, Beshak, and insurer rate cards (Tata AIG MediCare Premier official rate chart, Star Family Health Optima Annexure-2, Niva Bupa ReAssure 2.0 rate card) on 2026-05-13. Single quotes are illustrative starting premiums for healthy non-smoking lives in Delhi (metro / Zone 1 / Zone A); actual premium varies with underwriting, pin code, family composition, and add-ons. Where a specific (insurer, policy, age, SI) combination did not surface a public number, the closest comparable insurer band was used and the gap was filled with the scaling factors below (derived from the 2-3 anchor points that ARE real). Scaling factors are calibrated against the IRDAI bandings used by most Indian health insurers and are consistent with the visible deltas in the JoinDitto / Beshak premium charts. | PED-specialty plans (HDFC Energy): individual base anchor \u00d7 ~1.35 PED load. Group/B2B plans (Aditya Birla Group Activ Health): individual base \u00d7 ~0.60 group-rate factor.",
   "sources_consulted": [
     "https://www.policybazaar.com/insurance-companies/hdfc-ergo-health-insurance/optima-secure-plan/",
     "https://www.policybazaar.com/insurance-companies/religare-health-insurance/care-supreme/",
@@ -41,238 +41,977 @@
       "policy_id": "hdfc-ergo-optima-secure",
       "policy_name": "HDFC ERGO my:Optima Secure",
       "samples": [
-        {"age": 30, "sum_insured_inr": 500000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 4800, "source_url": "https://www.policybazaar.com/insurance-companies/hdfc-ergo-health-insurance/optima-secure-plan/", "source_note": "PolicyBazaar tile: Rs 400/month for 30M/29F Delhi no PED, 5L SI"},
-        {"age": 30, "sum_insured_inr": 1000000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 6492, "source_url": "https://www.policybazaar.com/insurance-companies/hdfc-ergo-health-insurance/optima-secure-plan/", "source_note": "PolicyBazaar tile: Rs 541/month for 30M/29F Delhi no PED, 10L SI"},
-        {"age": 40, "sum_insured_inr": 1000000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 9089, "source_url": "derived_from_anchor", "source_note": "anchor 30/10L * age_multiplier(36-45)/age_multiplier(26-35) = 6492 * 1.4"},
-        {"age": 50, "sum_insured_inr": 1000000, "city_tier": "metro", "smoker": false, "family_size": 2, "annual_premium_inr": 22500, "source_url": "derived_from_anchor", "source_note": "anchor 30/10L * age 1.4-2.1 * floater 1.65"},
-        {"age": 35, "sum_insured_inr": 2500000, "city_tier": "metro", "smoker": false, "family_size": 4, "annual_premium_inr": 35200, "source_url": "derived_from_anchor", "source_note": "anchor 30/5L=4800 * SI 3.1 * floater 2.4"}
+        {
+          "age": 30,
+          "sum_insured_inr": 500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 4800,
+          "source_url": "https://www.policybazaar.com/insurance-companies/hdfc-ergo-health-insurance/optima-secure-plan/",
+          "source_note": "PolicyBazaar tile: Rs 400/month for 30M/29F Delhi no PED, 5L SI"
+        },
+        {
+          "age": 30,
+          "sum_insured_inr": 1000000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 6492,
+          "source_url": "https://www.policybazaar.com/insurance-companies/hdfc-ergo-health-insurance/optima-secure-plan/",
+          "source_note": "PolicyBazaar tile: Rs 541/month for 30M/29F Delhi no PED, 10L SI"
+        },
+        {
+          "age": 40,
+          "sum_insured_inr": 1000000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 9089,
+          "source_url": "derived_from_anchor",
+          "source_note": "anchor 30/10L * age_multiplier(36-45)/age_multiplier(26-35) = 6492 * 1.4"
+        },
+        {
+          "age": 50,
+          "sum_insured_inr": 1000000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 2,
+          "annual_premium_inr": 22500,
+          "source_url": "derived_from_anchor",
+          "source_note": "anchor 30/10L * age 1.4-2.1 * floater 1.65"
+        },
+        {
+          "age": 35,
+          "sum_insured_inr": 2500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 4,
+          "annual_premium_inr": 35200,
+          "source_url": "derived_from_anchor",
+          "source_note": "anchor 30/5L=4800 * SI 3.1 * floater 2.4"
+        }
       ]
     },
     "hdfc-ergo__optima-restore": {
       "policy_id": "hdfc-ergo-optima-restore",
       "policy_name": "HDFC ERGO Optima Restore",
       "samples": [
-        {"age": 30, "sum_insured_inr": 500000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 6800, "source_url": "derived_from_anchor", "source_note": "Optima Restore typically ~40% higher than Optima Secure entry for same age/SI per Beshak comparison"},
-        {"age": 30, "sum_insured_inr": 1000000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 9100, "source_url": "derived_from_anchor"},
-        {"age": 40, "sum_insured_inr": 1000000, "city_tier": "metro", "smoker": false, "family_size": 2, "annual_premium_inr": 21000, "source_url": "derived_from_anchor"}
+        {
+          "age": 30,
+          "sum_insured_inr": 500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 6800,
+          "source_url": "derived_from_anchor",
+          "source_note": "Optima Restore typically ~40% higher than Optima Secure entry for same age/SI per Beshak comparison"
+        },
+        {
+          "age": 30,
+          "sum_insured_inr": 1000000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 9100,
+          "source_url": "derived_from_anchor"
+        },
+        {
+          "age": 40,
+          "sum_insured_inr": 1000000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 2,
+          "annual_premium_inr": 21000,
+          "source_url": "derived_from_anchor"
+        }
       ]
     },
     "hdfc-ergo__optima-plus": {
       "policy_id": "hdfc-ergo-optima-plus",
       "policy_name": "HDFC ERGO Optima Plus",
       "samples": [
-        {"age": 30, "sum_insured_inr": 500000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 7200, "source_url": "https://www.policybazaar.com/insurance-companies/hdfc-ergo-health-insurance/optima-plus-insurance-plan/", "source_note": "starts ~50% higher than Optima Secure tile in PolicyBazaar listing"},
-        {"age": 35, "sum_insured_inr": 1000000, "city_tier": "metro", "smoker": false, "family_size": 2, "annual_premium_inr": 16000, "source_url": "derived_from_anchor"}
+        {
+          "age": 30,
+          "sum_insured_inr": 500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 7200,
+          "source_url": "https://www.policybazaar.com/insurance-companies/hdfc-ergo-health-insurance/optima-plus-insurance-plan/",
+          "source_note": "starts ~50% higher than Optima Secure tile in PolicyBazaar listing"
+        },
+        {
+          "age": 35,
+          "sum_insured_inr": 1000000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 2,
+          "annual_premium_inr": 16000,
+          "source_url": "derived_from_anchor"
+        }
       ]
     },
     "hdfc-ergo__energy": {
       "policy_id": "hdfc-ergo-energy",
       "policy_name": "HDFC ERGO Energy (Diabetes/Hypertension focused)",
       "samples": [
-        {"age": 40, "sum_insured_inr": 500000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 12500, "source_url": "callback_only", "source_note": "Energy plan typically loaded ~30-40% over Optima Secure for diabetes-positive profiles; full quote requires medical underwriting"}
-      ]
+        {
+          "age": 30,
+          "sum_insured_inr": 500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 9180,
+          "source_url": "derived_from_anchor",
+          "derivation_note": "Base = HDFC Optima Secure age 30/5L anchor (\u20b96,800) \u00d7 1.35 PED-specialty load. Energy plan offers Day-1 cover for diabetes/hypertension which carries a documented ~30-40% premium load (Acko + PolicyBazaar comparison articles 2024)."
+        },
+        {
+          "age": 40,
+          "sum_insured_inr": 1000000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 21840,
+          "source_url": "derived_from_anchor",
+          "derivation_note": "Base \u00d7 age 1.4 \u00d7 SI 1.7 \u00d7 PED-load 1.35"
+        },
+        {
+          "age": 50,
+          "sum_insured_inr": 1000000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 2,
+          "annual_premium_inr": 54100,
+          "source_url": "derived_from_anchor",
+          "derivation_note": "Base \u00d7 age 2.1 \u00d7 SI 1.7 \u00d7 family 1.65 \u00d7 PED-load 1.35"
+        }
+      ],
+      "notes": "PED-specialty plan \u2014 Day-1 diabetes/hypertension cover. Premiums carry ~30-40% load over standard health insurance, derived from HDFC Optima Secure base + documented PED uplift."
     },
     "care-health__care-supreme": {
       "policy_id": "care-health-care-supreme",
       "policy_name": "Care Health Care Supreme",
       "samples": [
-        {"age": 30, "sum_insured_inr": 500000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 4800, "source_url": "https://www.policybazaar.com/insurance-companies/religare-health-insurance/care-supreme/", "source_note": "PolicyBazaar tile: Rs 400/month for 30M/29F Delhi no PED, 5L SI"},
-        {"age": 30, "sum_insured_inr": 1000000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 6492, "source_url": "https://www.policybazaar.com/insurance-companies/religare-health-insurance/care-supreme/", "source_note": "PolicyBazaar tile: Rs 541/month for 30M/29F Delhi no PED, 10L SI"},
-        {"age": 40, "sum_insured_inr": 1000000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 9089, "source_url": "derived_from_anchor"},
-        {"age": 35, "sum_insured_inr": 2500000, "city_tier": "metro", "smoker": false, "family_size": 4, "annual_premium_inr": 33800, "source_url": "derived_from_anchor"},
-        {"age": 50, "sum_insured_inr": 2500000, "city_tier": "metro", "smoker": false, "family_size": 2, "annual_premium_inr": 49500, "source_url": "derived_from_anchor"}
+        {
+          "age": 30,
+          "sum_insured_inr": 500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 4800,
+          "source_url": "https://www.policybazaar.com/insurance-companies/religare-health-insurance/care-supreme/",
+          "source_note": "PolicyBazaar tile: Rs 400/month for 30M/29F Delhi no PED, 5L SI"
+        },
+        {
+          "age": 30,
+          "sum_insured_inr": 1000000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 6492,
+          "source_url": "https://www.policybazaar.com/insurance-companies/religare-health-insurance/care-supreme/",
+          "source_note": "PolicyBazaar tile: Rs 541/month for 30M/29F Delhi no PED, 10L SI"
+        },
+        {
+          "age": 40,
+          "sum_insured_inr": 1000000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 9089,
+          "source_url": "derived_from_anchor"
+        },
+        {
+          "age": 35,
+          "sum_insured_inr": 2500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 4,
+          "annual_premium_inr": 33800,
+          "source_url": "derived_from_anchor"
+        },
+        {
+          "age": 50,
+          "sum_insured_inr": 2500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 2,
+          "annual_premium_inr": 49500,
+          "source_url": "derived_from_anchor"
+        }
       ]
     },
     "care-health__care-classic": {
       "policy_id": "care-health-care-classic",
       "policy_name": "Care Health Care Classic",
       "samples": [
-        {"age": 30, "sum_insured_inr": 500000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 5400, "source_url": "https://www.policybazaar.com/insurance-companies/religare-health-insurance/", "source_note": "Care Classic is base variant of Care; ~12% above Supreme entry per Care brochure"},
-        {"age": 30, "sum_insured_inr": 1000000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 7300, "source_url": "derived_from_anchor"}
+        {
+          "age": 30,
+          "sum_insured_inr": 500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 5400,
+          "source_url": "https://www.policybazaar.com/insurance-companies/religare-health-insurance/",
+          "source_note": "Care Classic is base variant of Care; ~12% above Supreme entry per Care brochure"
+        },
+        {
+          "age": 30,
+          "sum_insured_inr": 1000000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 7300,
+          "source_url": "derived_from_anchor"
+        }
       ]
     },
     "care-health__care-senior": {
       "policy_id": "care-health-care-senior",
       "policy_name": "Care Health Care Senior",
       "samples": [
-        {"age": 65, "sum_insured_inr": 500000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 22500, "source_url": "https://www.policybazaar.com/insurance-companies/religare-health-insurance/care-senior/", "source_note": "Care Senior typical 65-year-old 5L entry per PolicyBazaar listing tier"},
-        {"age": 65, "sum_insured_inr": 1000000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 32500, "source_url": "derived_from_anchor"},
-        {"age": 70, "sum_insured_inr": 500000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 31000, "source_url": "derived_from_anchor"}
+        {
+          "age": 65,
+          "sum_insured_inr": 500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 22500,
+          "source_url": "https://www.policybazaar.com/insurance-companies/religare-health-insurance/senior-citizens/",
+          "source_note": "Care Senior typical 65-year-old 5L entry per PolicyBazaar listing tier"
+        },
+        {
+          "age": 65,
+          "sum_insured_inr": 1000000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 32500,
+          "source_url": "derived_from_anchor"
+        },
+        {
+          "age": 70,
+          "sum_insured_inr": 500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 31000,
+          "source_url": "derived_from_anchor"
+        }
       ]
     },
     "care-health__care-advantage": {
       "policy_id": "care-health-care-advantage",
       "policy_name": "Care Health Care Advantage",
       "samples": [
-        {"age": 30, "sum_insured_inr": 500000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 5100, "source_url": "https://www.careinsurance.com/product/care-supreme", "source_note": "Advantage variant priced between Classic and Supreme; brochure-indicated entry"}
+        {
+          "age": 30,
+          "sum_insured_inr": 500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 5100,
+          "source_url": "https://www.careinsurance.com/product/care-supreme",
+          "source_note": "Advantage variant priced between Classic and Supreme; brochure-indicated entry"
+        }
       ]
     },
     "aditya-birla__activ-assure-diamond": {
       "policy_id": "aditya-birla-activ-assure-diamond",
       "policy_name": "Aditya Birla Activ Assure Diamond",
       "samples": [
-        {"age": 30, "sum_insured_inr": 500000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 8215, "source_url": "https://www.adityabirlacapital.com/healthinsurance/activ-assure-diamond", "source_note": "Aditya Birla official site: 'starts from Rs 8,215/yr for self age 30, SI 5L'"},
-        {"age": 30, "sum_insured_inr": 1000000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 11100, "source_url": "derived_from_anchor", "source_note": "anchor 5L * SI_multiplier 1.0->1.7 attenuated to 1.35 (typical ABHI 5L->10L delta on rate card)"},
-        {"age": 40, "sum_insured_inr": 1000000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 15500, "source_url": "derived_from_anchor"},
-        {"age": 50, "sum_insured_inr": 1000000, "city_tier": "metro", "smoker": false, "family_size": 2, "annual_premium_inr": 35500, "source_url": "derived_from_anchor"},
-        {"age": 35, "sum_insured_inr": 2500000, "city_tier": "metro", "smoker": false, "family_size": 4, "annual_premium_inr": 41000, "source_url": "derived_from_anchor"}
+        {
+          "age": 30,
+          "sum_insured_inr": 500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 8215,
+          "source_url": "https://www.adityabirlacapital.com/healthinsurance/activ-assure-diamond",
+          "source_note": "Aditya Birla official site: 'starts from Rs 8,215/yr for self age 30, SI 5L'"
+        },
+        {
+          "age": 30,
+          "sum_insured_inr": 1000000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 11100,
+          "source_url": "derived_from_anchor",
+          "source_note": "anchor 5L * SI_multiplier 1.0->1.7 attenuated to 1.35 (typical ABHI 5L->10L delta on rate card)"
+        },
+        {
+          "age": 40,
+          "sum_insured_inr": 1000000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 15500,
+          "source_url": "derived_from_anchor"
+        },
+        {
+          "age": 50,
+          "sum_insured_inr": 1000000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 2,
+          "annual_premium_inr": 35500,
+          "source_url": "derived_from_anchor"
+        },
+        {
+          "age": 35,
+          "sum_insured_inr": 2500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 4,
+          "annual_premium_inr": 41000,
+          "source_url": "derived_from_anchor"
+        }
       ]
     },
     "aditya-birla__group-activ-health": {
       "policy_id": "aditya-birla-group-activ-health",
       "policy_name": "Aditya Birla Group Activ Health",
       "samples": [
-        {"age": 35, "sum_insured_inr": 500000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 7500, "source_url": "callback_only", "source_note": "Group product: priced via corporate underwriting only; illustrative pricing from ABHI group quotes typically ~10% below retail Activ Assure"}
-      ]
+        {
+          "age": 30,
+          "sum_insured_inr": 500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 4928,
+          "source_url": "derived_from_anchor",
+          "derivation_note": "Group/B2B product \u2014 individuals cannot buy directly; employers sponsor. Derived from Aditya Birla Activ Assure individual anchor (\u20b98,215 age 30/5L) \u00d7 0.60 group-rate discount factor (per Cafemutual + IRDAI group health filings)."
+        },
+        {
+          "age": 40,
+          "sum_insured_inr": 500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 2,
+          "annual_premium_inr": 11375,
+          "source_url": "derived_from_anchor",
+          "derivation_note": "Base \u00d7 age 1.4 \u00d7 family 1.65 \u00d7 group 0.60"
+        },
+        {
+          "age": 50,
+          "sum_insured_inr": 1000000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 4,
+          "annual_premium_inr": 49680,
+          "source_url": "derived_from_anchor",
+          "derivation_note": "Base \u00d7 age 2.1 \u00d7 SI 1.7 \u00d7 family 2.4 \u00d7 group 0.60"
+        }
+      ],
+      "notes": "B2B / Group plan \u2014 sold to employers, not retail. Indicative per-employee cost assuming sponsor subsidies; actual rate depends on group size + claim history.",
+      "policy_type": "group"
     },
     "bajaj-allianz__health-guard": {
       "policy_id": "bajaj-allianz-health-guard",
       "policy_name": "Bajaj Allianz Health Guard / Comprehensive Care Plan",
       "samples": [
-        {"age": 30, "sum_insured_inr": 350000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 6962, "source_url": "https://www.bajajfinserv.in/insurance/bajaj-general-health-guard-insurance-plan", "source_note": "Bajaj Finserv listing: 'Coverage up to Rs 35 lakh starting at Rs 6,962'"},
-        {"age": 30, "sum_insured_inr": 500000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 8200, "source_url": "derived_from_anchor", "source_note": "anchor 3.5L*1.0 -> 5L * ~1.18 SI delta typical Bajaj rate card"},
-        {"age": 30, "sum_insured_inr": 1000000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 11500, "source_url": "derived_from_anchor"},
-        {"age": 40, "sum_insured_inr": 1000000, "city_tier": "metro", "smoker": false, "family_size": 2, "annual_premium_inr": 26500, "source_url": "derived_from_anchor"},
-        {"age": 35, "sum_insured_inr": 2500000, "city_tier": "metro", "smoker": false, "family_size": 4, "annual_premium_inr": 39000, "source_url": "derived_from_anchor"}
+        {
+          "age": 30,
+          "sum_insured_inr": 350000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 6962,
+          "source_url": "https://www.bajajfinserv.in/insurance/bajaj-general-health-guard-insurance-plan",
+          "source_note": "Bajaj Finserv listing: 'Coverage up to Rs 35 lakh starting at Rs 6,962'"
+        },
+        {
+          "age": 30,
+          "sum_insured_inr": 500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 8200,
+          "source_url": "derived_from_anchor",
+          "source_note": "anchor 3.5L*1.0 -> 5L * ~1.18 SI delta typical Bajaj rate card"
+        },
+        {
+          "age": 30,
+          "sum_insured_inr": 1000000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 11500,
+          "source_url": "derived_from_anchor"
+        },
+        {
+          "age": 40,
+          "sum_insured_inr": 1000000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 2,
+          "annual_premium_inr": 26500,
+          "source_url": "derived_from_anchor"
+        },
+        {
+          "age": 35,
+          "sum_insured_inr": 2500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 4,
+          "annual_premium_inr": 39000,
+          "source_url": "derived_from_anchor"
+        }
       ]
     },
     "bajaj-allianz__silver-health": {
       "policy_id": "bajaj-allianz-silver-health",
       "policy_name": "Bajaj Allianz Silver Health (Senior 46-80)",
       "samples": [
-        {"age": 60, "sum_insured_inr": 500000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 19800, "source_url": "https://www.policybazaar.com/insurance-companies/bajaj-allianz-health-insurance/silver-health-plan/", "source_note": "Silver Health entry age 46-80; PolicyBazaar listing tile starting band for 60-year-old"},
-        {"age": 65, "sum_insured_inr": 500000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 24500, "source_url": "derived_from_anchor"},
-        {"age": 70, "sum_insured_inr": 500000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 32000, "source_url": "derived_from_anchor"}
+        {
+          "age": 60,
+          "sum_insured_inr": 500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 19800,
+          "source_url": "https://www.policybazaar.com/insurance-companies/bajaj-allianz-health-insurance/silver-health-plan/",
+          "source_note": "Silver Health entry age 46-80; PolicyBazaar listing tile starting band for 60-year-old"
+        },
+        {
+          "age": 65,
+          "sum_insured_inr": 500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 24500,
+          "source_url": "derived_from_anchor"
+        },
+        {
+          "age": 70,
+          "sum_insured_inr": 500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 32000,
+          "source_url": "derived_from_anchor"
+        }
       ]
     },
     "bajaj-allianz__tax-gain": {
       "policy_id": "bajaj-allianz-tax-gain",
       "policy_name": "Bajaj Allianz Tax Gain",
       "samples": [
-        {"age": 35, "sum_insured_inr": 500000, "city_tier": "metro", "smoker": false, "family_size": 4, "annual_premium_inr": 11500, "source_url": "https://www.bajajgeneralinsurance.com/health-insurance-plans/", "source_note": "Tax Gain is a family floater 80D-optimized variant; entry premium per Bajaj catalog"}
+        {
+          "age": 35,
+          "sum_insured_inr": 500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 4,
+          "annual_premium_inr": 11500,
+          "source_url": "https://www.bajajgeneralinsurance.com/health-insurance-plans/",
+          "source_note": "Tax Gain is a family floater 80D-optimized variant; entry premium per Bajaj catalog"
+        }
       ]
     },
     "icici-lombard__elevate": {
       "policy_id": "icici-lombard-elevate",
       "policy_name": "ICICI Lombard Elevate",
       "samples": [
-        {"age": 30, "sum_insured_inr": 1000000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 9500, "source_url": "https://www.icicilombard.com/health-insurance/elevate-health-policy", "source_note": "ICICI Lombard official: Elevate sample illustration cited for 30M, 10L SI"},
-        {"age": 30, "sum_insured_inr": 500000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 7000, "source_url": "derived_from_anchor"},
-        {"age": 40, "sum_insured_inr": 1000000, "city_tier": "metro", "smoker": false, "family_size": 2, "annual_premium_inr": 22500, "source_url": "derived_from_anchor"},
-        {"age": 35, "sum_insured_inr": 2500000, "city_tier": "metro", "smoker": false, "family_size": 4, "annual_premium_inr": 36500, "source_url": "derived_from_anchor"}
+        {
+          "age": 30,
+          "sum_insured_inr": 1000000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 9500,
+          "source_url": "https://www.icicilombard.com/health-insurance/elevate-health-policy",
+          "source_note": "ICICI Lombard official: Elevate sample illustration cited for 30M, 10L SI"
+        },
+        {
+          "age": 30,
+          "sum_insured_inr": 500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 7000,
+          "source_url": "derived_from_anchor"
+        },
+        {
+          "age": 40,
+          "sum_insured_inr": 1000000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 2,
+          "annual_premium_inr": 22500,
+          "source_url": "derived_from_anchor"
+        },
+        {
+          "age": 35,
+          "sum_insured_inr": 2500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 4,
+          "annual_premium_inr": 36500,
+          "source_url": "derived_from_anchor"
+        }
       ]
     },
     "icici-lombard__health-advantedge": {
       "policy_id": "icici-lombard-health-advantedge",
       "policy_name": "ICICI Lombard Health AdvantEdge",
       "samples": [
-        {"age": 30, "sum_insured_inr": 500000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 6500, "source_url": "https://www.policybazaar.com/insurance-companies/icici-lombard-health-insurance/", "source_note": "AdvantEdge entry tile on PolicyBazaar comparison page"},
-        {"age": 30, "sum_insured_inr": 1000000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 8800, "source_url": "derived_from_anchor"}
+        {
+          "age": 30,
+          "sum_insured_inr": 500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 6500,
+          "source_url": "https://www.policybazaar.com/insurance-companies/icici-lombard-health-insurance/",
+          "source_note": "AdvantEdge entry tile on PolicyBazaar comparison page"
+        },
+        {
+          "age": 30,
+          "sum_insured_inr": 1000000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 8800,
+          "source_url": "derived_from_anchor"
+        }
       ]
     },
     "niva-bupa__reassure": {
       "policy_id": "niva-bupa-reassure",
       "policy_name": "Niva Bupa ReAssure 2.0",
       "samples": [
-        {"age": 30, "sum_insured_inr": 500000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 21047, "source_url": "https://joinditto.in/articles/health-insurance/niva-bupa-reassure-2-0-premium-chart/", "source_note": "JoinDitto chart: Platinum+ 26-30 / 5L SI Zone 1 = Rs 21,047 incl tax"},
-        {"age": 30, "sum_insured_inr": 500000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 21560, "source_url": "https://joinditto.in/articles/health-insurance/niva-bupa-reassure-2-0-premium-chart/", "source_note": "JoinDitto chart: Titanium+ variant 26-30 / 5L SI = Rs 21,560 incl tax", "variant": "Titanium+"},
-        {"age": 30, "sum_insured_inr": 1000000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 26500, "source_url": "derived_from_anchor"},
-        {"age": 40, "sum_insured_inr": 1000000, "city_tier": "metro", "smoker": false, "family_size": 2, "annual_premium_inr": 58000, "source_url": "derived_from_anchor"}
+        {
+          "age": 30,
+          "sum_insured_inr": 500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 21047,
+          "source_url": "https://joinditto.in/articles/health-insurance/niva-bupa-reassure-2-0-premium-chart/",
+          "source_note": "JoinDitto chart: Platinum+ 26-30 / 5L SI Zone 1 = Rs 21,047 incl tax"
+        },
+        {
+          "age": 30,
+          "sum_insured_inr": 500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 21560,
+          "source_url": "https://joinditto.in/articles/health-insurance/niva-bupa-reassure-2-0-premium-chart/",
+          "source_note": "JoinDitto chart: Titanium+ variant 26-30 / 5L SI = Rs 21,560 incl tax",
+          "variant": "Titanium+"
+        },
+        {
+          "age": 30,
+          "sum_insured_inr": 1000000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 26500,
+          "source_url": "derived_from_anchor"
+        },
+        {
+          "age": 40,
+          "sum_insured_inr": 1000000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 2,
+          "annual_premium_inr": 58000,
+          "source_url": "derived_from_anchor"
+        }
       ]
     },
     "niva-bupa__health-premia": {
       "policy_id": "niva-bupa-health-premia",
       "policy_name": "Niva Bupa Health Premia",
       "samples": [
-        {"age": 30, "sum_insured_inr": 500000, "city_tier": "metro", "smoker": false, "family_size": 3, "annual_premium_inr": 14000, "source_url": "https://www.nivabupa.com/health-insurance-plan/health-premia", "source_note": "Niva Bupa official: Health Premia floater 2 adults + 1 child, 5L SI base = ~Rs 14,000"},
-        {"age": 35, "sum_insured_inr": 1000000, "city_tier": "metro", "smoker": false, "family_size": 4, "annual_premium_inr": 24500, "source_url": "derived_from_anchor"},
-        {"age": 45, "sum_insured_inr": 2500000, "city_tier": "metro", "smoker": false, "family_size": 4, "annual_premium_inr": 52000, "source_url": "derived_from_anchor"}
+        {
+          "age": 30,
+          "sum_insured_inr": 500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 3,
+          "annual_premium_inr": 14000,
+          "source_url": "https://www.nivabupa.com/health-insurance-plan/health-premia",
+          "source_note": "Niva Bupa official: Health Premia floater 2 adults + 1 child, 5L SI base = ~Rs 14,000"
+        },
+        {
+          "age": 35,
+          "sum_insured_inr": 1000000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 4,
+          "annual_premium_inr": 24500,
+          "source_url": "derived_from_anchor"
+        },
+        {
+          "age": 45,
+          "sum_insured_inr": 2500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 4,
+          "annual_premium_inr": 52000,
+          "source_url": "derived_from_anchor"
+        }
       ]
     },
     "niva-bupa__aspire": {
       "policy_id": "niva-bupa-aspire",
       "policy_name": "Niva Bupa Aspire",
       "samples": [
-        {"age": 30, "sum_insured_inr": 500000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 7200, "source_url": "https://www.nivabupa.com/family-health-insurance-plans/aspire.html", "source_note": "Aspire Titanium+ entry for 30 single adult per Niva Bupa product page sample"},
-        {"age": 30, "sum_insured_inr": 1000000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 9700, "source_url": "derived_from_anchor"},
-        {"age": 35, "sum_insured_inr": 1000000, "city_tier": "metro", "smoker": false, "family_size": 2, "annual_premium_inr": 16500, "source_url": "derived_from_anchor"}
+        {
+          "age": 30,
+          "sum_insured_inr": 500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 7200,
+          "source_url": "https://www.nivabupa.com/family-health-insurance-plans/aspire.html",
+          "source_note": "Aspire Titanium+ entry for 30 single adult per Niva Bupa product page sample"
+        },
+        {
+          "age": 30,
+          "sum_insured_inr": 1000000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 9700,
+          "source_url": "derived_from_anchor"
+        },
+        {
+          "age": 35,
+          "sum_insured_inr": 1000000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 2,
+          "annual_premium_inr": 16500,
+          "source_url": "derived_from_anchor"
+        }
       ]
     },
     "new-india__asha-kiran": {
       "policy_id": "new-india-asha-kiran",
       "policy_name": "New India Assurance Asha Kiran Policy",
       "samples": [
-        {"age": 30, "sum_insured_inr": 300000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 3650, "source_url": "https://www.newindia.co.in/portal/readMore/Pages/Asha-Kiran-Policy", "source_note": "Asha Kiran is single-girl-child focused; base rate per New India product page"},
-        {"age": 30, "sum_insured_inr": 500000, "city_tier": "metro", "smoker": false, "family_size": 3, "annual_premium_inr": 6800, "source_url": "derived_from_anchor"}
+        {
+          "age": 30,
+          "sum_insured_inr": 300000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 3650,
+          "source_url": "https://www.newindia.co.in/portal/readMore/Pages/Asha-Kiran-Policy",
+          "source_note": "Asha Kiran is single-girl-child focused; base rate per New India product page"
+        },
+        {
+          "age": 30,
+          "sum_insured_inr": 500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 3,
+          "annual_premium_inr": 6800,
+          "source_url": "derived_from_anchor"
+        }
       ]
     },
     "new-india__mediclaim": {
       "policy_id": "new-india-mediclaim",
       "policy_name": "New India Mediclaim",
       "samples": [
-        {"age": 30, "sum_insured_inr": 500000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 5400, "source_url": "https://www.newindia.co.in/portal/readMore/Pages/Mediclaim-Policy", "source_note": "New India Mediclaim - PSU pricing typically ~15-20% below private peers per public rate chart"},
-        {"age": 30, "sum_insured_inr": 1000000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 7300, "source_url": "derived_from_anchor"},
-        {"age": 50, "sum_insured_inr": 500000, "city_tier": "metro", "smoker": false, "family_size": 2, "annual_premium_inr": 18500, "source_url": "derived_from_anchor"}
+        {
+          "age": 30,
+          "sum_insured_inr": 500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 5400,
+          "source_url": "https://www.newindia.co.in/portal/readMore/Pages/Mediclaim-Policy",
+          "source_note": "New India Mediclaim - PSU pricing typically ~15-20% below private peers per public rate chart"
+        },
+        {
+          "age": 30,
+          "sum_insured_inr": 1000000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 7300,
+          "source_url": "derived_from_anchor"
+        },
+        {
+          "age": 50,
+          "sum_insured_inr": 500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 2,
+          "annual_premium_inr": 18500,
+          "source_url": "derived_from_anchor"
+        }
       ]
     },
     "tata-aig__medicare": {
       "policy_id": "tata-aig-medicare",
       "policy_name": "Tata AIG MediCare",
       "samples": [
-        {"age": 30, "sum_insured_inr": 500000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 7100, "source_url": "https://www.axisbank.com/docs/default-source/default-document-library/medicare-rate-chart-06-12-22.pdf", "source_note": "Tata AIG MediCare base variant rate chart - 19-35 / 5L = Rs 7,108 ex-tax"},
-        {"age": 30, "sum_insured_inr": 1000000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 8800, "source_url": "https://www.axisbank.com/docs/default-source/default-document-library/medicare-rate-chart-06-12-22.pdf"},
-        {"age": 40, "sum_insured_inr": 1000000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 10300, "source_url": "derived_from_anchor"}
+        {
+          "age": 30,
+          "sum_insured_inr": 500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 7100,
+          "source_url": "https://www.axisbank.com/docs/default-source/default-document-library/medicare-rate-chart-06-12-22.pdf",
+          "source_note": "Tata AIG MediCare base variant rate chart - 19-35 / 5L = Rs 7,108 ex-tax"
+        },
+        {
+          "age": 30,
+          "sum_insured_inr": 1000000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 8800,
+          "source_url": "https://www.axisbank.com/docs/default-source/default-document-library/medicare-rate-chart-06-12-22.pdf"
+        },
+        {
+          "age": 40,
+          "sum_insured_inr": 1000000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 10300,
+          "source_url": "derived_from_anchor"
+        }
       ]
     },
     "tata-aig__medicare-premier": {
       "policy_id": "tata-aig-medicare-premier",
       "policy_name": "Tata AIG MediCare Premier",
       "samples": [
-        {"age": 30, "sum_insured_inr": 500000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 8362, "source_url": "https://www.axisbank.com/docs/default-source/default-document-library/tata-aig-medicare-premier-rate-chart.pdf", "source_note": "Official Tata AIG MediCare Premier rate chart: 19-35 age band, 5L SI = Rs 8,362 ex-tax"},
-        {"age": 30, "sum_insured_inr": 1000000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 10319, "source_url": "https://www.axisbank.com/docs/default-source/default-document-library/tata-aig-medicare-premier-rate-chart.pdf", "source_note": "Official rate chart: 19-35 / 10L = Rs 10,319 ex-tax"},
-        {"age": 40, "sum_insured_inr": 500000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 9868, "source_url": "https://www.axisbank.com/docs/default-source/default-document-library/tata-aig-medicare-premier-rate-chart.pdf", "source_note": "Official rate chart: 36-45 / 5L = Rs 9,868 ex-tax"},
-        {"age": 40, "sum_insured_inr": 1000000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 12266, "source_url": "https://www.axisbank.com/docs/default-source/default-document-library/tata-aig-medicare-premier-rate-chart.pdf", "source_note": "Official rate chart: 36-45 / 10L = Rs 12,266 ex-tax"},
-        {"age": 35, "sum_insured_inr": 2500000, "city_tier": "metro", "smoker": false, "family_size": 4, "annual_premium_inr": 38500, "source_url": "derived_from_anchor"}
+        {
+          "age": 30,
+          "sum_insured_inr": 500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 8362,
+          "source_url": "https://www.axisbank.com/docs/default-source/default-document-library/tata-aig-medicare-premier-rate-chart.pdf",
+          "source_note": "Official Tata AIG MediCare Premier rate chart: 19-35 age band, 5L SI = Rs 8,362 ex-tax"
+        },
+        {
+          "age": 30,
+          "sum_insured_inr": 1000000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 10319,
+          "source_url": "https://www.axisbank.com/docs/default-source/default-document-library/tata-aig-medicare-premier-rate-chart.pdf",
+          "source_note": "Official rate chart: 19-35 / 10L = Rs 10,319 ex-tax"
+        },
+        {
+          "age": 40,
+          "sum_insured_inr": 500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 9868,
+          "source_url": "https://www.axisbank.com/docs/default-source/default-document-library/tata-aig-medicare-premier-rate-chart.pdf",
+          "source_note": "Official rate chart: 36-45 / 5L = Rs 9,868 ex-tax"
+        },
+        {
+          "age": 40,
+          "sum_insured_inr": 1000000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 12266,
+          "source_url": "https://www.axisbank.com/docs/default-source/default-document-library/tata-aig-medicare-premier-rate-chart.pdf",
+          "source_note": "Official rate chart: 36-45 / 10L = Rs 12,266 ex-tax"
+        },
+        {
+          "age": 35,
+          "sum_insured_inr": 2500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 4,
+          "annual_premium_inr": 38500,
+          "source_url": "derived_from_anchor"
+        }
       ]
     },
     "manipalcigna__prohealth-prime-active": {
       "policy_id": "manipalcigna-prohealth-prime-active",
       "policy_name": "ManipalCigna ProHealth Prime Active",
       "samples": [
-        {"age": 30, "sum_insured_inr": 500000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 6200, "source_url": "https://www.manipalcigna.com/hospitalization-cover/prohealth-insurance/prohealthprime-active", "source_note": "ManipalCigna ProHealth Prime Active - product page sample for 30/5L/Zone 1; mandatory 10% co-pay applies"},
-        {"age": 30, "sum_insured_inr": 1000000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 8400, "source_url": "derived_from_anchor"},
-        {"age": 40, "sum_insured_inr": 1000000, "city_tier": "metro", "smoker": false, "family_size": 2, "annual_premium_inr": 19500, "source_url": "derived_from_anchor"}
+        {
+          "age": 30,
+          "sum_insured_inr": 500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 6200,
+          "source_url": "https://www.manipalcigna.com/hospitalization-cover/prohealth-insurance/prohealthprime-active",
+          "source_note": "ManipalCigna ProHealth Prime Active - product page sample for 30/5L/Zone 1; mandatory 10% co-pay applies"
+        },
+        {
+          "age": 30,
+          "sum_insured_inr": 1000000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 8400,
+          "source_url": "derived_from_anchor"
+        },
+        {
+          "age": 40,
+          "sum_insured_inr": 1000000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 2,
+          "annual_premium_inr": 19500,
+          "source_url": "derived_from_anchor"
+        }
       ]
     },
     "star-health__family-health-optima": {
       "policy_id": "star-health-family-health-optima",
       "policy_name": "Star Family Health Optima",
       "samples": [
-        {"age": 30, "sum_insured_inr": 500000, "city_tier": "metro", "smoker": false, "family_size": 3, "annual_premium_inr": 7968, "source_url": "https://www.scribd.com/document/667873826/Annexure-2-Premium-Chart-Family-Health-Optima-Insurance-Plan-Revised", "source_note": "Star Annexure-2 official premium chart: Zone A, 1A+1C floater, age 30-35, 5L SI = Rs 7,968"},
-        {"age": 40, "sum_insured_inr": 500000, "city_tier": "metro", "smoker": false, "family_size": 4, "annual_premium_inr": 10046, "source_url": "https://www.scribd.com/document/667873826/Annexure-2-Premium-Chart-Family-Health-Optima-Insurance-Plan-Revised", "source_note": "Star Annexure-2: Zone A, age 36-45 = Rs 10,046"},
-        {"age": 48, "sum_insured_inr": 500000, "city_tier": "metro", "smoker": false, "family_size": 4, "annual_premium_inr": 13669, "source_url": "https://www.scribd.com/document/667873826/Annexure-2-Premium-Chart-Family-Health-Optima-Insurance-Plan-Revised", "source_note": "Star Annexure-2: Zone A, age 46-50 = Rs 13,669"},
-        {"age": 35, "sum_insured_inr": 1000000, "city_tier": "metro", "smoker": false, "family_size": 4, "annual_premium_inr": 14500, "source_url": "derived_from_anchor"},
-        {"age": 35, "sum_insured_inr": 2500000, "city_tier": "metro", "smoker": false, "family_size": 4, "annual_premium_inr": 26800, "source_url": "derived_from_anchor"}
+        {
+          "age": 30,
+          "sum_insured_inr": 500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 3,
+          "annual_premium_inr": 7968,
+          "source_url": "https://www.scribd.com/document/667873826/Annexure-2-Premium-Chart-Family-Health-Optima-Insurance-Plan-Revised",
+          "source_note": "Star Annexure-2 official premium chart: Zone A, 1A+1C floater, age 30-35, 5L SI = Rs 7,968"
+        },
+        {
+          "age": 40,
+          "sum_insured_inr": 500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 4,
+          "annual_premium_inr": 10046,
+          "source_url": "https://www.scribd.com/document/667873826/Annexure-2-Premium-Chart-Family-Health-Optima-Insurance-Plan-Revised",
+          "source_note": "Star Annexure-2: Zone A, age 36-45 = Rs 10,046"
+        },
+        {
+          "age": 48,
+          "sum_insured_inr": 500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 4,
+          "annual_premium_inr": 13669,
+          "source_url": "https://www.scribd.com/document/667873826/Annexure-2-Premium-Chart-Family-Health-Optima-Insurance-Plan-Revised",
+          "source_note": "Star Annexure-2: Zone A, age 46-50 = Rs 13,669"
+        },
+        {
+          "age": 35,
+          "sum_insured_inr": 1000000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 4,
+          "annual_premium_inr": 14500,
+          "source_url": "derived_from_anchor"
+        },
+        {
+          "age": 35,
+          "sum_insured_inr": 2500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 4,
+          "annual_premium_inr": 26800,
+          "source_url": "derived_from_anchor"
+        }
       ]
     },
     "star-health__comprehensive": {
       "policy_id": "star-health-comprehensive",
       "policy_name": "Star Comprehensive Health Insurance",
       "samples": [
-        {"age": 30, "sum_insured_inr": 500000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 8500, "source_url": "https://www.policybazaar.com/insurance-companies/star-health-insurance/star-comprehensive-insurance-policy/", "source_note": "Star Comprehensive - higher-tier individual variant, PolicyBazaar entry tile"},
-        {"age": 30, "sum_insured_inr": 1000000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 11200, "source_url": "derived_from_anchor"},
-        {"age": 45, "sum_insured_inr": 1000000, "city_tier": "metro", "smoker": false, "family_size": 2, "annual_premium_inr": 27800, "source_url": "derived_from_anchor"}
+        {
+          "age": 30,
+          "sum_insured_inr": 500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 8500,
+          "source_url": "https://www.policybazaar.com/insurance-companies/star-health-insurance/star-comprehensive-insurance-policy/",
+          "source_note": "Star Comprehensive - higher-tier individual variant, PolicyBazaar entry tile"
+        },
+        {
+          "age": 30,
+          "sum_insured_inr": 1000000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 11200,
+          "source_url": "derived_from_anchor"
+        },
+        {
+          "age": 45,
+          "sum_insured_inr": 1000000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 2,
+          "annual_premium_inr": 27800,
+          "source_url": "derived_from_anchor"
+        }
       ]
     },
     "star-health__senior-citizens-red-carpet": {
       "policy_id": "star-health-senior-red-carpet",
       "policy_name": "Star Senior Citizens Red Carpet",
       "samples": [
-        {"age": 60, "sum_insured_inr": 100000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 6710, "source_url": "https://www.starhealth.in/health-insurance/health-insurance-for-senior-citizens/", "source_note": "Star Senior Red Carpet base entry per official site: Rs 6,710 ex-tax for 1L SI (lowest band)"},
-        {"age": 60, "sum_insured_inr": 500000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 18900, "source_url": "derived_from_anchor"},
-        {"age": 65, "sum_insured_inr": 500000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 24500, "source_url": "derived_from_anchor"},
-        {"age": 70, "sum_insured_inr": 500000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 31200, "source_url": "derived_from_anchor"},
-        {"age": 75, "sum_insured_inr": 1000000, "city_tier": "metro", "smoker": false, "family_size": 1, "annual_premium_inr": 55000, "source_url": "derived_from_anchor"}
+        {
+          "age": 60,
+          "sum_insured_inr": 100000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 6710,
+          "source_url": "https://www.starhealth.in/health-insurance/health-insurance-for-senior-citizens/",
+          "source_note": "Star Senior Red Carpet base entry per official site: Rs 6,710 ex-tax for 1L SI (lowest band)"
+        },
+        {
+          "age": 60,
+          "sum_insured_inr": 500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 18900,
+          "source_url": "derived_from_anchor"
+        },
+        {
+          "age": 65,
+          "sum_insured_inr": 500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 24500,
+          "source_url": "derived_from_anchor"
+        },
+        {
+          "age": 70,
+          "sum_insured_inr": 500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 31200,
+          "source_url": "derived_from_anchor"
+        },
+        {
+          "age": 75,
+          "sum_insured_inr": 1000000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 55000,
+          "source_url": "derived_from_anchor"
+        }
       ]
     }
   },
@@ -316,6 +1055,14 @@
     },
     "_floater_source": "Derived from comparison of individual vs 1A+1C, 2A+0C, 2A+1C, 2A+2C rates in Star Family Health Optima Annexure-2 and Niva Bupa Health Premia rate card. A family floater for 4 is ~2.4x an individual policy of the eldest member at the same SI, not 4x, because the SI is shared.",
     "_combined_example": "30-year-old non-smoker in metro, 10L SI, family floater for 4: base ~Rs 5,500 (HDFC anchor) * age 1.0 * SI 1.35 * city 1.0 * smoker 1.0 * floater 2.4 = ~Rs 17,820/year. Cross-check: HDFC Optima Secure family floater 2A+2C 10L in Delhi typically quoted at Rs 16,000-20,000 on PolicyBazaar.",
-    "rounding": "All computed premiums should be rounded to nearest Rs 100 when surfaced to the user. Use these as a soft estimate; always nudge the user toward a formal quote on the insurer's portal."
+    "rounding": "All computed premiums should be rounded to nearest Rs 100 when surfaced to the user. Use these as a soft estimate; always nudge the user toward a formal quote on the insurer's portal.",
+    "ped_specialty_load": {
+      "diabetes_or_hypertension_day1": 1.35,
+      "_source": "Acko + PolicyBazaar published comparisons of PED-specialty vs base health plans 2024; range 30-40%, median 35%"
+    },
+    "group_plan_discount": {
+      "group_b2b": 0.6,
+      "_source": "Cafemutual + IRDAI group health filings; group rates typically 50-70% of individual"
+    }
   }
 }

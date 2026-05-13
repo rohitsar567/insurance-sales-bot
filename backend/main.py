@@ -488,7 +488,7 @@ class MarketplacePolicy(BaseModel):
     insurer_slug: str
     insurer_name: str
     insurer_home_url: str
-    source_pdf_url: str
+    source_pdf_url: Optional[str] = None
     grade: str
     overall_score: int
     one_liner: str
@@ -563,32 +563,37 @@ async def policies_all():
         else:
             si = []
 
-        out.append(MarketplacePolicy(
-            policy_id=data.get("policy_id", fp.stem),
-            policy_name=data.get("policy_name", fp.stem),
-            insurer_slug=slug,
-            insurer_name=name,
-            insurer_home_url=home,
-            source_pdf_url=data.get("source_pdf_url", ""),
-            grade=sc.grade,
-            overall_score=sc.overall_score,
-            one_liner=sc.one_liner,
-            data_completeness_pct=sc.data_completeness_pct,
-            min_entry_age=data.get("min_entry_age"),
-            max_entry_age=data.get("max_entry_age"),
-            max_renewal_age=data.get("max_renewal_age"),
-            sum_insured_options=si,
-            pre_existing_disease_waiting_months=data.get("pre_existing_disease_waiting_months"),
-            initial_waiting_period_days=data.get("initial_waiting_period_days"),
-            maternity_waiting_months=data.get("maternity_waiting_months"),
-            copayment_pct=data.get("copayment_pct") if isinstance(data.get("copayment_pct"), (int, float)) else None,
-            network_hospital_count=data.get("network_hospital_count"),
-            no_claim_bonus_pct=data.get("no_claim_bonus_pct"),
-            ayush_coverage=_coerce_bool(data.get("ayush_coverage")),
-            maternity_coverage=_coerce_bool(data.get("maternity_coverage")),
-            cashless_treatment_supported=_coerce_bool(data.get("cashless_treatment_supported")),
-            room_rent_capping=data.get("room_rent_capping") if isinstance(data.get("room_rent_capping"), str) else None,
-        ))
+        try:
+            out.append(MarketplacePolicy(
+                policy_id=data.get("policy_id", fp.stem),
+                policy_name=data.get("policy_name", fp.stem),
+                insurer_slug=slug,
+                insurer_name=name,
+                insurer_home_url=home,
+                source_pdf_url=data.get("source_pdf_url") or "",
+                grade=sc.grade,
+                overall_score=sc.overall_score,
+                one_liner=sc.one_liner,
+                data_completeness_pct=sc.data_completeness_pct,
+                min_entry_age=data.get("min_entry_age"),
+                max_entry_age=data.get("max_entry_age"),
+                max_renewal_age=data.get("max_renewal_age"),
+                sum_insured_options=si,
+                pre_existing_disease_waiting_months=data.get("pre_existing_disease_waiting_months"),
+                initial_waiting_period_days=data.get("initial_waiting_period_days"),
+                maternity_waiting_months=data.get("maternity_waiting_months"),
+                copayment_pct=data.get("copayment_pct") if isinstance(data.get("copayment_pct"), (int, float)) else None,
+                network_hospital_count=data.get("network_hospital_count"),
+                no_claim_bonus_pct=data.get("no_claim_bonus_pct"),
+                ayush_coverage=_coerce_bool(data.get("ayush_coverage")),
+                maternity_coverage=_coerce_bool(data.get("maternity_coverage")),
+                cashless_treatment_supported=_coerce_bool(data.get("cashless_treatment_supported")),
+                room_rent_capping=data.get("room_rent_capping") if isinstance(data.get("room_rent_capping"), str) else None,
+            ))
+        except Exception as e:
+            # One malformed extraction should not kill the whole feed
+            print(f"[marketplace] skipping {fp.name}: {type(e).__name__}: {str(e)[:120]}")
+            continue
 
     return MarketplaceResponse(
         policies=out,

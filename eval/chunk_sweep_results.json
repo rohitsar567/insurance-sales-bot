@@ -1,0 +1,83 @@
+{
+  "results": [
+    {
+      "chunk_size": 600,
+      "overlap": 80,
+      "chunk_count": 5075,
+      "storage_mb": 108.8,
+      "ingest_seconds": 2038.0,
+      "eval_seconds": 21.8,
+      "factual_accuracy": 0.4,
+      "citation_accuracy": 0.5,
+      "refusal_precision": 0.444,
+      "p50_latency_ms": 10545,
+      "p95_latency_ms": 15886
+    },
+    {
+      "chunk_size": 600,
+      "overlap": 120,
+      "chunk_count": 5474,
+      "storage_mb": 115.5,
+      "ingest_seconds": 1661.1,
+      "eval_seconds": 14.7,
+      "factual_accuracy": 0.4,
+      "citation_accuracy": 0.5,
+      "refusal_precision": 0.444,
+      "p50_latency_ms": 10545,
+      "p95_latency_ms": 15886
+    },
+    {
+      "chunk_size": 800,
+      "overlap": 80,
+      "chunk_count": 3703,
+      "storage_mb": 86.2,
+      "ingest_seconds": 1415.5,
+      "eval_seconds": 14.3,
+      "factual_accuracy": 0.4,
+      "citation_accuracy": 0.5,
+      "refusal_precision": 0.444,
+      "p50_latency_ms": 10545,
+      "p95_latency_ms": 15886
+    },
+    {
+      "chunk_size": 800,
+      "overlap": 120,
+      "chunk_count": 3915,
+      "storage_mb": 93.3,
+      "ingest_seconds": 1414.5,
+      "eval_seconds": 14.6,
+      "factual_accuracy": 0.4,
+      "citation_accuracy": 0.5,
+      "refusal_precision": 0.444,
+      "p50_latency_ms": 10545,
+      "p95_latency_ms": 15886
+    },
+    {
+      "chunk_size": 1000,
+      "overlap": 120,
+      "chunk_count": 3051,
+      "storage_mb": 88.8,
+      "ingest_seconds": 1359.4,
+      "eval_seconds": 21.5,
+      "factual_accuracy": 0.4,
+      "citation_accuracy": 0.5,
+      "refusal_precision": 0.444,
+      "p50_latency_ms": 10545,
+      "p95_latency_ms": 15886
+    },
+    {
+      "chunk_size": 1000,
+      "overlap": 200,
+      "chunk_count": 3339,
+      "storage_mb": 92.3,
+      "ingest_seconds": 1313.4,
+      "eval_seconds": 14.6,
+      "factual_accuracy": 0.4,
+      "citation_accuracy": 0.5,
+      "refusal_precision": 0.444,
+      "p50_latency_ms": 10545,
+      "p95_latency_ms": 15886
+    }
+  ],
+  "in_progress": false
+}

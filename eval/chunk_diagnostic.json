@@ -1,0 +1,608 @@
+[
+  {
+    "chunk_size": 400,
+    "overlap": 60,
+    "chunk_count": 7641,
+    "summary": {
+      "ran_at": "2026-05-12T22:30:15Z",
+      "elapsed_seconds": 293.0,
+      "n_questions": 25,
+      "factual_accuracy": 0.4,
+      "citation_accuracy": 0.5,
+      "refusal_precision": 0.444,
+      "by_type": {
+        "waiting_period": 0.125,
+        "coverage_scope": 1.0,
+        "sub_limit": 0.333,
+        "exclusions_oos": 0.333,
+        "regulatory_oos": 0.667,
+        "bonus": 0.0
+      },
+      "by_brain": {
+        "groq-llama": 1.0,
+        "sarvam-m": 0.375
+      },
+      "blocked_count": 12
+    },
+    "rows": [
+      {
+        "id": "aditya-birla__activ-assure-diamond__wordings::pre_existing_disease_waiting_months::easy",
+        "question": "What is the waiting period for pre-existing diseases under Activ Assure?",
+        "blocked": false,
+        "factual_match": true,
+        "brain": "groq-llama::fallback-truncated-reasoning",
+        "bot_answer": "The waiting period for pre-existing diseases under Activ Assure is 24 months [Source: Activ Assure Diamond (aditya-birla), pp.10-11].",
+        "judge_reason": "BOT accurately conveys the waiting period.",
+        "faithfulness_reasons": []
+      },
+      {
+        "id": "aditya-birla__activ-assure-diamond__wordings::pre_existing_disease_waiting_months::medium",
+        "question": "If I have diabetes, how long do I have to wait before I can claim under Activ Assure?",
+        "blocked": true,
+        "factual_match": false,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "I'd rather not answer that without stronger evidence in the policy documents I have. Could you rephrase, or narrow your question to a specific policy?",
+        "judge_reason": "bot refused on a question with a known answer",
+        "faithfulness_reasons": [
+          "gate4_llm_judge: claims unsupported"
+        ]
+      },
+      {
+        "id": "aditya-birla__activ-assure-diamond__wordings::ayush_coverage::easy",
+        "question": "Does Activ Assure cover AYUSH (Ayurveda, Yoga, Unani, Siddha, Homeopathy)?",
+        "blocked": false,
+        "factual_match": true,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "Yes, Activ Assure Diamond does cover AYUSH treatments (Ayurveda, Yoga, Unani, Siddha, Homeopathy) under specific conditions. The policy reimburses in-patient hospitalization expenses for Ayush treatments conducted at recognized institutions [Source: Activ Assure Diamond (aditya-birla), p.3-4].  \n\nKey requirements:  \n1. Treatment must be at government hospitals, CCIM/CCH-recognized AYUSH colleges, or accredited institutions with \u226515 beds and qualified doctors  \n2. Must be performed by a registered AYUSH practitioner  \n3. Only covers in-patient expenses (excludes pre/post-hospitalization costs)  \n\nNote: This coverage is subject to policy schedule limits and hospital accreditation criteria. For out-patient Ayush consultations, coverage isn't mentioned in the provided clauses.",
+        "judge_reason": "BOT accurately conveys the information",
+        "faithfulness_reasons": []
+      },
+      {
+        "id": "aditya-birla__activ-assure-diamond__wordings::room_rent_capping::medium",
+        "question": "Is there a cap on room rent under Activ Assure?",
+        "blocked": false,
+        "factual_match": false,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "The room rent cap under Activ Assure is specified in your Policy Schedule/Product Benefit Table, as per the sub-limits mentioned [Source: Activ Assure Diamond (aditya-birla), p.1]. For example, a \"Single Private A/C Room\" is defined as the most economical accommodation category with specific limits [Source: Activ Assure Diamond (aditya-birla), p.23-24].  \n\nNote: This is subject to IRDAI regulations mandating reasonable sub-limits. For your exact cap, check the \"Room Rent\" section in your Policy Schedule or contact Aditya Birla Health directly.",
+        "judge_reason": "BOT does not convey the upgradability to the next level.",
+        "faithfulness_reasons": []
+      },
+      {
+        "id": "aditya-birla__activ-assure-diamond__wordings::REFUSE::exclusions_oos::hard",
+        "question": "Does Activ Assure cover injuries from space tourism?",
+        "blocked": false,
+        "factual_match": false,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "Activ Assure Diamond does not explicitly cover injuries from space tourism. The policy excludes \"participation or involvement in... professional or semiprofessional nature\" activities like aviation, scuba diving, or paragliding [Source: Activ Assure Diamond (aditya-birla), p.13]. Space tourism would likely be considered a high-risk activity falling under this exclusion. Additionally, injuries from \"willful or deliberate exposure to danger\" are not covered [Same source].  \n\nNote: This policy has a 36-month waiting period for pre-existing conditions, but space tourism exclusions apply regardless. For clarity, I recommend confirming with the insurer directly before purchasing, as space tourism is not a standard coverage scenario.",
+        "judge_reason": "did not refuse when expected",
+        "faithfulness_reasons": []
+      },
+      {
+        "id": "aditya-birla__activ-assure-diamond__wordings::REFUSE::exclusions_oos::hard",
+        "question": "What is the maximum claim amount for diamond-tipped surgical procedures under Activ Assure?",
+        "blocked": true,
+        "factual_match": true,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "I'd rather not answer that without stronger evidence in the policy documents I have. Could you rephrase, or narrow your question to a specific policy?",
+        "judge_reason": "correctly refused",
+        "faithfulness_reasons": [
+          "gate4_llm_judge: claims unsupported"
+        ]
+      },
+      {
+        "id": "aditya-birla__activ-assure-diamond__wordings::REFUSE::regulatory_oos::hard",
+        "question": "What is the IRDAI mandate on dental coverage that Activ Assure must follow?",
+        "blocked": true,
+        "factual_match": true,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "I'd rather not answer that without stronger evidence in the policy documents I have. Could you rephrase, or narrow your question to a specific policy?",
+        "judge_reason": "correctly refused",
+        "faithfulness_reasons": [
+          "gate4_llm_judge: claims unsupported"
+        ]
+      },
+      {
+        "id": "bajaj-allianz__comprehensive-care-plan__wordings::pre_existing_disease_waiting_months::easy",
+        "question": "What is the waiting period for pre-existing diseases under Comprehensive Care Plan?",
+        "blocked": true,
+        "factual_match": false,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "I'd rather not answer that without stronger evidence in the policy documents I have. Could you rephrase, or narrow your question to a specific policy?",
+        "judge_reason": "bot refused on a question with a known answer",
+        "faithfulness_reasons": [
+          "gate4_llm_judge: claims unsupported"
+        ]
+      },
+      {
+        "id": "bajaj-allianz__comprehensive-care-plan__wordings::pre_existing_disease_waiting_months::medium",
+        "question": "If I have diabetes, how long do I have to wait before I can claim under Comprehensive Care Plan?",
+        "blocked": true,
+        "factual_match": false,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "I'd rather not answer that without stronger evidence in the policy documents I have. Could you rephrase, or narrow your question to a specific policy?",
+        "judge_reason": "bot refused on a question with a known answer",
+        "faithfulness_reasons": [
+          "gate4_llm_judge: claims unsupported"
+        ]
+      },
+      {
+        "id": "bajaj-allianz__comprehensive-care-plan__wordings::initial_waiting_period_days::easy",
+        "question": "What is the initial waiting period under Comprehensive Care Plan?",
+        "blocked": true,
+        "factual_match": false,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "I'd rather not answer that without stronger evidence in the policy documents I have. Could you rephrase, or narrow your question to a specific policy?",
+        "judge_reason": "bot refused on a question with a known answer",
+        "faithfulness_reasons": [
+          "gate4_llm_judge: claims unsupported"
+        ]
+      },
+      {
+        "id": "bajaj-allianz__comprehensive-care-plan__wordings::ayush_coverage::easy",
+        "question": "Does Comprehensive Care Plan cover AYUSH (Ayurveda, Yoga, Unani, Siddha, Homeopathy)?",
+        "blocked": false,
+        "factual_match": true,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "The Comprehensive Care Plan does cover AYUSH treatments (Ayurveda, Yoga, Unani, Siddha, Homeopathy) **if** the treatment is conducted in a recognized AYUSH Hospital or Day Care Centre as defined in the policy. Coverage includes hospitalization and day-care procedures under these systems [Source: Comprehensive Care Plan (bajaj-allianz), p.1-2].  \n\n**Key criteria for AYUSH facilities**:  \n- Minimum 5 in-patient beds (15 in larger towns)  \n- 24/7 qualified AYUSH practitioners  \n- Dedicated therapy sections/operation theatres  \n- Registered with local authorities [Source: Comprehensive Care Plan (bajaj-allianz), p.1-2].  \n\nNote: This coverage applies only to in-patient hospitalization or day-care procedures at these facilities. For out-patient AYUSH consultations, the policy does not explicitly mention coverage in the provided clauses.",
+        "judge_reason": "BOT accurately conveys the coverage of AYUSH treatments.",
+        "faithfulness_reasons": []
+      },
+      {
+        "id": "bajaj-allianz__comprehensive-care-plan__wordings::REFUSE::exclusions_oos::hard",
+        "question": "Does Comprehensive Care Plan cover injuries from space tourism?",
+        "blocked": true,
+        "factual_match": true,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "I'd rather not answer that without stronger evidence in the policy documents I have. Could you rephrase, or narrow your question to a specific policy?",
+        "judge_reason": "correctly refused",
+        "faithfulness_reasons": [
+          "fabricated_citation: same as above, clause 3"
+        ]
+      },
+      {
+        "id": "bajaj-allianz__comprehensive-care-plan__wordings::REFUSE::exclusions_oos::hard",
+        "question": "What is the maximum claim amount for diamond-tipped surgical procedures under Comprehensive Care Plan?",
+        "blocked": false,
+        "factual_match": false,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "The Comprehensive Care Plan policy document provided does not mention any specific coverage limits or exclusions for diamond-tipped surgical procedures. The retrieved clauses focus on general terms, claim timelines, exclusions like terrorism, and benefits for critical illnesses/accidents, but no procedure-specific limits are indicated [Source: Comprehensive Care Plan (bajaj-allianz), pp.1-16].\n\nFor clarity, the policy covers surgical procedures under Section 5 (Critical Illness) and Section 2 (Accident Protection), but these are subject to general terms like waiting periods and exclusions. Since the document lacks details about diamond-tipped procedures, I cannot confirm coverage for this specific case.\n\nNote: This type of specialized procedure might require pre-authorization. I\u2019d recommend you confirm with the insurer directly before finalizing any treatment.",
+        "judge_reason": "did not refuse when expected",
+        "faithfulness_reasons": []
+      },
+      {
+        "id": "bajaj-allianz__comprehensive-care-plan__wordings::REFUSE::regulatory_oos::hard",
+        "question": "What is the IRDAI mandate on dental coverage that Comprehensive Care Plan must follow?",
+        "blocked": false,
+        "factual_match": false,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "The Comprehensive Care Plan policy document does not explicitly mention any IRDAI mandates specifically for dental coverage. The retrieved clauses focus on general hospitalization, AYUSH facilities, and day care centers without dental-specific provisions [Source: Comprehensive Care Plan (bajaj-allianz), pp.1-30].  \n\nFor dental coverage details, you would need to check the policy's excluded treatments or consult IRDAI's general health insurance regulations (not provided in this context). I recommend confirming directly with Bajaj Allianz or reviewing the policy's exclusions section for dental-related clauses.",
+        "judge_reason": "did not refuse when expected",
+        "faithfulness_reasons": []
+      },
+      {
+        "id": "bajaj-allianz__silver-health__cis::pre_existing_disease_waiting_months::easy",
+        "question": "What is the waiting period for pre-existing diseases under Silver Health?",
+        "blocked": true,
+        "factual_match": false,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "I'd rather not answer that without stronger evidence in the policy documents I have. Could you rephrase, or narrow your question to a specific policy?",
+        "judge_reason": "bot refused on a question with a known answer",
+        "faithfulness_reasons": [
+          "gate4_llm_judge: claims unsupported"
+        ]
+      },
+      {
+        "id": "bajaj-allianz__silver-health__cis::pre_existing_disease_waiting_months::medium",
+        "question": "If I have diabetes, how long do I have to wait before I can claim under Silver Health?",
+        "blocked": true,
+        "factual_match": false,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "I'd rather not answer that without stronger evidence in the policy documents I have. Could you rephrase, or narrow your question to a specific policy?",
+        "judge_reason": "bot refused on a question with a known answer",
+        "faithfulness_reasons": [
+          "gate4_llm_judge: claims unsupported"
+        ]
+      },
+      {
+        "id": "bajaj-allianz__silver-health__cis::initial_waiting_period_days::easy",
+        "question": "What is the initial waiting period under Silver Health?",
+        "blocked": false,
+        "factual_match": false,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "The initial waiting period under Silver Health (Bajaj Allianz) is **30 days for all illnesses** as per the policy clauses [Source: Silver Health (bajaj-allianz), pp.2-4]. This applies to all covered treatments except specific procedures listed under the 12-month waiting period. Note: This is the policy's standard waiting period \u2013 confirm with the insurer if your specific condition/procedure has additional waiting periods.",
+        "judge_reason": "judge_error: HTTPStatusError: Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429",
+        "faithfulness_reasons": []
+      },
+      {
+        "id": "bajaj-allianz__silver-health__cis::pre_hospitalization_days::easy",
+        "question": "How many days of pre-hospitalization expenses does Silver Health cover?",
+        "blocked": false,
+        "factual_match": true,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "Silver Health covers **30 days** of pre-hospitalization expenses prior to hospitalization, as per the policy clauses [Source: Silver Health (bajaj-allianz), p.1].  \n\nNote: This is subject to the general terms of the policy and any applicable exclusions. For example, expenses related to investigations or non-medical reasons (as listed in exclusions) would not be covered.",
+        "judge_reason": "BOT accurately conveys the key information.",
+        "faithfulness_reasons": []
+      },
+      {
+        "id": "bajaj-allianz__silver-health__cis::post_hospitalization_days::easy",
+        "question": "How many days of post-hospitalization expenses does Silver Health cover?",
+        "blocked": false,
+        "factual_match": true,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "Silver Health covers post-hospitalization expenses for **up to 60 days** from the date of discharge, as per the policy clauses [Source: Silver Health (bajaj-allianz), p.1].  \n\nNote: This is subject to the insured being admitted for over 24 hours. For clarity, you may confirm this with the insurer directly before finalizing.",
+        "judge_reason": "BOT accurately conveys the post-hospitalization coverage period.",
+        "faithfulness_reasons": []
+      },
+      {
+        "id": "bajaj-allianz__silver-health__cis::no_claim_bonus_pct::easy",
+        "question": "What's the no-claim bonus on Silver Health?",
+        "blocked": true,
+        "factual_match": false,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "I'd rather not answer that without stronger evidence in the policy documents I have. Could you rephrase, or narrow your question to a specific policy?",
+        "judge_reason": "bot refused on a question with a known answer",
+        "faithfulness_reasons": [
+          "unsupported_number: 2 years"
+        ]
+      },
+      {
+        "id": "bajaj-allianz__silver-health__cis::room_rent_capping::medium",
+        "question": "Is there a cap on room rent under Silver Health?",
+        "blocked": true,
+        "factual_match": false,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "I'd rather not answer that without stronger evidence in the policy documents I have. Could you rephrase, or narrow your question to a specific policy?",
+        "judge_reason": "bot refused on a question with a known answer",
+        "faithfulness_reasons": [
+          "unsupported_number: \u20b92",
+          "unsupported_number: \u20b92"
+        ]
+      },
+      {
+        "id": "bajaj-allianz__silver-health__cis::copayment_pct::easy",
+        "question": "Is there a copayment under Silver Health?",
+        "blocked": false,
+        "factual_match": true,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "Silver Health (bajaj-allianz) does not have a mandatory copayment clause in the base policy. However, specific add-ons like **cataract coverage** require a 10% copayment (max \u20b940,000 per claim) [Source: Silver Health (bajaj-allianz), p.3]. For non-network hospitals, a 20% copayment applies per claim unless an extra premium is paid to waive it [Source: Silver Health (bajaj-allianz), p.3].  \n\nNote: This varies by plan (A/B) and add-ons selected.",
+        "judge_reason": "BOT accurately conveys the copayment information.",
+        "faithfulness_reasons": []
+      },
+      {
+        "id": "bajaj-allianz__silver-health__cis::REFUSE::exclusions_oos::hard",
+        "question": "Does Silver Health cover injuries from space tourism?",
+        "blocked": false,
+        "factual_match": false,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "Silver Health by Bajaj Allianz does not explicitly cover injuries from space tourism based on the provided policy clauses. The policy covers in-patient hospitalization for accidental bodily injuries (Section C1) but excludes treatments outside India (Exclusion DII) and does not mention space tourism as a covered scenario.  \n\n**Key reasons:**  \n1. **Geographic exclusion**: All treatments outside India are excluded [Source: Silver Health (bajaj-allianz), p.2-4, Exclusion DII]. Space tourism typically occurs outside India.  \n2. **No specific coverage**: The policy does not list space tourism or high-altitude/aviation-related injuries as covered risks.  \n\n**Note**: This policy has a 30-day initial waiting period for all illnesses [Source: Silver Health (bajaj-allianz), p.3-5, Standard Time Period]. Even if coverage were claimed, pre-existing conditions related to such activities would face a 12-month waiting period.  \n\nI recommend you confirm directly with the insurer, as non-standard activities often require specific riders or exclusions.",
+        "judge_reason": "did not refuse when expected",
+        "faithfulness_reasons": []
+      },
+      {
+        "id": "bajaj-allianz__silver-health__cis::REFUSE::exclusions_oos::hard",
+        "question": "What is the maximum claim amount for diamond-tipped surgical procedures under Silver Health?",
+        "blocked": false,
+        "factual_match": false,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "The provided policy documents do not specifically mention diamond-tipped surgical procedures under covered treatments. While the policy covers advanced procedures like robotic surgeries and stereotactic radio surgeries [Source: Silver Health (bajaj-allianz), pp.2-3], there is no explicit reference to \"diamond-tipped\" procedures in the listed inclusions or exclusions.  \n\nFor clarity:  \n1. If the procedure falls under the broader category of \"Modern Treatment Methods\" (e.g., robotic surgeries), it *may* be covered up to the sum insured [Source: Silver Health (bajaj-allianz), pp.2-3].  \n2. If it is a cosmetic or elective procedure, it would likely be excluded under Section D II (cosmetic surgery) or Exclusion 10 (non-medical items) [Source: Silver Health (bajaj-allianz), pp.2-4].  \n\n**Note**: The policy does not specify sub-limits for individual procedures beyond the overall sum insured. For confirmation, you would need to share the specific procedure details with the insurer, as coverage depends on whether it aligns with the defined categories.",
+        "judge_reason": "did not refuse when expected",
+        "faithfulness_reasons": []
+      },
+      {
+        "id": "bajaj-allianz__silver-health__cis::REFUSE::regulatory_oos::hard",
+        "question": "What is the IRDAI mandate on dental coverage that Silver Health must follow?",
+        "blocked": true,
+        "factual_match": true,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "I'd rather not answer that without stronger evidence in the policy documents I have. Could you rephrase, or narrow your question to a specific policy?",
+        "judge_reason": "correctly refused",
+        "faithfulness_reasons": [
+          "gate4_llm_judge: claims unsupported"
+        ]
+      }
+    ]
+  },
+  {
+    "chunk_size": 1500,
+    "overlap": 300,
+    "chunk_count": 7641,
+    "summary": {
+      "ran_at": "2026-05-12T22:30:15Z",
+      "elapsed_seconds": 293.0,
+      "n_questions": 25,
+      "factual_accuracy": 0.4,
+      "citation_accuracy": 0.5,
+      "refusal_precision": 0.444,
+      "by_type": {
+        "waiting_period": 0.125,
+        "coverage_scope": 1.0,
+        "sub_limit": 0.333,
+        "exclusions_oos": 0.333,
+        "regulatory_oos": 0.667,
+        "bonus": 0.0
+      },
+      "by_brain": {
+        "groq-llama": 1.0,
+        "sarvam-m": 0.375
+      },
+      "blocked_count": 12
+    },
+    "rows": [
+      {
+        "id": "aditya-birla__activ-assure-diamond__wordings::pre_existing_disease_waiting_months::easy",
+        "question": "What is the waiting period for pre-existing diseases under Activ Assure?",
+        "blocked": false,
+        "factual_match": true,
+        "brain": "groq-llama::fallback-truncated-reasoning",
+        "bot_answer": "The waiting period for pre-existing diseases under Activ Assure is 24 months [Source: Activ Assure Diamond (aditya-birla), pp.10-11].",
+        "judge_reason": "BOT accurately conveys the waiting period.",
+        "faithfulness_reasons": []
+      },
+      {
+        "id": "aditya-birla__activ-assure-diamond__wordings::pre_existing_disease_waiting_months::medium",
+        "question": "If I have diabetes, how long do I have to wait before I can claim under Activ Assure?",
+        "blocked": true,
+        "factual_match": false,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "I'd rather not answer that without stronger evidence in the policy documents I have. Could you rephrase, or narrow your question to a specific policy?",
+        "judge_reason": "bot refused on a question with a known answer",
+        "faithfulness_reasons": [
+          "gate4_llm_judge: claims unsupported"
+        ]
+      },
+      {
+        "id": "aditya-birla__activ-assure-diamond__wordings::ayush_coverage::easy",
+        "question": "Does Activ Assure cover AYUSH (Ayurveda, Yoga, Unani, Siddha, Homeopathy)?",
+        "blocked": false,
+        "factual_match": true,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "Yes, Activ Assure Diamond does cover AYUSH treatments (Ayurveda, Yoga, Unani, Siddha, Homeopathy) under specific conditions. The policy reimburses in-patient hospitalization expenses for Ayush treatments conducted at recognized institutions [Source: Activ Assure Diamond (aditya-birla), p.3-4].  \n\nKey requirements:  \n1. Treatment must be at government hospitals, CCIM/CCH-recognized AYUSH colleges, or accredited institutions with \u226515 beds and qualified doctors  \n2. Must be performed by a registered AYUSH practitioner  \n3. Only covers in-patient expenses (excludes pre/post-hospitalization costs)  \n\nNote: This coverage is subject to policy schedule limits and hospital accreditation criteria. For out-patient Ayush consultations, coverage isn't mentioned in the provided clauses.",
+        "judge_reason": "BOT accurately conveys the information",
+        "faithfulness_reasons": []
+      },
+      {
+        "id": "aditya-birla__activ-assure-diamond__wordings::room_rent_capping::medium",
+        "question": "Is there a cap on room rent under Activ Assure?",
+        "blocked": false,
+        "factual_match": false,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "The room rent cap under Activ Assure is specified in your Policy Schedule/Product Benefit Table, as per the sub-limits mentioned [Source: Activ Assure Diamond (aditya-birla), p.1]. For example, a \"Single Private A/C Room\" is defined as the most economical accommodation category with specific limits [Source: Activ Assure Diamond (aditya-birla), p.23-24].  \n\nNote: This is subject to IRDAI regulations mandating reasonable sub-limits. For your exact cap, check the \"Room Rent\" section in your Policy Schedule or contact Aditya Birla Health directly.",
+        "judge_reason": "BOT does not convey the upgradability to the next level.",
+        "faithfulness_reasons": []
+      },
+      {
+        "id": "aditya-birla__activ-assure-diamond__wordings::REFUSE::exclusions_oos::hard",
+        "question": "Does Activ Assure cover injuries from space tourism?",
+        "blocked": false,
+        "factual_match": false,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "Activ Assure Diamond does not explicitly cover injuries from space tourism. The policy excludes \"participation or involvement in... professional or semiprofessional nature\" activities like aviation, scuba diving, or paragliding [Source: Activ Assure Diamond (aditya-birla), p.13]. Space tourism would likely be considered a high-risk activity falling under this exclusion. Additionally, injuries from \"willful or deliberate exposure to danger\" are not covered [Same source].  \n\nNote: This policy has a 36-month waiting period for pre-existing conditions, but space tourism exclusions apply regardless. For clarity, I recommend confirming with the insurer directly before purchasing, as space tourism is not a standard coverage scenario.",
+        "judge_reason": "did not refuse when expected",
+        "faithfulness_reasons": []
+      },
+      {
+        "id": "aditya-birla__activ-assure-diamond__wordings::REFUSE::exclusions_oos::hard",
+        "question": "What is the maximum claim amount for diamond-tipped surgical procedures under Activ Assure?",
+        "blocked": true,
+        "factual_match": true,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "I'd rather not answer that without stronger evidence in the policy documents I have. Could you rephrase, or narrow your question to a specific policy?",
+        "judge_reason": "correctly refused",
+        "faithfulness_reasons": [
+          "gate4_llm_judge: claims unsupported"
+        ]
+      },
+      {
+        "id": "aditya-birla__activ-assure-diamond__wordings::REFUSE::regulatory_oos::hard",
+        "question": "What is the IRDAI mandate on dental coverage that Activ Assure must follow?",
+        "blocked": true,
+        "factual_match": true,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "I'd rather not answer that without stronger evidence in the policy documents I have. Could you rephrase, or narrow your question to a specific policy?",
+        "judge_reason": "correctly refused",
+        "faithfulness_reasons": [
+          "gate4_llm_judge: claims unsupported"
+        ]
+      },
+      {
+        "id": "bajaj-allianz__comprehensive-care-plan__wordings::pre_existing_disease_waiting_months::easy",
+        "question": "What is the waiting period for pre-existing diseases under Comprehensive Care Plan?",
+        "blocked": true,
+        "factual_match": false,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "I'd rather not answer that without stronger evidence in the policy documents I have. Could you rephrase, or narrow your question to a specific policy?",
+        "judge_reason": "bot refused on a question with a known answer",
+        "faithfulness_reasons": [
+          "gate4_llm_judge: claims unsupported"
+        ]
+      },
+      {
+        "id": "bajaj-allianz__comprehensive-care-plan__wordings::pre_existing_disease_waiting_months::medium",
+        "question": "If I have diabetes, how long do I have to wait before I can claim under Comprehensive Care Plan?",
+        "blocked": true,
+        "factual_match": false,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "I'd rather not answer that without stronger evidence in the policy documents I have. Could you rephrase, or narrow your question to a specific policy?",
+        "judge_reason": "bot refused on a question with a known answer",
+        "faithfulness_reasons": [
+          "gate4_llm_judge: claims unsupported"
+        ]
+      },
+      {
+        "id": "bajaj-allianz__comprehensive-care-plan__wordings::initial_waiting_period_days::easy",
+        "question": "What is the initial waiting period under Comprehensive Care Plan?",
+        "blocked": true,
+        "factual_match": false,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "I'd rather not answer that without stronger evidence in the policy documents I have. Could you rephrase, or narrow your question to a specific policy?",
+        "judge_reason": "bot refused on a question with a known answer",
+        "faithfulness_reasons": [
+          "gate4_llm_judge: claims unsupported"
+        ]
+      },
+      {
+        "id": "bajaj-allianz__comprehensive-care-plan__wordings::ayush_coverage::easy",
+        "question": "Does Comprehensive Care Plan cover AYUSH (Ayurveda, Yoga, Unani, Siddha, Homeopathy)?",
+        "blocked": false,
+        "factual_match": true,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "The Comprehensive Care Plan does cover AYUSH treatments (Ayurveda, Yoga, Unani, Siddha, Homeopathy) **if** the treatment is conducted in a recognized AYUSH Hospital or Day Care Centre as defined in the policy. Coverage includes hospitalization and day-care procedures under these systems [Source: Comprehensive Care Plan (bajaj-allianz), p.1-2].  \n\n**Key criteria for AYUSH facilities**:  \n- Minimum 5 in-patient beds (15 in larger towns)  \n- 24/7 qualified AYUSH practitioners  \n- Dedicated therapy sections/operation theatres  \n- Registered with local authorities [Source: Comprehensive Care Plan (bajaj-allianz), p.1-2].  \n\nNote: This coverage applies only to in-patient hospitalization or day-care procedures at these facilities. For out-patient AYUSH consultations, the policy does not explicitly mention coverage in the provided clauses.",
+        "judge_reason": "BOT accurately conveys the coverage of AYUSH treatments.",
+        "faithfulness_reasons": []
+      },
+      {
+        "id": "bajaj-allianz__comprehensive-care-plan__wordings::REFUSE::exclusions_oos::hard",
+        "question": "Does Comprehensive Care Plan cover injuries from space tourism?",
+        "blocked": true,
+        "factual_match": true,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "I'd rather not answer that without stronger evidence in the policy documents I have. Could you rephrase, or narrow your question to a specific policy?",
+        "judge_reason": "correctly refused",
+        "faithfulness_reasons": [
+          "fabricated_citation: same as above, clause 3"
+        ]
+      },
+      {
+        "id": "bajaj-allianz__comprehensive-care-plan__wordings::REFUSE::exclusions_oos::hard",
+        "question": "What is the maximum claim amount for diamond-tipped surgical procedures under Comprehensive Care Plan?",
+        "blocked": false,
+        "factual_match": false,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "The Comprehensive Care Plan policy document provided does not mention any specific coverage limits or exclusions for diamond-tipped surgical procedures. The retrieved clauses focus on general terms, claim timelines, exclusions like terrorism, and benefits for critical illnesses/accidents, but no procedure-specific limits are indicated [Source: Comprehensive Care Plan (bajaj-allianz), pp.1-16].\n\nFor clarity, the policy covers surgical procedures under Section 5 (Critical Illness) and Section 2 (Accident Protection), but these are subject to general terms like waiting periods and exclusions. Since the document lacks details about diamond-tipped procedures, I cannot confirm coverage for this specific case.\n\nNote: This type of specialized procedure might require pre-authorization. I\u2019d recommend you confirm with the insurer directly before finalizing any treatment.",
+        "judge_reason": "did not refuse when expected",
+        "faithfulness_reasons": []
+      },
+      {
+        "id": "bajaj-allianz__comprehensive-care-plan__wordings::REFUSE::regulatory_oos::hard",
+        "question": "What is the IRDAI mandate on dental coverage that Comprehensive Care Plan must follow?",
+        "blocked": false,
+        "factual_match": false,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "The Comprehensive Care Plan policy document does not explicitly mention any IRDAI mandates specifically for dental coverage. The retrieved clauses focus on general hospitalization, AYUSH facilities, and day care centers without dental-specific provisions [Source: Comprehensive Care Plan (bajaj-allianz), pp.1-30].  \n\nFor dental coverage details, you would need to check the policy's excluded treatments or consult IRDAI's general health insurance regulations (not provided in this context). I recommend confirming directly with Bajaj Allianz or reviewing the policy's exclusions section for dental-related clauses.",
+        "judge_reason": "did not refuse when expected",
+        "faithfulness_reasons": []
+      },
+      {
+        "id": "bajaj-allianz__silver-health__cis::pre_existing_disease_waiting_months::easy",
+        "question": "What is the waiting period for pre-existing diseases under Silver Health?",
+        "blocked": true,
+        "factual_match": false,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "I'd rather not answer that without stronger evidence in the policy documents I have. Could you rephrase, or narrow your question to a specific policy?",
+        "judge_reason": "bot refused on a question with a known answer",
+        "faithfulness_reasons": [
+          "gate4_llm_judge: claims unsupported"
+        ]
+      },
+      {
+        "id": "bajaj-allianz__silver-health__cis::pre_existing_disease_waiting_months::medium",
+        "question": "If I have diabetes, how long do I have to wait before I can claim under Silver Health?",
+        "blocked": true,
+        "factual_match": false,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "I'd rather not answer that without stronger evidence in the policy documents I have. Could you rephrase, or narrow your question to a specific policy?",
+        "judge_reason": "bot refused on a question with a known answer",
+        "faithfulness_reasons": [
+          "gate4_llm_judge: claims unsupported"
+        ]
+      },
+      {
+        "id": "bajaj-allianz__silver-health__cis::initial_waiting_period_days::easy",
+        "question": "What is the initial waiting period under Silver Health?",
+        "blocked": false,
+        "factual_match": false,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "The initial waiting period under Silver Health (Bajaj Allianz) is **30 days for all illnesses** as per the policy clauses [Source: Silver Health (bajaj-allianz), pp.2-4]. This applies to all covered treatments except specific procedures listed under the 12-month waiting period. Note: This is the policy's standard waiting period \u2013 confirm with the insurer if your specific condition/procedure has additional waiting periods.",
+        "judge_reason": "judge_error: HTTPStatusError: Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429",
+        "faithfulness_reasons": []
+      },
+      {
+        "id": "bajaj-allianz__silver-health__cis::pre_hospitalization_days::easy",
+        "question": "How many days of pre-hospitalization expenses does Silver Health cover?",
+        "blocked": false,
+        "factual_match": true,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "Silver Health covers **30 days** of pre-hospitalization expenses prior to hospitalization, as per the policy clauses [Source: Silver Health (bajaj-allianz), p.1].  \n\nNote: This is subject to the general terms of the policy and any applicable exclusions. For example, expenses related to investigations or non-medical reasons (as listed in exclusions) would not be covered.",
+        "judge_reason": "BOT accurately conveys the key information.",
+        "faithfulness_reasons": []
+      },
+      {
+        "id": "bajaj-allianz__silver-health__cis::post_hospitalization_days::easy",
+        "question": "How many days of post-hospitalization expenses does Silver Health cover?",
+        "blocked": false,
+        "factual_match": true,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "Silver Health covers post-hospitalization expenses for **up to 60 days** from the date of discharge, as per the policy clauses [Source: Silver Health (bajaj-allianz), p.1].  \n\nNote: This is subject to the insured being admitted for over 24 hours. For clarity, you may confirm this with the insurer directly before finalizing.",
+        "judge_reason": "BOT accurately conveys the post-hospitalization coverage period.",
+        "faithfulness_reasons": []
+      },
+      {
+        "id": "bajaj-allianz__silver-health__cis::no_claim_bonus_pct::easy",
+        "question": "What's the no-claim bonus on Silver Health?",
+        "blocked": true,
+        "factual_match": false,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "I'd rather not answer that without stronger evidence in the policy documents I have. Could you rephrase, or narrow your question to a specific policy?",
+        "judge_reason": "bot refused on a question with a known answer",
+        "faithfulness_reasons": [
+          "unsupported_number: 2 years"
+        ]
+      },
+      {
+        "id": "bajaj-allianz__silver-health__cis::room_rent_capping::medium",
+        "question": "Is there a cap on room rent under Silver Health?",
+        "blocked": true,
+        "factual_match": false,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "I'd rather not answer that without stronger evidence in the policy documents I have. Could you rephrase, or narrow your question to a specific policy?",
+        "judge_reason": "bot refused on a question with a known answer",
+        "faithfulness_reasons": [
+          "unsupported_number: \u20b92",
+          "unsupported_number: \u20b92"
+        ]
+      },
+      {
+        "id": "bajaj-allianz__silver-health__cis::copayment_pct::easy",
+        "question": "Is there a copayment under Silver Health?",
+        "blocked": false,
+        "factual_match": true,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "Silver Health (bajaj-allianz) does not have a mandatory copayment clause in the base policy. However, specific add-ons like **cataract coverage** require a 10% copayment (max \u20b940,000 per claim) [Source: Silver Health (bajaj-allianz), p.3]. For non-network hospitals, a 20% copayment applies per claim unless an extra premium is paid to waive it [Source: Silver Health (bajaj-allianz), p.3].  \n\nNote: This varies by plan (A/B) and add-ons selected.",
+        "judge_reason": "BOT accurately conveys the copayment information.",
+        "faithfulness_reasons": []
+      },
+      {
+        "id": "bajaj-allianz__silver-health__cis::REFUSE::exclusions_oos::hard",
+        "question": "Does Silver Health cover injuries from space tourism?",
+        "blocked": false,
+        "factual_match": false,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "Silver Health by Bajaj Allianz does not explicitly cover injuries from space tourism based on the provided policy clauses. The policy covers in-patient hospitalization for accidental bodily injuries (Section C1) but excludes treatments outside India (Exclusion DII) and does not mention space tourism as a covered scenario.  \n\n**Key reasons:**  \n1. **Geographic exclusion**: All treatments outside India are excluded [Source: Silver Health (bajaj-allianz), p.2-4, Exclusion DII]. Space tourism typically occurs outside India.  \n2. **No specific coverage**: The policy does not list space tourism or high-altitude/aviation-related injuries as covered risks.  \n\n**Note**: This policy has a 30-day initial waiting period for all illnesses [Source: Silver Health (bajaj-allianz), p.3-5, Standard Time Period]. Even if coverage were claimed, pre-existing conditions related to such activities would face a 12-month waiting period.  \n\nI recommend you confirm directly with the insurer, as non-standard activities often require specific riders or exclusions.",
+        "judge_reason": "did not refuse when expected",
+        "faithfulness_reasons": []
+      },
+      {
+        "id": "bajaj-allianz__silver-health__cis::REFUSE::exclusions_oos::hard",
+        "question": "What is the maximum claim amount for diamond-tipped surgical procedures under Silver Health?",
+        "blocked": false,
+        "factual_match": false,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "The provided policy documents do not specifically mention diamond-tipped surgical procedures under covered treatments. While the policy covers advanced procedures like robotic surgeries and stereotactic radio surgeries [Source: Silver Health (bajaj-allianz), pp.2-3], there is no explicit reference to \"diamond-tipped\" procedures in the listed inclusions or exclusions.  \n\nFor clarity:  \n1. If the procedure falls under the broader category of \"Modern Treatment Methods\" (e.g., robotic surgeries), it *may* be covered up to the sum insured [Source: Silver Health (bajaj-allianz), pp.2-3].  \n2. If it is a cosmetic or elective procedure, it would likely be excluded under Section D II (cosmetic surgery) or Exclusion 10 (non-medical items) [Source: Silver Health (bajaj-allianz), pp.2-4].  \n\n**Note**: The policy does not specify sub-limits for individual procedures beyond the overall sum insured. For confirmation, you would need to share the specific procedure details with the insurer, as coverage depends on whether it aligns with the defined categories.",
+        "judge_reason": "did not refuse when expected",
+        "faithfulness_reasons": []
+      },
+      {
+        "id": "bajaj-allianz__silver-health__cis::REFUSE::regulatory_oos::hard",
+        "question": "What is the IRDAI mandate on dental coverage that Silver Health must follow?",
+        "blocked": true,
+        "factual_match": true,
+        "brain": "sarvam-m::simple-qa",
+        "bot_answer": "I'd rather not answer that without stronger evidence in the policy documents I have. Could you rephrase, or narrow your question to a specific policy?",
+        "judge_reason": "correctly refused",
+        "faithfulness_reasons": [
+          "gate4_llm_judge: claims unsupported"
+        ]
+      }
+    ]
+  }
+]
