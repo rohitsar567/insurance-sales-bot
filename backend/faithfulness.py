@@ -55,7 +55,7 @@ HALLUCINATION_LOG = LOG_DIR / "hallucinations.jsonl"
 # higher here than they would be for Voyage. Re-tune if changing embedding model.
 # Lowered 2026-05-13 based on eval data showing too-aggressive refusal at 0.40:
 # many real questions retrieve top chunks at 0.30-0.38 that DO contain the answer.
-MIN_TOP_SCORE = 0.30  # below this we refuse outright (BGE-small cosine similarity)
+MIN_TOP_SCORE = 0.18  # below this we refuse outright (BGE-small cosine similarity)
 MIN_AVG_SCORE = 0.22  # average of top 5 must be above this
 
 
