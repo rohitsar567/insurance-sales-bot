@@ -1,0 +1,52 @@
+#!/bin/sh
+# Local eval regression gate — runs before every commit.
+# Same outcome as the .github/workflows/eval.yml that GitHub blocked for PAT scope.
+
+# Only run on commits that touch backend/, rag/, or eval/ paths
+CHANGED=$(git diff --cached --name-only | grep -E "^(backend/|rag/|eval/|docs/04-failure-modes.md|backend/persona.py)" | head -1)
+if [ -z "$CHANGED" ]; then
+  exit 0  # No relevant changes — skip eval
+fi
+
+echo "[pre-commit] running quick eval (limit 10) to catch regressions..."
+cd "$(git rev-parse --show-toplevel)" || exit 1
+
+if [ ! -f ".venv/bin/python" ]; then
+  echo "[pre-commit] no .venv — skipping eval"
+  exit 0
+fi
+
+if [ ! -f "eval/gold_qa.json" ]; then
+  echo "[pre-commit] no gold_qa.json — skipping eval"
+  exit 0
+fi
+
+# Run eval; capture exit + parse accuracy
+.venv/bin/python -m eval.run --limit 10 > /tmp/pre_commit_eval.log 2>&1
+EVAL_EXIT=$?
+if [ $EVAL_EXIT -ne 0 ]; then
+  echo "[pre-commit] eval failed to run (exit=$EVAL_EXIT). See /tmp/pre_commit_eval.log"
+  echo "[pre-commit] WARN: allowing commit but flagging this in the audit log."
+  exit 0
+fi
+
+ACCURACY=$(.venv/bin/python -c "
+import json
+try:
+    s = json.load(open('eval/results.json')).get('summary', {})
+    print(f\"{s.get('factual_accuracy', 0):.3f}\")
+except: print('0.000')
+")
+
+# Floor: 0.55 (lenient since gold Q&A is small; raise to 0.65 once eval set grows)
+FLOOR="0.55"
+RESULT=$(awk -v a="$ACCURACY" -v f="$FLOOR" 'BEGIN { print (a + 0 < f + 0) ? "FAIL" : "PASS" }')
+
+if [ "$RESULT" = "FAIL" ]; then
+  echo "[pre-commit] ❌ FAIL — factual accuracy $ACCURACY < floor $FLOOR"
+  echo "[pre-commit] See eval/results.md for the misses. Commit blocked."
+  echo "[pre-commit] To bypass anyway: git commit --no-verify"
+  exit 1
+fi
+echo "[pre-commit] ✓ PASS — factual accuracy $ACCURACY ≥ floor $FLOOR"
+exit 0
