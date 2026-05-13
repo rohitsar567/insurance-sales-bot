@@ -27,6 +27,6 @@ _Auto-generated. Source: `eval/gold_qa.json` + `eval/results.json` + `eval/run.p
 ## Methodology
 
 - Gold Q&A built by 3 pipelines: auto-from-extraction (templated), LLM-drafted (human-verified), hand-crafted adversarial. See `docs/03-eval-plan.md`.
-- Grader: Groq Llama-3.3-70B (different model family from generators → non-circular).
+- Grader: NIM Llama-4 Maverick (Meta MoE) — different family from the DeepSeek-V4 brain → non-circular (D-019, 2026-05-14). The earlier Groq Llama grader was retired in the same consolidation.
 - Re-run: `python -m eval.run [--limit N] [--policy <id>]`.
 - CI gate: `.github/workflows/eval.yml` runs eval on every PR; blocks merge if factual_accuracy < 0.65 or citation_accuracy < 0.55.

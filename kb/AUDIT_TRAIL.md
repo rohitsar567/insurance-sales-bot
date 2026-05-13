@@ -121,10 +121,13 @@ Every architectural decision in `docs/decisions.md` produces a specific artifact
 | D-011 Voyage embeddings | _superseded by local BGE; see D-011 revision_ |
 | D-012 Render hosting | _superseded by HF Spaces_ |
 | D-013 Tailwind + shadcn | `frontend/src/app/globals.css` |
-| D-014 Groq Llama grader | `backend/providers/groq_llm.py` |
+| D-014 Groq Llama grader | _superseded by D-019 NIM Maverick — see `backend/providers/nvidia_nim_llm.py:get_judge_llm`_ |
 | D-015 OpenAPI codegen | `backend/main.py` (auto-served) |
 | D-016 Brain router | `backend/orchestrator.py:pick_brain` |
 | D-017 Regulatory corpus deferred | `docs/04-failure-modes.md` F-07 |
+| D-018 Chunk-size sweep | `tools/chunk_sweep.py` + `eval/chunk_sweep_results.json` |
+| D-019 Stack A: NVIDIA NIM consolidation | `backend/providers/nvidia_nim_llm.py` |
+| D-020 Space/dataset split | `Dockerfile` snapshot_download + `rohitsar567/insurance-bot-data` |
 
 ## 5. What you can't audit (yet)
 
@@ -191,4 +194,5 @@ Three back-to-back curation passes brought the `data/policy_facts/` directory to
 - **EN ↔ हिं i18n** — full bilingual UI with the 13-term jargon glossary at `frontend/src/lib/i18n.ts` (mirrored to `kb/methodology/glossary.json`).
 - **Scorecard methodology expander** — every grade opens a transparency panel sourced from `METHODOLOGY_BLUEPRINT` (mirrored to `kb/methodology/scorecard.json`).
 - **Source-quote popovers** — hovering a fact on a policy card surfaces the verbatim PDF quote that backed it.
-- **Cerebras Qwen-3-235B wired as primary judge** — replaces the previous Groq Llama-3.1 grader for the eval pipeline; legacy provider retained as fallback.
+- **2026-05-14 Stack A consolidation (D-019)** — 4 third-party LLM providers (Groq, OpenRouter, direct DeepSeek, Cerebras) collapsed onto a single NVIDIA NIM endpoint. Brain = DeepSeek-V4-Pro (heavy intents) + V4-Flash (voice + fact-find). Judge = Meta Llama-4 Maverick (different family). Sarvam scoped to voice STT/TTS + Indic translation only. Free tier, 40 req/min, no daily cap. ~600 LOC of legacy provider wiring deleted.
+- **2026-05-14 Space/data split (D-020)** — `rag/corpus/` (188 MB), `rag/vectors/` (129 MB), and `rag/extracted/` moved to companion HF dataset `rohitsar567/insurance-bot-data` (50 GB free quota). Dockerfile pulls them at image build time. Space repo collapses from 286 MB → ~3 MB code-only.
