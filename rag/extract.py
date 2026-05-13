@@ -2,8 +2,11 @@
 
 For each PDF in rag/corpus/:
   1. Read full text via pdfplumber (already have per-page text from ingest)
-  2. Pass to LLM (NIM DeepSeek-V4-Pro primary, Sarvam-M fallback) with the
-     Pydantic schema as a structured-output target
+  2. Pass to LLM (NIM DeepSeek-V4-Pro primary, V4-Flash fallback) with the
+     Pydantic schema as a structured-output target. Sarvam-M is NOT in the
+     reasoning path per D-019 (it lives in Indic translation only — its
+     2048-token <think> reasoning + output cap was truncating JSON mid-stream
+     when used as extraction fallback, causing ~20 extraction failures).
   3. Self-critique pass — LLM scores per-field confidence vs source text
   4. Validate via Pydantic
   5. Upsert into DuckDB `policies` table
@@ -31,8 +34,11 @@ import pdfplumber
 
 from backend.config import settings
 from backend.providers.base import ChatMessage
-from backend.providers.nvidia_nim_llm import NvidiaNimLLM, get_brain_llm
-from backend.providers.sarvam_llm import SarvamLLM
+from backend.providers.nvidia_nim_llm import (
+    NvidiaNimLLM,
+    get_brain_llm,
+    get_fast_brain_llm,
+)
 from rag.ingest import policy_id_for
 from rag.schema import HealthPolicy
 
@@ -326,12 +332,16 @@ async def main():
     # Provider matrix (2026-05-14, Stack A consolidation per D-019):
     #   - NIM DeepSeek-V4-Pro: 1M ctx, frontier MoE, MIT-licensed, free tier
     #     40 req/min with no daily cap. Clean JSON output, no <think> verbosity.
-    #   - Sarvam-M: starter-tier 2048 output cap — used only as a fallback for
-    #     short policies if NIM upstream fails.
-    primary = get_brain_llm()  # DeepSeek-V4-Pro on NIM
-    fallback = SarvamLLM()
+    #     Used as primary because of the bigger reasoning budget.
+    #   - NIM DeepSeek-V4-Flash: 284B/13B MoE, ~3× faster than V4-Pro, same
+    #     clean JSON discipline. Used as fallback on V4-Pro ReadTimeout —
+    #     different MoE routing path so a Pro timeout doesn't always reproduce
+    #     in Flash. Sarvam-M was the old fallback but its <think> tags ate the
+    #     2048 output cap before reaching JSON, causing ~20 truncation failures.
+    primary = get_brain_llm()       # DeepSeek-V4-Pro
+    fallback = get_fast_brain_llm() # DeepSeek-V4-Flash
 
-    print(f"Extracting {len(pdfs)} policies. Primary=NIM DeepSeek-V4-Pro, Fallback=Sarvam-M.\n")
+    print(f"Extracting {len(pdfs)} policies. Primary=NIM V4-Pro, Fallback=NIM V4-Flash.\n")
     t0 = time.time()
     ok = 0
     for i, pdf in enumerate(pdfs, 1):

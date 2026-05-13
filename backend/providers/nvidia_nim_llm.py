@@ -64,7 +64,7 @@ class NvidiaNimLLM(LLMProvider):
         self,
         model: str = NIM_BRAIN_MODEL,
         api_key: Optional[str] = None,
-        timeout: float = 60.0,
+        timeout: float = 120.0,
     ):
         self.api_key = api_key or getattr(settings, "NVIDIA_NIM_API_KEY", "")
         self.model = model
