@@ -52,14 +52,14 @@ frontend/node_modules/
 frontend/.next/
 frontend/.env.local
 
-# Vector DB persistence — too large for git (sqlite > 10MB HF limit).
-# Rebuilt at container startup from corpus PDFs in ~5 min.
+# Large data lives in the companion HF dataset, NOT in the Space git repo.
+# The free-tier HF Space cap is 1 GB; rag/corpus + rag/vectors is ~310 MB.
+# Dataset: https://huggingface.co/datasets/rohitsar567/insurance-bot-data
+# Dockerfile snapshot_downloads these at build time. See D-019.
 rag/vectors/
+rag/corpus/
+rag/extracted/
 # rag/policies.duckdb -- intentionally not gitignored (small)
-
-# Raw PDFs — large; do commit a subset later for reproducibility
-# (keeping commented out — we WILL commit the corpus we acquire so deploy works)
-# rag/corpus/
 
 # Eval outputs
 eval/results_*.json

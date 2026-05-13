@@ -1,0 +1,234 @@
+{
+  "weights": {
+    "Coverage Breadth": 0.22,
+    "Cost Predictability": 0.2,
+    "Waiting-Period Friction": 0.18,
+    "Claim Experience": 0.2,
+    "Renewal Protection": 0.12,
+    "Bonus & Loyalty": 0.08
+  },
+  "scored_fields": [
+    "ayush_coverage",
+    "day_care_treatments_count",
+    "maternity_coverage",
+    "newborn_coverage",
+    "organ_donor_expenses",
+    "ambulance_cover",
+    "domiciliary_treatment",
+    "preventive_health_checkup",
+    "pre_hospitalization_days",
+    "post_hospitalization_days",
+    "copayment_pct",
+    "room_rent_capping",
+    "deductible_amount",
+    "pre_existing_disease_waiting_months",
+    "maternity_waiting_months",
+    "initial_waiting_period_days",
+    "cashless_treatment_supported",
+    "network_hospital_count",
+    "claim_settlement_ratio",
+    "tat_cashless_authorization_hours",
+    "max_renewal_age",
+    "max_entry_age",
+    "no_claim_bonus_pct",
+    "restoration_benefit"
+  ],
+  "methodology": [
+    {
+      "name": "Coverage Breadth",
+      "weight_pct": 22,
+      "consumer_question": "When I actually need to claim, what's covered vs what's not?",
+      "why_it_matters": "Determines whether your hospital bill is fully reimbursed or whether you pay out-of-pocket for gaps like AYUSH, maternity, newborn care, or ambulance.",
+      "fields_driving_score": [
+        {
+          "field": "ayush_coverage",
+          "rule": "AYUSH covered → +8"
+        },
+        {
+          "field": "day_care_treatments_count",
+          "rule": "≥400 procedures → +10, ≥200 → +6, <100 → −5"
+        },
+        {
+          "field": "maternity_coverage",
+          "rule": "Covered → +6"
+        },
+        {
+          "field": "newborn_coverage",
+          "rule": "Covered → +4"
+        },
+        {
+          "field": "organ_donor_expenses",
+          "rule": "Covered → +4"
+        },
+        {
+          "field": "ambulance_cover",
+          "rule": "Covered → +3"
+        },
+        {
+          "field": "domiciliary_treatment",
+          "rule": "Covered → +4"
+        },
+        {
+          "field": "preventive_health_checkup",
+          "rule": "Free → +3"
+        },
+        {
+          "field": "pre_hospitalization_days",
+          "rule": "≥60 days → +4"
+        },
+        {
+          "field": "post_hospitalization_days",
+          "rule": "≥90 days → +4"
+        }
+      ],
+      "anchors": [
+        "IRDAI Health Insurance Master Circular 2024 — emphasises comprehensive cover",
+        "Acko buying guide: coverage breadth most-cited buyer concern"
+      ]
+    },
+    {
+      "name": "Cost Predictability",
+      "weight_pct": 20,
+      "consumer_question": "Will I face surprise bills I can't plan for?",
+      "why_it_matters": "Co-pay forces you to pay a % of every claim; room-rent capping reduces what gets reimbursed; sub-limits cap specific treatments below your sum insured. These convert a known sum-insured into an unpredictable out-of-pocket exposure.",
+      "fields_driving_score": [
+        {
+          "field": "copayment_pct",
+          "rule": "0% → +0, 10% → −5, 20%+ → −12"
+        },
+        {
+          "field": "room_rent_capping",
+          "rule": "No limit → +6, capped → −5 to −10"
+        },
+        {
+          "field": "deductible_amount",
+          "rule": "₹0 → +0, ≥₹1L → −8"
+        },
+        {
+          "field": "sub_limits",
+          "rule": "No condition-specific caps → +5"
+        },
+        {
+          "field": "icu_charges_capping",
+          "rule": "No cap → +3"
+        }
+      ],
+      "anchors": [
+        "IRDAI Master Circular — disclosure norms on co-pay/sub-limits",
+        "Common consumer complaint themes (IRDAI complaint logs)"
+      ]
+    },
+    {
+      "name": "Waiting-Period Friction",
+      "weight_pct": 18,
+      "consumer_question": "How soon can I actually use this policy if something happens?",
+      "why_it_matters": "Initial waiting period (30 days typical), pre-existing-disease waiting (commonly 24–48 months), and maternity waits delay claims. Shorter is better — especially for older buyers or those with diabetes/hypertension.",
+      "fields_driving_score": [
+        {
+          "field": "initial_waiting_period_days",
+          "rule": "≤30 days → 0, >30 days → −3"
+        },
+        {
+          "field": "pre_existing_disease_waiting_months",
+          "rule": "≤24mo → +10, 36mo → 0, ≥48mo → −15"
+        },
+        {
+          "field": "maternity_waiting_months",
+          "rule": "≤24mo → +5, ≥36mo → −5"
+        },
+        {
+          "field": "specific_disease_waiting_months",
+          "rule": "≤24mo → +3"
+        }
+      ],
+      "anchors": [
+        "IRDAI standard product specifications (Arogya Sanjeevani UIN guideline: 36-month PED max)",
+        "PolicyBazaar comparison data: 24-month PED is the buyer benchmark"
+      ]
+    },
+    {
+      "name": "Claim Experience",
+      "weight_pct": 20,
+      "consumer_question": "Will the insurer actually pay when I claim?",
+      "why_it_matters": "Coverage on paper means nothing if claims get denied or take weeks. We measure cashless network reach, IRDAI's published Claim Settlement Ratio (CSR), the complaint count per 10,000 policies, and how fast cashless pre-auth happens.",
+      "fields_driving_score": [
+        {
+          "field": "cashless_treatment_supported",
+          "rule": "Yes → +5"
+        },
+        {
+          "field": "network_hospital_count",
+          "rule": "≥10,000 → +10, ≥5,000 → +5, <2,000 → −5"
+        },
+        {
+          "field": "claim_settlement_ratio (IRDAI)",
+          "rule": "≥95% → +12, 90–95 → +6, <85% → −10"
+        },
+        {
+          "field": "complaints_per_10k_policies (IRDAI)",
+          "rule": "<5 → +4, >20 → −8"
+        },
+        {
+          "field": "tat_cashless_authorization_hours",
+          "rule": "≤2h → +4, ≥24h → −4"
+        }
+      ],
+      "anchors": [
+        "IRDAI Annual Report 2023-24 — published CSR per insurer",
+        "IRDAI Grievance Redressal handbook — complaints/10K is the regulator's own metric"
+      ]
+    },
+    {
+      "name": "Renewal Protection",
+      "weight_pct": 12,
+      "consumer_question": "Can I keep this policy when I'm 70 and need it most?",
+      "why_it_matters": "Health insurance only works if you can keep renewing. Lifelong renewability is the IRDAI default since 2020, but entry-age caps and porting friction still matter. Buyers who don't check this often lose cover when claims rise.",
+      "fields_driving_score": [
+        {
+          "field": "max_renewal_age",
+          "rule": "Lifelong → +12, 80 → +6, ≤70 → −5"
+        },
+        {
+          "field": "max_entry_age",
+          "rule": "≥65 → +4 (more buyers eligible)"
+        },
+        {
+          "field": "guaranteed_renewability",
+          "rule": "Stated explicitly → +4"
+        }
+      ],
+      "anchors": [
+        "IRDAI Master Circular 2024 — lifelong renewability mandate",
+        "IRDAI Portability Regulations 2020"
+      ]
+    },
+    {
+      "name": "Bonus & Loyalty",
+      "weight_pct": 8,
+      "consumer_question": "What do I get for staying claim-free and renewing year after year?",
+      "why_it_matters": "Claim-free years should compound value: most policies give 20–50% No-Claim Bonus and some restore the sum insured on exhaustion. Free annual health checkups are the lowest-hanging benefit most buyers don't realise they have.",
+      "fields_driving_score": [
+        {
+          "field": "no_claim_bonus_pct",
+          "rule": "≥50% → +8, ≥25% → +4"
+        },
+        {
+          "field": "restoration_benefit",
+          "rule": "Present → +6"
+        },
+        {
+          "field": "preventive_health_checkup",
+          "rule": "Free annually → +3"
+        },
+        {
+          "field": "wellness_program_present",
+          "rule": "Yes → +2"
+        }
+      ],
+      "anchors": [
+        "IRDAI 'Cumulative Bonus' rules — capped at 100% under standard products",
+        "Industry NCB best-practice (PolicyBazaar comparison standards)"
+      ]
+    }
+  ]
+}

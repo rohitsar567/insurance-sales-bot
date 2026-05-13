@@ -20,13 +20,15 @@ import {
   MarketplaceResponse,
   postChat,
   postPremiumEstimate,
+  postProfileUpdate,
   postTranscribe,
   PremiumEstimateResponse,
   ProfileCompletenessResponse,
   ScorecardResponse,
   uploadPolicy,
+  UserProfile,
 } from "@/lib/api";
-import { translate, UILang, StringKey } from "@/lib/i18n";
+import { translate, UILang, StringKey, GLOSSARY } from "@/lib/i18n";
 
 type DisplayMessage = ChatMessage & {
   id: string;
@@ -59,9 +61,22 @@ export default function Page() {
   const [showCoverage, setShowCoverage] = useState(false);
   const [showPremium, setShowPremium] = useState(false);
   const [showMarketplace, setShowMarketplace] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const [marketplace, setMarketplace] = useState<MarketplaceResponse | null>(null);
   const [openPolicy, setOpenPolicy] = useState<MarketplacePolicy | null>(null);
   const [sessionId, setSessionId] = useState<string | undefined>();
+  const [profileCompleteness, setProfileCompleteness] = useState<ProfileCompletenessResponse | null>(null);
+
+  // Re-fetch profile completeness whenever sessionId changes (after first chat
+  // turn) — drives the score-gate on marketplace cards + detail modal.
+  useEffect(() => {
+    if (typeof window !== "undefined" && sessionId) {
+      sessionStorage.setItem("insurance_session_id", sessionId);
+      getProfileCompleteness(sessionId)
+        .then(setProfileCompleteness)
+        .catch(() => setProfileCompleteness(null));
+    }
+  }, [sessionId]);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const [handsFree, setHandsFree] = useState(false);  // VAD auto-cutoff mode
   // Live ref of handsFree so async TTS-ended callbacks read the latest value
@@ -84,10 +99,24 @@ export default function Page() {
     getCoverage()
       .then(setCoverage)
       .catch(() => setCoverage(null));
+    // Initial marketplace pull — no session yet, uses generic baseline scoring
     getMarketplace()
       .then(setMarketplace)
       .catch(() => setMarketplace(null));
   }, []);
+
+  // Re-fetch marketplace WITH session_id whenever profile completeness flips
+  // to personalised — backend re-scores each card against the user's profile,
+  // so grades reflect "this policy for THIS buyer" rather than the generic
+  // baseline. Without this useEffect, the cards stay generic even after
+  // profile is saved.
+  useEffect(() => {
+    if (sessionId && profileCompleteness?.is_personalized) {
+      getMarketplace(sessionId)
+        .then(setMarketplace)
+        .catch(() => {}); // keep prior data on transient errors
+    }
+  }, [sessionId, profileCompleteness?.is_personalized]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -321,7 +350,7 @@ export default function Page() {
               </div>
             </button>
             <button
-              onClick={() => { setShowPremium(!showPremium); setShowMarketplace(false); setShowCoverage(false); }}
+              onClick={() => { setShowPremium(!showPremium); setShowMarketplace(false); setShowCoverage(false); setShowProfile(false); }}
               className={`group relative overflow-hidden rounded-xl transition-all shadow-sm hover:shadow-md ${
                 showPremium ? "ring-2 ring-[var(--primary)]" : ""
               }`}
@@ -336,6 +365,30 @@ export default function Page() {
                   <div className="text-[10px] uppercase tracking-wider opacity-85 leading-none">{t("header.annual_premium_kicker")}</div>
                   <div className="text-xs font-bold leading-tight whitespace-nowrap">{t("header.annual_premium")}</div>
                 </div>
+              </div>
+            </button>
+            <button
+              onClick={() => { setShowProfile(!showProfile); setShowMarketplace(false); setShowPremium(false); setShowCoverage(false); }}
+              className={`group relative overflow-hidden rounded-xl transition-all shadow-sm hover:shadow-md ${
+                showProfile ? "ring-2 ring-[var(--primary)]" : ""
+              }`}
+              title={uiLang === "hi" ? "अपनी profile बनाएं — हर policy को आपके लिए score करेंगे" : "Build your profile — every policy gets a personal score"}
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-violet-600 via-purple-600 to-fuchsia-600" />
+              <div className="relative flex items-stretch text-white">
+                <div className="flex items-center justify-center px-3 py-2 bg-black/15">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="8" r="4" /><path d="M4 21v-2a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v2" /></svg>
+                </div>
+                <div className="px-3 py-2 text-left">
+                  <div className="text-[10px] uppercase tracking-wider opacity-85 leading-none">{uiLang === "hi" ? "आप" : "You"}</div>
+                  <div className="text-xs font-bold leading-tight whitespace-nowrap">{uiLang === "hi" ? "आपकी profile" : "Your profile"}</div>
+                </div>
+                {profileCompleteness && (
+                  <div className="flex flex-col items-center justify-center px-3 py-1 bg-white/15 border-l border-white/20">
+                    <div className="text-sm font-bold leading-none">{profileCompleteness.completeness_pct}%</div>
+                    <div className="text-[9px] uppercase tracking-wider opacity-90 leading-none mt-0.5">{uiLang === "hi" ? "पूर्ण" : "DONE"}</div>
+                  </div>
+                )}
               </div>
             </button>
             {/* UI language toggle — flips visual chrome + voice TTS together */}
@@ -353,9 +406,21 @@ export default function Page() {
             data={marketplace}
             onOpenPolicy={(p) => setOpenPolicy(p)}
             onClose={() => setShowMarketplace(false)}
+            t={t}
+            isPersonalized={profileCompleteness?.is_personalized === true}
           />
         )}
         {showPremium && <PremiumCalculatorPanel onClose={() => setShowPremium(false)} />}
+        {showProfile && (
+          <ProfileBuilderPanel
+            sessionId={sessionId}
+            setSessionId={setSessionId}
+            initialProfile={profileCompleteness?.profile || {}}
+            onSaved={(resp) => { setProfileCompleteness(resp); }}
+            onClose={() => setShowProfile(false)}
+            uiLang={uiLang}
+          />
+        )}
       </header>
       {openPolicy && <PolicyDetailModal policy={openPolicy} onClose={() => setOpenPolicy(null)} />}
 
@@ -446,6 +511,221 @@ export default function Page() {
       <footer className="border-t border-[var(--border)] py-3 px-6 text-center text-xs text-[var(--muted-foreground)]">
         Advisory only. Information based on policy documents; verify with the insurer before purchase. All policy ratings are illustrative and based on publicly disclosed data.
       </footer>
+    </div>
+  );
+}
+
+function ProfileBuilderPanel({
+  sessionId,
+  setSessionId,
+  initialProfile,
+  onSaved,
+  onClose,
+  uiLang,
+}: {
+  sessionId: string | undefined;
+  setSessionId: (id: string) => void;
+  initialProfile: UserProfile;
+  onSaved: (r: ProfileCompletenessResponse) => void;
+  onClose: () => void;
+  uiLang: UILang;
+}) {
+  const [age, setAge] = useState<number | null>(initialProfile.age ?? null);
+  const [dependents, setDependents] = useState<string>(initialProfile.dependents ?? "self");
+  const [budget, setBudget] = useState<string>(initialProfile.budget_band ?? "");
+  const [income, setIncome] = useState<string>(initialProfile.income_band ?? "");
+  const [city, setCity] = useState<string>(initialProfile.location_tier ?? "");
+  const [conditions, setConditions] = useState<string[]>(initialProfile.health_conditions ?? []);
+  const [existingCover, setExistingCover] = useState<number | null>(initialProfile.existing_cover_inr ?? null);
+  const [primaryGoal, setPrimaryGoal] = useState<string>(initialProfile.primary_goal ?? "");
+  const [parentsHasPed, setParentsHasPed] = useState<boolean | null>(initialProfile.parents_has_ped ?? null);
+  const [parentsAgeMax, setParentsAgeMax] = useState<number | null>(initialProfile.parents_age_max ?? null);
+  const [busy, setBusy] = useState(false);
+
+  const hindi = uiLang === "hi";
+
+  const toggleCondition = (c: string) => {
+    setConditions((prev) => prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]);
+  };
+
+  const handleSave = async () => {
+    if (busy) return;
+    setBusy(true);
+    let sid = sessionId;
+    if (!sid) {
+      sid = `s_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      setSessionId(sid);
+      if (typeof window !== "undefined") sessionStorage.setItem("insurance_session_id", sid);
+    }
+    try {
+      const resp = await postProfileUpdate({
+        session_id: sid,
+        age: age ?? undefined,
+        dependents: dependents || undefined,
+        budget_band: budget || undefined,
+        income_band: income || undefined,
+        location_tier: city || undefined,
+        health_conditions: conditions.length ? conditions : undefined,
+        existing_cover_inr: existingCover ?? undefined,
+        primary_goal: primaryGoal || undefined,
+        parents_to_insure: dependents.includes("parent") ? true : null,
+        parents_has_ped: parentsHasPed,
+        parents_age_max: parentsAgeMax ?? undefined,
+      });
+      onSaved(resp);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // chip helper styles
+  const chipBase = "px-2.5 py-1 rounded-full border text-[11px] cursor-pointer transition";
+  const chipOn = "border-[var(--primary)] bg-[var(--primary)] text-white";
+  const chipOff = "border-[var(--border)] hover:border-[var(--primary)]";
+
+  const conditionOptions = hindi
+    ? [["diabetes", "मधुमेह"], ["hypertension", "BP"], ["thyroid", "थायरॉइड"], ["heart", "हृदय रोग"], ["asthma", "अस्थमा"], ["cancer", "कैंसर इतिहास"]]
+    : [["diabetes", "Diabetes"], ["hypertension", "BP / Hypertension"], ["thyroid", "Thyroid"], ["heart", "Heart"], ["asthma", "Asthma"], ["cancer", "Cancer history"]];
+
+  return (
+    <div className="border-t border-[var(--border)] bg-[var(--muted)] animate-fade-up max-h-[80vh] overflow-y-auto scrollbar-thin">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5">
+        <div className="flex items-baseline justify-between mb-4">
+          <div>
+            <h2 className="text-lg font-semibold">{hindi ? "आपकी profile बनाएं" : "Build your profile"}</h2>
+            <p className="text-xs text-[var(--muted-foreground)] mt-1 max-w-2xl">
+              {hindi
+                ? "ये जवाब इसी chat में रहते हैं। ईमानदारी से बताइए — आपकी सेहत का सच बताना आपकी claim बचाता है, premium बढ़ाने का बहाना नहीं।"
+                : "Your answers stay in this chat. Be honest — the truth protects your claim later, not just my recommendation. We don't share with any insurer until you choose to buy."}
+            </p>
+          </div>
+          <button onClick={onClose} className="text-xs text-[var(--muted-foreground)] hover:underline">{hindi ? "बंद करें" : "close"}</button>
+        </div>
+
+        <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 space-y-5">
+          {/* Age */}
+          <div>
+            <label className="flex items-baseline justify-between text-xs mb-1.5">
+              <span className="font-semibold">{hindi ? "आपकी उम्र" : "Your age"}</span>
+              <span className="font-mono text-sm">{age ?? (hindi ? "—" : "—")}</span>
+            </label>
+            <input type="range" min={18} max={80} value={age ?? 35} onChange={(e) => setAge(parseInt(e.target.value))} className="w-full accent-[var(--primary)]" />
+            <p className="text-[10px] text-[var(--muted-foreground)] mt-0.5">{hindi ? "Premium + eligibility + renewal age इसी पर निर्भर।" : "Premium, eligibility, and how long you can renew all hinge on this."}</p>
+          </div>
+
+          {/* Dependents */}
+          <div>
+            <label className="block text-xs font-semibold mb-1.5">{hindi ? "किसको cover करना है" : "Who needs cover"}</label>
+            <div className="flex flex-wrap gap-2">
+              {[
+                ["self", hindi ? "सिर्फ मैं" : "Just me"],
+                ["self+spouse", hindi ? "मैं + पति/पत्नी" : "Self + spouse"],
+                ["self+spouse+kids", hindi ? "मैं + पति/पत्नी + बच्चे" : "Self + spouse + kids"],
+                ["self+parents", hindi ? "मैं + माता-पिता" : "Self + parents"],
+                ["self+spouse+kids+parents", hindi ? "पूरा परिवार" : "Whole family"],
+              ].map(([key, label]) => (
+                <button key={key} onClick={() => setDependents(key)} className={`${chipBase} ${dependents === key ? chipOn : chipOff}`}>{label}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* Parents detail — conditional */}
+          {dependents.includes("parent") && (
+            <div className="border-l-2 border-[var(--primary)] pl-3 space-y-3">
+              <div>
+                <label className="flex items-baseline justify-between text-xs mb-1.5">
+                  <span className="font-semibold">{hindi ? "सबसे बड़े parent की उम्र" : "Older parent's age"}</span>
+                  <span className="font-mono text-sm">{parentsAgeMax ?? "—"}</span>
+                </label>
+                <input type="range" min={45} max={85} value={parentsAgeMax ?? 65} onChange={(e) => setParentsAgeMax(parseInt(e.target.value))} className="w-full accent-[var(--primary)]" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold mb-1.5">{hindi ? "क्या उन्हें diabetes / BP / heart है?" : "Any pre-existing conditions (diabetes / BP / heart)?"}</label>
+                <div className="flex gap-2">
+                  <button onClick={() => setParentsHasPed(true)} className={`${chipBase} ${parentsHasPed === true ? chipOn : chipOff}`}>{hindi ? "हाँ" : "Yes"}</button>
+                  <button onClick={() => setParentsHasPed(false)} className={`${chipBase} ${parentsHasPed === false ? chipOn : chipOff}`}>{hindi ? "नहीं" : "No"}</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Your conditions */}
+          <div>
+            <label className="block text-xs font-semibold mb-1.5">{hindi ? "आपकी pre-existing conditions" : "Your pre-existing conditions"}</label>
+            <p className="text-[10px] text-amber-700 dark:text-amber-400 mb-2">{hindi ? "सच बताइए। बीमाकर्ता claim time पर hospital records check करते हैं। आज की बचत बाद में ₹8L का denied claim बन जाती है।" : "Be honest. Insurers cross-check at claim time. ₹500 saved today = ₹8L denied claim tomorrow."}</p>
+            <div className="flex flex-wrap gap-2">
+              <button onClick={() => setConditions([])} className={`${chipBase} ${conditions.length === 0 ? chipOn : chipOff}`}>{hindi ? "कुछ नहीं" : "None"}</button>
+              {conditionOptions.map(([key, label]) => (
+                <button key={key} onClick={() => toggleCondition(key)} className={`${chipBase} ${conditions.includes(key) ? chipOn : chipOff}`}>{label}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* Existing cover */}
+          <div>
+            <label className="block text-xs font-semibold mb-1.5">{hindi ? "पहले से कोई health insurance?" : "Already have any health insurance?"}</label>
+            <div className="flex flex-wrap gap-2">
+              {[[0, hindi ? "नहीं" : "None"], [300000, "₹3L"], [500000, "₹5L"], [1000000, "₹10L"], [2500000, "₹25L+"]].map(([v, label]) => (
+                <button key={String(v)} onClick={() => setExistingCover(v as number)} className={`${chipBase} ${existingCover === v ? chipOn : chipOff}`}>{label}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* City tier */}
+          <div>
+            <label className="block text-xs font-semibold mb-1.5">{hindi ? "आपका शहर" : "Your city"}</label>
+            <div className="flex gap-2">
+              {[["metro", hindi ? "Metro (Mumbai/Delhi/Bangalore/...)" : "Metro"], ["tier1", hindi ? "Tier 1" : "Tier 1"], ["tier2", hindi ? "छोटा शहर" : "Tier 2 / smaller"]].map(([key, label]) => (
+                <button key={key} onClick={() => setCity(key)} className={`${chipBase} ${city === key ? chipOn : chipOff}`}>{label}</button>
+              ))}
+            </div>
+            <p className="text-[10px] text-[var(--muted-foreground)] mt-0.5">{hindi ? "Cashless network आपके शहर में कितना deep है — यह बड़ा फर्क डालता है।" : "How many cashless hospitals exist in your city makes a huge difference."}</p>
+          </div>
+
+          {/* Budget */}
+          <div>
+            <label className="block text-xs font-semibold mb-1.5">{hindi ? "सालाना premium budget" : "Annual premium budget"}</label>
+            <div className="flex flex-wrap gap-2">
+              {[["under_15k", hindi ? "₹15k से कम" : "Under ₹15k"], ["15k_30k", "₹15-30k"], ["30k_60k", "₹30-60k"], ["60k+", "₹60k+"]].map(([key, label]) => (
+                <button key={key} onClick={() => setBudget(key)} className={`${chipBase} ${budget === key ? chipOn : chipOff}`}>{label}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* Income */}
+          <div>
+            <label className="block text-xs font-semibold mb-1.5">{hindi ? "सालाना आय" : "Annual income"}</label>
+            <div className="flex flex-wrap gap-2">
+              {[["under_5L", hindi ? "₹5L से कम" : "Under ₹5L"], ["5L-10L", "₹5-10L"], ["10L-25L", "₹10-25L"], ["25L+", "₹25L+"]].map(([key, label]) => (
+                <button key={key} onClick={() => setIncome(key)} className={`${chipBase} ${income === key ? chipOn : chipOff}`}>{label}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* Primary goal */}
+          <div>
+            <label className="block text-xs font-semibold mb-1.5">{hindi ? "आज यहाँ क्यों?" : "What brought you here today?"}</label>
+            <div className="flex flex-wrap gap-2">
+              {[["first_buy", hindi ? "पहली policy" : "First policy"], ["upgrade", hindi ? "Cover बढ़ानी है" : "Upgrade"], ["compare_specific", hindi ? "Specific policies compare करनी हैं" : "Compare specific policies"], ["tax_planning", "Tax 80D"]].map(([key, label]) => (
+                <button key={key} onClick={() => setPrimaryGoal(key)} className={`${chipBase} ${primaryGoal === key ? chipOn : chipOff}`}>{label}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="sticky bottom-0 mt-4 pb-2 bg-[var(--muted)] flex items-center justify-end gap-2">
+          <button onClick={onClose} className="text-xs text-[var(--muted-foreground)] hover:underline">{hindi ? "रद्द करें" : "Cancel"}</button>
+          <button
+            onClick={handleSave}
+            disabled={busy}
+            className={`text-sm font-semibold rounded-md px-4 py-2 ${busy ? "bg-[var(--muted)] text-[var(--muted-foreground)]" : "bg-[var(--primary)] text-white hover:opacity-90"}`}
+          >
+            {busy ? (hindi ? "Save हो रहा है…" : "Saving…") : (hindi ? "Save & Score करें" : "Save & Score")}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -547,8 +827,14 @@ function PremiumCalculatorPanel({ onClose }: { onClose: () => void }) {
             </div>
             <div>
               <label className="flex items-center justify-between text-xs mb-1">
-                <span className="font-medium">Voluntary co-pay</span>
-                <span className="font-mono">{copay}%</span>
+                <span className="font-medium">Your share of every claim</span>
+                <span className="font-mono">
+                  {copay === 0 ? (
+                    <span className="text-emerald-600 font-semibold">Insurer pays it all</span>
+                  ) : (
+                    <span>You pay ~₹{Math.round(sumInsured * copay / 100 / 100000)}L on a ₹{Math.round(sumInsured / 100000)}L claim</span>
+                  )}
+                </span>
               </label>
               <input
                 type="range" min={0} max={40} step={5}
@@ -556,7 +842,11 @@ function PremiumCalculatorPanel({ onClose }: { onClose: () => void }) {
                 onChange={(e) => setCopay(parseInt(e.target.value))}
                 className="w-full accent-[var(--primary)]"
               />
-              <p className="text-[10px] text-[var(--muted-foreground)] mt-0.5">Higher co-pay = lower premium; you pay this % of each claim</p>
+              <p className="text-[10px] text-[var(--muted-foreground)] mt-0.5">
+                {copay === 0
+                  ? "No share. Highest premium."
+                  : `Your premium drops ~${Math.round(copay * 0.7)}%. In exchange you pay ₹${Math.round(sumInsured * copay / 100 / 1000)}k on a ₹${Math.round(sumInsured / 100000)}L hospital bill.`}
+              </p>
             </div>
             <div className="flex items-center gap-3 flex-wrap text-xs">
               <span className="font-medium">City tier:</span>
@@ -1012,18 +1302,115 @@ const INSURER_COLOR: Record<string, string> = {
   "tata-aig":      "bg-slate-700",
 };
 
+// SafeLink — renders a real <a> only when href is non-empty + not a "#"
+// placeholder. Otherwise renders the children as a non-interactive span so
+// the user never lands on a dead link. Closes #107 ghost-URL prevention.
+function SafeLink({ href, children, className, fallbackClassName }: {
+  href?: string | null;
+  children: React.ReactNode;
+  className?: string;
+  fallbackClassName?: string;
+}) {
+  const ok = !!href && href !== "#" && href.startsWith("http");
+  if (ok) {
+    return <a href={href!} target="_blank" rel="noopener" className={className}>{children}</a>;
+  }
+  return <span className={fallbackClassName || `${className || ""} opacity-50 cursor-not-allowed`} title="No verified source URL available">{children}</span>;
+}
+
+// Jargon — inline component that wraps a term and shows an info popover
+// on click with a plain-language explanation. Bilingual via uiLang.
+function Jargon({ term, children, uiLang }: { term: keyof typeof GLOSSARY; children: React.ReactNode; uiLang: UILang }) {
+  const [open, setOpen] = useState(false);
+  const entry = GLOSSARY[term];
+  if (!entry) return <>{children}</>;
+  const lang = uiLang === "hi" ? "hi" : "en";
+  const { title, body } = entry[lang];
+  return (
+    <span className="inline-flex items-center gap-0.5 relative">
+      {children}
+      <button
+        onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
+        className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border border-[var(--muted-foreground)] text-[8px] text-[var(--muted-foreground)] hover:text-[var(--primary)] hover:border-[var(--primary)] ml-0.5"
+        aria-label={`Explain ${String(term)}`}
+        type="button"
+      >
+        ?
+      </button>
+      {open && (
+        <span className="absolute z-50 top-full mt-1 left-0 w-64 bg-[var(--card)] border border-[var(--border)] rounded-lg shadow-lg p-2.5 text-left animate-fade-up" onClick={(e) => e.stopPropagation()}>
+          <span className="block text-[11px] font-semibold text-[var(--foreground)] mb-1">{title}</span>
+          <span className="block text-[10px] text-[var(--muted-foreground)] leading-snug">{body}</span>
+          <button onClick={() => setOpen(false)} className="absolute top-1 right-1.5 text-[var(--muted-foreground)] hover:text-[var(--foreground)] text-xs">×</button>
+        </span>
+      )}
+    </span>
+  );
+}
+
 function insurerInitials(name: string): string {
   return name.split(" ").map((w) => w[0]).filter(Boolean).join("").slice(0, 2).toUpperCase();
+}
+
+// Real insurer logos sourced from each insurer's official site (favicons /
+// media-kit assets). Fall back to colored letter avatar when the URL fails
+// to load (handled by onError swap in InsurerLogo component).
+const INSURER_LOGO_URL: Record<string, string> = {
+  "aditya-birla":  "https://www.adityabirlacapital.com/healthinsurance/static/assets/images/abhi-logo.svg",
+  "bajaj-allianz": "https://www.bajajallianz.com/content/dam/bagic/header/logo.png",
+  "care-health":   "https://www.careinsurance.com/upload_master/images/logo.png",
+  "hdfc-ergo":     "https://www.hdfcergo.com/etc.clientlibs/hdfcergo/clientlibs/clientlib-site/resources/images/HDFC-ERGO-Logo.png",
+  "icici-lombard": "https://www.icicilombard.com/content/dam/ilom-website/icon/icici-lombard-logo-new.svg",
+  "manipalcigna":  "https://www.manipalcigna.com/o/manipal-cigna-theme/images/manipal-cigna-logo.svg",
+  "new-india":     "https://www.newindia.co.in/portal/readWriteData/NIAImages/NewLogo.png",
+  "niva-bupa":     "https://transactions.nivabupa.com/_next/static/media/niva-bupa-logo.7b6e7f4e.svg",
+  "star-health":   "https://www.starhealth.in/sites/default/files/star-logo-revised.png",
+  "tata-aig":      "https://www.tataaig.com/etc/designs/tataaig/clientlibs/responsive/images/tataaig-logo.svg",
+};
+
+function InsurerLogo({ slug, name, size = 44 }: { slug: string; name: string; size?: number }) {
+  const [failed, setFailed] = useState(false);
+  const url = INSURER_LOGO_URL[slug];
+  const color = INSURER_COLOR[slug] || "bg-slate-500";
+  if (!url || failed) {
+    const initials = insurerInitials(name);
+    return (
+      <div
+        className={`rounded-lg ${color} text-white flex items-center justify-center font-bold shrink-0`}
+        style={{ width: size, height: size, fontSize: size * 0.32 }}
+      >
+        {initials}
+      </div>
+    );
+  }
+  return (
+    <div
+      className="rounded-lg bg-white border border-[var(--border)] flex items-center justify-center shrink-0 overflow-hidden p-1"
+      style={{ width: size, height: size }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={url}
+        alt={name}
+        onError={() => setFailed(true)}
+        className="max-w-full max-h-full object-contain"
+      />
+    </div>
+  );
 }
 
 function MarketplacePanel({
   data,
   onOpenPolicy,
   onClose,
+  t,
+  isPersonalized,
 }: {
   data: MarketplaceResponse;
   onOpenPolicy: (p: MarketplacePolicy) => void;
   onClose: () => void;
+  t: (k: StringKey, v?: Record<string, string | number>) => string;
+  isPersonalized: boolean;
 }) {
   const [search, setSearch] = useState("");
   const [insurerFilter, setInsurerFilter] = useState<string>("all");
@@ -1069,29 +1456,29 @@ function MarketplacePanel({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5">
         <div className="flex items-baseline justify-between mb-4">
           <div>
-            <h2 className="text-lg font-semibold">Health insurance marketplace</h2>
+            <h2 className="text-lg font-semibold">{t("mp.heading")}</h2>
             <p className="text-xs text-[var(--muted-foreground)]">
-              {data.total} policies from {data.insurers_indexed} leading Indian health insurers. Click any policy for the full rating, key terms, and the source document.
+              {t("mp.summary", { total: data.total, insurers: data.insurers_indexed })}
             </p>
           </div>
-          <button onClick={onClose} className="text-xs text-[var(--muted-foreground)] hover:underline">close</button>
+          <button onClick={onClose} className="text-xs text-[var(--muted-foreground)] hover:underline">{t("mp.close")}</button>
         </div>
 
         {/* Filter bar */}
         <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 mb-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
             <div>
-              <label className="block text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wide mb-1">Search</label>
+              <label className="block text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wide mb-1">{t("mp.search")}</label>
               <input
                 type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-                placeholder="Policy or insurer name…"
+                placeholder={t("mp.search_placeholder")}
                 className="w-full text-sm bg-transparent border border-[var(--border)] rounded-md px-2 py-1.5 outline-none focus:border-[var(--primary)]"
               />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wide mb-1">Insurer</label>
+              <label className="block text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wide mb-1">{t("mp.insurer")}</label>
               <select value={insurerFilter} onChange={(e) => setInsurerFilter(e.target.value)} className="w-full text-sm bg-transparent border border-[var(--border)] rounded-md px-2 py-1.5">
-                <option value="all">All ({data.insurers_indexed})</option>
+                <option value="all">{t("mp.all_insurers")} ({data.insurers_indexed})</option>
                 {insurers.map((s) => {
                   const name = data.policies.find((p) => p.insurer_slug === s)?.insurer_name || s;
                   const count = data.policies.filter((p) => p.insurer_slug === s).length;
@@ -1100,39 +1487,39 @@ function MarketplacePanel({
               </select>
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wide mb-1">Min rating</label>
+              <label className="block text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wide mb-1">{t("mp.min_rating")}</label>
               <select value={grade} onChange={(e) => setGrade(e.target.value)} className="w-full text-sm bg-transparent border border-[var(--border)] rounded-md px-2 py-1.5">
-                <option value="all">All grades</option>
-                <option value="A">A only</option>
-                <option value="B">B or better</option>
-                <option value="C">C or better</option>
+                <option value="all">{t("mp.all_grades")}</option>
+                <option value="A">{t("mp.a_only")}</option>
+                <option value="B">{t("mp.b_or_better")}</option>
+                <option value="C">{t("mp.c_or_better")}</option>
               </select>
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wide mb-1">Sort by</label>
+              <label className="block text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wide mb-1">{t("mp.sort_by")}</label>
               <select value={sortBy} onChange={(e) => setSortBy(e.target.value as "score" | "name" | "insurer")} className="w-full text-sm bg-transparent border border-[var(--border)] rounded-md px-2 py-1.5">
-                <option value="score">Highest rated</option>
-                <option value="name">Policy name (A–Z)</option>
-                <option value="insurer">Insurer (A–Z)</option>
+                <option value="score">{t("mp.sort_score")}</option>
+                <option value="name">{t("mp.sort_name")}</option>
+                <option value="insurer">{t("mp.sort_insurer")}</option>
               </select>
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wide mb-1">Max pre-existing wait: <span className="font-mono">{maxPED} mo</span></label>
+              <label className="block text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wide mb-1">{t("mp.max_ped_wait")} <span className="font-mono">{maxPED} mo</span></label>
               <input type="range" min={12} max={48} step={6} value={maxPED} onChange={(e) => setMaxPED(parseInt(e.target.value))} className="w-full accent-[var(--primary)]" />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wide mb-1">Min sum insured: <span className="font-mono">{minSI >= 10000000 ? (minSI/10000000) + " cr" : (minSI/100000) + " L"}</span></label>
+              <label className="block text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wide mb-1">{t("mp.min_sum_insured")} <span className="font-mono">{minSI >= 10000000 ? (minSI/10000000) + " cr" : (minSI/100000) + " L"}</span></label>
               <input type="range" min={500000} max={10000000} step={500000} value={minSI} onChange={(e) => setMinSI(parseInt(e.target.value))} className="w-full accent-[var(--primary)]" />
             </div>
             <label className="flex items-center gap-2 text-xs">
-              <input type="checkbox" checked={requireAyush} onChange={(e) => setRequireAyush(e.target.checked)} className="accent-[var(--primary)]" /> AYUSH covered
+              <input type="checkbox" checked={requireAyush} onChange={(e) => setRequireAyush(e.target.checked)} className="accent-[var(--primary)]" /> {t("mp.ayush_covered")}
             </label>
             <label className="flex items-center gap-2 text-xs">
-              <input type="checkbox" checked={requireCashless} onChange={(e) => setRequireCashless(e.target.checked)} className="accent-[var(--primary)]" /> Cashless network
+              <input type="checkbox" checked={requireCashless} onChange={(e) => setRequireCashless(e.target.checked)} className="accent-[var(--primary)]" /> {t("mp.cashless_network")}
             </label>
           </div>
           <div className="text-xs text-[var(--muted-foreground)] mt-3">
-            Showing <span className="font-semibold text-[var(--foreground)]">{sorted.length}</span> of {data.total} policies
+            {t("mp.showing")} <span className="font-semibold text-[var(--foreground)]">{sorted.length}</span> {t("mp.of")} {data.total} {t("mp.policies_word")}
           </div>
         </div>
 
@@ -1146,11 +1533,13 @@ function MarketplacePanel({
               selected={selectedIds.includes(p.policy_id)}
               onToggleSelect={() => toggleSelect(p.policy_id)}
               selectionDisabled={selectedIds.length >= MAX_COMPARE}
+              t={t}
+              isPersonalized={isPersonalized}
             />
           ))}
           {sorted.length === 0 && (
             <div className="col-span-full text-center text-sm text-[var(--muted-foreground)] py-12">
-              No policies match these filters. Try widening the criteria.
+              {t("mp.no_match")}
             </div>
           )}
         </div>
@@ -1261,7 +1650,14 @@ function PerPolicyPremiumEstimator({ policy }: { policy: MarketplacePolicy }) {
         </div>
         <div>
           <div className="flex items-center justify-between text-[10px] uppercase tracking-wide text-[var(--muted-foreground)] font-semibold">
-            <span>Co-pay</span><span className="font-mono">{copay}%</span>
+            <span>Your share per claim</span>
+            <span className="font-mono">
+              {copay === 0 ? (
+                <span className="text-emerald-600">Insurer pays all</span>
+              ) : (
+                <span>₹{Math.round(si * copay / 100 / 100000) || "0"}L on ₹{Math.round(si / 100000)}L</span>
+              )}
+            </span>
           </div>
           <input type="range" min={0} max={40} step={5} value={copay} onChange={(e) => setCopay(parseInt(e.target.value))} className="w-full accent-[var(--primary)]" />
         </div>
@@ -1311,10 +1707,10 @@ function InsurerReviewsBlock({ reviews }: { reviews: InsurerReviews }) {
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
         {cm.claim_settlement_ratio_pct != null && (
-          <a href={cm.source_irdai_url || "#"} target="_blank" rel="noopener" className="rounded-lg border border-[var(--border)] p-2 hover:border-[var(--primary)] transition">
+          <SafeLink href={cm.source_irdai_url} className="rounded-lg border border-[var(--border)] p-2 hover:border-[var(--primary)] transition block">
             <div className="text-[9px] uppercase tracking-wide text-[var(--muted-foreground)]">Claim ratio (IRDAI {cm.claim_settlement_ratio_year})</div>
             <div className="font-semibold text-sm">{cm.claim_settlement_ratio_pct}%</div>
-          </a>
+          </SafeLink>
         )}
         {cm.complaints_per_10k_policies != null && (
           <div className="rounded-lg border border-[var(--border)] p-2">
@@ -1323,10 +1719,10 @@ function InsurerReviewsBlock({ reviews }: { reviews: InsurerReviews }) {
           </div>
         )}
         {Object.entries(agg).filter(([, v]) => v?.avg_star != null).slice(0, 2).map(([portal, v]) => (
-          <a key={portal} href={v?.url || "#"} target="_blank" rel="noopener" className="rounded-lg border border-[var(--border)] p-2 hover:border-[var(--primary)] transition">
+          <SafeLink key={portal} href={v?.url} className="rounded-lg border border-[var(--border)] p-2 hover:border-[var(--primary)] transition block">
             <div className="text-[9px] uppercase tracking-wide text-[var(--muted-foreground)]">{portal}</div>
             <div className="font-semibold text-sm">{v?.avg_star}★ {v?.review_count != null && <span className="opacity-60 font-normal">({v?.review_count.toLocaleString()})</span>}</div>
-          </a>
+          </SafeLink>
         ))}
       </div>
       {reviews.reddit_sentiment?.notable_themes && reviews.reddit_sentiment.notable_themes.length > 0 && (
@@ -1344,9 +1740,9 @@ function InsurerReviewsBlock({ reviews }: { reviews: InsurerReviews }) {
           <div className="text-[10px] uppercase tracking-wide text-[var(--muted-foreground)] font-semibold mb-1">Reviewed by</div>
           <div className="space-y-0.5">
             {reviews.youtube_coverage.top_creators_who_reviewed.slice(0, 3).map((c, i) => (
-              <a key={i} href={c.video_url || "#"} target="_blank" rel="noopener" className="block text-xs hover:text-[var(--primary)]">
+              <SafeLink key={i} href={c.video_url} className="block text-xs hover:text-[var(--primary)]">
                 <span className="font-medium">{c.creator}</span> — <span className="text-[var(--muted-foreground)]">{c.verdict}</span>
-              </a>
+              </SafeLink>
             ))}
           </div>
         </div>
@@ -1361,17 +1757,23 @@ function PolicyCard({
   selected,
   onToggleSelect,
   selectionDisabled,
+  t,
+  isPersonalized = false,
 }: {
   policy: MarketplacePolicy;
   onOpen: () => void;
   selected: boolean;
   onToggleSelect: () => void;
   selectionDisabled: boolean;
+  t: (k: StringKey, v?: Record<string, string | number>) => string;
+  isPersonalized?: boolean;
 }) {
-  const initials = insurerInitials(policy.insurer_name);
-  const color = INSURER_COLOR[policy.insurer_slug] || "bg-slate-500";
   const maxSI = policy.sum_insured_options.length ? Math.max(...policy.sum_insured_options) : null;
   const siDisplay = maxSI ? (maxSI >= 10000000 ? `${maxSI/10000000} cr` : `${maxSI/100000} L`) : "—";
+  // Translate the grade one-liner — backend produces fixed English strings;
+  // we map them to i18n keys to flip with the UI language.
+  const oneLinerKey = ({ A: "grade.a", B: "grade.b", C: "grade.c", D: "grade.d", F: "grade.f" } as Record<string, StringKey>)[policy.grade] || "grade.c";
+  const oneLiner = t(oneLinerKey);
   return (
     <div className={`relative text-left bg-[var(--card)] border ${selected ? "border-[var(--primary)] shadow-md" : "border-[var(--border)]"} rounded-xl p-4 hover:border-[var(--primary)] hover:shadow-md transition group`}>
       <label
@@ -1385,28 +1787,45 @@ function PolicyCard({
           onChange={onToggleSelect}
           className="accent-[var(--primary)] w-3 h-3"
         />
-        {selected ? "Selected" : "Compare"}
+        {selected ? t("mp.selected") : t("mp.compare")}
       </label>
-      <button onClick={onOpen} className="w-full text-left">
+      {/* Card body is a div+role=button (NOT <button>) because it contains
+          jargon "?" icons and a "src" pill which are themselves <button>s.
+          HTML disallows button-in-button → hydration error. */}
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={onOpen}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } }}
+        className="w-full text-left cursor-pointer"
+      >
         <div className="flex items-start gap-3 mb-3 pr-16">
-          <div className={`w-11 h-11 rounded-lg ${color} text-white flex items-center justify-center font-bold text-sm shrink-0`}>{initials}</div>
+          <InsurerLogo slug={policy.insurer_slug} name={policy.insurer_name} size={44} />
           <div className="flex-1 min-w-0">
             <div className="text-xs text-[var(--muted-foreground)] truncate">{policy.insurer_name}</div>
             <div className="font-semibold text-sm truncate group-hover:text-[var(--primary)] transition">{policy.policy_name}</div>
           </div>
-          <div className={`shrink-0 flex flex-col items-center rounded-lg overflow-hidden ${gradeColor(policy.grade)}`}>
-            <div className="px-2 pt-0.5 text-[10px] font-semibold opacity-90 uppercase tracking-wide">{policy.grade}</div>
-            <div className="px-2 pb-0.5 text-base font-bold leading-none">{policy.overall_score}<span className="text-[10px] font-normal opacity-80">/100</span></div>
-          </div>
+          {/* Score badge ONLY when we have a profile — otherwise CTA pill */}
+          {isPersonalized ? (
+            <div className={`shrink-0 flex flex-col items-center rounded-lg overflow-hidden ${gradeColor(policy.grade)}`}>
+              <div className="px-2 pt-0.5 text-[10px] font-semibold opacity-90 uppercase tracking-wide">{policy.grade}</div>
+              <div className="px-2 pb-0.5 text-base font-bold leading-none">{policy.overall_score}<span className="text-[10px] font-normal opacity-80">/100</span></div>
+            </div>
+          ) : (
+            <div className="shrink-0 flex flex-col items-center justify-center rounded-lg overflow-hidden bg-[var(--muted)] border border-dashed border-[var(--border)] px-2 py-1.5 text-center" style={{ minWidth: 64 }}>
+              <div className="text-[9px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)] leading-tight">{t("card.see_score_pill")}</div>
+              <div className="text-[8px] text-[var(--muted-foreground)] leading-tight mt-0.5">{t("card.see_score_sub")}</div>
+            </div>
+          )}
         </div>
-        <p className="text-xs text-[var(--muted-foreground)] mb-3 line-clamp-2">{policy.one_liner}</p>
+        <p className="text-xs text-[var(--muted-foreground)] mb-3 line-clamp-2">{isPersonalized ? oneLiner : t("card.score_locked_msg")}</p>
         <div className="grid grid-cols-2 gap-2 text-xs">
-          <Stat label="Sum insured up to" value={siDisplay} />
-          <Stat label="PED waiting" value={policy.pre_existing_disease_waiting_months ? `${policy.pre_existing_disease_waiting_months} mo` : "—"} />
-          <Stat label="AYUSH" value={policy.ayush_coverage === true ? "Yes" : policy.ayush_coverage === false ? "No" : "—"} />
-          <Stat label="Network" value={policy.network_hospital_count ? `${(policy.network_hospital_count / 1000).toFixed(0)}K+` : "—"} />
+          <Stat label={<Jargon term="SI" uiLang={t("header.title").includes("स्व") ? "hi" : "en"}>{t("stat.sum_insured_up_to")}</Jargon>} value={siDisplay} />
+          <Stat label={<Jargon term="PED" uiLang={t("header.title").includes("स्व") ? "hi" : "en"}>{t("stat.ped_waiting")}</Jargon>} value={policy.pre_existing_disease_waiting_months ? `${policy.pre_existing_disease_waiting_months} mo` : "—"} />
+          <Stat label={<Jargon term="AYUSH" uiLang={t("header.title").includes("स्व") ? "hi" : "en"}>{t("stat.ayush")}</Jargon>} value={policy.ayush_coverage === true ? "Yes" : policy.ayush_coverage === false ? "No" : "—"} />
+          <Stat label={t("stat.network")} value={policy.network_hospital_count ? `${(policy.network_hospital_count / 1000).toFixed(0)}K+` : "—"} />
         </div>
-      </button>
+      </div>
     </div>
   );
 }
@@ -1499,11 +1918,31 @@ function MethodologyExpander() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({ label, value, jargon, uiLang, sourceQuote }: { label: React.ReactNode; value: string; jargon?: keyof typeof GLOSSARY; uiLang?: UILang; sourceQuote?: string }) {
+  const [showSrc, setShowSrc] = useState(false);
   return (
-    <div>
-      <div className="text-[10px] text-[var(--muted-foreground)] uppercase tracking-wide">{label}</div>
+    <div className="relative">
+      <div className="text-[10px] text-[var(--muted-foreground)] uppercase tracking-wide flex items-center gap-1">
+        {jargon && uiLang ? <Jargon term={jargon} uiLang={uiLang}>{label}</Jargon> : <span>{label}</span>}
+        {sourceQuote && (
+          <button
+            onClick={(e) => { e.stopPropagation(); setShowSrc(!showSrc); }}
+            className="text-[8px] px-1 py-0.5 rounded border border-[var(--border)] text-[var(--muted-foreground)] hover:text-[var(--primary)] hover:border-[var(--primary)]"
+            type="button"
+            title={uiLang === "hi" ? "स्रोत देखें" : "View source"}
+          >
+            src
+          </button>
+        )}
+      </div>
       <div className="text-xs font-semibold">{value}</div>
+      {showSrc && sourceQuote && (
+        <div className="absolute z-50 top-full mt-1 left-0 w-72 bg-[var(--card)] border border-[var(--border)] rounded-lg shadow-lg p-2.5 animate-fade-up">
+          <div className="text-[10px] font-semibold text-[var(--muted-foreground)] mb-1 uppercase tracking-wide">{uiLang === "hi" ? "स्रोत (PDF से उद्धरण)" : "Source (PDF excerpt)"}</div>
+          <div className="text-[11px] text-[var(--foreground)] leading-snug italic">&ldquo;{sourceQuote}&rdquo;</div>
+          <button onClick={() => setShowSrc(false)} className="absolute top-1 right-1.5 text-[var(--muted-foreground)] hover:text-[var(--foreground)] text-xs">×</button>
+        </div>
+      )}
     </div>
   );
 }
@@ -1753,24 +2192,29 @@ function PolicyDetailModal({ policy, onClose }: { policy: MarketplacePolicy; onC
           )}
 
           <div>
-            <h4 className="text-sm font-semibold mb-2">Key terms</h4>
-            <div className="grid grid-cols-2 gap-3 text-xs">
-              <Stat label="Sum insured up to" value={siDisplay} />
-              <Stat label="Entry age" value={policy.min_entry_age && policy.max_entry_age ? `${policy.min_entry_age}-${policy.max_entry_age}` : "—"} />
-              <Stat label="Renewal up to" value={policy.max_renewal_age ? (policy.max_renewal_age >= 99 ? "Lifelong" : `${policy.max_renewal_age}`) : "—"} />
-              <Stat label="Initial waiting" value={policy.initial_waiting_period_days ? `${policy.initial_waiting_period_days} days` : "—"} />
-              <Stat label="Pre-existing waiting" value={policy.pre_existing_disease_waiting_months ? `${policy.pre_existing_disease_waiting_months} months` : "—"} />
-              <Stat label="Maternity waiting" value={policy.maternity_waiting_months ? `${policy.maternity_waiting_months} months` : "—"} />
-              <Stat label="Copayment" value={policy.copayment_pct != null ? `${policy.copayment_pct}%` : "None"} />
-              <Stat label="No-claim bonus" value={policy.no_claim_bonus_pct ? `${policy.no_claim_bonus_pct}%` : "—"} />
-              <Stat label="Network hospitals" value={policy.network_hospital_count ? `${policy.network_hospital_count.toLocaleString()}+` : "—"} />
-              <Stat label="AYUSH covered" value={policy.ayush_coverage === true ? "Yes" : policy.ayush_coverage === false ? "No" : "—"} />
-              <Stat label="Maternity" value={policy.maternity_coverage === true ? "Covered" : policy.maternity_coverage === false ? "Not covered" : "—"} />
-              <Stat label="Cashless" value={policy.cashless_treatment_supported === true ? "Supported" : "—"} />
+            <h4 className="text-sm font-semibold mb-3">What this policy covers, in plain words</h4>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
+              <Stat label={<Jargon term="SI" uiLang="en">Cover up to</Jargon>} value={siDisplay} />
+              <Stat label="Who can buy + renew" value={(() => {
+                const min = policy.min_entry_age;
+                const max = policy.max_entry_age;
+                const renew = policy.max_renewal_age;
+                const minStr = min ? (min >= 30 && min <= 365 ? `${min} days` : `${min} yrs`) : null;
+                const maxStr = max ? `${max} yrs` : null;
+                const range = minStr && maxStr ? `${minStr} – ${maxStr}` : (minStr || maxStr || "Not stated");
+                const renewStr = renew ? (renew >= 99 ? " · lifelong renewal" : ` · renews up to ${renew}`) : "";
+                return range + renewStr;
+              })()} />
+              <Stat label="Wait before any claim" value={policy.initial_waiting_period_days ? `${policy.initial_waiting_period_days} days from start` : "Not stated"} />
+              <Stat label={<Jargon term="PED" uiLang="en">Wait if you already had a condition</Jargon>} value={policy.pre_existing_disease_waiting_months ? `${policy.pre_existing_disease_waiting_months} months` : "Not stated"} />
+              <Stat label="Maternity" value={policy.maternity_coverage === true ? (policy.maternity_waiting_months ? `Covered after ${policy.maternity_waiting_months}-month wait` : "Covered") : policy.maternity_coverage === false ? "Not covered" : "Check the wording"} />
+              <Stat label={<Jargon term="CoPay" uiLang="en">Your share per claim</Jargon>} value={policy.copayment_pct != null ? (policy.copayment_pct === 0 ? "Insurer pays it all" : `You pay ${policy.copayment_pct}% of every bill`) : "Not stated"} />
+              <Stat label={<Jargon term="NCB" uiLang="en">Reward for staying claim-free</Jargon>} value={policy.no_claim_bonus_pct ? `+${policy.no_claim_bonus_pct}% cover each claim-free year` : "Not stated"} />
+              <Stat label={<Jargon term="Cashless" uiLang="en">Cashless at hospital</Jargon>} value={policy.cashless_treatment_supported === true ? `Yes · ${policy.network_hospital_count ? policy.network_hospital_count.toLocaleString() + "+ network hospitals" : "network published by insurer"}` : "Not supported"} />
+              <Stat label={<Jargon term="AYUSH" uiLang="en">AYUSH (Ayurveda, Yoga…)</Jargon>} value={policy.ayush_coverage === true ? "Covered" : policy.ayush_coverage === false ? "Not covered" : "Check the wording"} />
               {policy.room_rent_capping && (
-                <div className="col-span-2">
-                  <div className="text-[10px] text-[var(--muted-foreground)] uppercase tracking-wide">Room rent</div>
-                  <div className="text-xs">{policy.room_rent_capping}</div>
+                <div className="col-span-2 pt-1 border-t border-[var(--border)]">
+                  <Stat label={<Jargon term="RoomRent" uiLang="en">Hospital room category</Jargon>} value={policy.room_rent_capping} />
                 </div>
               )}
             </div>

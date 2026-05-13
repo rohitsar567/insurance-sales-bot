@@ -465,6 +465,81 @@ class ProfileCompletenessResponse(BaseModel):
     is_personalized: bool                # True if completeness >= threshold
     gate_threshold: float = 0.6
     next_question_hint: Optional[str] = None
+    profile: dict = Field(default_factory=dict)  # current profile state for UI to render
+    session_id: Optional[str] = None
+
+
+class ProfileUpdateRequest(BaseModel):
+    session_id: str
+    age: Optional[int] = None
+    dependents: Optional[str] = None
+    income_band: Optional[str] = None
+    existing_cover_inr: Optional[int] = None
+    primary_goal: Optional[str] = None
+    location_tier: Optional[str] = None
+    parents_to_insure: Optional[bool] = None
+    parents_age_max: Optional[int] = None
+    parents_has_ped: Optional[bool] = None
+    health_conditions: Optional[list[str]] = None
+    budget_band: Optional[str] = None
+
+
+@app.post("/api/profile", response_model=ProfileCompletenessResponse)
+async def profile_update(req: ProfileUpdateRequest):
+    """Write user-provided profile fields into session_state. Returns the new
+    completeness so the frontend can immediately reveal personalized scores.
+
+    ALSO ingests the profile as a chunk into Chroma (doc_type='profile',
+    policy_id='profile_<session_id>') so the brain sees user context
+    alongside policy + regulatory chunks at retrieval time. This is the
+    "profile RAG" architecture — every recommendation grounds in (policy
+    text + IRDAI mandate + user's own situation) jointly.
+    """
+    from backend.scorecard import profile_completeness as _completeness
+    from backend.session_state import get_session
+    from backend.profile_rag import upsert_profile_chunk
+
+    sess = get_session(req.session_id)
+    # Update only fields the client explicitly sent (non-None) — keeps partial
+    # save flows clean
+    for field_name in (
+        "age", "dependents", "income_band", "existing_cover_inr", "primary_goal",
+        "location_tier", "parents_to_insure", "parents_age_max", "parents_has_ped",
+        "health_conditions", "budget_band",
+    ):
+        v = getattr(req, field_name, None)
+        if v is not None:
+            setattr(sess.profile, field_name, v)
+
+    p = sess.profile
+    profile_dict = {
+        "age": p.age, "dependents": p.dependents, "income_band": p.income_band,
+        "existing_cover_inr": p.existing_cover_inr, "primary_goal": p.primary_goal,
+        "location_tier": p.location_tier, "parents_to_insure": p.parents_to_insure,
+        "parents_age_max": p.parents_age_max, "parents_has_ped": p.parents_has_ped,
+        "health_conditions": p.health_conditions, "budget_band": p.budget_band,
+    }
+    c = _completeness(profile_dict)
+    collected = [k for k, v in profile_dict.items() if v not in (None, "", [], False)]
+    missing = [k for k, v in profile_dict.items() if v in (None, "", [])]
+
+    # Ingest the profile into the RAG store so the brain sees user context
+    # at retrieval time alongside policy + regulatory chunks. Fire-and-forget
+    # — a profile upsert failure shouldn't block the API response.
+    try:
+        await upsert_profile_chunk(req.session_id, profile_dict)
+    except Exception as e:
+        print(f"[profile_rag] upsert failed for {req.session_id}: {type(e).__name__}: {e}")
+
+    return ProfileCompletenessResponse(
+        completeness=c,
+        completeness_pct=int(c * 100),
+        fields_collected=collected,
+        fields_missing=missing,
+        is_personalized=c >= 0.6,
+        profile=profile_dict,
+        session_id=req.session_id,
+    )
 
 
 @app.get("/api/profile/completeness", response_model=ProfileCompletenessResponse)
@@ -510,6 +585,8 @@ async def profile_completeness_view(session_id: Optional[str] = None):
         fields_missing=missing,
         is_personalized=c >= 0.6,
         next_question_hint=hint,
+        profile=profile_dict,
+        session_id=session_id,
     )
 
 
@@ -694,10 +771,31 @@ def _merge_curated(extracted: dict, curated: dict | None) -> dict:
 
 
 @app.get("/api/policies/all", response_model=MarketplaceResponse)
-async def policies_all():
-    """The marketplace data feed — every extracted policy + scorecard + filterable fields."""
+async def policies_all(session_id: Optional[str] = None):
+    """The marketplace data feed — every extracted policy + scorecard + filterable fields.
+
+    When session_id is provided AND the session has a profile populated to
+    ≥0.6 completeness, every policy is scored against THAT profile (dynamic
+    per-user grade). Otherwise we score with the generic baseline weights.
+    """
     import json as _json
-    from backend.scorecard import build_scorecard
+    from backend.scorecard import build_scorecard, profile_completeness as _completeness
+    from backend.session_state import get_session as _get_sess
+
+    # Pull user profile if we have one
+    user_profile_dict: Optional[dict] = None
+    if session_id:
+        sess = _get_sess(session_id)
+        p = sess.profile
+        profile_dict = {
+            "age": p.age, "dependents": p.dependents, "income_band": p.income_band,
+            "existing_cover_inr": p.existing_cover_inr, "primary_goal": p.primary_goal,
+            "location_tier": p.location_tier, "parents_to_insure": p.parents_to_insure,
+            "parents_age_max": p.parents_age_max, "parents_has_ped": p.parents_has_ped,
+            "health_conditions": p.health_conditions, "budget_band": p.budget_band,
+        }
+        if _completeness(profile_dict) >= 0.6:
+            user_profile_dict = profile_dict
 
     corpus_url_index = _build_corpus_url_index()
     curated_facts = _load_curated_facts()
@@ -746,7 +844,7 @@ async def policies_all():
             if rp.exists():
                 try: ir = _json.loads(rp.read_text())
                 except Exception: pass
-        sc = build_scorecard(data, insurer_reviews=ir)
+        sc = build_scorecard(data, insurer_reviews=ir, profile=user_profile_dict)
 
         si = data.get("sum_insured_options") or []
         if isinstance(si, list):
@@ -820,7 +918,7 @@ async def policies_all():
                     ir = _json.loads(rp.read_text())
                 except Exception:
                     pass
-        sc = build_scorecard(data, insurer_reviews=ir)
+        sc = build_scorecard(data, insurer_reviews=ir, profile=user_profile_dict)
         si = data.get("sum_insured_options") or []
         if isinstance(si, list):
             si = [int(x) for x in si if isinstance(x, (int, float)) or (isinstance(x, str) and x.isdigit())]

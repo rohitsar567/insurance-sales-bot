@@ -19,10 +19,15 @@ class Settings:
     # Provider keys
     SARVAM_API_KEY: str = os.environ.get("SARVAM_API_KEY", "")
     VOYAGE_API_KEY: str = os.environ.get("VOYAGE_API_KEY", "")
-    GROQ_API_KEY: str = os.environ.get("GROQ_API_KEY", "")
-    OPENROUTER_API_KEY: str = os.environ.get("OPENROUTER_API_KEY", "")
+    # NVIDIA NIM — single provider hosting the entire reasoning stack:
+    #   Brain  = meta/llama-3.3-70b-instruct
+    #   Judge  = meta/llama-4-maverick-17b-128e-instruct (different arch from brain)
+    # Free tier: 40 req/min, no daily cap, no card. Replaces OpenRouter +
+    # direct DeepSeek + Cerebras + Groq (four legacy providers retired
+    # 2026-05-14 in favor of single-provider consolidation — see D-019).
+    NVIDIA_NIM_API_KEY: str = os.environ.get("NVIDIA_NIM_API_KEY", "")
 
-    # Sarvam endpoints
+    # Sarvam endpoints (voice STT/TTS + Indic translation only — not brain anymore)
     SARVAM_BASE_URL: str = "https://api.sarvam.ai"
     SARVAM_STT_PATH: str = "/speech-to-text"
     SARVAM_TTS_PATH: str = "/text-to-speech"
@@ -31,20 +36,20 @@ class Settings:
     # Sarvam model identifiers
     SARVAM_STT_MODEL: str = "saarika:v2.5"
     SARVAM_TTS_MODEL: str = "bulbul:v2"
-    SARVAM_TTS_SPEAKER: str = "anushka"  # natural female advisor voice; configurable
-    SARVAM_LLM_MODEL: str = "sarvam-m"
+    SARVAM_TTS_SPEAKER: str = "anushka"  # natural female advisor voice
+    SARVAM_LLM_MODEL: str = "sarvam-m"  # used by translator.py for Indic translation
 
-    # Voyage
+    # Voyage (legacy — embeddings now via local BGE; kept for back-compat with extracted/ artifacts)
     VOYAGE_MODEL: str = "voyage-3"
 
-    # Groq (grader + fallback brain)
-    GROQ_BASE_URL: str = "https://api.groq.com/openai/v1"
-    GROQ_GRADER_MODEL: str = "llama-3.3-70b-versatile"
-    GROQ_BRAIN_MODEL: str = "llama-3.3-70b-versatile"
-
-    # OpenRouter (alt fallback brain)
-    OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
-    OPENROUTER_BRAIN_MODEL: str = "deepseek/deepseek-chat-v3-0324"
+    # NVIDIA NIM (single source of truth for brain + judge — tiered routing)
+    # Heavy brain (quality > latency): DeepSeek-V4-Pro (1.6T/49B MoE)
+    # Fast brain (latency > quality): DeepSeek-V4-Flash (284B/13B MoE)
+    # Judge: Meta Llama-4 Maverick (400B/17B MoE) — different family = cross-grading independence
+    NVIDIA_NIM_BASE_URL: str = "https://integrate.api.nvidia.com/v1"
+    NVIDIA_NIM_BRAIN_MODEL: str = "deepseek-ai/deepseek-v4-pro"
+    NVIDIA_NIM_FAST_BRAIN_MODEL: str = "deepseek-ai/deepseek-v4-flash"
+    NVIDIA_NIM_JUDGE_MODEL: str = "meta/llama-4-maverick-17b-128e-instruct"
 
     # Storage paths
     CORPUS_DIR: Path = ROOT / "rag" / "corpus"
@@ -61,7 +66,7 @@ class Settings:
     def validate(cls) -> list[str]:
         """Return list of missing required keys. Empty list = healthy."""
         missing = []
-        for k in ("SARVAM_API_KEY", "VOYAGE_API_KEY", "GROQ_API_KEY"):
+        for k in ("SARVAM_API_KEY", "NVIDIA_NIM_API_KEY"):
             if not getattr(cls, k):
                 missing.append(k)
         return missing

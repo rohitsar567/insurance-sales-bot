@@ -29,7 +29,7 @@ from typing import Optional
 from backend.config import settings
 from backend.orchestrator import handle_turn
 from backend.providers.base import ChatMessage
-from backend.providers.groq_llm import GroqLLM
+from backend.providers.nvidia_nim_llm import get_judge_llm
 
 ROOT = settings.CORPUS_DIR.parent.parent
 GOLD_FILE = ROOT / "eval" / "gold_qa.json"
@@ -78,11 +78,14 @@ class EvalRecord:
     latency_ms: int = 0
 
 
-_judge: Optional[GroqLLM] = None
-def get_judge() -> GroqLLM:
+_judge = None
+def get_judge():
+    """Returns the LLM judge — NIM Llama-4 Maverick (Stack A, D-019).
+    Different family from DeepSeek-V4 brain → non-circular eval. 40 req/min
+    with no daily cap, so sweep / eval volume is no longer constrained."""
     global _judge
     if _judge is None:
-        _judge = GroqLLM()
+        _judge = get_judge_llm(language="en")
     return _judge
 
 

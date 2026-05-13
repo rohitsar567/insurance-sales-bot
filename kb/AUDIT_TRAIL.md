@@ -173,3 +173,22 @@ python tools/verify_urls.py
 ```
 
 Total cost from cold: <$2 (BGE local + ~80 LLM extractions). Total wall-time: ~30-40 min on a modern laptop.
+
+## Batch — 2026-05-14
+
+Three back-to-back curation passes brought the `data/policy_facts/` directory to **102 policies** with verbatim-quote provenance. Mirrored into `kb/policies/` today.
+
+- **Batch 1 — human-research curation (22 policies).** Manual + agent-assisted verbatim extraction from local PDFs in `rag/corpus/` for the 22 highest-priority wordings. Schema: `{value, unit?, source_pdf_path, source_quote}` per field with a `_meta` block (`curated_at`, `primary_source_pdf`, `completeness_pct`, `notes`). Average completeness ≈83.5%. Recorded in [`data/policy_facts/_curation_report.md`](../data/policy_facts/_curation_report.md).
+- **Batch 2 — regex + pdfplumber pass (43 policies).** Automated pattern extraction across the remaining retail health policy PDFs. Each field carries the same provenance triple; numeric values were validated against the verbatim quote before being written.
+- **Batch 3 — group / specialty policies (37 policies).** `tools/curate_remaining.py` extended coverage to group, top-up, critical-illness, personal-accident, and specialty riders. Marked with `policy_type` (e.g. `hospital_cash`) where the wording diverged from indemnity templates.
+
+**Verification.** `tools/info_source_map.py` produced [`eval/info_source_map.json`](../eval/info_source_map.json) and [`data/information_source_map.md`](../data/information_source_map.md) with verdict counts: **✅ 798 / ⚠️ 321 / ❌ 0 / ⏳ 1385.** No ❌ (broken-link) verdicts remain; the ⏳ tail tracks deferred verifications. The ✅:⚠️ ratio is the canonical KPI for source-grounding quality on this dataset.
+
+**UI / runtime changes shipped today:**
+
+- **Profile Builder tab** — guided 8-question discovery flow (`docs/discovery-script.md`). Profile-completeness gate (≥0.6) controls whether the personalised scorecard renders.
+- **Score gate on policy cards** — recommendations suppress the per-buyer letter grade until completeness ≥ 0.6 (universal IRDAI metrics like CSR and complaints/10K still render, since they're insurer-level).
+- **EN ↔ हिं i18n** — full bilingual UI with the 13-term jargon glossary at `frontend/src/lib/i18n.ts` (mirrored to `kb/methodology/glossary.json`).
+- **Scorecard methodology expander** — every grade opens a transparency panel sourced from `METHODOLOGY_BLUEPRINT` (mirrored to `kb/methodology/scorecard.json`).
+- **Source-quote popovers** — hovering a fact on a policy card surfaces the verbatim PDF quote that backed it.
+- **Cerebras Qwen-3-235B wired as primary judge** — replaces the previous Groq Llama-3.1 grader for the eval pipeline; legacy provider retained as fallback.

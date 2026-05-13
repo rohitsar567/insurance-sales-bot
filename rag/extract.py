@@ -2,8 +2,8 @@
 
 For each PDF in rag/corpus/:
   1. Read full text via pdfplumber (already have per-page text from ingest)
-  2. Pass to LLM (Sarvam-M primary, DeepSeek-V3 fallback) with the Pydantic
-     schema as a structured-output target
+  2. Pass to LLM (NIM DeepSeek-V4-Pro primary, Sarvam-M fallback) with the
+     Pydantic schema as a structured-output target
   3. Self-critique pass — LLM scores per-field confidence vs source text
   4. Validate via Pydantic
   5. Upsert into DuckDB `policies` table
@@ -31,8 +31,7 @@ import pdfplumber
 
 from backend.config import settings
 from backend.providers.base import ChatMessage
-from backend.providers.groq_llm import GroqLLM
-from backend.providers.openrouter_llm import OpenRouterLLM
+from backend.providers.nvidia_nim_llm import NvidiaNimLLM, get_brain_llm
 from backend.providers.sarvam_llm import SarvamLLM
 from rag.ingest import policy_id_for
 from rag.schema import HealthPolicy
@@ -64,12 +63,12 @@ EXTRACT_SYSTEM = """You extract structured fields from Indian health insurance p
 
 def build_extract_prompt(policy_text: str, schema_excerpt: str, policy_id: str) -> str:
     # Sarvam-M rejects prompts >~25k chars with HTTP 400 even though docs say
-    # 32k tokens — undocumented stricter limit. Groq llama-3.3-70b handles
-    # 128k but rate-limits TOKENS per minute aggressively (~30k/min free tier).
-    # 12k chars (~3k tokens) keeps total request well under both limits and
-    # captures Schedule + Key Definitions + Benefits front-matter where the
-    # structured fields live. Exclusions section (the back half) doesn't yield
-    # many structured fields, just policy_exclusions list which is mostly noise.
+    # 32k tokens — undocumented stricter limit. DeepSeek-V4-Pro on NIM handles
+    # 1M context but the schema fits comfortably in 12k chars. 12k chars
+    # (~3k tokens) captures Schedule + Key Definitions + Benefits front-matter
+    # where the structured fields live. Exclusions section (the back half)
+    # doesn't yield many structured fields, just policy_exclusions list which
+    # is mostly noise.
     MAX_CHARS = 12_000
     if len(policy_text) > MAX_CHARS:
         # Front-bias: schedules, definitions, waiting periods, UIN, sum-insured
@@ -216,7 +215,7 @@ def upsert_policy(policy: HealthPolicy, source_pdf_path: str, source_pdf_url: st
             policy.insurer_slug,
             policy.insurer_name,
             policy.policy_name,
-            policy.policy_type.value if policy.policy_type else None,
+            (policy.policy_type.value if hasattr(policy.policy_type, "value") else policy.policy_type) if policy.policy_type else None,
             policy.uin_code,
             policy.extraction_confidence_pct,
             time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -255,9 +254,10 @@ async def extract_one(pdf_path: Path, manifest_entry: dict, llm_primary, llm_fal
     for attempt, llm in enumerate([llm_primary, llm_fallback]):
         try:
             # Hard per-attempt timeout so a hung TCP connection in httpx
-            # pooling can't stall the whole sweep. Groq (primary) has its own
-            # 4-step backoff retry loop that can use up to ~5min, so give it
-            # 120s ceiling. Sarvam (fallback) has no retries; 60s is plenty.
+            # pooling can't stall the whole sweep. NIM DeepSeek-V4-Pro has its
+            # own 4-step backoff retry loop that can use up to ~5min on 429s,
+            # so give it 120s ceiling. Sarvam (fallback) has no retries; 60s
+            # is plenty.
             attempt_timeout = 120 if llm is llm_primary else 60
             res = await asyncio.wait_for(
                 llm.chat(messages=messages, temperature=0.0, max_tokens=2048),
@@ -317,15 +317,15 @@ async def main():
     if args.limit:
         pdfs = pdfs[: args.limit]
 
-    # Sarvam-M is a reasoning model that consumes most of the starter-tier
-    # 2048-output-token budget on <think> blocks, frequently truncating the
-    # JSON. Groq Llama-3.3-70b skips the reasoning and emits JSON cleanly +
-    # has higher output budget. So Groq primary, Sarvam fallback.
-    primary = GroqLLM()
+    # Provider matrix (2026-05-14, Stack A consolidation per D-019):
+    #   - NIM DeepSeek-V4-Pro: 1M ctx, frontier MoE, MIT-licensed, free tier
+    #     40 req/min with no daily cap. Clean JSON output, no <think> verbosity.
+    #   - Sarvam-M: starter-tier 2048 output cap — used only as a fallback for
+    #     short policies if NIM upstream fails.
+    primary = get_brain_llm()  # DeepSeek-V4-Pro on NIM
     fallback = SarvamLLM()
-    _ = OpenRouterLLM  # noqa: F841 — kept importable for future paid use
 
-    print(f"Extracting {len(pdfs)} policies. Primary=Sarvam-M, Fallback=DeepSeek-V3.\n")
+    print(f"Extracting {len(pdfs)} policies. Primary=NIM DeepSeek-V4-Pro, Fallback=Sarvam-M.\n")
     t0 = time.time()
     ok = 0
     for i, pdf in enumerate(pdfs, 1):

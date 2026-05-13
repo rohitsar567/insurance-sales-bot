@@ -1,5 +1,5 @@
 """Verify the Sarvam-M Hinglish back-translation preserved the load-bearing
-facts from DeepSeek-V3's English reply.
+facts from the NIM Llama-3.3-70B English reply.
 
 Closes the F-16 gap: faithfulness gates verify the English answer, but until
 this module the Hinglish translation that the user actually saw/heard was
@@ -132,18 +132,17 @@ Be strict. Tone changes are fine; fact changes are not."""
 
 
 async def check_hinglish_faithfulness(english_reply: str, hinglish_reply: str) -> DriftVerdict:
-    """Gate 5 — Groq Llama judges whether the Hinglish translation is faithful
-    to the English original. Catches semantic drift the regex anchors miss
-    (e.g. paraphrased exclusions, dropped caveats).
+    """Gate 5 — NIM Llama-4 Maverick judges whether the Hinglish translation is
+    faithful to the English original. Catches semantic drift the regex anchors
+    miss (e.g. paraphrased exclusions, dropped caveats).
     """
     if not english_reply.strip() or not hinglish_reply.strip():
         return DriftVerdict(drift_detected=False)
 
     try:
-        # Lazy-import to avoid pulling Groq into modules that don't need it
         from backend.providers.base import ChatMessage
-        from backend.providers.groq_llm import GroqLLM
-        judge = GroqLLM()
+        from backend.providers.nvidia_nim_llm import get_judge_llm
+        judge = get_judge_llm(language="hi")
         user = f"ENGLISH SOURCE:\n{english_reply}\n\nHINGLISH TRANSLATION:\n{hinglish_reply}\n\nVerify."
         res = await judge.chat(
             messages=[

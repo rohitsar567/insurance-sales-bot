@@ -41,11 +41,34 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Pre-download the embedding model so the first request is fast (no cold load)
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('BAAI/bge-small-en-v1.5')"
 
-# Copy the backend source + RAG modules + data
+# Copy the backend source + RAG modules (rag/ holds .py only at this stage)
 COPY backend ./backend
 COPY rag ./rag
 COPY eval ./eval
 COPY docs ./docs
+
+# Pull the large data (corpus PDFs + pre-built Chroma vectors + extracted JSONs)
+# from the companion HF dataset rather than baking it into the Space repo.
+# Why: the free-tier Space repo has a 1 GB cap; rag/corpus + rag/vectors is
+# ~310 MB and would have made the Space repo unviable on top of the regular
+# code. HF datasets get 50 GB free quota — the right place for this data.
+# Public dataset, no token needed at build time. See D-019.
+RUN python -c "\
+from huggingface_hub import snapshot_download; \
+snapshot_download(\
+    repo_id='rohitsar567/insurance-bot-data', \
+    repo_type='dataset', \
+    local_dir='/app/rag', \
+    allow_patterns=['rag/corpus/**','rag/vectors/**','rag/extracted/**'], \
+) " && \
+    # The dataset preserves the rag/ prefix in path_in_repo, so the snapshot
+    # writes to /app/rag/rag/corpus/... — flatten one level so existing
+    # backend imports (rag/corpus/, rag/vectors/) keep working unchanged.
+    if [ -d /app/rag/rag ]; then \
+        cp -r /app/rag/rag/* /app/rag/ && rm -rf /app/rag/rag; \
+    fi && \
+    echo "Dataset pull complete:" && \
+    du -sh /app/rag/corpus /app/rag/vectors /app/rag/extracted 2>&1 | sed 's/^/  /'
 
 # Copy the built frontend from stage 1
 COPY --from=frontend-builder /app/frontend/out ./frontend/out

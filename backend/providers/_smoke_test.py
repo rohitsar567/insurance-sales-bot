@@ -5,6 +5,14 @@ Run from project root:
 
 Each test prints OK/FAIL and the response. Failures here will surface in the
 build before they surface in the UI.
+
+Stack A providers (post-2026-05-14, D-019):
+  - Sarvam-M LLM — Indic translation (Hindi/Hinglish/vernacular)
+  - Sarvam Bulbul TTS — voice synthesis
+  - Sarvam Saarika STT — voice recognition
+  - Local BGE embeddings (no network)
+  - NVIDIA NIM brain — DeepSeek-V4-Pro
+  - NVIDIA NIM judge — Llama-4 Maverick
 """
 
 from __future__ import annotations
@@ -14,24 +22,22 @@ import traceback
 
 from backend.config import settings
 from backend.providers.base import ChatMessage
+from backend.providers.nvidia_nim_llm import get_brain_llm, get_judge_llm
 from backend.providers.sarvam_llm import SarvamLLM
 from backend.providers.sarvam_stt import SarvamSTT
 from backend.providers.sarvam_tts import SarvamTTS
-from backend.providers.voyage_embeddings import VoyageEmbeddings
-from backend.providers.groq_llm import GroqLLM
-from backend.providers.openrouter_llm import OpenRouterLLM
 
 
 async def test_sarvam_llm():
-    print("\n--- Sarvam-M LLM ---")
+    print("\n--- Sarvam-M LLM (Indic translation only) ---")
     try:
         client = SarvamLLM()
         result = await client.chat(
             messages=[
-                ChatMessage(role="system", content="You are a helpful insurance advisor. Keep replies under 20 words."),
-                ChatMessage(role="user", content="What does PED stand for in health insurance?"),
+                ChatMessage(role="system", content="You are a translator. Translate to Hindi."),
+                ChatMessage(role="user", content="The sum insured is the maximum amount your policy will pay."),
             ],
-            max_tokens=100,
+            max_tokens=120,
         )
         print(f"OK | model={result.model} | reply: {result.text[:200]}")
         print(f"   tokens prompt={result.prompt_tokens} completion={result.completion_tokens}")
@@ -51,7 +57,6 @@ async def test_sarvam_tts():
             language_code="en-IN",
         )
         print(f"OK | got {len(audio)} bytes of audio")
-        # Save for manual inspection
         out = settings.CORPUS_DIR.parent / "_smoke_tts.wav"
         out.write_bytes(audio)
         print(f"   saved to {out.relative_to(settings.CORPUS_DIR.parent.parent)}")
@@ -62,12 +67,19 @@ async def test_sarvam_tts():
         return False
 
 
-async def test_voyage():
-    print("\n--- Voyage embeddings ---")
+async def test_nim_brain():
+    print("\n--- NIM DeepSeek-V4-Pro (THE brain — Stack A primary) ---")
     try:
-        client = VoyageEmbeddings()
-        vectors = await client.embed(["the cataract waiting period is 24 months", "policy covers ayurveda"])
-        print(f"OK | got {len(vectors)} vectors, dim={len(vectors[0])}")
+        client = get_brain_llm()
+        result = await client.chat(
+            messages=[
+                ChatMessage(role="system", content="You are a precise insurance advisor."),
+                ChatMessage(role="user", content="Briefly: what does 'sum insured' mean in health insurance? Under 25 words."),
+            ],
+            max_tokens=120,
+            temperature=0.2,
+        )
+        print(f"OK | model={result.model} | reply: {result.text[:200]}")
         return True
     except Exception as e:
         print(f"FAIL | {type(e).__name__}: {e}")
@@ -75,10 +87,10 @@ async def test_voyage():
         return False
 
 
-async def test_groq():
-    print("\n--- Groq Llama-3.3-70B (grader + medium fallback) ---")
+async def test_nim_judge():
+    print("\n--- NIM Llama-4 Maverick (faithfulness judge — Stack A grader) ---")
     try:
-        client = GroqLLM()
+        client = get_judge_llm(language="en")
         result = await client.chat(
             messages=[
                 ChatMessage(role="system", content="You are a strict evaluator. Reply YES or NO only."),
@@ -88,25 +100,6 @@ async def test_groq():
             temperature=0.0,
         )
         print(f"OK | model={result.model} | reply: {result.text!r}")
-        return True
-    except Exception as e:
-        print(f"FAIL | {type(e).__name__}: {e}")
-        traceback.print_exc()
-        return False
-
-
-async def test_openrouter():
-    print("\n--- OpenRouter DeepSeek-V3 (strongest fallback brain) ---")
-    try:
-        client = OpenRouterLLM()
-        result = await client.chat(
-            messages=[
-                ChatMessage(role="system", content="You are a precise insurance advisor."),
-                ChatMessage(role="user", content="Briefly: what does 'sum insured' mean in health insurance? Under 25 words."),
-            ],
-            max_tokens=100,
-        )
-        print(f"OK | model={result.model} | reply: {result.text[:200]}")
         return True
     except Exception as e:
         print(f"FAIL | {type(e).__name__}: {e}")
@@ -144,10 +137,9 @@ async def main():
         print(f"WARN | missing keys: {missing}")
 
     results = {}
+    results["nim_brain"] = await test_nim_brain()
+    results["nim_judge"] = await test_nim_judge()
     results["sarvam_llm"] = await test_sarvam_llm()
-    results["voyage"] = await test_voyage()
-    results["groq"] = await test_groq()
-    results["openrouter"] = await test_openrouter()
     results["sarvam_tts"] = await test_sarvam_tts()
     results["sarvam_stt"] = await test_sarvam_stt()  # depends on TTS output
 

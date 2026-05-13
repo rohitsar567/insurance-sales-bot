@@ -21,7 +21,7 @@ A **voice-first health-insurance advisor** for Indian buyers, grounded in a cura
 
 > *"What's the pre-existing disease waiting period under Care Supreme, and how does that compare to ICICI Elevate?"*
 
-You should see (i) a comparative answer with `[Source: ...]` citations linking to specific policy PDFs and page ranges, (ii) the brain that handled it (`sarvam-m`, `groq-llama`, or `crosscheck-rescued-...`), and (iii) audio synthesised by Sarvam Bulbul. Ask the same in Hinglish — *"Care Supreme mein PED ka waiting period kya hai?"* — and the response flows through the Indic translation cascade with three drift checks before reaching you.
+You should see (i) a comparative answer with `[Source: ...]` citations linking to specific policy PDFs and page ranges, (ii) the brain that handled it (`v4-pro::comparison`, `v4-flash::qa`, or `crosscheck-rescued-by-maverick`), and (iii) audio synthesised by Sarvam Bulbul. Ask the same in Hinglish — *"Care Supreme mein PED ka waiting period kya hai?"* — and the response flows through the Indic translation cascade with three drift checks before reaching you.
 
 Now ask: *"What does IRDAI's 2024 Master Circular say about cataract waiting-period caps?"* The bot will ground the answer in `irdai-master-circular-health-2024.pdf` — a document we had to **Playwright** past Akamai bot protection to obtain (§6).
 
@@ -50,22 +50,22 @@ Now ask: *"What does IRDAI's 2024 Master Circular say about cataract waiting-per
 │                               │                                         │
 │           ┌───────────────────┼───────────────────┐                     │
 │           ▼                   ▼                   ▼                     │
-│   ┌──────────────┐    ┌──────────────┐    ┌──────────────────┐         │
-│   │ STRUCTURED   │    │ VECTOR STORE │    │ BRAIN ROUTER     │         │
-│   │ DuckDB       │    │ Chroma 0.5.20│    │ Sarvam-M  ◀┐     │         │
-│   │ 48 fields    │    │ BGE-small    │    │ DeepSeek-V3 │     │         │
-│   │ /policy      │    │ 800/120 chunk│    │ Groq Llama  │     │         │
-│   └──────────────┘    └──────────────┘    │  3.3-70B    │     │         │
-│           ▲                   ▲           │  (grader +  │     │         │
-│           │ extracted at      │ embedded  │   cross-    │     │         │
-│           │ ingest            │ at ingest │   check)    │     │         │
-│           │                   │           └──────────────┘     │         │
+│   ┌──────────────┐    ┌──────────────┐    ┌─────────────────────┐      │
+│   │ STRUCTURED   │    │ VECTOR STORE │    │ NIM BRAIN ROUTER    │      │
+│   │ DuckDB       │    │ Chroma 0.5.20│    │ V4-Pro  (heavy) ◀┐  │      │
+│   │ 48 fields    │    │ BGE-small    │    │ V4-Flash (fast)  │  │      │
+│   │ /policy      │    │ 800/120 chunk│    │ Llama-4 Maverick │  │      │
+│   └──────────────┘    └──────────────┘    │   (judge + xcheck│  │      │
+│           ▲                   ▲           │    + eval grader)│  │      │
+│           │ extracted at      │ embedded  │ single NIM key   │  │      │
+│           │ ingest            │ at ingest │ 40 req/min       │  │      │
+│           │                   │           └─────────────────────┘     │
 └───────────┼───────────────────┼─────────────────────────────────┼───────┘
             │                   │                                 │
 ┌───────────┴───────────────────┴───────────────┐                 │
 │ INGEST  (rag/ingest.py + rag/extract.py)      │                 │
 │ pdfplumber → 800-tok chunks → BGE embed       │                 │
-│ Sarvam-M structured extract + DeepSeek fallbk │                 │
+│ NIM V4-Pro structured extract + Sarvam fallbk │                 │
 │ self-critique → confidence_pct per field      │                 │
 └────────────────┬──────────────────────────────┘                 │
                  │                                                │
@@ -85,12 +85,12 @@ Now ask: *"What does IRDAI's 2024 Master Circular say about cataract waiting-per
 | **API gateway** ([`backend/main.py`](backend/main.py)) | FastAPI + Pydantic. Routes: `/api/chat`, `/api/voice`, `/api/policies`, `/api/policies/{id}/scorecard`, `/api/insurers/{slug}/reviews`. OpenAPI auto-served; frontend types codegen via `openapi-typescript` (D-015). |
 | **Orchestrator** ([`backend/orchestrator.py`](backend/orchestrator.py)) | Intent classifier → retrieval → brain router → 4-gate faithfulness → cross-check retry → Indic cascade. The single file that defines a turn. |
 | **Faithfulness verifier** ([`backend/faithfulness.py`](backend/faithfulness.py)) | Four gates run on every reply: retrieval floor, citation integrity, regex numeric grounding, LLM-judge. Every block goes to `logs/hallucinations.jsonl`. |
-| **Translation cascade** ([`backend/translator.py`](backend/translator.py), [`backend/translation_check.py`](backend/translation_check.py)) | For Indic queries: Sarvam Mayura translates Hinglish → English, primary brain reasons in English, gates run on English, Sarvam translates back, three drift checks validate the Indic output (§3). |
+| **Translation cascade** ([`backend/translator.py`](backend/translator.py), [`backend/translation_check.py`](backend/translation_check.py)) | For Indic queries: Sarvam-M translates Hinglish → English, NIM brain reasons in English, gates run on English, Sarvam translates back, three drift checks validate the Indic output (§3). |
 | **Retrieval** ([`rag/retrieve.py`](rag/retrieve.py)) | Top-k cosine search over Chroma with policy-name-aware boost. Returns `RetrievedChunk(policy_id, policy_name, page_start, page_end, source_url, score, text)`. |
-| **Structured extraction** ([`rag/extract.py`](rag/extract.py)) | Sarvam-M with the 48-field Pydantic schema as structured-output target; DeepSeek-V3 fallback for tables Sarvam misses; self-critique pass scores per-field confidence. |
+| **Structured extraction** ([`rag/extract.py`](rag/extract.py)) | NIM DeepSeek-V4-Pro (1M context, clean JSON discipline) with the 48-field Pydantic schema as structured-output target; Sarvam-M fallback. Self-critique pass scores per-field confidence. |
 | **Scorecard** ([`backend/scorecard.py`](backend/scorecard.py)) | Pure-Python rules-based aggregation over 24 of the 48 extracted fields → 6 sub-scores → A–F grade. No LLM in the loop — anyone can reproduce a grade from the JSON. Methodology in [`docs/scorecard-methodology.md`](docs/scorecard-methodology.md). |
 | **KB** ([`kb/`](kb/)) | Markdown-first knowledge base with 11 per-policy sheets, scorecard results, eval results, URL verification, insurer reviews, premium anchors, security findings. Regeneratable via `python -m rag.build_kb`. |
-| **Eval** ([`eval/`](eval/)) | Three gold-Q&A pipelines (templated, LLM-drafted, adversarial), Groq Llama-3.3-70B grader for non-circular evaluation, results versioned in `eval/results.md`. |
+| **Eval** ([`eval/`](eval/)) | Three gold-Q&A pipelines (templated, LLM-drafted, adversarial), NIM Llama-4 Maverick grader for non-circular evaluation (different family from DeepSeek brain), results versioned in `eval/results.md`. |
 
 Full system diagram in [`docs/02-architecture.md`](docs/02-architecture.md) §1; stack rationale in [`docs/tech-stack-rationale.md`](docs/tech-stack-rationale.md).
 
@@ -108,30 +108,38 @@ Sarvam-first per the assignment. Saarika v2.5 (their newer Indic ASR) handles En
 
 First-party Indic prosody. The orchestrator pre-expands domain acronyms (`PED → pre-existing disease`) before sending text to Bulbul — see F-06 in [`docs/04-failure-modes.md`](docs/04-failure-modes.md). [`backend/providers/sarvam_tts.py`](backend/providers/sarvam_tts.py).
 
-### 3.3 Sarvam-M — the Indic translator + cross-check brain
+### 3.3 NVIDIA NIM — the consolidated open-weights reasoning stack
 
-**Sarvam-M is the primary brain.** D-016 locks it in for three reasons that are honest, not ceremonial:
+**D-019 (2026-05-14) locks the consolidation:** every non-Sarvam reasoning call runs on a single `nvapi-...` key against `integrate.api.nvidia.com`. Four legacy providers (OpenRouter, direct DeepSeek, Cerebras, Groq) were retired in the same change — ~600 LOC of provider wiring deleted, no quality loss, no daily rate limit, $0 cost.
 
-1. **The Indic translation cascade is owned by Sarvam-M / Mayura.** When the user speaks Hinglish or Hindi, the pipeline is: Sarvam translates Hinglish → English → primary brain reasons in English → 4 faithfulness gates run on the English reply → Sarvam translates English → Hinglish → **three drift checks** ([`backend/translation_check.py`](backend/translation_check.py)) verify the Indic output preserves numbers, citations, and semantic meaning. Drift checks are:
+Tiered brain routing inside one provider:
+
+| Tier | Model | Used when | Why |
+|---|---|---|---|
+| **Heavy brain** | `deepseek-ai/deepseek-v4-pro` (1.6T / 49B MoE, 1M context, MIT) | `intent ∈ {comparison, recommendation}` | Beats Opus-4.6 + GPT-5.4 on SimpleQA-Verified (57.9% vs 46.2% / 45.3%) and LiveCodeBench. Quality > latency for synthesis. |
+| **Fast brain** | `deepseek-ai/deepseek-v4-flash` (284B / 13B MoE, 1M context, MIT) | `intent ∈ {fact_find, qa}` — i.e. voice turns | ~27% of V3.2 single-token FLOPs → lower TTFT for voice. Still frontier-tier (HMMT 2026 94.8%, LiveCodeBench 91.6%). |
+| **Judge** | `meta/llama-4-maverick-17b-128e-instruct` (400B / 17B MoE) | Faithfulness Gate 4, Hinglish drift LLM-judge, eval grader | **Different family from the DeepSeek brain** — Meta MoE judging DeepSeek MoE = the brain does not mark its own homework. |
+
+The router lives in [`backend/orchestrator.py:pick_brain`](backend/orchestrator.py). The cross-check retry pattern stays inside NIM: when faithfulness fails on the primary brain's output (and the failure isn't Gate 1 / "no evidence at all"), the orchestrator re-runs the same prompt on Llama-4 Maverick (the judge model used as rescue brain). Different architecture (DeepSeek MoE vs Meta MoE), different training corpus — the "different-family ensemble" signal is preserved without requiring a second provider. The rescued reply is tagged `crosscheck-rescued-by-maverick` for audit.
+
+### 3.4 Sarvam — voice + Indic translation (not the brain anymore)
+
+Sarvam stays where Sarvam is uniquely strong, but it no longer reasons:
+
+1. **STT — Sarvam Saarika v2.5.** Best Indian-accent recognition available.
+2. **TTS — Sarvam Bulbul v2.** Best Hinglish TTS, single-speaker voice (`anushka`).
+3. **Indic translation cascade — Sarvam-M.** When the user speaks Hinglish or Hindi: Sarvam translates Hinglish → English → NIM brain reasons in English → 4 faithfulness gates run on the English reply → Sarvam translates English → Hinglish → **three drift checks** ([`backend/translation_check.py`](backend/translation_check.py)) verify the Indic output preserves numbers, citations, and semantic meaning. Drift checks:
    - **Gate-A (regex anchors):** `check_translation_drift()` verifies every digit / currency / citation in the English reply appears in the Indic reply. If not → revert to English.
-   - **Gate-B (LLM-judge):** Groq Llama scores semantic faithfulness across languages.
+   - **Gate-B (LLM-judge):** NIM Llama-4 Maverick scores semantic faithfulness across languages.
    - **Gate-C (back-translation cosine):** Sarvam back-translates Hinglish → English; cosine vs original English ≥ 0.80 or revert.
-   
-   This closes the F-16 gap documented in failure modes ([`docs/04-failure-modes.md`](docs/04-failure-modes.md)) where the faithfulness gates only check the English reply.
 
-2. **Sarvam-M is the cross-check brain when the primary is DeepSeek.** The cross-check pattern (next paragraph) requires a *different model family* to be informative; Sarvam-M's reasoning differs enough from DeepSeek's that a disagreement is a real signal.
+   This closes the F-16 gap in [`docs/04-failure-modes.md`](docs/04-failure-modes.md) where the faithfulness gates only check the English reply.
 
-3. **Indic + BFSI vocabulary is what Sarvam tuned for.** "Premium," "rider," "co-payment," "claim settlement ratio" — these are correctly handled in Sarvam-M without prompt engineering gymnastics.
+**Why Sarvam moved out of the brain role:** Sarvam-M's 2048 starter-tier output cap + `<think>` reasoning tokens consume the budget, causing frequent truncation mid-JSON in extraction and mid-answer in advisory. NIM-hosted DeepSeek-V4-Pro (1M context, no rate limit, MIT-licensed frontier) is a strictly better fit for the reasoning role on Sarvam's free tier. Sarvam wins decisively on voice + Indic — the parts of the stack closed-source frontier can't match.
 
-### 3.4 DeepSeek-V3 — the primary reasoner
+### 3.5 NIM Llama-4 Maverick — the cross-family judge
 
-For complex multi-policy comparison and adversarial refusal questions, **DeepSeek-V3 (via OpenRouter)** outperforms Sarvam-M on our gold set. Eval-by-brain ([`eval/results.md`](eval/results.md)): on the 25-question run, `groq-llama` brain hit 100% factual accuracy vs `sarvam-m` at 37.5%. We accept the asymmetry honestly: Sarvam-M is the right brain for Indic + cultural framing, and a frontier open-source brain is the right brain for multi-hop comparison. The router lives in [`backend/orchestrator.py:pick_brain`](backend/orchestrator.py) (D-016).
-
-**The cross-check retry pattern** ([`backend/orchestrator.py`](backend/orchestrator.py) §5a, lines 215–249) is the punchline: when faithfulness fails on a primary-brain reply (and the failure isn't Gate 1 / "no evidence at all"), the orchestrator re-runs the same prompt through the *opposite-family* brain. Sarvam-M primary → DeepSeek cross-check. DeepSeek primary → Sarvam-M cross-check. Capped at one retry (no loops). If the cross-check passes faithfulness, the reply is tagged `crosscheck-rescued-<primary>` so the reviewer can audit when this saved the user from a refusal. This is the *production* version of "ensemble disagreement is informative" — not a research toy.
-
-### 3.5 Groq Llama-3.3-70B — the grader
-
-Different model family from Sarvam-M, free tier, ~500 tok/sec. **Non-circular eval is the whole point** — if Sarvam-M graded Sarvam-M, the eval would be aspirational. D-014 locks this. [`eval/run.py`](eval/run.py) calls Groq Llama with a strict JSON-schema judge prompt. Same Groq Llama also serves as Gate 4 of faithfulness ([`backend/faithfulness.py`](backend/faithfulness.py) `_gate_llm_judge`).
+Same NIM endpoint, different model family from the DeepSeek brain. **Non-circular eval is the whole point** — if a DeepSeek model graded DeepSeek output, the eval would be aspirational. [`eval/run.py`](eval/run.py) calls Llama-4 Maverick with a strict JSON-schema judge prompt. The same model also serves as Gate 4 of faithfulness ([`backend/faithfulness.py`](backend/faithfulness.py) `_gate_llm_judge`) and as the Hinglish-translation drift judge ([`backend/translation_check.py`](backend/translation_check.py) `check_hinglish_faithfulness`).
 
 ### 3.6 BGE-small-en-v1.5 — embeddings (the honest tradeoff)
 
@@ -148,7 +156,7 @@ D-011 originally locked Voyage AI `voyage-3`. Mid-build, Voyage's 3 RPM free-tie
 | Pipeline | What | Volume | Why |
 | --- | --- | --- | --- |
 | **A — Auto-templated** | 15 templates × ~80 policies | ~1,100 candidate pairs; ~300 currently committed | Scales for free. Each pair traces to a specific schema field → specific clause. Fully reproducible. |
-| **B — LLM-drafted nuanced** | Sarvam-M / DeepSeek prompted on policy text to draft 5 buyer-style multi-clause questions per top-priority policy | Target 100; spot-checked | Tests reasoning Pipeline A can't reach. |
+| **B — LLM-drafted nuanced** | NIM DeepSeek-V4-Pro prompted on policy text to draft 5 buyer-style multi-clause questions per top-priority policy | Target 100; spot-checked | Tests reasoning Pipeline A can't reach. |
 | **C — Adversarial** | Hand-written: out-of-corpus (space tourism), out-of-policy-type (IRDAI mandate when corpus had no IRDAI before §6), Hinglish, multi-policy compare | ~30–40 | Tests **refusal precision**, not just factual accuracy. |
 
 Generator: [`eval/generate_gold.py`](eval/generate_gold.py). Committed gold set: [`eval/gold_qa.json`](eval/gold_qa.json).
@@ -162,7 +170,7 @@ Every reply, every turn, runs through [`backend/faithfulness.py`](backend/faithf
 | **1 Retrieval floor** | `_gate_retrieval_floor` | Top retrieval score < 0.40 — bot has nothing to ground in | line 74 |
 | **2 Citation integrity** | `_gate_citation_integrity` | Reply cites a policy_name that wasn't retrieved | line 94 |
 | **3 Numeric grounding (regex)** | `_gate_numeric_grounding` | Any `₹`, `%`, `days`, `months`, `years` in reply doesn't appear in retrieved chunks | line 137 |
-| **4 LLM-judge faithfulness** | `_gate_llm_judge` (Groq Llama, different family from brain) | Judge says any claim is unsupported by chunks | line 191 |
+| **4 LLM-judge faithfulness** | `_gate_llm_judge` (NIM Llama-4 Maverick, different family from DeepSeek brain) | Judge says any claim is unsupported by chunks | line 191 |
 
 The 4-gate verdict is bundled with a `cross-check retry` (§3.4) and the 3-gate Indic drift check (§3.3). Total inspection surface per turn = **4 English faithfulness gates + 1 cross-check brain pass + 3 Indic drift gates** when the user speaks Hinglish.
 
@@ -185,7 +193,7 @@ By brain: `groq-llama` 100%, `sarvam-m` 37.5%.
 1. **The gates are aggressive.** 12 of 25 questions are blocked — the bot refused when the gold answer claims the corpus has the data. In several cases the data *is* in the corpus but Gate 3 (regex numeric grounding) was over-strict on currency/percent normalisation. The fix is to soften the regex (v1.1, tracked); the v1 stance is "refuse rather than mis-cite" which is the SAFE failure mode in BFSI.
 2. **Pipeline A templated questions over-index on `waiting_period` and `sub_limit` fields that several CIS-only PDFs (Bajaj Silver Health, Tax Gain) don't explicitly state.** When the template asks the question anyway, the bot correctly refuses, but the gold expects an answer.
 
-The grader is documented as a Groq Llama judge in `eval/results.md` footer; this is non-circular (different family from Sarvam-M brain).
+The grader is now NIM Llama-4 Maverick (D-019 consolidation, 2026-05-14); this is non-circular — different family from the DeepSeek-V4 brain. Earlier eval run footers refer to the legacy Groq Llama judge.
 
 ### 4.4 Audit log — every blocked claim, every gate
 
@@ -240,7 +248,7 @@ D-007. [`kb/premiums/INDEX.md`](kb/premiums/INDEX.md) lists the public PolicyBaz
 
 ### 6.6 Push-to-talk, not full-duplex streaming
 
-Voice latency: ~3–4s for Llama brain, 15–25s for Sarvam-M reasoning chain (F-09 in [`docs/04-failure-modes.md`](docs/04-failure-modes.md)). Streaming STT + full-duplex is in [`docs/ROADMAP.md`](docs/ROADMAP.md) §v2.4.
+Voice latency: ~3–4s for V4-Flash fast brain (default for voice turns), 6–10s for V4-Pro heavy brain (used on comparison / recommendation intents). Streaming STT + full-duplex is in [`docs/ROADMAP.md`](docs/ROADMAP.md) §v2.4.
 
 ### 6.7 HF Spaces free tier — cold start
 
@@ -256,9 +264,9 @@ For each: try voice and text. The reply panel shows `brain_used` and per-citatio
 
 | # | Question | What you should see | Why this question |
 | --- | --- | --- | --- |
-| 1 | *"What's the pre-existing disease waiting period under Care Supreme?"* | Specific number ("36 months" or similar) + `[Source: care-health/care-supreme/wordings, p.18]`. Brain likely `sarvam-m` or `groq-llama`. | Single-field lookup — the easiest competence check. |
-| 2 | *"Compare cataract waiting period in ICICI Elevate vs HDFC Optima Secure."* | Two-policy comparison with citations from both PDFs. Brain likely `deepseek-v3` (longer context, multi-hop). | Multi-policy reasoning — tests retrieval and brain routing. |
-| 3 | *"Care Supreme mein PED ka waiting period kya hai?"* (Hinglish) | Answer in Hinglish with citations preserved. `brain_used` includes `cascade::sarvam-trans+...+sarvam-trans` or `cascade::drift-*-fallback` if a drift gate fired. | Indic cascade + 3-gate drift verification. |
+| 1 | *"What's the pre-existing disease waiting period under Care Supreme?"* | Specific number ("36 months" or similar) + `[Source: care-health/care-supreme/wordings, p.18]`. Brain `v4-flash::qa` (fact-find / single-policy → fast brain). | Single-field lookup — the easiest competence check. |
+| 2 | *"Compare cataract waiting period in ICICI Elevate vs HDFC Optima Secure."* | Two-policy comparison with citations from both PDFs. Brain `v4-pro::comparison` (heavy brain for multi-policy synthesis). | Multi-policy reasoning — tests retrieval and tiered brain routing. |
+| 3 | *"Care Supreme mein PED ka waiting period kya hai?"* (Hinglish) | Answer in Hinglish with citations preserved. `brain_used` includes `cascade::sarvam-trans+v4-flash::qa+sarvam-trans` or `cascade::drift-*-fallback` if a drift gate fired. | Indic cascade + 3-gate drift verification. |
 | 4 | *"What does IRDAI say about cataract waiting-period caps under the 2024 Master Circular?"* | Cited answer from `irdai-master-circular-health-2024.pdf`. Refused before §6 Playwright rescue; answers now. | Demonstrates the IRDAI corpus fix. |
 | 5 | *"Does Bajaj Silver Health cover space-tourism injuries?"* | **Safe refusal:** *"I'd rather not answer that without stronger evidence in the policy documents I have."* | Adversarial out-of-corpus — refusal is the correct behaviour (F-07). |
 | 6 | *"Should I get the cataract surgery covered under this policy?"* | Bot answers what's covered + refuses to give clinical advice; suggests consulting a doctor. | Persona rule 4 (F-14) — no medical advice. |
@@ -276,7 +284,7 @@ A take-home is a sample of how the engineer thinks under constraint. Three thing
 
 **2. I treat hallucination defense and refusal as product features.** BFSI deployments get fined for mis-selling; the bot is biased toward refusal over confident wrong answers. The 4 faithfulness gates + cross-check retry + 3 Indic drift checks + audit log are the BFSI-compliance-grade version of "we shipped a chatbot." If the eval shows 40% headline accuracy because the gates are aggressive, the right response is to soften the gates carefully (v1.1) — not to ship a higher number by relaxing the verifier.
 
-**3. I document the model picks honestly, including where Sarvam wins and where it doesn't.** Sarvam-M is the right brain for Indic + BFSI vocabulary + cultural framing — and it owns the translation cascade. DeepSeek-V3 wins on multi-hop comparison reasoning. The router admits both honestly. The cross-check retry pattern (Sarvam-M ↔ DeepSeek as different-family verifiers) is the production version of "ensemble disagreement is informative." A Sarvam customer deploying this stack gets a product that *uses Sarvam where Sarvam is best* and a documented escalation path for cases where it isn't — which is the honest sales narrative for an Indic AI company in 2026.
+**3. I document the model picks honestly — Sarvam where Sarvam is uniquely strong, NIM open-weights frontier for the reasoning roles.** Sarvam Saarika v2.5 STT, Sarvam Bulbul v2 TTS, and Sarvam-M Indic translation are *non-substitutable* — no closed-source frontier matches them on Indian voice or Hinglish. Reasoning is a different problem; DeepSeek-V4-Pro (1.6T MoE, MIT-licensed, beats Opus-4.6 + GPT-5.4 on SimpleQA-Verified) hosted free on NVIDIA NIM is the strongest open-weights reasoning brain available today, and pairing it with Meta Llama-4 Maverick as a cross-family judge gives the bot two different architectures evaluating every claim. A Sarvam customer deploying this stack gets a product that *uses Sarvam exactly where Sarvam beats the world* and uses MIT-licensed frontier weights for the parts that any reasoning provider could in principle handle — open-weights only, $0 inference, single API key for the entire non-voice stack. That's the honest sales narrative for an Indic AI company in 2026: Sarvam isn't trying to win a benchmark it doesn't need to win.
 
 The rest is craftsmanship. The 8-section KB ([`kb/`](kb/)) is regeneratable from primary sources in <40 minutes for <$2 cold ([`kb/AUDIT_TRAIL.md`](kb/AUDIT_TRAIL.md) §7). Every numeric value in every reviewer-facing artifact traces to a source PDF + page + clause. Every architectural decision is in [`docs/decisions.md`](docs/decisions.md) D-001 through D-017 with alternatives and revisit-at-scale notes. The repo is structured so a Sarvam engineer joining the project on Monday could ship v1.1 by Friday.
 
