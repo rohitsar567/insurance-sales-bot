@@ -1,0 +1,121 @@
+{
+  "policy_id": "care-health__care-advantage-add-ons-protect-plus-care-shield__brochure",
+  "policy_name": "Care Advantage Add Ons Protect Plus Care Shield",
+  "insurer_slug": "care-health",
+  "uin_code": {
+    "value": "CHIHLIP26049V042526",
+    "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
+    "source_quote": "UIN:CHIHLIP26049V042526"
+  },
+  "min_entry_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
+    "source_quote": ""
+  },
+  "max_entry_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
+    "source_quote": ""
+  },
+  "max_renewal_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
+    "source_quote": ""
+  },
+  "pre_existing_disease_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
+    "source_quote": ""
+  },
+  "initial_waiting_period_days": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
+    "source_quote": ""
+  },
+  "maternity_coverage": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
+    "source_quote": ""
+  },
+  "maternity_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
+    "source_quote": ""
+  },
+  "ayush_coverage": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
+    "source_quote": ""
+  },
+  "cashless_treatment_supported": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
+    "source_quote": ""
+  },
+  "copayment_pct": {
+    "value": 20,
+    "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
+    "source_quote": "co-payment of 20%"
+  },
+  "no_claim_bonus_pct": {
+    "value": 50,
+    "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
+    "source_quote": "NCBS)\n(50%"
+  },
+  "restoration_benefit": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
+    "source_quote": ""
+  },
+  "room_rent_capping": {
+    "value": "Room rent/ room category No sub-limit No sub-limit\nICU charges No sub-limit No s",
+    "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
+    "source_quote": "Room rent/ room category No sub-limit No sub-limit\nICU charges No sub-limit No sub-limit\nIn-patient care Up to"
+  },
+  "pre_hospitalization_days": {
+    "value": 30,
+    "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
+    "source_quote": "Pre-hospitalization medical Pre-hospitalization for 30 days"
+  },
+  "post_hospitalization_days": {
+    "value": 60,
+    "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
+    "source_quote": "post-hospitalization post-hospitalization for 60 days"
+  },
+  "day_care_treatments_count": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
+    "source_quote": ""
+  },
+  "network_hospital_count": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
+    "source_quote": ""
+  },
+  "sum_insured_options": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
+    "source_quote": ""
+  },
+  "claim_settlement_ratio": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
+    "source_quote": ""
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
+    "source_quote": ""
+  },
+  "policy_type": {
+    "value": "group",
+    "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
+    "source_quote": "classified as group from PDF heuristics"
+  },
+  "_meta": {
+    "curated_at": "2026-05-14",
+    "primary_source_pdf": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
+    "completeness_pct": 32,
+    "notes": "Curated by tools/curate_remaining.py \u2014 pattern-based extraction from local PDF"
+  }
+}

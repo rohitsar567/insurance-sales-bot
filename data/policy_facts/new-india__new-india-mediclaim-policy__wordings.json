@@ -1,0 +1,121 @@
+{
+  "policy_id": "new-india__new-india-mediclaim-policy__wordings",
+  "policy_name": "New India Mediclaim Policy",
+  "insurer_slug": "new-india",
+  "uin_code": {
+    "value": "NIAHLIP23187V052223",
+    "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__wordings.pdf",
+    "source_quote": "UIN: NIAHLIP23187V052223"
+  },
+  "min_entry_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__wordings.pdf",
+    "source_quote": ""
+  },
+  "max_entry_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__wordings.pdf",
+    "source_quote": ""
+  },
+  "max_renewal_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__wordings.pdf",
+    "source_quote": ""
+  },
+  "pre_existing_disease_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__wordings.pdf",
+    "source_quote": ""
+  },
+  "initial_waiting_period_days": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__wordings.pdf",
+    "source_quote": ""
+  },
+  "maternity_coverage": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__wordings.pdf",
+    "source_quote": ""
+  },
+  "maternity_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__wordings.pdf",
+    "source_quote": ""
+  },
+  "ayush_coverage": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__wordings.pdf",
+    "source_quote": "AYUSH TREATMENT\nExpenses incurred for inpatient care treatment under Ayurveda, Yoga and Naturopathy, Unani,\nSiddha and H"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__wordings.pdf",
+    "source_quote": "CASHLESS FACILITY"
+  },
+  "copayment_pct": {
+    "value": 20,
+    "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__wordings.pdf",
+    "source_quote": "CO-PAY\nIf the Insured person opts for voluntary co-pay of 20%"
+  },
+  "no_claim_bonus_pct": {
+    "value": 25,
+    "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__wordings.pdf",
+    "source_quote": "CUMULATIVE BONUS\nThe Sum Insured under Policy shall be increased by 25%"
+  },
+  "restoration_benefit": {
+    "value": "restoration of normal state of Health under any circumstances. We cover\nthe expe",
+    "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__wordings.pdf",
+    "source_quote": "restoration of normal state of Health under any circumstances. We cover\nthe expenses up to 10%"
+  },
+  "room_rent_capping": {
+    "value": "Room rent, Boarding, DMO / RMO / CMO / RMP Charges, Nursing (Including Injection",
+    "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__wordings.pdf",
+    "source_quote": "Room rent, Boarding, DMO / RMO / CMO / RMP Charges, Nursing (Including Injection /\n3.1 (a) Drugs and Intra venous fluid "
+  },
+  "pre_hospitalization_days": {
+    "value": 30,
+    "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__wordings.pdf",
+    "source_quote": "Pre-Hospitalization Medical expenses for up to 30 days"
+  },
+  "post_hospitalization_days": {
+    "value": 60,
+    "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__wordings.pdf",
+    "source_quote": "Post-Hospitalization Medical expenses for up to 60 days"
+  },
+  "day_care_treatments_count": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__wordings.pdf",
+    "source_quote": ""
+  },
+  "network_hospital_count": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__wordings.pdf",
+    "source_quote": ""
+  },
+  "sum_insured_options": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__wordings.pdf",
+    "source_quote": ""
+  },
+  "claim_settlement_ratio": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__wordings.pdf",
+    "source_quote": ""
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__wordings.pdf",
+    "source_quote": ""
+  },
+  "policy_type": {
+    "value": "group",
+    "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__wordings.pdf",
+    "source_quote": "classified as group from PDF heuristics"
+  },
+  "_meta": {
+    "curated_at": "2026-05-14",
+    "primary_source_pdf": "rag/corpus/new-india/new-india-mediclaim-policy__wordings.pdf",
+    "completeness_pct": 45,
+    "notes": "Curated by tools/curate_remaining.py \u2014 pattern-based extraction from local PDF"
+  }
+}
