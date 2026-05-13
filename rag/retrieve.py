@@ -47,6 +47,43 @@ def get_collection():
     )
 
 
+import re as _re
+
+# Queries containing these keywords trigger a parallel regulatory-only
+# retrieval whose top results are boosted ×1.2 and merged into the final
+# context. This ensures the brain sees IRDAI mandates whenever the user
+# asks about compliance, legality, or what's "allowed" — even when the
+# policy chunks would otherwise dominate raw cosine.
+_REGULATORY_TRIGGERS = _re.compile(
+    r"\b(irdai|irda|regulation|regulator|regulatory|mandate|mandatory|"
+    r"allowed|prohibited|legal|illegal|unenforceable|cap|capped|ceiling|"
+    r"master circular|section\s+\d+|compliance|non[- ]?compliant|"
+    r"required|must|rule|statute|act|government)\b",
+    flags=_re.IGNORECASE,
+)
+REGULATORY_BOOST = 1.2  # multiplier applied to regulatory chunk scores
+
+
+def _is_regulatory_intent(query: str) -> bool:
+    return bool(_REGULATORY_TRIGGERS.search(query or ""))
+
+
+def _build_chunk(cid: str, doc: str, meta: dict, score: float) -> RetrievedChunk:
+    return RetrievedChunk(
+        chunk_id=cid,
+        text=doc,
+        policy_id=meta.get("policy_id", ""),
+        insurer_slug=meta.get("insurer_slug", ""),
+        policy_name=meta.get("policy_name", ""),
+        doc_type=meta.get("doc_type", ""),
+        source_url=meta.get("source_url", ""),
+        page_start=int(meta.get("page_start", 0)),
+        page_end=int(meta.get("page_end", 0)),
+        chunk_idx=int(meta.get("chunk_idx", 0)),
+        score=score,
+    )
+
+
 async def retrieve(
     query: str,
     top_k: int = settings.RAG_TOP_K,
@@ -58,6 +95,12 @@ async def retrieve(
 
     Optional filters narrow retrieval to specific policies/insurers (used
     by comparison and per-policy Q&A flows).
+
+    For queries with regulatory intent (IRDAI / mandate / allowed / etc.),
+    runs a SECOND retrieval restricted to doc_type='regulatory' chunks and
+    merges the top 3 of those (score-boosted ×1.2) into the result set.
+    This ensures the brain sees regulatory ceilings even when policy
+    chunks dominate raw cosine.
     """
     embedder = embedder or VoyageEmbeddings()
     [query_vec] = await embedder.embed([query], input_type="query")
@@ -69,6 +112,8 @@ async def retrieve(
         where["insurer_slug"] = {"$in": insurer_slugs}
 
     collection = get_collection()
+
+    # Standard retrieval
     res = collection.query(
         query_embeddings=[query_vec],
         n_results=top_k,
@@ -76,32 +121,41 @@ async def retrieve(
     )
 
     out: list[RetrievedChunk] = []
-    if not res["ids"] or not res["ids"][0]:
-        return out
+    if res["ids"] and res["ids"][0]:
+        for cid, doc, meta, dist in zip(
+            res["ids"][0], res["documents"][0],
+            res["metadatas"][0], res["distances"][0],
+        ):
+            out.append(_build_chunk(cid, doc, meta, 1.0 - dist))
 
-    for cid, doc, meta, dist in zip(
-        res["ids"][0],
-        res["documents"][0],
-        res["metadatas"][0],
-        res["distances"][0],
-    ):
-        # Chroma returns cosine *distance*; convert to similarity score
-        score = 1.0 - dist
-        out.append(
-            RetrievedChunk(
-                chunk_id=cid,
-                text=doc,
-                policy_id=meta.get("policy_id", ""),
-                insurer_slug=meta.get("insurer_slug", ""),
-                policy_name=meta.get("policy_name", ""),
-                doc_type=meta.get("doc_type", ""),
-                source_url=meta.get("source_url", ""),
-                page_start=int(meta.get("page_start", 0)),
-                page_end=int(meta.get("page_end", 0)),
-                chunk_idx=int(meta.get("chunk_idx", 0)),
-                score=score,
+    # Regulatory boost pass — only when the query is about IRDAI / regulations,
+    # and only when not already filtered to specific policies (otherwise the
+    # caller is asking about a specific policy, not regulations).
+    if _is_regulatory_intent(query) and not policy_ids and not insurer_slugs:
+        try:
+            reg_res = collection.query(
+                query_embeddings=[query_vec],
+                n_results=3,
+                where={"doc_type": "regulatory"},
             )
-        )
+            if reg_res["ids"] and reg_res["ids"][0]:
+                seen = {c.chunk_id for c in out}
+                reg_chunks: list[RetrievedChunk] = []
+                for cid, doc, meta, dist in zip(
+                    reg_res["ids"][0], reg_res["documents"][0],
+                    reg_res["metadatas"][0], reg_res["distances"][0],
+                ):
+                    if cid in seen:
+                        continue
+                    boosted = (1.0 - dist) * REGULATORY_BOOST
+                    reg_chunks.append(_build_chunk(cid, doc, meta, boosted))
+                # Merge and re-sort by score, then trim back to top_k
+                merged = sorted(out + reg_chunks, key=lambda c: c.score, reverse=True)
+                out = merged[:top_k]
+        except Exception:
+            # Regulatory boost is additive; failure shouldn't kill the main result
+            pass
+
     return out
 
 

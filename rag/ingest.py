@@ -185,6 +185,10 @@ async def ingest_one(
     policy_name = manifest_entry.get("policy_name", pdf_path.stem)
     doc_type = manifest_entry.get("doc_type", "unknown")
     source_url = manifest_entry.get("url", "")
+    # PDFs under rag/corpus/regulatory/ are IRDAI / Govt mandates. Tag them
+    # so retrieve.py can apply the regulatory-intent boost.
+    if pdf_path.parent.name == "regulatory" or insurer_slug == "regulatory":
+        doc_type = "regulatory"
 
     # Skip if already ingested
     existing = collection.get(where={"policy_id": policy_id}, limit=1)
