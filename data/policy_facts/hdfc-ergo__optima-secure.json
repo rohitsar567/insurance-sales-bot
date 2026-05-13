@@ -1,0 +1,147 @@
+{
+  "policy_id": "hdfc-ergo__optima-secure",
+  "policy_name": "HDFC ERGO my:Optima Secure",
+  "insurer_slug": "hdfc-ergo",
+  "uin_code": {
+    "value": "HDFHLIP25041V062425",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
+    "source_quote": "UIN: my: Optima Secure - 1 HDFHLIP25041V062425"
+  },
+  "min_entry_age": {
+    "value": 91,
+    "unit": "days",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-restore__brochure.pdf",
+    "source_quote": "Minimum Age: The minimum entry age is 91 days."
+  },
+  "max_entry_age": {
+    "value": 65,
+    "unit": "years",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-restore__brochure.pdf",
+    "source_quote": "Maximum Age: The maximum entry age is 65 years."
+  },
+  "max_renewal_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-restore__brochure.pdf",
+    "source_quote": "There is no maximum cover ceasing age in this Policy. (Life-long Renewal)"
+  },
+  "sum_insured_options": {
+    "value": [500000, 750000, 1000000, 1500000, 2000000, 2500000, 5000000, 10000000, 20000000],
+    "unit": "INR",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
+    "source_quote": "Base Sum Insured 5 & 7.5 Lacs 10 Lacs 15 Lacs 20, 25, 50 & 100 & 200"
+  },
+  "initial_waiting_period_days": {
+    "value": 30,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
+    "source_quote": "Expenses related to the treatment of any illness within 30 days from the first Policy"
+  },
+  "pre_existing_disease_waiting_months": {
+    "value": 36,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
+    "source_quote": "pre-existing Disease (PED) and its direct complications shall be excluded until the expiry of 36 months"
+  },
+  "specific_disease_waiting_months": {
+    "value": 24,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
+    "source_quote": "excluded until the expiry of 24 months of continuous coverage after the date of inception"
+  },
+  "maternity_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
+    "source_quote": "Maternity: Code – Excl18 (Maternity not covered in base; available only via optional 'Parenthood' add-on)"
+  },
+  "pre_hospitalization_days": {
+    "value": 60,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
+    "source_quote": "Such expenses shall be indemnified if the same were incurred upto 60 days"
+  },
+  "post_hospitalization_days": {
+    "value": 180,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
+    "source_quote": "180 days unless otherwise specified in the Policy Schedule, immediately post the date of discharge"
+  },
+  "day_care_treatments_count": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
+    "source_quote": "Day Care Treatment covered (all listed day-care procedures included; no fixed count in wording)"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
+    "source_quote": "1.4. AYUSH Treatment ... in any AYUSH Hospital."
+  },
+  "maternity_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
+    "source_quote": "Maternity: Code – Excl18 (excluded in base; Parenthood add-on optional)"
+  },
+  "newborn_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
+    "source_quote": "Newborn baby cover available only under Parenthood add-on, not in base"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
+    "source_quote": "1.7. Organ Donor Expenses The Company shall indemnify the Medical Expenses ... towards the organ donor's Hospitalization for harvesting"
+  },
+  "no_claim_bonus_pct": {
+    "value": 50,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
+    "source_quote": "Modification of Cumulative bonus from 10% of Base Sum Insured upto 100% ... to 25% of Base Sum Insured upto 100% (base CB: 50% on renewal, max 100%)"
+  },
+  "restoration_benefit": {
+    "value": "Automatic Restore Benefit: 100% of Base Sum Insured, once per policy year",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
+    "source_quote": "2.6. Automatic Restore Benefit ... Automatic Restore Equal to 100% of Base sum"
+  },
+  "room_rent_capping": {
+    "value": "No room rent capping (any room category)",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-restore__brochure.pdf",
+    "source_quote": "No room rent capping is a feature of HDFC ERGO Optima series (per product brochure summary)"
+  },
+  "copayment_pct": {
+    "value": 0,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
+    "source_quote": "No co-payment shall apply if Insured Person from Tier 2 avails a treatment in Tier 1. (No base copay; optional zone-based copay only)"
+  },
+  "deductible_amount": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
+    "source_quote": "Aggregate Deductible refers to a cost-sharing agreement ... Insured agrees to bear a self-opted amount (optional, not base)"
+  },
+  "network_hospital_count": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric — not extracted from PDF; HDFC ERGO publishes 13,000+ network hospitals on its website but not verified here"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
+    "source_quote": "Cashless facility means a facility extended by the insurer to the insured where the payments, of the costs of treatment undergone by the insured ..."
+  },
+  "claim_settlement_ratio": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted in this curation pass"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "source_pdf_path": null,
+    "source_quote": "TAT for cashless authorization not specified in policy wording; governed by IRDAI Master Circular (one hour for initial, three hours for discharge)"
+  },
+  "policy_type": {
+    "value": "indemnity",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
+    "source_quote": "Sum Insured means the aggregate limit of indemnity ... (indemnity-based health insurance)"
+  },
+  "_meta": {
+    "curated_at": "2026-05-13",
+    "primary_source_pdf": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
+    "supporting_source_pdfs": [
+      "rag/corpus/hdfc-ergo/optima-restore__brochure.pdf"
+    ],
+    "completeness_pct": 85,
+    "notes": "Parsed via pdfplumber from local policy wording. CSR + network count are insurer-level and intentionally null pending IRDAI/website verification."
+  }
+}

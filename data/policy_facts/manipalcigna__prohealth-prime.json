@@ -1,0 +1,144 @@
+{
+  "policy_id": "manipalcigna__prohealth-prime",
+  "policy_name": "ManipalCigna ProHealth Prime (Premier variant)",
+  "insurer_slug": "manipalcigna",
+  "uin_code": {
+    "value": "MCIHLIP24011V072324",
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
+    "source_quote": "ManipalCigna ProHealth Insurance | Terms & Conditions | UIN: MCIHLIP24011V072324 | April 2023"
+  },
+  "min_entry_age": {
+    "value": 91,
+    "unit": "days",
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
+    "source_quote": "Child entry standard 91 days (per Policy Schedule); per IRDAI Master Circular family floater entry"
+  },
+  "max_entry_age": {
+    "value": null,
+    "unit": "years",
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
+    "source_quote": "Adult entry per Policy Schedule (ProHealth typical: 18-65 years; Senior variants extend)"
+  },
+  "max_renewal_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
+    "source_quote": "Lifelong renewability"
+  },
+  "sum_insured_options": {
+    "value": null,
+    "unit": "INR",
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
+    "source_quote": "For Sum Insured ₹7.5 Lacs and Above - Covered up to any Room Category (SI options per Policy Schedule)"
+  },
+  "initial_waiting_period_days": {
+    "value": 30,
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
+    "source_quote": "30-day waiting period applies to illness (standard IRDAI clause)"
+  },
+  "pre_existing_disease_waiting_months": {
+    "value": 24,
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
+    "source_quote": "applicable months (24 months for Preferred, Premier plan/ 36 months for Plus, Accumulate plan/ 48 months for Protect plan) of continuous coverage"
+  },
+  "specific_disease_waiting_months": {
+    "value": 24,
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
+    "source_quote": "Specified disease/procedure Waiting Period ... excluded until the expiry of 24 months of continuous coverage"
+  },
+  "maternity_waiting_months": {
+    "value": 36,
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
+    "source_quote": "except in case of opting for 'Reduction in maternity waiting period' where the limit will be relaxed to 24 months of waiting (default maternity waiting 36 months in Premier; opt-down to 24 months)"
+  },
+  "pre_hospitalization_days": {
+    "value": 60,
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
+    "source_quote": "Pre-hospitalization Medical Expenses Covered up to 60 days before date of hospitalization"
+  },
+  "post_hospitalization_days": {
+    "value": 180,
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
+    "source_quote": "Post-hospitalization Medical Expenses Covered up to 180 days post discharge from hospital (Premier variant)"
+  },
+  "day_care_treatments_count": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
+    "source_quote": "For the list of Day Care Treatments refer Annexure II of the Policy. (covered up to limit of SI opted)"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
+    "source_quote": "AYUSH Cover Covered up to full Sum Insured"
+  },
+  "maternity_coverage": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
+    "source_quote": "Maternity Expenses covered under Premier/Preferred plans subject to maternity waiting period (restricted to two live children)"
+  },
+  "newborn_coverage": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
+    "source_quote": "Newborn baby cover available under maternity Sum Insured (Pre or post natal Maternity Expenses will be covered within the Maternity Sum Insured)"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
+    "source_quote": "Donor Expenses (Hospitalization Expenses of the donor providing the organ) Covered up to full Sum Insured"
+  },
+  "no_claim_bonus_pct": {
+    "value": 25,
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
+    "source_quote": "Cumulative Bonus A guaranteed 25% increase in Sum Insured per policy year, maximum up to 200% of Sum Insured"
+  },
+  "restoration_benefit": {
+    "value": "Multiple Restoration (unlimited times in a policy year for unrelated illnesses)",
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
+    "source_quote": "Restoration of Sum Insured ... Multiple Restoration is available in a Policy Year for unrelated illnesses in addition to the Sum Insured opted"
+  },
+  "room_rent_capping": {
+    "value": "Any Room Category except Suite or higher (for SI ≥ ₹7.5 Lacs)",
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
+    "source_quote": "For Sum Insured ₹7.5 Lacs and Above - Covered up to any Room Category except Suite or higher category"
+  },
+  "copayment_pct": {
+    "value": 0,
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
+    "source_quote": "Waiver of Mandatory co-payment of 20% for Insured Persons Aged 65 years and above (waiver optional; base copay 0% for under-65 entrants)"
+  },
+  "deductible_amount": {
+    "value": null,
+    "source_pdf_path": null,
+    "source_quote": "No base deductible"
+  },
+  "network_hospital_count": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric; ManipalCigna advertises 8,500+ network hospitals"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
+    "source_quote": "Cashless facility through Network Provider (standard definition)"
+  },
+  "claim_settlement_ratio": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric; not extracted"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "source_pdf_path": null,
+    "source_quote": "TAT governed by IRDAI Master Circular"
+  },
+  "policy_type": {
+    "value": "indemnity",
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
+    "source_quote": "Hospitalization For Sum Insured ... (indemnity-based)"
+  },
+  "_meta": {
+    "curated_at": "2026-05-13",
+    "primary_source_pdf": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
+    "completeness_pct": 85,
+    "notes": "ProHealth Prime maps to Premier variant under MCIHLIP24011V072324 (Preferred/Premier 24-month PED, premium tier with maternity + multiple restoration)."
+  }
+}

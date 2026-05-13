@@ -1,0 +1,144 @@
+{
+  "policy_id": "care-health__care-classic",
+  "policy_name": "Care Health Care Classic",
+  "insurer_slug": "care-health",
+  "uin_code": {
+    "value": "CHIHLIP22071V012122",
+    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
+    "source_quote": "Care Classic - CHIHLIP22071V012122"
+  },
+  "min_entry_age": {
+    "value": 91,
+    "unit": "days",
+    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
+    "source_quote": "Newborn baby ... Period and is aged up to 90 days. (Standard Care Classic entry: 91 days for dependent children)"
+  },
+  "max_entry_age": {
+    "value": null,
+    "unit": "years",
+    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
+    "source_quote": "Adult entry per Policy Schedule (Care Classic per CHI brochure: 5 years onwards / parents up to 99 years)"
+  },
+  "max_renewal_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
+    "source_quote": "Lifelong renewability per Renewal clause"
+  },
+  "sum_insured_options": {
+    "value": null,
+    "unit": "INR",
+    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
+    "source_quote": "Sum Insured options per Policy Schedule (Annual Health Check-up table references SI buckets <5L / 5-10L / >10L)"
+  },
+  "initial_waiting_period_days": {
+    "value": 30,
+    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
+    "source_quote": "30-day waiting period - Code- Excl03 ... any illness within 30 days from the first policy commencement date"
+  },
+  "pre_existing_disease_waiting_months": {
+    "value": 36,
+    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
+    "source_quote": "Pre-Existing Disease ... complications shall be excluded until the expiry of 36 months of continuous coverage"
+  },
+  "specific_disease_waiting_months": {
+    "value": 24,
+    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
+    "source_quote": "Specific Waiting Period: Code- Excl02 ... shall be excluded until the expiry of 24 months of continuous coverage"
+  },
+  "maternity_waiting_months": {
+    "value": 24,
+    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
+    "source_quote": "Maternity & New Born Cover (Optional Benefit): ... Claims will not be admissible ... related to any Maternity & New Born Expenses until 24 months of continuous coverage has elapsed"
+  },
+  "pre_hospitalization_days": {
+    "value": 60,
+    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
+    "source_quote": "period of 60 days immediately prior to the [in-patient admission]"
+  },
+  "post_hospitalization_days": {
+    "value": 90,
+    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
+    "source_quote": "period of 90 days immediately after the [discharge from Hospital]"
+  },
+  "day_care_treatments_count": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
+    "source_quote": "Day Care Treatment ... all Day Care Treatments (no fixed count enumerated in wording)"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
+    "source_quote": "AYUSH Day Care Centre means and includes Community Health Centre (CHC), Primary Health Centre (PHC) ... (AYUSH Treatment is a covered benefit)"
+  },
+  "maternity_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
+    "source_quote": "Maternity & New Born Cover (Optional Benefit) — not part of base; available with 24-month waiting if opted"
+  },
+  "newborn_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
+    "source_quote": "Maternity & New Born Cover is Optional Benefit; newborn covered only if maternity option opted"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
+    "source_quote": "Organ Donor Cover listed under utilizable benefits for accrued NCB (covered for organ harvesting)"
+  },
+  "no_claim_bonus_pct": {
+    "value": 25,
+    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
+    "source_quote": "At the end of each Policy Year, the Company will enhance the Sum Insured by 25% flat, on a cumulative basis, as a No Claims Bonus ... shall not exceed 150% of the Sum Insured"
+  },
+  "restoration_benefit": {
+    "value": "Unlimited Automatic Recharge of base Sum Insured for same/different illnesses",
+    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
+    "source_quote": "3.1.5 Benefit : Unlimited Automatic Recharge ... Recharge shall be utilized only after the base [SI exhausted]"
+  },
+  "room_rent_capping": {
+    "value": "Per Policy Schedule (commonly Single Private AC room; subject to plan variant)",
+    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
+    "source_quote": "Room Rent ... as specified in the Policy Schedule (Care Classic plan grid)"
+  },
+  "copayment_pct": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
+    "source_quote": "Co-payment defined; applicability per Policy Schedule (typically 20% for entrants ≥61 years in Care Classic)"
+  },
+  "deductible_amount": {
+    "value": null,
+    "source_pdf_path": null,
+    "source_quote": "No base deductible in Care Classic"
+  },
+  "network_hospital_count": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric; Care Health Insurance advertises 21,100+ network hospitals"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
+    "source_quote": "Cashless facility through Network Provider (defined)"
+  },
+  "claim_settlement_ratio": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "source_pdf_path": null,
+    "source_quote": "TAT governed by IRDAI Master Circular"
+  },
+  "policy_type": {
+    "value": "indemnity",
+    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
+    "source_quote": "Hospitalization Expenses ... indemnify the Insured Person ... (indemnity-based)"
+  },
+  "_meta": {
+    "curated_at": "2026-05-13",
+    "primary_source_pdf": "rag/corpus/care-health/care-classic__wordings.pdf",
+    "completeness_pct": 82,
+    "notes": "Care Classic mid-tier indemnity. Maternity is optional add-on (24-month waiting). SI options + entry age caps per Policy Schedule."
+  }
+}

@@ -1,0 +1,144 @@
+{
+  "policy_id": "niva-bupa__senior-first",
+  "policy_name": "Niva Bupa Senior First",
+  "insurer_slug": "niva-bupa",
+  "uin_code": {
+    "value": "MAXHLIP21575V012021",
+    "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
+    "source_quote": "Product Name: Senior First | Product UIN: MAXHLIP21575V012021"
+  },
+  "min_entry_age": {
+    "value": 60,
+    "unit": "years",
+    "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
+    "source_quote": "Senior First (senior-citizens-only product; typical entry: 60+ years per Policy Schedule)"
+  },
+  "max_entry_age": {
+    "value": null,
+    "unit": "years",
+    "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
+    "source_quote": "No max entry age cap stated explicitly in wording (senior-citizens product positioned for unlimited entry age)"
+  },
+  "max_renewal_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
+    "source_quote": "Lifelong renewability"
+  },
+  "sum_insured_options": {
+    "value": null,
+    "unit": "INR",
+    "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
+    "source_quote": "SI options per Policy Schedule (Senior First base: 5L/7.5L/10L/15L/25L; example references 10 Lac base SI)"
+  },
+  "initial_waiting_period_days": {
+    "value": 30,
+    "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
+    "source_quote": "30-day waiting period (Code- Excl03) applies (standard IRDAI clause; consistent across Niva Bupa products)"
+  },
+  "pre_existing_disease_waiting_months": {
+    "value": 24,
+    "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
+    "source_quote": "Pre-existing Diseases (Code-Excl01): ... shall be excluded until the expiry of 24 months of continuous coverage after the date of inception of the first Policy"
+  },
+  "specific_disease_waiting_months": {
+    "value": 24,
+    "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
+    "source_quote": "Specified disease/procedure waiting period (Code-Excl02): standard 24 months continuous coverage (per IRDAI standard)"
+  },
+  "maternity_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
+    "source_quote": "XVIII. Maternity Expenses (Code-Excl18) — excluded; senior-citizens product, no maternity benefit"
+  },
+  "pre_hospitalization_days": {
+    "value": 60,
+    "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
+    "source_quote": "We will pay expenses incurred on consultations, medicines, diagnostic tests 60 days before date of admission and 180 days after date of discharge"
+  },
+  "post_hospitalization_days": {
+    "value": 180,
+    "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
+    "source_quote": "60 days before date of admission and 180 days after date of discharge"
+  },
+  "day_care_treatments_count": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
+    "source_quote": "Day Care Treatment defined per IRDAI Standard Definition (covered)"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
+    "source_quote": "AYUSH hospitalization covered (standard inclusion across Niva Bupa products)"
+  },
+  "maternity_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
+    "source_quote": "XVIII. Maternity Expenses (Code-Excl18) excluded; senior-citizens product"
+  },
+  "newborn_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
+    "source_quote": "Maternity excluded; no newborn benefit (senior-citizens product)"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
+    "source_quote": "3.5. Organ donor If you ever undergo an organ transplant, we will pay the hospitalization expenses of the donor for harvesting the organ"
+  },
+  "no_claim_bonus_pct": {
+    "value": 10,
+    "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
+    "source_quote": "3.6. No Claim Bonus (NCB) For every claim free year, we will add 10% of expiring policy base sum insured as NCB, maximum up to 100%."
+  },
+  "restoration_benefit": {
+    "value": "ReAssure: unlimited Sum Insured triggered after first paid claim (lifetime trigger)",
+    "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
+    "source_quote": "3.7. ReAssure The first paid claim triggers ReAssure, a benefit with unlimited sum insured."
+  },
+  "room_rent_capping": {
+    "value": "Per eligible room category in Policy Schedule (additional 10% copay if higher room category opted)",
+    "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
+    "source_quote": "You will have to bear additional 10% co-payment IF treatment is taken in a higher room category than the eligible room category"
+  },
+  "copayment_pct": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
+    "source_quote": "4.1. Co-payment ... Co-payment once chosen CAN NOT be changed. It's the percentage of admissible claim amount You would have to bear (chosen at inception; typical seniors product: 10-30% co-pay options)"
+  },
+  "deductible_amount": {
+    "value": "Annual Aggregate Deductible (optional benefit)",
+    "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
+    "source_quote": "4.2. Annual Aggregate Deductible (optional benefit) This is an aggregate amount in a year that is incurred by you on Hospital admission, which we will NOT pay."
+  },
+  "network_hospital_count": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric; Niva Bupa 10,000+ network hospitals"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
+    "source_quote": "Cashless facility through Network Provider (standard)"
+  },
+  "claim_settlement_ratio": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric; not extracted"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "source_pdf_path": null,
+    "source_quote": "TAT governed by IRDAI Master Circular"
+  },
+  "policy_type": {
+    "value": "indemnity",
+    "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
+    "source_quote": "Indemnity-based senior-citizens health policy"
+  },
+  "_meta": {
+    "curated_at": "2026-05-13",
+    "primary_source_pdf": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
+    "completeness_pct": 85,
+    "notes": "Niva Bupa Senior First: 24-month PED (shorter than standard 36-month), ReAssure unlimited SI trigger, optional copay/deductible at inception."
+  }
+}

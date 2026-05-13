@@ -1,0 +1,144 @@
+{
+  "policy_id": "new-india__floater-mediclaim",
+  "policy_name": "New India Floater Mediclaim Policy",
+  "insurer_slug": "new-india",
+  "uin_code": {
+    "value": "NIAHLIP25039V082425",
+    "source_pdf_path": "rag/corpus/new-india/new-india-floater-mediclaim-policy__wordings.pdf",
+    "source_quote": "UIN: NIAHLIP25039V082425 NEW INDIA FLOATER MEDICLAIM POLICY"
+  },
+  "min_entry_age": {
+    "value": 91,
+    "unit": "days",
+    "source_pdf_path": "rag/corpus/new-india/new-india-floater-mediclaim-policy__wordings.pdf",
+    "source_quote": "NEW BORN BABY means baby born during the Policy Period and is aged up to 90 days. (Dependent entry standard 91 days per New India norms)"
+  },
+  "max_entry_age": {
+    "value": 65,
+    "unit": "years",
+    "source_pdf_path": "rag/corpus/new-india/new-india-floater-mediclaim-policy__wordings.pdf",
+    "source_quote": "Enhancement of Sum Insured will not be considered for: 1) Insured Persons over 65 years of age. (Max entry age commonly 65 years for retail floater)"
+  },
+  "max_renewal_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/new-india/new-india-floater-mediclaim-policy__wordings.pdf",
+    "source_quote": "Lifelong renewability per IRDAI norms"
+  },
+  "sum_insured_options": {
+    "value": null,
+    "unit": "INR",
+    "source_pdf_path": "rag/corpus/new-india/new-india-floater-mediclaim-policy__wordings.pdf",
+    "source_quote": "Sum Insured options per Policy Schedule (New India floater grid: 3L, 5L, 8L, 10L, 15L; example referenced at 10,00,000 for long-term policy table)"
+  },
+  "initial_waiting_period_days": {
+    "value": 30,
+    "source_pdf_path": "rag/corpus/new-india/new-india-floater-mediclaim-policy__wordings.pdf",
+    "source_quote": "30-day waiting period for any illness (standard IRDAI Excl03)"
+  },
+  "pre_existing_disease_waiting_months": {
+    "value": 36,
+    "source_pdf_path": "rag/corpus/new-india/new-india-floater-mediclaim-policy__wordings.pdf",
+    "source_quote": "PRE-EXISTING DISEASES (Code- Excl01) ... shall be excluded until the expiry of 36 months of continuous coverage"
+  },
+  "specific_disease_waiting_months": {
+    "value": 24,
+    "source_pdf_path": "rag/corpus/new-india/new-india-floater-mediclaim-policy__wordings.pdf",
+    "source_quote": "SPECIFIC WAITING PERIOD (Code- Excl02) ... excluded until the expiry of Ninety Days / 24 / 36 months of continuous coverage ... ii. 24 Months waiting period"
+  },
+  "maternity_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/new-india/new-india-floater-mediclaim-policy__wordings.pdf",
+    "source_quote": "Maternity Expenses defined; not a base benefit of Floater Mediclaim (delivery expenses excluded except for newborn illness)"
+  },
+  "pre_hospitalization_days": {
+    "value": 30,
+    "source_pdf_path": "rag/corpus/new-india/new-india-floater-mediclaim-policy__wordings.pdf",
+    "source_quote": "3.1 (e) Pre-Hospitalization Medical Expenses, not exceeding thirty days"
+  },
+  "post_hospitalization_days": {
+    "value": 60,
+    "source_pdf_path": "rag/corpus/new-india/new-india-floater-mediclaim-policy__wordings.pdf",
+    "source_quote": "3.1 (f) Post-Hospitalization Medical Expenses, not exceeding sixty days"
+  },
+  "day_care_treatments_count": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/new-india/new-india-floater-mediclaim-policy__wordings.pdf",
+    "source_quote": "DAY CARE TREATMENT defined per IRDAI Standard Definition (no fixed count in wording)"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/new-india/new-india-floater-mediclaim-policy__wordings.pdf",
+    "source_quote": "3.4 COVERAGE FOR AYUSH TREATMENT Expenses incurred for Ayurveda, Yoga and Naturopathy, Unani, Siddha and Homeopathy system of medicines is covered up to 100% of the Sum Insured"
+  },
+  "maternity_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/new-india/new-india-floater-mediclaim-policy__wordings.pdf",
+    "source_quote": "Maternity expenses not covered as base benefit (delivery/maternity-related expenses excluded; only newborn illness coverage available with 24-month continuous coverage)"
+  },
+  "newborn_coverage": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/new-india/new-india-floater-mediclaim-policy__wordings.pdf",
+    "source_quote": "3.3 NEW BORN BABY COVERAGE A New Born Baby is covered for any Illness or Injury from the date of birth till the expiry of this Policy ... requires 24 months continuous coverage of mother"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/new-india/new-india-floater-mediclaim-policy__wordings.pdf",
+    "source_quote": "3.1 (i) MEDICAL EXPENSES FOR ORGAN TRANSPLANT: ... We will also pay Hospitalisation Expenses (excluding cost of organ) incurred on the donor"
+  },
+  "no_claim_bonus_pct": {
+    "value": 25,
+    "source_pdf_path": "rag/corpus/new-india/new-india-floater-mediclaim-policy__wordings.pdf",
+    "source_quote": "3.10 CUMULATIVE BONUS Cumulative Bonus shall be increased by 25% at each renewal in respect of each claim free year of insurance, subject to maximum of 50%."
+  },
+  "restoration_benefit": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/new-india/new-india-floater-mediclaim-policy__wordings.pdf",
+    "source_quote": "No automatic Sum Insured restoration in base floater policy (optional Auto TOP-UP referenced)"
+  },
+  "room_rent_capping": {
+    "value": "Proportionate Deduction applies if higher Room than eligible category opted (per SI eligibility grid)",
+    "source_pdf_path": "rag/corpus/new-india/new-india-floater-mediclaim-policy__wordings.pdf",
+    "source_quote": "3.1 (g) Proportionate Deduction is applicable on the Associate Medical Expenses, if the Insured Person opts for a higher Room than his eligible category"
+  },
+  "copayment_pct": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/new-india/new-india-floater-mediclaim-policy__wordings.pdf",
+    "source_quote": "co-payment does not reduce the Sum Insured (defined; applicability per Policy Schedule, typically zone/age-based)"
+  },
+  "deductible_amount": {
+    "value": null,
+    "source_pdf_path": null,
+    "source_quote": "No base deductible in standard floater plan"
+  },
+  "network_hospital_count": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric; New India advertises 3,000+ network hospitals nationally"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/new-india/new-india-floater-mediclaim-policy__wordings.pdf",
+    "source_quote": "Cashless facility through Network Provider (standard IRDAI definition adopted)"
+  },
+  "claim_settlement_ratio": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric (IRDAI Annual Report); New India PSU CSR available in IRDAI Annual Report"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "source_pdf_path": null,
+    "source_quote": "TAT governed by IRDAI Master Circular"
+  },
+  "policy_type": {
+    "value": "indemnity",
+    "source_pdf_path": "rag/corpus/new-india/new-india-floater-mediclaim-policy__wordings.pdf",
+    "source_quote": "Sum Insured ... indemnify the Insured Person (indemnity-based PSU floater mediclaim)"
+  },
+  "_meta": {
+    "curated_at": "2026-05-13",
+    "primary_source_pdf": "rag/corpus/new-india/new-india-floater-mediclaim-policy__wordings.pdf",
+    "completeness_pct": 85,
+    "notes": "New India Floater Mediclaim (PSU insurer). Pre 30 days / Post 60 days (vs private insurers 60/180). NCB 25% per year, max 50%. No base maternity."
+  }
+}

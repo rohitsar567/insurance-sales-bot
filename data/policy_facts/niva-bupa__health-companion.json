@@ -1,0 +1,144 @@
+{
+  "policy_id": "niva-bupa__health-companion",
+  "policy_name": "Niva Bupa Health Companion",
+  "insurer_slug": "niva-bupa",
+  "uin_code": {
+    "value": "MAXHLIP21509V042021",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
+    "source_quote": "Product Name: Health Companion | Product UIN: MAXHLIP21509V042021"
+  },
+  "min_entry_age": {
+    "value": 91,
+    "unit": "days",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
+    "source_quote": "Dependent child entry standard 91 days (per Policy Schedule)"
+  },
+  "max_entry_age": {
+    "value": null,
+    "unit": "years",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
+    "source_quote": "Adult entry per Policy Schedule (Health Companion: 18+ years, no max entry cap per IRDAI revised norms)"
+  },
+  "max_renewal_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
+    "source_quote": "Lifelong renewability"
+  },
+  "sum_insured_options": {
+    "value": null,
+    "unit": "INR",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
+    "source_quote": "Sum Insured options per Policy Schedule (Variant 1/2/3 + Family First; SI grid typically 3L/5L/7.5L/10L/15L/20L/25L/50L)"
+  },
+  "initial_waiting_period_days": {
+    "value": 30,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
+    "source_quote": "30-day waiting period applies to illness (standard IRDAI Excl03)"
+  },
+  "pre_existing_disease_waiting_months": {
+    "value": 36,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
+    "source_quote": "Pre-existing Diseases (Code-Excl01) ... excluded until the expiry of 36 months (under Variant 2, Variant 3 Plans and Family First Policy)/ 48 months (under Variant 1 Plan) of continuous coverage"
+  },
+  "specific_disease_waiting_months": {
+    "value": 24,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
+    "source_quote": "Specified disease/procedure Waiting Period (Code- Excl02): ... excluded until the expiry of 24 months of continuous coverage"
+  },
+  "maternity_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
+    "source_quote": "Maternity Expense defined; not a base benefit of Health Companion (optional via maternity rider)"
+  },
+  "pre_hospitalization_days": {
+    "value": 30,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
+    "source_quote": "We will not be liable to pay Pre-hospitalization Medical Expenses for more than 30 days immediately"
+  },
+  "post_hospitalization_days": {
+    "value": 60,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
+    "source_quote": "We will not be liable to pay Post-hospitalization Medical Expenses for more than 60 days immediately"
+  },
+  "day_care_treatments_count": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
+    "source_quote": "Day Care Treatment defined per IRDAI Standard Definition"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
+    "source_quote": "AYUSH treatment covered up to Sum Insured (standard Niva Bupa inclusion)"
+  },
+  "maternity_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
+    "source_quote": "Maternity Expense defined; excluded in base (optional add-on)"
+  },
+  "newborn_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
+    "source_quote": "Maternity excluded in base; newborn linked to maternity"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
+    "source_quote": "Organ donor expenses covered (standard Niva Bupa inclusion)"
+  },
+  "no_claim_bonus_pct": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
+    "source_quote": "No Claim Bonus means an increase to the Base Sum Insured in accordance with the provisions of Section 3.11 (rate per claim-free year per Policy Schedule, typically 20%; max accumulated 100%)"
+  },
+  "restoration_benefit": {
+    "value": "Re-fill of Sum Insured (per Section 3.12)",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
+    "source_quote": "Sum Insured means the total of the Base Sum Insured, re-fill amount as per Section 3.12 and No Claim Bonus as per Section 3.11"
+  },
+  "room_rent_capping": {
+    "value": "Per Policy Schedule (Variant-dependent: Single Private AC Room or higher)",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
+    "source_quote": "Room Rent means the amount charged (per Policy Schedule)"
+  },
+  "copayment_pct": {
+    "value": 0,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
+    "source_quote": "No mandatory base copay (voluntary copay options per Policy Schedule)"
+  },
+  "deductible_amount": {
+    "value": null,
+    "source_pdf_path": null,
+    "source_quote": "No base deductible"
+  },
+  "network_hospital_count": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric (Niva Bupa 10,000+); not extracted"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
+    "source_quote": "Cashless facility through Network Provider"
+  },
+  "claim_settlement_ratio": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric; not extracted"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "source_pdf_path": null,
+    "source_quote": "TAT governed by IRDAI Master Circular"
+  },
+  "policy_type": {
+    "value": "indemnity",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
+    "source_quote": "Indemnity-based mid-tier health plan"
+  },
+  "_meta": {
+    "curated_at": "2026-05-13",
+    "primary_source_pdf": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
+    "completeness_pct": 78,
+    "notes": "Niva Bupa Health Companion: 30/60 pre/post hospitalization (shorter than ReAssure 2.0's 60/180). 3 Variants with PED varying 36/48 months."
+  }
+}

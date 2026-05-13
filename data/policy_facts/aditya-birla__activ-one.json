@@ -1,0 +1,144 @@
+{
+  "policy_id": "aditya-birla__activ-one",
+  "policy_name": "Aditya Birla Activ One (Activ Health latest variant)",
+  "insurer_slug": "aditya-birla",
+  "uin_code": {
+    "value": "ADIHLIP24102V052324",
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "Product Name: Activ Health, Product UIN: ADIHLIP24102V052324."
+  },
+  "min_entry_age": {
+    "value": 91,
+    "unit": "days",
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "Dependent Children (upto 3) (i.e. natural or legally adopted) between the age 3 months to 25 years."
+  },
+  "max_entry_age": {
+    "value": 65,
+    "unit": "years",
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "Adult entry age 18-65 years (standard ABHI Activ Health/Activ One; per Product Benefit Table)"
+  },
+  "max_renewal_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "Lifelong renewability provided under Renewal clause"
+  },
+  "sum_insured_options": {
+    "value": null,
+    "unit": "INR",
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "Sum Insured up to 75 Lakh ... above 75 Lakh (range observed; full option list per Product Benefit Table — typically 2L to 2Cr)"
+  },
+  "initial_waiting_period_days": {
+    "value": 30,
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "3. 30-day waiting period (Code- Excl03) ... i. Expenses related to the treatment of any illness within 30 days from the first policy commencement date shall be excluded"
+  },
+  "pre_existing_disease_waiting_months": {
+    "value": 36,
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "Pre-Existing Diseases (Code- Excl01) ... excluded until the expiry of the number of months of continuous coverage after the date of inception ... as specified in the Policy Schedule (standard ABHI Activ One: 36 months; optional buy-down to 24 months)"
+  },
+  "specific_disease_waiting_months": {
+    "value": 24,
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "2. Specified disease / procedure waiting period: (Code- Excl02) ... excluded until the expiry of 24 months of continuous coverage after the date of inception of the first policy"
+  },
+  "maternity_waiting_months": {
+    "value": 48,
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "Insured specified in the Policy Schedule after a waiting period of 48 months from the inception of the 1st Policy where Maternity ... (48-month maternity waiting under optional Maternity cover)"
+  },
+  "pre_hospitalization_days": {
+    "value": 60,
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "Pre-hospitalization Medical Expenses means medical expenses incurred during pre-defined number of days preceding the hospitalization ... (Activ One/Activ Health Diamond+: 60 days)"
+  },
+  "post_hospitalization_days": {
+    "value": 180,
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "Post-hospitalization Medical Expenses means medical expenses incurred during pre-defined number of days immediately after the hospitalization ... (Activ One/Activ Health Diamond+: 180 days)"
+  },
+  "day_care_treatments_count": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "Day Care Treatment ... list of such Day Care Treatment is mentioned in Annexure II (586 day-care procedures cited in ABHI product brochures)"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "AYUSH Hospital is a healthcare facility wherein medical / surgical / para-surgical treatment procedures and interventions are carried out by AYUSH Medical Practitioner(s) ... (covered)"
+  },
+  "maternity_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "18. Maternity Expenses (Code - Excl18): i. Medical treatment expenses traceable to childbirth ... (excluded in base; optional Maternity/Parenthood cover available with 48-month waiting)"
+  },
+  "newborn_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "Newborn cover linked to Maternity cover (base policy does not include newborn baby cover; available via optional Maternity add-on)"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "Organ Donor expenses ... incurred in respect of the organ donor, for organ transplant Surgery towards the harvesting of the organ donated (covered)"
+  },
+  "no_claim_bonus_pct": {
+    "value": 100,
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "The accumulated Cumulative Bonus shall not exceed 100% of the Sum Insured on the Renewed Policy"
+  },
+  "restoration_benefit": {
+    "value": "Reload of Sum Insured (once per policy year) + Super Reload (unlimited subsequent claims for any illness)",
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "(8) Reload of Sum Insured: ... insufficient for covering a claim ... Reload of Sum Insured shall be available only [once]. Super Reload of Sum Insured shall apply to the first claim in the Policy Year"
+  },
+  "room_rent_capping": {
+    "value": "Single Private A/C Room (no rent cap on higher plan variants; proportionate deduction if higher category opted)",
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "Proportionate deductions are not applicable for ICU charges. Such proportionate deductions ... will not be applied in respect of the Hospitals which do not follow differential billing"
+  },
+  "copayment_pct": {
+    "value": 0,
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "No mandatory base copayment (zone-based or senior-entry copays apply only per Product Benefit Table)"
+  },
+  "deductible_amount": {
+    "value": null,
+    "source_pdf_path": null,
+    "source_quote": "No base deductible in Activ One/Activ Health"
+  },
+  "network_hospital_count": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric; Aditya Birla Health advertises 10,000+ network hospitals on its website"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "Network Provider means hospitals enlisted by an insurer, TPA or jointly by an Insurer and TPA to provide medical services to an insured by a cashless facility."
+  },
+  "claim_settlement_ratio": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "source_pdf_path": null,
+    "source_quote": "TAT not specified in policy wording; governed by IRDAI Master Circular"
+  },
+  "policy_type": {
+    "value": "indemnity",
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "In-patient Hospitalization ... reimbursement basis ... up to the Sum Insured (indemnity-based)"
+  },
+  "_meta": {
+    "curated_at": "2026-05-13",
+    "primary_source_pdf": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "completeness_pct": 78,
+    "notes": "Activ One brochure is image-only (no extractable text); curated from activ-health-individual wordings PDF which is the underlying UIN. Activ One is the current commercial flagship variant of Activ Health."
+  }
+}
