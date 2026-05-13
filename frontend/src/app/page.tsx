@@ -62,6 +62,18 @@ export default function Page() {
   const [marketplace, setMarketplace] = useState<MarketplaceResponse | null>(null);
   const [openPolicy, setOpenPolicy] = useState<MarketplacePolicy | null>(null);
   const [sessionId, setSessionId] = useState<string | undefined>();
+  const [profileCompleteness, setProfileCompleteness] = useState<ProfileCompletenessResponse | null>(null);
+
+  // Re-fetch profile completeness whenever sessionId changes (after first chat
+  // turn) — drives the score-gate on marketplace cards + detail modal.
+  useEffect(() => {
+    if (typeof window !== "undefined" && sessionId) {
+      sessionStorage.setItem("insurance_session_id", sessionId);
+      getProfileCompleteness(sessionId)
+        .then(setProfileCompleteness)
+        .catch(() => setProfileCompleteness(null));
+    }
+  }, [sessionId]);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const [handsFree, setHandsFree] = useState(false);  // VAD auto-cutoff mode
   // Live ref of handsFree so async TTS-ended callbacks read the latest value
@@ -353,6 +365,8 @@ export default function Page() {
             data={marketplace}
             onOpenPolicy={(p) => setOpenPolicy(p)}
             onClose={() => setShowMarketplace(false)}
+            t={t}
+            isPersonalized={profileCompleteness?.is_personalized === true}
           />
         )}
         {showPremium && <PremiumCalculatorPanel onClose={() => setShowPremium(false)} />}
@@ -1016,14 +1030,65 @@ function insurerInitials(name: string): string {
   return name.split(" ").map((w) => w[0]).filter(Boolean).join("").slice(0, 2).toUpperCase();
 }
 
+// Real insurer logos sourced from each insurer's official site (favicons /
+// media-kit assets). Fall back to colored letter avatar when the URL fails
+// to load (handled by onError swap in InsurerLogo component).
+const INSURER_LOGO_URL: Record<string, string> = {
+  "aditya-birla":  "https://www.adityabirlacapital.com/healthinsurance/static/assets/images/abhi-logo.svg",
+  "bajaj-allianz": "https://www.bajajallianz.com/content/dam/bagic/header/logo.png",
+  "care-health":   "https://www.careinsurance.com/upload_master/images/logo.png",
+  "hdfc-ergo":     "https://www.hdfcergo.com/etc.clientlibs/hdfcergo/clientlibs/clientlib-site/resources/images/HDFC-ERGO-Logo.png",
+  "icici-lombard": "https://www.icicilombard.com/content/dam/ilom-website/icon/icici-lombard-logo-new.svg",
+  "manipalcigna":  "https://www.manipalcigna.com/o/manipal-cigna-theme/images/manipal-cigna-logo.svg",
+  "new-india":     "https://www.newindia.co.in/portal/readWriteData/NIAImages/NewLogo.png",
+  "niva-bupa":     "https://transactions.nivabupa.com/_next/static/media/niva-bupa-logo.7b6e7f4e.svg",
+  "star-health":   "https://www.starhealth.in/sites/default/files/star-logo-revised.png",
+  "tata-aig":      "https://www.tataaig.com/etc/designs/tataaig/clientlibs/responsive/images/tataaig-logo.svg",
+};
+
+function InsurerLogo({ slug, name, size = 44 }: { slug: string; name: string; size?: number }) {
+  const [failed, setFailed] = useState(false);
+  const url = INSURER_LOGO_URL[slug];
+  const color = INSURER_COLOR[slug] || "bg-slate-500";
+  if (!url || failed) {
+    const initials = insurerInitials(name);
+    return (
+      <div
+        className={`rounded-lg ${color} text-white flex items-center justify-center font-bold shrink-0`}
+        style={{ width: size, height: size, fontSize: size * 0.32 }}
+      >
+        {initials}
+      </div>
+    );
+  }
+  return (
+    <div
+      className="rounded-lg bg-white border border-[var(--border)] flex items-center justify-center shrink-0 overflow-hidden p-1"
+      style={{ width: size, height: size }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={url}
+        alt={name}
+        onError={() => setFailed(true)}
+        className="max-w-full max-h-full object-contain"
+      />
+    </div>
+  );
+}
+
 function MarketplacePanel({
   data,
   onOpenPolicy,
   onClose,
+  t,
+  isPersonalized,
 }: {
   data: MarketplaceResponse;
   onOpenPolicy: (p: MarketplacePolicy) => void;
   onClose: () => void;
+  t: (k: StringKey, v?: Record<string, string | number>) => string;
+  isPersonalized: boolean;
 }) {
   const [search, setSearch] = useState("");
   const [insurerFilter, setInsurerFilter] = useState<string>("all");
@@ -1069,29 +1134,29 @@ function MarketplacePanel({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5">
         <div className="flex items-baseline justify-between mb-4">
           <div>
-            <h2 className="text-lg font-semibold">Health insurance marketplace</h2>
+            <h2 className="text-lg font-semibold">{t("mp.heading")}</h2>
             <p className="text-xs text-[var(--muted-foreground)]">
-              {data.total} policies from {data.insurers_indexed} leading Indian health insurers. Click any policy for the full rating, key terms, and the source document.
+              {t("mp.summary", { total: data.total, insurers: data.insurers_indexed })}
             </p>
           </div>
-          <button onClick={onClose} className="text-xs text-[var(--muted-foreground)] hover:underline">close</button>
+          <button onClick={onClose} className="text-xs text-[var(--muted-foreground)] hover:underline">{t("mp.close")}</button>
         </div>
 
         {/* Filter bar */}
         <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 mb-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
             <div>
-              <label className="block text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wide mb-1">Search</label>
+              <label className="block text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wide mb-1">{t("mp.search")}</label>
               <input
                 type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-                placeholder="Policy or insurer name…"
+                placeholder={t("mp.search_placeholder")}
                 className="w-full text-sm bg-transparent border border-[var(--border)] rounded-md px-2 py-1.5 outline-none focus:border-[var(--primary)]"
               />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wide mb-1">Insurer</label>
+              <label className="block text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wide mb-1">{t("mp.insurer")}</label>
               <select value={insurerFilter} onChange={(e) => setInsurerFilter(e.target.value)} className="w-full text-sm bg-transparent border border-[var(--border)] rounded-md px-2 py-1.5">
-                <option value="all">All ({data.insurers_indexed})</option>
+                <option value="all">{t("mp.all_insurers")} ({data.insurers_indexed})</option>
                 {insurers.map((s) => {
                   const name = data.policies.find((p) => p.insurer_slug === s)?.insurer_name || s;
                   const count = data.policies.filter((p) => p.insurer_slug === s).length;
@@ -1100,39 +1165,39 @@ function MarketplacePanel({
               </select>
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wide mb-1">Min rating</label>
+              <label className="block text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wide mb-1">{t("mp.min_rating")}</label>
               <select value={grade} onChange={(e) => setGrade(e.target.value)} className="w-full text-sm bg-transparent border border-[var(--border)] rounded-md px-2 py-1.5">
-                <option value="all">All grades</option>
-                <option value="A">A only</option>
-                <option value="B">B or better</option>
-                <option value="C">C or better</option>
+                <option value="all">{t("mp.all_grades")}</option>
+                <option value="A">{t("mp.a_only")}</option>
+                <option value="B">{t("mp.b_or_better")}</option>
+                <option value="C">{t("mp.c_or_better")}</option>
               </select>
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wide mb-1">Sort by</label>
+              <label className="block text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wide mb-1">{t("mp.sort_by")}</label>
               <select value={sortBy} onChange={(e) => setSortBy(e.target.value as "score" | "name" | "insurer")} className="w-full text-sm bg-transparent border border-[var(--border)] rounded-md px-2 py-1.5">
-                <option value="score">Highest rated</option>
-                <option value="name">Policy name (A–Z)</option>
-                <option value="insurer">Insurer (A–Z)</option>
+                <option value="score">{t("mp.sort_score")}</option>
+                <option value="name">{t("mp.sort_name")}</option>
+                <option value="insurer">{t("mp.sort_insurer")}</option>
               </select>
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wide mb-1">Max pre-existing wait: <span className="font-mono">{maxPED} mo</span></label>
+              <label className="block text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wide mb-1">{t("mp.max_ped_wait")} <span className="font-mono">{maxPED} mo</span></label>
               <input type="range" min={12} max={48} step={6} value={maxPED} onChange={(e) => setMaxPED(parseInt(e.target.value))} className="w-full accent-[var(--primary)]" />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wide mb-1">Min sum insured: <span className="font-mono">{minSI >= 10000000 ? (minSI/10000000) + " cr" : (minSI/100000) + " L"}</span></label>
+              <label className="block text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wide mb-1">{t("mp.min_sum_insured")} <span className="font-mono">{minSI >= 10000000 ? (minSI/10000000) + " cr" : (minSI/100000) + " L"}</span></label>
               <input type="range" min={500000} max={10000000} step={500000} value={minSI} onChange={(e) => setMinSI(parseInt(e.target.value))} className="w-full accent-[var(--primary)]" />
             </div>
             <label className="flex items-center gap-2 text-xs">
-              <input type="checkbox" checked={requireAyush} onChange={(e) => setRequireAyush(e.target.checked)} className="accent-[var(--primary)]" /> AYUSH covered
+              <input type="checkbox" checked={requireAyush} onChange={(e) => setRequireAyush(e.target.checked)} className="accent-[var(--primary)]" /> {t("mp.ayush_covered")}
             </label>
             <label className="flex items-center gap-2 text-xs">
-              <input type="checkbox" checked={requireCashless} onChange={(e) => setRequireCashless(e.target.checked)} className="accent-[var(--primary)]" /> Cashless network
+              <input type="checkbox" checked={requireCashless} onChange={(e) => setRequireCashless(e.target.checked)} className="accent-[var(--primary)]" /> {t("mp.cashless_network")}
             </label>
           </div>
           <div className="text-xs text-[var(--muted-foreground)] mt-3">
-            Showing <span className="font-semibold text-[var(--foreground)]">{sorted.length}</span> of {data.total} policies
+            {t("mp.showing")} <span className="font-semibold text-[var(--foreground)]">{sorted.length}</span> {t("mp.of")} {data.total} {t("mp.policies_word")}
           </div>
         </div>
 
@@ -1146,11 +1211,13 @@ function MarketplacePanel({
               selected={selectedIds.includes(p.policy_id)}
               onToggleSelect={() => toggleSelect(p.policy_id)}
               selectionDisabled={selectedIds.length >= MAX_COMPARE}
+              t={t}
+              isPersonalized={isPersonalized}
             />
           ))}
           {sorted.length === 0 && (
             <div className="col-span-full text-center text-sm text-[var(--muted-foreground)] py-12">
-              No policies match these filters. Try widening the criteria.
+              {t("mp.no_match")}
             </div>
           )}
         </div>
@@ -1361,17 +1428,23 @@ function PolicyCard({
   selected,
   onToggleSelect,
   selectionDisabled,
+  t,
+  isPersonalized = false,
 }: {
   policy: MarketplacePolicy;
   onOpen: () => void;
   selected: boolean;
   onToggleSelect: () => void;
   selectionDisabled: boolean;
+  t: (k: StringKey, v?: Record<string, string | number>) => string;
+  isPersonalized?: boolean;
 }) {
-  const initials = insurerInitials(policy.insurer_name);
-  const color = INSURER_COLOR[policy.insurer_slug] || "bg-slate-500";
   const maxSI = policy.sum_insured_options.length ? Math.max(...policy.sum_insured_options) : null;
   const siDisplay = maxSI ? (maxSI >= 10000000 ? `${maxSI/10000000} cr` : `${maxSI/100000} L`) : "—";
+  // Translate the grade one-liner — backend produces fixed English strings;
+  // we map them to i18n keys to flip with the UI language.
+  const oneLinerKey = ({ A: "grade.a", B: "grade.b", C: "grade.c", D: "grade.d", F: "grade.f" } as Record<string, StringKey>)[policy.grade] || "grade.c";
+  const oneLiner = t(oneLinerKey);
   return (
     <div className={`relative text-left bg-[var(--card)] border ${selected ? "border-[var(--primary)] shadow-md" : "border-[var(--border)]"} rounded-xl p-4 hover:border-[var(--primary)] hover:shadow-md transition group`}>
       <label
@@ -1385,26 +1458,34 @@ function PolicyCard({
           onChange={onToggleSelect}
           className="accent-[var(--primary)] w-3 h-3"
         />
-        {selected ? "Selected" : "Compare"}
+        {selected ? t("mp.selected") : t("mp.compare")}
       </label>
       <button onClick={onOpen} className="w-full text-left">
         <div className="flex items-start gap-3 mb-3 pr-16">
-          <div className={`w-11 h-11 rounded-lg ${color} text-white flex items-center justify-center font-bold text-sm shrink-0`}>{initials}</div>
+          <InsurerLogo slug={policy.insurer_slug} name={policy.insurer_name} size={44} />
           <div className="flex-1 min-w-0">
             <div className="text-xs text-[var(--muted-foreground)] truncate">{policy.insurer_name}</div>
             <div className="font-semibold text-sm truncate group-hover:text-[var(--primary)] transition">{policy.policy_name}</div>
           </div>
-          <div className={`shrink-0 flex flex-col items-center rounded-lg overflow-hidden ${gradeColor(policy.grade)}`}>
-            <div className="px-2 pt-0.5 text-[10px] font-semibold opacity-90 uppercase tracking-wide">{policy.grade}</div>
-            <div className="px-2 pb-0.5 text-base font-bold leading-none">{policy.overall_score}<span className="text-[10px] font-normal opacity-80">/100</span></div>
-          </div>
+          {/* Score badge ONLY when we have a profile — otherwise CTA pill */}
+          {isPersonalized ? (
+            <div className={`shrink-0 flex flex-col items-center rounded-lg overflow-hidden ${gradeColor(policy.grade)}`}>
+              <div className="px-2 pt-0.5 text-[10px] font-semibold opacity-90 uppercase tracking-wide">{policy.grade}</div>
+              <div className="px-2 pb-0.5 text-base font-bold leading-none">{policy.overall_score}<span className="text-[10px] font-normal opacity-80">/100</span></div>
+            </div>
+          ) : (
+            <div className="shrink-0 flex flex-col items-center justify-center rounded-lg overflow-hidden bg-[var(--muted)] border border-dashed border-[var(--border)] px-2 py-1.5 text-center" style={{ minWidth: 64 }}>
+              <div className="text-[9px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)] leading-tight">{t("card.see_score_pill")}</div>
+              <div className="text-[8px] text-[var(--muted-foreground)] leading-tight mt-0.5">{t("card.see_score_sub")}</div>
+            </div>
+          )}
         </div>
-        <p className="text-xs text-[var(--muted-foreground)] mb-3 line-clamp-2">{policy.one_liner}</p>
+        <p className="text-xs text-[var(--muted-foreground)] mb-3 line-clamp-2">{isPersonalized ? oneLiner : t("card.score_locked_msg")}</p>
         <div className="grid grid-cols-2 gap-2 text-xs">
-          <Stat label="Sum insured up to" value={siDisplay} />
-          <Stat label="PED waiting" value={policy.pre_existing_disease_waiting_months ? `${policy.pre_existing_disease_waiting_months} mo` : "—"} />
-          <Stat label="AYUSH" value={policy.ayush_coverage === true ? "Yes" : policy.ayush_coverage === false ? "No" : "—"} />
-          <Stat label="Network" value={policy.network_hospital_count ? `${(policy.network_hospital_count / 1000).toFixed(0)}K+` : "—"} />
+          <Stat label={t("stat.sum_insured_up_to")} value={siDisplay} />
+          <Stat label={t("stat.ped_waiting")} value={policy.pre_existing_disease_waiting_months ? `${policy.pre_existing_disease_waiting_months} mo` : "—"} />
+          <Stat label={t("stat.ayush")} value={policy.ayush_coverage === true ? "Yes" : policy.ayush_coverage === false ? "No" : "—"} />
+          <Stat label={t("stat.network")} value={policy.network_hospital_count ? `${(policy.network_hospital_count / 1000).toFixed(0)}K+` : "—"} />
         </div>
       </button>
     </div>

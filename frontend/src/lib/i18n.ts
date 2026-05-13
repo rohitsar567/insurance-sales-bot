@@ -117,6 +117,17 @@ export const UI_STRINGS = {
     "suggested.q2": "What is the waiting period for pre-existing diseases?",
     "suggested.q3": "Does HDFC ERGO Optima Secure cover AYUSH?",
     "suggested.q4": "What's the room rent cap on Care Supreme?",
+
+    // Grade one-liners (mirror backend/scorecard.py::grade_for)
+    "grade.a": "Strong all-rounder — solid pick for the buyer.",
+    "grade.b": "Good policy with a few notable gaps.",
+    "grade.c": "Decent baseline; check the trade-offs before signing.",
+    "grade.d": "Material concerns — only suitable for specific use-cases.",
+    "grade.f": "Significant gaps — alternative options are likely better.",
+
+    "card.see_score_pill": "See score",
+    "card.see_score_sub": "build profile",
+    "card.score_locked_msg": "Complete your profile and I'll score this policy for you.",
   },
   hi: {
     "header.title": "स्वास्थ्य बीमा, अब ईमानदारी से।",
@@ -217,6 +228,16 @@ export const UI_STRINGS = {
     "suggested.q2": "Pre-existing diseases की waiting period क्या है?",
     "suggested.q3": "क्या HDFC ERGO Optima Secure में AYUSH cover है?",
     "suggested.q4": "Care Supreme में room rent cap क्या है?",
+
+    "grade.a": "मजबूत all-rounder — खरीदार के लिए ठोस विकल्प।",
+    "grade.b": "अच्छी policy, कुछ notable gaps के साथ।",
+    "grade.c": "ठीक-ठाक baseline; sign करने से पहले trade-offs जाँचें।",
+    "grade.d": "गंभीर concerns — सिर्फ specific use-case के लिए ठीक।",
+    "grade.f": "बड़े gaps — alternative options बेहतर होंगे।",
+
+    "card.see_score_pill": "स्कोर देखें",
+    "card.see_score_sub": "profile बनाएं",
+    "card.score_locked_msg": "अपनी profile पूरी करें — मैं इस policy को आपके लिए score करूंगा।",
   },
 } as const;
 
