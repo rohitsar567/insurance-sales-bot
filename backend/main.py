@@ -207,6 +207,7 @@ async def chat(req: ChatRequest):
             chat_history=req.chat_history,
             user_profile=req.profile,
             policy_filter_ids=req.policy_filter_ids,
+            session_id=session_id,
         )
     except Exception as e:
         log_turn({
@@ -466,6 +467,78 @@ class ScorecardResponse(BaseModel):
     sub_scores: list[ScorecardSubScore]
     data_completeness_pct: float
     methodology_link: str
+
+
+class CompareEntry(BaseModel):
+    policy_id: str
+    policy_name: str
+    insurer_slug: str
+    fields: dict
+    scorecard: Optional[ScorecardResponse] = None
+
+
+class CompareResponse(BaseModel):
+    policies: list[CompareEntry]
+    field_order: list[str]
+
+
+@app.get("/api/policies/compare", response_model=CompareResponse)
+async def compare_policies(policy_ids: list[str] = None):
+    """Side-by-side comparison of 2-4 policies with their scorecards + field diffs."""
+    import json as _json
+    from backend.scorecard import build_scorecard
+
+    if not policy_ids:
+        from fastapi import Query
+        raise HTTPException(400, "Provide policy_ids as repeated query params")
+    if len(policy_ids) < 2 or len(policy_ids) > 4:
+        raise HTTPException(400, "compare requires 2 to 4 policy_ids")
+
+    entries = []
+    for pid in policy_ids:
+        p = settings.EXTRACTED_DIR / f"{pid}.json"
+        if not p.exists():
+            raise HTTPException(404, f"No extraction for {pid}")
+        data = _json.loads(p.read_text())
+        # Insurer reviews for scorecard
+        slug = data.get("insurer_slug")
+        ir = None
+        if slug:
+            rp = settings.CORPUS_DIR.parent.parent / "data" / "reviews" / f"{slug}.json"
+            if rp.exists():
+                try: ir = _json.loads(rp.read_text())
+                except Exception: pass
+        sc = build_scorecard(data, insurer_reviews=ir)
+        entries.append(CompareEntry(
+            policy_id=pid,
+            policy_name=data.get("policy_name", pid),
+            insurer_slug=slug or "?",
+            fields=data,
+            scorecard=ScorecardResponse(
+                policy_id=sc.policy_id, policy_name=sc.policy_name, insurer_slug=sc.insurer_slug,
+                overall_score=sc.overall_score, grade=sc.grade, one_liner=sc.one_liner,
+                sub_scores=[ScorecardSubScore(**s.__dict__) for s in sc.sub_scores],
+                data_completeness_pct=sc.data_completeness_pct,
+                methodology_link=sc.methodology_link,
+            ),
+        ))
+
+    # Comparison-critical fields, in order
+    field_order = [
+        "policy_type", "uin_code",
+        "min_entry_age", "max_entry_age", "max_renewal_age",
+        "sum_insured_options",
+        "initial_waiting_period_days", "pre_existing_disease_waiting_months",
+        "maternity_waiting_months",
+        "pre_hospitalization_days", "post_hospitalization_days",
+        "day_care_treatments_count", "ayush_coverage", "maternity_coverage",
+        "newborn_coverage", "organ_donor_expenses",
+        "no_claim_bonus_pct", "restoration_benefit",
+        "room_rent_capping", "copayment_pct", "deductible_amount",
+        "network_hospital_count", "cashless_treatment_supported",
+        "claim_settlement_ratio", "tat_cashless_authorization_hours",
+    ]
+    return CompareResponse(policies=entries, field_order=field_order)
 
 
 @app.get("/api/policies/{policy_id}/scorecard", response_model=ScorecardResponse)
