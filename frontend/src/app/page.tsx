@@ -277,8 +277,8 @@ export default function Page() {
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center font-bold text-sm">IA</div>
             <div>
-              <h1 className="font-semibold text-base sm:text-lg leading-tight">Insurance Sales Portfolio Expert</h1>
-              <p className="text-xs text-[var(--muted-foreground)]">Voice-first AI advisor · Indian health insurance · Sarvam AI</p>
+              <h1 className="font-semibold text-base sm:text-lg leading-tight">Health insurance, finally honest.</h1>
+              <p className="text-xs text-[var(--muted-foreground)]">Compare. Score. Buy what fits — not what pays the highest commission.</p>
             </div>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
@@ -645,17 +645,24 @@ function HealthBadge({ health }: { health: { status: string; missing: string[] }
 
 function EmptyState({ onSuggest, coverage }: { onSuggest: (q: string) => void; coverage: CoverageResponse | null }) {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center text-center px-4">
-      <div className="w-16 h-16 rounded-2xl bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center text-2xl font-bold mb-6">IA</div>
-      <h2 className="text-xl sm:text-2xl font-semibold mb-2">Hi, I&apos;m your AI insurance advisor.</h2>
-      <p className="text-sm text-[var(--muted-foreground)] max-w-md mb-3">
-        Ask me about Indian health insurance — coverage, waiting periods, exclusions, side-by-side comparisons. Speak or type, English or हिन्दी. Every fact comes with a citation.
+    <div className="flex-1 flex flex-col items-center justify-center text-center px-4 py-6">
+      <div className="w-16 h-16 rounded-2xl bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center text-2xl font-bold mb-5">IA</div>
+      <h2 className="text-xl sm:text-2xl font-semibold mb-2">Find a health policy that genuinely fits <em className="not-italic text-[var(--primary)]">you</em>.</h2>
+      <p className="text-sm text-[var(--muted-foreground)] max-w-xl mb-4">
+        I'll ask 8–10 short questions, then show you 3 policies that match — with the exact reasons each ranked well. <strong className="text-[var(--foreground)]">No broker commissions in my ranking.</strong> Every fact you see has a source link.
       </p>
       {coverage && (
-        <p className="text-xs text-[var(--muted-foreground)] mb-6">
-          Currently covering <span className="font-semibold text-[var(--foreground)]">{coverage.total_policies} policies</span> from <span className="font-semibold text-[var(--foreground)]">{coverage.total_insurers} insurers</span>. Have a different PDF? <span className="font-semibold">Click the 📎 icon to upload.</span>
+        <p className="text-xs text-[var(--muted-foreground)] mb-5">
+          <span className="font-semibold text-[var(--foreground)]">{coverage.total_policies} policies</span> across <span className="font-semibold text-[var(--foreground)]">{coverage.total_insurers} insurers</span> indexed. Or upload your own policy PDF — I'll analyse it the same way.
         </p>
       )}
+      {/* Honest-disclosure trust contract — sits between welcome + suggested-Qs */}
+      <div className="bg-[var(--accent)] border border-[var(--primary)] rounded-xl px-4 py-3 max-w-xl mb-6 text-left">
+        <div className="text-xs font-semibold text-[var(--primary)] mb-1">Tell me the truth — even on the hard things.</div>
+        <p className="text-xs text-[var(--muted-foreground)] leading-snug">
+          When I ask about your health later, please don't hide a condition to lower your premium. Insurers cross-check disclosed history against hospital records at claim time. The ₹500/month you save today turns into an ₹8 lakh denied claim later. Your honest answers stay in this chat — they're not shared with any insurer until you choose to buy.
+        </p>
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-2xl">
         {SUGGESTED_QUESTIONS.map((q, i) => (
           <button
