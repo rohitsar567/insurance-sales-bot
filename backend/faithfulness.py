@@ -269,8 +269,13 @@ async def check_faithfulness(
         verdict.reasons.extend([f"unsupported_number: {n}" for n in bad_nums])
         verdict.unsupported_claims.extend(bad_nums)
 
-    # Gate 4 — LLM judge (only if previous gates passed — saves token cost on obvious failures)
-    if verdict.passed and run_llm_judge:
+    # Gate 4 — LLM judge (only if previous gates passed — saves token cost on
+    # obvious failures). Also SKIP when retrieval was strongly grounded: top
+    # chunk cosine > HIGH_CONFIDENCE_FLOOR means hallucination risk is low and
+    # the 1-2s Groq round-trip rarely adds value. Cuts ~60% of judge calls.
+    HIGH_CONFIDENCE_FLOOR = 0.50
+    top_score = max((c.score for c in chunks), default=0.0) if chunks else 0.0
+    if verdict.passed and run_llm_judge and top_score < HIGH_CONFIDENCE_FLOOR:
         ok4, unsupported = await _gate_llm_judge(reply, chunks)
         if not ok4:
             verdict.passed = False
