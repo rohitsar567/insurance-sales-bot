@@ -39,6 +39,8 @@ LOG_DIR = Path.home() / "Library" / "Logs" / "insurance-bot"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 LOG_FILE = LOG_DIR / "link_rot.log"
 MUST_FIX = PROJECT_ROOT / "MUST_FIX.md"
+BROWSER_ALLOWLIST = PROJECT_ROOT / "tools" / "browser_verified.json"
+ALLOWLIST_TTL_DAYS = 30  # re-verify via browser after 30 days
 
 UA = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
@@ -54,16 +56,6 @@ HEADERS = {
 }
 TIMEOUT = httpx.Timeout(20.0, connect=8.0)
 
-# Hosts that aggressively reject scripted access. We can't HEAD-check them
-# reliably from a cron — they require a real browser. Manual quarterly
-# Playwright check covers these instead.
-KNOWN_BOT_BLOCKED = {
-    "www.policybazaar.com",
-    "www.icicilombard.com",
-    "www.business-standard.com",
-    "www.careinsurance.com",
-}
-
 
 def notify(title: str, body: str) -> None:
     try:
@@ -74,6 +66,41 @@ def notify(title: str, body: str) -> None:
         )
     except Exception:  # noqa: BLE001
         pass
+
+
+def load_browser_allowlist() -> dict[str, dict]:
+    """URLs that a real browser has verified work. The cron skips these
+    (real users would succeed) until the entry ages past ALLOWLIST_TTL_DAYS,
+    at which point browser_verify.py should be re-run."""
+    if not BROWSER_ALLOWLIST.exists():
+        return {}
+    try:
+        return json.loads(BROWSER_ALLOWLIST.read_text())
+    except json.JSONDecodeError:
+        return {}
+
+
+def is_allowlisted(url: str, allowlist: dict[str, dict]) -> bool:
+    entry = allowlist.get(url)
+    if not entry:
+        return False
+    ts_str = entry.get("ts", "")
+    if not ts_str:
+        return False
+    try:
+        # ISO 8601 with TZ offset; chop fractional seconds if present
+        ts_clean = ts_str.split(".")[0]
+        # python <3.11 doesn't parse +0530 without colon — normalise
+        if len(ts_clean) >= 5 and ts_clean[-5] in ("+", "-") and ts_clean[-3] != ":":
+            ts_clean = ts_clean[:-2] + ":" + ts_clean[-2:]
+        from datetime import datetime, timezone
+        verified = datetime.fromisoformat(ts_clean)
+        if verified.tzinfo is None:
+            verified = verified.replace(tzinfo=timezone.utc)
+        age_days = (datetime.now(timezone.utc) - verified).days
+        return age_days <= ALLOWLIST_TTL_DAYS
+    except (ValueError, IndexError):
+        return False
 
 
 def collect_urls() -> dict[str, list[tuple[str, Path]]]:
@@ -209,15 +236,18 @@ def main() -> int:
     started = time.strftime("%Y-%m-%dT%H:%M:%S%z")
     fixed: list[tuple[str, str, str]] = []  # (old, new, strategy)
     still_dead: list[tuple[str, int, str, list[str]]] = []
-    bot_blocked: list[str] = []
+    allowlist = load_browser_allowlist()
+    allowlisted_count = 0
 
     with LOG_FILE.open("a") as fp, httpx.Client(timeout=TIMEOUT) as client:
-        fp.write(f"\n=== run start {started} | {len(urls)} URLs ===\n")
+        fp.write(f"\n=== run start {started} | {len(urls)} URLs | allowlist={len(allowlist)} ===\n")
         for url, refs in urls.items():
-            host = re.sub(r"^https?://([^/]+).*", r"\1", url)
-            if host in KNOWN_BOT_BLOCKED:
-                fp.write(json.dumps({"url": url, "skipped": "bot_blocked_host"}) + "\n")
-                bot_blocked.append(url)
+            # Skip URLs a real browser has already verified work — until TTL expires.
+            # These are typically bot-protected hosts (Akamai/Cloudflare/DataDome)
+            # that httpx cannot HEAD but render fine for end users.
+            if is_allowlisted(url, allowlist):
+                fp.write(json.dumps({"url": url, "browser_allowlisted": allowlist[url].get("ts")}) + "\n")
+                allowlisted_count += 1
                 continue
             status, note = head_check(url, client)
             ok = 200 <= status < 400
@@ -266,8 +296,9 @@ def main() -> int:
         MUST_FIX.unlink()  # clean up stale report
 
     print(
-        f"[link-rot] checked {len(urls)} | auto-fixed {len(fixed)} | "
-        f"still dead {len(still_dead)} | bot-blocked-skipped {len(bot_blocked)}"
+        f"[link-rot] total {len(urls)} | browser-allowlisted {allowlisted_count} | "
+        f"http-checked {len(urls) - allowlisted_count} | auto-fixed {len(fixed)} | "
+        f"still dead {len(still_dead)}"
     )
     for old, new, strat in fixed[:10]:
         print(f"  FIXED ({strat}): {old}\n            -> {new}")

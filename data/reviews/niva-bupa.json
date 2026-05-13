@@ -39,7 +39,7 @@
   "trustpilot": {
     "score": 1.8,
     "review_count": null,
-    "url": "https://www.trustpilot.com/review/nivabupa.com",
+    "url": "https://www.mouthshut.com/product-reviews/niva-bupa-health-insurance-reviews-925608449",
     "note": "Indian Trustpilot footprint is small; Niva Bupa page page returns 403/404 to automated crawlers but is reachable in-browser. Reviews skew to complaints around refunds and policy onboarding."
   },
   "reddit_sentiment": {
@@ -199,7 +199,7 @@
     "ok": 16,
     "broken_count": 11,
     "broken_urls": [
-      "https://www.trustpilot.com/review/nivabupa.com",
+      "https://www.mouthshut.com/product-reviews/niva-bupa-health-insurance-reviews-925608449",
       "http://www.quora.com/Has-anyone-taken-Niva-Bupa-health-insurance-in-India-How-reliable-is-it",
       "https://www.youtube.com/watch?v=U1kNh-rRuXo",
       "https://www.youtube.com/watch?v=2_EhrtJhn44",
