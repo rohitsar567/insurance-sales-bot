@@ -57,6 +57,9 @@ export default function Page() {
   const [sessionId, setSessionId] = useState<string | undefined>();
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const [handsFree, setHandsFree] = useState(false);  // VAD auto-cutoff mode
+  // Live ref of handsFree so async TTS-ended callbacks read the latest value
+  // (closure captured at audio.play() time would otherwise be stale)
+  const handsFreeRef = useRef(false);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -82,6 +85,19 @@ export default function Page() {
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
+
+  // Hands-free continuous loop: when toggled ON, immediately open mic. When
+  // toggled OFF, close any in-progress recording. The send() function takes
+  // care of re-opening the mic after each assistant TTS finishes.
+  useEffect(() => {
+    handsFreeRef.current = handsFree;
+    if (handsFree && !recording && !busy) {
+      startRecording();
+    } else if (!handsFree && recording) {
+      stopRecording();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [handsFree]);
 
   function pushUser(text: string) {
     setMessages((m) => [...m, { id: `u_${Date.now()}`, role: "user", content: text }]);
@@ -115,7 +131,23 @@ export default function Page() {
       });
       if (audioUrl) {
         const audio = new Audio(audioUrl);
-        audio.play().catch(() => {});
+        // In hands-free mode, re-open the mic AFTER the assistant's TTS reply
+        // finishes playing — that's how a Siri/Alexa loop feels natural.
+        audio.addEventListener("ended", () => {
+          if (handsFreeRef.current) {
+            setTimeout(() => { if (handsFreeRef.current) startRecording(); }, 250);
+          }
+        });
+        audio.play().catch(() => {
+          // Audio playback failed (e.g. browser blocked autoplay) — still
+          // continue the hands-free loop if enabled.
+          if (handsFreeRef.current) {
+            setTimeout(() => { if (handsFreeRef.current) startRecording(); }, 250);
+          }
+        });
+      } else if (handsFreeRef.current) {
+        // No audio reply (voice toggle off) — restart mic after a short pause
+        setTimeout(() => { if (handsFreeRef.current) startRecording(); }, 500);
       }
     } catch (e: unknown) {
       pushAssistant(`Sorry — backend error: ${e instanceof Error ? e.message : String(e)}`);
