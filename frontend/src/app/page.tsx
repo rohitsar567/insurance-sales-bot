@@ -5,7 +5,9 @@ import {
   audioBlobURLFromBase64,
   Citation,
   ChatMessage,
+  CompareResponse,
   CoverageResponse,
+  getCompare,
   getCoverage,
   getHealth,
   getInsurerReviews,
@@ -920,6 +922,16 @@ function MarketplacePanel({
   const [requireCashless, setRequireCashless] = useState(false);
   const [grade, setGrade] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"score" | "name" | "insurer">("score");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [compareOpen, setCompareOpen] = useState(false);
+  const MAX_COMPARE = 4;
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => x !== id);
+      if (prev.length >= MAX_COMPARE) return prev;
+      return [...prev, id];
+    });
+  };
 
   const insurers = Array.from(new Set(data.policies.map((p) => p.insurer_slug))).sort();
 
@@ -1014,9 +1026,16 @@ function MarketplacePanel({
         </div>
 
         {/* Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pb-20">
           {sorted.map((p) => (
-            <PolicyCard key={p.policy_id} policy={p} onOpen={() => onOpenPolicy(p)} />
+            <PolicyCard
+              key={p.policy_id}
+              policy={p}
+              onOpen={() => onOpenPolicy(p)}
+              selected={selectedIds.includes(p.policy_id)}
+              onToggleSelect={() => toggleSelect(p.policy_id)}
+              selectionDisabled={selectedIds.length >= MAX_COMPARE}
+            />
           ))}
           {sorted.length === 0 && (
             <div className="col-span-full text-center text-sm text-[var(--muted-foreground)] py-12">
@@ -1025,6 +1044,51 @@ function MarketplacePanel({
           )}
         </div>
       </div>
+
+      {/* Sticky compare action bar */}
+      {selectedIds.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-[var(--card)] border-t border-[var(--border)] shadow-lg animate-fade-up">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-semibold">{selectedIds.length} of {MAX_COMPARE} selected</span>
+              {selectedIds.map((id) => {
+                const p = data.policies.find((pp) => pp.policy_id === id);
+                if (!p) return null;
+                return (
+                  <span
+                    key={id}
+                    className="inline-flex items-center gap-1 text-[11px] bg-[var(--accent)] border border-[var(--border)] rounded-md px-2 py-0.5"
+                  >
+                    {p.policy_name.slice(0, 28)}{p.policy_name.length > 28 ? "…" : ""}
+                    <button
+                      onClick={() => toggleSelect(id)}
+                      className="text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                      aria-label="Remove from comparison"
+                    >×</button>
+                  </span>
+                );
+              })}
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => setSelectedIds([])}
+                className="text-xs text-[var(--muted-foreground)] hover:underline"
+              >Clear</button>
+              <button
+                onClick={() => setCompareOpen(true)}
+                disabled={selectedIds.length < 2}
+                className={`text-sm font-semibold rounded-md px-3 py-1.5 ${selectedIds.length < 2 ? "bg-[var(--muted)] text-[var(--muted-foreground)] cursor-not-allowed" : "bg-[var(--primary)] text-white hover:opacity-90"}`}
+              >
+                Compare {selectedIds.length >= 2 ? `(${selectedIds.length})` : ""}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {compareOpen && (
+        <ComparisonModal policyIds={selectedIds} onClose={() => setCompareOpen(false)} />
+      )}
     </div>
   );
 }
@@ -1159,35 +1223,59 @@ function InsurerReviewsBlock({ reviews }: { reviews: InsurerReviews }) {
   );
 }
 
-function PolicyCard({ policy, onOpen }: { policy: MarketplacePolicy; onOpen: () => void }) {
+function PolicyCard({
+  policy,
+  onOpen,
+  selected,
+  onToggleSelect,
+  selectionDisabled,
+}: {
+  policy: MarketplacePolicy;
+  onOpen: () => void;
+  selected: boolean;
+  onToggleSelect: () => void;
+  selectionDisabled: boolean;
+}) {
   const initials = insurerInitials(policy.insurer_name);
   const color = INSURER_COLOR[policy.insurer_slug] || "bg-slate-500";
   const maxSI = policy.sum_insured_options.length ? Math.max(...policy.sum_insured_options) : null;
   const siDisplay = maxSI ? (maxSI >= 10000000 ? `${maxSI/10000000} cr` : `${maxSI/100000} L`) : "—";
   return (
-    <button
-      onClick={onOpen}
-      className="text-left bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 hover:border-[var(--primary)] hover:shadow-md transition group"
-    >
-      <div className="flex items-start gap-3 mb-3">
-        <div className={`w-11 h-11 rounded-lg ${color} text-white flex items-center justify-center font-bold text-sm shrink-0`}>{initials}</div>
-        <div className="flex-1 min-w-0">
-          <div className="text-xs text-[var(--muted-foreground)] truncate">{policy.insurer_name}</div>
-          <div className="font-semibold text-sm truncate group-hover:text-[var(--primary)] transition">{policy.policy_name}</div>
+    <div className={`relative text-left bg-[var(--card)] border ${selected ? "border-[var(--primary)] shadow-md" : "border-[var(--border)]"} rounded-xl p-4 hover:border-[var(--primary)] hover:shadow-md transition group`}>
+      <label
+        className={`absolute top-2 right-2 z-10 flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-md border ${selected ? "border-[var(--primary)] bg-[var(--accent)] text-[var(--primary)]" : "border-[var(--border)] bg-[var(--card)] text-[var(--muted-foreground)]"} ${selectionDisabled && !selected ? "opacity-40 cursor-not-allowed" : "cursor-pointer hover:border-[var(--primary)]"}`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <input
+          type="checkbox"
+          checked={selected}
+          disabled={selectionDisabled && !selected}
+          onChange={onToggleSelect}
+          className="accent-[var(--primary)] w-3 h-3"
+        />
+        {selected ? "Selected" : "Compare"}
+      </label>
+      <button onClick={onOpen} className="w-full text-left">
+        <div className="flex items-start gap-3 mb-3 pr-16">
+          <div className={`w-11 h-11 rounded-lg ${color} text-white flex items-center justify-center font-bold text-sm shrink-0`}>{initials}</div>
+          <div className="flex-1 min-w-0">
+            <div className="text-xs text-[var(--muted-foreground)] truncate">{policy.insurer_name}</div>
+            <div className="font-semibold text-sm truncate group-hover:text-[var(--primary)] transition">{policy.policy_name}</div>
+          </div>
+          <div className={`shrink-0 flex flex-col items-center rounded-lg overflow-hidden ${gradeColor(policy.grade)}`}>
+            <div className="px-2 pt-0.5 text-[10px] font-semibold opacity-90 uppercase tracking-wide">{policy.grade}</div>
+            <div className="px-2 pb-0.5 text-base font-bold leading-none">{policy.overall_score}<span className="text-[10px] font-normal opacity-80">/100</span></div>
+          </div>
         </div>
-        <div className={`shrink-0 flex flex-col items-center rounded-lg overflow-hidden ${gradeColor(policy.grade)}`}>
-          <div className="px-2 pt-0.5 text-[10px] font-semibold opacity-90 uppercase tracking-wide">{policy.grade}</div>
-          <div className="px-2 pb-0.5 text-base font-bold leading-none">{policy.overall_score}<span className="text-[10px] font-normal opacity-80">/100</span></div>
+        <p className="text-xs text-[var(--muted-foreground)] mb-3 line-clamp-2">{policy.one_liner}</p>
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          <Stat label="Sum insured up to" value={siDisplay} />
+          <Stat label="PED waiting" value={policy.pre_existing_disease_waiting_months ? `${policy.pre_existing_disease_waiting_months} mo` : "—"} />
+          <Stat label="AYUSH" value={policy.ayush_coverage === true ? "Yes" : policy.ayush_coverage === false ? "No" : "—"} />
+          <Stat label="Network" value={policy.network_hospital_count ? `${(policy.network_hospital_count / 1000).toFixed(0)}K+` : "—"} />
         </div>
-      </div>
-      <p className="text-xs text-[var(--muted-foreground)] mb-3 line-clamp-2">{policy.one_liner}</p>
-      <div className="grid grid-cols-2 gap-2 text-xs">
-        <Stat label="Sum insured up to" value={siDisplay} />
-        <Stat label="PED waiting" value={policy.pre_existing_disease_waiting_months ? `${policy.pre_existing_disease_waiting_months} mo` : "—"} />
-        <Stat label="AYUSH" value={policy.ayush_coverage === true ? "Yes" : policy.ayush_coverage === false ? "No" : "—"} />
-        <Stat label="Network" value={policy.network_hospital_count ? `${(policy.network_hospital_count / 1000).toFixed(0)}K+` : "—"} />
-      </div>
-    </button>
+      </button>
+    </div>
   );
 }
 
@@ -1196,6 +1284,166 @@ function Stat({ label, value }: { label: string; value: string }) {
     <div>
       <div className="text-[10px] text-[var(--muted-foreground)] uppercase tracking-wide">{label}</div>
       <div className="text-xs font-semibold">{value}</div>
+    </div>
+  );
+}
+
+function FIELD_LABEL(field: string): string {
+  const map: Record<string, string> = {
+    policy_type: "Policy type",
+    uin_code: "UIN code",
+    min_entry_age: "Min entry age",
+    max_entry_age: "Max entry age",
+    max_renewal_age: "Max renewal age",
+    sum_insured_options: "Sum insured options",
+    initial_waiting_period_days: "Initial waiting period",
+    pre_existing_disease_waiting_months: "Pre-existing waiting",
+    maternity_waiting_months: "Maternity waiting",
+    pre_hospitalization_days: "Pre-hospitalisation cover",
+    post_hospitalization_days: "Post-hospitalisation cover",
+    day_care_treatments_count: "Day-care treatments",
+    ayush_coverage: "AYUSH covered",
+    maternity_coverage: "Maternity covered",
+    newborn_coverage: "Newborn covered",
+    organ_donor_expenses: "Organ donor expenses",
+    no_claim_bonus_pct: "No-claim bonus",
+    restoration_benefit: "Restoration benefit",
+    room_rent_capping: "Room rent capping",
+    copayment_pct: "Co-payment",
+    deductible_amount: "Deductible",
+    network_hospital_count: "Network hospitals",
+    cashless_treatment_supported: "Cashless supported",
+    claim_settlement_ratio: "Claim settlement ratio",
+    tat_cashless_authorization_hours: "Cashless TAT",
+  };
+  return map[field] || field.replace(/_/g, " ");
+}
+
+function renderFieldValue(value: unknown, field: string): string {
+  if (value === null || value === undefined || value === "") return "—";
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (Array.isArray(value)) {
+    if (field === "sum_insured_options" && value.every((v) => typeof v === "number")) {
+      const nums = value as number[];
+      const fmt = (n: number) => (n >= 10000000 ? `${n / 10000000} cr` : `${n / 100000} L`);
+      return nums.map(fmt).join(", ");
+    }
+    return value.map((v) => String(v)).join(", ");
+  }
+  if (typeof value === "number") {
+    if (field.endsWith("_pct") || field === "claim_settlement_ratio") return `${value}%`;
+    if (field === "network_hospital_count" && value >= 1000) return `${value.toLocaleString("en-IN")}`;
+    if (field === "initial_waiting_period_days") return `${value} days`;
+    if (field.endsWith("_months")) return `${value} months`;
+    if (field.endsWith("_days") || field === "pre_hospitalization_days" || field === "post_hospitalization_days") return `${value} days`;
+    if (field === "tat_cashless_authorization_hours") return `${value} hours`;
+    if (field === "deductible_amount") return `₹${value.toLocaleString("en-IN")}`;
+    return String(value);
+  }
+  return String(value);
+}
+
+function ComparisonModal({ policyIds, onClose }: { policyIds: string[]; onClose: () => void }) {
+  const [data, setData] = useState<CompareResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    setError(null);
+    getCompare(policyIds)
+      .then(setData)
+      .catch((e: Error) => setError(e.message));
+  }, [policyIds]);
+
+  return (
+    <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-3 animate-fade-up" onClick={onClose}>
+      <div
+        className="bg-[var(--card)] rounded-2xl shadow-xl w-full max-w-6xl max-h-[92vh] overflow-y-auto scrollbar-thin"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sticky top-0 z-10 bg-[var(--card)] border-b border-[var(--border)] px-5 py-4 flex items-center justify-between">
+          <div>
+            <h3 className="text-base font-bold">Side-by-side comparison</h3>
+            <p className="text-[11px] text-[var(--muted-foreground)] mt-0.5">
+              Cells with differences are highlighted. Values come directly from each policy&apos;s wording PDF.
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-xs text-[var(--muted-foreground)] hover:underline"
+          >close</button>
+        </div>
+
+        <div className="p-5">
+          {error && (
+            <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-3">
+              Failed to load comparison: {error}
+            </div>
+          )}
+          {!data && !error && (
+            <div className="text-sm text-[var(--muted-foreground)] py-12 text-center">
+              Loading comparison…
+            </div>
+          )}
+          {data && (
+            <div className="overflow-x-auto -mx-5 px-5">
+              <table className="w-full border-collapse text-xs">
+                <thead>
+                  <tr>
+                    <th className="text-left text-[11px] uppercase tracking-wide text-[var(--muted-foreground)] font-semibold pb-3 pr-3 sticky left-0 bg-[var(--card)]">
+                      Field
+                    </th>
+                    {data.policies.map((p) => {
+                      const color = INSURER_COLOR[p.insurer_slug] || "bg-slate-500";
+                      return (
+                        <th key={p.policy_id} className="text-left pb-3 px-2 align-bottom min-w-[180px]">
+                          <div className="flex items-start gap-2">
+                            <div className={`w-8 h-8 rounded-md ${color} text-white flex items-center justify-center font-bold text-[11px] shrink-0`}>
+                              {insurerInitials(p.fields.insurer_name as string || p.insurer_slug)}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="text-[10px] text-[var(--muted-foreground)] truncate">{p.insurer_slug}</div>
+                              <div className="font-semibold text-xs leading-tight truncate">{p.policy_name}</div>
+                              {p.scorecard && (
+                                <div className={`inline-block mt-1 text-[10px] font-semibold px-1.5 py-0.5 rounded ${gradeColor(p.scorecard.grade)}`}>
+                                  {p.scorecard.grade} · {p.scorecard.overall_score}/100
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </th>
+                      );
+                    })}
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.field_order.map((field, fieldIdx) => {
+                    const values = data.policies.map((p) => renderFieldValue(p.fields[field], field));
+                    const allSame = values.every((v) => v === values[0]);
+                    return (
+                      <tr key={field} className={fieldIdx % 2 === 0 ? "bg-[var(--muted)]" : ""}>
+                        <td className="text-[11px] font-semibold pr-3 py-2 sticky left-0 bg-inherit text-[var(--foreground)] align-top">
+                          {FIELD_LABEL(field)}
+                        </td>
+                        {values.map((v, i) => (
+                          <td
+                            key={i}
+                            className={`px-2 py-2 align-top ${allSame ? "text-[var(--muted-foreground)]" : "text-[var(--foreground)] font-medium"}`}
+                          >
+                            {v}
+                          </td>
+                        ))}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              <p className="text-[10px] text-[var(--muted-foreground)] mt-3">
+                Fields shown in bold differ across the selected policies; greyed values are identical.
+                For premium estimates use the calculator on each policy&apos;s detail page.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
