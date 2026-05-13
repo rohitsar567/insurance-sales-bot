@@ -2,7 +2,6 @@
   "insurer_slug": "niva-bupa",
   "insurer_name": "Niva Bupa Health Insurance",
   "last_updated": "2026-05-13",
-
   "claim_metrics": {
     "claim_settlement_ratio_pct": 91.62,
     "claim_settlement_ratio_year": "2023-24 (3-year avg through FY25)",
@@ -13,21 +12,34 @@
     "source_secondary_url": "https://joinditto.in/articles/health-insurance/niva-bupa-health-insurance-claim-settlement-ratio/",
     "source_annual_report": "https://transactions.nivabupa.com/pages/doc/pub-dis/annual-reports/Annual-Report-FY-2023-24.pdf"
   },
-
   "aggregator_ratings": {
-    "policybazaar": {"avg_star": 4.4, "review_count": null, "url": "https://www.policybazaar.com/max-bupa-health-general-reviews-477/"},
-    "insuredekho": {"avg_star": 4.3, "review_count": 192, "url": "https://www.insurancedekho.com/health-insurance/niva-bupa-health-insurance/user-reviews"},
-    "mouthshut": {"avg_star": 2.0, "review_count": null, "url": "https://www.mouthshut.com/product-reviews/niva-bupa-health-insurance-reviews-925608449"},
-    "justdial": {"avg_star": 3.5, "review_count": 903, "url": "https://www.justdial.com/Mumbai/Niva-Bupa-Health-Insurance-Company-Ltd-Customer-Care/022PXX22-XX22-121222183516-A3L5_BZDET/reviews"}
+    "policybazaar": {
+      "avg_star": 4.4,
+      "review_count": null,
+      "url": "https://www.policybazaar.com/max-bupa-health-general-reviews-477/"
+    },
+    "insuredekho": {
+      "avg_star": 4.3,
+      "review_count": 192,
+      "url": "https://www.insurancedekho.com/health-insurance/niva-bupa-health-insurance/user-reviews"
+    },
+    "mouthshut": {
+      "avg_star": 2.0,
+      "review_count": null,
+      "url": "https://www.mouthshut.com/product-reviews/niva-bupa-health-insurance-reviews-925608449"
+    },
+    "justdial": {
+      "avg_star": 3.5,
+      "review_count": 903,
+      "url": "https://www.justdial.com/Mumbai/Niva-Bupa-Health-Insurance-Company-Ltd-Customer-Care/022PXX22-XX22-121222183516-A3L5_BZDET/reviews"
+    }
   },
-
   "trustpilot": {
     "score": 1.8,
     "review_count": null,
     "url": "https://www.trustpilot.com/review/nivabupa.com",
     "note": "Complaints around refunds and policy onboarding"
   },
-
   "reddit_sentiment": {
     "subreddit": "IndianFinance / IndiaInvestments / personalfinanceindia",
     "mentions_last_year_estimate": 45,
@@ -37,35 +49,79 @@
       "Bupa global parent brand association = trust signal",
       "App quality and customer service complaints common",
       "Higher than industry-average complaint volume (42.85 per 10K)",
-      "Recently listed on Indian stock market (Nov 2024) — growing scale"
+      "Recently listed on Indian stock market (Nov 2024) \u2014 growing scale"
     ],
     "sample_post_urls": [
       "https://www.quora.com/Has-anyone-taken-Niva-Bupa-health-insurance-in-India-How-reliable-is-it",
       "https://www.policybazaar.com/health-insurance/companies/hdfc-ergo-vs-niva-bupa/"
     ]
   },
-
   "youtube_coverage": {
     "top_creators_who_reviewed": [
-      {"creator": "Ditto Insurance", "video_url": "https://www.youtube.com/watch?v=2_EhrtJhn44", "verdict": "ReAssure 2.0 vs HDFC Ergo vs Care comparison; recommended for premium plans"},
-      {"creator": "Sagar Sinha", "video_url": "https://www.youtube.com/watch?v=1BUFoq5jbmQ", "verdict": "balanced comparison with HDFC ERGO"},
-      {"creator": "Sanjay Kathuria", "video_url": "https://www.youtube.com/watch?v=EDZ74XMFirI", "verdict": "comparative 2026 review"}
+      {
+        "creator": "Ditto Insurance",
+        "video_url": "https://www.youtube.com/watch?v=2_EhrtJhn44",
+        "verdict": "ReAssure 2.0 vs HDFC Ergo vs Care comparison; recommended for premium plans"
+      },
+      {
+        "creator": "Sagar Sinha",
+        "video_url": "https://www.youtube.com/watch?v=1BUFoq5jbmQ",
+        "verdict": "balanced comparison with HDFC ERGO"
+      },
+      {
+        "creator": "Sanjay Kathuria",
+        "video_url": "https://www.youtube.com/watch?v=EDZ74XMFirI",
+        "verdict": "comparative 2026 review"
+      }
     ],
     "overall_youtube_sentiment": "favourable"
   },
-
   "in_news": [
-    {"headline": "Niva Bupa shares make positive debut on bourses; list at 6% premium", "url": "https://www.business-standard.com/markets/news/niva-bupa-shares-make-positive-debut-on-bourses-list-at-6-premium-124111400326_1.html", "publication": "Business Standard", "date": "2024-11-14", "tone": "positive"},
-    {"headline": "Bupa Group Indian health insurance business, Niva Bupa, successfully completes IPO", "url": "https://www.bupa.com/news-and-press/press-releases/2024/bupa-indian-health-insurance-business-niva-bupa-completes-ipo", "publication": "Bupa Group", "date": "2024-11", "tone": "positive"},
-    {"headline": "Star Health, CARE, Niva Bupa record most policyholder complaints in FY24", "url": "https://www.business-standard.com/finance/personal-finance/star-health-care-niva-bupa-record-most-policyholder-complaints-in-fy24-125090100487_1.html", "publication": "Business Standard", "date": "2025-09-01", "tone": "negative"},
-    {"headline": "Niva Bupa IPO: Growth, claim settlement and retention metrics compared with industry peers", "url": "https://upstox.com/news/market-news/ipo/understanding-niva-bupa-s-market-position-growth-claim-settlement-and-retention-metrics-compared-with-industry-peers/article-127535/", "publication": "Upstox", "date": "2024-11", "tone": "neutral"}
+    {
+      "headline": "Niva Bupa shares make positive debut on bourses; list at 6% premium",
+      "url": "https://www.business-standard.com/markets/news/niva-bupa-shares-make-positive-debut-on-bourses-list-at-6-premium-124111400326_1.html",
+      "publication": "Business Standard",
+      "date": "2024-11-14",
+      "tone": "positive"
+    },
+    {
+      "headline": "Bupa Group Indian health insurance business, Niva Bupa, successfully completes IPO",
+      "url": "https://www.bupa.com/news-and-press/press-releases/2024/bupa-indian-health-insurance-business-niva-bupa-completes-ipo",
+      "publication": "Bupa Group",
+      "date": "2024-11",
+      "tone": "positive"
+    },
+    {
+      "headline": "Star Health, CARE, Niva Bupa record most policyholder complaints in FY24",
+      "url": "https://www.business-standard.com/finance/personal-finance/star-health-care-niva-bupa-record-most-policyholder-complaints-in-fy24-125090100487_1.html",
+      "publication": "Business Standard",
+      "date": "2025-09-01",
+      "tone": "negative"
+    },
+    {
+      "headline": "Niva Bupa IPO: Growth, claim settlement and retention metrics compared with industry peers",
+      "url": "https://upstox.com/news/market-news/ipo/understanding-niva-bupa-s-market-position-growth-claim-settlement-and-retention-metrics-compared-with-industry-peers/article-127535/",
+      "publication": "Upstox",
+      "date": "2024-11",
+      "tone": "neutral"
+    }
   ],
-
   "aggregate_score": {
     "value_0_100": 75.8,
     "letter_grade": "B",
     "headline": "Strong CSR (91.6%) and growth post-IPO; complaints volume above industry average is the main drag",
     "computed_at": "2026-05-13",
     "computation_notes": "0.40*91.62 + 0.20*(100-43*2) + 0.15*(4.0*20) + 0.10*60 + 0.10*90 + 0.05*50 = 36.6 + 2.8 + 12 + 6 + 9 + 2.5 = 68.9. Adjusted +6.9 for IPO success, Bupa global brand strength, and Ditto/YouTube favorability."
+  },
+  "_url_verification": {
+    "verified_at": "2026-05-12T23:57:25Z",
+    "total_urls": 17,
+    "ok": 14,
+    "broken_count": 3,
+    "broken_urls": [
+      "https://www.trustpilot.com/review/nivabupa.com",
+      "https://www.business-standard.com/markets/news/niva-bupa-shares-make-positive-debut-on-bourses-list-at-6-premium-124111400326_1.html",
+      "https://www.business-standard.com/finance/personal-finance/star-health-care-niva-bupa-record-most-policyholder-complaints-in-fy24-125090100487_1.html"
+    ]
   }
 }

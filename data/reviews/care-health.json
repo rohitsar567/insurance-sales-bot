@@ -2,7 +2,6 @@
   "insurer_slug": "care-health",
   "insurer_name": "Care Health Insurance",
   "last_updated": "2026-05-13",
-
   "claim_metrics": {
     "claim_settlement_ratio_pct": 93.13,
     "claim_settlement_ratio_year": "2023-24 (3-year avg)",
@@ -14,19 +13,28 @@
     "source_secondary_url": "https://www.policyx.com/health-insurance/religare-health-insurance/claim-settlement-ratio/",
     "source_company_url": "https://www.careinsurance.com/health-insurance/health-insurance-claim-settlement-ratio"
   },
-
   "aggregator_ratings": {
-    "policybazaar": {"avg_star": 4.4, "review_count": null, "url": "https://www.policybazaar.com/insurance-companies/religare-health-insurance/claim-settlement-ratio/"},
-    "insuredekho": {"avg_star": 4.3, "review_count": null, "url": "https://www.insurancedekho.com/health-insurance/care/user-reviews"},
-    "joinditto": {"avg_star": 4.0, "review_count": null, "url": "https://joinditto.in/articles/health-insurance/care-health-insurance-review/"}
+    "policybazaar": {
+      "avg_star": 4.4,
+      "review_count": null,
+      "url": "https://www.policybazaar.com/insurance-companies/religare-health-insurance/claim-settlement-ratio/"
+    },
+    "insuredekho": {
+      "avg_star": 4.3,
+      "review_count": null,
+      "url": "https://www.insurancedekho.com/health-insurance/care/user-reviews"
+    },
+    "joinditto": {
+      "avg_star": 4.0,
+      "review_count": null,
+      "url": "https://joinditto.in/articles/health-insurance/care-health-insurance-review/"
+    }
   },
-
   "trustpilot": {
     "score": null,
     "review_count": null,
     "url": null
   },
-
   "reddit_sentiment": {
     "subreddit": "IndianFinance / IndiaInvestments",
     "mentions_last_year_estimate": 35,
@@ -43,26 +51,59 @@
       "https://www.policybazaar.com/health-insurance/companies/hdfc-ergo-vs-niva-bupa/"
     ]
   },
-
   "youtube_coverage": {
     "top_creators_who_reviewed": [
-      {"creator": "Ditto Insurance", "video_url": "https://www.youtube.com/watch?v=2_EhrtJhn44", "verdict": "Care Supreme in 3-way comparison; competitive option"},
-      {"creator": "Ditto Insurance", "video_url": "https://www.youtube.com/watch?v=1rRvcVkcQVw", "verdict": "Care Supreme vs HDFC Ergo Optima Secure 2026 comparison"}
+      {
+        "creator": "Ditto Insurance",
+        "video_url": "https://www.youtube.com/watch?v=2_EhrtJhn44",
+        "verdict": "Care Supreme in 3-way comparison; competitive option"
+      },
+      {
+        "creator": "Ditto Insurance",
+        "video_url": "https://www.youtube.com/watch?v=1rRvcVkcQVw",
+        "verdict": "Care Supreme vs HDFC Ergo Optima Secure 2026 comparison"
+      }
     ],
     "overall_youtube_sentiment": "favourable"
   },
-
   "in_news": [
-    {"headline": "Care Health Insurance settled only 57.69% of claims, paying Rs 2.88 per Rs 5 claimed", "url": "https://thesouthfirst.com/health/health-insurance-claims-standalone-insurers-pay-rs-3-07-per-rs-5-claim-general-insurers-offer-rs-4-17/", "publication": "The South First", "date": "2024-12", "tone": "negative"},
-    {"headline": "Star Health, CARE, Niva Bupa record most policyholder complaints in FY24", "url": "https://www.business-standard.com/finance/personal-finance/star-health-care-niva-bupa-record-most-policyholder-complaints-in-fy24-125090100487_1.html", "publication": "Business Standard", "date": "2025-09-01", "tone": "negative"},
-    {"headline": "Care Health Insurance Claim Settlement Ratio Analysis", "url": "https://joinditto.in/articles/health-insurance/care-health-insurance-claim-settlement-ratio/", "publication": "Ditto Insurance", "date": "2026-04", "tone": "neutral"}
+    {
+      "headline": "Care Health Insurance settled only 57.69% of claims, paying Rs 2.88 per Rs 5 claimed",
+      "url": "https://thesouthfirst.com/health/health-insurance-claims-standalone-insurers-pay-rs-3-07-per-rs-5-claim-general-insurers-offer-rs-4-17/",
+      "publication": "The South First",
+      "date": "2024-12",
+      "tone": "negative"
+    },
+    {
+      "headline": "Star Health, CARE, Niva Bupa record most policyholder complaints in FY24",
+      "url": "https://www.business-standard.com/finance/personal-finance/star-health-care-niva-bupa-record-most-policyholder-complaints-in-fy24-125090100487_1.html",
+      "publication": "Business Standard",
+      "date": "2025-09-01",
+      "tone": "negative"
+    },
+    {
+      "headline": "Care Health Insurance Claim Settlement Ratio Analysis",
+      "url": "https://joinditto.in/articles/health-insurance/care-health-insurance-claim-settlement-ratio/",
+      "publication": "Ditto Insurance",
+      "date": "2026-04",
+      "tone": "neutral"
+    }
   ],
-
   "aggregate_score": {
     "value_0_100": 70.4,
     "letter_grade": "B",
     "headline": "Solid CSR (93%) and YouTube/advisor endorsement, but bottom-of-table ICR (57.7%) and complaints volume drag the score",
     "computed_at": "2026-05-13",
-    "computation_notes": "0.40*93.13 + 0.20*(100-42*2) + 0.15*(4.2*20) + 0.10*60 + 0.10*90 + 0.05*33 = 37.3 + 3.2 + 12.6 + 6 + 9 + 1.65 = 69.75 ≈ 70.4"
+    "computation_notes": "0.40*93.13 + 0.20*(100-42*2) + 0.15*(4.2*20) + 0.10*60 + 0.10*90 + 0.05*33 = 37.3 + 3.2 + 12.6 + 6 + 9 + 1.65 = 69.75 \u2248 70.4"
+  },
+  "_url_verification": {
+    "verified_at": "2026-05-12T23:57:25Z",
+    "total_urls": 13,
+    "ok": 11,
+    "broken_count": 2,
+    "broken_urls": [
+      "https://www.careinsurance.com/health-insurance/health-insurance-claim-settlement-ratio",
+      "https://www.business-standard.com/finance/personal-finance/star-health-care-niva-bupa-record-most-policyholder-complaints-in-fy24-125090100487_1.html"
+    ]
   }
 }

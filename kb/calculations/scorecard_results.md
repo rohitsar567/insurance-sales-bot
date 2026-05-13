@@ -1,6 +1,6 @@
 # Calculations — Scorecard Results
 
-_Computed by `backend/scorecard.py` at 2026-05-12T23:12:11Z on 11 extracted policies._
+_Computed by `backend/scorecard.py` at 2026-05-12T23:59:58Z on 11 extracted policies._
 
 Methodology: [`docs/scorecard-methodology.md`](../../docs/scorecard-methodology.md)
 

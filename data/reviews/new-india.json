@@ -2,7 +2,6 @@
   "insurer_slug": "new-india",
   "insurer_name": "New India Assurance",
   "last_updated": "2026-05-13",
-
   "claim_metrics": {
     "claim_settlement_ratio_pct": 95.04,
     "claim_settlement_ratio_year": "2023-24 (by claim count)",
@@ -15,19 +14,28 @@
     "source_company_url": "https://www.newindia.co.in/public-disclosure",
     "note": "Highest payer among general insurers; IBAI 2023-24 General Insurance Claim Insights ranks NIA #1 on settlement"
   },
-
   "aggregator_ratings": {
-    "policybazaar": {"avg_star": 4.2, "review_count": null, "url": "https://www.policybazaar.com/insurance-companies/new-india-assurance-health-insurance/claim-settlement-ratio/"},
-    "insuredekho": {"avg_star": 4.0, "review_count": null, "url": "https://www.insurancedekho.com/health-insurance/new-india/claim-settlement"},
-    "policyx": {"avg_star": 4.1, "review_count": null, "url": "https://www.policyx.com/health-insurance/new-india-health-insurance/claim-settlement-ratio/"}
+    "policybazaar": {
+      "avg_star": 4.2,
+      "review_count": null,
+      "url": "https://www.policybazaar.com/insurance-companies/new-india-assurance-health-insurance/claim-settlement-ratio/"
+    },
+    "insuredekho": {
+      "avg_star": 4.0,
+      "review_count": null,
+      "url": "https://www.insurancedekho.com/health-insurance/new-india/claim-settlement"
+    },
+    "policyx": {
+      "avg_star": 4.1,
+      "review_count": null,
+      "url": "https://www.policyx.com/health-insurance/new-india-health-insurance/claim-settlement-ratio/"
+    }
   },
-
   "trustpilot": {
     "score": null,
     "review_count": null,
     "url": null
   },
-
   "reddit_sentiment": {
     "subreddit": "IndianFinance / IndiaInvestments",
     "mentions_last_year_estimate": 25,
@@ -44,24 +52,48 @@
       "https://www.policybazaar.com/insurance-companies/new-india-assurance-health-insurance/claim-settlement-ratio/"
     ]
   },
-
   "youtube_coverage": {
     "top_creators_who_reviewed": [],
     "overall_youtube_sentiment": "mixed",
     "note": "Limited dedicated influencer coverage; PSU brand under-marketed on YouTube vs private players"
   },
-
   "in_news": [
-    {"headline": "New India Assurance Tops Health Insurance Claims Settlement", "url": "https://www.deccanchronicle.com/business/new-india-assurance-tops-health-insurance-claims-settlement-1841899", "publication": "Deccan Chronicle", "date": "2024", "tone": "positive"},
-    {"headline": "New India Assurance Q3FY24 results: Net profit falls 4.38% to Rs 715 crore", "url": "https://www.business-standard.com/companies/news/new-india-assurance-q3fy24-results-net-profit-falls-4-38-to-rs-715-crore-124020901758_1.html", "publication": "Business Standard", "date": "2024-02-09", "tone": "neutral"},
-    {"headline": "ICICI Lombard, Bajaj Allianz and New India are the most profitable non-life players in FY 2024", "url": "https://cafemutual.com/news/insurance/33076-icici-lombard-bajaj-allianz-and-new-india-are-the-most-profitable-non-life-players-in-fy-2024", "publication": "Cafemutual", "date": "2024", "tone": "positive"}
+    {
+      "headline": "New India Assurance Tops Health Insurance Claims Settlement",
+      "url": "https://www.deccanchronicle.com/business/new-india-assurance-tops-health-insurance-claims-settlement-1841899",
+      "publication": "Deccan Chronicle",
+      "date": "2024",
+      "tone": "positive"
+    },
+    {
+      "headline": "New India Assurance Q3FY24 results: Net profit falls 4.38% to Rs 715 crore",
+      "url": "https://www.business-standard.com/companies/news/new-india-assurance-q3fy24-results-net-profit-falls-4-38-to-rs-715-crore-124020901758_1.html",
+      "publication": "Business Standard",
+      "date": "2024-02-09",
+      "tone": "neutral"
+    },
+    {
+      "headline": "ICICI Lombard, Bajaj Allianz and New India are the most profitable non-life players in FY 2024",
+      "url": "https://cafemutual.com/news/insurance/33076-icici-lombard-bajaj-allianz-and-new-india-are-the-most-profitable-non-life-players-in-fy-2024",
+      "publication": "Cafemutual",
+      "date": "2024",
+      "tone": "positive"
+    }
   ],
-
   "aggregate_score": {
     "value_0_100": 78.6,
     "letter_grade": "B",
     "headline": "Highest claim payout among general insurers (ICR 103%, CSR 95% by count); PSU service experience drags consumer-perception score",
     "computed_at": "2026-05-13",
-    "computation_notes": "0.40*95.04 + 0.20*(100-40) + 0.15*(4.1*20) + 0.10*60 + 0.10*60 + 0.05*67 = 38 + 12 + 12.3 + 6 + 6 + 3.35 = 77.65 ≈ 78.6"
+    "computation_notes": "0.40*95.04 + 0.20*(100-40) + 0.15*(4.1*20) + 0.10*60 + 0.10*60 + 0.05*67 = 38 + 12 + 12.3 + 6 + 6 + 3.35 = 77.65 \u2248 78.6"
+  },
+  "_url_verification": {
+    "verified_at": "2026-05-12T23:57:25Z",
+    "total_urls": 8,
+    "ok": 7,
+    "broken_count": 1,
+    "broken_urls": [
+      "https://www.business-standard.com/companies/news/new-india-assurance-q3fy24-results-net-profit-falls-4-38-to-rs-715-crore-124020901758_1.html"
+    ]
   }
 }

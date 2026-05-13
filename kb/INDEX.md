@@ -1,6 +1,6 @@
 # Knowledge Base — Master Index
 
-_Generated 2026-05-12T23:12:11Z. Auto-regenerable via `python -m rag.build_kb`._
+_Generated 2026-05-12T23:59:58Z. Auto-regenerable via `python -m rag.build_kb`._
 
 This is the **single canonical KB** for this project. Every data point in the bot
 (citations, scorecards, comparison views) traces back to one of these files.

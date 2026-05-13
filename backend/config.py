@@ -52,10 +52,10 @@ class Settings:
     VECTORS_DIR: Path = ROOT / "rag" / "vectors"
     STRUCTURED_DB: Path = ROOT / "rag" / "policies.duckdb"
 
-    # Tunables
-    CHUNK_TOKENS: int = 800
-    CHUNK_OVERLAP_TOKENS: int = 120
-    RAG_TOP_K: int = 5
+    # Tunables (overrideable via env vars so the hyperparameter sweep can iterate)
+    CHUNK_TOKENS: int = int(os.environ.get("CHUNK_TOKENS", "800"))
+    CHUNK_OVERLAP_TOKENS: int = int(os.environ.get("CHUNK_OVERLAP_TOKENS", "120"))
+    RAG_TOP_K: int = int(os.environ.get("RAG_TOP_K", "5"))
 
     @classmethod
     def validate(cls) -> list[str]:
