@@ -268,6 +268,20 @@ export async function getMarketplace(): Promise<MarketplaceResponse> {
   return resp.json();
 }
 
+export type UserProfile = {
+  age?: number | null;
+  dependents?: string | null;
+  income_band?: string | null;
+  existing_cover_inr?: number | null;
+  primary_goal?: string | null;
+  location_tier?: string | null;
+  parents_to_insure?: boolean | null;
+  parents_age_max?: number | null;
+  parents_has_ped?: boolean | null;
+  health_conditions?: string[] | null;
+  budget_band?: string | null;
+};
+
 export type ProfileCompletenessResponse = {
   completeness: number;
   completeness_pct: number;
@@ -276,13 +290,24 @@ export type ProfileCompletenessResponse = {
   is_personalized: boolean;
   gate_threshold: number;
   next_question_hint?: string | null;
+  profile?: UserProfile;
+  session_id?: string | null;
 };
 
 export async function getProfileCompleteness(session_id?: string): Promise<ProfileCompletenessResponse> {
-  // Same relative-URL caveat as getCompare — build path as string
   const qs = session_id ? `?session_id=${encodeURIComponent(session_id)}` : "";
   const resp = await fetch(`${BACKEND_URL}/api/profile/completeness${qs}`);
   if (!resp.ok) throw new Error(`profile completeness failed: ${resp.status}`);
+  return resp.json();
+}
+
+export async function postProfileUpdate(req: UserProfile & { session_id: string }): Promise<ProfileCompletenessResponse> {
+  const resp = await fetch(`${BACKEND_URL}/api/profile`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(req),
+  });
+  if (!resp.ok) throw new Error(`profile update failed: ${resp.status}`);
   return resp.json();
 }
 

@@ -465,6 +465,64 @@ class ProfileCompletenessResponse(BaseModel):
     is_personalized: bool                # True if completeness >= threshold
     gate_threshold: float = 0.6
     next_question_hint: Optional[str] = None
+    profile: dict = Field(default_factory=dict)  # current profile state for UI to render
+    session_id: Optional[str] = None
+
+
+class ProfileUpdateRequest(BaseModel):
+    session_id: str
+    age: Optional[int] = None
+    dependents: Optional[str] = None
+    income_band: Optional[str] = None
+    existing_cover_inr: Optional[int] = None
+    primary_goal: Optional[str] = None
+    location_tier: Optional[str] = None
+    parents_to_insure: Optional[bool] = None
+    parents_age_max: Optional[int] = None
+    parents_has_ped: Optional[bool] = None
+    health_conditions: Optional[list[str]] = None
+    budget_band: Optional[str] = None
+
+
+@app.post("/api/profile", response_model=ProfileCompletenessResponse)
+async def profile_update(req: ProfileUpdateRequest):
+    """Write user-provided profile fields into session_state. Returns the new
+    completeness so the frontend can immediately reveal personalized scores."""
+    from backend.scorecard import profile_completeness as _completeness
+    from backend.session_state import get_session
+
+    sess = get_session(req.session_id)
+    # Update only fields the client explicitly sent (non-None) — keeps partial
+    # save flows clean
+    for field_name in (
+        "age", "dependents", "income_band", "existing_cover_inr", "primary_goal",
+        "location_tier", "parents_to_insure", "parents_age_max", "parents_has_ped",
+        "health_conditions", "budget_band",
+    ):
+        v = getattr(req, field_name, None)
+        if v is not None:
+            setattr(sess.profile, field_name, v)
+
+    p = sess.profile
+    profile_dict = {
+        "age": p.age, "dependents": p.dependents, "income_band": p.income_band,
+        "existing_cover_inr": p.existing_cover_inr, "primary_goal": p.primary_goal,
+        "location_tier": p.location_tier, "parents_to_insure": p.parents_to_insure,
+        "parents_age_max": p.parents_age_max, "parents_has_ped": p.parents_has_ped,
+        "health_conditions": p.health_conditions, "budget_band": p.budget_band,
+    }
+    c = _completeness(profile_dict)
+    collected = [k for k, v in profile_dict.items() if v not in (None, "", [], False)]
+    missing = [k for k, v in profile_dict.items() if v in (None, "", [])]
+    return ProfileCompletenessResponse(
+        completeness=c,
+        completeness_pct=int(c * 100),
+        fields_collected=collected,
+        fields_missing=missing,
+        is_personalized=c >= 0.6,
+        profile=profile_dict,
+        session_id=req.session_id,
+    )
 
 
 @app.get("/api/profile/completeness", response_model=ProfileCompletenessResponse)
@@ -510,6 +568,8 @@ async def profile_completeness_view(session_id: Optional[str] = None):
         fields_missing=missing,
         is_personalized=c >= 0.6,
         next_question_hint=hint,
+        profile=profile_dict,
+        session_id=session_id,
     )
 
 

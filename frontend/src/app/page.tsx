@@ -20,11 +20,13 @@ import {
   MarketplaceResponse,
   postChat,
   postPremiumEstimate,
+  postProfileUpdate,
   postTranscribe,
   PremiumEstimateResponse,
   ProfileCompletenessResponse,
   ScorecardResponse,
   uploadPolicy,
+  UserProfile,
 } from "@/lib/api";
 import { translate, UILang, StringKey } from "@/lib/i18n";
 
@@ -59,6 +61,7 @@ export default function Page() {
   const [showCoverage, setShowCoverage] = useState(false);
   const [showPremium, setShowPremium] = useState(false);
   const [showMarketplace, setShowMarketplace] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const [marketplace, setMarketplace] = useState<MarketplaceResponse | null>(null);
   const [openPolicy, setOpenPolicy] = useState<MarketplacePolicy | null>(null);
   const [sessionId, setSessionId] = useState<string | undefined>();
@@ -333,7 +336,7 @@ export default function Page() {
               </div>
             </button>
             <button
-              onClick={() => { setShowPremium(!showPremium); setShowMarketplace(false); setShowCoverage(false); }}
+              onClick={() => { setShowPremium(!showPremium); setShowMarketplace(false); setShowCoverage(false); setShowProfile(false); }}
               className={`group relative overflow-hidden rounded-xl transition-all shadow-sm hover:shadow-md ${
                 showPremium ? "ring-2 ring-[var(--primary)]" : ""
               }`}
@@ -348,6 +351,30 @@ export default function Page() {
                   <div className="text-[10px] uppercase tracking-wider opacity-85 leading-none">{t("header.annual_premium_kicker")}</div>
                   <div className="text-xs font-bold leading-tight whitespace-nowrap">{t("header.annual_premium")}</div>
                 </div>
+              </div>
+            </button>
+            <button
+              onClick={() => { setShowProfile(!showProfile); setShowMarketplace(false); setShowPremium(false); setShowCoverage(false); }}
+              className={`group relative overflow-hidden rounded-xl transition-all shadow-sm hover:shadow-md ${
+                showProfile ? "ring-2 ring-[var(--primary)]" : ""
+              }`}
+              title={uiLang === "hi" ? "अपनी profile बनाएं — हर policy को आपके लिए score करेंगे" : "Build your profile — every policy gets a personal score"}
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-violet-600 via-purple-600 to-fuchsia-600" />
+              <div className="relative flex items-stretch text-white">
+                <div className="flex items-center justify-center px-3 py-2 bg-black/15">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="8" r="4" /><path d="M4 21v-2a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v2" /></svg>
+                </div>
+                <div className="px-3 py-2 text-left">
+                  <div className="text-[10px] uppercase tracking-wider opacity-85 leading-none">{uiLang === "hi" ? "आप" : "You"}</div>
+                  <div className="text-xs font-bold leading-tight whitespace-nowrap">{uiLang === "hi" ? "आपकी profile" : "Your profile"}</div>
+                </div>
+                {profileCompleteness && (
+                  <div className="flex flex-col items-center justify-center px-3 py-1 bg-white/15 border-l border-white/20">
+                    <div className="text-sm font-bold leading-none">{profileCompleteness.completeness_pct}%</div>
+                    <div className="text-[9px] uppercase tracking-wider opacity-90 leading-none mt-0.5">{uiLang === "hi" ? "पूर्ण" : "DONE"}</div>
+                  </div>
+                )}
               </div>
             </button>
             {/* UI language toggle — flips visual chrome + voice TTS together */}
@@ -370,6 +397,16 @@ export default function Page() {
           />
         )}
         {showPremium && <PremiumCalculatorPanel onClose={() => setShowPremium(false)} />}
+        {showProfile && (
+          <ProfileBuilderPanel
+            sessionId={sessionId}
+            setSessionId={setSessionId}
+            initialProfile={profileCompleteness?.profile || {}}
+            onSaved={(resp) => { setProfileCompleteness(resp); }}
+            onClose={() => setShowProfile(false)}
+            uiLang={uiLang}
+          />
+        )}
       </header>
       {openPolicy && <PolicyDetailModal policy={openPolicy} onClose={() => setOpenPolicy(null)} />}
 
@@ -460,6 +497,221 @@ export default function Page() {
       <footer className="border-t border-[var(--border)] py-3 px-6 text-center text-xs text-[var(--muted-foreground)]">
         Advisory only. Information based on policy documents; verify with the insurer before purchase. All policy ratings are illustrative and based on publicly disclosed data.
       </footer>
+    </div>
+  );
+}
+
+function ProfileBuilderPanel({
+  sessionId,
+  setSessionId,
+  initialProfile,
+  onSaved,
+  onClose,
+  uiLang,
+}: {
+  sessionId: string | undefined;
+  setSessionId: (id: string) => void;
+  initialProfile: UserProfile;
+  onSaved: (r: ProfileCompletenessResponse) => void;
+  onClose: () => void;
+  uiLang: UILang;
+}) {
+  const [age, setAge] = useState<number | null>(initialProfile.age ?? null);
+  const [dependents, setDependents] = useState<string>(initialProfile.dependents ?? "self");
+  const [budget, setBudget] = useState<string>(initialProfile.budget_band ?? "");
+  const [income, setIncome] = useState<string>(initialProfile.income_band ?? "");
+  const [city, setCity] = useState<string>(initialProfile.location_tier ?? "");
+  const [conditions, setConditions] = useState<string[]>(initialProfile.health_conditions ?? []);
+  const [existingCover, setExistingCover] = useState<number | null>(initialProfile.existing_cover_inr ?? null);
+  const [primaryGoal, setPrimaryGoal] = useState<string>(initialProfile.primary_goal ?? "");
+  const [parentsHasPed, setParentsHasPed] = useState<boolean | null>(initialProfile.parents_has_ped ?? null);
+  const [parentsAgeMax, setParentsAgeMax] = useState<number | null>(initialProfile.parents_age_max ?? null);
+  const [busy, setBusy] = useState(false);
+
+  const hindi = uiLang === "hi";
+
+  const toggleCondition = (c: string) => {
+    setConditions((prev) => prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]);
+  };
+
+  const handleSave = async () => {
+    if (busy) return;
+    setBusy(true);
+    let sid = sessionId;
+    if (!sid) {
+      sid = `s_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      setSessionId(sid);
+      if (typeof window !== "undefined") sessionStorage.setItem("insurance_session_id", sid);
+    }
+    try {
+      const resp = await postProfileUpdate({
+        session_id: sid,
+        age: age ?? undefined,
+        dependents: dependents || undefined,
+        budget_band: budget || undefined,
+        income_band: income || undefined,
+        location_tier: city || undefined,
+        health_conditions: conditions.length ? conditions : undefined,
+        existing_cover_inr: existingCover ?? undefined,
+        primary_goal: primaryGoal || undefined,
+        parents_to_insure: dependents.includes("parent") ? true : null,
+        parents_has_ped: parentsHasPed,
+        parents_age_max: parentsAgeMax ?? undefined,
+      });
+      onSaved(resp);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // chip helper styles
+  const chipBase = "px-2.5 py-1 rounded-full border text-[11px] cursor-pointer transition";
+  const chipOn = "border-[var(--primary)] bg-[var(--primary)] text-white";
+  const chipOff = "border-[var(--border)] hover:border-[var(--primary)]";
+
+  const conditionOptions = hindi
+    ? [["diabetes", "मधुमेह"], ["hypertension", "BP"], ["thyroid", "थायरॉइड"], ["heart", "हृदय रोग"], ["asthma", "अस्थमा"], ["cancer", "कैंसर इतिहास"]]
+    : [["diabetes", "Diabetes"], ["hypertension", "BP / Hypertension"], ["thyroid", "Thyroid"], ["heart", "Heart"], ["asthma", "Asthma"], ["cancer", "Cancer history"]];
+
+  return (
+    <div className="border-t border-[var(--border)] bg-[var(--muted)] animate-fade-up max-h-[80vh] overflow-y-auto scrollbar-thin">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5">
+        <div className="flex items-baseline justify-between mb-4">
+          <div>
+            <h2 className="text-lg font-semibold">{hindi ? "आपकी profile बनाएं" : "Build your profile"}</h2>
+            <p className="text-xs text-[var(--muted-foreground)] mt-1 max-w-2xl">
+              {hindi
+                ? "ये जवाब इसी chat में रहते हैं। ईमानदारी से बताइए — आपकी सेहत का सच बताना आपकी claim बचाता है, premium बढ़ाने का बहाना नहीं।"
+                : "Your answers stay in this chat. Be honest — the truth protects your claim later, not just my recommendation. We don't share with any insurer until you choose to buy."}
+            </p>
+          </div>
+          <button onClick={onClose} className="text-xs text-[var(--muted-foreground)] hover:underline">{hindi ? "बंद करें" : "close"}</button>
+        </div>
+
+        <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 space-y-5">
+          {/* Age */}
+          <div>
+            <label className="flex items-baseline justify-between text-xs mb-1.5">
+              <span className="font-semibold">{hindi ? "आपकी उम्र" : "Your age"}</span>
+              <span className="font-mono text-sm">{age ?? (hindi ? "—" : "—")}</span>
+            </label>
+            <input type="range" min={18} max={80} value={age ?? 35} onChange={(e) => setAge(parseInt(e.target.value))} className="w-full accent-[var(--primary)]" />
+            <p className="text-[10px] text-[var(--muted-foreground)] mt-0.5">{hindi ? "Premium + eligibility + renewal age इसी पर निर्भर।" : "Premium, eligibility, and how long you can renew all hinge on this."}</p>
+          </div>
+
+          {/* Dependents */}
+          <div>
+            <label className="block text-xs font-semibold mb-1.5">{hindi ? "किसको cover करना है" : "Who needs cover"}</label>
+            <div className="flex flex-wrap gap-2">
+              {[
+                ["self", hindi ? "सिर्फ मैं" : "Just me"],
+                ["self+spouse", hindi ? "मैं + पति/पत्नी" : "Self + spouse"],
+                ["self+spouse+kids", hindi ? "मैं + पति/पत्नी + बच्चे" : "Self + spouse + kids"],
+                ["self+parents", hindi ? "मैं + माता-पिता" : "Self + parents"],
+                ["self+spouse+kids+parents", hindi ? "पूरा परिवार" : "Whole family"],
+              ].map(([key, label]) => (
+                <button key={key} onClick={() => setDependents(key)} className={`${chipBase} ${dependents === key ? chipOn : chipOff}`}>{label}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* Parents detail — conditional */}
+          {dependents.includes("parent") && (
+            <div className="border-l-2 border-[var(--primary)] pl-3 space-y-3">
+              <div>
+                <label className="flex items-baseline justify-between text-xs mb-1.5">
+                  <span className="font-semibold">{hindi ? "सबसे बड़े parent की उम्र" : "Older parent's age"}</span>
+                  <span className="font-mono text-sm">{parentsAgeMax ?? "—"}</span>
+                </label>
+                <input type="range" min={45} max={85} value={parentsAgeMax ?? 65} onChange={(e) => setParentsAgeMax(parseInt(e.target.value))} className="w-full accent-[var(--primary)]" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold mb-1.5">{hindi ? "क्या उन्हें diabetes / BP / heart है?" : "Any pre-existing conditions (diabetes / BP / heart)?"}</label>
+                <div className="flex gap-2">
+                  <button onClick={() => setParentsHasPed(true)} className={`${chipBase} ${parentsHasPed === true ? chipOn : chipOff}`}>{hindi ? "हाँ" : "Yes"}</button>
+                  <button onClick={() => setParentsHasPed(false)} className={`${chipBase} ${parentsHasPed === false ? chipOn : chipOff}`}>{hindi ? "नहीं" : "No"}</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Your conditions */}
+          <div>
+            <label className="block text-xs font-semibold mb-1.5">{hindi ? "आपकी pre-existing conditions" : "Your pre-existing conditions"}</label>
+            <p className="text-[10px] text-amber-700 dark:text-amber-400 mb-2">{hindi ? "सच बताइए। बीमाकर्ता claim time पर hospital records check करते हैं। आज की बचत बाद में ₹8L का denied claim बन जाती है।" : "Be honest. Insurers cross-check at claim time. ₹500 saved today = ₹8L denied claim tomorrow."}</p>
+            <div className="flex flex-wrap gap-2">
+              <button onClick={() => setConditions([])} className={`${chipBase} ${conditions.length === 0 ? chipOn : chipOff}`}>{hindi ? "कुछ नहीं" : "None"}</button>
+              {conditionOptions.map(([key, label]) => (
+                <button key={key} onClick={() => toggleCondition(key)} className={`${chipBase} ${conditions.includes(key) ? chipOn : chipOff}`}>{label}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* Existing cover */}
+          <div>
+            <label className="block text-xs font-semibold mb-1.5">{hindi ? "पहले से कोई health insurance?" : "Already have any health insurance?"}</label>
+            <div className="flex flex-wrap gap-2">
+              {[[0, hindi ? "नहीं" : "None"], [300000, "₹3L"], [500000, "₹5L"], [1000000, "₹10L"], [2500000, "₹25L+"]].map(([v, label]) => (
+                <button key={String(v)} onClick={() => setExistingCover(v as number)} className={`${chipBase} ${existingCover === v ? chipOn : chipOff}`}>{label}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* City tier */}
+          <div>
+            <label className="block text-xs font-semibold mb-1.5">{hindi ? "आपका शहर" : "Your city"}</label>
+            <div className="flex gap-2">
+              {[["metro", hindi ? "Metro (Mumbai/Delhi/Bangalore/...)" : "Metro"], ["tier1", hindi ? "Tier 1" : "Tier 1"], ["tier2", hindi ? "छोटा शहर" : "Tier 2 / smaller"]].map(([key, label]) => (
+                <button key={key} onClick={() => setCity(key)} className={`${chipBase} ${city === key ? chipOn : chipOff}`}>{label}</button>
+              ))}
+            </div>
+            <p className="text-[10px] text-[var(--muted-foreground)] mt-0.5">{hindi ? "Cashless network आपके शहर में कितना deep है — यह बड़ा फर्क डालता है।" : "How many cashless hospitals exist in your city makes a huge difference."}</p>
+          </div>
+
+          {/* Budget */}
+          <div>
+            <label className="block text-xs font-semibold mb-1.5">{hindi ? "सालाना premium budget" : "Annual premium budget"}</label>
+            <div className="flex flex-wrap gap-2">
+              {[["under_15k", hindi ? "₹15k से कम" : "Under ₹15k"], ["15k_30k", "₹15-30k"], ["30k_60k", "₹30-60k"], ["60k+", "₹60k+"]].map(([key, label]) => (
+                <button key={key} onClick={() => setBudget(key)} className={`${chipBase} ${budget === key ? chipOn : chipOff}`}>{label}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* Income */}
+          <div>
+            <label className="block text-xs font-semibold mb-1.5">{hindi ? "सालाना आय" : "Annual income"}</label>
+            <div className="flex flex-wrap gap-2">
+              {[["under_5L", hindi ? "₹5L से कम" : "Under ₹5L"], ["5L-10L", "₹5-10L"], ["10L-25L", "₹10-25L"], ["25L+", "₹25L+"]].map(([key, label]) => (
+                <button key={key} onClick={() => setIncome(key)} className={`${chipBase} ${income === key ? chipOn : chipOff}`}>{label}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* Primary goal */}
+          <div>
+            <label className="block text-xs font-semibold mb-1.5">{hindi ? "आज यहाँ क्यों?" : "What brought you here today?"}</label>
+            <div className="flex flex-wrap gap-2">
+              {[["first_buy", hindi ? "पहली policy" : "First policy"], ["upgrade", hindi ? "Cover बढ़ानी है" : "Upgrade"], ["compare_specific", hindi ? "Specific policies compare करनी हैं" : "Compare specific policies"], ["tax_planning", "Tax 80D"]].map(([key, label]) => (
+                <button key={key} onClick={() => setPrimaryGoal(key)} className={`${chipBase} ${primaryGoal === key ? chipOn : chipOff}`}>{label}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="sticky bottom-0 mt-4 pb-2 bg-[var(--muted)] flex items-center justify-end gap-2">
+          <button onClick={onClose} className="text-xs text-[var(--muted-foreground)] hover:underline">{hindi ? "रद्द करें" : "Cancel"}</button>
+          <button
+            onClick={handleSave}
+            disabled={busy}
+            className={`text-sm font-semibold rounded-md px-4 py-2 ${busy ? "bg-[var(--muted)] text-[var(--muted-foreground)]" : "bg-[var(--primary)] text-white hover:opacity-90"}`}
+          >
+            {busy ? (hindi ? "Save हो रहा है…" : "Saving…") : (hindi ? "Save & Score करें" : "Save & Score")}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
