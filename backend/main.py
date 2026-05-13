@@ -516,6 +516,36 @@ class MarketplaceResponse(BaseModel):
     insurers_indexed: int
 
 
+@app.get("/api/scorecard/methodology")
+async def scorecard_methodology():
+    """Transparency endpoint — returns the 6-criterion blueprint with weights,
+    consumer rationale, fields driving each sub-score, and regulatory anchors.
+
+    Frontend renders this inside PolicyDetailModal so the user can see exactly
+    how the headline number is computed and which of the 48 HealthPolicy fields
+    feed into which criterion.
+    """
+    from backend.scorecard import METHODOLOGY_BLUEPRINT, WEIGHTS, SCORED_FIELDS
+    return {
+        "weights": WEIGHTS,
+        "scored_fields_count": len(SCORED_FIELDS),
+        "total_schema_fields": 48,
+        "criteria": METHODOLOGY_BLUEPRINT,
+        "grade_thresholds": {
+            "A": "≥85 — strong all-rounder",
+            "B": "70–84 — good with a few gaps",
+            "C": "55–69 — check trade-offs",
+            "D": "40–54 — material concerns",
+            "F": "<40 — significant gaps",
+        },
+        "scoring_approach": (
+            "Rules-based (deterministic), no LLM-in-the-loop. Each criterion produces a "
+            "0–100 sub-score from concrete schema fields; the overall score is the weighted "
+            "average. Weights adapt to user profile when age/parents/budget are known."
+        ),
+    }
+
+
 def _build_corpus_url_index() -> dict[str, str]:
     """Parse data/corpus_urls.md and return {policy_id: source_url}. Used to
     backfill source_pdf_url when the LLM extraction didn't capture it."""

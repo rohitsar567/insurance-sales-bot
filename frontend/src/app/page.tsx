@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   audioBlobURLFromBase64,
+  BACKEND_URL,
   Citation,
   ChatMessage,
   CompareResponse,
@@ -1360,6 +1361,94 @@ function PolicyCard({
   );
 }
 
+type MethodologyResponse = {
+  weights: Record<string, number>;
+  scored_fields_count: number;
+  total_schema_fields: number;
+  criteria: Array<{
+    name: string;
+    weight_pct: number;
+    consumer_question: string;
+    why_it_matters: string;
+    fields_driving_score: Array<{ field: string; rule: string }>;
+    anchors: string[];
+  }>;
+  grade_thresholds: Record<string, string>;
+  scoring_approach: string;
+};
+
+function MethodologyExpander() {
+  const [open, setOpen] = useState(false);
+  const [data, setData] = useState<MethodologyResponse | null>(null);
+  useEffect(() => {
+    if (open && !data) {
+      fetch(`${BACKEND_URL}/api/scorecard/methodology`)
+        .then((r) => r.json())
+        .then(setData)
+        .catch(() => setData(null));
+    }
+  }, [open, data]);
+  return (
+    <div className="mt-3 border border-[var(--border)] rounded-lg bg-[var(--card)]">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full text-left px-3 py-2 text-xs font-semibold flex items-center justify-between hover:bg-[var(--muted)]"
+      >
+        <span>How is this score computed? <span className="text-[var(--muted-foreground)] font-normal">(48 fields → 6 criteria, with weights)</span></span>
+        <span className="text-[var(--muted-foreground)]">{open ? "−" : "+"}</span>
+      </button>
+      {open && (
+        <div className="px-3 pb-3 space-y-3 text-xs border-t border-[var(--border)] pt-3">
+          {!data && <div className="text-[var(--muted-foreground)] py-2">Loading methodology…</div>}
+          {data && (
+            <>
+              <p className="text-[var(--muted-foreground)] leading-snug">
+                {data.scoring_approach} The blueprint below shows which fields drive each criterion and what regulatory or buyer-research source justifies the weight.
+              </p>
+              {data.criteria.map((c) => (
+                <div key={c.name} className="border border-[var(--border)] rounded-md p-2.5 bg-[var(--muted)]">
+                  <div className="flex items-baseline justify-between mb-1">
+                    <span className="text-xs font-bold">{c.name}</span>
+                    <span className="text-[10px] font-mono text-[var(--primary)]">{c.weight_pct}% of overall</span>
+                  </div>
+                  <div className="text-[11px] text-[var(--foreground)] italic mb-1">"{c.consumer_question}"</div>
+                  <div className="text-[11px] text-[var(--muted-foreground)] mb-2 leading-snug">{c.why_it_matters}</div>
+                  <details className="text-[11px]">
+                    <summary className="cursor-pointer text-[var(--primary)] hover:underline mb-1">
+                      {c.fields_driving_score.length} fields drive this score
+                    </summary>
+                    <ul className="mt-1 space-y-0.5 pl-2">
+                      {c.fields_driving_score.map((f, i) => (
+                        <li key={i} className="text-[10px]">
+                          <code className="text-[var(--primary)]">{f.field}</code>
+                          <span className="text-[var(--muted-foreground)]"> — {f.rule}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                  {c.anchors.length > 0 && (
+                    <details className="text-[11px] mt-1">
+                      <summary className="cursor-pointer text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
+                        Why this weight? {c.anchors.length} source{c.anchors.length === 1 ? "" : "s"}
+                      </summary>
+                      <ul className="mt-1 space-y-0.5 pl-2 text-[10px] text-[var(--muted-foreground)]">
+                        {c.anchors.map((a, i) => <li key={i}>· {a}</li>)}
+                      </ul>
+                    </details>
+                  )}
+                </div>
+              ))}
+              <div className="text-[10px] text-[var(--muted-foreground)] pt-1 border-t border-[var(--border)]">
+                Grade bands: A ≥85, B 70–84, C 55–69, D 40–54, F &lt;40. Overall = weighted average of the 6 sub-scores (weights re-tuned to buyer profile when known).
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div>
@@ -1586,6 +1675,7 @@ function PolicyDetailModal({ policy, onClose }: { policy: MarketplacePolicy; onC
                 </div>
               </div>
               <ScorecardCard sc={sc} />
+              <MethodologyExpander />
             </div>
           )}
 
