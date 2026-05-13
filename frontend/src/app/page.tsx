@@ -26,6 +26,7 @@ import {
   ScorecardResponse,
   uploadPolicy,
 } from "@/lib/api";
+import { translate, UILang, StringKey } from "@/lib/i18n";
 
 type DisplayMessage = ChatMessage & {
   id: string;
@@ -50,6 +51,9 @@ export default function Page() {
   const [recording, setRecording] = useState(false);
   const [returnAudio, setReturnAudio] = useState(true);
   const [ttsLang, setTtsLang] = useState<"en-IN" | "hi-IN">("en-IN");
+  // Visual UI language — same source as ttsLang so the toggle controls both
+  const uiLang: UILang = ttsLang === "hi-IN" ? "hi" : "en";
+  const t = (key: StringKey, vars?: Record<string, string | number>) => translate(uiLang, key, vars);
   const [health, setHealth] = useState<{ status: string; missing: string[] } | null>(null);
   const [coverage, setCoverage] = useState<CoverageResponse | null>(null);
   const [showCoverage, setShowCoverage] = useState(false);
@@ -279,8 +283,8 @@ export default function Page() {
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center font-bold text-sm">IA</div>
             <div>
-              <h1 className="font-semibold text-base sm:text-lg leading-tight">Health insurance, finally honest.</h1>
-              <p className="text-xs text-[var(--muted-foreground)]">Compare. Score. Buy what fits — not what pays the highest commission.</p>
+              <h1 className="font-semibold text-base sm:text-lg leading-tight">{t("header.title")}</h1>
+              <p className="text-xs text-[var(--muted-foreground)]">{t("header.subtitle")}</p>
             </div>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
@@ -299,19 +303,19 @@ export default function Page() {
                   <LibraryIcon />
                 </div>
                 <div className="px-3 py-2 text-left">
-                  <div className="text-[10px] uppercase tracking-wider opacity-85 leading-none">Interactive</div>
-                  <div className="text-xs font-bold leading-tight whitespace-nowrap">Policy Library</div>
+                  <div className="text-[10px] uppercase tracking-wider opacity-85 leading-none">{t("header.policy_library_kicker")}</div>
+                  <div className="text-xs font-bold leading-tight whitespace-nowrap">{t("header.policy_library")}</div>
                 </div>
                 {marketplace && (
                   <div className="flex flex-col items-center justify-center px-3 py-1 bg-white/15 border-l border-white/20">
                     <div className="text-sm font-bold leading-none">{marketplace.total}</div>
-                    <div className="text-[9px] uppercase tracking-wider opacity-90 leading-none mt-0.5">policies</div>
+                    <div className="text-[9px] uppercase tracking-wider opacity-90 leading-none mt-0.5">{t("header.policies_label")}</div>
                   </div>
                 )}
                 {marketplace && (
                   <div className="hidden sm:flex flex-col items-center justify-center px-3 py-1 bg-black/10">
                     <div className="text-sm font-bold leading-none">{marketplace.insurers_indexed}</div>
-                    <div className="text-[9px] uppercase tracking-wider opacity-90 leading-none mt-0.5">insurers</div>
+                    <div className="text-[9px] uppercase tracking-wider opacity-90 leading-none mt-0.5">{t("header.insurers_label")}</div>
                   </div>
                 )}
               </div>
@@ -321,7 +325,7 @@ export default function Page() {
               className={`group relative overflow-hidden rounded-xl transition-all shadow-sm hover:shadow-md ${
                 showPremium ? "ring-2 ring-[var(--primary)]" : ""
               }`}
-              title="Estimate annual premium"
+              title={t("header.annual_premium")}
             >
               <div className="absolute inset-0 bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500" />
               <div className="relative flex items-stretch text-white">
@@ -329,10 +333,18 @@ export default function Page() {
                   <RupeeIcon />
                 </div>
                 <div className="px-3 py-2 text-left">
-                  <div className="text-[10px] uppercase tracking-wider opacity-85 leading-none">Estimate</div>
-                  <div className="text-xs font-bold leading-tight whitespace-nowrap">Annual premium</div>
+                  <div className="text-[10px] uppercase tracking-wider opacity-85 leading-none">{t("header.annual_premium_kicker")}</div>
+                  <div className="text-xs font-bold leading-tight whitespace-nowrap">{t("header.annual_premium")}</div>
                 </div>
               </div>
+            </button>
+            {/* UI language toggle — flips visual chrome + voice TTS together */}
+            <button
+              onClick={() => setTtsLang(ttsLang === "en-IN" ? "hi-IN" : "en-IN")}
+              className="text-xs font-semibold px-2 py-1 rounded-md border border-[var(--border)] bg-[var(--card)] hover:border-[var(--primary)] hover:text-[var(--primary)]"
+              title={ttsLang === "en-IN" ? "Switch to Hindi" : "अंग्रेज़ी में बदलें"}
+            >
+              {ttsLang === "en-IN" ? "EN · हिं" : "हिं · EN"}
             </button>
           </div>
         </div>
@@ -349,7 +361,7 @@ export default function Page() {
 
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-4 sm:py-6 flex flex-col">
         {messages.length === 0 ? (
-          <EmptyState onSuggest={(q) => send(q)} coverage={coverage} />
+          <EmptyState onSuggest={(q) => send(q)} coverage={coverage} t={t} />
         ) : (
           <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-thin space-y-4 mb-4 pr-1">
             {messages.map((m) => <Message key={m.id} m={m} />)}
@@ -645,36 +657,37 @@ function HealthBadge({ health }: { health: { status: string; missing: string[] }
   );
 }
 
-function EmptyState({ onSuggest, coverage }: { onSuggest: (q: string) => void; coverage: CoverageResponse | null }) {
+function EmptyState({ onSuggest, coverage, t }: { onSuggest: (q: string) => void; coverage: CoverageResponse | null; t: (k: StringKey, v?: Record<string, string | number>) => string }) {
+  const suggested: StringKey[] = ["suggested.q1", "suggested.q2", "suggested.q3", "suggested.q4"];
   return (
     <div className="flex-1 flex flex-col items-center justify-center text-center px-4 py-6">
       <div className="w-16 h-16 rounded-2xl bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center text-2xl font-bold mb-5">IA</div>
-      <h2 className="text-xl sm:text-2xl font-semibold mb-2">Find a health policy that genuinely fits <em className="not-italic text-[var(--primary)]">you</em>.</h2>
+      <h2 className="text-xl sm:text-2xl font-semibold mb-2">{t("welcome.heading_a")}<em className="not-italic text-[var(--primary)]">{t("welcome.heading_b")}</em>{t("welcome.heading_c")}</h2>
       <p className="text-sm text-[var(--muted-foreground)] max-w-xl mb-4">
-        I'll ask 8–10 short questions, then show you 3 policies that match — with the exact reasons each ranked well. <strong className="text-[var(--foreground)]">No broker commissions in my ranking.</strong> Every fact you see has a source link.
+        {t("welcome.subtitle")} <strong className="text-[var(--foreground)]">{t("welcome.no_commissions")}</strong> {t("welcome.source_link")}
       </p>
       {coverage && (
         <p className="text-xs text-[var(--muted-foreground)] mb-5">
-          <span className="font-semibold text-[var(--foreground)]">{coverage.total_policies} policies</span> across <span className="font-semibold text-[var(--foreground)]">{coverage.total_insurers} insurers</span> indexed. Or upload your own policy PDF — I'll analyse it the same way.
+          {t("welcome.coverage_template", { policies: coverage.total_policies, insurers: coverage.total_insurers })}
         </p>
       )}
-      {/* Honest-disclosure trust contract — sits between welcome + suggested-Qs */}
       <div className="bg-[var(--accent)] border border-[var(--primary)] rounded-xl px-4 py-3 max-w-xl mb-6 text-left">
-        <div className="text-xs font-semibold text-[var(--primary)] mb-1">Tell me the truth — even on the hard things.</div>
-        <p className="text-xs text-[var(--muted-foreground)] leading-snug">
-          When I ask about your health later, please don't hide a condition to lower your premium. Insurers cross-check disclosed history against hospital records at claim time. The ₹500/month you save today turns into an ₹8 lakh denied claim later. Your honest answers stay in this chat — they're not shared with any insurer until you choose to buy.
-        </p>
+        <div className="text-xs font-semibold text-[var(--primary)] mb-1">{t("welcome.trust_title")}</div>
+        <p className="text-xs text-[var(--muted-foreground)] leading-snug">{t("welcome.trust_body")}</p>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-2xl">
-        {SUGGESTED_QUESTIONS.map((q, i) => (
-          <button
-            key={i}
-            onClick={() => onSuggest(q)}
-            className="text-left text-sm px-4 py-3 rounded-xl border border-[var(--border)] bg-[var(--card)] hover:border-[var(--primary)] transition"
-          >
-            <span className="opacity-50 text-xs">→</span> {q}
-          </button>
-        ))}
+        {suggested.map((key, i) => {
+          const q = t(key);
+          return (
+            <button
+              key={i}
+              onClick={() => onSuggest(q)}
+              className="text-left text-sm px-4 py-3 rounded-xl border border-[var(--border)] bg-[var(--card)] hover:border-[var(--primary)] transition"
+            >
+              <span className="opacity-50 text-xs">→</span> {q}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
