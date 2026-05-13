@@ -21,6 +21,10 @@ class Settings:
     VOYAGE_API_KEY: str = os.environ.get("VOYAGE_API_KEY", "")
     GROQ_API_KEY: str = os.environ.get("GROQ_API_KEY", "")
     OPENROUTER_API_KEY: str = os.environ.get("OPENROUTER_API_KEY", "")
+    # Cerebras — primary LLM judge / fallback brain when set. Same Llama-3.3-70B
+    # model as Groq but ~30 req/sec free-tier vs Groq's 30 req/min. Drops in
+    # via the get_judge_llm() chain in backend/providers/cerebras_llm.py.
+    CEREBRAS_API_KEY: str = os.environ.get("CEREBRAS_API_KEY", "")
 
     # Sarvam endpoints
     SARVAM_BASE_URL: str = "https://api.sarvam.ai"

@@ -210,18 +210,21 @@ async def handle_turn(
     )
     messages = [ChatMessage(role=m["role"], content=m["content"]) for m in messages_dict]
 
+    # Language-aware fallback chain: Hindi/Hinglish prefers Llama-70B via
+    # Groq (more Indic training), English prefers Cerebras Qwen-235B
+    # (larger, faster, no rate limit). Either falls back to the other.
+    from backend.providers.cerebras_llm import get_judge_llm
     try:
         llm_result = await pick.provider.chat(messages=messages, temperature=0.2, max_tokens=1500)
     except Exception as e:
-        # Fallback to Groq Llama if primary brain fails
-        fallback = GroqLLM()
+        fallback = get_judge_llm(language=language)
         llm_result = await fallback.chat(messages=messages, temperature=0.2, max_tokens=1500)
         pick = BrainPick(fallback, f"fallback-after-{type(e).__name__}")
 
-    # Detect truncated <think> reasoning — if so, retry with Groq (no reasoning tags)
+    # Detect truncated <think> reasoning — if so, retry with a non-reasoning model
     if "<think>" in llm_result.text.lower() and "</think>" not in llm_result.text.lower():
         try:
-            fallback = GroqLLM()
+            fallback = get_judge_llm(language=language)
             llm_result = await fallback.chat(messages=messages, temperature=0.2, max_tokens=1500)
             pick = BrainPick(fallback, "fallback-truncated-reasoning")
         except Exception:

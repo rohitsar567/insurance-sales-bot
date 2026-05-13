@@ -163,7 +163,16 @@ def _gate_numeric_grounding(reply: str, chunks: list[RetrievedChunk]) -> tuple[b
 
 _judge: Optional[GroqLLM] = None
 
-def _get_judge() -> GroqLLM:
+def _get_judge():
+    """LLM judge for Gate 4. Picks Cerebras Qwen-235B if available (faster, no
+    rate limit), Groq Llama-3.3-70B otherwise. Judge tasks are always
+    English (we're judging policy text), so the language-aware chain returns
+    Cerebras-first."""
+    from backend.providers.cerebras_llm import get_judge_llm
+    return get_judge_llm(language="en")
+
+
+def _get_judge_legacy() -> GroqLLM:
     global _judge
     if _judge is None:
         _judge = GroqLLM()

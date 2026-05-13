@@ -78,11 +78,15 @@ class EvalRecord:
     latency_ms: int = 0
 
 
-_judge: Optional[GroqLLM] = None
-def get_judge() -> GroqLLM:
+_judge = None
+def get_judge():
+    """Returns the LLM judge — Cerebras when CEREBRAS_API_KEY is set, else Groq.
+    Cerebras has ~30 req/sec free tier vs Groq's 30 req/min, so sweeps work
+    much better with Cerebras configured."""
     global _judge
     if _judge is None:
-        _judge = GroqLLM()
+        from backend.providers.cerebras_llm import get_judge_llm
+        _judge = get_judge_llm()
     return _judge
 
 
