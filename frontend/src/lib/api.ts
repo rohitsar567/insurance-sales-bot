@@ -279,17 +279,19 @@ export type ProfileCompletenessResponse = {
 };
 
 export async function getProfileCompleteness(session_id?: string): Promise<ProfileCompletenessResponse> {
-  const url = new URL(`${BACKEND_URL}/api/profile/completeness`);
-  if (session_id) url.searchParams.set("session_id", session_id);
-  const resp = await fetch(url.toString());
+  // Same relative-URL caveat as getCompare — build path as string
+  const qs = session_id ? `?session_id=${encodeURIComponent(session_id)}` : "";
+  const resp = await fetch(`${BACKEND_URL}/api/profile/completeness${qs}`);
   if (!resp.ok) throw new Error(`profile completeness failed: ${resp.status}`);
   return resp.json();
 }
 
 export async function getCompare(policy_ids: string[]): Promise<CompareResponse> {
-  const url = new URL(`${BACKEND_URL}/api/policies/compare`);
-  for (const id of policy_ids) url.searchParams.append("policy_ids", id);
-  const resp = await fetch(url.toString());
+  // Build query string manually — URL constructor requires an absolute URL,
+  // but in production BACKEND_URL is "" (same-origin) which makes the path
+  // relative. Constructing `new URL("/api/...")` throws "Invalid URL".
+  const params = policy_ids.map((id) => `policy_ids=${encodeURIComponent(id)}`).join("&");
+  const resp = await fetch(`${BACKEND_URL}/api/policies/compare?${params}`);
   if (!resp.ok) throw new Error(`compare failed: ${resp.status}`);
   return resp.json();
 }

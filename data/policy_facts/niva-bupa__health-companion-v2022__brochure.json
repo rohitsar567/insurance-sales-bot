@@ -1,0 +1,121 @@
+{
+  "policy_id": "niva-bupa__health-companion-v2022__brochure",
+  "policy_name": "Health Companion V2022",
+  "insurer_slug": "niva-bupa",
+  "uin_code": {
+    "value": "NBHHLIP24115V072324",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
+    "source_quote": "UIN: NBHHLIP24115V072324"
+  },
+  "min_entry_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
+    "source_quote": ""
+  },
+  "max_entry_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
+    "source_quote": ""
+  },
+  "max_renewal_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
+    "source_quote": ""
+  },
+  "pre_existing_disease_waiting_months": {
+    "value": 24,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
+    "source_quote": "pre-existing diseases | 24 months"
+  },
+  "initial_waiting_period_days": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
+    "source_quote": ""
+  },
+  "maternity_coverage": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
+    "source_quote": ""
+  },
+  "maternity_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
+    "source_quote": ""
+  },
+  "ayush_coverage": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
+    "source_quote": "AYUSH Treatment(2) Covered"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
+    "source_quote": "CASHLESS HASSLE FREE\nhospital"
+  },
+  "copayment_pct": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
+    "source_quote": ""
+  },
+  "no_claim_bonus_pct": {
+    "value": 100,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
+    "source_quote": "No Claim Bonus Year; maximum up to 100%"
+  },
+  "restoration_benefit": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
+    "source_quote": ""
+  },
+  "room_rent_capping": {
+    "value": "Room Rent)\nalcoholism, drug or substance abuse or any addictive\ncondition and co",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
+    "source_quote": "Room Rent)\nalcoholism, drug or substance abuse or any addictive\ncondition and consequences thereof. Refer to the\nDay Car"
+  },
+  "pre_hospitalization_days": {
+    "value": 60,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
+    "source_quote": "Pre Hospitalisation 60 Days"
+  },
+  "post_hospitalization_days": {
+    "value": 180,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
+    "source_quote": "Post Hospitalisation 180 Days"
+  },
+  "day_care_treatments_count": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
+    "source_quote": ""
+  },
+  "network_hospital_count": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
+    "source_quote": ""
+  },
+  "sum_insured_options": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
+    "source_quote": ""
+  },
+  "claim_settlement_ratio": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
+    "source_quote": ""
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
+    "source_quote": ""
+  },
+  "policy_type": {
+    "value": "hospital_cash",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
+    "source_quote": "classified as hospital_cash from PDF heuristics"
+  },
+  "_meta": {
+    "curated_at": "2026-05-14",
+    "primary_source_pdf": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
+    "completeness_pct": 41,
+    "notes": "Curated by tools/curate_remaining.py \u2014 pattern-based extraction from local PDF"
+  }
+}

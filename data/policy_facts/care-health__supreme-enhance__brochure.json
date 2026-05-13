@@ -1,0 +1,121 @@
+{
+  "policy_id": "care-health__supreme-enhance__brochure",
+  "policy_name": "Supreme Enhance",
+  "insurer_slug": "care-health",
+  "uin_code": {
+    "value": "CHIHLIP25036V012425",
+    "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
+    "source_quote": "UIN:CHIHLIP25036V012425"
+  },
+  "min_entry_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
+    "source_quote": ""
+  },
+  "max_entry_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
+    "source_quote": ""
+  },
+  "max_renewal_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
+    "source_quote": ""
+  },
+  "pre_existing_disease_waiting_months": {
+    "value": 36,
+    "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
+    "source_quote": "Pre-existing disease wait 36 Months"
+  },
+  "initial_waiting_period_days": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
+    "source_quote": ""
+  },
+  "maternity_coverage": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
+    "source_quote": ""
+  },
+  "maternity_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
+    "source_quote": ""
+  },
+  "ayush_coverage": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
+    "source_quote": ""
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
+    "source_quote": "Cashless Treatment"
+  },
+  "copayment_pct": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
+    "source_quote": ""
+  },
+  "no_claim_bonus_pct": {
+    "value": 100,
+    "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
+    "source_quote": "cumulative bonus upto 100%"
+  },
+  "restoration_benefit": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
+    "source_quote": ""
+  },
+  "room_rent_capping": {
+    "value": "Room Rent Most Economical Single Pvt Room Most Economical Single Pvt Room\nRoom R",
+    "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
+    "source_quote": "Room Rent Most Economical Single Pvt Room Most Economical Single Pvt Room\nRoom Rent Modification** No Limit"
+  },
+  "pre_hospitalization_days": {
+    "value": 60,
+    "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
+    "source_quote": "Pre-Hospitalization - We cover medical expenses like examination, tests, medication etc. incurred by you up to 60 days"
+  },
+  "post_hospitalization_days": {
+    "value": 90,
+    "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
+    "source_quote": "Post-Hospitalization Medical\n90 Days"
+  },
+  "day_care_treatments_count": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
+    "source_quote": ""
+  },
+  "network_hospital_count": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
+    "source_quote": ""
+  },
+  "sum_insured_options": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
+    "source_quote": "Sum Insured options ar"
+  },
+  "claim_settlement_ratio": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
+    "source_quote": ""
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
+    "source_quote": ""
+  },
+  "policy_type": {
+    "value": "group",
+    "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
+    "source_quote": "classified as group from PDF heuristics"
+  },
+  "_meta": {
+    "curated_at": "2026-05-14",
+    "primary_source_pdf": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
+    "completeness_pct": 36,
+    "notes": "Curated by tools/curate_remaining.py \u2014 pattern-based extraction from local PDF"
+  }
+}

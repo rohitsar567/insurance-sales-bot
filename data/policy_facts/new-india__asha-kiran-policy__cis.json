@@ -1,0 +1,121 @@
+{
+  "policy_id": "new-india__asha-kiran-policy__cis",
+  "policy_name": "Asha Kiran Policy",
+  "insurer_slug": "new-india",
+  "uin_code": {
+    "value": "NIAHLIP25047V042425",
+    "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
+    "source_quote": "UIN: NIAHLIP25047V042425"
+  },
+  "min_entry_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
+    "source_quote": ""
+  },
+  "max_entry_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
+    "source_quote": ""
+  },
+  "max_renewal_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
+    "source_quote": ""
+  },
+  "pre_existing_disease_waiting_months": {
+    "value": 36,
+    "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
+    "source_quote": "Pre-existing Diseases (Code- Excl01)-36 Months"
+  },
+  "initial_waiting_period_days": {
+    "value": 30,
+    "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
+    "source_quote": "Initial Waiting period: First 30 days"
+  },
+  "maternity_coverage": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
+    "source_quote": ""
+  },
+  "maternity_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
+    "source_quote": ""
+  },
+  "ayush_coverage": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
+    "source_quote": ""
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
+    "source_quote": "Cashless Service and Reimbursement-Available\nProcedure i. Network"
+  },
+  "copayment_pct": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
+    "source_quote": ""
+  },
+  "no_claim_bonus_pct": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
+    "source_quote": ""
+  },
+  "restoration_benefit": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
+    "source_quote": ""
+  },
+  "room_rent_capping": {
+    "value": "Room rent and ICU 3.1(a)\nrespectively & (b)\nLIMIT ON PAYMENT FOR CATARACT\nUp to",
+    "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
+    "source_quote": "Room rent and ICU 3.1(a)\nrespectively & (b)\nLIMIT ON PAYMENT FOR CATARACT\nUp to"
+  },
+  "pre_hospitalization_days": {
+    "value": 30,
+    "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
+    "source_quote": "Pre-hospitalisation - 30 days"
+  },
+  "post_hospitalization_days": {
+    "value": 60,
+    "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
+    "source_quote": "Post-Hospitalisation \u2013Treatment within 60 days"
+  },
+  "day_care_treatments_count": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
+    "source_quote": ""
+  },
+  "network_hospital_count": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
+    "source_quote": ""
+  },
+  "sum_insured_options": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
+    "source_quote": ""
+  },
+  "claim_settlement_ratio": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
+    "source_quote": ""
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
+    "source_quote": ""
+  },
+  "policy_type": {
+    "value": "hospital_cash",
+    "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
+    "source_quote": "classified as hospital_cash from PDF heuristics"
+  },
+  "_meta": {
+    "curated_at": "2026-05-14",
+    "primary_source_pdf": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
+    "completeness_pct": 36,
+    "notes": "Curated by tools/curate_remaining.py \u2014 pattern-based extraction from local PDF"
+  }
+}

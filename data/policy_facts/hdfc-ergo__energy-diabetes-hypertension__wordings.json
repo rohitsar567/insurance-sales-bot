@@ -1,0 +1,121 @@
+{
+  "policy_id": "hdfc-ergo__energy-diabetes-hypertension__wordings",
+  "policy_name": "Energy Diabetes Hypertension",
+  "insurer_slug": "hdfc-ergo",
+  "uin_code": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
+    "source_quote": ""
+  },
+  "min_entry_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
+    "source_quote": ""
+  },
+  "max_entry_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
+    "source_quote": ""
+  },
+  "max_renewal_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
+    "source_quote": ""
+  },
+  "pre_existing_disease_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
+    "source_quote": ""
+  },
+  "initial_waiting_period_days": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
+    "source_quote": ""
+  },
+  "maternity_coverage": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
+    "source_quote": ""
+  },
+  "maternity_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
+    "source_quote": ""
+  },
+  "ayush_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
+    "source_quote": "AYUSH treatment (i) undertaken under General or Local\nexpenses are not covered"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
+    "source_quote": "Cashless facility"
+  },
+  "copayment_pct": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
+    "source_quote": ""
+  },
+  "no_claim_bonus_pct": {
+    "value": 10,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
+    "source_quote": "Cumulative Bonus\nOn Renewal of this Policy with the Company without a break, a sum equal to 10%"
+  },
+  "restoration_benefit": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
+    "source_quote": ""
+  },
+  "room_rent_capping": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
+    "source_quote": ""
+  },
+  "pre_hospitalization_days": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
+    "source_quote": ""
+  },
+  "post_hospitalization_days": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
+    "source_quote": ""
+  },
+  "day_care_treatments_count": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
+    "source_quote": ""
+  },
+  "network_hospital_count": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
+    "source_quote": ""
+  },
+  "sum_insured_options": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
+    "source_quote": ""
+  },
+  "claim_settlement_ratio": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
+    "source_quote": ""
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
+    "source_quote": ""
+  },
+  "policy_type": {
+    "value": "critical_illness",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
+    "source_quote": "classified as critical_illness from PDF heuristics"
+  },
+  "_meta": {
+    "curated_at": "2026-05-14",
+    "primary_source_pdf": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
+    "completeness_pct": 18,
+    "notes": "Curated by tools/curate_remaining.py \u2014 pattern-based extraction from local PDF"
+  }
+}
