@@ -31,6 +31,7 @@ import pdfplumber
 
 from backend.config import settings
 from backend.providers.base import ChatMessage
+from backend.providers.groq_llm import GroqLLM
 from backend.providers.openrouter_llm import OpenRouterLLM
 from backend.providers.sarvam_llm import SarvamLLM
 from rag.ingest import policy_id_for
@@ -75,10 +76,16 @@ EXTRACTION DIRECTIVES (read carefully — coverage is more important than cautio
 
 
 def build_extract_prompt(policy_text: str, schema_excerpt: str, policy_id: str) -> str:
-    # Truncate to a sane size for the LLM
-    MAX_CHARS = 60_000
+    # Sarvam-M context window rejects ~60k char prompts (HTTP 400). Groq
+    # llama-3.3-70b handles up to ~128k tokens but rate-limits aggressively
+    # so we keep prompts tight. 25k chars ≈ 6k tokens covers the schedule +
+    # key-terms front-matter where 90% of structured fields live.
+    MAX_CHARS = 25_000
     if len(policy_text) > MAX_CHARS:
-        policy_text = policy_text[:MAX_CHARS] + "\n\n[...truncated for length...]"
+        # Front-bias: schedules, definitions, waiting periods, UIN, sum-insured
+        # tables all live in the first ~25k chars. Truncate the back (which is
+        # usually exclusions + boilerplate + grievance procedures).
+        policy_text = policy_text[:MAX_CHARS] + "\n\n[...truncated for length — extract from above only...]"
     return f"""POLICY DOCUMENT (policy_id = {policy_id}):
 '''
 {policy_text}
@@ -288,7 +295,12 @@ async def main():
         pdfs = pdfs[: args.limit]
 
     primary = SarvamLLM()
-    fallback = OpenRouterLLM()
+    # OpenRouter free credits exhausted (HTTP 402). Groq has retry+backoff
+    # baked in (1.5s/3s/6s/12s) and a ~30 req/min budget that's adequate for
+    # the long-running extraction sweep. Llama-3.3-70b also handles longer
+    # contexts than Sarvam-M when policy PDFs run long.
+    fallback = GroqLLM()
+    _ = OpenRouterLLM  # noqa: F841 — kept importable for future paid use
 
     print(f"Extracting {len(pdfs)} policies. Primary=Sarvam-M, Fallback=DeepSeek-V3.\n")
     t0 = time.time()

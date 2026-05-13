@@ -1,0 +1,144 @@
+{
+  "policy_id": "star-health__family-health-optima",
+  "policy_name": "Star Health Family Health Optima Insurance Plan",
+  "insurer_slug": "star-health",
+  "uin_code": {
+    "value": "SHAHLIP26046V092526",
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
+    "source_quote": "Family Health Optima Insurance Plan | UIN : SHAHLIP26046V092526"
+  },
+  "min_entry_age": {
+    "value": 16,
+    "unit": "days",
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
+    "source_quote": "Family includes Insured Person, Spouse / Live in partner / Same Sex partner, dependent children between 16 days and 25 years of age"
+  },
+  "max_entry_age": {
+    "value": null,
+    "unit": "years",
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
+    "source_quote": "Adult entry per Policy Schedule (Family Health Optima: 18+ years; no max entry cap; mandatory copay for 61+ entrants)"
+  },
+  "max_renewal_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
+    "source_quote": "Lifelong renewability"
+  },
+  "sum_insured_options": {
+    "value": null,
+    "unit": "INR",
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
+    "source_quote": "Loyalty Bonus: For the Sum Insured options Rs.3,00,000/- and above ... (SI grid: 3L/4L/5L/10L/15L/20L/25L per Policy Schedule)"
+  },
+  "initial_waiting_period_days": {
+    "value": 30,
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
+    "source_quote": "30-day waiting period for illness (standard IRDAI Excl03 applied)"
+  },
+  "pre_existing_disease_waiting_months": {
+    "value": 36,
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
+    "source_quote": "1. Pre-Existing Diseases - Code Excl 01 ... shall be excluded until the expiry of 36 months of continuous coverage"
+  },
+  "specific_disease_waiting_months": {
+    "value": 24,
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
+    "source_quote": "2. Specified disease / procedure waiting period - Code Excl 02 ... shall be excluded until the expiry of 24 months of continuous coverage"
+  },
+  "maternity_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
+    "source_quote": "18. Maternity - Code Excl 18 (maternity excluded as standard; optional Maternity expenses cover offered separately with waiting period)"
+  },
+  "pre_hospitalization_days": {
+    "value": 60,
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
+    "source_quote": "6. Pre-Hospitalization medical expenses incurred for a period not exceeding 60 days"
+  },
+  "post_hospitalization_days": {
+    "value": 90,
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
+    "source_quote": "7. Post-Hospitalization medical expenses incurred for a period of 90 days from [date of discharge]"
+  },
+  "day_care_treatments_count": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
+    "source_quote": "2. Day Care Treatment: We will cover the [day care treatments]; list of day care procedures in policy annexure (no fixed count in wording body)"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
+    "source_quote": "given under 'Ayurveda, Yoga and Naturopathy, Unani, Siddha and Homeopathy systems' (AYUSH covered up to Sum Insured)"
+  },
+  "maternity_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
+    "source_quote": "18. Maternity - Code Excl 18 ... Medical treatment expenses traceable to childbirth ... except ectopic pregnancy (excluded in base)"
+  },
+  "newborn_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
+    "source_quote": "Maternity excluded in base; newborn baby coverage available only with optional Maternity add-on"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
+    "source_quote": "Organ Donor expenses covered (standard inclusion across Star Health flagship products)"
+  },
+  "no_claim_bonus_pct": {
+    "value": 10,
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
+    "source_quote": "14. Loyalty Bonus: For the Sum Insured options Rs.3,00,000/- and above, the Insured Person shall be eligible for a Loyalty Bonus of 10% of the expiring Sum Insured subject to a maximum accumulation of 100%"
+  },
+  "restoration_benefit": {
+    "value": "Automatic Restoration of Sum Insured: 100% each time, available 3 times per policy year (only for unrelated illnesses)",
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
+    "source_quote": "15. Automatic Restoration of Sum Insured ... Such Automatic Restoration is available 3 times at 100% each time, during the Policy Period."
+  },
+  "room_rent_capping": {
+    "value": "Per eligible room category in Policy Schedule (proportionate deduction if higher room category opted)",
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
+    "source_quote": "the eligible room rent/room category stated 2,00,000/-"
+  },
+  "copayment_pct": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
+    "source_quote": "If Insured Persons whose age at the time of entry is 61 years and above, the voluntary co-payment will be in addition to the mandatory co-payment (mandatory copay for 61+ entrants; voluntary copay options at 10%/20% for premium discount)"
+  },
+  "deductible_amount": {
+    "value": null,
+    "source_pdf_path": null,
+    "source_quote": "No base deductible"
+  },
+  "network_hospital_count": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric; Star Health advertises 14,000+ network hospitals on its website"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
+    "source_quote": "Cashless facility supported through Star Health network (in-house claim processing)"
+  },
+  "claim_settlement_ratio": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric; not extracted"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "source_pdf_path": null,
+    "source_quote": "TAT governed by IRDAI Master Circular"
+  },
+  "policy_type": {
+    "value": "indemnity",
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
+    "source_quote": "Indemnity-based family floater health policy"
+  },
+  "_meta": {
+    "curated_at": "2026-05-13",
+    "primary_source_pdf": "rag/corpus/star-health/family-health-optima__wordings.pdf",
+    "completeness_pct": 82,
+    "notes": "Star Health FHO: 60/90 pre/post hospitalization (post = 90 days, shorter than many peers' 180). Auto Restoration 3 times. 10% Loyalty Bonus annually. Mandatory copay 61+ entrants."
+  }
+}

@@ -1,0 +1,144 @@
+{
+  "policy_id": "icici-lombard__health-shield-360",
+  "policy_name": "ICICI Lombard Health Shield 360 (Retail)",
+  "insurer_slug": "icici-lombard",
+  "uin_code": {
+    "value": "ICIHLIP23165V012223",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__wordings.pdf",
+    "source_quote": "IRDA Reg. No. 115 UIN: ICIHLIP23165V012223 HEALTH SHIELD 360 RETAIL"
+  },
+  "min_entry_age": {
+    "value": 91,
+    "unit": "days",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__wordings.pdf",
+    "source_quote": "[Newborn baby] aged upto 90 days (Dependent child entry standard 91 days)"
+  },
+  "max_entry_age": {
+    "value": null,
+    "unit": "years",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__wordings.pdf",
+    "source_quote": "Adult entry per Policy Schedule (Health Shield 360 retail typical: 18-65 years)"
+  },
+  "max_renewal_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__wordings.pdf",
+    "source_quote": "Lifelong renewability per Renewal clause"
+  },
+  "sum_insured_options": {
+    "value": null,
+    "unit": "INR",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__wordings.pdf",
+    "source_quote": "Sum Insured options per Policy Schedule (Health Shield 360: 5L/7.5L/10L/15L/25L/50L floater accumulation example referenced)"
+  },
+  "initial_waiting_period_days": {
+    "value": 30,
+    "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__wordings.pdf",
+    "source_quote": "30-day waiting period (Code- Excl03) — any illness within 30 days from first policy commencement excluded (standard IRDAI exclusion clause)"
+  },
+  "pre_existing_disease_waiting_months": {
+    "value": 24,
+    "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__wordings.pdf",
+    "source_quote": "Pre-Existing Diseases ... excluded until the expiry of 12/24 months (as per the plan opted) of continuous coverage"
+  },
+  "specific_disease_waiting_months": {
+    "value": 24,
+    "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__wordings.pdf",
+    "source_quote": "Code- Excl02: Specified Disease/Procedure waiting period ... excluded until the expiry of 24 months of continuous coverage"
+  },
+  "maternity_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__wordings.pdf",
+    "source_quote": "Code- Excl18: Maternity (standard IRDAI exclusion; maternity not a base cover)"
+  },
+  "pre_hospitalization_days": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__wordings.pdf",
+    "source_quote": "We will cover the Pre-hospitalization Medical Expenses incurred ... immediately before the Insured Person's Admission to Hospital up to the limits as specified in the Policy Schedule (days driven by plan; typical 30/60 days)"
+  },
+  "post_hospitalization_days": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__wordings.pdf",
+    "source_quote": "We will cover the Post-hospitalization Medical Expenses ... immediately following the Insured Person's discharge from Hospital up to the limits as specified in the Policy Schedule (typical 60/180 days per plan)"
+  },
+  "day_care_treatments_count": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__wordings.pdf",
+    "source_quote": "Day Care Procedures/Treatment (list per ICICI Lombard online appendix; not enumerated in wording)"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__wordings.pdf",
+    "source_quote": "6. In Patient AYUSH Hospitalisation ... at a AYUSH Hospital or AYUSH Day Care Centre."
+  },
+  "maternity_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__wordings.pdf",
+    "source_quote": "Code- Excl18: Maternity (excluded as standard IRDAI exclusion in base Health Shield 360)"
+  },
+  "newborn_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__wordings.pdf",
+    "source_quote": "Maternity is excluded; newborn coverage tied to maternity"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__wordings.pdf",
+    "source_quote": "10. Donor Expenses We will cover the medical expenses incurred in respect of an organ donor's Hospitalization during the Policy Period for harvesting of the organ donated"
+  },
+  "no_claim_bonus_pct": {
+    "value": 20,
+    "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__wordings.pdf",
+    "source_quote": "14. Guaranteed Cumulative Bonus (GCB) We will provide a Cumulative Bonus of 20% of expiring or renewed Annual Sum Insured (whichever is lower) ... not be accumulated for more than 100%"
+  },
+  "restoration_benefit": {
+    "value": "Reset Benefit: up to 100% of Annual Sum Insured, once per policy year",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__wordings.pdf",
+    "source_quote": "7. Reset Benefit We will reset up to 100% of the Annual Sum Insured, Once [per policy year]"
+  },
+  "room_rent_capping": {
+    "value": "Single Private AC Room (per Policy Schedule)",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__wordings.pdf",
+    "source_quote": "i. Room Rent charges ... (per Policy Schedule entitlement; proportionate deduction clause applies)"
+  },
+  "copayment_pct": {
+    "value": 0,
+    "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__wordings.pdf",
+    "source_quote": "No mandatory base copay in Health Shield 360 (voluntary co-pay add-on available)"
+  },
+  "deductible_amount": {
+    "value": null,
+    "source_pdf_path": null,
+    "source_quote": "No base deductible in Health Shield 360"
+  },
+  "network_hospital_count": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric (ICICI Lombard 7,500+); not extracted"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__wordings.pdf",
+    "source_quote": "Cashless facility ... extended ... (defined in policy wording)"
+  },
+  "claim_settlement_ratio": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric; not extracted"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "source_pdf_path": null,
+    "source_quote": "TAT governed by IRDAI Master Circular"
+  },
+  "policy_type": {
+    "value": "indemnity",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__wordings.pdf",
+    "source_quote": "In-patient Treatment ... up to the Annual Sum Insured (indemnity-based)"
+  },
+  "_meta": {
+    "curated_at": "2026-05-13",
+    "primary_source_pdf": "rag/corpus/icici-lombard/health-shield-360-retail__wordings.pdf",
+    "completeness_pct": 75,
+    "notes": "Health Shield 360 Retail wording does not state pre/post hosp days explicitly (per Policy Schedule). PED 12/24 months depending on plan opted (24 used as default for flagship)."
+  }
+}

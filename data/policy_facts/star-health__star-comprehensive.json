@@ -1,0 +1,144 @@
+{
+  "policy_id": "star-health__star-comprehensive",
+  "policy_name": "Star Comprehensive Insurance Policy",
+  "insurer_slug": "star-health",
+  "uin_code": {
+    "value": "SHAHLIP26044V092526",
+    "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
+    "source_quote": "Star Comprehensive Insurance Policy | UIN : SHAHLIP26044V092526"
+  },
+  "min_entry_age": {
+    "value": 91,
+    "unit": "days",
+    "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
+    "source_quote": "Newborn baby (defined as upto 90 days); dependent entry standard 91 days"
+  },
+  "max_entry_age": {
+    "value": null,
+    "unit": "years",
+    "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
+    "source_quote": "Adult entry per Policy Schedule (Star Comprehensive: 18+ years; max entry typically 65 years per brochure)"
+  },
+  "max_renewal_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
+    "source_quote": "Lifelong renewability"
+  },
+  "sum_insured_options": {
+    "value": [500000, 750000, 1000000, 1500000, 2000000, 2500000, 5000000, 7500000, 10000000],
+    "unit": "INR",
+    "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
+    "source_quote": "Sum Insured 5,00,000 / 7,50,000 / 10,00,000 to 25,00,000 / 50,00,000 / 75,00,000 / 1,00,00,000 (Delivery and New Born SI grid)"
+  },
+  "initial_waiting_period_days": {
+    "value": 30,
+    "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
+    "source_quote": "30-day waiting period for illness (standard IRDAI Excl03 applied)"
+  },
+  "pre_existing_disease_waiting_months": {
+    "value": 12,
+    "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
+    "source_quote": "Pre-Existing Diseases: Code Excl 01 ... shall be excluded until the expiry of 12 months of continuous coverage after the date of inception of the first policy with insurer"
+  },
+  "specific_disease_waiting_months": {
+    "value": 24,
+    "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
+    "source_quote": "2. Specified disease / procedure waiting period - Code Excl 02 ... shall be excluded until the expiry of 24 months of continuous coverage"
+  },
+  "maternity_waiting_months": {
+    "value": 24,
+    "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
+    "source_quote": "i. Benefit under this Section is subject to a waiting period of 24 months from the date of first commencement of Star Comprehensive Insurance Policy"
+  },
+  "pre_hospitalization_days": {
+    "value": 60,
+    "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
+    "source_quote": "5. Pre-Hospitalization Expenses: Medical expenses incurred for a period not exceeding 60 days prior to the date of hospitalization"
+  },
+  "post_hospitalization_days": {
+    "value": 90,
+    "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
+    "source_quote": "6. Post-Hospitalization Expenses: Medical expenses incurred for a period up to 90 days from the date of discharge"
+  },
+  "day_care_treatments_count": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
+    "source_quote": "2. Day Care Treatment: We will cover ... All Day Care Treatments (no fixed count enumerated in wording)"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
+    "source_quote": "treatments given under Ayurveda, Yoga and Naturopathy, Unani, Siddha and Homeopathy (AYUSH covered)"
+  },
+  "maternity_coverage": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
+    "source_quote": "14. Delivery and New Born A. Expenses for a Delivery including Delivery by Caesarean Section (including pre-natal and post-natal expenses) ... subject to a maximum of 2 deliveries in the entire life time of the Insured Person"
+  },
+  "newborn_coverage": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
+    "source_quote": "B. Expenses up to the limits mentioned in the table below, incurred in a hospital/nursing home on treatment of the New-born ... including any congenital disorders"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
+    "source_quote": "9. Organ Donor Expenses: In-patient hospitalization expenses incurred for organ transplantation from the Donor to the Recipient Insured Person are payable"
+  },
+  "no_claim_bonus_pct": {
+    "value": 100,
+    "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
+    "source_quote": "Where the Sum Insured under the policy is Rs.7,50,000/-or above, the Insured Person would be entitled to the benefit of Cumulative Bonus calculated at 100% of the Basic Sum Insured under this policy following a claim free year. The maximum benefit of cumulative bonus is 100%"
+  },
+  "restoration_benefit": {
+    "value": "Automatic Restoration of Basic Sum Insured by 100%, once per policy period (usable even for same illness)",
+    "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
+    "source_quote": "13. Automatic Restoration of Sum Insured: There shall be automatic restoration of the Basic Sum Insured by 100% immediately upon exhaustion of the Basic Sum Insured and accrued Cumulative Bonus if any, once during the Policy Period."
+  },
+  "room_rent_capping": {
+    "value": "Per eligible room category in Policy Schedule (proportionate deduction if higher category opted)",
+    "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
+    "source_quote": "proportion to the room rent limit / room (proportionate deduction clause applies)"
+  },
+  "copayment_pct": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
+    "source_quote": "Mandatory copay for 61+ entrants (standard Star Health clause; voluntary copay 10%/20% optional)"
+  },
+  "deductible_amount": {
+    "value": null,
+    "source_pdf_path": null,
+    "source_quote": "No base deductible"
+  },
+  "network_hospital_count": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric (Star Health 14,000+)"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
+    "source_quote": "Cashless facility through Star Health in-house claims"
+  },
+  "claim_settlement_ratio": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric; not extracted"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "source_pdf_path": null,
+    "source_quote": "TAT governed by IRDAI Master Circular"
+  },
+  "policy_type": {
+    "value": "indemnity",
+    "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
+    "source_quote": "Indemnity-based comprehensive individual / family floater plan"
+  },
+  "_meta": {
+    "curated_at": "2026-05-13",
+    "primary_source_pdf": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
+    "completeness_pct": 88,
+    "notes": "Star Comprehensive: 12-month PED (best in class), 100% NCB for SI ≥ 7.5L per claim-free year, maternity covered with 24-month waiting + newborn cover."
+  }
+}

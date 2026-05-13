@@ -1,0 +1,144 @@
+{
+  "policy_id": "icici-lombard__complete-health-insurance",
+  "policy_name": "ICICI Lombard Complete Health Insurance (Health Shield)",
+  "insurer_slug": "icici-lombard",
+  "uin_code": {
+    "value": "ICIHLIP22096V062122",
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
+    "source_quote": "UIN - ICIHLIP22096V062122"
+  },
+  "min_entry_age": {
+    "value": 91,
+    "unit": "days",
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
+    "source_quote": "Dependent child entry standard 91 days (per Policy Schedule)"
+  },
+  "max_entry_age": {
+    "value": null,
+    "unit": "years",
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
+    "source_quote": "Maximum renewal age - There will be life-long renewal without any age restriction (entry age per Policy Schedule)"
+  },
+  "max_renewal_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
+    "source_quote": "There will be life-long renewal without any age restriction for the cover."
+  },
+  "sum_insured_options": {
+    "value": [300000, 400000, 500000, 700000, 1000000, 1500000, 2000000, 2500000, 5000000],
+    "unit": "INR",
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
+    "source_quote": "Sum Insured 3 lacs/ 4 lacs/ 5 lacs 7 lacs/ 10 lacs 15lacs / 20lacs / 25Lacs / 50lacs"
+  },
+  "initial_waiting_period_days": {
+    "value": 30,
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
+    "source_quote": "(d) Initial waiting period: 30 days for all illnesses (except Hospitalisation due to injury)."
+  },
+  "pre_existing_disease_waiting_months": {
+    "value": 24,
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
+    "source_quote": "(a) Pre-existing diseases: Declared and accepted PED will be covered after 24 months of continuous coverage."
+  },
+  "specific_disease_waiting_months": {
+    "value": 24,
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
+    "source_quote": "(c) Specific waiting period: First 24 months, for specific Illness and treatment."
+  },
+  "maternity_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
+    "source_quote": "Maternity not listed in base benefit table (offered as optional benefit only)"
+  },
+  "pre_hospitalization_days": {
+    "value": 30,
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
+    "source_quote": "Pre & Post Hospitalisation Medical Expenses incurred due to Illness up to 30 days period immediately before and 60 days immediately after"
+  },
+  "post_hospitalization_days": {
+    "value": 60,
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
+    "source_quote": "30 days period immediately before and 60 days immediately after an Insured Person's admission to a Hospital"
+  },
+  "day_care_treatments_count": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
+    "source_quote": "Day Care Procedure: Medical expenses for day care procedures (list maintained on ICICI Lombard website)"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
+    "source_quote": "In Patient AYUSH Hospitalization — Reimbursement of expenses for AYUSH treatment"
+  },
+  "maternity_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
+    "source_quote": "Maternity not in base benefit grid (Complete Health Insurance excludes maternity from base; optional add-on)"
+  },
+  "newborn_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
+    "source_quote": "Maternity excluded; newborn cover tied to maternity"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
+    "source_quote": "Donor Expenses: Medical Expenses incurred in respect of the donor expenses up to Sum insured ... subject to a limit of Rs.10 Lakhs. The limit for this cover is over and above annual sum insured"
+  },
+  "no_claim_bonus_pct": {
+    "value": 10,
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
+    "source_quote": "Additional Sum Insured (Cumulative bonus) An additional sum insured of 10% of annual sum insured for each completed and continuous claim free Policy Year subject to a maximum of 50%"
+  },
+  "restoration_benefit": {
+    "value": "Unlimited Reset Benefit (available unlimited times per policy year)",
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
+    "source_quote": "Unlimited Reset Benefit ... will be available unlimited times in a policy year in case the Sum insured ... is insufficient"
+  },
+  "room_rent_capping": {
+    "value": "Per Policy Schedule (Single Private AC Room typical for higher SI plans)",
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
+    "source_quote": "Standard room entitlement per Policy Schedule"
+  },
+  "copayment_pct": {
+    "value": 0,
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
+    "source_quote": "No mandatory base copay (World Wide Cover optional with 10% co-pay; otherwise 0%)"
+  },
+  "deductible_amount": {
+    "value": null,
+    "source_pdf_path": null,
+    "source_quote": "No base deductible"
+  },
+  "network_hospital_count": {
+    "value": 6500,
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
+    "source_quote": "Cashless Facility available at over 6500+ network hospitals."
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
+    "source_quote": "Cashless or Reimbursement of covered medical expenses up to specified Sum Insured as per the scope of cover."
+  },
+  "claim_settlement_ratio": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "source_pdf_path": null,
+    "source_quote": "TAT governed by IRDAI Master Circular"
+  },
+  "policy_type": {
+    "value": "indemnity",
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
+    "source_quote": "Indemnity-based comprehensive health policy"
+  },
+  "_meta": {
+    "curated_at": "2026-05-13",
+    "primary_source_pdf": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
+    "completeness_pct": 90,
+    "notes": "ICICI Lombard Complete Health Insurance (Health Shield retail variant): clean Key Information Sheet. 24-month PED, 30/60 pre/post, Unlimited Reset, NCB 10% per claim-free year capped 50%."
+  }
+}

@@ -457,6 +457,62 @@ class ScorecardSubScore(BaseModel):
     signals: list[str]
 
 
+class ProfileCompletenessResponse(BaseModel):
+    completeness: float                  # 0.0 - 1.0
+    completeness_pct: int                # 0 - 100
+    fields_collected: list[str]
+    fields_missing: list[str]
+    is_personalized: bool                # True if completeness >= threshold
+    gate_threshold: float = 0.6
+    next_question_hint: Optional[str] = None
+
+
+@app.get("/api/profile/completeness", response_model=ProfileCompletenessResponse)
+async def profile_completeness_view(session_id: Optional[str] = None):
+    """Returns how much we know about the user. Frontend uses this to gate the
+    personalized scorecard render — until completeness >= 0.6 we show the
+    insurer-level metrics only, NOT the per-user grade.
+    """
+    from backend.scorecard import profile_completeness as _completeness
+    from backend.session_state import get_session
+    from backend.needs_finder import next_question
+
+    if not session_id:
+        return ProfileCompletenessResponse(
+            completeness=0.0, completeness_pct=0,
+            fields_collected=[], fields_missing=[],
+            is_personalized=False,
+            next_question_hint="Start the chat and tell me about your situation",
+        )
+    sess = get_session(session_id)
+    p = sess.profile
+    profile_dict = {
+        "age": p.age, "dependents": p.dependents, "income_band": p.income_band,
+        "existing_cover_inr": p.existing_cover_inr, "primary_goal": p.primary_goal,
+        "location_tier": p.location_tier, "parents_to_insure": p.parents_to_insure,
+        "parents_age_max": p.parents_age_max, "parents_has_ped": p.parents_has_ped,
+        "health_conditions": p.health_conditions, "budget_band": p.budget_band,
+    }
+    c = _completeness(profile_dict)
+    collected = [k for k, v in profile_dict.items() if v not in (None, "", [], False)]
+    missing = [k for k, v in profile_dict.items() if v in (None, "", [])]
+    hint = None
+    try:
+        nq = next_question(p)
+        if nq:
+            hint = nq.prompt_en
+    except Exception:
+        pass
+    return ProfileCompletenessResponse(
+        completeness=c,
+        completeness_pct=int(c * 100),
+        fields_collected=collected,
+        fields_missing=missing,
+        is_personalized=c >= 0.6,
+        next_question_hint=hint,
+    )
+
+
 class ScorecardResponse(BaseModel):
     policy_id: str
     policy_name: str
@@ -581,6 +637,62 @@ def _build_corpus_url_index() -> dict[str, str]:
     return out
 
 
+def _load_curated_facts() -> dict[str, dict]:
+    """Load the data/policy_facts/*.json curated layer. Each file has a
+    `{field: {value, source_pdf_path, source_quote}}` shape. We unwrap to a
+    flat `{field: value}` dict for the marketplace endpoint, preserving the
+    provenance in a `_facts_provenance` field for transparency.
+    """
+    import json as _json
+    facts: dict[str, dict] = {}
+    facts_dir = settings.CORPUS_DIR.parent.parent / "data" / "policy_facts"
+    if not facts_dir.exists():
+        return facts
+    for f in facts_dir.glob("*.json"):
+        try:
+            d = _json.loads(f.read_text())
+        except Exception:
+            continue
+        policy_id = d.get("policy_id") or f.stem
+        flat: dict = {}
+        provenance: dict = {}
+        for k, v in d.items():
+            if k.startswith("_") or k in ("policy_id", "policy_name", "insurer_slug"):
+                flat[k] = v
+                continue
+            if isinstance(v, dict) and "value" in v:
+                flat[k] = v["value"]
+                if v.get("source_pdf_path") or v.get("source_quote") or v.get("source_url"):
+                    provenance[k] = {
+                        "source_pdf_path": v.get("source_pdf_path"),
+                        "source_quote": v.get("source_quote"),
+                        "source_url": v.get("source_url"),
+                    }
+            else:
+                flat[k] = v
+        flat["_facts_provenance"] = provenance
+        # Try a couple of policy_id permutations to maximise lookup hit rate
+        facts[policy_id] = flat
+        # Some extracted JSONs use `_wordings` suffix; the curated files don't
+        facts.setdefault(f"{policy_id}__wordings", flat)
+        facts.setdefault(f"{policy_id}__brochure", flat)
+        facts.setdefault(f"{policy_id}__cis", flat)
+    return facts
+
+
+def _merge_curated(extracted: dict, curated: dict | None) -> dict:
+    """Curated facts override LLM extraction for every field they populate.
+    LLM extraction fills the long tail. Provenance pointers survive in the
+    merged dict so the UI can show source quotes per field."""
+    if not curated:
+        return extracted
+    merged = dict(extracted)
+    for k, v in curated.items():
+        if v is not None and v != "" and v != []:
+            merged[k] = v
+    return merged
+
+
 @app.get("/api/policies/all", response_model=MarketplaceResponse)
 async def policies_all():
     """The marketplace data feed — every extracted policy + scorecard + filterable fields."""
@@ -588,6 +700,7 @@ async def policies_all():
     from backend.scorecard import build_scorecard
 
     corpus_url_index = _build_corpus_url_index()
+    curated_facts = _load_curated_facts()
 
     insurer_meta = {
         "aditya-birla":  ("Aditya Birla Health Insurance", "https://www.adityabirlacapital.com/healthinsurance"),
@@ -607,12 +720,23 @@ async def policies_all():
         if isinstance(v, bool): return v
         return None
 
+    # Build a unified policy set: every extracted JSON + every curated facts
+    # JSON that doesn't have an extracted counterpart yet. This way, even
+    # policies whose LLM extraction failed still surface in the marketplace
+    # with their human-curated data.
+    seen_policy_ids: set[str] = set()
     out = []
+
+    # Pass 1: existing extracted policies (merged with curated overrides)
     for fp in sorted(settings.EXTRACTED_DIR.glob("*.json")):
         try:
             data = _json.loads(fp.read_text())
         except Exception:
             continue
+        policy_id_local = data.get("policy_id", fp.stem)
+        curated_for_this = curated_facts.get(policy_id_local) or curated_facts.get(fp.stem)
+        data = _merge_curated(data, curated_for_this)
+        seen_policy_ids.add(policy_id_local)
         slug = data.get("insurer_slug", "")
         name, home = insurer_meta.get(slug, (slug, ""))
         # Get insurer reviews if available for the scorecard
@@ -669,6 +793,74 @@ async def policies_all():
         except Exception as e:
             # One malformed extraction should not kill the whole feed
             print(f"[marketplace] skipping {fp.name}: {type(e).__name__}: {str(e)[:120]}")
+            continue
+
+    # Pass 2: curated policies that don't yet have an LLM extraction.
+    # These come straight from data/policy_facts/*.json — fully human-curated
+    # with verbatim source quotes per field.
+    for curated_policy_id, data in curated_facts.items():
+        # Skip permutation keys (we set __wordings / __brochure / __cis aliases
+        # in _load_curated_facts to maximise the lookup hit-rate in pass 1)
+        if curated_policy_id != data.get("policy_id", curated_policy_id):
+            continue
+        if curated_policy_id in seen_policy_ids:
+            continue
+        # Also skip if any extracted ID matches with a suffix
+        if any(eid.startswith(curated_policy_id + "__") for eid in seen_policy_ids):
+            continue
+        seen_policy_ids.add(curated_policy_id)
+        slug = data.get("insurer_slug", "")
+        name, home = insurer_meta.get(slug, (slug, ""))
+        # Insurer reviews for scorecard
+        ir = None
+        if slug:
+            rp = settings.CORPUS_DIR.parent.parent / "data" / "reviews" / f"{slug}.json"
+            if rp.exists():
+                try:
+                    ir = _json.loads(rp.read_text())
+                except Exception:
+                    pass
+        sc = build_scorecard(data, insurer_reviews=ir)
+        si = data.get("sum_insured_options") or []
+        if isinstance(si, list):
+            si = [int(x) for x in si if isinstance(x, (int, float)) or (isinstance(x, str) and x.isdigit())]
+        else:
+            si = []
+        try:
+            source_pdf_url = (
+                data.get("source_pdf_url")
+                or corpus_url_index.get(curated_policy_id)
+                or corpus_url_index.get(f"{curated_policy_id}__wordings")
+                or ""
+            )
+            out.append(MarketplacePolicy(
+                policy_id=curated_policy_id,
+                policy_name=data.get("policy_name", curated_policy_id),
+                insurer_slug=slug,
+                insurer_name=name,
+                insurer_home_url=home,
+                source_pdf_url=source_pdf_url,
+                grade=sc.grade,
+                overall_score=sc.overall_score,
+                one_liner=sc.one_liner,
+                data_completeness_pct=sc.data_completeness_pct,
+                min_entry_age=data.get("min_entry_age"),
+                max_entry_age=data.get("max_entry_age"),
+                max_renewal_age=data.get("max_renewal_age"),
+                sum_insured_options=si,
+                pre_existing_disease_waiting_months=data.get("pre_existing_disease_waiting_months"),
+                initial_waiting_period_days=data.get("initial_waiting_period_days"),
+                maternity_waiting_months=data.get("maternity_waiting_months"),
+                copayment_pct=data.get("copayment_pct") if isinstance(data.get("copayment_pct"), (int, float)) else None,
+                network_hospital_count=data.get("network_hospital_count"),
+                no_claim_bonus_pct=data.get("no_claim_bonus_pct"),
+                ayush_coverage=_coerce_bool(data.get("ayush_coverage")),
+                maternity_coverage=_coerce_bool(data.get("maternity_coverage")),
+                cashless_treatment_supported=_coerce_bool(data.get("cashless_treatment_supported")),
+                room_rent_capping=data.get("room_rent_capping") if isinstance(data.get("room_rent_capping"), str) else None,
+            ))
+        except Exception as e:
+            print(f"[marketplace] skipping curated {curated_policy_id}: {type(e).__name__}: {str(e)[:120]}")
             continue
 
     return MarketplaceResponse(

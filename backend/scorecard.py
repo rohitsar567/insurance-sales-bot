@@ -461,46 +461,171 @@ def compute_data_completeness(p: dict) -> float:
 def _profile_tuned_weights(profile: Optional[dict]) -> dict[str, float]:
     """Return a per-sub-score weight dict adapted to the buyer profile.
 
-    The base weights (`WEIGHTS`) reflect a typical buyer. A 25-year-old
-    cares more about waiting periods + claim experience than about renewal
-    protection. A 55-year-old cares more about renewal + claim than about
-    bonuses. A buyer with parents to cover cares most about coverage breadth
-    and network. We renormalise so weights sum to 1.0.
+    Every signal we collect should MOVE the weighting — collecting input and
+    then ignoring it is wasted attention. The weights re-normalise to 1.0 at
+    the end. Each adjustment is small (typically ±0.02–0.06) so accumulated
+    drift never crosses the validity boundary of the rules.
 
-    See docs/scorecard-methodology.md §6 for the v2 plan; this is the v1
-    implementation.
+    Audit trail per delta is in docs/scorecard-methodology.md §6 (knowledge
+    graph: profile-field → weight-shift table).
     """
     if not profile:
         return WEIGHTS
     w = dict(WEIGHTS)
 
+    # ---- AGE ----
     age = profile.get("age")
     if isinstance(age, int):
         if age < 30:
-            w["Waiting-Period Friction"] += 0.04
+            w["Waiting-Period Friction"] += 0.04   # PED + maternity waits hit hardest
             w["Claim Experience"] += 0.02
             w["Renewal Protection"] -= 0.04
             w["Bonus & Loyalty"] -= 0.02
         elif age >= 50:
-            w["Renewal Protection"] += 0.06
-            w["Claim Experience"] += 0.02
+            w["Renewal Protection"] += 0.06        # can I keep it past 70?
+            w["Claim Experience"] += 0.02          # actually getting paid matters more
             w["Bonus & Loyalty"] -= 0.04
             w["Waiting-Period Friction"] -= 0.04
 
-    if profile.get("parents_to_insure"):
+    # ---- DEPENDENTS ----
+    deps = (profile.get("dependents") or "").lower()
+    if any(k in deps for k in ("kid", "child")):
+        w["Coverage Breadth"] += 0.03              # paediatric + day-care + immunisation
+        w["Bonus & Loyalty"] += 0.01               # free checkups for family
+        w["Cost Predictability"] -= 0.02           # family floater premiums are higher
+        w["Renewal Protection"] -= 0.02
+    if any(k in deps for k in ("spouse", "wife", "husband", "partner")):
+        w["Coverage Breadth"] += 0.02              # maternity becomes relevant
+        w["Waiting-Period Friction"] += 0.02       # maternity 36mo wait matters
+        w["Bonus & Loyalty"] -= 0.02
+        w["Renewal Protection"] -= 0.02
+
+    if profile.get("parents_to_insure") or "parent" in deps:
         w["Coverage Breadth"] += 0.04
-        w["Claim Experience"] += 0.04  # network matters more for elderly hospital access
+        w["Claim Experience"] += 0.04              # network matters more for elderly access
         w["Bonus & Loyalty"] -= 0.04
         w["Cost Predictability"] -= 0.04
+        # Older parents with PED → renewal+claim become survival metrics
+        if profile.get("parents_has_ped") or profile.get("parents_age_max", 0) >= 65:
+            w["Renewal Protection"] += 0.04
+            w["Waiting-Period Friction"] += 0.02
+            w["Bonus & Loyalty"] -= 0.04
+            w["Cost Predictability"] -= 0.02
 
-    if profile.get("budget_band") in ("under_15k", "15k_30k"):
-        w["Cost Predictability"] += 0.04
-        w["Bonus & Loyalty"] -= 0.02
+    # ---- EXISTING COVER ----
+    existing = profile.get("existing_cover_inr")
+    if isinstance(existing, int) and existing > 0:
+        # Already has cover → super-top-up territory; cost predictability less
+        # critical, claim experience more (you only need this when claim hits big)
+        w["Cost Predictability"] -= 0.03
+        w["Claim Experience"] += 0.03
+    elif existing == 0:
+        # First-time buyer → predictable bill + simple terms matter most
+        w["Cost Predictability"] += 0.03
+        w["Coverage Breadth"] += 0.02
+        w["Bonus & Loyalty"] -= 0.03
         w["Waiting-Period Friction"] -= 0.02
 
-    # Normalise so sum is exactly 1.0
+    # ---- PRIMARY GOAL ----
+    goal = (profile.get("primary_goal") or "").lower()
+    if "tax" in goal:
+        w["Cost Predictability"] += 0.02           # premium is the tax-deduction itself
+        w["Bonus & Loyalty"] -= 0.02
+    if "upgrade" in goal:
+        w["Coverage Breadth"] += 0.03              # whole point of upgrading
+        w["Renewal Protection"] += 0.02
+        w["Bonus & Loyalty"] -= 0.05
+    if "compare" in goal or "specific" in goal:
+        # User already knows what they want — flatten weights, defer to facts
+        for k in w:
+            w[k] = 0.95 * w[k] + 0.05 * (1.0 / 6)
+
+    # ---- HEALTH CONDITIONS ----
+    conditions = profile.get("health_conditions") or []
+    if isinstance(conditions, list) and conditions:
+        condition_str = " ".join(str(c).lower() for c in conditions)
+        if any(c in condition_str for c in ("diab", "bp", "hyper", "thyroid", "heart", "cancer", "asthma")):
+            # Pre-existing → PED waiting is the most important thing in the universe
+            w["Waiting-Period Friction"] += 0.06
+            w["Claim Experience"] += 0.03          # PED claim disputes are common
+            w["Bonus & Loyalty"] -= 0.04
+            w["Cost Predictability"] -= 0.03
+            w["Renewal Protection"] -= 0.02
+
+    # ---- BUDGET ----
+    budget = profile.get("budget_band")
+    if budget in ("under_15k", "15k_30k"):
+        w["Cost Predictability"] += 0.04           # every rupee counts
+        w["Bonus & Loyalty"] -= 0.02
+        w["Waiting-Period Friction"] -= 0.02
+    elif budget == "60k+":
+        # High budget → comprehensive coverage + best claim experience matter
+        w["Coverage Breadth"] += 0.02
+        w["Claim Experience"] += 0.02
+        w["Cost Predictability"] -= 0.04
+
+    # ---- INCOME ----
+    income = profile.get("income_band")
+    if income == "under_5L":
+        w["Cost Predictability"] += 0.03
+        w["Bonus & Loyalty"] -= 0.03
+    elif income in ("10L-25L", "25L+"):
+        w["Coverage Breadth"] += 0.02
+        w["Claim Experience"] += 0.02
+        w["Cost Predictability"] -= 0.04
+
+    # ---- LOCATION ----
+    loc = profile.get("location_tier")
+    if loc in ("tier2", "tier3"):
+        # Smaller city → network density + cashless TAT critical
+        w["Claim Experience"] += 0.04
+        w["Coverage Breadth"] -= 0.02
+        w["Bonus & Loyalty"] -= 0.02
+    elif loc == "metro":
+        # Metros have hospital depth → coverage breadth differentiates
+        w["Coverage Breadth"] += 0.02
+        w["Claim Experience"] -= 0.02
+
+    # Clamp + normalise (no weight should go below 5%)
+    for k in w:
+        if w[k] < 0.05:
+            w[k] = 0.05
     total = sum(w.values())
     return {k: v / total for k, v in w.items()}
+
+
+def profile_completeness(profile: Optional[dict]) -> float:
+    """0.0–1.0 measure of how much we know about the buyer.
+
+    Used by the frontend to GATE the personalized scorecard view — until
+    completeness >= 0.6, we show insurer-level metrics (CSR, complaints —
+    universal) but suppress the per-user grade since it's meaningless without
+    knowing who's buying.
+    """
+    if not profile:
+        return 0.0
+    # Weighted by signal importance: age + dependents + budget are core; goal
+    # + conditions + location are deep-dives that further refine.
+    weights = {
+        "age": 0.20,
+        "dependents": 0.15,
+        "budget_band": 0.15,
+        "existing_cover_inr": 0.10,
+        "primary_goal": 0.10,
+        "location_tier": 0.10,
+        "health_conditions": 0.10,
+        "income_band": 0.05,
+        "parents_age_max": 0.05,
+    }
+    total = 0.0
+    for field_name, weight in weights.items():
+        v = profile.get(field_name)
+        if v is None:
+            continue
+        if isinstance(v, (list, str)) and len(v) == 0:
+            continue
+        total += weight
+    return round(total, 2)
 
 
 def build_scorecard(policy: dict, insurer_reviews: Optional[dict] = None, profile: Optional[dict] = None) -> Scorecard:
