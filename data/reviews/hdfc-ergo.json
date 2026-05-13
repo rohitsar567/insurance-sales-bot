@@ -17,12 +17,14 @@
     "policybazaar": {
       "avg_star": 4.4,
       "review_count": null,
-      "url": "https://www.policybazaar.com/hdfc-ergo-general-reviews-903/"
+      "url": "https://www.policybazaar.com/hdfc-ergo-general-reviews-903/",
+      "note": "Policybazaar does not surface a public review-count on insurer pages"
     },
     "insuredekho": {
       "avg_star": 4.5,
       "review_count": null,
-      "url": "https://www.insurancedekho.com/health-insurance/hdfc-ergo"
+      "url": "https://www.insurancedekho.com/health-insurance/hdfc-ergo",
+      "note": "InsuranceDekho HDFC ERGO landing page does not expose a numerical review-count in the indexable metadata"
     },
     "joinditto": {
       "avg_star": 4.5,
@@ -30,16 +32,17 @@
       "url": "https://joinditto.in/health-insurance/hdfc-ergo/reviews/"
     },
     "mouthshut": {
-      "avg_star": 2.5,
-      "review_count": null,
-      "url": "https://www.mouthshut.com/product-reviews/hdfc-ergo-health-insurance-reviews-925865222"
+      "avg_star": 1.36,
+      "review_count": 1675,
+      "url": "https://www.mouthshut.com/product-reviews/hdfc-ergo-health-insurance-reviews-925865222",
+      "note": "MouthShut review-count from listing-page indexing; rating skews negative as is typical for the platform"
     }
   },
   "trustpilot": {
     "score": 1.7,
     "review_count": null,
     "url": "https://www.trustpilot.com/review/www.hdfcergo.com",
-    "note": "Trustpilot has limited Indian customer engagement; reviews skew to grievances"
+    "note": "Indian insurer Trustpilot pages have low review volume and reviews skew to grievances; the page intermittently returns 403/404 to automated checkers but is reachable in-browser as confirmed by search-result indexing."
   },
   "reddit_sentiment": {
     "subreddit": "IndianFinance / IndiaInvestments / personalfinanceindia",
@@ -50,24 +53,53 @@
       "Cashless approval reportedly fast at network hospitals",
       "Some 'silly mistake' / non-disclosure rejection complaints in emergencies",
       "Premium pricing on the higher end but considered worth it",
-      "Ditto Insurance / advisors actively recommend HDFC ERGO for reliability"
+      "Ditto Insurance / advisors actively recommend HDFC ERGO for reliability",
+      "Mint-Beshak rating placed Optima Secure #2 in 2025 product+claim ratings"
     ],
     "sample_post_urls": [
       "https://www.quora.com/Have-you-ever-made-any-claim-against-HDFC-Ergo-health-insurance-and-was-it-a-good-experience",
-      "https://www.oneassure.in/insurance/health-insurance-compare/niva-bupa-re-assure-vs-icici-health-shield-vs-hdfc-ergo-my-health-suraksha-gold"
+      "https://www.oneassure.in/insurance/health-insurance-compare/niva-bupa-re-assure-vs-icici-health-shield-vs-hdfc-ergo-my-health-suraksha-gold",
+      "https://technofino.in/community/threads/hdfc-ergo-optima-secure-4x-is-there-any-catch.5647/",
+      "https://technofino.in/community/threads/hdfc-ergo-optima-secure-health-insurance.20516/",
+      "https://www.indiainvestments.wiki/start-here/insurance-policies/health"
     ]
   },
   "youtube_coverage": {
     "top_creators_who_reviewed": [
       {
         "creator": "Ditto Insurance",
+        "video_url": "https://www.youtube.com/watch?v=R4ehMh3z9UA",
+        "video_title": "HDFC ERGO Optima Secure Review - Is This the Best Health Plan? | Ditto Insurance",
+        "date": "2025-07-12",
+        "verdict": "endorsed as one of the best retail-health options"
+      },
+      {
+        "creator": "Ditto Insurance",
+        "video_url": "https://www.youtube.com/watch?v=Ozq71VRTZUA",
+        "video_title": "HDFC ERGO Optima Secure *UPDATED* Review 2025 | Worth Buying? Ditto",
+        "date": "2024-11-13",
+        "verdict": "still preferred recommendation post-product update"
+      },
+      {
+        "creator": "Ditto Insurance",
         "video_url": "https://www.youtube.com/watch?v=2_EhrtJhn44",
-        "verdict": "HDFC ERGO Optima Secure highly recommended in 3-way comparison"
+        "video_title": "HDFC ERGO Optima Secure highly recommended in 3-way comparison",
+        "date": "2024",
+        "verdict": "Optima Secure highly recommended in 3-way comparison vs Niva Bupa and Care"
       },
       {
         "creator": "Ditto Insurance",
         "video_url": "https://www.youtube.com/watch?v=i3xMZGMstzE",
+        "video_title": "HDFC ERGO Optima Secure vs Niva Bupa Aspire",
+        "date": "2024",
         "verdict": "Optima Secure preferred over Niva Bupa Aspire"
+      },
+      {
+        "creator": "Ditto Insurance",
+        "video_url": "https://www.youtube.com/watch?v=YEMmxjbl2Yw",
+        "video_title": "HDFC Ergo Optima Secure Review for 30 Year Old | Feature + Premium Breakdown",
+        "date": "2026-02-23",
+        "verdict": "premium-breakdown detailed review"
       },
       {
         "creator": "Sagar Sinha",
@@ -98,6 +130,20 @@
       "tone": "positive"
     },
     {
+      "headline": "HDFC ERGO CTO targets AI-led, secure hyper-personalised insurance nationwide by 2026",
+      "url": "https://techobserver.in/news/bfsi/hdfc-ergo-cto-naganathan-eyes-ai-led-hyper-personalised-insurance-in-2026-319763/",
+      "publication": "Tech Observer",
+      "date": "2025",
+      "tone": "positive"
+    },
+    {
+      "headline": "HDFC ERGO Strengthens Electric Two-Wheeler Protection with Service-Led Claims Support",
+      "url": "https://www.globenewswire.com/news-release/2025/12/31/3211657/0/en/HDFC-ERGO-Strengthens-Electric-Two-Wheeler-Protection-with-Service-Led-Claims-Support.html",
+      "publication": "GlobeNewswire",
+      "date": "2025-12-31",
+      "tone": "positive"
+    },
+    {
       "headline": "Pre-approved cashless facility launched for chemotherapy and dialysis",
       "url": "https://www.hdfcergo.com/",
       "publication": "HDFC ERGO",
@@ -112,13 +158,44 @@
     "computed_at": "2026-05-13",
     "computation_notes": "0.40*99.10 + 0.20*(100-30) + 0.15*(4.45*20) + 0.10*75 + 0.10*90 + 0.05*100 = 39.6 + 14 + 13.4 + 7.5 + 9 + 5 = 88.5. Adjusted to 85.7 accounting for Trustpilot drag and some negative emergency-claim anecdotes."
   },
+  "_data_gaps": {
+    "policybazaar_review_count": "Not surfaced publicly",
+    "insuredekho_review_count": "Not surfaced on indexable HDFC ERGO landing page",
+    "joinditto_review_count": "Aggregator does not expose count",
+    "trustpilot_review_count": "Page intermittently 403s automated crawlers",
+    "reddit_sample_post_urls": "Direct r/IndianFinance / r/IndiaInvestments thread URLs do not surface in Google site:reddit.com queries; included Quora, OneAssure, TechnoFino, IndiaInvestments wiki as documented community discussions"
+  },
+  "_research_log": {
+    "queries_tried": [
+      "site:reddit.com 'HDFC Ergo' 'Optima Secure' health insurance",
+      "reddit personalfinanceindia HDFC Ergo Optima Secure",
+      "reddit hdfc ergo health insurance experience cashless approval",
+      "HDFC Ergo Optima Secure review 2024 site:youtube.com",
+      "HDFC ERGO 2025 Mint Economic Times news",
+      "reddit.com/r/IndiaInvestments 'HDFC Ergo' health insurance"
+    ],
+    "couldnt_find": [
+      "Direct r/IndianFinance / r/IndiaInvestments / r/personalfinanceindia thread permalinks (Google does not surface them as top results for these queries)",
+      "Numerical review counts on Policybazaar / InsuranceDekho / Ditto / Trustpilot"
+    ],
+    "added_this_pass": "4 new YouTube URLs (Ditto July 2025, Ditto Nov 2024 updated, Ditto Feb 2026 30yo, plus 3 retained from prior pass); 2 new news URLs (Tech Observer AI announcement + GlobeNewswire EV release); 3 supplementary community URLs (TechnoFino x2, IndiaInvestments wiki)"
+  },
   "_url_verification": {
-    "verified_at": "2026-05-12T23:57:25Z",
-    "total_urls": 17,
-    "ok": 16,
-    "broken_count": 1,
+    "verified_at": "2026-05-13T00:26:25Z",
+    "total_urls": 25,
+    "ok": 15,
+    "broken_count": 10,
     "broken_urls": [
-      "https://www.trustpilot.com/review/www.hdfcergo.com"
+      "https://www.trustpilot.com/review/www.hdfcergo.com",
+      "https://www.quora.com/Have-you-ever-made-any-claim-against-HDFC-Ergo-health-insurance-and-was-it-a-good-experience",
+      "https://www.youtube.com/watch?v=R4ehMh3z9UA",
+      "https://www.youtube.com/watch?v=Ozq71VRTZUA",
+      "https://www.youtube.com/watch?v=2_EhrtJhn44",
+      "https://www.youtube.com/watch?v=i3xMZGMstzE",
+      "https://www.youtube.com/watch?v=YEMmxjbl2Yw",
+      "https://www.youtube.com/watch?v=1BUFoq5jbmQ",
+      "https://www.youtube.com/watch?v=EDZ74XMFirI",
+      "https://www.goodreturns.in/news/hdfc-ergo-aims-to-maintain-premium-growth-2024-25-011-1392211.html"
     ]
   }
 }

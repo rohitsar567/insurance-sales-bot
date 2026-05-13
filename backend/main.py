@@ -482,6 +482,121 @@ class CompareResponse(BaseModel):
     field_order: list[str]
 
 
+class MarketplacePolicy(BaseModel):
+    policy_id: str
+    policy_name: str
+    insurer_slug: str
+    insurer_name: str
+    insurer_home_url: str
+    source_pdf_url: str
+    grade: str
+    overall_score: int
+    one_liner: str
+    data_completeness_pct: float
+    # Headline filterable fields
+    min_entry_age: Optional[int] = None
+    max_entry_age: Optional[int] = None
+    max_renewal_age: Optional[int] = None
+    sum_insured_options: list[int] = Field(default_factory=list)
+    pre_existing_disease_waiting_months: Optional[int] = None
+    initial_waiting_period_days: Optional[int] = None
+    maternity_waiting_months: Optional[int] = None
+    copayment_pct: Optional[float] = None
+    network_hospital_count: Optional[int] = None
+    no_claim_bonus_pct: Optional[int] = None
+    ayush_coverage: Optional[bool] = None
+    maternity_coverage: Optional[bool] = None
+    cashless_treatment_supported: Optional[bool] = None
+    room_rent_capping: Optional[str] = None
+
+
+class MarketplaceResponse(BaseModel):
+    policies: list[MarketplacePolicy]
+    total: int
+    insurers_indexed: int
+
+
+@app.get("/api/policies/all", response_model=MarketplaceResponse)
+async def policies_all():
+    """The marketplace data feed — every extracted policy + scorecard + filterable fields."""
+    import json as _json
+    from backend.scorecard import build_scorecard
+
+    insurer_meta = {
+        "aditya-birla":  ("Aditya Birla Health Insurance", "https://www.adityabirlacapital.com/healthinsurance"),
+        "bajaj-allianz": ("Bajaj Allianz General Insurance", "https://www.bajajallianz.com/"),
+        "care-health":   ("Care Health Insurance", "https://www.careinsurance.com/"),
+        "hdfc-ergo":     ("HDFC ERGO General Insurance", "https://www.hdfcergo.com/"),
+        "icici-lombard": ("ICICI Lombard General Insurance", "https://www.icicilombard.com/"),
+        "manipalcigna":  ("ManipalCigna Health Insurance", "https://www.manipalcigna.com/"),
+        "new-india":     ("New India Assurance", "https://www.newindia.co.in/"),
+        "niva-bupa":     ("Niva Bupa Health Insurance", "https://www.nivabupa.com/"),
+        "star-health":   ("Star Health & Allied Insurance", "https://www.starhealth.in/"),
+        "tata-aig":      ("Tata AIG General Insurance", "https://www.tataaig.com/"),
+    }
+
+    def _coerce_bool(v):
+        if isinstance(v, dict) and "covered" in v: return v.get("covered")
+        if isinstance(v, bool): return v
+        return None
+
+    out = []
+    for fp in sorted(settings.EXTRACTED_DIR.glob("*.json")):
+        try:
+            data = _json.loads(fp.read_text())
+        except Exception:
+            continue
+        slug = data.get("insurer_slug", "")
+        name, home = insurer_meta.get(slug, (slug, ""))
+        # Get insurer reviews if available for the scorecard
+        ir = None
+        if slug:
+            rp = settings.CORPUS_DIR.parent.parent / "data" / "reviews" / f"{slug}.json"
+            if rp.exists():
+                try: ir = _json.loads(rp.read_text())
+                except Exception: pass
+        sc = build_scorecard(data, insurer_reviews=ir)
+
+        si = data.get("sum_insured_options") or []
+        if isinstance(si, list):
+            si = [int(x) for x in si if isinstance(x, (int, float)) or (isinstance(x, str) and x.isdigit())]
+        else:
+            si = []
+
+        out.append(MarketplacePolicy(
+            policy_id=data.get("policy_id", fp.stem),
+            policy_name=data.get("policy_name", fp.stem),
+            insurer_slug=slug,
+            insurer_name=name,
+            insurer_home_url=home,
+            source_pdf_url=data.get("source_pdf_url", ""),
+            grade=sc.grade,
+            overall_score=sc.overall_score,
+            one_liner=sc.one_liner,
+            data_completeness_pct=sc.data_completeness_pct,
+            min_entry_age=data.get("min_entry_age"),
+            max_entry_age=data.get("max_entry_age"),
+            max_renewal_age=data.get("max_renewal_age"),
+            sum_insured_options=si,
+            pre_existing_disease_waiting_months=data.get("pre_existing_disease_waiting_months"),
+            initial_waiting_period_days=data.get("initial_waiting_period_days"),
+            maternity_waiting_months=data.get("maternity_waiting_months"),
+            copayment_pct=data.get("copayment_pct") if isinstance(data.get("copayment_pct"), (int, float)) else None,
+            network_hospital_count=data.get("network_hospital_count"),
+            no_claim_bonus_pct=data.get("no_claim_bonus_pct"),
+            ayush_coverage=_coerce_bool(data.get("ayush_coverage")),
+            maternity_coverage=_coerce_bool(data.get("maternity_coverage")),
+            cashless_treatment_supported=_coerce_bool(data.get("cashless_treatment_supported")),
+            room_rent_capping=data.get("room_rent_capping") if isinstance(data.get("room_rent_capping"), str) else None,
+        ))
+
+    return MarketplaceResponse(
+        policies=out,
+        total=len(out),
+        insurers_indexed=len({p.insurer_slug for p in out}),
+    )
+
+
 @app.get("/api/policies/compare", response_model=CompareResponse)
 async def compare_policies(policy_ids: list[str] = None):
     """Side-by-side comparison of 2-4 policies with their scorecards + field diffs."""

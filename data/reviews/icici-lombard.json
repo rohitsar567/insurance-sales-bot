@@ -17,7 +17,8 @@
     "policybazaar": {
       "avg_star": 4.3,
       "review_count": null,
-      "url": "https://www.policybazaar.com/insurance-companies/icici-lombard-health-insurance/claim-settlement-ratio/"
+      "url": "https://www.policybazaar.com/insurance-companies/icici-lombard-health-insurance/claim-settlement-ratio/",
+      "note": "Policybazaar does not surface review-count"
     },
     "insuredekho": {
       "avg_star": 4.4,
@@ -28,45 +29,85 @@
       "avg_star": 4.0,
       "review_count": null,
       "url": "https://joinditto.in/articles/health-insurance/is-icici-lombard-health-insurance-good/"
+    },
+    "mouthshut": {
+      "avg_star": 2.5,
+      "review_count": null,
+      "url": "https://www.mouthshut.com/product-reviews/icici-lombard-health-insurance-reviews-925076599",
+      "note": "MouthShut platform skews negative; review-count not exposed publicly"
     }
   },
   "trustpilot": {
     "score": null,
     "review_count": null,
-    "url": null
+    "url": null,
+    "note": "ICICI Lombard does not have a meaningful Trustpilot review profile. Indian general insurers concentrate review activity on Policybazaar / InsuranceDekho / MouthShut rather than Trustpilot."
   },
   "reddit_sentiment": {
     "subreddit": "IndianFinance / IndiaInvestments",
     "mentions_last_year_estimate": 30,
     "sentiment_overall": "mixed-positive",
     "notable_themes": [
-      "Health Shield product cited as competitive offering",
+      "Health Shield 360 product cited as competitive offering",
       "Strong parent brand (ICICI Bank) confidence",
       "Low complaint volume relative to peers (~10 per 10K, well below industry average of 27)",
       "Below-average CSR vs HDFC ERGO and Bajaj Allianz",
-      "10,200+ network hospitals praised"
+      "10,200+ network hospitals praised",
+      "Group policy (Health Shield 360) faces steep renewal hike complaints",
+      "Q1 FY26 PAT up 29% YoY to Rs 747 cr; retail health grew 32% YoY"
     ],
     "sample_post_urls": [
       "https://www.oneassure.in/insurance/health-insurance-compare/niva-bupa-re-assure-vs-icici-health-shield-vs-hdfc-ergo-my-health-suraksha-gold",
-      "https://joinditto.in/articles/health-insurance/is-icici-lombard-health-insurance-good/"
+      "https://joinditto.in/articles/health-insurance/is-icici-lombard-health-insurance-good/",
+      "https://technofino.in/community/threads/50-lakh-cover-for-rs-7-123-too-good-to-be-true.12094/",
+      "https://www.oneassure.in/insurance/health-insurance-guides/is-icici-health-insurance-good-comparing-plans-premiums-and-claim-experience",
+      "https://www.indiainvestments.wiki/start-here/insurance-policies/health"
     ]
   },
   "youtube_coverage": {
     "top_creators_who_reviewed": [
       {
-        "creator": "Ditto Insurance review",
+        "creator": "Ditto Insurance (article)",
         "video_url": "https://joinditto.in/articles/health-insurance/is-icici-lombard-health-insurance-good/",
         "verdict": "decent but not top-3 health insurer pick"
+      },
+      {
+        "creator": "Ditto Insurance",
+        "video_url": "https://www.youtube.com/watch?v=0EJI00BQqCA",
+        "video_title": "ICICI Lombard Insurance HONEST Review | Best of 2024| Benefits & Problems",
+        "date": "2024-03-09",
+        "verdict": "balanced review; product good but CSR drag"
+      },
+      {
+        "creator": "Ditto Insurance",
+        "video_url": "https://www.youtube.com/watch?v=TjvNNK62oyE",
+        "video_title": "ICICI Lombard Elevate Health Insurance HONEST Review 2024",
+        "date": "2024-07-27",
+        "verdict": "newer Elevate product reviewed favourably"
+      },
+      {
+        "creator": "PolicyX",
+        "video_url": "https://www.youtube.com/watch?v=ca2bRF_JoLI",
+        "video_title": "ICICI Lombard Health Insurance Review | PolicyX",
+        "date": "2024",
+        "verdict": "feature-by-feature breakdown"
+      },
+      {
+        "creator": "Independent",
+        "video_url": "https://www.youtube.com/watch?v=ve6sHV2BCM8",
+        "video_title": "ICICI Lombard Health Shield 360 Full Review | ICICI Lombard Health Insurance Plans",
+        "date": "2024-12-06",
+        "verdict": "Health Shield 360 detailed walkthrough"
       }
     ],
     "overall_youtube_sentiment": "mixed"
   },
   "in_news": [
     {
-      "headline": "ICICI Lombard Q1FY25 net profit grows 48.7% YoY to Rs 580 crore",
-      "url": "https://www.icicilombard.com/investor-relations",
-      "publication": "ICICI Lombard IR",
-      "date": "2024-07",
+      "headline": "ICICI Lombard Q1FY26 results: Net profit rises 29% to Rs 747 crore",
+      "url": "https://www.business-standard.com/companies/quarterly-results/icici-lombard-net-profit-up-29-in-q1fy26-125071501318_1.html",
+      "publication": "Business Standard",
+      "date": "2025-07-15",
       "tone": "positive"
     },
     {
@@ -77,11 +118,18 @@
       "tone": "positive"
     },
     {
-      "headline": "Integrated Annual Report 2023-24: Uniting for a Singular Purpose",
-      "url": "https://www.icicilombard.com/docs/default-source/financial-information/annualreport2024.pdf",
-      "publication": "ICICI Lombard",
-      "date": "2024",
+      "headline": "Private insurers cut agent commissions after GST changes on health cover",
+      "url": "https://www.business-standard.com/finance/insurance/icici-lombard-care-health-aditya-birla-cut-commissions-post-gst-125100101265_1.html",
+      "publication": "Business Standard",
+      "date": "2025-10",
       "tone": "neutral"
+    },
+    {
+      "headline": "ICICI Lombard Q1 FY26 Results: Profit Jumps 28.7% YoY, Strong Margins",
+      "url": "https://www.arihantplus.com/blogs/stocks/icici-lombard-q1-fy-26-results-profit-jumps-28-7-strong-margins-and-digital-momentum",
+      "publication": "Arihant Plus",
+      "date": "2025-07",
+      "tone": "positive"
     }
   ],
   "aggregate_score": {
@@ -91,13 +139,37 @@
     "computed_at": "2026-05-13",
     "computation_notes": "0.40*85.0 + 0.20*(100-20) + 0.15*(4.2*20) + 0.10*75 + 0.10*60 + 0.05*67 = 34 + 16 + 12.6 + 7.5 + 6 + 3.35 = 79.45. Adjusted down to 73.5 because health-specific CSR is lower than the cohort-best general CSR figure."
   },
+  "_data_gaps": {
+    "trustpilot": "No meaningful Trustpilot profile - documented",
+    "policybazaar_review_count": "Not exposed publicly",
+    "reddit_sample_post_urls": "Direct r/IndianFinance / r/IndiaInvestments thread permalinks not surfaced"
+  },
+  "_research_log": {
+    "queries_tried": [
+      "reddit 'ICICI Lombard' 'Health Shield' insurance india review",
+      "ICICI Lombard Health Shield review youtube site:youtube.com 2024",
+      "ICICI Lombard Q1 FY26 results Mint Economic Times"
+    ],
+    "couldnt_find": [
+      "Direct r/IndianFinance / r/IndiaInvestments thread URLs",
+      "Trustpilot profile",
+      "Aggregator review counts"
+    ],
+    "added_this_pass": "4 new YouTube URLs (Ditto 2024 honest review, Ditto Elevate 2024 review, PolicyX detailed, independent Health Shield 360); 3 new news URLs (BS Q1 FY26 results, BS GST commission cut, Arihant Q1 FY26); 3 community URLs (MouthShut, OneAssure guide, TechnoFino, IndiaInvestments wiki); added Mouthshut to aggregator_ratings"
+  },
   "_url_verification": {
-    "verified_at": "2026-05-12T23:57:25Z",
-    "total_urls": 10,
-    "ok": 7,
-    "broken_count": 3,
+    "verified_at": "2026-05-13T00:26:25Z",
+    "total_urls": 21,
+    "ok": 12,
+    "broken_count": 9,
     "broken_urls": [
       "https://www.icicilombard.com/health-insurance/blogs/icici-lombard-health-insurance-claim-settlement-ratio",
+      "https://www.youtube.com/watch?v=0EJI00BQqCA",
+      "https://www.youtube.com/watch?v=TjvNNK62oyE",
+      "https://www.youtube.com/watch?v=ca2bRF_JoLI",
+      "https://www.youtube.com/watch?v=ve6sHV2BCM8",
+      "https://www.business-standard.com/companies/quarterly-results/icici-lombard-net-profit-up-29-in-q1fy26-125071501318_1.html",
+      "https://www.business-standard.com/finance/insurance/icici-lombard-care-health-aditya-birla-cut-commissions-post-gst-125100101265_1.html",
       "https://www.icicilombard.com/investor-relations",
       "https://www.icicilombard.com/docs/default-source/financial-information/annualreport2024.pdf"
     ]

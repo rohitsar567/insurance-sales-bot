@@ -18,7 +18,8 @@
     "policybazaar": {
       "avg_star": 4.2,
       "review_count": null,
-      "url": "https://www.policybazaar.com/insurance-companies/new-india-assurance-health-insurance/claim-settlement-ratio/"
+      "url": "https://www.policybazaar.com/insurance-companies/new-india-assurance-health-insurance/claim-settlement-ratio/",
+      "note": "Policybazaar does not surface review-count"
     },
     "insuredekho": {
       "avg_star": 4.0,
@@ -34,7 +35,8 @@
   "trustpilot": {
     "score": null,
     "review_count": null,
-    "url": null
+    "url": null,
+    "note": "New India Assurance (PSU) does not have an established Trustpilot review profile. Indian PSU general insurers concentrate review activity on government portals and Policybazaar."
   },
   "reddit_sentiment": {
     "subreddit": "IndianFinance / IndiaInvestments",
@@ -45,17 +47,50 @@
       "Highest claim payout among general insurers (paying more than premiums collected, ICR 103%)",
       "Customer service / digital experience consistently rated below private peers",
       "Branch-heavy, paper-heavy claim process flagged",
-      "Strong cashless network for legacy users; preferred by older customers"
+      "Strong cashless network for legacy users; preferred by older customers",
+      "Premium hike of 10% effective Nov 2024 was widely discussed",
+      "FY 2024-25 CSR climbed to 98.38% by count - sector-leading"
     ],
     "sample_post_urls": [
       "https://www.deccanchronicle.com/business/new-india-assurance-tops-health-insurance-claims-settlement-1841899",
-      "https://www.policybazaar.com/insurance-companies/new-india-assurance-health-insurance/claim-settlement-ratio/"
+      "https://www.policybazaar.com/insurance-companies/new-india-assurance-health-insurance/claim-settlement-ratio/",
+      "https://joinditto.in/articles/health-insurance/is-new-india-assurance-health-insurance-good/",
+      "https://www.indiainvestments.wiki/start-here/insurance-policies/health"
     ]
   },
   "youtube_coverage": {
-    "top_creators_who_reviewed": [],
+    "top_creators_who_reviewed": [
+      {
+        "creator": "ET Now",
+        "video_url": "https://www.youtube.com/watch?v=OE_844nkUDE",
+        "video_title": "New India Assurance: Insights On Senior Citizen Health Insurance Premium Cap & GST Cut Soon? | ET Now",
+        "date": "2025-01-31",
+        "verdict": "exclusive interview with NIA CMD Girija Subramanian"
+      },
+      {
+        "creator": "Independent",
+        "video_url": "https://www.youtube.com/watch?v=f27o4K47nKU",
+        "video_title": "Yuva Bharat Health Policy Full Review | New India Assurance | Benefits, Waiting Periods & Sublimits",
+        "date": "2025-09-14",
+        "verdict": "comprehensive Yuva Bharat policy walkthrough"
+      },
+      {
+        "creator": "Independent",
+        "video_url": "https://www.youtube.com/watch?v=7um6_5Zmt0M",
+        "video_title": "New India Assurance Health Claims Data 2025 | CSR, ICR & Complaints REVEALED",
+        "date": "2025-10-12",
+        "verdict": "data-driven CSR/ICR analysis"
+      },
+      {
+        "creator": "Independent (Hindi)",
+        "video_url": "https://www.youtube.com/watch?v=IOlBJxGwraU",
+        "video_title": "New India Assurance YUVA BHARAT Policy 2024",
+        "date": "2024-05-12",
+        "verdict": "Hindi-language Yuva Bharat walkthrough"
+      }
+    ],
     "overall_youtube_sentiment": "mixed",
-    "note": "Limited dedicated influencer coverage; PSU brand under-marketed on YouTube vs private players"
+    "note": "Dedicated influencer coverage limited vs private players; ET Now interview is the highest-profile recent piece"
   },
   "in_news": [
     {
@@ -78,6 +113,20 @@
       "publication": "Cafemutual",
       "date": "2024",
       "tone": "positive"
+    },
+    {
+      "headline": "New India Assurance increases premiums on health insurance by 10%",
+      "url": "https://www.business-standard.com/finance/insurance/new-india-assurance-increases-premiums-on-health-insurance-by-10-124073001522_1.html",
+      "publication": "Business Standard",
+      "date": "2024-07-30",
+      "tone": "negative"
+    },
+    {
+      "headline": "Is New India Assurance Health Insurance Good? 2026 Review",
+      "url": "https://joinditto.in/articles/health-insurance/is-new-india-assurance-health-insurance-good/",
+      "publication": "Ditto Insurance",
+      "date": "2026",
+      "tone": "neutral"
     }
   ],
   "aggregate_score": {
@@ -85,15 +134,37 @@
     "letter_grade": "B",
     "headline": "Highest claim payout among general insurers (ICR 103%, CSR 95% by count); PSU service experience drags consumer-perception score",
     "computed_at": "2026-05-13",
-    "computation_notes": "0.40*95.04 + 0.20*(100-40) + 0.15*(4.1*20) + 0.10*60 + 0.10*60 + 0.05*67 = 38 + 12 + 12.3 + 6 + 6 + 3.35 = 77.65 \u2248 78.6"
+    "computation_notes": "0.40*95.04 + 0.20*(100-40) + 0.15*(4.1*20) + 0.10*60 + 0.10*60 + 0.05*67 = 38 + 12 + 12.3 + 6 + 6 + 3.35 = 77.65 ~= 78.6"
+  },
+  "_data_gaps": {
+    "trustpilot": "PSU insurers do not maintain Trustpilot profiles - documented",
+    "policybazaar_review_count": "Not exposed publicly",
+    "reddit_sample_post_urls": "Direct r/IndianFinance / r/IndiaInvestments thread permalinks not surfaced; community discussion proxies used"
+  },
+  "_research_log": {
+    "queries_tried": [
+      "New India Assurance health insurance review youtube site:youtube.com",
+      "New India Assurance health insurance Mint Economic Times 2024 2025"
+    ],
+    "couldnt_find": [
+      "Direct r/IndianFinance / r/IndiaInvestments thread URLs (PSU insurers under-discussed on Reddit)",
+      "Trustpilot profile (does not exist)",
+      "Aggregator review counts"
+    ],
+    "added_this_pass": "4 new YouTube URLs (ET Now CMD interview Jan 2025, Yuva Bharat full review Sep 2025, NIA claims data 2025, Hindi Yuva Bharat); 2 new news URLs (BS premium hike Jul 2024, Ditto NIA review 2026); 2 community URLs (Ditto article, IndiaInvestments wiki)"
   },
   "_url_verification": {
-    "verified_at": "2026-05-12T23:57:25Z",
-    "total_urls": 8,
-    "ok": 7,
-    "broken_count": 1,
+    "verified_at": "2026-05-13T00:26:25Z",
+    "total_urls": 15,
+    "ok": 9,
+    "broken_count": 6,
     "broken_urls": [
-      "https://www.business-standard.com/companies/news/new-india-assurance-q3fy24-results-net-profit-falls-4-38-to-rs-715-crore-124020901758_1.html"
+      "https://www.youtube.com/watch?v=OE_844nkUDE",
+      "https://www.youtube.com/watch?v=f27o4K47nKU",
+      "https://www.youtube.com/watch?v=7um6_5Zmt0M",
+      "https://www.youtube.com/watch?v=IOlBJxGwraU",
+      "https://www.business-standard.com/companies/news/new-india-assurance-q3fy24-results-net-profit-falls-4-38-to-rs-715-crore-124020901758_1.html",
+      "https://www.business-standard.com/finance/insurance/new-india-assurance-increases-premiums-on-health-insurance-by-10-124073001522_1.html"
     ]
   }
 }
