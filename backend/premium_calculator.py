@@ -54,7 +54,25 @@ FALLBACK_SI = {
     "2500000": 3.1, "5000000": 4.6, "10000000": 7.2,
 }
 FALLBACK_CITY = {"metro": 1.0, "tier1": 0.92, "tier2": 0.82}
-FALLBACK_FLOATER = {1: 1.0, 2: 1.65, 3: 2.0, 4: 2.4, 5: 2.7, 6: 2.95}
+# family_size=0 is the slider's "self-only" marker — treated identically to 1
+FALLBACK_FLOATER = {0: 1.0, 1: 1.0, 2: 1.65, 3: 2.0, 4: 2.4, 5: 2.7, 6: 2.95}
+
+# Pre-existing-disease loading factors. Sources: Acko + PolicyBazaar coverage
+# articles on PED loading (typical 25-50% premium uplift depending on severity).
+FALLBACK_PED = {
+    "none": 1.0,
+    "diabetes_or_hypertension": 1.30,
+    "heart_disease": 1.45,
+    "multiple": 1.55,
+}
+
+# Co-pay reduces premium. Industry norm (PolicyBazaar/Acko): each 10 pct
+# points of co-pay yields ~7% premium reduction, capped at 40% co-pay.
+def _copay_multiplier(pct: float) -> float:
+    if not pct or pct <= 0:
+        return 1.0
+    pct = min(40.0, float(pct))
+    return 1.0 - (pct / 100.0 * 0.70)
 
 
 def _age_bucket(age: int) -> str:
@@ -106,6 +124,8 @@ def estimate(
     smoker: bool = False,
     family_size: int = 1,
     policy_id: Optional[str] = None,
+    pre_existing_conditions: str = "none",
+    copayment_pct: float = 0.0,
 ) -> PremiumEstimate:
     data = _load_data()
     base_premiums = data.get("base_premiums", {})
@@ -116,6 +136,7 @@ def estimate(
     smoker_mult = scaling.get("smoker_multiplier", 1.35)
     floater_mults_raw = scaling.get("family_floater_multipliers", {})
     floater_mults = {int(k): v for k, v in floater_mults_raw.items()} if floater_mults_raw else FALLBACK_FLOATER
+    ped_mults = scaling.get("ped_load_multipliers", FALLBACK_PED)
 
     sources = []
     sample_used = None
@@ -150,6 +171,10 @@ def estimate(
     if smoker:
         base *= smoker_mult
     base *= floater_mults.get(family_size, 1.0)
+    # PED load — diabetes/hypertension/heart raise premiums materially
+    base *= ped_mults.get(pre_existing_conditions, 1.0)
+    # Co-pay discount — opting into co-payment lowers premium
+    base *= _copay_multiplier(copayment_pct)
 
     point = int(round(base / 100) * 100)  # round to nearest ₹100
     return PremiumEstimate(
