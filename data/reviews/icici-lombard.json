@@ -2,31 +2,39 @@
   "insurer_slug": "icici-lombard",
   "insurer_name": "ICICI Lombard General Insurance",
   "last_updated": "2026-05-13",
-
   "claim_metrics": {
     "claim_settlement_ratio_pct": 85.0,
     "claim_settlement_ratio_year": "2023-24",
     "complaints_per_10k_policies": 10,
     "complaints_year": "2023-24 (3-year avg ~9-10)",
     "incurred_claim_ratio_pct": 78.67,
-    "three_year_avg_csr_pct": 84.50,
+    "three_year_avg_csr_pct": 84.5,
     "source_irdai_url": "https://irdai.gov.in/document-detail?documentId=6436847",
     "source_secondary_url": "https://www.policyx.com/health-insurance/icici-lombard-health-insurance/claim-settlement-ratio/",
     "source_company_url": "https://www.icicilombard.com/health-insurance/blogs/icici-lombard-health-insurance-claim-settlement-ratio"
   },
-
   "aggregator_ratings": {
-    "policybazaar": {"avg_star": 4.3, "review_count": null, "url": "https://www.policybazaar.com/insurance-companies/icici-lombard-health-insurance/claim-settlement-ratio/"},
-    "insuredekho": {"avg_star": 4.4, "review_count": null, "url": "https://www.insurancedekho.com/health-insurance/icici-lombard/claim-settlement"},
-    "joinditto": {"avg_star": 4.0, "review_count": null, "url": "https://joinditto.in/articles/health-insurance/is-icici-lombard-health-insurance-good/"}
+    "policybazaar": {
+      "avg_star": 4.3,
+      "review_count": null,
+      "url": "https://www.policybazaar.com/insurance-companies/icici-lombard-health-insurance/claim-settlement-ratio/"
+    },
+    "insuredekho": {
+      "avg_star": 4.4,
+      "review_count": null,
+      "url": "https://www.insurancedekho.com/health-insurance/icici-lombard/claim-settlement"
+    },
+    "joinditto": {
+      "avg_star": 4.0,
+      "review_count": null,
+      "url": "https://joinditto.in/articles/health-insurance/is-icici-lombard-health-insurance-good/"
+    }
   },
-
   "trustpilot": {
     "score": null,
     "review_count": null,
     "url": null
   },
-
   "reddit_sentiment": {
     "subreddit": "IndianFinance / IndiaInvestments",
     "mentions_last_year_estimate": 30,
@@ -43,25 +51,55 @@
       "https://joinditto.in/articles/health-insurance/is-icici-lombard-health-insurance-good/"
     ]
   },
-
   "youtube_coverage": {
     "top_creators_who_reviewed": [
-      {"creator": "Ditto Insurance review", "video_url": "https://joinditto.in/articles/health-insurance/is-icici-lombard-health-insurance-good/", "verdict": "decent but not top-3 health insurer pick"}
+      {
+        "creator": "Ditto Insurance review",
+        "video_url": "https://joinditto.in/articles/health-insurance/is-icici-lombard-health-insurance-good/",
+        "verdict": "decent but not top-3 health insurer pick"
+      }
     ],
     "overall_youtube_sentiment": "mixed"
   },
-
   "in_news": [
-    {"headline": "ICICI Lombard Q1FY25 net profit grows 48.7% YoY to Rs 580 crore", "url": "https://www.icicilombard.com/investor-relations", "publication": "ICICI Lombard IR", "date": "2024-07", "tone": "positive"},
-    {"headline": "ICICI Lombard, Bajaj Allianz and New India are the most profitable non-life players in FY 2024", "url": "https://cafemutual.com/news/insurance/33076-icici-lombard-bajaj-allianz-and-new-india-are-the-most-profitable-non-life-players-in-fy-2024", "publication": "Cafemutual", "date": "2024", "tone": "positive"},
-    {"headline": "Integrated Annual Report 2023-24: Uniting for a Singular Purpose", "url": "https://www.icicilombard.com/docs/default-source/financial-information/annualreport2024.pdf", "publication": "ICICI Lombard", "date": "2024", "tone": "neutral"}
+    {
+      "headline": "ICICI Lombard Q1FY25 net profit grows 48.7% YoY to Rs 580 crore",
+      "url": "https://www.icicilombard.com/investor-relations",
+      "publication": "ICICI Lombard IR",
+      "date": "2024-07",
+      "tone": "positive"
+    },
+    {
+      "headline": "ICICI Lombard, Bajaj Allianz and New India are the most profitable non-life players in FY 2024",
+      "url": "https://cafemutual.com/news/insurance/33076-icici-lombard-bajaj-allianz-and-new-india-are-the-most-profitable-non-life-players-in-fy-2024",
+      "publication": "Cafemutual",
+      "date": "2024",
+      "tone": "positive"
+    },
+    {
+      "headline": "Integrated Annual Report 2023-24: Uniting for a Singular Purpose",
+      "url": "https://www.icicilombard.com/docs/default-source/financial-information/annualreport2024.pdf",
+      "publication": "ICICI Lombard",
+      "date": "2024",
+      "tone": "neutral"
+    }
   ],
-
   "aggregate_score": {
     "value_0_100": 73.5,
     "letter_grade": "B",
     "headline": "Strongest complaint metrics in the cohort (10 per 10K) and solid financials, but health CSR (85%) lags peers like HDFC ERGO and Bajaj",
     "computed_at": "2026-05-13",
     "computation_notes": "0.40*85.0 + 0.20*(100-20) + 0.15*(4.2*20) + 0.10*75 + 0.10*60 + 0.05*67 = 34 + 16 + 12.6 + 7.5 + 6 + 3.35 = 79.45. Adjusted down to 73.5 because health-specific CSR is lower than the cohort-best general CSR figure."
+  },
+  "_url_verification": {
+    "verified_at": "2026-05-12T23:57:25Z",
+    "total_urls": 10,
+    "ok": 7,
+    "broken_count": 3,
+    "broken_urls": [
+      "https://www.icicilombard.com/health-insurance/blogs/icici-lombard-health-insurance-claim-settlement-ratio",
+      "https://www.icicilombard.com/investor-relations",
+      "https://www.icicilombard.com/docs/default-source/financial-information/annualreport2024.pdf"
+    ]
   }
 }

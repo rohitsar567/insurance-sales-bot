@@ -1,6 +1,6 @@
 # Research — Corpus Acquisition
 
-_Auto-generated from `rag/corpus/_manifest.json` at 2026-05-12T23:12:11Z_
+_Auto-generated from `rag/corpus/_manifest.json` at 2026-05-12T23:59:58Z_
 
 ## Headline
 - Total attempted: **91** URLs across 10 target insurers

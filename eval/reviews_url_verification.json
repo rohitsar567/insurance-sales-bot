@@ -1,0 +1,231 @@
+{
+  "verified_at": "2026-05-12T23:57:25Z",
+  "per_insurer": {
+    "aditya-birla": {
+      "total": 9,
+      "ok": 9,
+      "broken": 0,
+      "broken_list": []
+    },
+    "bajaj-allianz": {
+      "total": 11,
+      "ok": 11,
+      "broken": 0,
+      "broken_list": []
+    },
+    "care-health": {
+      "total": 13,
+      "ok": 11,
+      "broken": 2,
+      "broken_list": [
+        {
+          "path": "claim_metrics.source_company_url",
+          "url": "https://www.careinsurance.com/health-insurance/health-insurance-claim-settlement-ratio",
+          "status": 403,
+          "error": null
+        },
+        {
+          "path": "in_news.[1].url",
+          "url": "https://www.business-standard.com/finance/personal-finance/star-health-care-niva-bupa-record-most-policyholder-complaints-in-fy24-125090100487_1.html",
+          "status": 403,
+          "error": null
+        }
+      ]
+    },
+    "hdfc-ergo": {
+      "total": 17,
+      "ok": 16,
+      "broken": 1,
+      "broken_list": [
+        {
+          "path": "trustpilot.url",
+          "url": "https://www.trustpilot.com/review/www.hdfcergo.com",
+          "status": 403,
+          "error": null
+        }
+      ]
+    },
+    "icici-lombard": {
+      "total": 10,
+      "ok": 7,
+      "broken": 3,
+      "broken_list": [
+        {
+          "path": "claim_metrics.source_company_url",
+          "url": "https://www.icicilombard.com/health-insurance/blogs/icici-lombard-health-insurance-claim-settlement-ratio",
+          "status": 403,
+          "error": null
+        },
+        {
+          "path": "in_news.[0].url",
+          "url": "https://www.icicilombard.com/investor-relations",
+          "status": 403,
+          "error": null
+        },
+        {
+          "path": "in_news.[2].url",
+          "url": "https://www.icicilombard.com/docs/default-source/financial-information/annualreport2024.pdf",
+          "status": 403,
+          "error": null
+        }
+      ]
+    },
+    "manipalcigna": {
+      "total": 8,
+      "ok": 8,
+      "broken": 0,
+      "broken_list": []
+    },
+    "new-india": {
+      "total": 8,
+      "ok": 7,
+      "broken": 1,
+      "broken_list": [
+        {
+          "path": "in_news.[1].url",
+          "url": "https://www.business-standard.com/companies/news/new-india-assurance-q3fy24-results-net-profit-falls-4-38-to-rs-715-crore-124020901758_1.html",
+          "status": 403,
+          "error": null
+        }
+      ]
+    },
+    "niva-bupa": {
+      "total": 17,
+      "ok": 14,
+      "broken": 3,
+      "broken_list": [
+        {
+          "path": "trustpilot.url",
+          "url": "https://www.trustpilot.com/review/nivabupa.com",
+          "status": 403,
+          "error": null
+        },
+        {
+          "path": "in_news.[0].url",
+          "url": "https://www.business-standard.com/markets/news/niva-bupa-shares-make-positive-debut-on-bourses-list-at-6-premium-124111400326_1.html",
+          "status": 403,
+          "error": null
+        },
+        {
+          "path": "in_news.[2].url",
+          "url": "https://www.business-standard.com/finance/personal-finance/star-health-care-niva-bupa-record-most-policyholder-complaints-in-fy24-125090100487_1.html",
+          "status": 403,
+          "error": null
+        }
+      ]
+    },
+    "star-health": {
+      "total": 13,
+      "ok": 11,
+      "broken": 2,
+      "broken_list": [
+        {
+          "path": "claim_metrics.source_secondary_url",
+          "url": "https://www.business-standard.com/finance/personal-finance/star-health-care-niva-bupa-record-most-policyholder-complaints-in-fy24-125090100487_1.html",
+          "status": 403,
+          "error": null
+        },
+        {
+          "path": "trustpilot.url",
+          "url": "https://www.trustpilot.com/review/www.starhealth.in",
+          "status": 403,
+          "error": null
+        }
+      ]
+    },
+    "tata-aig": {
+      "total": 9,
+      "ok": 9,
+      "broken": 0,
+      "broken_list": []
+    }
+  },
+  "total_urls": 95,
+  "broken_urls": [
+    {
+      "insurer": "care-health",
+      "path": "claim_metrics.source_company_url",
+      "url": "https://www.careinsurance.com/health-insurance/health-insurance-claim-settlement-ratio",
+      "status": 403,
+      "error": null
+    },
+    {
+      "insurer": "care-health",
+      "path": "in_news.[1].url",
+      "url": "https://www.business-standard.com/finance/personal-finance/star-health-care-niva-bupa-record-most-policyholder-complaints-in-fy24-125090100487_1.html",
+      "status": 403,
+      "error": null
+    },
+    {
+      "insurer": "hdfc-ergo",
+      "path": "trustpilot.url",
+      "url": "https://www.trustpilot.com/review/www.hdfcergo.com",
+      "status": 403,
+      "error": null
+    },
+    {
+      "insurer": "icici-lombard",
+      "path": "claim_metrics.source_company_url",
+      "url": "https://www.icicilombard.com/health-insurance/blogs/icici-lombard-health-insurance-claim-settlement-ratio",
+      "status": 403,
+      "error": null
+    },
+    {
+      "insurer": "icici-lombard",
+      "path": "in_news.[0].url",
+      "url": "https://www.icicilombard.com/investor-relations",
+      "status": 403,
+      "error": null
+    },
+    {
+      "insurer": "icici-lombard",
+      "path": "in_news.[2].url",
+      "url": "https://www.icicilombard.com/docs/default-source/financial-information/annualreport2024.pdf",
+      "status": 403,
+      "error": null
+    },
+    {
+      "insurer": "new-india",
+      "path": "in_news.[1].url",
+      "url": "https://www.business-standard.com/companies/news/new-india-assurance-q3fy24-results-net-profit-falls-4-38-to-rs-715-crore-124020901758_1.html",
+      "status": 403,
+      "error": null
+    },
+    {
+      "insurer": "niva-bupa",
+      "path": "trustpilot.url",
+      "url": "https://www.trustpilot.com/review/nivabupa.com",
+      "status": 403,
+      "error": null
+    },
+    {
+      "insurer": "niva-bupa",
+      "path": "in_news.[0].url",
+      "url": "https://www.business-standard.com/markets/news/niva-bupa-shares-make-positive-debut-on-bourses-list-at-6-premium-124111400326_1.html",
+      "status": 403,
+      "error": null
+    },
+    {
+      "insurer": "niva-bupa",
+      "path": "in_news.[2].url",
+      "url": "https://www.business-standard.com/finance/personal-finance/star-health-care-niva-bupa-record-most-policyholder-complaints-in-fy24-125090100487_1.html",
+      "status": 403,
+      "error": null
+    },
+    {
+      "insurer": "star-health",
+      "path": "claim_metrics.source_secondary_url",
+      "url": "https://www.business-standard.com/finance/personal-finance/star-health-care-niva-bupa-record-most-policyholder-complaints-in-fy24-125090100487_1.html",
+      "status": 403,
+      "error": null
+    },
+    {
+      "insurer": "star-health",
+      "path": "trustpilot.url",
+      "url": "https://www.trustpilot.com/review/www.starhealth.in",
+      "status": 403,
+      "error": null
+    }
+  ],
+  "ok_urls": 103
+}

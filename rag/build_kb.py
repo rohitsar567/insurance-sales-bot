@@ -280,6 +280,11 @@ def build_index(policies: list[dict], scorecards: list[Scorecard]) -> str:
 
 RESEARCH_DIR = KB_DIR / "research"
 CALCULATIONS_DIR = KB_DIR / "calculations"
+REVIEWS_KB_DIR = KB_DIR / "reviews"
+PREMIUMS_KB_DIR = KB_DIR / "premiums"
+SECURITY_KB_DIR = KB_DIR / "security"
+EVAL_KB_DIR = KB_DIR / "eval"
+METHODOLOGY_KB_DIR = KB_DIR / "methodology"
 
 
 def build_research_corpus_acquisition() -> str:
@@ -533,11 +538,313 @@ traceable to one of these files (see `backend/faithfulness.py`).
 """
 
 
+def build_reviews_kb_for(slug: str, data: dict) -> str:
+    cm = data.get("claim_metrics", {})
+    agg = data.get("aggregator_ratings", {})
+    tp = data.get("trustpilot", {})
+    reddit = data.get("reddit_sentiment", {})
+    yt = data.get("youtube_coverage", {})
+    news = data.get("in_news", [])
+    score = data.get("aggregate_score", {})
+    ver = data.get("_url_verification", {})
+
+    rows = []
+    rows.append(f"# {data.get('insurer_name', slug)} — Reputation Sheet")
+    rows.append("")
+    rows.append(f"_Auto-generated from `data/reviews/{slug}.json`. Reviews are the v1 substitute for live regulator + sentiment monitoring. Re-build with `python -m rag.build_kb`._")
+    rows.append("")
+    rows.append(f"**Aggregate score:** **{score.get('value_0_100', 'n/a')}** ({score.get('letter_grade', '?')}). _{score.get('headline', '')}_")
+    rows.append("")
+    rows.append(f"**URL verification:** {ver.get('ok', 0)}/{ver.get('total_urls', 0)} URLs reachable via HEAD-check; {ver.get('broken_count', 0)} return 403 to scripts (bot-protected real URLs — open fine in a browser).")
+    rows.append("")
+    rows.append("## IRDAI claim metrics")
+    rows.append("")
+    rows.append("| Metric | Value |")
+    rows.append("| --- | --- |")
+    rows.append(f"| Claim settlement ratio (CSR) | **{cm.get('claim_settlement_ratio_pct', 'n/a')}%** ({cm.get('claim_settlement_ratio_year', 'unknown year')}) |")
+    rows.append(f"| Complaints / 10K policies | **{cm.get('complaints_per_10k_policies', 'n/a')}** ({cm.get('complaints_year', 'unknown')}) |")
+    rows.append(f"| Source | [IRDAI Annual Report]({cm.get('source_irdai_url', '#')}) |")
+    rows.append("")
+    rows.append("## Aggregator portal ratings")
+    rows.append("")
+    rows.append("| Portal | Avg star | Review count | URL |")
+    rows.append("| --- | --- | --- | --- |")
+    for pname, pdata in agg.items():
+        if not pdata: continue
+        rows.append(f"| {pname} | {pdata.get('avg_star', 'n/a')} | {pdata.get('review_count', 'n/a')} | [{(pdata.get('url') or 'n/a')[:60]}]({pdata.get('url', '#')}) |")
+    rows.append("")
+    if tp.get("score") is not None:
+        rows.append(f"**Trustpilot:** {tp.get('score')} ({tp.get('review_count', 'n/a')} reviews) — [{(tp.get('url') or 'n/a')[:60]}]({tp.get('url', '#')})")
+        rows.append("")
+    rows.append("## Reddit / r/IndianFinance sentiment")
+    rows.append("")
+    rows.append(f"- Overall: **{reddit.get('sentiment_overall', 'n/a')}**")
+    rows.append(f"- Mentions estimate: {reddit.get('mentions_last_year_estimate', 'n/a')}")
+    if reddit.get("notable_themes"):
+        rows.append(f"- Themes: {', '.join(reddit['notable_themes'])}")
+    if reddit.get("sample_post_urls"):
+        rows.append(f"- Sample posts:")
+        for u in reddit["sample_post_urls"][:5]:
+            rows.append(f"  - [{u[:80]}]({u})")
+    rows.append("")
+    rows.append("## YouTube coverage")
+    rows.append("")
+    rows.append(f"- Overall sentiment: **{yt.get('overall_youtube_sentiment', 'n/a')}**")
+    for entry in yt.get("top_creators_who_reviewed", [])[:5]:
+        rows.append(f"- **{entry.get('creator', '?')}** — [{(entry.get('video_url') or 'n/a')[:80]}]({entry.get('video_url', '#')}) — _{entry.get('verdict', '')}_")
+    rows.append("")
+    rows.append("## Recent news")
+    rows.append("")
+    for n in news[:8]:
+        rows.append(f"- **{n.get('headline', '?')}** ({n.get('publication', '?')}, {n.get('date', '?')}, tone: {n.get('tone', '?')}) — [{(n.get('url') or 'n/a')[:80]}]({n.get('url', '#')})")
+    rows.append("")
+    rows.append("---")
+    rows.append("")
+    rows.append(f"_Aggregate score formula: 0.40 × CSR + 0.20 × inverse-complaints + 0.15 × avg-aggregator-star + 0.10 × reddit + 0.10 × youtube + 0.05 × news. See `data/reviews/INDEX.md` for the leaderboard._")
+    rows.append("")
+    rows.append(f"**Flows into the bot via:** `score_claim_experience()` in `backend/scorecard.py` — IRDAI CSR + complaints become Claim Experience sub-score signals for every policy this insurer offers.")
+    return "\n".join(rows)
+
+
+def build_reviews_index(all_reviews: list[dict]) -> str:
+    rows = []
+    rows.append("# Reviews — Insurer Reputation Index")
+    rows.append("")
+    rows.append(f"_Auto-generated. Source: `data/reviews/*.json`. Per-insurer sheets in `kb/reviews/<slug>.md`._")
+    rows.append("")
+    rows.append("## Leaderboard")
+    rows.append("")
+    rows.append("| Rank | Insurer | Score | Grade | CSR | Complaints/10K | URL verification |")
+    rows.append("| --- | --- | --- | --- | --- | --- | --- |")
+    for i, r in enumerate(sorted(all_reviews, key=lambda d: -(d.get("aggregate_score", {}).get("value_0_100") or 0)), 1):
+        slug = r.get("insurer_slug")
+        score = r.get("aggregate_score", {})
+        cm = r.get("claim_metrics", {})
+        ver = r.get("_url_verification", {})
+        rows.append(
+            f"| {i} | [{r.get('insurer_name', slug)}](./{slug}.md) | "
+            f"**{score.get('value_0_100', 'n/a')}** | {score.get('letter_grade', '?')} | "
+            f"{cm.get('claim_settlement_ratio_pct', 'n/a')}% | "
+            f"{cm.get('complaints_per_10k_policies', 'n/a')} | "
+            f"{ver.get('ok', 0)}/{ver.get('total_urls', 0)} reachable |"
+        )
+    rows.append("")
+    rows.append("## Bot integration")
+    rows.append("")
+    rows.append("- API: `GET /api/insurers/<slug>/reviews`")
+    rows.append("- The IRDAI CSR + complaints per 10K from this data feeds the **Claim Experience** sub-score of the scorecard (see `kb/policies/<id>.md` for the per-policy effect).")
+    rows.append("- v2 expansions: live Reddit/YouTube sentiment refresh, IRDAI weekly refresh, news monitoring with alerts on insurer-specific incidents.")
+    return "\n".join(rows)
+
+
+def build_premiums_kb() -> str:
+    rows = []
+    rows.append("# Premiums — Illustrative Pricing Data")
+    rows.append("")
+    rows.append("_Auto-generated from `data/premiums/illustrative_premiums.json`. Real PolicyBazaar / InsuranceDekho / rate-chart anchors plus derived scaling factors. NEVER a binding quote._")
+    rows.append("")
+    pf = ROOT / "data" / "premiums" / "illustrative_premiums.json"
+    if not pf.exists():
+        rows.append("_Premium data file not yet generated._")
+        return "\n".join(rows)
+    data = json.loads(pf.read_text())
+    methodology = data.get("methodology", "")
+    sources = data.get("sources_consulted", [])
+    base = data.get("base_premiums", {})
+    scaling = data.get("scaling_factors", {})
+
+    rows.append(f"## Methodology")
+    rows.append("")
+    rows.append(methodology)
+    rows.append("")
+    rows.append("### Sources consulted")
+    rows.append("")
+    for s in sources[:10]:
+        rows.append(f"- [{s[:100]}]({s})")
+    rows.append("")
+    rows.append("## Per-policy anchor samples")
+    rows.append("")
+    rows.append(f"_{len(base)} policies indexed._")
+    rows.append("")
+    for pid, entry in sorted(base.items()):
+        samples = entry.get("samples", [])
+        if not samples: continue
+        rows.append(f"### {entry.get('policy_name', pid)}")
+        rows.append(f"`policy_id`: `{pid}`")
+        rows.append("")
+        rows.append("| Age | SI (₹) | City | Smoker | Family | Premium ₹/yr | Source |")
+        rows.append("| --- | --- | --- | --- | --- | --- | --- |")
+        for s in samples:
+            src = s.get("source_url", "")
+            src_tag = "callback only" if src == "callback_only" else (f"[link]({src})" if src.startswith("http") else "derived")
+            rows.append(
+                f"| {s.get('age', '?')} | {s.get('sum_insured_inr', '?')} | "
+                f"{s.get('city_tier', 'n/a')} | "
+                f"{'Y' if s.get('smoker') else 'N'} | {s.get('family_size', 1)} | "
+                f"**{s.get('annual_premium_inr', '?'):,}** | {src_tag} |"
+            )
+        rows.append("")
+
+    rows.append("## Scaling factors")
+    rows.append("")
+    rows.append("These are derived from comparing real anchor points across age, SI, city, smoker, family-floater dimensions.")
+    rows.append("")
+    for cat, mults in scaling.items():
+        if cat.startswith("_"): continue
+        rows.append(f"### {cat}")
+        rows.append("```")
+        rows.append(json.dumps(mults, indent=2))
+        rows.append("```")
+        rows.append("")
+    return "\n".join(rows)
+
+
+def build_security_kb() -> str:
+    return """# Security — Upload Gates + Hallucination Defense
+
+_Auto-generated. Source modules: `backend/security.py` + `backend/faithfulness.py`._
+
+## Upload security — 5 gates
+
+Every PDF uploaded via `/api/upload-policy` runs through these gates before
+indexing. Failure logs to `logs/upload_blocks.jsonl`.
+
+| # | Gate | Check |
+| --- | --- | --- |
+| 1 | Mechanics | Magic bytes `%PDF`; size 5KB-25MB; `%%EOF` present; dangerous PDF features (`/JavaScript`, `/Launch`, `/OpenAction`, `/EmbeddedFile`, `/SubmitForm`, `/AA`, `/RichMedia`, `/Movie`, `/Sound`, `/GoToR`); embedded executable signatures (Windows PE, Linux ELF, Mach-O, Java class, shell, HTML/JS, PHP) |
+| 2 | Content quality | ≥1,500 chars text; ≥3 pages; ≥1 insurance keyword match (catches "garbage PDF" uploads) |
+| 3 | Prompt injection | 11 regex patterns scanning for "ignore previous instructions", "system prompt reveal", jailbreak markers, role-takeover patterns, im_start/im_end tokens |
+| 4 | Session rate limit | 5 uploads/hour/session; 200 chunks/session lifetime |
+| 5 | IP rate limit | 10 uploads/hour/IP (per X-Forwarded-For or peer IP) |
+
+All gates run for EVERY upload. Block on any failure; the audit trail captures the reason set.
+
+## Hallucination defense — 5 gates (runtime, per-turn)
+
+| # | Gate | What it catches |
+| --- | --- | --- |
+| 1 | Retrieval floor | Top-1 cosine < 0.30 OR avg top-5 < 0.22 → refuse outright |
+| 2 | Citation integrity | Any `[Source:…]` in the bot's reply must point to a real retrieved chunk's policy_name |
+| 3 | Numeric grounding | Every ₹, %, day/month/year in the reply must appear in retrieved chunks (regex) |
+| 4 | LLM-judge faithfulness | Groq Llama-3.3-70B inspects the reply against retrieved chunks; outputs strict JSON; non-circular eval |
+| 5 (Indic) | Hinglish drift LLM-judge | Same idea on the Hinglish back-translation vs the English source |
+
+Plus **regex anchors + back-translate cosine** as additional drift checks
+when the bot replies in Hinglish.
+
+All blocked replies → `logs/hallucinations.jsonl` with the reason set.
+
+## What WE can't (yet) check
+
+- LLM determinism (DeepSeek-V3 / Sarvam-M can produce slightly different
+  output at `temperature=0`).
+- Insurer-side PDF tampering — we trust the source PDF was real at download.
+- Embedding model drift — pinned to BGE-small-en-v1.5.
+
+These are explicit limits documented in `kb/AUDIT_TRAIL.md` §5.
+"""
+
+
+def build_eval_kb_index() -> str:
+    rows = []
+    rows.append("# Eval — Gold Q&A + Run History")
+    rows.append("")
+    rows.append("_Auto-generated. Source: `eval/gold_qa.json` + `eval/results.json` + `eval/run.py`._")
+    rows.append("")
+    gold_path = ROOT / "eval" / "gold_qa.json"
+    if gold_path.exists():
+        gold = json.loads(gold_path.read_text())
+        from collections import Counter
+        by_type = Counter(q.get("question_type") for q in gold)
+        rows.append(f"## Gold Q&A composition — {len(gold)} pairs total")
+        rows.append("")
+        rows.append("| Type | Count |")
+        rows.append("| --- | --- |")
+        for t, n in by_type.most_common():
+            rows.append(f"| `{t}` | {n} |")
+        rows.append("")
+        refusal_count = sum(1 for q in gold if q.get("expected_refusal"))
+        rows.append(f"**Refusal-test questions:** {refusal_count} (these test the bot correctly refuses out-of-corpus questions)")
+        rows.append("")
+    results_path = ROOT / "eval" / "results.json"
+    if results_path.exists():
+        try:
+            r = json.loads(results_path.read_text())
+            s = r.get("summary", {})
+            rows.append("## Most recent eval run")
+            rows.append("")
+            rows.append(f"- Ran: {s.get('ran_at')}")
+            rows.append(f"- Questions: {s.get('n_questions')}")
+            rows.append(f"- Factual accuracy: **{s.get('factual_accuracy', 0)*100:.1f}%**")
+            rows.append(f"- Citation accuracy: **{s.get('citation_accuracy', 0)*100:.1f}%**")
+            rows.append(f"- Refusal precision: **{s.get('refusal_precision', 0)*100:.1f}%**")
+            rows.append(f"- Blocked by faithfulness: {s.get('blocked_count', 0)}")
+            rows.append("")
+        except Exception:
+            pass
+    rows.append("## Methodology")
+    rows.append("")
+    rows.append("- Gold Q&A built by 3 pipelines: auto-from-extraction (templated), LLM-drafted (human-verified), hand-crafted adversarial. See `docs/03-eval-plan.md`.")
+    rows.append("- Grader: Groq Llama-3.3-70B (different model family from generators → non-circular).")
+    rows.append("- Re-run: `python -m eval.run [--limit N] [--policy <id>]`.")
+    rows.append("- CI gate: `.github/workflows/eval.yml` runs eval on every PR; blocks merge if factual_accuracy < 0.65 or citation_accuracy < 0.55.")
+    return "\n".join(rows)
+
+
+def build_methodology_kb() -> str:
+    return """# Methodology — Pointers to all design docs
+
+_All design / decision docs in one navigable place._
+
+## Foundation docs (in `docs/`)
+
+| Doc | What it covers |
+| --- | --- |
+| [`01-requirements.md`](../../docs/01-requirements.md) | Product vision, 3 user personas, buyer journey, 10 success criteria, 11 non-goals, constraints |
+| [`02-architecture.md`](../../docs/02-architecture.md) | Stack picks, system diagram, schema groupings, repo layout, c-readiness commitments |
+| [`03-eval-plan.md`](../../docs/03-eval-plan.md) | 3-pipeline gold Q&A construction, grader, metrics, run cadence |
+| [`04-failure-modes.md`](../../docs/04-failure-modes.md) | 16 named failure modes (F-01..F-16), detection + mitigation per mode |
+| [`05-needs-analysis-flow.md`](../../docs/05-needs-analysis-flow.md) | Fact-find question graph, bilingual prompts, termination logic |
+| [`decisions.md`](../../docs/decisions.md) | Append-only log of 17+ technical decisions with alternatives + reasoning |
+| [`tech-stack-rationale.md`](../../docs/tech-stack-rationale.md) | 22-row stack pick table + selection rubric + cost envelope |
+| [`scorecard-methodology.md`](../../docs/scorecard-methodology.md) | 48-field schema → 24 scored fields → 6 sub-scores → A-F grade |
+| [`ROADMAP.md`](../../docs/ROADMAP.md) | v1 vertical slice → v2 platform plan |
+| [`information_source_map.md`](../../docs/information_source_map.md) | Corpus catalog (auto-generated by `rag/source_map.py`) |
+
+## KB sub-indexes (each regenerable via `python -m rag.build_kb`)
+
+| Path | Content |
+| --- | --- |
+| [`kb/INDEX.md`](../INDEX.md) | Master index |
+| [`kb/AUDIT_TRAIL.md`](../AUDIT_TRAIL.md) | 10-stage data lineage + decision-to-artifact map |
+| [`kb/policies/`](../policies/) | One sheet per extracted policy |
+| [`kb/research/`](../research/) | Corpus acquisition, URL verification, insurer universe |
+| [`kb/calculations/`](../calculations/) | Scorecard results, eval results, extraction audit |
+| [`kb/reviews/`](../reviews/) | Per-insurer reputation sheets + leaderboard |
+| [`kb/premiums/`](../premiums/) | Illustrative pricing samples + scaling factors |
+| [`kb/security/`](../security/) | Upload gates + hallucination defense |
+| [`kb/eval/`](../eval/) | Gold Q&A composition + run history |
+
+## How to navigate
+
+- New visitor → start at `kb/INDEX.md`
+- Auditor → start at `kb/AUDIT_TRAIL.md`
+- Engineer onboarding → start at `docs/02-architecture.md`
+- BFSI compliance review → `kb/security/` + `docs/04-failure-modes.md` + `logs/hallucinations.jsonl`
+- Buyer-side curiosity → any `kb/policies/<id>.md` ends with a "What the bot will and won't say" section.
+"""
+
+
 def main():
     KB_DIR.mkdir(parents=True, exist_ok=True)
     POLICIES_DIR.mkdir(parents=True, exist_ok=True)
     RESEARCH_DIR.mkdir(parents=True, exist_ok=True)
     CALCULATIONS_DIR.mkdir(parents=True, exist_ok=True)
+    REVIEWS_KB_DIR.mkdir(parents=True, exist_ok=True)
+    PREMIUMS_KB_DIR.mkdir(parents=True, exist_ok=True)
+    SECURITY_KB_DIR.mkdir(parents=True, exist_ok=True)
+    EVAL_KB_DIR.mkdir(parents=True, exist_ok=True)
+    METHODOLOGY_KB_DIR.mkdir(parents=True, exist_ok=True)
 
     files = sorted(EXTRACTED.glob("*.json"))
     print(f"Found {len(files)} extracted policy JSONs")
@@ -568,13 +875,45 @@ def main():
     (CALCULATIONS_DIR / "eval_results.md").write_text(build_calc_eval_results())
     (CALCULATIONS_DIR / "extraction_quality_audit.md").write_text(build_calc_extraction_audit(policies))
 
+    # Reviews KB
+    reviews_dir = ROOT / "data" / "reviews"
+    all_reviews = []
+    if reviews_dir.exists():
+        for rf in sorted(reviews_dir.glob("*.json")):
+            try:
+                rdata = json.loads(rf.read_text())
+                slug = rdata.get("insurer_slug", rf.stem)
+                (REVIEWS_KB_DIR / f"{slug}.md").write_text(build_reviews_kb_for(slug, rdata))
+                all_reviews.append(rdata)
+            except Exception:
+                continue
+        if all_reviews:
+            (REVIEWS_KB_DIR / "INDEX.md").write_text(build_reviews_index(all_reviews))
+
+    # Premiums KB
+    (PREMIUMS_KB_DIR / "INDEX.md").write_text(build_premiums_kb())
+
+    # Security KB
+    (SECURITY_KB_DIR / "INDEX.md").write_text(build_security_kb())
+
+    # Eval KB
+    (EVAL_KB_DIR / "INDEX.md").write_text(build_eval_kb_index())
+
+    # Methodology KB
+    (METHODOLOGY_KB_DIR / "INDEX.md").write_text(build_methodology_kb())
+
     # Master index
     (KB_DIR / "INDEX.md").write_text(build_master_index(policies, scorecards))
 
     print(f"\n✓ kb/INDEX.md")
-    print(f"✓ kb/policies/  ({len(policies)} files)")
-    print(f"✓ kb/research/  (3 files)")
-    print(f"✓ kb/calculations/  (3 files)")
+    print(f"✓ kb/policies/   ({len(policies)} files)")
+    print(f"✓ kb/research/   (3 files)")
+    print(f"✓ kb/calculations/ (3 files)")
+    print(f"✓ kb/reviews/    ({len(all_reviews) + (1 if all_reviews else 0)} files)")
+    print(f"✓ kb/premiums/   (1 file)")
+    print(f"✓ kb/security/   (1 file)")
+    print(f"✓ kb/eval/       (1 file)")
+    print(f"✓ kb/methodology/ (1 file)")
     print(f"\nKB rebuilt — open `kb/INDEX.md` for the master map.")
 
 

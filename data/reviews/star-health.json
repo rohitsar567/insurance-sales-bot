@@ -2,7 +2,6 @@
   "insurer_slug": "star-health",
   "insurer_name": "Star Health & Allied Insurance",
   "last_updated": "2026-05-13",
-
   "claim_metrics": {
     "claim_settlement_ratio_pct": 82.31,
     "claim_settlement_ratio_year": "2023-24",
@@ -14,20 +13,29 @@
     "source_irdai_url": "https://irdai.gov.in/document-detail?documentId=6436847",
     "source_secondary_url": "https://www.business-standard.com/finance/personal-finance/star-health-care-niva-bupa-record-most-policyholder-complaints-in-fy24-125090100487_1.html"
   },
-
   "aggregator_ratings": {
-    "policybazaar": {"avg_star": 4.3, "review_count": null, "url": "https://www.policybazaar.com/star-health-insurance-reviews-881/"},
-    "insuredekho": {"avg_star": 4.4, "review_count": 403, "url": "https://www.insurancedekho.com/health-insurance/star/user-reviews"},
-    "mouthshut": {"avg_star": 2.0, "review_count": null, "url": "https://www.mouthshut.com/product-reviews/star-health-insurance-reviews-925865246"}
+    "policybazaar": {
+      "avg_star": 4.3,
+      "review_count": null,
+      "url": "https://www.policybazaar.com/star-health-insurance-reviews-881/"
+    },
+    "insuredekho": {
+      "avg_star": 4.4,
+      "review_count": 403,
+      "url": "https://www.insurancedekho.com/health-insurance/star/user-reviews"
+    },
+    "mouthshut": {
+      "avg_star": 2.0,
+      "review_count": null,
+      "url": "https://www.mouthshut.com/product-reviews/star-health-insurance-reviews-925865246"
+    }
   },
-
   "trustpilot": {
     "score": 1.5,
     "review_count": null,
     "url": "https://www.trustpilot.com/review/www.starhealth.in",
     "note": "Largely negative reviews; complaints cluster around claim rejections and post-sale service"
   },
-
   "reddit_sentiment": {
     "subreddit": "IndianFinance / IndiaInvestments / personalfinanceindia",
     "mentions_last_year_estimate": 60,
@@ -44,27 +52,66 @@
       "https://technofino.in/community/threads/star-health-insurance-renew-or-port.35180/"
     ]
   },
-
   "youtube_coverage": {
     "top_creators_who_reviewed": [
-      {"creator": "Ditto Insurance", "video_url": "https://www.youtube.com/watch?v=0tiEsznD61I", "verdict": "comparison Super Star vs HDFC Ergo Optima Secure; Ditto prefers HDFC ERGO for reliability"},
-      {"creator": "Ditto Insurance (review)", "video_url": "https://joinditto.in/articles/health-insurance/star-health-insurance-review/", "verdict": "suitable for senior citizens; concerns on claim experience"}
+      {
+        "creator": "Ditto Insurance",
+        "video_url": "https://www.youtube.com/watch?v=0tiEsznD61I",
+        "verdict": "comparison Super Star vs HDFC Ergo Optima Secure; Ditto prefers HDFC ERGO for reliability"
+      },
+      {
+        "creator": "Ditto Insurance (review)",
+        "video_url": "https://joinditto.in/articles/health-insurance/star-health-insurance-review/",
+        "verdict": "suitable for senior citizens; concerns on claim experience"
+      }
     ],
     "overall_youtube_sentiment": "mixed"
   },
-
   "in_news": [
-    {"headline": "Star Health under IRDAI lens over claim settlement; insurer says routine process", "url": "https://www.businesstoday.in/personal-finance/insurance/story/star-health-under-irdai-lens-over-claim-settlement-insurer-says-routine-process-469373-2025-03-25", "publication": "Business Today", "date": "2025-03-25", "tone": "negative"},
-    {"headline": "Star Health Under Fire: IRDAI Scrutinizes High Claim Rejections & Delays", "url": "https://the420.in/star-health-under-fire-irdai-scrutinizes-high-claim-rejections-delays/", "publication": "The420.in", "date": "2025-04", "tone": "negative"},
-    {"headline": "Star Health, CARE, Niva Bupa record most policyholder complaints in FY24", "url": "https://www.business-standard.com/finance/personal-finance/star-health-care-niva-bupa-record-most-policyholder-complaints-in-fy24-125090100487_1.html", "publication": "Business Standard", "date": "2025-09-01", "tone": "negative"},
-    {"headline": "Star Health Under Irdai Scrutiny For Health Insurance Claim Settlement Practices", "url": "https://www.outlookmoney.com/insurance/health-insurance/star-health-under-irdai-scrutiny-for-health-insurance-claim-settlement-practices", "publication": "Outlook Money", "date": "2025-04", "tone": "negative"}
+    {
+      "headline": "Star Health under IRDAI lens over claim settlement; insurer says routine process",
+      "url": "https://www.businesstoday.in/personal-finance/insurance/story/star-health-under-irdai-lens-over-claim-settlement-insurer-says-routine-process-469373-2025-03-25",
+      "publication": "Business Today",
+      "date": "2025-03-25",
+      "tone": "negative"
+    },
+    {
+      "headline": "Star Health Under Fire: IRDAI Scrutinizes High Claim Rejections & Delays",
+      "url": "https://the420.in/star-health-under-fire-irdai-scrutinizes-high-claim-rejections-delays/",
+      "publication": "The420.in",
+      "date": "2025-04",
+      "tone": "negative"
+    },
+    {
+      "headline": "Star Health, CARE, Niva Bupa record most policyholder complaints in FY24",
+      "url": "https://www.business-standard.com/finance/personal-finance/star-health-care-niva-bupa-record-most-policyholder-complaints-in-fy24-125090100487_1.html",
+      "publication": "Business Standard",
+      "date": "2025-09-01",
+      "tone": "negative"
+    },
+    {
+      "headline": "Star Health Under Irdai Scrutiny For Health Insurance Claim Settlement Practices",
+      "url": "https://www.outlookmoney.com/insurance/health-insurance/star-health-under-irdai-scrutiny-for-health-insurance-claim-settlement-practices",
+      "publication": "Outlook Money",
+      "date": "2025-04",
+      "tone": "negative"
+    }
   ],
-
   "aggregate_score": {
     "value_0_100": 60.4,
     "letter_grade": "C",
     "headline": "India's largest standalone health insurer by premium, but under IRDAI scrutiny for the sector's highest complaint volume (13,308 in FY24) and lowest CSR (82.3%) among standalone insurers",
     "computed_at": "2026-05-13",
     "computation_notes": "0.40*82.31 + 0.20*(100-50*2) + 0.15*(4.0*20) + 0.10*40 + 0.10*60 + 0.05*0 = 32.9 + 0 + 12 + 4 + 6 + 0 = 54.9 (uncapped). Complaints capped at 50; star avg ~4.0 across aggregators; Reddit mixed-negative=40; YouTube mixed=60; news 0 positive of 4."
+  },
+  "_url_verification": {
+    "verified_at": "2026-05-12T23:57:25Z",
+    "total_urls": 13,
+    "ok": 11,
+    "broken_count": 2,
+    "broken_urls": [
+      "https://www.business-standard.com/finance/personal-finance/star-health-care-niva-bupa-record-most-policyholder-complaints-in-fy24-125090100487_1.html",
+      "https://www.trustpilot.com/review/www.starhealth.in"
+    ]
   }
 }

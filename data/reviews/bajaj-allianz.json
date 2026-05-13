@@ -2,7 +2,6 @@
   "insurer_slug": "bajaj-allianz",
   "insurer_name": "Bajaj Allianz General Insurance",
   "last_updated": "2026-05-13",
-
   "claim_metrics": {
     "claim_settlement_ratio_pct": 92.24,
     "claim_settlement_ratio_year": "2023-24",
@@ -15,19 +14,28 @@
     "source_company_url": "https://www.bajajgeneralinsurance.com/about-us/financial-information.html",
     "source_annual_report": "https://www.bajajgeneralinsurance.com/download-documents/annual-report/Annual-Report-2023-2024.pdf"
   },
-
   "aggregator_ratings": {
-    "policybazaar": {"avg_star": 4.5, "review_count": null, "url": "https://www.policybazaar.com/insurance-companies/bajaj-allianz-health-insurance/claim-settlement-ratio/"},
-    "insuredekho": {"avg_star": 4.4, "review_count": null, "url": "https://www.insurancedekho.com/health-insurance/bajaj-allianz/claim-settlement"},
-    "joinditto": {"avg_star": 4.5, "review_count": null, "url": "https://joinditto.in/articles/health-insurance/bajaj-general-health-insurance-claim-settlement-ratio/"}
+    "policybazaar": {
+      "avg_star": 4.5,
+      "review_count": null,
+      "url": "https://www.policybazaar.com/insurance-companies/bajaj-allianz-health-insurance/claim-settlement-ratio/"
+    },
+    "insuredekho": {
+      "avg_star": 4.4,
+      "review_count": null,
+      "url": "https://www.insurancedekho.com/health-insurance/bajaj-allianz/claim-settlement"
+    },
+    "joinditto": {
+      "avg_star": 4.5,
+      "review_count": null,
+      "url": "https://joinditto.in/articles/health-insurance/bajaj-general-health-insurance-claim-settlement-ratio/"
+    }
   },
-
   "trustpilot": {
     "score": null,
     "review_count": null,
     "url": null
   },
-
   "reddit_sentiment": {
     "subreddit": "IndianFinance / IndiaInvestments",
     "mentions_last_year_estimate": 25,
@@ -44,25 +52,51 @@
       "https://www.policyx.com/health-insurance/bajaj-general-health-insurance/claim-settlement-ratio/"
     ]
   },
-
   "youtube_coverage": {
     "top_creators_who_reviewed": [
-      {"creator": "Ditto Insurance", "video_url": "https://joinditto.in/articles/health-insurance/bajaj-general-health-insurance-claim-settlement-ratio/", "verdict": "ranked in top-5 by Ditto for retail health"}
+      {
+        "creator": "Ditto Insurance",
+        "video_url": "https://joinditto.in/articles/health-insurance/bajaj-general-health-insurance-claim-settlement-ratio/",
+        "verdict": "ranked in top-5 by Ditto for retail health"
+      }
     ],
     "overall_youtube_sentiment": "favourable"
   },
-
   "in_news": [
-    {"headline": "Bajaj Allianz General Insurance delivers strong financial results with profits rising 27% to Rs 921 crore", "url": "https://www.bajajallianz.com/download-documents/press-release/Press-Release-Finance-Bajaj-Allianz-General-Insurance-delivers-strong-financial-results-with-profits-rising-by-27percent-to-Rs%20921-crore.pdf", "publication": "Bajaj Allianz", "date": "2024", "tone": "positive"},
-    {"headline": "ICICI Lombard, Bajaj Allianz and New India are the most profitable non-life players in FY 2024", "url": "https://cafemutual.com/news/insurance/33076-icici-lombard-bajaj-allianz-and-new-india-are-the-most-profitable-non-life-players-in-fy-2024", "publication": "Cafemutual", "date": "2024", "tone": "positive"},
-    {"headline": "Bajaj Allianz GWP grew to Rs 20,630 crore in FY24, 33.2% growth", "url": "https://www.bajajgeneralinsurance.com/about-us/financial-highlights.html", "publication": "Bajaj Allianz IR", "date": "2024", "tone": "positive"}
+    {
+      "headline": "Bajaj Allianz General Insurance delivers strong financial results with profits rising 27% to Rs 921 crore",
+      "url": "https://www.bajajallianz.com/download-documents/press-release/Press-Release-Finance-Bajaj-Allianz-General-Insurance-delivers-strong-financial-results-with-profits-rising-by-27percent-to-Rs%20921-crore.pdf",
+      "publication": "Bajaj Allianz",
+      "date": "2024",
+      "tone": "positive"
+    },
+    {
+      "headline": "ICICI Lombard, Bajaj Allianz and New India are the most profitable non-life players in FY 2024",
+      "url": "https://cafemutual.com/news/insurance/33076-icici-lombard-bajaj-allianz-and-new-india-are-the-most-profitable-non-life-players-in-fy-2024",
+      "publication": "Cafemutual",
+      "date": "2024",
+      "tone": "positive"
+    },
+    {
+      "headline": "Bajaj Allianz GWP grew to Rs 20,630 crore in FY24, 33.2% growth",
+      "url": "https://www.bajajgeneralinsurance.com/about-us/financial-highlights.html",
+      "publication": "Bajaj Allianz IR",
+      "date": "2024",
+      "tone": "positive"
+    }
   ],
-
   "aggregate_score": {
     "value_0_100": 84.5,
     "letter_grade": "B",
     "headline": "Industry-leading complaints record (3 per 10K) and high CSR (92.2%); third-largest non-life insurer in India",
     "computed_at": "2026-05-13",
     "computation_notes": "0.40*92.24 + 0.20*(100-6) + 0.15*(4.47*20) + 0.10*90 + 0.10*90 + 0.05*100 = 36.9 + 18.8 + 13.4 + 9 + 9 + 5 = 92.1. Adjusted down to 84.5 because brand awareness in health-specific (vs general) segment is mid-tier and review-count footprint smaller than Star/HDFC."
+  },
+  "_url_verification": {
+    "verified_at": "2026-05-12T23:57:25Z",
+    "total_urls": 11,
+    "ok": 11,
+    "broken_count": 0,
+    "broken_urls": []
   }
 }
