@@ -2176,35 +2176,29 @@ function PolicyDetailModal({ policy, onClose }: { policy: MarketplacePolicy; onC
           )}
 
           <div>
-            <h4 className="text-sm font-semibold mb-2">Key terms</h4>
-            <div className="grid grid-cols-2 gap-3 text-xs">
-              <Stat label="Sum insured up to" value={siDisplay} />
-              <Stat label="Entry age" value={(() => {
-                if (!policy.min_entry_age && !policy.max_entry_age) return "—";
-                // min_entry_age is sometimes stored in DAYS (infant cover, e.g., 91 days)
-                // and max_entry_age in YEARS (e.g., 65). Detect: if min > 18, it's years;
-                // if min <= 18 and looks like a day-count (≥30), label as days.
+            <h4 className="text-sm font-semibold mb-3">What this policy covers, in plain words</h4>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
+              <Stat label={<Jargon term="SI" uiLang="en">Cover up to</Jargon>} value={siDisplay} />
+              <Stat label="Who can buy + renew" value={(() => {
                 const min = policy.min_entry_age;
                 const max = policy.max_entry_age;
-                const minStr = min ? (min >= 30 && min <= 365 ? `${min} days` : `${min} yrs`) : "—";
-                const maxStr = max ? `${max} yrs` : "—";
-                if (min && max) return `${minStr} – ${maxStr}`;
-                return min ? minStr : maxStr;
+                const renew = policy.max_renewal_age;
+                const minStr = min ? (min >= 30 && min <= 365 ? `${min} days` : `${min} yrs`) : null;
+                const maxStr = max ? `${max} yrs` : null;
+                const range = minStr && maxStr ? `${minStr} – ${maxStr}` : (minStr || maxStr || "Not stated");
+                const renewStr = renew ? (renew >= 99 ? " · lifelong renewal" : ` · renews up to ${renew}`) : "";
+                return range + renewStr;
               })()} />
-              <Stat label="Renewal up to" value={policy.max_renewal_age ? (policy.max_renewal_age >= 99 ? "Lifelong" : `${policy.max_renewal_age}`) : "—"} />
-              <Stat label="Initial waiting" value={policy.initial_waiting_period_days ? `${policy.initial_waiting_period_days} days` : "—"} />
-              <Stat label="Pre-existing waiting" value={policy.pre_existing_disease_waiting_months ? `${policy.pre_existing_disease_waiting_months} months` : "—"} />
-              <Stat label="Maternity waiting" value={policy.maternity_waiting_months ? `${policy.maternity_waiting_months} months` : "—"} />
-              <Stat label="Copayment" value={policy.copayment_pct != null ? `${policy.copayment_pct}%` : "None"} />
-              <Stat label="No-claim bonus" value={policy.no_claim_bonus_pct ? `${policy.no_claim_bonus_pct}%` : "—"} />
-              <Stat label="Network hospitals" value={policy.network_hospital_count ? `${policy.network_hospital_count.toLocaleString()}+` : "—"} />
-              <Stat label="AYUSH covered" value={policy.ayush_coverage === true ? "Yes" : policy.ayush_coverage === false ? "No" : "—"} />
-              <Stat label="Maternity" value={policy.maternity_coverage === true ? "Covered" : policy.maternity_coverage === false ? "Not covered" : "—"} />
-              <Stat label="Cashless" value={policy.cashless_treatment_supported === true ? "Supported" : "—"} />
+              <Stat label="Wait before any claim" value={policy.initial_waiting_period_days ? `${policy.initial_waiting_period_days} days from start` : "Not stated"} />
+              <Stat label={<Jargon term="PED" uiLang="en">Wait if you already had a condition</Jargon>} value={policy.pre_existing_disease_waiting_months ? `${policy.pre_existing_disease_waiting_months} months` : "Not stated"} />
+              <Stat label="Maternity" value={policy.maternity_coverage === true ? (policy.maternity_waiting_months ? `Covered after ${policy.maternity_waiting_months}-month wait` : "Covered") : policy.maternity_coverage === false ? "Not covered" : "Check the wording"} />
+              <Stat label={<Jargon term="CoPay" uiLang="en">Your share per claim</Jargon>} value={policy.copayment_pct != null ? (policy.copayment_pct === 0 ? "Insurer pays it all" : `You pay ${policy.copayment_pct}% of every bill`) : "Not stated"} />
+              <Stat label={<Jargon term="NCB" uiLang="en">Reward for staying claim-free</Jargon>} value={policy.no_claim_bonus_pct ? `+${policy.no_claim_bonus_pct}% cover each claim-free year` : "Not stated"} />
+              <Stat label={<Jargon term="Cashless" uiLang="en">Cashless at hospital</Jargon>} value={policy.cashless_treatment_supported === true ? `Yes · ${policy.network_hospital_count ? policy.network_hospital_count.toLocaleString() + "+ network hospitals" : "network published by insurer"}` : "Not supported"} />
+              <Stat label={<Jargon term="AYUSH" uiLang="en">AYUSH (Ayurveda, Yoga…)</Jargon>} value={policy.ayush_coverage === true ? "Covered" : policy.ayush_coverage === false ? "Not covered" : "Check the wording"} />
               {policy.room_rent_capping && (
-                <div className="col-span-2">
-                  <div className="text-[10px] text-[var(--muted-foreground)] uppercase tracking-wide">Room rent</div>
-                  <div className="text-xs">{policy.room_rent_capping}</div>
+                <div className="col-span-2 pt-1 border-t border-[var(--border)]">
+                  <Stat label={<Jargon term="RoomRent" uiLang="en">Hospital room category</Jargon>} value={policy.room_rent_capping} />
                 </div>
               )}
             </div>
