@@ -457,6 +457,62 @@ class ScorecardSubScore(BaseModel):
     signals: list[str]
 
 
+class ProfileCompletenessResponse(BaseModel):
+    completeness: float                  # 0.0 - 1.0
+    completeness_pct: int                # 0 - 100
+    fields_collected: list[str]
+    fields_missing: list[str]
+    is_personalized: bool                # True if completeness >= threshold
+    gate_threshold: float = 0.6
+    next_question_hint: Optional[str] = None
+
+
+@app.get("/api/profile/completeness", response_model=ProfileCompletenessResponse)
+async def profile_completeness_view(session_id: Optional[str] = None):
+    """Returns how much we know about the user. Frontend uses this to gate the
+    personalized scorecard render — until completeness >= 0.6 we show the
+    insurer-level metrics only, NOT the per-user grade.
+    """
+    from backend.scorecard import profile_completeness as _completeness
+    from backend.session_state import get_session
+    from backend.needs_finder import next_question
+
+    if not session_id:
+        return ProfileCompletenessResponse(
+            completeness=0.0, completeness_pct=0,
+            fields_collected=[], fields_missing=[],
+            is_personalized=False,
+            next_question_hint="Start the chat and tell me about your situation",
+        )
+    sess = get_session(session_id)
+    p = sess.profile
+    profile_dict = {
+        "age": p.age, "dependents": p.dependents, "income_band": p.income_band,
+        "existing_cover_inr": p.existing_cover_inr, "primary_goal": p.primary_goal,
+        "location_tier": p.location_tier, "parents_to_insure": p.parents_to_insure,
+        "parents_age_max": p.parents_age_max, "parents_has_ped": p.parents_has_ped,
+        "health_conditions": p.health_conditions, "budget_band": p.budget_band,
+    }
+    c = _completeness(profile_dict)
+    collected = [k for k, v in profile_dict.items() if v not in (None, "", [], False)]
+    missing = [k for k, v in profile_dict.items() if v in (None, "", [])]
+    hint = None
+    try:
+        nq = next_question(p)
+        if nq:
+            hint = nq.prompt_en
+    except Exception:
+        pass
+    return ProfileCompletenessResponse(
+        completeness=c,
+        completeness_pct=int(c * 100),
+        fields_collected=collected,
+        fields_missing=missing,
+        is_personalized=c >= 0.6,
+        next_question_hint=hint,
+    )
+
+
 class ScorecardResponse(BaseModel):
     policy_id: str
     policy_name: str
