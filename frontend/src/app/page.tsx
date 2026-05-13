@@ -1302,6 +1302,22 @@ const INSURER_COLOR: Record<string, string> = {
   "tata-aig":      "bg-slate-700",
 };
 
+// SafeLink — renders a real <a> only when href is non-empty + not a "#"
+// placeholder. Otherwise renders the children as a non-interactive span so
+// the user never lands on a dead link. Closes #107 ghost-URL prevention.
+function SafeLink({ href, children, className, fallbackClassName }: {
+  href?: string | null;
+  children: React.ReactNode;
+  className?: string;
+  fallbackClassName?: string;
+}) {
+  const ok = !!href && href !== "#" && href.startsWith("http");
+  if (ok) {
+    return <a href={href!} target="_blank" rel="noopener" className={className}>{children}</a>;
+  }
+  return <span className={fallbackClassName || `${className || ""} opacity-50 cursor-not-allowed`} title="No verified source URL available">{children}</span>;
+}
+
 // Jargon — inline component that wraps a term and shows an info popover
 // on click with a plain-language explanation. Bilingual via uiLang.
 function Jargon({ term, children, uiLang }: { term: keyof typeof GLOSSARY; children: React.ReactNode; uiLang: UILang }) {
@@ -1691,10 +1707,10 @@ function InsurerReviewsBlock({ reviews }: { reviews: InsurerReviews }) {
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
         {cm.claim_settlement_ratio_pct != null && (
-          <a href={cm.source_irdai_url || "#"} target="_blank" rel="noopener" className="rounded-lg border border-[var(--border)] p-2 hover:border-[var(--primary)] transition">
+          <SafeLink href={cm.source_irdai_url} className="rounded-lg border border-[var(--border)] p-2 hover:border-[var(--primary)] transition block">
             <div className="text-[9px] uppercase tracking-wide text-[var(--muted-foreground)]">Claim ratio (IRDAI {cm.claim_settlement_ratio_year})</div>
             <div className="font-semibold text-sm">{cm.claim_settlement_ratio_pct}%</div>
-          </a>
+          </SafeLink>
         )}
         {cm.complaints_per_10k_policies != null && (
           <div className="rounded-lg border border-[var(--border)] p-2">
@@ -1703,10 +1719,10 @@ function InsurerReviewsBlock({ reviews }: { reviews: InsurerReviews }) {
           </div>
         )}
         {Object.entries(agg).filter(([, v]) => v?.avg_star != null).slice(0, 2).map(([portal, v]) => (
-          <a key={portal} href={v?.url || "#"} target="_blank" rel="noopener" className="rounded-lg border border-[var(--border)] p-2 hover:border-[var(--primary)] transition">
+          <SafeLink key={portal} href={v?.url} className="rounded-lg border border-[var(--border)] p-2 hover:border-[var(--primary)] transition block">
             <div className="text-[9px] uppercase tracking-wide text-[var(--muted-foreground)]">{portal}</div>
             <div className="font-semibold text-sm">{v?.avg_star}★ {v?.review_count != null && <span className="opacity-60 font-normal">({v?.review_count.toLocaleString()})</span>}</div>
-          </a>
+          </SafeLink>
         ))}
       </div>
       {reviews.reddit_sentiment?.notable_themes && reviews.reddit_sentiment.notable_themes.length > 0 && (
@@ -1724,9 +1740,9 @@ function InsurerReviewsBlock({ reviews }: { reviews: InsurerReviews }) {
           <div className="text-[10px] uppercase tracking-wide text-[var(--muted-foreground)] font-semibold mb-1">Reviewed by</div>
           <div className="space-y-0.5">
             {reviews.youtube_coverage.top_creators_who_reviewed.slice(0, 3).map((c, i) => (
-              <a key={i} href={c.video_url || "#"} target="_blank" rel="noopener" className="block text-xs hover:text-[var(--primary)]">
+              <SafeLink key={i} href={c.video_url} className="block text-xs hover:text-[var(--primary)]">
                 <span className="font-medium">{c.creator}</span> — <span className="text-[var(--muted-foreground)]">{c.verdict}</span>
-              </a>
+              </SafeLink>
             ))}
           </div>
         </div>
