@@ -561,8 +561,14 @@ function PremiumCalculatorPanel({ onClose }: { onClose: () => void }) {
             </div>
             <div>
               <label className="flex items-center justify-between text-xs mb-1">
-                <span className="font-medium">Voluntary co-pay</span>
-                <span className="font-mono">{copay}%</span>
+                <span className="font-medium">Your share of every claim</span>
+                <span className="font-mono">
+                  {copay === 0 ? (
+                    <span className="text-emerald-600 font-semibold">Insurer pays it all</span>
+                  ) : (
+                    <span>You pay ~₹{Math.round(sumInsured * copay / 100 / 100000)}L on a ₹{Math.round(sumInsured / 100000)}L claim</span>
+                  )}
+                </span>
               </label>
               <input
                 type="range" min={0} max={40} step={5}
@@ -570,7 +576,11 @@ function PremiumCalculatorPanel({ onClose }: { onClose: () => void }) {
                 onChange={(e) => setCopay(parseInt(e.target.value))}
                 className="w-full accent-[var(--primary)]"
               />
-              <p className="text-[10px] text-[var(--muted-foreground)] mt-0.5">Higher co-pay = lower premium; you pay this % of each claim</p>
+              <p className="text-[10px] text-[var(--muted-foreground)] mt-0.5">
+                {copay === 0
+                  ? "No share. Highest premium."
+                  : `Your premium drops ~${Math.round(copay * 0.7)}%. In exchange you pay ₹${Math.round(sumInsured * copay / 100 / 1000)}k on a ₹${Math.round(sumInsured / 100000)}L hospital bill.`}
+              </p>
             </div>
             <div className="flex items-center gap-3 flex-wrap text-xs">
               <span className="font-medium">City tier:</span>
@@ -1328,7 +1338,14 @@ function PerPolicyPremiumEstimator({ policy }: { policy: MarketplacePolicy }) {
         </div>
         <div>
           <div className="flex items-center justify-between text-[10px] uppercase tracking-wide text-[var(--muted-foreground)] font-semibold">
-            <span>Co-pay</span><span className="font-mono">{copay}%</span>
+            <span>Your share per claim</span>
+            <span className="font-mono">
+              {copay === 0 ? (
+                <span className="text-emerald-600">Insurer pays all</span>
+              ) : (
+                <span>₹{Math.round(si * copay / 100 / 100000) || "0"}L on ₹{Math.round(si / 100000)}L</span>
+              )}
+            </span>
           </div>
           <input type="range" min={0} max={40} step={5} value={copay} onChange={(e) => setCopay(parseInt(e.target.value))} className="w-full accent-[var(--primary)]" />
         </div>
