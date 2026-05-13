@@ -348,4 +348,58 @@ Plus Sarvam-M used as brain (wrong fit — Sarvam-M's 2048 output cap + `<think>
 
 ---
 
+## D-020 — Split data from code: HF Dataset for corpus + Chroma, HF Space for code only
+
+**Date:** 2026-05-14
+**Status:** Locked (live + verified)
+
+**Context:** Free-tier HF Spaces have a hard **1 GB combined git+LFS storage cap**. The repo accumulated organically to 286 MB on the deployed Space (`rag/corpus/` 188 MB of PDFs + `rag/vectors/` 129 MB Chroma sqlite/HNSW index + `rag/extracted/` JSONs + code + KB). New pushes that added or modified large blobs hit `403 Forbidden: Repository storage limit reached (Max: 1 GB)`. Worse, the 87 MB IRDAI master-circular PDF and 110 MB Chroma DB were individually over HF's 10 MB per-file `git push` threshold without LFS-tracked attributes, so plain `git push hf main` rejected them with the "use git-lfs.com" hint.
+
+**Alternatives considered:**
+  (i) **Upgrade HF Pro ($9/mo, 50 GB Space repos)** — declined by the user; "no funding."
+  (ii) **`git lfs migrate import` on the existing history** — would rewrite all 90+ historical commits and required installing `git-lfs` binary (not present, no Homebrew either).
+  (iii) **Strip the corpus + Chroma from the Space repo entirely**, rely on the Space rebuilding Chroma from scratch on every boot. Rejected — Chroma rebuild from 104 PDFs is a ~25 min cold boot, which makes every deploy painful for demo reviewers.
+  (iv) **Move data to a companion HF Dataset** (free 50 GB quota per dataset), pull at Docker build time via `huggingface_hub.snapshot_download`. Space repo stays code-only (~3 MB).
+  (v) **Object store (S3, GCS) for data** — adds an AWS/GCP credential dependency the take-home wasn't supposed to need.
+
+**Chose:** (iv).
+
+**Reasoning:**
+- **HF Datasets are quota-isolated from Spaces** — `rohitsar567/insurance-bot-data` can hold the full corpus + Chroma + extracted JSONs without consuming Space budget.
+- **Public dataset = no token at Docker build time** — the snapshot_download in the Dockerfile runs without secrets, simplifying the build environment.
+- **The "data is the moat, code is the wrapper"** framing matches how production ML services are deployed — the dataset can iterate independently of the code (re-extraction sync just updates the dataset, no Space rebuild needed unless code changes).
+- **Reproducibility** — the dataset is the single source of truth for "what the bot knew at deploy time". A reviewer can clone the dataset and run the bot locally against the exact same corpus + vectors.
+- **Cost stays $0** — free tier datasets are 50 GB; our usage (~320 MB) is 0.6% of quota.
+
+**Implementation:**
+
+| Component | Before | After |
+|---|---|---|
+| `rag/corpus/*.pdf` (188 MB) | In Space git repo | In dataset `rohitsar567/insurance-bot-data/rag/corpus/` |
+| `rag/vectors/chroma.sqlite3` + HNSW binaries (129 MB) | In Space git repo | In dataset `rohitsar567/insurance-bot-data/rag/vectors/` |
+| `rag/extracted/*.json` | In Space git repo | In dataset `rohitsar567/insurance-bot-data/rag/extracted/` (also kept locally for git) |
+| Code (`backend/`, `frontend/`, `rag/*.py`, `eval/`, `kb/`) | In Space git repo | Unchanged — still in Space git repo |
+| Dockerfile snapshot_download step | Did not exist | Added (lines 47-65), pulls dataset into `/app/rag/` at build time |
+| `.gitignore` | corpus was tracked | corpus + vectors + extracted all in gitignore |
+
+**Files touched (commit `b7aced6` + `cf84ac6`):**
+- `Dockerfile` — added `RUN python -c "from huggingface_hub import snapshot_download; snapshot_download(repo_id='rohitsar567/insurance-bot-data', repo_type='dataset', local_dir='/app/rag', allow_patterns=['rag/corpus/**','rag/vectors/**','rag/extracted/**'])"` plus a flatten step to handle the path-in-repo nesting.
+- `.gitignore` — added `rag/corpus/` and `rag/extracted/` (rag/vectors was already ignored).
+- `tools/upload_extracted_to_dataset.py` — sync helper for post-extraction updates.
+- `tools/upload_to_hf.py` — IGNORE list updated to exclude the data dirs.
+- Bulk delete on HF Space: 263 files removed via `HfApi.create_commit` with `CommitOperationDelete` (corpus PDFs + Chroma + extracted + 4 legacy provider modules).
+
+**Operational note — re-syncing data after iterations:**
+- Extraction produces new `rag/extracted/*.json` → run `tools/upload_extracted_to_dataset.py` to push to dataset. The next Space rebuild picks up the latest.
+- Chunk sweep changes `rag/vectors/` → re-upload `rag/vectors/` to dataset.
+- The Space rebuild itself is triggered by `huggingface_hub.HfApi.restart_space(factory_reboot=True)` after a dataset update, or automatically by any Space-repo commit.
+
+**Risk:** Dataset becomes unavailable during Docker build → Space build fails. Mitigation: dataset is on HF's own CDN, same uptime as the Space. If HF is fully down, neither would work anyway.
+
+**Revisit at scale (v2):**
+- Move to a private dataset + token-gated build if the corpus contains material we don't want public-archive-indexed (currently all PDFs are public).
+- Add a `dataset_version` env var to pin Space builds to a specific dataset commit (currently latest).
+
+---
+
 *Entries added as we go. Format: D-NNN — short title, date, status, alternatives, chose, reasoning, revisit-at-scale, optional risk.*
