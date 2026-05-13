@@ -25,11 +25,48 @@ Design principles
 
 from __future__ import annotations
 
+import re
 from datetime import date
 from enum import Enum
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+
+# ---------------------------------------------------------------------------
+# Normalisation helpers — let the LLM emit natural-language variants while
+# we still store a clean enum value. The extractor frequently produces
+# "family floater" (with space) or "self+spouse+children" (kids spelled as
+# children) — these are semantically correct, just lexically off from our
+# canonical enum string. Without these normalisers the strict Pydantic
+# validator rejects ~40% of otherwise-good NIM V4-Pro extractions.
+# ---------------------------------------------------------------------------
+
+
+def _norm_token(s: str) -> str:
+    """Lower, trim, collapse whitespace, replace spaces+hyphens with underscore."""
+    s = (s or "").strip().lower()
+    s = re.sub(r"[\s\-]+", "_", s)
+    return s
+
+
+_FAMILY_SYNONYMS = {
+    "children": "kids",
+    "child": "kids",
+    "kid": "kids",
+    "spouse_and_children": "self+spouse+kids",
+    "spouse_and_kids": "self+spouse+kids",
+}
+
+
+def _norm_family(v: str) -> str:
+    """Map common LLM variants to canonical FamilyComposition values."""
+    s = _norm_token(v).replace("_", "+")
+    # apply word-level synonyms
+    parts = []
+    for p in s.split("+"):
+        parts.append(_FAMILY_SYNONYMS.get(p, p))
+    return "+".join(parts)
 
 
 # ---------------------------------------------------------------------------
@@ -131,6 +168,13 @@ class HealthPolicy(BaseModel):
     insurer_slug: str = Field(..., description="Slug for insurer, e.g. 'niva-bupa'.")
     policy_name: str = Field(..., description="Marketing name of the policy, e.g. 'Reassure 2.0'.")
     policy_type: Optional[PolicyType] = Field(None, description="Product category per IRDAI filing.")
+
+    @field_validator("policy_type", mode="before")
+    @classmethod
+    def _norm_policy_type(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            return _norm_token(v)
+        return v
     uin_code: Optional[str] = Field(
         None,
         description="IRDAI Unique Identification Number (UIN) — regulator-issued, "
@@ -151,6 +195,13 @@ class HealthPolicy(BaseModel):
     family_composition_allowed: Optional[List[FamilyComposition]] = Field(
         None, description="Composition options the contract supports."
     )
+
+    @field_validator("family_composition_allowed", mode="before")
+    @classmethod
+    def _norm_family_list(cls, v: Any) -> Any:
+        if isinstance(v, list):
+            return [_norm_family(x) if isinstance(x, str) else x for x in v]
+        return v
     residency_requirement: Optional[str] = Field(
         None, description="e.g. 'Indian resident only', 'NRI eligible with conditions'."
     )
@@ -171,6 +222,19 @@ class HealthPolicy(BaseModel):
     premium_payment_term_years: Optional[int] = Field(
         None, description="Years over which premium must be paid (usually 1 for non-life)."
     )
+
+    @field_validator("premium_payment_term_years", mode="before")
+    @classmethod
+    def _coerce_premium_term(cls, v: Any) -> Any:
+        # Accept list-of-options (e.g. [1, 2, 3]) by taking the smallest /
+        # default option. Most non-life policies are billed annually so the
+        # first int is the right "default term" for downstream consumers.
+        if isinstance(v, list) and v:
+            try:
+                return int(v[0])
+            except (TypeError, ValueError):
+                return None
+        return v
     grace_period_days: Optional[int] = Field(
         None, description="Days past renewal date during which the policy stays continuously covered."
     )
