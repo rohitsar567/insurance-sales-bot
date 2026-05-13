@@ -487,9 +487,17 @@ class ProfileUpdateRequest(BaseModel):
 @app.post("/api/profile", response_model=ProfileCompletenessResponse)
 async def profile_update(req: ProfileUpdateRequest):
     """Write user-provided profile fields into session_state. Returns the new
-    completeness so the frontend can immediately reveal personalized scores."""
+    completeness so the frontend can immediately reveal personalized scores.
+
+    ALSO ingests the profile as a chunk into Chroma (doc_type='profile',
+    policy_id='profile_<session_id>') so the brain sees user context
+    alongside policy + regulatory chunks at retrieval time. This is the
+    "profile RAG" architecture — every recommendation grounds in (policy
+    text + IRDAI mandate + user's own situation) jointly.
+    """
     from backend.scorecard import profile_completeness as _completeness
     from backend.session_state import get_session
+    from backend.profile_rag import upsert_profile_chunk
 
     sess = get_session(req.session_id)
     # Update only fields the client explicitly sent (non-None) — keeps partial
@@ -514,6 +522,15 @@ async def profile_update(req: ProfileUpdateRequest):
     c = _completeness(profile_dict)
     collected = [k for k, v in profile_dict.items() if v not in (None, "", [], False)]
     missing = [k for k, v in profile_dict.items() if v in (None, "", [])]
+
+    # Ingest the profile into the RAG store so the brain sees user context
+    # at retrieval time alongside policy + regulatory chunks. Fire-and-forget
+    # — a profile upsert failure shouldn't block the API response.
+    try:
+        await upsert_profile_chunk(req.session_id, profile_dict)
+    except Exception as e:
+        print(f"[profile_rag] upsert failed for {req.session_id}: {type(e).__name__}: {e}")
+
     return ProfileCompletenessResponse(
         completeness=c,
         completeness_pct=int(c * 100),

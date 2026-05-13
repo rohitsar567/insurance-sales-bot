@@ -90,6 +90,7 @@ async def retrieve(
     policy_ids: Optional[list[str]] = None,
     insurer_slugs: Optional[list[str]] = None,
     embedder: Optional[VoyageEmbeddings] = None,
+    session_id: Optional[str] = None,
 ) -> list[RetrievedChunk]:
     """Embed the query and return top-k most similar chunks.
 
@@ -127,6 +128,30 @@ async def retrieve(
             res["metadatas"][0], res["distances"][0],
         ):
             out.append(_build_chunk(cid, doc, meta, 1.0 - dist))
+
+    # Profile boost pass — when the orchestrator passes a session_id, look
+    # up THAT user's profile chunk in Chroma. Inject it at the top of the
+    # context (always, not just on high cosine) so the LLM sees the user
+    # context block before any policy text. Mirrors the regulatory-boost
+    # pattern below.
+    if session_id:
+        try:
+            profile_chunk_id = f"profile_{session_id}"
+            prof_res = collection.get(
+                ids=[profile_chunk_id],
+                include=["documents", "metadatas"],
+            )
+            if prof_res.get("ids"):
+                p_doc = prof_res["documents"][0] if prof_res.get("documents") else ""
+                p_meta = prof_res["metadatas"][0] if prof_res.get("metadatas") else {}
+                if p_doc:
+                    # Profile gets max score (1.0) so it always tops the context
+                    profile_chunk = _build_chunk(profile_chunk_id, p_doc, p_meta, 1.0)
+                    # Prepend; trim to top_k so we keep budget
+                    out = [profile_chunk] + [c for c in out if c.chunk_id != profile_chunk_id]
+                    out = out[:top_k]
+        except Exception:
+            pass
 
     # Regulatory boost pass — only when the query is about IRDAI / regulations,
     # and only when not already filtered to specific policies (otherwise the

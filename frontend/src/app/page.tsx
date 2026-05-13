@@ -1773,7 +1773,16 @@ function PolicyCard({
         />
         {selected ? t("mp.selected") : t("mp.compare")}
       </label>
-      <button onClick={onOpen} className="w-full text-left">
+      {/* Card body is a div+role=button (NOT <button>) because it contains
+          jargon "?" icons and a "src" pill which are themselves <button>s.
+          HTML disallows button-in-button → hydration error. */}
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={onOpen}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } }}
+        className="w-full text-left cursor-pointer"
+      >
         <div className="flex items-start gap-3 mb-3 pr-16">
           <InsurerLogo slug={policy.insurer_slug} name={policy.insurer_name} size={44} />
           <div className="flex-1 min-w-0">
@@ -1800,7 +1809,7 @@ function PolicyCard({
           <Stat label={<Jargon term="AYUSH" uiLang={t("header.title").includes("स्व") ? "hi" : "en"}>{t("stat.ayush")}</Jargon>} value={policy.ayush_coverage === true ? "Yes" : policy.ayush_coverage === false ? "No" : "—"} />
           <Stat label={t("stat.network")} value={policy.network_hospital_count ? `${(policy.network_hospital_count / 1000).toFixed(0)}K+` : "—"} />
         </div>
-      </button>
+      </div>
     </div>
   );
 }
