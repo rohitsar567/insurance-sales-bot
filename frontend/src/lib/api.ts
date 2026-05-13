@@ -268,6 +268,24 @@ export async function getMarketplace(): Promise<MarketplaceResponse> {
   return resp.json();
 }
 
+export type ProfileCompletenessResponse = {
+  completeness: number;
+  completeness_pct: number;
+  fields_collected: string[];
+  fields_missing: string[];
+  is_personalized: boolean;
+  gate_threshold: number;
+  next_question_hint?: string | null;
+};
+
+export async function getProfileCompleteness(session_id?: string): Promise<ProfileCompletenessResponse> {
+  const url = new URL(`${BACKEND_URL}/api/profile/completeness`);
+  if (session_id) url.searchParams.set("session_id", session_id);
+  const resp = await fetch(url.toString());
+  if (!resp.ok) throw new Error(`profile completeness failed: ${resp.status}`);
+  return resp.json();
+}
+
 export async function getCompare(policy_ids: string[]): Promise<CompareResponse> {
   const url = new URL(`${BACKEND_URL}/api/policies/compare`);
   for (const id of policy_ids) url.searchParams.append("policy_ids", id);

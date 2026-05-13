@@ -13,6 +13,7 @@ import {
   getHealth,
   getInsurerReviews,
   getMarketplace,
+  getProfileCompleteness,
   getScorecard,
   InsurerReviews,
   MarketplacePolicy,
@@ -21,6 +22,7 @@ import {
   postPremiumEstimate,
   postTranscribe,
   PremiumEstimateResponse,
+  ProfileCompletenessResponse,
   ScorecardResponse,
   uploadPolicy,
 } from "@/lib/api";
@@ -837,51 +839,79 @@ function ScorecardBadgesForCitations({ citations }: { citations: Citation[] }) {
   );
 }
 
+// Plain-English label per criterion — shown as a sub-line under the name
+// so the buyer doesn't need to mentally translate "Cost Predictability" etc.
+const CRITERION_BLURB: Record<string, string> = {
+  "Coverage Breadth": "What's actually covered when you claim",
+  "Cost Predictability": "How likely you'll face surprise out-of-pocket bills",
+  "Waiting-Period Friction": "How soon you can actually use the policy",
+  "Claim Experience": "Will the insurer actually pay when you claim?",
+  "Renewal Protection": "Can you keep this policy at 70+ when you need it most",
+  "Bonus & Loyalty": "Rewards for staying claim-free + renewing",
+};
+
 function ScorecardCard({ sc }: { sc: ScorecardResponse }) {
+  // Sort sub-scores high-to-low so strengths surface first, weaknesses last —
+  // mirrors how a human would explain it
+  const sortedSubs = [...sc.sub_scores].sort((a, b) => b.score - a.score);
   return (
-    <div className="mt-2 rounded-xl border border-[var(--border)] bg-[var(--card)] p-3 text-xs animate-fade-up">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <span className={`inline-flex items-center justify-center w-7 h-7 rounded-lg font-bold ${gradeColor(sc.grade)}`}>
+    <div className="mt-2 rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 text-xs animate-fade-up">
+      <div className="flex items-start justify-between mb-3 gap-3">
+        <div className="flex items-start gap-3 min-w-0 flex-1">
+          <span className={`inline-flex items-center justify-center w-10 h-10 rounded-lg font-bold text-base ${gradeColor(sc.grade)} shrink-0`}>
             {sc.grade}
           </span>
-          <div>
-            <div className="font-semibold text-sm">{sc.policy_name}</div>
-            <div className="text-[var(--muted-foreground)] text-[11px]">{sc.one_liner}</div>
+          <div className="min-w-0">
+            <div className="font-semibold text-sm truncate">{sc.policy_name}</div>
+            <div className="text-[var(--muted-foreground)] text-[11px] leading-snug mt-0.5">{sc.one_liner}</div>
           </div>
         </div>
-        <div className="text-right">
-          <div className="text-lg font-semibold">{sc.overall_score}<span className="text-[var(--muted-foreground)] text-xs">/100</span></div>
-          <div className="text-[10px] text-[var(--muted-foreground)]">data {sc.data_completeness_pct.toFixed(0)}% complete</div>
+        <div className="text-right shrink-0">
+          <div className="text-2xl font-bold leading-none">{sc.overall_score}<span className="text-[var(--muted-foreground)] text-sm font-normal">/100</span></div>
+          <div className="text-[10px] text-[var(--muted-foreground)] mt-0.5">data {sc.data_completeness_pct.toFixed(0)}% complete</div>
         </div>
       </div>
-      <div className="space-y-1.5 mt-3">
-        {sc.sub_scores.map((s) => (
-          <div key={s.name}>
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="font-medium">{s.name}</span>
-              <span className="text-[var(--muted-foreground)]">{s.score} · {s.summary}</span>
+      <div className="space-y-2.5 mt-4">
+        {sortedSubs.map((s) => {
+          const barColor = s.score >= 75 ? "bg-emerald-500" : s.score >= 55 ? "bg-amber-500" : "bg-red-400";
+          const blurb = CRITERION_BLURB[s.name];
+          return (
+            <div key={s.name}>
+              <div className="flex items-baseline justify-between mb-0.5">
+                <div className="min-w-0 flex-1 pr-2">
+                  <div className="text-[11px] font-semibold leading-tight">{s.name}</div>
+                  {blurb && <div className="text-[10px] text-[var(--muted-foreground)] leading-tight mt-0.5">{blurb}</div>}
+                </div>
+                <div className="text-right shrink-0">
+                  <span className="text-sm font-bold">{s.score}</span>
+                  <span className="text-[10px] text-[var(--muted-foreground)] ml-1">/ 100</span>
+                  <div className="text-[10px] text-[var(--muted-foreground)] leading-tight">{s.summary}</div>
+                </div>
+              </div>
+              <div className="h-2 rounded-full bg-[var(--muted)] overflow-hidden">
+                <div className={`h-full ${barColor} transition-[width] duration-500`} style={{ width: `${Math.max(2, s.score)}%` }} />
+              </div>
+              {s.signals && s.signals.length > 0 && (
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {s.signals.slice(0, 4).map((sig, i) => {
+                    const isNegative = sig.startsWith("−") || sig.startsWith("-");
+                    return (
+                      <span
+                        key={i}
+                        className={`inline-block text-[10px] px-1.5 py-0.5 rounded ${isNegative ? "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-300" : "bg-[var(--accent)] text-[var(--foreground)]"}`}
+                      >
+                        {sig}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-            <div className="h-1.5 rounded-full bg-[var(--muted)] overflow-hidden">
-              <div
-                className={`h-full ${s.score >= 70 ? "bg-emerald-500" : s.score >= 55 ? "bg-amber-500" : "bg-red-400"}`}
-                style={{ width: `${Math.max(2, s.score)}%` }}
-              />
-            </div>
-            {s.signals && s.signals.length > 0 && (
-              <ul className="mt-1 ml-1 space-y-0.5">
-                {s.signals.slice(0, 4).map((sig, i) => (
-                  <li key={i} className="text-[10px] text-[var(--muted-foreground)]">
-                    · {sig}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
-      <div className="mt-2 pt-2 border-t border-[var(--border)] text-[10px] text-[var(--muted-foreground)]">
-        Methodology: 24 of 48 schema fields drive this grade. Rules-based, no LLM-in-the-loop.
+      <div className="mt-3 pt-2.5 border-t border-[var(--border)] text-[10px] text-[var(--muted-foreground)] leading-snug">
+        Weighted average across 6 criteria. Rules-based — no LLM in the scoring loop. Expand &quot;How is this score computed?&quot; below to see which of 48 schema fields feed each criterion.
       </div>
     </div>
   );
@@ -1628,12 +1658,19 @@ function ComparisonModal({ policyIds, onClose }: { policyIds: string[]; onClose:
 function PolicyDetailModal({ policy, onClose }: { policy: MarketplacePolicy; onClose: () => void }) {
   const [sc, setSc] = useState<ScorecardResponse | null>(null);
   const [reviews, setReviews] = useState<InsurerReviews | null>(null);
+  const [completeness, setCompleteness] = useState<ProfileCompletenessResponse | null>(null);
   useEffect(() => {
     getScorecard(policy.policy_id).then(setSc).catch(() => setSc(null));
     if (policy.insurer_slug) {
       getInsurerReviews(policy.insurer_slug).then(setReviews).catch(() => setReviews(null));
     }
+    // Profile completeness gates whether we render the per-user grade.
+    // Below threshold: show universal grade only (insurer-quality-led) with a
+    // CTA to complete the profile.
+    const sid = typeof window !== "undefined" ? sessionStorage.getItem("insurance_session_id") || undefined : undefined;
+    getProfileCompleteness(sid).then(setCompleteness).catch(() => setCompleteness(null));
   }, [policy.policy_id, policy.insurer_slug]);
+  const isPersonalized = completeness?.is_personalized === true;
 
   const initials = insurerInitials(policy.insurer_name);
   const color = INSURER_COLOR[policy.insurer_slug] || "bg-slate-500";
@@ -1674,6 +1711,22 @@ function PolicyDetailModal({ policy, onClose }: { policy: MarketplacePolicy; onC
         <div className="p-5 space-y-5">
           {sc && (
             <div>
+              {!isPersonalized && (
+                <div className="mb-3 bg-[var(--accent)] border border-[var(--primary)] rounded-lg p-3 text-xs">
+                  <div className="font-semibold text-[var(--primary)] mb-1">This is the generic grade for an average buyer.</div>
+                  <p className="text-[var(--muted-foreground)] leading-snug">
+                    Tell me about yourself (age, dependents, conditions, budget) and I&apos;ll re-score this policy for <strong className="text-[var(--foreground)]">your</strong> situation. The same policy can be a B for a 30-year-old and a D for a 60-year-old with diabetes — context changes everything.
+                    {completeness && completeness.completeness_pct > 0 && (
+                      <span className="block mt-1">Your profile is {completeness.completeness_pct}% complete. {completeness.next_question_hint && <em className="not-italic">Next: {completeness.next_question_hint.slice(0, 80)}…</em>}</span>
+                    )}
+                  </p>
+                </div>
+              )}
+              {isPersonalized && completeness && (
+                <div className="mb-3 text-[10px] text-[var(--primary)] font-semibold flex items-center gap-1">
+                  ✓ Personalized for you · profile {completeness.completeness_pct}% complete
+                </div>
+              )}
               <div className="flex items-center gap-3 mb-3">
                 <span className={`inline-flex items-center justify-center w-12 h-12 rounded-lg font-bold ${gradeColor(sc.grade)}`}>{sc.grade}</span>
                 <div className="flex-1">

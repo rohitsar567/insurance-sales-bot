@@ -1,0 +1,145 @@
+{
+  "policy_id": "care-health__care-advantage",
+  "policy_name": "Care Health Care Advantage",
+  "insurer_slug": "care-health",
+  "uin_code": {
+    "value": "CHIHLIP26049V042526",
+    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
+    "source_quote": "007PLC161503 UAN:25076804 UIN:CHIHLIP26049V042526 IRDAI Registration Number - 148 www.careinsurance.com Quick quote & buy Online renewals Customer support Claim centre PA/52/raM:reV REACH US @ WhatsAp"
+  },
+  "min_entry_age": {
+    "value": null,
+    "unit": "days",
+    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
+    "source_quote": "Min entry age not found"
+  },
+  "max_entry_age": {
+    "value": null,
+    "unit": "years",
+    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
+    "source_quote": "Max entry age not explicitly stated; check Policy Schedule"
+  },
+  "max_renewal_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
+    "source_quote": "Lifelong renewability"
+  },
+  "sum_insured_options": {
+    "value": null,
+    "unit": "INR",
+    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
+    "source_quote": "Sum Insured options not enumerated in extracted text; check Policy Schedule"
+  },
+  "initial_waiting_period_days": {
+    "value": 30,
+    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
+    "source_quote": "Default IRDAI 30-day waiting period applies (not explicitly quoted in extracted snippet)"
+  },
+  "pre_existing_disease_waiting_months": {
+    "value": 36,
+    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
+    "source_quote": "Ailment wait Period 24 Months Pre-Existing Disease 36 Months Wait Period Pricing Zones Zone 1 - Delhi NCR, Surat, Mathura, Aligarh Zone 2 - Mumbai (incl. MMR), Telangana, Indore, Nashik Zone 3 - Pune,"
+  },
+  "specific_disease_waiting_months": {
+    "value": 24,
+    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
+    "source_quote": "r Initial Wait Period 30 Days Named Ailment wait Period 24 Months Pre-Existing Disease 36 Months Wait Period Pricing Zones Zone 1 - Delhi NCR, Surat, Mathura, Aligarh Zone 2 - Mumbai (incl. MMR), Tela"
+  },
+  "maternity_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
+    "source_quote": "Maternity waiting not specified or maternity excluded"
+  },
+  "pre_hospitalization_days": {
+    "value": 30,
+    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
+    "source_quote": "um Insured Treatment Expenses Pre Hospitalisation/ 30 days pre hospitalization Post Hospitalisation and 60 days post hospitalization Automatic Recharge Yes, once in a Policy Year Ambulance Cover Up to"
+  },
+  "post_hospitalization_days": {
+    "value": 60,
+    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
+    "source_quote": "/ 30 days pre hospitalization Post Hospitalisation and 60 days post hospitalization Automatic Recharge Yes, once in a Policy Year Ambulance Cover Up to Sum Insured Organ Donor Expenses Up to Sum Insur"
+  },
+  "day_care_treatments_count": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
+    "source_quote": "Day-care count not enumerated; covered per policy definition"
+  },
+  "ayush_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
+    "source_quote": "AYUSH coverage not found in extracted text"
+  },
+  "maternity_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
+    "source_quote": "Maternity not explicitly mentioned; presumed excluded in base"
+  },
+  "newborn_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
+    "source_quote": "Newborn cover not found; typically tied to maternity option"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
+    "source_quote": "Organ Donor Expenses Up to Sum Insured 10% increase in SI per Policy Year in No Claim Bonus (NCB) case of claim-free year; Max up to 50% of SI OPTIONAL BENEFITS: 50% increase in SI per Policy Year in "
+  },
+  "no_claim_bonus_pct": {
+    "value": 50,
+    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
+    "source_quote": "No Claim Bonus will not exceed 50% of Sum Insured under the policy and in the event"
+  },
+  "restoration_benefit": {
+    "value": "recharge of Sum Insured",
+    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
+    "source_quote": "recharge of Sum Insured"
+  },
+  "room_rent_capping": {
+    "value": "Room Rent No Sub-Limit",
+    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
+    "source_quote": "Room Rent No Sub-Limit"
+  },
+  "copayment_pct": {
+    "value": 20,
+    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
+    "source_quote": "part of Smart Select Network: 20% co-payment on all claims Note : check the list of hospitals covered under smart select on https://www.careinsurance.com/ smart"
+  },
+  "deductible_amount": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
+    "source_quote": "No base deductible (or only optional voluntary deductible add-on)"
+  },
+  "network_hospital_count": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric; not extracted in this curation pass"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
+    "source_quote": "at a very affordable premium. CASHLESS MEDICAL SERVICES AT NETWORK OF 24000+ HEALTHCARE PROVIDERS Care Advantage gives you the advantage of cashless treatment which ensures you concentrate only on you"
+  },
+  "claim_settlement_ratio": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "source_pdf_path": null,
+    "source_quote": "TAT not specified in policy wording; governed by IRDAI Master Circular"
+  },
+  "policy_type": {
+    "value": "indemnity",
+    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
+    "source_quote": "Default indemnity (no explicit alternate type detected)"
+  },
+  "_meta": {
+    "curated_at": "2026-05-14",
+    "primary_source_pdf": "rag/corpus/care-health/care-advantage__brochure.pdf",
+    "supporting_source_pdfs": [],
+    "completeness_pct": 80,
+    "notes": "Pattern-based extraction from local PDF via pdfplumber. Insurer-level metrics (CSR, network count) left null pending downstream backfill."
+  }
+}

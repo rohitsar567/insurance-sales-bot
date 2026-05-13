@@ -1,0 +1,148 @@
+{
+  "policy_id": "icici-lombard__complete-health-umbrella",
+  "policy_name": "ICICI Lombard Complete Health Insurance — Umbrella",
+  "insurer_slug": "icici-lombard",
+  "uin_code": {
+    "value": "ICIHLIP23144V072223",
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
+    "source_quote": "um criterion as under – UIN : ICIHLIP23144V072223 1 CIN: L67200MH2000PLC129408 a. has qualified nursing staff under its employment; b. has qualified medical practitioner/s in charge c. has fully equip"
+  },
+  "min_entry_age": {
+    "value": null,
+    "unit": "days",
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
+    "source_quote": "Min entry age not found"
+  },
+  "max_entry_age": {
+    "value": null,
+    "unit": "years",
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
+    "source_quote": "Max entry age not explicitly stated; check Policy Schedule"
+  },
+  "max_renewal_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
+    "source_quote": "Max renewal age not specified; check Policy Schedule"
+  },
+  "sum_insured_options": {
+    "value": [
+      1000000,
+      5000000
+    ],
+    "unit": "INR",
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
+    "source_quote": "ed Annual Revised Accumulated Sum Insured (after 5 claim free years) reduced to ` 10 Lacs Sum Insured Guaranteed Cumulative Bonus (GCB) 50 Lac 50 Lac 10Lac 10 Lac UIN : ICIHLIP23144V072223 12 CIN: L67"
+  },
+  "initial_waiting_period_days": {
+    "value": 90,
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
+    "source_quote": "f the below mentioned illness within 90 days from the first policy commencement date shall be excluded unless they are pre-existing and disclosed at the time of underwriting I. Hypertension ii. Diabet"
+  },
+  "pre_existing_disease_waiting_months": {
+    "value": 24,
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
+    "source_quote": "related to the treatment of a pre-existing Disease (PED) and its direct complications shall be excluded until the expiry of 24 months of continuous coverage after the date of inception of the first po"
+  },
+  "specific_disease_waiting_months": {
+    "value": 24,
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
+    "source_quote": "lated to the treatment of the listed Conditions, surgeries/treatments shall be excluded until the expiry of 24 months of continuous coverage after the date of inception of the first policy with us. Th"
+  },
+  "maternity_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
+    "source_quote": "Maternity waiting not specified or maternity excluded"
+  },
+  "pre_hospitalization_days": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
+    "source_quote": "Pre-hospitalization days not extracted"
+  },
+  "post_hospitalization_days": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
+    "source_quote": "Post-hospitalization days not extracted"
+  },
+  "day_care_treatments_count": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
+    "source_quote": "Day-care count not enumerated; covered per policy definition"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
+    "source_quote": "me where treatment was taken. Ayush Hospital is a healthcare facility wherein medical/surgical/para-surgical treatment procedures and interventions are carried out by AYUSH Medical practitioner(s) com"
+  },
+  "maternity_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
+    "source_quote": "al of sterilization xv. Code- Excl18: Maternity: I. Medical treatment expenses traceable to childbirth (including complicated deliveries and caesarean sections incurred during hospitalisation) except "
+  },
+  "newborn_coverage": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
+    "source_quote": "Newborn Baby means baby born during the Policy Period and is aged upto 90 days. Non- Network Provider means any Hospital, day ca"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
+    "source_quote": "organ donor’s Hospitalization during the Policy Period for harvesting of the organ donated to the Insured Person up to the Annual Sum Insured specified in the Policy Schedule provided that: i. The org"
+  },
+  "no_claim_bonus_pct": {
+    "value": 20,
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
+    "source_quote": "Cumulative Bonus of 20% of expiring or renewed Annual Sum Insured (whiche"
+  },
+  "restoration_benefit": {
+    "value": "restorative, cosmetic services related to disease, disorder and conditions related to natural",
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
+    "source_quote": "restorative, cosmetic services related to disease, disorder and conditions related to natural"
+  },
+  "room_rent_capping": {
+    "value": "Single Private Room means an air conditioned room in a Hospital where a single patient is accommodated and which has an attached toilet (lavatory",
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
+    "source_quote": "Single Private Room means an air conditioned room in a Hospital where a single patient is accommodated and which has an attached toilet (lavatory"
+  },
+  "copayment_pct": {
+    "value": 10,
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
+    "source_quote": "to Policy Cancellation. iv. A Co-payment of 10% will be applied to every admissible claim v. The coverage is available for 45 consecutive days from the date of travel"
+  },
+  "deductible_amount": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
+    "source_quote": "No base deductible (or only optional voluntary deductible add-on)"
+  },
+  "network_hospital_count": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric; not extracted in this curation pass"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
+    "source_quote": "’s authorized representative. Cashless Facility means a facility extended by the insurer to the insured where the payments, of the costs of treatment undergone by the insured in accordance with the po"
+  },
+  "claim_settlement_ratio": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "source_pdf_path": null,
+    "source_quote": "TAT not specified in policy wording; governed by IRDAI Master Circular"
+  },
+  "policy_type": {
+    "value": "hospital-cash",
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
+    "source_quote": "Hospital cash / daily benefit policy"
+  },
+  "_meta": {
+    "curated_at": "2026-05-14",
+    "primary_source_pdf": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
+    "supporting_source_pdfs": [],
+    "completeness_pct": 75,
+    "notes": "Pattern-based extraction from local PDF via pdfplumber. Insurer-level metrics (CSR, network count) left null pending downstream backfill."
+  }
+}

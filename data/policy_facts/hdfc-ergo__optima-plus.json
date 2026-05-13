@@ -1,0 +1,145 @@
+{
+  "policy_id": "hdfc-ergo__optima-plus",
+  "policy_name": "HDFC ERGO Optima Plus",
+  "insurer_slug": "hdfc-ergo",
+  "uin_code": {
+    "value": "HDHHLIP21336V022021",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
+    "source_quote": "400 059. UIN: Optima Plus- 1 HDHHLIP21336V022021 HDFC ERGO General Insurance Company Limited Policy Wording Optima Plus Preamble HDFC ERGO General Insurance Company Limited will provide the insurance "
+  },
+  "min_entry_age": {
+    "value": 91,
+    "unit": "days",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
+    "source_quote": "o be married to You; ii) Your children Aged between 91 days and 21 years if they are unmarried. iii) Your natural parents or parents that have legally adopted You, provided that: a) The parent was bel"
+  },
+  "max_entry_age": {
+    "value": null,
+    "unit": "years",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
+    "source_quote": "Max entry age not explicitly stated; check Policy Schedule"
+  },
+  "max_renewal_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
+    "source_quote": "Lifelong renewability: s an Insured Person. There is no maximum cover ceasing age under this Policy. We may apply a risk loading on the premium payable (based upon the declarations made in the proposal form and the health s"
+  },
+  "sum_insured_options": {
+    "value": null,
+    "unit": "INR",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
+    "source_quote": "Sum Insured options not enumerated in extracted text; check Policy Schedule"
+  },
+  "initial_waiting_period_days": {
+    "value": 30,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
+    "source_quote": "the treatment of any illness within 30 days from the first policy commencement date shall be excluded except claims arising due to an accident, provided the same are covered. II. This exclusion shall "
+  },
+  "pre_existing_disease_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
+    "source_quote": "PED waiting period not extracted; check Section 5 / Excl01"
+  },
+  "specific_disease_waiting_months": {
+    "value": 24,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
+    "source_quote": "Default IRDAI 24-month specific-disease waiting (not explicitly quoted)"
+  },
+  "maternity_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
+    "source_quote": "Maternity waiting not specified or maternity excluded"
+  },
+  "pre_hospitalization_days": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
+    "source_quote": "Pre-hospitalization days not extracted"
+  },
+  "post_hospitalization_days": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
+    "source_quote": "Post-hospitalization days not extracted"
+  },
+  "day_care_treatments_count": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
+    "source_quote": "Day-care count not enumerated; covered per policy definition"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
+    "source_quote": "ysical bodily injury. Def. 2. AYUSH Day Care Centre means and includes Community Health Centre (CHC), Primary Health Centre (PHC), Dispensary, Clinic, Polyclinic or any such health centre which is reg"
+  },
+  "maternity_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
+    "source_quote": "ization xv. Maternity: Code – Excl18 a. Medical treatment expenses traceable to childbirth (including complicated deliveries and caesarean sections incurred during hospitalization) except ectopic"
+  },
+  "newborn_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
+    "source_quote": "Newborn cover not found; typically tied to maternity option"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
+    "source_quote": "Organ Donor The Medical Expenses for an organ donor’s treatment for the harvesting of the organ donated, provided that: i) The organ donor is any person whose organ has been made available in accordan"
+  },
+  "no_claim_bonus_pct": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
+    "source_quote": "NCB % not extracted; product may use booster/recharge structure"
+  },
+  "restoration_benefit": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
+    "source_quote": "Restoration benefit not found in extracted text"
+  },
+  "room_rent_capping": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
+    "source_quote": "Room rent capping not extracted (only definition found, no explicit cap)"
+  },
+  "copayment_pct": {
+    "value": 0,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
+    "source_quote": "No mandatory copay extracted; product may have age-based or zone-based optional copay"
+  },
+  "deductible_amount": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
+    "source_quote": "No base deductible (or only optional voluntary deductible add-on)"
+  },
+  "network_hospital_count": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric; not extracted in this curation pass"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
+    "source_quote": "l services to an insured by a Cashless facility. Def. 20. Non Network means any Hospital, day care centre or other provider that is not part of the network. Def. 21. Pre-existing Condition means any c"
+  },
+  "claim_settlement_ratio": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "source_pdf_path": null,
+    "source_quote": "TAT not specified in policy wording; governed by IRDAI Master Circular"
+  },
+  "policy_type": {
+    "value": "indemnity",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
+    "source_quote": "from one or more insurers to indemnify treatment costs, the insured person shall have the right to require a settlement of his/her claim in terms of any of his/her policies. In all such cases the i"
+  },
+  "_meta": {
+    "curated_at": "2026-05-14",
+    "primary_source_pdf": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
+    "supporting_source_pdfs": [],
+    "completeness_pct": 55,
+    "notes": "Pattern-based extraction from local PDF via pdfplumber. Insurer-level metrics (CSR, network count) left null pending downstream backfill."
+  }
+}

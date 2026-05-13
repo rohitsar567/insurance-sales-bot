@@ -1,0 +1,145 @@
+{
+  "policy_id": "niva-bupa__saral-suraksha",
+  "policy_name": "Niva Bupa Saral Suraksha Bima (Standard)",
+  "insurer_slug": "niva-bupa",
+  "uin_code": {
+    "value": "NBHPAIP22153V012122",
+    "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
+    "source_quote": "surance Co. Ltd, Product UIN: NBHPAIP22153V012122. authorized personnel. 2.9. Hospitalisation means admission in a hospital for a minimum period of twenty-four (24) consecutive 'In-patient care' hours"
+  },
+  "min_entry_age": {
+    "value": null,
+    "unit": "days",
+    "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
+    "source_quote": "Min entry age not found"
+  },
+  "max_entry_age": {
+    "value": null,
+    "unit": "years",
+    "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
+    "source_quote": "Max entry age not explicitly stated; check Policy Schedule"
+  },
+  "max_renewal_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
+    "source_quote": "Max renewal age not specified; check Policy Schedule"
+  },
+  "sum_insured_options": {
+    "value": null,
+    "unit": "INR",
+    "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
+    "source_quote": "Sum Insured options not enumerated in extracted text; check Policy Schedule"
+  },
+  "initial_waiting_period_days": {
+    "value": 30,
+    "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
+    "source_quote": "oner to have commenced within 30 days from the date of the Accident. (iv) The compensation shall be paid by the company at quarterly intervals, after ascertaining the amount payable. If the period of "
+  },
+  "pre_existing_disease_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
+    "source_quote": "PED waiting period not extracted; check Section 5 / Excl01"
+  },
+  "specific_disease_waiting_months": {
+    "value": 24,
+    "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
+    "source_quote": "Default IRDAI 24-month specific-disease waiting (not explicitly quoted)"
+  },
+  "maternity_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
+    "source_quote": "Maternity waiting not specified or maternity excluded"
+  },
+  "pre_hospitalization_days": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
+    "source_quote": "Pre-hospitalization days not extracted"
+  },
+  "post_hospitalization_days": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
+    "source_quote": "Post-hospitalization days not extracted"
+  },
+  "day_care_treatments_count": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
+    "source_quote": "Day-care count not enumerated; covered per policy definition"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
+    "source_quote": "zation due to accident, under AYUSH (as defined in IRDAI (Health Insurance) Regulations, 2016) systems of medicine shall be covered without any sub- Product Name: Saral Suraksha Bima, Niva Bupa Health"
+  },
+  "maternity_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
+    "source_quote": "Maternity not explicitly mentioned; presumed excluded in base"
+  },
+  "newborn_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
+    "source_quote": "Newborn cover not found; typically tied to maternity option"
+  },
+  "organ_donor_expenses": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
+    "source_quote": "Organ donor cover not extracted"
+  },
+  "no_claim_bonus_pct": {
+    "value": 5,
+    "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
+    "source_quote": "cumulative bonus) shall be increased by 5% in respect of each claim free policy year, provid"
+  },
+  "restoration_benefit": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
+    "source_quote": "Restoration benefit not found in extracted text"
+  },
+  "room_rent_capping": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
+    "source_quote": "Room rent capping not extracted (only definition found, no explicit cap)"
+  },
+  "copayment_pct": {
+    "value": 0,
+    "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
+    "source_quote": "No mandatory copay extracted; product may have age-based or zone-based optional copay"
+  },
+  "deductible_amount": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
+    "source_quote": "No base deductible (or only optional voluntary deductible add-on)"
+  },
+  "network_hospital_count": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric; not extracted in this curation pass"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
+    "source_quote": "sible and violent means. 2.2. Cashless Facility means a facility extended by the insurer to the insured where the payments, of the costs of treatment undergone by the insured person in accordance with"
+  },
+  "claim_settlement_ratio": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "source_pdf_path": null,
+    "source_quote": "TAT not specified in policy wording; governed by IRDAI Master Circular"
+  },
+  "policy_type": {
+    "value": "indemnity",
+    "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
+    "source_quote": "o Accident: The Company shall indemnify medical expenses incurred for hospitalisation arising due to accident during the policy period, up to the limit of 10% of the base sum insured, specified in t"
+  },
+  "_meta": {
+    "curated_at": "2026-05-14",
+    "primary_source_pdf": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
+    "supporting_source_pdfs": [],
+    "completeness_pct": 55,
+    "notes": "Pattern-based extraction from local PDF via pdfplumber. Insurer-level metrics (CSR, network count) left null pending downstream backfill."
+  }
+}
