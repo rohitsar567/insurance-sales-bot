@@ -18,7 +18,7 @@ Gate 3 — NUMERIC GROUNDING
   must also appear in at least one retrieved chunk. Catches the "premium is
   ₹15,000" hallucination class deterministically.
 
-Gate 4 — LLM-JUDGE FAITHFULNESS (Groq Llama, cheap + fast + different family)
+Gate 4 — LLM-JUDGE FAITHFULNESS (NIM Llama-4 Maverick — different arch from brain)
   Pass {retrieved_chunks, reply} to a second LLM with prompt:
     "For each factual claim in the reply, is it supported by these chunks?
      Reply STRICT_JSON: {supported: bool, unsupported_claims: [str]}"
@@ -42,8 +42,8 @@ from pathlib import Path
 from typing import Optional
 
 from backend.config import settings
-from backend.providers.base import ChatMessage
-from backend.providers.groq_llm import GroqLLM
+from backend.providers.base import ChatMessage, LLMProvider
+from backend.providers.nvidia_nim_llm import get_judge_llm
 from rag.retrieve import RetrievedChunk
 
 LOG_DIR = settings.CORPUS_DIR.parent.parent / "logs"
@@ -158,24 +158,19 @@ def _gate_numeric_grounding(reply: str, chunks: list[RetrievedChunk]) -> tuple[b
 
 
 # ============================================================================
-# Gate 4 — LLM-JUDGE FAITHFULNESS (Groq Llama)
+# Gate 4 — LLM-JUDGE FAITHFULNESS (NIM Llama-4 Maverick)
 # ============================================================================
 
-_judge: Optional[GroqLLM] = None
-
-def _get_judge():
-    """LLM judge for Gate 4. Picks Cerebras Qwen-235B if available (faster, no
-    rate limit), Groq Llama-3.3-70B otherwise. Judge tasks are always
-    English (we're judging policy text), so the language-aware chain returns
-    Cerebras-first."""
-    from backend.providers.cerebras_llm import get_judge_llm
-    return get_judge_llm(language="en")
+_judge: Optional[LLMProvider] = None
 
 
-def _get_judge_legacy() -> GroqLLM:
+def _get_judge() -> LLMProvider:
+    """LLM judge for Gate 4. Always NIM Llama-4 Maverick (MoE, different
+    architecture from the dense Llama-3.3-70B brain), so the judge sees the
+    brain's output from a genuinely different decision surface."""
     global _judge
     if _judge is None:
-        _judge = GroqLLM()
+        _judge = get_judge_llm(language="en")
     return _judge
 
 
@@ -281,7 +276,7 @@ async def check_faithfulness(
     # Gate 4 — LLM judge (only if previous gates passed — saves token cost on
     # obvious failures). Also SKIP when retrieval was strongly grounded: top
     # chunk cosine > HIGH_CONFIDENCE_FLOOR means hallucination risk is low and
-    # the 1-2s Groq round-trip rarely adds value. Cuts ~60% of judge calls.
+    # the 1-2s NIM round-trip rarely adds value. Cuts ~60% of judge calls.
     HIGH_CONFIDENCE_FLOOR = 0.50
     top_score = max((c.score for c in chunks), default=0.0) if chunks else 0.0
     if verdict.passed and run_llm_judge and top_score < HIGH_CONFIDENCE_FLOOR:

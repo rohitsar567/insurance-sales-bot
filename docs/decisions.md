@@ -274,4 +274,78 @@ Every meaningful technical and product decision, with alternatives considered an
 
 ---
 
+## D-019 — Stack A consolidation: NVIDIA NIM as the single non-Sarvam provider
+
+**Date:** 2026-05-14
+**Status:** Locked (supersedes D-006 provider-cascade complexity and the deferred-judge plan in D-018)
+
+**Context:** Through May 2026 the LLM stack accumulated four third-party providers across overlapping roles, each with its own free-tier ceiling that masqueraded as quality problems:
+
+| Provider | Role | Failure mode hit during build |
+|---|---|---|
+| OpenRouter (DeepSeek-V3 via meta-router) | Brain | $0 balance → HTTP 402 on every brain call |
+| api.deepseek.com (direct) | Judge / fallback brain | Starter credits not applied to new keys → HTTP 402 |
+| Cerebras (Qwen-3-235B) | Brain fallback / judge | Free-tier model swap broke chain; works but redundant |
+| Groq (Llama-3.3-70B) | Judge / extraction fallback | 30 req/min cap → chunk-sweep took 4-5h and Stage 1 returned identical results across cells |
+
+Plus Sarvam-M used as brain (wrong fit — Sarvam-M's 2048 output cap + `<think>` tags consume the budget, frequently truncates mid-JSON in extraction, frequently truncates mid-answer in advisory).
+
+**What forced the consolidation:** Trying to wire a fifth provider (DeepSeek direct) after OpenRouter ran out yielded HTTP 402 on a brand-new key. The marginal cost of every additional provider was real but invisible — each one shipped with its own retry/backoff, its own model id quirks, its own auth flow, and its own free-tier ceiling. Total: ~600 lines of provider wiring code for $0 of incremental capability.
+
+**The empirical breakthrough:** NVIDIA NIM (`integrate.api.nvidia.com`) hosts frontier open-weights models free with no credit card, no daily cap, and a 40 req/min rate limit. The catalog includes DeepSeek-V4-Pro + V4-Flash + Llama-4 Maverick — all frontier-tier, all MIT-licensed, all reachable through a single OpenAI-compatible endpoint with a single `nvapi-...` key.
+
+**Alternatives considered:**
+  (i) **Deposit $10 to OpenRouter** to unlock the 1000 req/day `:free` tier. Refundable, but a real bank transaction.
+  (ii) **GitHub Models** (free GPT-4o with rate limits) — same 50/day fragility OpenRouter had.
+  (iii) **Gemini 2.5 Flash on AI Studio** — frontier closed-source, 15 req/min, no cap. Strong but adds a second provider ecosystem.
+  (iv) **NVIDIA NIM as single non-Sarvam provider** — frontier OPEN-weights, $0, no card, no daily cap, single key.
+  (v) **Self-host DeepSeek-V4** — model weights are MIT-licensed and downloadable. 671B params requires 8×H100 — impractical for take-home demo.
+
+**Chose:** (iv).
+
+**Reasoning:**
+- **Cost:** $0 to deposit, $0 to run, no monthly minimum, no card on file. Strictly cheaper than any closed-source frontier API.
+- **Quality:** DeepSeek-V4-Pro beats Opus-4.6 + GPT-5.4 on SimpleQA-Verified (57.9% vs 46.2% / 45.3%) and on LiveCodeBench. Llama-4 Maverick (judge) is Meta's April-2025 MoE flagship. Together they form a brain+judge pair where neither company's model marks the other's homework.
+- **Single key, single provider** replaces 4 third-party APIs. Net deletion of `openrouter_llm.py`, `deepseek_llm.py`, `cerebras_llm.py`, `groq_llm.py` and their cascading fallback chains in `orchestrator.py` + `faithfulness.py` + `translation_check.py` + `rag/extract.py` + `eval/run.py` + `_smoke_test.py`. ~600 LOC deleted.
+- **Tiered brain routing inside one provider** beats cross-provider fallback chains:
+    - **Heavy brain (V4-Pro):** complex queries — `intent ∈ {comparison, recommendation}`. Quality > latency.
+    - **Fast brain (V4-Flash):** voice turns + fact-find — `intent ∈ {qa, fact_find}`. Latency > quality, still frontier-tier (HMMT 2026 94.8%, LiveCodeBench 91.6%).
+    - **Judge (Llama-4 Maverick):** all faithfulness Gate 4 + Hinglish drift + eval grader calls. Different family from the DeepSeek brain.
+- **Sarvam stays where Sarvam is uniquely good:** voice STT (Saarika v2.5) + TTS (Bulbul v2) + Indic translation (Sarvam-M, used by `translator.py` for Hindi/Hinglish in & out of the English reasoning brain). Sarvam-M is NOT the brain anymore.
+- **Unblocks the deferred D-018 sweep:** NIM's no-rate-limit means Stage 1 chunk-sweep and Stage 2 top_k × MIN_TOP_SCORE sweep can finally run on the full 96-question gold set with the LLM judge, instead of falling back to regex grading.
+- **Unblocks the 77 failed extractions** in `rag/extracted/`: V4-Pro's 1M context + clean JSON discipline replaces the truncation + rate-limit failures that left only 27/104 PDFs structured. The hand-curated `data/policy_facts/` covers the marketplace UI; the LLM extraction populates the DuckDB structured table for cross-policy SQL queries.
+
+**Final stack:**
+
+| Role | Model id (NIM) | Why |
+|---|---|---|
+| Heavy brain | `deepseek-ai/deepseek-v4-pro` | 1.6T / 49B MoE, 1M context, frontier on factual recall + reasoning |
+| Fast brain | `deepseek-ai/deepseek-v4-flash` | 284B / 13B MoE, 1M context, ~27% FLOPs of V3.2 → lower TTFT for voice |
+| Judge | `meta/llama-4-maverick-17b-128e-instruct` | 400B / 17B MoE, Meta family (not DeepSeek) for cross-grading independence |
+| Indic translation | `sarvam-m` (Sarvam) | Best-in-class Hindi/Hinglish/vernacular |
+| STT | `saarika:v2.5` (Sarvam) | Best-in-class Indian-accent speech recognition |
+| TTS | `bulbul:v2` (Sarvam) | Best-in-class Hinglish TTS |
+| Embeddings | `BAAI/bge-small-en-v1.5` (local CPU) | 384-dim, no network, free |
+
+**Risk:** NIM's 40 req/min is plenty for demo (1-2 reviewers, 30-60 calls per session) but would constrain production with many concurrent users. Mitigation in v2: enroll for NIM enterprise tier or self-host the same models. Quality stays identical because the weights are the same.
+
+**Revisit at scale (v2):**
+- If demo traffic justifies it, move to paid NIM tier or self-host V4-Pro on a single H100 (FP8 + KV-cache compression makes this feasible for 49B active params).
+- Add Gemini 2.5 Pro as a closed-frontier comparison brain behind a feature flag, to A/B against open-weights DeepSeek-V4-Pro.
+- Profile-routing: if a user's profile is profile_completeness < 0.4 (fact-find ongoing), force fast brain even on `comparison` intent.
+
+**Files touched:**
+- Added: `backend/providers/nvidia_nim_llm.py` (single new module, ~140 LOC)
+- Modified: `backend/config.py`, `backend/orchestrator.py`, `backend/faithfulness.py`, `backend/translation_check.py`, `backend/providers/__init__.py`, `backend/providers/_smoke_test.py`, `eval/run.py`, `rag/extract.py`
+- Deleted: `backend/providers/openrouter_llm.py`, `backend/providers/deepseek_llm.py`, `backend/providers/cerebras_llm.py`, `backend/providers/groq_llm.py`, `tools/direct_test.py`
+- `.env`: replaced `GROQ_API_KEY`, `OPENROUTER_API_KEY`, `CEREBRAS_API_KEY`, `DEEPSEEK_API_KEY` with single `NVIDIA_NIM_API_KEY`
+
+**Smoke-test evidence (2026-05-14):**
+- V4-Pro brain: "What does PED mean?" → "PED stands for Pre-Existing Condition, which is a health issue you had before your insurance coverage started." ✅
+- V4-Flash fast brain: "What does PED mean?" → "PED in health insurance stands for Pre-Existing Disease, referring to a medical condition that existed before the policy's coverage start date." ✅
+- Maverick judge: "What does PED mean?" → "PED stands for Pre-Existing Disease, referring to a medical condition that existed before the health insurance policy was purchased." ✅
+- All three HTTP 200 through `backend/providers/nvidia_nim_llm.py`.
+
+---
+
 *Entries added as we go. Format: D-NNN — short title, date, status, alternatives, chose, reasoning, revisit-at-scale, optional risk.*

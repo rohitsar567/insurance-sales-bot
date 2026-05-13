@@ -4,9 +4,10 @@ For each user turn:
   1. Retrieve top-k relevant chunks from Chroma
   2. Format them as cited context
   3. Build messages with persona + history + profile
-  4. Route to a brain LLM (Sarvam-M primary, Llama/DeepSeek fallback for complex)
-  5. Strip <think> tags from Sarvam-M output
-  6. Return (reply_text, citations[], retrieved_chunk_ids[], cost_estimate)
+  4. Route to the brain: NIM DeepSeek-V4-Pro (single-provider Stack A, D-019)
+  5. Run 4-gate faithfulness verification (judge = NIM Llama-4 Maverick — different family)
+  6. On Indic input, translate via Sarvam-M (in & out)
+  7. Return (reply_text, citations[], retrieved_chunk_ids[], cost_estimate)
 """
 
 from __future__ import annotations
@@ -18,9 +19,12 @@ from typing import Optional
 from backend.faithfulness import check_faithfulness, FaithfulnessVerdict
 from backend.persona import build_messages, strip_think_tags
 from backend.providers.base import ChatMessage, LLMProvider
-from backend.providers.groq_llm import GroqLLM
-from backend.providers.openrouter_llm import OpenRouterLLM
-from backend.providers.sarvam_llm import SarvamLLM
+from backend.providers.nvidia_nim_llm import (
+    NIM_JUDGE_MODEL,
+    NvidiaNimLLM,
+    get_brain_llm,
+    get_fast_brain_llm,
+)
 from rag.retrieve import RetrievedChunk, format_for_llm_context, retrieve
 
 
@@ -78,15 +82,24 @@ class BrainPick:
 
 
 def pick_brain(intent: str, language: str) -> BrainPick:
-    """Route to the right brain per Doc decisions.md D-016 (rev 2026-05-13).
+    """Route to the reasoning brain per D-019 (2026-05-14, tiered routing).
 
-    English: DeepSeek-V3 always (reasoning quality > Sarvam-M for English Q&A).
-    Indic: handled in handle_turn via translation cascade (Sarvam translates
-    in, DeepSeek reasons, Sarvam translates back). This function returns the
-    REASONING brain in both cases; the Indic in/out translation is done
-    separately by translator.py.
+    All routes go through NVIDIA NIM (single provider, $0 cost). Tier picked
+    by intent classification:
+      - 'comparison' / 'recommendation' → DeepSeek-V4-Pro (1.6T/49B MoE)
+            Heavy synthesis, multi-policy reasoning. Quality > latency.
+      - 'fact_find' / 'qa'              → DeepSeek-V4-Flash (284B/13B MoE)
+            Single-turn voice responses. Latency > quality, still frontier-tier.
+
+    Indic queries get a Sarvam-M translation pass in `handle_turn` before
+    retrieval, then another after reasoning to convert the English reply back
+    to Hindi/Hinglish. The brain itself always reasons in English on English
+    context.
     """
-    return BrainPick(OpenRouterLLM(), f"reasoning-{intent}")
+    HEAVY_INTENTS = {"comparison", "recommendation"}
+    if intent in HEAVY_INTENTS:
+        return BrainPick(get_brain_llm(), f"v4-pro::{intent}")
+    return BrainPick(get_fast_brain_llm(), f"v4-flash::{intent}")
 
 
 # ---------- main entrypoint ----------
@@ -210,25 +223,13 @@ async def handle_turn(
     )
     messages = [ChatMessage(role=m["role"], content=m["content"]) for m in messages_dict]
 
-    # Language-aware fallback chain: Hindi/Hinglish prefers Llama-70B via
-    # Groq (more Indic training), English prefers Cerebras Qwen-235B
-    # (larger, faster, no rate limit). Either falls back to the other.
-    from backend.providers.cerebras_llm import get_judge_llm
-    try:
-        llm_result = await pick.provider.chat(messages=messages, temperature=0.2, max_tokens=1500)
-    except Exception as e:
-        fallback = get_judge_llm(language=language)
-        llm_result = await fallback.chat(messages=messages, temperature=0.2, max_tokens=1500)
-        pick = BrainPick(fallback, f"fallback-after-{type(e).__name__}")
-
-    # Detect truncated <think> reasoning — if so, retry with a non-reasoning model
-    if "<think>" in llm_result.text.lower() and "</think>" not in llm_result.text.lower():
-        try:
-            fallback = get_judge_llm(language=language)
-            llm_result = await fallback.chat(messages=messages, temperature=0.2, max_tokens=1500)
-            pick = BrainPick(fallback, "fallback-truncated-reasoning")
-        except Exception:
-            pass
+    # NIM DeepSeek-V4-Pro is THE brain (D-019). Frontier MoE (1.6T/49B),
+    # MIT-licensed, beats Opus-4.6 + GPT-5.4 on SimpleQA-Verified. Three
+    # reasoning modes; we use the default (Non-think) for direct advisory
+    # responses with low voice latency. The judge model (Meta Llama-4 Maverick)
+    # in faithfulness.py is from a different company, architecture, and
+    # training corpus — the brain does not mark its own homework.
+    llm_result = await pick.provider.chat(messages=messages, temperature=0.2, max_tokens=1500)
 
     raw = llm_result.text
     reply = strip_think_tags(raw)
@@ -244,22 +245,17 @@ async def handle_turn(
     )
 
     # 5a. CROSS-CHECK RETRY — if faithfulness blocked AND the failure isn't
-    # Gate 1 (no evidence at all), try a DIFFERENT-FAMILY brain. Picks the
-    # opposite family of whatever the primary was:
-    #   primary Sarvam-M → cross-check DeepSeek-V3
-    #   primary DeepSeek-V3 → cross-check Sarvam-M
-    # Capped at ONE retry — no loops.
+    # Gate 1 (no evidence at all), retry with a DIFFERENT-ARCHITECTURE NIM
+    # model: Llama-4 Maverick (MoE, 400B/17B-active). The brain (Llama-3.3-70B,
+    # dense) marks the same prompt independently — frequently catches issues
+    # that came from a particular routing path or token sampling. Capped at
+    # ONE retry — no loops.
     blocked = False
     if not verdict.passed:
         gate1_failure = any("gate1_retrieval" in r for r in verdict.reasons)
         if not gate1_failure:
-            # Pick the OTHER family for the rescue pass
-            primary_name = pick.provider.name
             try:
-                if primary_name == "sarvam-m":
-                    secondary = OpenRouterLLM()
-                else:
-                    secondary = SarvamLLM()
+                secondary = NvidiaNimLLM(model=NIM_JUDGE_MODEL)
                 second = await secondary.chat(messages=messages, temperature=0.1, max_tokens=1500)
                 second_reply = strip_think_tags(second.text)
                 second_verdict = await check_faithfulness(
@@ -267,7 +263,7 @@ async def handle_turn(
                 )
                 if second_verdict.passed:
                     reply = second_reply
-                    pick = BrainPick(secondary, f"crosscheck-rescued-{primary_name}")
+                    pick = BrainPick(secondary, f"crosscheck-rescued-by-maverick")
                     verdict = second_verdict
                 else:
                     blocked = True

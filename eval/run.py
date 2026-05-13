@@ -29,7 +29,7 @@ from typing import Optional
 from backend.config import settings
 from backend.orchestrator import handle_turn
 from backend.providers.base import ChatMessage
-from backend.providers.groq_llm import GroqLLM
+from backend.providers.nvidia_nim_llm import get_judge_llm
 
 ROOT = settings.CORPUS_DIR.parent.parent
 GOLD_FILE = ROOT / "eval" / "gold_qa.json"
@@ -80,13 +80,12 @@ class EvalRecord:
 
 _judge = None
 def get_judge():
-    """Returns the LLM judge — Cerebras when CEREBRAS_API_KEY is set, else Groq.
-    Cerebras has ~30 req/sec free tier vs Groq's 30 req/min, so sweeps work
-    much better with Cerebras configured."""
+    """Returns the LLM judge — NIM Llama-4 Maverick (Stack A, D-019).
+    Different family from DeepSeek-V4 brain → non-circular eval. 40 req/min
+    with no daily cap, so sweep / eval volume is no longer constrained."""
     global _judge
     if _judge is None:
-        from backend.providers.cerebras_llm import get_judge_llm
-        _judge = get_judge_llm()
+        _judge = get_judge_llm(language="en")
     return _judge
 
 

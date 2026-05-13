@@ -2,8 +2,8 @@
 
 For each PDF in rag/corpus/:
   1. Read full text via pdfplumber (already have per-page text from ingest)
-  2. Pass to LLM (Sarvam-M primary, DeepSeek-V3 fallback) with the Pydantic
-     schema as a structured-output target
+  2. Pass to LLM (NIM DeepSeek-V4-Pro primary, Sarvam-M fallback) with the
+     Pydantic schema as a structured-output target
   3. Self-critique pass — LLM scores per-field confidence vs source text
   4. Validate via Pydantic
   5. Upsert into DuckDB `policies` table
@@ -31,8 +31,7 @@ import pdfplumber
 
 from backend.config import settings
 from backend.providers.base import ChatMessage
-from backend.providers.groq_llm import GroqLLM
-from backend.providers.openrouter_llm import OpenRouterLLM
+from backend.providers.nvidia_nim_llm import NvidiaNimLLM, get_brain_llm
 from backend.providers.sarvam_llm import SarvamLLM
 from rag.ingest import policy_id_for
 from rag.schema import HealthPolicy
@@ -44,43 +43,33 @@ DB_PATH = settings.STRUCTURED_DB
 
 # ---------- LLM extraction prompts ----------
 
-EXTRACT_SYSTEM = """You are an expert insurance analyst tasked with extracting EVERY structured field you can find in an Indian health insurance policy document. Output a single JSON object matching the provided schema.
+EXTRACT_SYSTEM = """You extract structured fields from Indian health insurance policy documents and output a compact JSON object. Strict instructions:
 
-EXTRACTION DIRECTIVES (read carefully — coverage is more important than caution)
+1. **OUTPUT ONLY THE JSON.** No markdown fences, no commentary, no <think> tags, no preface. Start your response with `{` and end with `}`. Nothing else.
 
-1. **EXHAUSTIVE COVERAGE.** Comb the entire document. Indian insurance PDFs scatter information across:
-   - Schedule / Plan Table (sum insured options, premium structure, base eligibility)
-   - Definitions section (waiting period definitions, scope of cover)
-   - "Conditions" / "Specific Conditions" (room rent, copay, sub-limits)
-   - "Benefits" / "Coverage" section (inpatient, OPD, AYUSH, daycare, maternity)
-   - "Exclusions" section (permanent + temporary)
-   - Annexures (often hold day-care lists, network info, claim TAT)
-   - First page / cover (UIN code, insurer name, product name)
-
-2. **DEFAULT TO EXTRACTING, NOT NULL.** Only return null when the document genuinely doesn't address that field. Many fields you'll find with a careful read — don't skip them.
+2. **OMIT NULL FIELDS.** Do NOT include fields whose value would be null. Only include fields you actually extracted from the document. Empty/unknown fields = simply leave them out. This keeps the JSON compact.
 
 3. **NORMALIZE VALUES.**
-   - Waiting periods: return months as integer ("2 years" -> 24, "30 days" -> use initial_waiting_period_days = 30)
-   - Sum insured: list of INR integers, no commas: [500000, 1000000, 1500000]
-   - Booleans: true / false
-   - Percentages: numeric (e.g. 50 for 50%)
-   - Days: integer
-   - Coverage items (CoverageItem objects): { "covered": bool, "limit_inr": int?, "limit_text": "verbatim quote from doc?", "notes": "additional context?" }
+   - Waiting periods in months as integer; days separately.
+   - Sum insured as list of INR integers, no commas: [500000, 1000000].
+   - Booleans: true / false (lowercase).
+   - Percentages: numeric (50 for 50%).
+   - Coverage items (CoverageItem): {"covered": bool, "limit_inr": int?, "limit_text": str?, "notes": str?} — also drop null sub-keys inside.
 
-4. **OUTPUT FORMAT.** Single JSON object. No markdown fences, no commentary, no <think> tags. Just the JSON.
+4. **NO HALLUCINATIONS.** If a field is not explicitly stated, OMIT it. Don't invent.
 
-5. **POPULATE source_metadata WHEN POSSIBLE.** If you cite a section/page for a field, include it in `source_metadata` keyed by `<field_name>_clause`.
-
-6. **HALLUCINATIONS ARE STILL WORSE THAN NULL.** Don't invent numbers. But assume the document has the answer somewhere — look harder before defaulting to null.
-"""
+5. **COMPACT.** No whitespace beyond what's needed. Single object."""
 
 
 def build_extract_prompt(policy_text: str, schema_excerpt: str, policy_id: str) -> str:
-    # Sarvam-M context window rejects ~60k char prompts (HTTP 400). Groq
-    # llama-3.3-70b handles up to ~128k tokens but rate-limits aggressively
-    # so we keep prompts tight. 25k chars ≈ 6k tokens covers the schedule +
-    # key-terms front-matter where 90% of structured fields live.
-    MAX_CHARS = 25_000
+    # Sarvam-M rejects prompts >~25k chars with HTTP 400 even though docs say
+    # 32k tokens — undocumented stricter limit. DeepSeek-V4-Pro on NIM handles
+    # 1M context but the schema fits comfortably in 12k chars. 12k chars
+    # (~3k tokens) captures Schedule + Key Definitions + Benefits front-matter
+    # where the structured fields live. Exclusions section (the back half)
+    # doesn't yield many structured fields, just policy_exclusions list which
+    # is mostly noise.
+    MAX_CHARS = 12_000
     if len(policy_text) > MAX_CHARS:
         # Front-bias: schedules, definitions, waiting periods, UIN, sum-insured
         # tables all live in the first ~25k chars. Truncate the back (which is
@@ -101,14 +90,14 @@ Now produce the JSON object. Remember: null for any field not explicitly stated.
 # ---------- helpers ----------
 
 def schema_excerpt() -> str:
-    """Compact representation of HealthPolicy fields for the prompt."""
+    """Compact representation of HealthPolicy fields for the prompt. Strips
+    descriptions to save input tokens (~6.7k → ~2.5k chars)."""
     fields = HealthPolicy.model_fields
     lines = []
     for name, info in fields.items():
         ann = info.annotation
         ann_str = str(ann).replace("typing.", "").replace("Optional[", "?").replace("]", "")
-        desc = info.description or ""
-        lines.append(f"  {name}: {ann_str}  // {desc[:80]}")
+        lines.append(f"  {name}: {ann_str}")
     return "{\n" + "\n".join(lines) + "\n}"
 
 
@@ -141,19 +130,37 @@ def load_manifest() -> dict:
 
 
 def json_from_llm_text(text: str) -> dict:
-    """Strip code fences and extract the first {...} block."""
+    """Strip code fences and <think> blocks, extract the first balanced {...} block."""
     text = text.strip()
+    # Sarvam-M reasoning model emits <think>...</think> before the JSON; strip
+    # them (handles both closed and unterminated think blocks when output is
+    # truncated mid-thought).
+    text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
+    text = re.sub(r"<think>.*", "", text, flags=re.DOTALL)
     # Remove fenced markdown
     text = re.sub(r"^```(?:json)?\s*", "", text)
     text = re.sub(r"\s*```$", "", text)
+    text = text.strip()
     # Find first balanced { ... }
     start = text.find("{")
     if start == -1:
         raise ValueError("no JSON object found in LLM output")
     depth = 0
+    in_str = False
+    esc = False
     for i in range(start, len(text)):
         c = text[i]
-        if c == "{":
+        if in_str:
+            if esc:
+                esc = False
+            elif c == "\\":
+                esc = True
+            elif c == '"':
+                in_str = False
+            continue
+        if c == '"':
+            in_str = True
+        elif c == "{":
             depth += 1
         elif c == "}":
             depth -= 1
@@ -208,7 +215,7 @@ def upsert_policy(policy: HealthPolicy, source_pdf_path: str, source_pdf_url: st
             policy.insurer_slug,
             policy.insurer_name,
             policy.policy_name,
-            policy.policy_type.value if policy.policy_type else None,
+            (policy.policy_type.value if hasattr(policy.policy_type, "value") else policy.policy_type) if policy.policy_type else None,
             policy.uin_code,
             policy.extraction_confidence_pct,
             time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -246,14 +253,30 @@ async def extract_one(pdf_path: Path, manifest_entry: dict, llm_primary, llm_fal
     raw = ""
     for attempt, llm in enumerate([llm_primary, llm_fallback]):
         try:
-            res = await llm.chat(messages=messages, temperature=0.0, max_tokens=4096)
+            # Hard per-attempt timeout so a hung TCP connection in httpx
+            # pooling can't stall the whole sweep. NIM DeepSeek-V4-Pro has its
+            # own 4-step backoff retry loop that can use up to ~5min on 429s,
+            # so give it 120s ceiling. Sarvam (fallback) has no retries; 60s
+            # is plenty.
+            attempt_timeout = 120 if llm is llm_primary else 60
+            res = await asyncio.wait_for(
+                llm.chat(messages=messages, temperature=0.0, max_tokens=2048),
+                timeout=attempt_timeout,
+            )
             raw = res.text
             data = json_from_llm_text(raw)
-            # Seed identity fields from filename/manifest
-            data.setdefault("policy_id", policy_id)
-            data.setdefault("insurer_slug", pdf_path.parent.name)
-            data.setdefault("insurer_name", manifest_entry.get("insurer_name", pdf_path.parent.name))
-            data.setdefault("policy_name", manifest_entry.get("policy_name", pdf_path.stem))
+            # Force-fill identity fields from filename/manifest. These are
+            # REQUIRED in the schema, and the LLM frequently emits them as
+            # null because they're not in the truncated text. Override even
+            # if the key exists with null/empty.
+            if not data.get("policy_id"):
+                data["policy_id"] = policy_id
+            if not data.get("insurer_slug"):
+                data["insurer_slug"] = pdf_path.parent.name
+            if not data.get("insurer_name"):
+                data["insurer_name"] = manifest_entry.get("insurer_name") or pdf_path.parent.name
+            if not data.get("policy_name"):
+                data["policy_name"] = manifest_entry.get("policy_name") or pdf_path.stem
             policy = HealthPolicy(**data)
             EXTRACTED_DIR.mkdir(parents=True, exist_ok=True)
             out_json.write_text(policy.model_dump_json(indent=2))
@@ -294,15 +317,15 @@ async def main():
     if args.limit:
         pdfs = pdfs[: args.limit]
 
-    primary = SarvamLLM()
-    # OpenRouter free credits exhausted (HTTP 402). Groq has retry+backoff
-    # baked in (1.5s/3s/6s/12s) and a ~30 req/min budget that's adequate for
-    # the long-running extraction sweep. Llama-3.3-70b also handles longer
-    # contexts than Sarvam-M when policy PDFs run long.
-    fallback = GroqLLM()
-    _ = OpenRouterLLM  # noqa: F841 — kept importable for future paid use
+    # Provider matrix (2026-05-14, Stack A consolidation per D-019):
+    #   - NIM DeepSeek-V4-Pro: 1M ctx, frontier MoE, MIT-licensed, free tier
+    #     40 req/min with no daily cap. Clean JSON output, no <think> verbosity.
+    #   - Sarvam-M: starter-tier 2048 output cap — used only as a fallback for
+    #     short policies if NIM upstream fails.
+    primary = get_brain_llm()  # DeepSeek-V4-Pro on NIM
+    fallback = SarvamLLM()
 
-    print(f"Extracting {len(pdfs)} policies. Primary=Sarvam-M, Fallback=DeepSeek-V3.\n")
+    print(f"Extracting {len(pdfs)} policies. Primary=NIM DeepSeek-V4-Pro, Fallback=Sarvam-M.\n")
     t0 = time.time()
     ok = 0
     for i, pdf in enumerate(pdfs, 1):
