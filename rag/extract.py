@@ -47,16 +47,22 @@ EXTRACT_SYSTEM = """You extract structured fields from Indian health insurance p
 
 1. **OUTPUT ONLY THE JSON.** No markdown fences, no commentary, no <think> tags, no preface. Start your response with `{` and end with `}`. Nothing else.
 
-2. **OMIT NULL FIELDS.** Do NOT include fields whose value would be null. Only include fields you actually extracted from the document. Empty/unknown fields = simply leave them out. This keeps the JSON compact.
+2. **EMIT EVERY FIELD YOU CAN INFER, EVEN PARTIALLY.** This is critical — be GENEROUS in field population, not conservative. For each field:
+   - If the document **states** it: extract the verbatim value.
+   - If the document **implies** it (e.g., "this is a family floater plan" implies policy_type='family_floater'; UIN starting with IHIP usually means individual indemnity): set the field with the inferred value.
+   - If the document is **partially silent but the structure is standard** (e.g., maternity not mentioned → assume not covered, so omit; grace period not stated for renewals → IRDAI mandates 30 days, so set 30): apply the IRDAI default when reasonable.
+   - Only OMIT a field when there is **zero textual signal** AND no industry default applies.
+   The downstream consumer treats null as "unknown" and won't show it. Sparse extractions hurt the user — they make the comparison + filter UI useless. Lean toward EMITTING.
 
 3. **NORMALIZE VALUES.**
    - Waiting periods in months as integer; days separately.
    - Sum insured as list of INR integers, no commas: [500000, 1000000].
    - Booleans: true / false (lowercase).
    - Percentages: numeric (50 for 50%).
-   - Coverage items (CoverageItem): {"covered": bool, "limit_inr": int?, "limit_text": str?, "notes": str?} — also drop null sub-keys inside.
+   - Coverage items (CoverageItem): {"covered": bool, "limit_inr": int?, "limit_text": str?, "notes": str?} — drop null sub-keys inside.
+   - Enums use the canonical lowercase underscore form: 'family_floater', 'pan_india', 'critical_illness'. The schema normalises common variants automatically, but emitting canonical saves a normalisation hop.
 
-4. **NO HALLUCINATIONS.** If a field is not explicitly stated, OMIT it. Don't invent.
+4. **NO HALLUCINATIONS.** Do not invent specific NUMBERS (waiting months, sub-limits, sum-insured tiers) that aren't in the text. Inferring an ENUM from clear textual cues is fine — that's extraction, not hallucination.
 
 5. **COMPACT.** No whitespace beyond what's needed. Single object."""
 
