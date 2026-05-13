@@ -185,6 +185,27 @@ export type PremiumEstimateResponse = {
   disclaimer: string;
 };
 
+export type ComparePolicyEntry = {
+  policy_id: string;
+  policy_name: string;
+  insurer_slug: string;
+  fields: Record<string, unknown>;
+  scorecard?: ScorecardResponse;
+};
+
+export type CompareResponse = {
+  policies: ComparePolicyEntry[];
+  field_order: string[];
+};
+
+export async function getCompare(policy_ids: string[]): Promise<CompareResponse> {
+  const url = new URL(`${BACKEND_URL}/api/policies/compare`);
+  for (const id of policy_ids) url.searchParams.append("policy_ids", id);
+  const resp = await fetch(url.toString());
+  if (!resp.ok) throw new Error(`compare failed: ${resp.status}`);
+  return resp.json();
+}
+
 export async function postPremiumEstimate(req: PremiumEstimateRequest): Promise<PremiumEstimateResponse> {
   const resp = await fetch(`${BACKEND_URL}/api/premium/estimate`, {
     method: "POST",

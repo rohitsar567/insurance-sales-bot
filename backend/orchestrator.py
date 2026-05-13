@@ -112,6 +112,7 @@ async def handle_turn(
     user_profile: Optional[dict] = None,
     policy_filter_ids: Optional[list[str]] = None,
     top_k: int = 5,
+    session_id: Optional[str] = None,
 ) -> TurnResult:
     t0 = time.time()
 
@@ -132,35 +133,62 @@ async def handle_turn(
         except Exception:
             pass  # fall through with original; if Sarvam translator fails, DeepSeek can still try
 
-    # 1b. Fact-find branch — conversational openers / advice-seeking queries
-    # bypass retrieval + faithfulness; we ask the next discovery question.
-    if intent == "fact_find":
-        from backend.needs_finder import Profile, next_question
-        profile = Profile()
-        if user_profile:
-            for k, v in user_profile.items():
-                if hasattr(profile, k):
-                    setattr(profile, k, v)
-        q = next_question(profile, language=language)
+    # 1b. SESSION-STATE-AWARE FACT-FIND
+    # Load session state. If we're already in fact-find (awaiting an answer to a
+    # specific question), interpret the user's message as that answer and emit
+    # the next question — regardless of whether intent_classifier thinks it's a
+    # fact-find phrase. This is what fixes "39 years old" being misrouted to RAG.
+    from backend.needs_finder import next_question, record_answer
+    from backend.session_state import get_session
+    session = get_session(session_id or "anonymous")
+
+    in_fact_find_continuation = bool(session.awaiting_question_id) and not session.free_form_session
+    treat_as_fact_find = (intent == "fact_find" and not session.free_form_session) or in_fact_find_continuation
+
+    if treat_as_fact_find:
+        # If we were awaiting an answer, parse + record it before picking next Q.
+        if session.awaiting_question_id:
+            session.record_user_answer(user_text)
+
+        q = next_question(session.profile, language=language)
         if q is not None:
-            opener_en = "Happy to help. " if "hi" not in user_text.lower()[:3] else "Hi! "
-            opener_hi = "मदद के लिए तैयार हूँ। "
+            session.set_awaiting(q.id)
+            if in_fact_find_continuation:
+                opener_en = "Got it. "
+                opener_hi = "ठीक है। "
+            else:
+                opener_en = "Happy to help. " if not user_text.lower().strip().startswith(("hi", "hello")) else "Hi! "
+                opener_hi = "मदद के लिए तैयार हूँ। "
             reply = (opener_hi + q.prompt_hi) if language == "indic" else (opener_en + q.prompt_en)
+            brain_tag = "needs_finder::fact_find_continue" if in_fact_find_continuation else "needs_finder::fact_find_start"
         else:
-            reply = ("Great — sounds like you've thought through your needs. "
-                     "Want to ask about a specific policy, or have me compare a few for your profile?")
+            # Fact-find complete — produce a profile readback + invite next step
+            from backend.needs_finder import readback_summary
+            session.set_awaiting(None)
+            summary = readback_summary(session.profile)
+            reply = (
+                f"Got it — here's what I've understood: {summary}. Want me to suggest 2-3 policies that fit your profile, "
+                "or do you have a specific policy in mind to dig into?"
+            )
+            brain_tag = "needs_finder::fact_find_complete"
+
         return TurnResult(
             reply_text=reply,
             citations=[],
             retrieved_chunk_ids=[],
-            brain_used="needs_finder::fact_find",
-            intent=intent,
+            brain_used=brain_tag,
+            intent="fact_find",
             language=language,
             latency_ms=int((time.time() - t0) * 1000),
             raw_reply=reply,
             faithfulness_passed=True,
             blocked=False,
         )
+
+    # User explicitly asked a specific question — leave fact-find mode if they were in one.
+    if session.awaiting_question_id:
+        session.set_awaiting(None)
+        session.free_form_session = True
 
     # 2. Retrieve
     chunks: list[RetrievedChunk] = await retrieve(

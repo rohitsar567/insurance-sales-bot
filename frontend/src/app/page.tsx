@@ -5,7 +5,9 @@ import {
   audioBlobURLFromBase64,
   Citation,
   ChatMessage,
+  CompareResponse,
   CoverageResponse,
+  getCompare,
   getCoverage,
   getHealth,
   getScorecard,
@@ -151,9 +153,14 @@ export default function Page() {
           audioContextRef.current = audioCtx;
           analyserRef.current = analyser;
           silenceStartRef.current = null;
+          const recordingStartTime = Date.now();
           const buf = new Uint8Array(analyser.fftSize);
-          const SILENCE_THRESHOLD = 0.018;       // RMS threshold (0-1 scale)
-          const SILENCE_DURATION_MS = 1500;
+          // Tuned 2026-05-13 after live bug report — VAD was cutting off too early
+          // on quiet speakers. Require minimum 1.5s of recording before allowing
+          // auto-stop; raise silence threshold + duration.
+          const MIN_RECORDING_MS = 1500;
+          const SILENCE_THRESHOLD = 0.012;       // RMS — was 0.018; lowered to allow quieter voices
+          const SILENCE_DURATION_MS = 2000;       // was 1500
           const tick = () => {
             if (!analyserRef.current) return;
             analyser.getByteTimeDomainData(buf);
@@ -164,7 +171,12 @@ export default function Page() {
             }
             const rms = Math.sqrt(sumSquares / buf.length);
             const now = Date.now();
-            if (rms < SILENCE_THRESHOLD) {
+            const recordedFor = now - recordingStartTime;
+
+            if (recordedFor < MIN_RECORDING_MS) {
+              // Force-keep recording — user might still be inhaling
+              silenceStartRef.current = null;
+            } else if (rms < SILENCE_THRESHOLD) {
               if (silenceStartRef.current === null) silenceStartRef.current = now;
               else if (now - silenceStartRef.current > SILENCE_DURATION_MS) {
                 stopRecording();
