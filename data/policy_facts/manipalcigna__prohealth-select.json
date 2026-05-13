@@ -1,0 +1,148 @@
+{
+  "policy_id": "manipalcigna__prohealth-select",
+  "policy_name": "ManipalCigna ProHealth Select",
+  "insurer_slug": "manipalcigna",
+  "uin_code": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "source_quote": "UIN not found in extracted text"
+  },
+  "min_entry_age": {
+    "value": null,
+    "unit": "days",
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "source_quote": "Min entry age not found"
+  },
+  "max_entry_age": {
+    "value": null,
+    "unit": "years",
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "source_quote": "Max entry age not explicitly stated; check Policy Schedule"
+  },
+  "max_renewal_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "source_quote": "Max renewal age not specified; check Policy Schedule"
+  },
+  "sum_insured_options": {
+    "value": [
+      50000,
+      100000
+    ],
+    "unit": "INR",
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "source_quote": "ured opted. Available for all Sum Insured's except Rs 0.5L and 1L AYUSH Cover Coverage for Ayurvedic, Yoga & Naturopathy, Unani, Siddha and Homeopathy up to Sum Insured limits. Value Added Cumulative "
+  },
+  "initial_waiting_period_days": {
+    "value": 30,
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "source_quote": "Default IRDAI 30-day waiting period applies (not explicitly quoted in extracted snippet)"
+  },
+  "pre_existing_disease_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "source_quote": "PED waiting period not extracted; check Section 5 / Excl01"
+  },
+  "specific_disease_waiting_months": {
+    "value": 24,
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "source_quote": "Default IRDAI 24-month specific-disease waiting (not explicitly quoted)"
+  },
+  "maternity_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "source_quote": "Maternity waiting not specified or maternity excluded"
+  },
+  "pre_hospitalization_days": {
+    "value": 3,
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "source_quote": "nsured Person should at least 3 days prior to admission to the Policy. Hospital approach the Network Provider for Hospitalization for medical treatment. VII. CLAIM PROCESS & MANAGEMENT ii. The Network"
+  },
+  "post_hospitalization_days": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "source_quote": "Post-hospitalization days not extracted"
+  },
+  "day_care_treatments_count": {
+    "value": 171,
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "source_quote": "ost - hospitalization 90 days Day Care Treatment 171 procedures, Covered up to full sum insured Domiciliary Treatment Covered up to the limit of Sum Insured opted Ambulance Cover Covered upto `2000 pe"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "source_quote": "ed opted. ProHealth Select A) AYUSH Cover Covered upto full Sum Insured II. 9 Value Added Cumulative Bonus 5 % each year maximum upto 100%.This will not be reduced in case of claim III. 1 Covers under"
+  },
+  "maternity_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "source_quote": "Maternity not explicitly mentioned; presumed excluded in base"
+  },
+  "newborn_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "source_quote": "Newborn cover not found; typically tied to maternity option"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "source_quote": "organ donor is any We will, on a reimbursement basis cover Medical Expenses of an Insured person in accordance with the Transplantation of Human Organs Act 1994 Person which are incurred due to a Dise"
+  },
+  "no_claim_bonus_pct": {
+    "value": 5,
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "source_quote": "Cumulative Bonus 5 % each year maximum upto 100%.This will not be redu"
+  },
+  "restoration_benefit": {
+    "value": "Restoration of Sum Insured Sum Insured restored to 100% when total of opted Sum Insured and Cumulative Bonus II",
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "source_quote": "Restoration of Sum Insured Sum Insured restored to 100% when total of opted Sum Insured and Cumulative Bonus II"
+  },
+  "room_rent_capping": {
+    "value": "Single Private Room IV",
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "source_quote": "Single Private Room IV"
+  },
+  "copayment_pct": {
+    "value": 10,
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "source_quote": "Details: Cost a. A Voluntary co-payment of 10% or 20% on admissible claim amount (final payable claim amount after assessment) will VII.7 Sharing apply to each and ev"
+  },
+  "deductible_amount": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "source_quote": "No base deductible (or only optional voluntary deductible add-on)"
+  },
+  "network_hospital_count": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric; not extracted in this curation pass"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "source_quote": "4 & 5 Basis either by way of Cashless to the Hospital/ Network provider when a cashless facility is availed or directly to This section you as a reimbursement against the bills when you have paid for "
+  },
+  "claim_settlement_ratio": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "source_pdf_path": null,
+    "source_quote": "TAT not specified in policy wording; governed by IRDAI Master Circular"
+  },
+  "policy_type": {
+    "value": "hospital-cash",
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "source_quote": "Hospital cash / daily benefit policy"
+  },
+  "_meta": {
+    "curated_at": "2026-05-14",
+    "primary_source_pdf": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "supporting_source_pdfs": [],
+    "completeness_pct": 75,
+    "notes": "Pattern-based extraction from local PDF via pdfplumber. Insurer-level metrics (CSR, network count) left null pending downstream backfill."
+  }
+}

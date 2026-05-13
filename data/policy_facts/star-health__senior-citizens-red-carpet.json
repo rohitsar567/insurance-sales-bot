@@ -1,0 +1,145 @@
+{
+  "policy_id": "star-health__senior-citizens-red-carpet",
+  "policy_name": "Star Senior Citizens Red Carpet",
+  "insurer_slug": "star-health",
+  "uin_code": {
+    "value": "SHAHLIP26041V082526",
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "arpet Health Insurance Policy SHAHLIP26041V082526 1 Medical Underwriting / Pre-Policy Medical Check-up: The company may ask the members Senior Citizens Red Carpet Senior Citizens Red Carpet to be prop"
+  },
+  "min_entry_age": {
+    "value": null,
+    "unit": "days",
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "Min entry age not found"
+  },
+  "max_entry_age": {
+    "value": null,
+    "unit": "years",
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "Max entry age not explicitly stated; check Policy Schedule"
+  },
+  "max_renewal_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "Lifelong renewability: ly without break • Guaranteed Lifelong renewals Coverage Policy Term: The policy is available for 1/2/3 years which can be renewed. Where the 1. Hospitalization Cover: Room, Boarding and Nursing expen"
+  },
+  "sum_insured_options": {
+    "value": null,
+    "unit": "INR",
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "Sum Insured options not enumerated in extracted text; check Policy Schedule"
+  },
+  "initial_waiting_period_days": {
+    "value": 30,
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "eatment of any illness within 30 days from the first policy Burn(s) or Cancer or as part of medically necessary treatment to remove a direct and commencement date shall be excluded except claims arisi"
+  },
+  "pre_existing_disease_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "PED waiting period not extracted; check Section 5 / Excl01"
+  },
+  "specific_disease_waiting_months": {
+    "value": 24,
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "Default IRDAI 24-month specific-disease waiting (not explicitly quoted)"
+  },
+  "maternity_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "Maternity waiting not specified or maternity excluded"
+  },
+  "pre_hospitalization_days": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "Pre-hospitalization days not extracted"
+  },
+  "post_hospitalization_days": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "Post-hospitalization days not extracted"
+  },
+  "day_care_treatments_count": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "Day-care count not enumerated; covered per policy definition"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "ating doctor is maintained 9. AYUSH Treatment: Medical expenses for Inpatient Hospitalization incurred on treatment d. Insured can avail ‘’Home Care Treatment’’ service on cashless basis from the list"
+  },
+  "maternity_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "Maternity not explicitly mentioned; presumed excluded in base"
+  },
+  "newborn_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "Newborn cover not found; typically tied to maternity option"
+  },
+  "organ_donor_expenses": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "Organ donor cover not extracted"
+  },
+  "no_claim_bonus_pct": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "NCB % not extracted; product may use booster/recharge structure"
+  },
+  "restoration_benefit": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "Restoration benefit not found in extracted text"
+  },
+  "room_rent_capping": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "Room rent capping not extracted (only definition found, no explicit cap)"
+  },
+  "copayment_pct": {
+    "value": 30,
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "nt: This policy is subject to co-payment of 30% for all claims. 6 7 Sublimits C laim Illustration for Sublimit and Co-pay: Treatment for Cerebro Vascular Accident (Ind"
+  },
+  "deductible_amount": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "No base deductible (or only optional voluntary deductible add-on)"
+  },
+  "network_hospital_count": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric; not extracted in this curation pass"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "e Care Treatment’’ service on cashless basis from the list of under Ayurveda, Unani, Siddha and Homeopathy systems of medicines in a AYUSH our Network service providers given in our website ‘’www.star"
+  },
+  "claim_settlement_ratio": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "source_pdf_path": null,
+    "source_quote": "TAT not specified in policy wording; governed by IRDAI Master Circular"
+  },
+  "policy_type": {
+    "value": "indemnity",
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "Default indemnity (no explicit alternate type detected)"
+  },
+  "_meta": {
+    "curated_at": "2026-05-14",
+    "primary_source_pdf": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "supporting_source_pdfs": [],
+    "completeness_pct": 50,
+    "notes": "Pattern-based extraction from local PDF via pdfplumber. Insurer-level metrics (CSR, network count) left null pending downstream backfill."
+  }
+}

@@ -1,0 +1,149 @@
+{
+  "policy_id": "bajaj-allianz__health-guard",
+  "policy_name": "Bajaj Allianz Health Guard (Silver / Gold / Platinum)",
+  "insurer_slug": "bajaj-allianz",
+  "uin_code": {
+    "value": "BAJHLIP25035V072425",
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
+    "source_quote": "U66010PN2000PLC015329 | UIN: BAJHLIP25035V072425 1 Bajaj Allianz General Insurance Co. Ltd. Bajaj Allianz House, Airport Road, Yerawada, Pune - 411 006. Reg. No.: 113 For more details, log on to: www."
+  },
+  "min_entry_age": {
+    "value": null,
+    "unit": "days",
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
+    "source_quote": "Min entry age not found"
+  },
+  "max_entry_age": {
+    "value": null,
+    "unit": "years",
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
+    "source_quote": "Max entry age not explicitly stated; check Policy Schedule"
+  },
+  "max_renewal_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
+    "source_quote": "Max renewal age not specified; check Policy Schedule"
+  },
+  "sum_insured_options": {
+    "value": [
+      300000,
+      750000,
+      1000000
+    ],
+    "unit": "INR",
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
+    "source_quote": "Gold Plan and Platinum Plan - Sum Insured 3 lacs to 7.5 lacs- maximum eligible room is Single Private Air-Conditioned room - Sum Insured 10 Lacs and above - eligible for any room category ii. If admit"
+  },
+  "initial_waiting_period_days": {
+    "value": 30,
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
+    "source_quote": "the treatment of any Illness within 30 days from the first Policy commencement date shall be excluded except claims arising due to an Accident, provided the same are covered. b. This exclusion shall n"
+  },
+  "pre_existing_disease_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
+    "source_quote": "PED waiting period not extracted; check Section 5 / Excl01"
+  },
+  "specific_disease_waiting_months": {
+    "value": 24,
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
+    "source_quote": "lated to the treatment of the listed Conditions, surgeries/treatments shall be excluded until the expiry of 24 months of continuous coverage after the date of inception of the first Health Guard Polic"
+  },
+  "maternity_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
+    "source_quote": "Maternity waiting not specified or maternity excluded"
+  },
+  "pre_hospitalization_days": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
+    "source_quote": "Pre-hospitalization days not extracted"
+  },
+  "post_hospitalization_days": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
+    "source_quote": "Post-hospitalization days not extracted"
+  },
+  "day_care_treatments_count": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
+    "source_quote": "Day-care count not enumerated; covered per policy definition"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
+    "source_quote": "where treatment was taken. 3. AYUSH Hospital: An AYUSH Hospital is a healthcare facility wherein medical/surgical/para-surgical treatment procedures and interventions are carried out by AYUSH Medical "
+  },
+  "maternity_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
+    "source_quote": "ct/plans of Our Company where maternity expenses are not covered. f. Any complications arising, within 90 days post-delivery, out of or as a consequence of maternity/child birth will be covered up to "
+  },
+  "newborn_coverage": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
+    "source_quote": "New Born Baby: Newborn baby means baby born during the Policy Pe"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
+    "source_quote": "Organ Donor Expenses: We will pay expenses towards organ donor’s treatment for harvesting of the donated organ, provided that, 1. The organ donor is any person whose organ has been made available in a"
+  },
+  "no_claim_bonus_pct": {
+    "value": 100,
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
+    "source_quote": "Cumulative Bonus (if any) is exhausted due to claims registered and paid during the Policy Year, then it is agreed that 100% of the Base Sum Insured specified under In-patien"
+  },
+  "restoration_benefit": {
+    "value": "Reinstatement Benefit:",
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
+    "source_quote": "Reinstatement Benefit:"
+  },
+  "room_rent_capping": {
+    "value": "Single Private room:",
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
+    "source_quote": "Single Private room:"
+  },
+  "copayment_pct": {
+    "value": 15,
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
+    "source_quote": "Zone A city will have to pay 15% co-payment on admissible claim amount.  Those, who pay Zone C premium rates and avail treatment in Zone A city will have to p"
+  },
+  "deductible_amount": {
+    "value": 50000,
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
+    "source_quote": "xcess of the Annual Aggregate Deductible limit of ₹ 50,000 / ₹ 100000 / ₹ 200000 / ₹ 300000, as opted by You , subject to the ”In-patient Hospitalization Treatment” section Sum I"
+  },
+  "network_hospital_count": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric; not extracted in this curation pass"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
+    "source_quote": "ewal date or Grace period. 7. Cashless facility: Cashless facility means a facility extended by the Insurer to the Insured Person where the payments, of the costs of treatment undergone by the Insured"
+  },
+  "claim_settlement_ratio": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "source_pdf_path": null,
+    "source_quote": "TAT not specified in policy wording; governed by IRDAI Master Circular"
+  },
+  "policy_type": {
+    "value": "top-up",
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
+    "source_quote": "Top-up / super top-up policy (kicks in above a deductible)"
+  },
+  "_meta": {
+    "curated_at": "2026-05-14",
+    "primary_source_pdf": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
+    "supporting_source_pdfs": [],
+    "completeness_pct": 70,
+    "notes": "Pattern-based extraction from local PDF via pdfplumber. Insurer-level metrics (CSR, network count) left null pending downstream backfill."
+  }
+}

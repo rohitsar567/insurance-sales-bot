@@ -1,0 +1,145 @@
+{
+  "policy_id": "star-health__star-cardiac-care-platinum",
+  "policy_name": "Star Cardiac Care Platinum",
+  "insurer_slug": "star-health",
+  "uin_code": {
+    "value": "SHAHLIP22033V022122",
+    "source_pdf_path": "rag/corpus/star-health/star-cardiac-care-platinum__wordings.pdf",
+    "source_quote": "UM Unique Identification No.: SHAHLIP22033V022122 PREAMBLE Cumulative Bonus: Cumulative Bonus means any increase or addition in the Sum The proposal and declaration given by the proposer and other doc"
+  },
+  "min_entry_age": {
+    "value": null,
+    "unit": "days",
+    "source_pdf_path": "rag/corpus/star-health/star-cardiac-care-platinum__wordings.pdf",
+    "source_quote": "Min entry age not found"
+  },
+  "max_entry_age": {
+    "value": null,
+    "unit": "years",
+    "source_pdf_path": "rag/corpus/star-health/star-cardiac-care-platinum__wordings.pdf",
+    "source_quote": "Max entry age not explicitly stated; check Policy Schedule"
+  },
+  "max_renewal_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/star-health/star-cardiac-care-platinum__wordings.pdf",
+    "source_quote": "Max renewal age not specified; check Policy Schedule"
+  },
+  "sum_insured_options": {
+    "value": null,
+    "unit": "INR",
+    "source_pdf_path": "rag/corpus/star-health/star-cardiac-care-platinum__wordings.pdf",
+    "source_quote": "Sum Insured options not enumerated in extracted text; check Policy Schedule"
+  },
+  "initial_waiting_period_days": {
+    "value": 30,
+    "source_pdf_path": "rag/corpus/star-health/star-cardiac-care-platinum__wordings.pdf",
+    "source_quote": "the treatment of any illness within 30 days from the first reproductive technologies such as IVF, ZIFT, GIFT, ICSI policy commencement date shall be excluded except claims arising due to an accident, "
+  },
+  "pre_existing_disease_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/star-health/star-cardiac-care-platinum__wordings.pdf",
+    "source_quote": "PED waiting period not extracted; check Section 5 / Excl01"
+  },
+  "specific_disease_waiting_months": {
+    "value": 24,
+    "source_pdf_path": "rag/corpus/star-health/star-cardiac-care-platinum__wordings.pdf",
+    "source_quote": "Default IRDAI 24-month specific-disease waiting (not explicitly quoted)"
+  },
+  "maternity_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/star-health/star-cardiac-care-platinum__wordings.pdf",
+    "source_quote": "Maternity waiting not specified or maternity excluded"
+  },
+  "pre_hospitalization_days": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/star-health/star-cardiac-care-platinum__wordings.pdf",
+    "source_quote": "Pre-hospitalization days not extracted"
+  },
+  "post_hospitalization_days": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/star-health/star-cardiac-care-platinum__wordings.pdf",
+    "source_quote": "Post-hospitalization days not extracted"
+  },
+  "day_care_treatments_count": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/star-health/star-cardiac-care-platinum__wordings.pdf",
+    "source_quote": "Day-care count not enumerated; covered per policy definition"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/star-health/star-cardiac-care-platinum__wordings.pdf",
+    "source_quote": "and all premium paid thereon AYUSH Day Care Centre: AYUSH Day Care Centre means and includes Community shall be forfeited to the Company in the event of misrepresentation, mis-description or non- Heal"
+  },
+  "maternity_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/star-health/star-cardiac-care-platinum__wordings.pdf",
+    "source_quote": "Maternity not explicitly mentioned; presumed excluded in base"
+  },
+  "newborn_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/star-health/star-cardiac-care-platinum__wordings.pdf",
+    "source_quote": "Newborn cover not found; typically tied to maternity option"
+  },
+  "organ_donor_expenses": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/star-health/star-cardiac-care-platinum__wordings.pdf",
+    "source_quote": "Organ donor cover not extracted"
+  },
+  "no_claim_bonus_pct": {
+    "value": 10,
+    "source_pdf_path": "rag/corpus/star-health/star-cardiac-care-platinum__wordings.pdf",
+    "source_quote": "Cumulative bonus calculated at 10% of basic sum insured for each claim free year sub"
+  },
+  "restoration_benefit": {
+    "value": "Restoration of Basic Sum Insured (Applicable for Section 1 Only): 1 RF ablation for lumbar and cervical facet joint 50,000/- 65,000/- 75,000/-",
+    "source_pdf_path": "rag/corpus/star-health/star-cardiac-care-platinum__wordings.pdf",
+    "source_quote": "Restoration of Basic Sum Insured (Applicable for Section 1 Only): 1 RF ablation for lumbar and cervical facet joint 50,000/- 65,000/- 75,000/-"
+  },
+  "room_rent_capping": {
+    "value": "Single Private AC Room Part of the sum insured",
+    "source_pdf_path": "rag/corpus/star-health/star-cardiac-care-platinum__wordings.pdf",
+    "source_quote": "Single Private AC Room Part of the sum insured"
+  },
+  "copayment_pct": {
+    "value": 0,
+    "source_pdf_path": "rag/corpus/star-health/star-cardiac-care-platinum__wordings.pdf",
+    "source_quote": "No mandatory copay extracted; product may have age-based or zone-based optional copay"
+  },
+  "deductible_amount": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/star-health/star-cardiac-care-platinum__wordings.pdf",
+    "source_quote": "No base deductible (or only optional voluntary deductible add-on)"
+  },
+  "network_hospital_count": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric; not extracted in this curation pass"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/star-health/star-cardiac-care-platinum__wordings.pdf",
+    "source_quote": "s or injury that is likely to Cashless facility: Cashless facility means a facility extended by the insurer to the insured respond quickly to treatment which aims to return the person to his or her st"
+  },
+  "claim_settlement_ratio": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "source_pdf_path": null,
+    "source_quote": "TAT not specified in policy wording; governed by IRDAI Master Circular"
+  },
+  "policy_type": {
+    "value": "benefit",
+    "source_pdf_path": "rag/corpus/star-health/star-cardiac-care-platinum__wordings.pdf",
+    "source_quote": "Specialty cardiac/critical illness — benefit-based lump-sum on diagnosis"
+  },
+  "_meta": {
+    "curated_at": "2026-05-14",
+    "primary_source_pdf": "rag/corpus/star-health/star-cardiac-care-platinum__wordings.pdf",
+    "supporting_source_pdfs": [],
+    "completeness_pct": 65,
+    "notes": "Pattern-based extraction from local PDF via pdfplumber. Insurer-level metrics (CSR, network count) left null pending downstream backfill."
+  }
+}

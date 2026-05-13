@@ -1,0 +1,145 @@
+{
+  "policy_id": "icici-lombard__arogya-sanjeevani",
+  "policy_name": "ICICI Lombard Arogya Sanjeevani (Standard)",
+  "insurer_slug": "icici-lombard",
+  "uin_code": {
+    "value": "ICIHLIP20178V011920",
+    "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "horized representative. UIN : ICIHLIP20178V011920 Arogya Sanjeevani Policy 3.14.Day Care Treatment means medical treatment, and/or surgical a) it needs ongoing or long-term monitoring through procedur"
+  },
+  "min_entry_age": {
+    "value": null,
+    "unit": "days",
+    "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "Min entry age not found"
+  },
+  "max_entry_age": {
+    "value": null,
+    "unit": "years",
+    "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "Max entry age not explicitly stated; check Policy Schedule"
+  },
+  "max_renewal_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "Max renewal age not specified; check Policy Schedule"
+  },
+  "sum_insured_options": {
+    "value": null,
+    "unit": "INR",
+    "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "Sum Insured options not enumerated in extracted text; check Policy Schedule"
+  },
+  "initial_waiting_period_days": {
+    "value": 30,
+    "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "the treatment of any illness within 30 days from the first policy commencement date shall be excluded 4.7. The expenses that are not covered in this policy are placed under List- except claims arising"
+  },
+  "pre_existing_disease_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "PED waiting period not extracted; check Section 5 / Excl01"
+  },
+  "specific_disease_waiting_months": {
+    "value": 24,
+    "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "Default IRDAI 24-month specific-disease waiting (not explicitly quoted)"
+  },
+  "maternity_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "Maternity waiting not specified or maternity excluded"
+  },
+  "pre_hospitalization_days": {
+    "value": 30,
+    "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "dergone in a Day Care Centre. Pre Hospitalisation For 30 days prior to the date of hospitalization Post Hospitalisation For 60 days from the date of discharge from the hospital Sublimit for room/docto"
+  },
+  "post_hospitalization_days": {
+    "value": 60,
+    "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "o the date of hospitalization Post Hospitalisation For 60 days from the date of discharge from the hospital Sublimit for room/doctors fee 1. Room Rent, Boarding, Nursing Expenses all inclusive as prov"
+  },
+  "day_care_treatments_count": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "Day-care count not enumerated; covered per policy definition"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "icy Wordings 1. PREAMBLE 3.6. AYUSH Day Care Centre means and includes Community Health Centre (CHC), Primary Health Centre (PHC), Dispensary, Clinic, Polyclinic or This Policy is a contract of insura"
+  },
+  "maternity_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "15. Maternity Expenses (Code- Excl18): 1.2. Procedure for reimbursement of claims: i) Medical treatment expenses traceable to childbirth (including For reimbursement of claims the insured person many"
+  },
+  "newborn_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "Newborn cover not found; typically tied to maternity option"
+  },
+  "organ_donor_expenses": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "Organ donor cover not extracted"
+  },
+  "no_claim_bonus_pct": {
+    "value": 5,
+    "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "Cumulative Bonus will be increased by 5% in respect of each claim free iii. The within ref"
+  },
+  "restoration_benefit": {
+    "value": "reinstatement OR",
+    "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "reinstatement OR"
+  },
+  "room_rent_capping": {
+    "value": "Room Rent, Boarding, Nursing Expenses all inclusive as provided by the Hospital / Nursing Home up to 2% of",
+    "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "Room Rent, Boarding, Nursing Expenses all inclusive as provided by the Hospital / Nursing Home up to 2% of"
+  },
+  "copayment_pct": {
+    "value": 5,
+    "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "ccess, the insured person may Copayment of 5% applicable to claim amount admissible and payable obtain the treatment as per treating doctor's advice and submit as pe"
+  },
+  "deductible_amount": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "No base deductible (or only optional voluntary deductible add-on)"
+  },
+  "network_hospital_count": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric; not extracted in this curation pass"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "s thereof 3. DEFINITIONS 3.8. Cashless Facility means a facility extended by the insurer to the The terms defined below and at other junctures in the Policy have the insured where the payments, of the"
+  },
+  "claim_settlement_ratio": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "source_pdf_path": null,
+    "source_quote": "TAT not specified in policy wording; governed by IRDAI Master Circular"
+  },
+  "policy_type": {
+    "value": "indemnity",
+    "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "ures are to the Company shall indemnify Medically necessary, expenses towards the be carried out; Coverage mentioned in the policy schedule. iii. Maintaining daily records of the patients and making"
+  },
+  "_meta": {
+    "curated_at": "2026-05-14",
+    "primary_source_pdf": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
+    "supporting_source_pdfs": [],
+    "completeness_pct": 75,
+    "notes": "Pattern-based extraction from local PDF via pdfplumber. Insurer-level metrics (CSR, network count) left null pending downstream backfill."
+  }
+}

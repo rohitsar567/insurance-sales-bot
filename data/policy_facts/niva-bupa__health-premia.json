@@ -1,0 +1,145 @@
+{
+  "policy_id": "niva-bupa__health-premia",
+  "policy_name": "Niva Bupa Health Premia",
+  "insurer_slug": "niva-bupa",
+  "uin_code": {
+    "value": "MAXHLIP21176V022021",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
+    "source_quote": ": Health Premia, Product UIN: MAXHLIP21176V022021 c. has a fully equipped operation theatre of its own where Surgical Procedures are carried out; d. maintains daily records of patients and will make t"
+  },
+  "min_entry_age": {
+    "value": null,
+    "unit": "days",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
+    "source_quote": "Min entry age not found"
+  },
+  "max_entry_age": {
+    "value": null,
+    "unit": "years",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
+    "source_quote": "Max entry age not explicitly stated; check Policy Schedule"
+  },
+  "max_renewal_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
+    "source_quote": "Max renewal age not specified; check Policy Schedule"
+  },
+  "sum_insured_options": {
+    "value": null,
+    "unit": "INR",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
+    "source_quote": "Sum Insured options not enumerated in extracted text; check Policy Schedule"
+  },
+  "initial_waiting_period_days": {
+    "value": 30,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
+    "source_quote": "Default IRDAI 30-day waiting period applies (not explicitly quoted in extracted snippet)"
+  },
+  "pre_existing_disease_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
+    "source_quote": "PED waiting period not extracted; check Section 5 / Excl01"
+  },
+  "specific_disease_waiting_months": {
+    "value": 24,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
+    "source_quote": "Default IRDAI 24-month specific-disease waiting (not explicitly quoted)"
+  },
+  "maternity_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
+    "source_quote": "Maternity waiting not specified or maternity excluded"
+  },
+  "pre_hospitalization_days": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
+    "source_quote": "Pre-hospitalization days not extracted"
+  },
+  "post_hospitalization_days": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
+    "source_quote": "Post-hospitalization days not extracted"
+  },
+  "day_care_treatments_count": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
+    "source_quote": "Day-care count not enumerated; covered per policy definition"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
+    "source_quote": "age as on last birthday. 2.38 AYUSH Treatment refers to the medical and / or hospitalization treatments given under Ayurveda, Yoga and Naturopathy, Unani, Sidha and Homeopathy systems. Product Name: H"
+  },
+  "maternity_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
+    "source_quote": "Maternity not explicitly mentioned; presumed excluded in base"
+  },
+  "newborn_coverage": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
+    "source_quote": "New Born Baby means baby born during the Policy Period and is aged between 1 day and 90 days, both days inclusive. 2.26 Non-Network means any Hospital, Day Care Ce"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
+    "source_quote": "Organ Donor Transplant What is covered: We will indemnify the Medical Expenses incurred for a living organ donor’s treatment as an Inpatient for the harvesting of the organ donated. Conditions - The a"
+  },
+  "no_claim_bonus_pct": {
+    "value": 10,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
+    "source_quote": "Cumulative Bonus by increasing the Sum Insured applicable under the Policy by 10% of the Base Sum Insured of the immediately preced"
+  },
+  "restoration_benefit": {
+    "value": "restorative services related to disease, disorder and conditions related to",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
+    "source_quote": "restorative services related to disease, disorder and conditions related to"
+  },
+  "room_rent_capping": {
+    "value": "Single Private Room means an air conditioned room in a Hospital where a single patient is accommodated and which has an attached",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
+    "source_quote": "Single Private Room means an air conditioned room in a Hospital where a single patient is accommodated and which has an attached"
+  },
+  "copayment_pct": {
+    "value": 20,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
+    "source_quote": "he Insured Person will bear a 20% Co-Payment and We will indemnify the remaining part of the amount that We assess as admissible in respect of a claim under thi"
+  },
+  "deductible_amount": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
+    "source_quote": "No base deductible (or only optional voluntary deductible add-on)"
+  },
+  "network_hospital_count": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric; not extracted in this curation pass"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
+    "source_quote": "isible and violent means. 2.2 Cashless Facility means a facility extended by the insurer to the insured where the payments, of the costs of treatment undergone by the insured in accordance with the po"
+  },
+  "claim_settlement_ratio": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "source_pdf_path": null,
+    "source_quote": "TAT not specified in policy wording; governed by IRDAI Master Circular"
+  },
+  "policy_type": {
+    "value": "hospital-cash",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
+    "source_quote": "Hospital cash / daily benefit policy"
+  },
+  "_meta": {
+    "curated_at": "2026-05-14",
+    "primary_source_pdf": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
+    "supporting_source_pdfs": [],
+    "completeness_pct": 65,
+    "notes": "Pattern-based extraction from local PDF via pdfplumber. Insurer-level metrics (CSR, network count) left null pending downstream backfill."
+  }
+}

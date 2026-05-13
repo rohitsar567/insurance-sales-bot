@@ -76,11 +76,14 @@ EXTRACTION DIRECTIVES (read carefully — coverage is more important than cautio
 
 
 def build_extract_prompt(policy_text: str, schema_excerpt: str, policy_id: str) -> str:
-    # Sarvam-M context window rejects ~60k char prompts (HTTP 400). Groq
-    # llama-3.3-70b handles up to ~128k tokens but rate-limits aggressively
-    # so we keep prompts tight. 25k chars ≈ 6k tokens covers the schedule +
-    # key-terms front-matter where 90% of structured fields live.
-    MAX_CHARS = 25_000
+    # Sarvam-M rejects prompts >~25k chars with HTTP 400 even though docs say
+    # 32k tokens — undocumented stricter limit. Groq llama-3.3-70b handles
+    # 128k but rate-limits TOKENS per minute aggressively (~30k/min free tier).
+    # 12k chars (~3k tokens) keeps total request well under both limits and
+    # captures Schedule + Key Definitions + Benefits front-matter where the
+    # structured fields live. Exclusions section (the back half) doesn't yield
+    # many structured fields, just policy_exclusions list which is mostly noise.
+    MAX_CHARS = 12_000
     if len(policy_text) > MAX_CHARS:
         # Front-bias: schedules, definitions, waiting periods, UIN, sum-insured
         # tables all live in the first ~25k chars. Truncate the back (which is
@@ -141,19 +144,37 @@ def load_manifest() -> dict:
 
 
 def json_from_llm_text(text: str) -> dict:
-    """Strip code fences and extract the first {...} block."""
+    """Strip code fences and <think> blocks, extract the first balanced {...} block."""
     text = text.strip()
+    # Sarvam-M reasoning model emits <think>...</think> before the JSON; strip
+    # them (handles both closed and unterminated think blocks when output is
+    # truncated mid-thought).
+    text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
+    text = re.sub(r"<think>.*", "", text, flags=re.DOTALL)
     # Remove fenced markdown
     text = re.sub(r"^```(?:json)?\s*", "", text)
     text = re.sub(r"\s*```$", "", text)
+    text = text.strip()
     # Find first balanced { ... }
     start = text.find("{")
     if start == -1:
         raise ValueError("no JSON object found in LLM output")
     depth = 0
+    in_str = False
+    esc = False
     for i in range(start, len(text)):
         c = text[i]
-        if c == "{":
+        if in_str:
+            if esc:
+                esc = False
+            elif c == "\\":
+                esc = True
+            elif c == '"':
+                in_str = False
+            continue
+        if c == '"':
+            in_str = True
+        elif c == "{":
             depth += 1
         elif c == "}":
             depth -= 1
@@ -246,14 +267,21 @@ async def extract_one(pdf_path: Path, manifest_entry: dict, llm_primary, llm_fal
     raw = ""
     for attempt, llm in enumerate([llm_primary, llm_fallback]):
         try:
-            res = await llm.chat(messages=messages, temperature=0.0, max_tokens=4096)
+            res = await llm.chat(messages=messages, temperature=0.0, max_tokens=2048)
             raw = res.text
             data = json_from_llm_text(raw)
-            # Seed identity fields from filename/manifest
-            data.setdefault("policy_id", policy_id)
-            data.setdefault("insurer_slug", pdf_path.parent.name)
-            data.setdefault("insurer_name", manifest_entry.get("insurer_name", pdf_path.parent.name))
-            data.setdefault("policy_name", manifest_entry.get("policy_name", pdf_path.stem))
+            # Force-fill identity fields from filename/manifest. These are
+            # REQUIRED in the schema, and the LLM frequently emits them as
+            # null because they're not in the truncated text. Override even
+            # if the key exists with null/empty.
+            if not data.get("policy_id"):
+                data["policy_id"] = policy_id
+            if not data.get("insurer_slug"):
+                data["insurer_slug"] = pdf_path.parent.name
+            if not data.get("insurer_name"):
+                data["insurer_name"] = manifest_entry.get("insurer_name") or pdf_path.parent.name
+            if not data.get("policy_name"):
+                data["policy_name"] = manifest_entry.get("policy_name") or pdf_path.stem
             policy = HealthPolicy(**data)
             EXTRACTED_DIR.mkdir(parents=True, exist_ok=True)
             out_json.write_text(policy.model_dump_json(indent=2))

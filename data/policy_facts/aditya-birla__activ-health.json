@@ -1,0 +1,150 @@
+{
+  "policy_id": "aditya-birla__activ-health",
+  "policy_name": "Aditya Birla Activ Health (Platinum Enhanced / Essential)",
+  "insurer_slug": "aditya-birla",
+  "uin_code": {
+    "value": "ADIHLIP24102V052324",
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "e: Activ Health, Product UIN: ADIHLIP24102V052324. 4. Cashless Facility means a facility extended by the insurer to the insured where the payments, of the costs of treatment undergone by the insured i"
+  },
+  "min_entry_age": {
+    "value": null,
+    "unit": "days",
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "Min entry age not found"
+  },
+  "max_entry_age": {
+    "value": null,
+    "unit": "years",
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "Max entry age not explicitly stated; check Policy Schedule"
+  },
+  "max_renewal_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "Max renewal age not specified; check Policy Schedule"
+  },
+  "sum_insured_options": {
+    "value": [
+      400000,
+      500000,
+      1000000,
+      7500000
+    ],
+    "unit": "INR",
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "ck-up Program, applicable for Sum Insured up to 75 Lakh rupees for Insured Persons who are Aged 18 years and above on the Start Date are as follows: List of Tests - During Annual Health Check up Sum I"
+  },
+  "initial_waiting_period_days": {
+    "value": 30,
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "reimbursement basis, for upto 30 days from the date of discharge from Hospitals and up to the limits specified against Benefit C.IV.(31) in the Policy Schedule / Product Benefit Table of this Policy. "
+  },
+  "pre_existing_disease_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "PED waiting period not extracted; check Section 5 / Excl01"
+  },
+  "specific_disease_waiting_months": {
+    "value": 24,
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "Default IRDAI 24-month specific-disease waiting (not explicitly quoted)"
+  },
+  "maternity_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "Maternity waiting not specified or maternity excluded"
+  },
+  "pre_hospitalization_days": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "Pre-hospitalization days not extracted"
+  },
+  "post_hospitalization_days": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "Post-hospitalization days not extracted"
+  },
+  "day_care_treatments_count": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "Day-care count not enumerated; covered per policy definition"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "visible and violent means. 2. AYUSH Hospital is a healthcare facility wherein medical / surgical / para-surgical treatment procedures and interventions are carried out by AYUSH Medical Practitioner(s)"
+  },
+  "maternity_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "8. Maternity Expenses (Code - Excl18): i. Medical treatment expenses traceable to childbirth (including complicated deliveries and caesarean sections incurred during hospitalization) except ectopic"
+  },
+  "newborn_coverage": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "New Born Baby means baby born during the Policy Period and is aged upto 90 days. 34. OPD treatment means the one in which the Ins"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "Organ Donor Expenses: What is covered We shall cover the Medical Expenses, up to the limits as specified in the Policy Schedule / Product Benefit Table of this Policy, incurred by or in respect of the"
+  },
+  "no_claim_bonus_pct": {
+    "value": 100,
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "Cumulative Bonus shall not exceed 100% of the Sum Insured on the Renewed Policy as speci"
+  },
+  "restoration_benefit": {
+    "value": "reinstatement",
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "reinstatement"
+  },
+  "room_rent_capping": {
+    "value": "room category / limit that is higher than the one that is specified in the Policy Schedule / Product",
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "room category / limit that is higher than the one that is specified in the Policy Schedule / Product"
+  },
+  "copayment_pct": {
+    "value": 0,
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "No mandatory copay extracted; product may have age-based or zone-based optional copay"
+  },
+  "deductible_amount": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "No base deductible (or only optional voluntary deductible add-on)"
+  },
+  "network_hospital_count": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric; not extracted in this curation pass"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "UIN: ADIHLIP24102V052324. 4. Cashless Facility means a facility extended by the insurer to the insured where the payments, of the costs of treatment undergone by the insured in accordance with the pol"
+  },
+  "claim_settlement_ratio": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "source_pdf_path": null,
+    "source_quote": "TAT not specified in policy wording; governed by IRDAI Master Circular"
+  },
+  "policy_type": {
+    "value": "hospital-cash",
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "Hospital cash / daily benefit policy"
+  },
+  "_meta": {
+    "curated_at": "2026-05-14",
+    "primary_source_pdf": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "supporting_source_pdfs": [],
+    "completeness_pct": 70,
+    "notes": "Pattern-based extraction from local PDF via pdfplumber. Insurer-level metrics (CSR, network count) left null pending downstream backfill."
+  }
+}

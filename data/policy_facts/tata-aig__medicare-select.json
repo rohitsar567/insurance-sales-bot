@@ -1,0 +1,145 @@
+{
+  "policy_id": "tata-aig__medicare-select",
+  "policy_name": "Tata AIG MediCare Select",
+  "insurer_slug": "tata-aig",
+  "uin_code": {
+    "value": "TATHLIP25051V012425",
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-select__brochure.pdf",
+    "source_quote": "TATA AIG MediCare Select UIN: TATHLIP25051V012425 Page 1 of 21 Zone B Hyderabad (including Secunderabad), Sangareddy, Bengaluru, Kolkata (including Kolkata Metropolitan Area, Howrah, Hoogly), Indore, "
+  },
+  "min_entry_age": {
+    "value": 0,
+    "unit": "days",
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-select__brochure.pdf",
+    "source_quote": "uitability Entry Age: Minimum Child- 0 days Dependent children between 0 days and 5 years can be insured only when both parents are getting insured. Adult- 18 years Entry Age: Maximum Child- 25 years "
+  },
+  "max_entry_age": {
+    "value": null,
+    "unit": "years",
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-select__brochure.pdf",
+    "source_quote": "Max entry age not explicitly stated; check Policy Schedule"
+  },
+  "max_renewal_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-select__brochure.pdf",
+    "source_quote": "Lifelong renewability: it Cover Ceasing age There is no maximum cover ceasing age under this policy. Policy Term 1 Year/ 2 Years/ 3 Years Coverage Options Individual/Family floater Age of Proposer 18 years or above Relation"
+  },
+  "sum_insured_options": {
+    "value": null,
+    "unit": "INR",
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-select__brochure.pdf",
+    "source_quote": "Sum Insured options not enumerated in extracted text; check Policy Schedule"
+  },
+  "initial_waiting_period_days": {
+    "value": 30,
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-select__brochure.pdf",
+    "source_quote": "Gastric bypass surgeries iii. 30 Days Waiting Period (Code- Excl 03): a. Expenses related to the treatment of any Illness within 30 days from the first Policy commencement date shall be excluded excep"
+  },
+  "pre_existing_disease_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-select__brochure.pdf",
+    "source_quote": "PED waiting period not extracted; check Section 5 / Excl01"
+  },
+  "specific_disease_waiting_months": {
+    "value": 24,
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-select__brochure.pdf",
+    "source_quote": "Default IRDAI 24-month specific-disease waiting (not explicitly quoted)"
+  },
+  "maternity_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-select__brochure.pdf",
+    "source_quote": "Maternity waiting not specified or maternity excluded"
+  },
+  "pre_hospitalization_days": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-select__brochure.pdf",
+    "source_quote": "Pre-hospitalization days not extracted"
+  },
+  "post_hospitalization_days": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-select__brochure.pdf",
+    "source_quote": "Post-hospitalization days not extracted"
+  },
+  "day_care_treatments_count": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-select__brochure.pdf",
+    "source_quote": "Day-care count not enumerated; covered per policy definition"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-select__brochure.pdf",
+    "source_quote": "dings or end of life care. g. AYUSH Benefit: Covers medical Expenses incurred for In-patient/Day care treatment taken in an AYUSH hospital/AYUSH day care centre, including pre and post hospitalization"
+  },
+  "maternity_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-select__brochure.pdf",
+    "source_quote": "Maternity not explicitly mentioned; presumed excluded in base"
+  },
+  "newborn_coverage": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-select__brochure.pdf",
+    "source_quote": "New Born Baby and First year Vaccinations of the New Born Baby, sub"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-select__brochure.pdf",
+    "source_quote": "Organ Donor: Covers Medical Expenses incurred by or in respect of the organ donor, for an organ transplant Surgery, solely towards the harvesting of the organ donated. The insured person must be the r"
+  },
+  "no_claim_bonus_pct": {
+    "value": 50,
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-select__brochure.pdf",
+    "source_quote": "Cumulative Bonus: If you choose Cumulative Bonus, 50% Cumulative Bonus will be applied on the Sum Insur"
+  },
+  "restoration_benefit": {
+    "value": "Restore Infinity Plus: We will provide reinstatement of the base sum insured, if the Sum Insured and",
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-select__brochure.pdf",
+    "source_quote": "Restore Infinity Plus: We will provide reinstatement of the base sum insured, if the Sum Insured and"
+  },
+  "room_rent_capping": {
+    "value": "Single Private Room",
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-select__brochure.pdf",
+    "source_quote": "Single Private Room"
+  },
+  "copayment_pct": {
+    "value": 0,
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-select__brochure.pdf",
+    "source_quote": "No mandatory copay extracted; product may have age-based or zone-based optional copay"
+  },
+  "deductible_amount": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-select__brochure.pdf",
+    "source_quote": "Aggregate Deductible : Our liability under this Policy shall be subject to Aggregate Deductible as"
+  },
+  "network_hospital_count": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric; not extracted in this curation pass"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-select__brochure.pdf",
+    "source_quote": "er. d. Procedure for availing cashless facility: • For any emergency Hospitalisation, our TPA/We must be informed within 24 hours after hospitalization. • For any planned hospitalization, kindly seek "
+  },
+  "claim_settlement_ratio": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "source_pdf_path": null,
+    "source_quote": "TAT not specified in policy wording; governed by IRDAI Master Circular"
+  },
+  "policy_type": {
+    "value": "indemnity",
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-select__brochure.pdf",
+    "source_quote": "enefits a. Range of benefits: Indemnity based health insurance cover with range of benefits and optional covers. b. Network of hospitals: We are equipped to offer you quality health care with our str"
+  },
+  "_meta": {
+    "curated_at": "2026-05-14",
+    "primary_source_pdf": "rag/corpus/tata-aig/medicare-select__brochure.pdf",
+    "supporting_source_pdfs": [],
+    "completeness_pct": 70,
+    "notes": "Pattern-based extraction from local PDF via pdfplumber. Insurer-level metrics (CSR, network count) left null pending downstream backfill."
+  }
+}

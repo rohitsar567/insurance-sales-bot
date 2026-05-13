@@ -1,0 +1,148 @@
+{
+  "policy_id": "hdfc-ergo__my-health-women-suraksha",
+  "policy_name": "HDFC ERGO my:health Women Suraksha",
+  "insurer_slug": "hdfc-ergo",
+  "uin_code": {
+    "value": "HDFHLIP22142V032122",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
+    "source_quote": "N: my:health Women Suraksha - HDFHLIP22142V032122. UID: 17332."
+  },
+  "min_entry_age": {
+    "value": null,
+    "unit": "days",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
+    "source_quote": "Min entry age not found"
+  },
+  "max_entry_age": {
+    "value": null,
+    "unit": "years",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
+    "source_quote": "Max entry age not explicitly stated; check Policy Schedule"
+  },
+  "max_renewal_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
+    "source_quote": "Max renewal age not specified; check Policy Schedule"
+  },
+  "sum_insured_options": {
+    "value": [
+      100000,
+      50000000
+    ],
+    "unit": "INR",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
+    "source_quote": "**As per filed document, the sum insured option available is from ` 1 lakh to ` 5 crores my:health Women Suraksha Sum Insured ` ` 1 1 to Lakh Crore (Multiples of 1 lakh) Plans Women Cancer Plus Plan -"
+  },
+  "initial_waiting_period_days": {
+    "value": 30,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
+    "source_quote": "Default IRDAI 30-day waiting period applies (not explicitly quoted in extracted snippet)"
+  },
+  "pre_existing_disease_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
+    "source_quote": "PED waiting period not extracted; check Section 5 / Excl01"
+  },
+  "specific_disease_waiting_months": {
+    "value": 24,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
+    "source_quote": "Default IRDAI 24-month specific-disease waiting (not explicitly quoted)"
+  },
+  "maternity_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
+    "source_quote": "Maternity waiting not specified or maternity excluded"
+  },
+  "pre_hospitalization_days": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
+    "source_quote": "Pre-hospitalization days not extracted"
+  },
+  "post_hospitalization_days": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
+    "source_quote": "Post-hospitalization days not extracted"
+  },
+  "day_care_treatments_count": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
+    "source_quote": "Day-care count not enumerated; covered per policy definition"
+  },
+  "ayush_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
+    "source_quote": "AYUSH coverage not found in extracted text"
+  },
+  "maternity_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
+    "source_quote": "Maternity not explicitly mentioned; presumed excluded in base"
+  },
+  "newborn_coverage": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
+    "source_quote": "newborn baby coach, etc. for maintenance complications of good"
+  },
+  "organ_donor_expenses": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
+    "source_quote": "Organ donor cover not extracted"
+  },
+  "no_claim_bonus_pct": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
+    "source_quote": "NCB % not extracted; product may use booster/recharge structure"
+  },
+  "restoration_benefit": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
+    "source_quote": "Restoration benefit not found in extracted text"
+  },
+  "room_rent_capping": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
+    "source_quote": "Room rent capping not extracted (only definition found, no explicit cap)"
+  },
+  "copayment_pct": {
+    "value": 0,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
+    "source_quote": "No mandatory copay extracted; product may have age-based or zone-based optional copay"
+  },
+  "deductible_amount": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
+    "source_quote": "No base deductible (or only optional voluntary deductible add-on)"
+  },
+  "network_hospital_count": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric; not extracted in this curation pass"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
+    "source_quote": "Cashless mention not found"
+  },
+  "claim_settlement_ratio": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "source_pdf_path": null,
+    "source_quote": "TAT not specified in policy wording; governed by IRDAI Master Circular"
+  },
+  "policy_type": {
+    "value": "indemnity",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
+    "source_quote": "Default indemnity (no explicit alternate type detected)"
+  },
+  "_meta": {
+    "curated_at": "2026-05-14",
+    "primary_source_pdf": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
+    "supporting_source_pdfs": [],
+    "completeness_pct": 55,
+    "notes": "Pattern-based extraction from local PDF via pdfplumber. Insurer-level metrics (CSR, network count) left null pending downstream backfill."
+  }
+}

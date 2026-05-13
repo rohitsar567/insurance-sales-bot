@@ -1,0 +1,145 @@
+{
+  "policy_id": "icici-lombard__health-advantedge",
+  "policy_name": "ICICI Lombard Health Advantedge",
+  "insurer_slug": "icici-lombard",
+  "uin_code": {
+    "value": "ICIHLIP24182V042324",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
+    "source_quote": "N: L67200MH2000PLC129408 UIN: ICIHLIP24182V042324 Health AdvantEdge Mailing Address: Registered Office Address: Toll free no: 1800 2666 601 & 602, 6th Floor, Interface 16, ICICI Lombard House, 414, P "
+  },
+  "min_entry_age": {
+    "value": null,
+    "unit": "days",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
+    "source_quote": "Min entry age not found"
+  },
+  "max_entry_age": {
+    "value": null,
+    "unit": "years",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
+    "source_quote": "Max entry age not explicitly stated; check Policy Schedule"
+  },
+  "max_renewal_age": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
+    "source_quote": "Max renewal age not specified; check Policy Schedule"
+  },
+  "sum_insured_options": {
+    "value": null,
+    "unit": "INR",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
+    "source_quote": "Sum Insured options not enumerated in extracted text; check Policy Schedule"
+  },
+  "initial_waiting_period_days": {
+    "value": 30,
+    "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
+    "source_quote": "Default IRDAI 30-day waiting period applies (not explicitly quoted in extracted snippet)"
+  },
+  "pre_existing_disease_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
+    "source_quote": "PED waiting period not extracted; check Section 5 / Excl01"
+  },
+  "specific_disease_waiting_months": {
+    "value": 24,
+    "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
+    "source_quote": "Default IRDAI 24-month specific-disease waiting (not explicitly quoted)"
+  },
+  "maternity_waiting_months": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
+    "source_quote": "Maternity waiting not specified or maternity excluded"
+  },
+  "pre_hospitalization_days": {
+    "value": 60,
+    "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
+    "source_quote": "he Insured Person immediately 60 days before the Insured Person’s Admission to Hospital provided that: i. We have accepted the claim under “Inpatient Treatment”/ Daycare Procedures/ Treatment” in resp"
+  },
+  "post_hospitalization_days": {
+    "value": 180,
+    "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
+    "source_quote": "he Insured Person immediately 180 days following the Insured Person’s discharge from Hospital provided that: i. We have accepted the claim under “Inpatient Treatment”or “Daycare Procedures/ Treatment”"
+  },
+  "day_care_treatments_count": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
+    "source_quote": "Day-care count not enumerated; covered per policy definition"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
+    "source_quote": "eatment may have been taken. “AYUSH Day Care Centre” means and includes Community Health Centre (CHC), Primary Health Centre (PHC), Dispensary, Clinic, Polyclinic or any such health centre which is re"
+  },
+  "maternity_coverage": {
+    "value": false,
+    "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
+    "source_quote": "Maternity not explicitly mentioned; presumed excluded in base"
+  },
+  "newborn_coverage": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
+    "source_quote": "Newborn Baby” means baby born during the Policy Period and is aged upto 90 days. \"Non- Network Provider\" means any hospital, day"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
+    "source_quote": "organ donor’s Hospitalization during the Policy Period for harvesting of the organ donated to the Insured Person up to the Annual Sum Insured specified in the Policy Schedule provided that: i. The org"
+  },
+  "no_claim_bonus_pct": {
+    "value": 20,
+    "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
+    "source_quote": "Cumulative Bonus of 20% of expiring or renewed Annual Sum Insured (whiche"
+  },
+  "restoration_benefit": {
+    "value": "Reset benefit will not be available for this cover",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
+    "source_quote": "Reset benefit will not be available for this cover"
+  },
+  "room_rent_capping": {
+    "value": "no room rent capping",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
+    "source_quote": "no room rent capping"
+  },
+  "copayment_pct": {
+    "value": 0,
+    "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
+    "source_quote": "No mandatory copay extracted; product may have age-based or zone-based optional copay"
+  },
+  "deductible_amount": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
+    "source_quote": "No base deductible (or only optional voluntary deductible add-on)"
+  },
+  "network_hospital_count": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric; not extracted in this curation pass"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
+    "source_quote": "s authorized representative. \"Cashless facility\" means a facility extended by the Insurer to the Insured where, the payments of the costs of treatment undergone by the Insured in accordance with the P"
+  },
+  "claim_settlement_ratio": {
+    "value": null,
+    "source_url": null,
+    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "source_pdf_path": null,
+    "source_quote": "TAT not specified in policy wording; governed by IRDAI Master Circular"
+  },
+  "policy_type": {
+    "value": "hospital-cash",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
+    "source_quote": "Hospital cash / daily benefit policy"
+  },
+  "_meta": {
+    "curated_at": "2026-05-14",
+    "primary_source_pdf": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
+    "supporting_source_pdfs": [],
+    "completeness_pct": 75,
+    "notes": "Pattern-based extraction from local PDF via pdfplumber. Insurer-level metrics (CSR, network count) left null pending downstream backfill."
+  }
+}
