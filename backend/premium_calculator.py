@@ -54,8 +54,15 @@ FALLBACK_SI = {
     "2500000": 3.1, "5000000": 4.6, "10000000": 7.2,
 }
 FALLBACK_CITY = {"metro": 1.0, "tier1": 0.92, "tier2": 0.82}
-# family_size=0 is the slider's "self-only" marker — treated identically to 1
-FALLBACK_FLOATER = {0: 1.0, 1: 1.0, 2: 1.65, 3: 2.0, 4: 2.4, 5: 2.7, 6: 2.95}
+# family_size = NUMBER OF DEPENDENTS COVERED (in addition to self).
+#   0 = self only (individual policy, no floater premium uplift)
+#   1 = self + 1 dependent (couple cover)
+#   2 = self + 2 dependents (small family)
+#   ...
+# Source: typical retail family-floater rate cards from PolicyBazaar +
+# InsuranceDekho — individual base, ~1.5× for couple, ~2× for family of 3,
+# ~2.4× for family of 4, scaling thereafter.
+FALLBACK_FLOATER = {0: 1.0, 1: 1.50, 2: 1.85, 3: 2.20, 4: 2.55, 5: 2.85, 6: 3.10}
 
 # Pre-existing-disease loading factors. Sources: Acko + PolicyBazaar coverage
 # articles on PED loading (typical 25-50% premium uplift depending on severity).

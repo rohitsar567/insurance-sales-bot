@@ -440,20 +440,22 @@ function PremiumCalculatorPanel({ onClose }: { onClose: () => void }) {
   const [sumInsured, setSumInsured] = useState(1000000);
   const [cityTier, setCityTier] = useState<"metro" | "tier1" | "tier2">("metro");
   const [smoker, setSmoker] = useState(false);
-  const [familySize, setFamilySize] = useState(2);
+  const [familySize, setFamilySize] = useState(0);
+  const [ped, setPed] = useState<"none" | "diabetes_or_hypertension" | "heart_disease" | "multiple">("none");
+  const [copay, setCopay] = useState(0);
   const [estimate, setEstimate] = useState<PremiumEstimateResponse | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     const handler = setTimeout(() => {
       setBusy(true);
-      postPremiumEstimate({ age, sum_insured_inr: sumInsured, city_tier: cityTier, smoker, family_size: familySize })
+      postPremiumEstimate({ age, sum_insured_inr: sumInsured, city_tier: cityTier, smoker, family_size: familySize, pre_existing_conditions: ped, copayment_pct: copay })
         .then(setEstimate)
         .catch(() => setEstimate(null))
         .finally(() => setBusy(false));
     }, 200); // debounce
     return () => clearTimeout(handler);
-  }, [age, sumInsured, cityTier, smoker, familySize]);
+  }, [age, sumInsured, cityTier, smoker, familySize, ped, copay]);
 
   const fmtINR = (v: number) => `₹${v.toLocaleString("en-IN")}`;
   const siDisplay = sumInsured >= 10000000 ? `${sumInsured / 10000000} cr` : `${sumInsured / 100000} L`;
@@ -506,14 +508,40 @@ function PremiumCalculatorPanel({ onClose }: { onClose: () => void }) {
             <div>
               <label className="flex items-center justify-between text-xs mb-1">
                 <span className="font-medium">Family covered</span>
-                <span className="font-mono">{familySize} {familySize === 1 ? "person" : "people"}</span>
+                <span className="font-mono">{familySize === 0 ? "Self only" : `Self + ${familySize} dependent${familySize === 1 ? "" : "s"}`}</span>
               </label>
               <input
-                type="range" min={1} max={6} step={1}
+                type="range" min={0} max={6} step={1}
                 value={familySize}
                 onChange={(e) => setFamilySize(parseInt(e.target.value))}
                 className="w-full accent-[var(--primary)]"
               />
+            </div>
+            <div>
+              <label className="block text-xs mb-1 font-medium">Pre-existing conditions</label>
+              <select
+                value={ped}
+                onChange={(e) => setPed(e.target.value as typeof ped)}
+                className="w-full text-xs bg-transparent border border-[var(--border)] rounded-md px-2 py-1.5 outline-none focus:border-[var(--primary)]"
+              >
+                <option value="none">None</option>
+                <option value="diabetes_or_hypertension">Diabetes or hypertension</option>
+                <option value="heart_disease">Heart disease</option>
+                <option value="multiple">Multiple conditions</option>
+              </select>
+            </div>
+            <div>
+              <label className="flex items-center justify-between text-xs mb-1">
+                <span className="font-medium">Voluntary co-pay</span>
+                <span className="font-mono">{copay}%</span>
+              </label>
+              <input
+                type="range" min={0} max={40} step={5}
+                value={copay}
+                onChange={(e) => setCopay(parseInt(e.target.value))}
+                className="w-full accent-[var(--primary)]"
+              />
+              <p className="text-[10px] text-[var(--muted-foreground)] mt-0.5">Higher co-pay = lower premium; you pay this % of each claim</p>
             </div>
             <div className="flex items-center gap-3 flex-wrap text-xs">
               <span className="font-medium">City tier:</span>
@@ -1131,17 +1159,19 @@ function PerPolicyPremiumEstimator({ policy }: { policy: MarketplacePolicy }) {
   const [si, setSI] = useState(defaultSI);
   const [city, setCity] = useState<"metro" | "tier1" | "tier2">("metro");
   const [smoker, setSmoker] = useState(false);
-  const [fam, setFam] = useState(1);
+  const [fam, setFam] = useState(0);
+  const [ped, setPed] = useState<"none" | "diabetes_or_hypertension" | "heart_disease" | "multiple">("none");
+  const [copay, setCopay] = useState(0);
   const [est, setEst] = useState<PremiumEstimateResponse | null>(null);
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => {
       setBusy(true);
-      postPremiumEstimate({ age, sum_insured_inr: si, city_tier: city, smoker, family_size: fam, policy_id: policy.policy_id })
+      postPremiumEstimate({ age, sum_insured_inr: si, city_tier: city, smoker, family_size: fam, policy_id: policy.policy_id, pre_existing_conditions: ped, copayment_pct: copay })
         .then(setEst).catch(() => setEst(null)).finally(() => setBusy(false));
     }, 150);
     return () => clearTimeout(t);
-  }, [age, si, city, smoker, fam, policy.policy_id]);
+  }, [age, si, city, smoker, fam, ped, copay, policy.policy_id]);
   const fmt = (v: number) => `₹${v.toLocaleString("en-IN")}`;
   const siDisp = si >= 10000000 ? `${si / 10000000} cr` : `${si / 100000} L`;
   return (
@@ -1161,9 +1191,28 @@ function PerPolicyPremiumEstimator({ policy }: { policy: MarketplacePolicy }) {
         </div>
         <div>
           <div className="flex items-center justify-between text-[10px] uppercase tracking-wide text-[var(--muted-foreground)] font-semibold">
-            <span>Family size</span><span className="font-mono">{fam}</span>
+            <span>Family covered</span><span className="font-mono">{fam === 0 ? "Self only" : `Self + ${fam}`}</span>
           </div>
-          <input type="range" min={1} max={6} value={fam} onChange={(e) => setFam(parseInt(e.target.value))} className="w-full accent-[var(--primary)]" />
+          <input type="range" min={0} max={6} value={fam} onChange={(e) => setFam(parseInt(e.target.value))} className="w-full accent-[var(--primary)]" />
+        </div>
+        <div>
+          <div className="text-[10px] uppercase tracking-wide text-[var(--muted-foreground)] font-semibold mb-0.5">Pre-existing conditions</div>
+          <select
+            value={ped}
+            onChange={(e) => setPed(e.target.value as typeof ped)}
+            className="w-full text-[11px] bg-transparent border border-[var(--border)] rounded px-1.5 py-1"
+          >
+            <option value="none">None</option>
+            <option value="diabetes_or_hypertension">Diabetes / hypertension</option>
+            <option value="heart_disease">Heart disease</option>
+            <option value="multiple">Multiple</option>
+          </select>
+        </div>
+        <div>
+          <div className="flex items-center justify-between text-[10px] uppercase tracking-wide text-[var(--muted-foreground)] font-semibold">
+            <span>Co-pay</span><span className="font-mono">{copay}%</span>
+          </div>
+          <input type="range" min={0} max={40} step={5} value={copay} onChange={(e) => setCopay(parseInt(e.target.value))} className="w-full accent-[var(--primary)]" />
         </div>
         <div className="flex items-center gap-2 flex-wrap text-[11px] pt-1">
           {(["metro", "tier1", "tier2"] as const).map((t) => (
