@@ -516,11 +516,48 @@ class MarketplaceResponse(BaseModel):
     insurers_indexed: int
 
 
+def _build_corpus_url_index() -> dict[str, str]:
+    """Parse data/corpus_urls.md and return {policy_id: source_url}. Used to
+    backfill source_pdf_url when the LLM extraction didn't capture it."""
+    import re as _re
+    out: dict[str, str] = {}
+    md_path = settings.CORPUS_DIR.parent.parent / "data" / "corpus_urls.md"
+    if not md_path.exists():
+        return out
+    for line in md_path.read_text().splitlines():
+        if not line.startswith("|") or "insurer_slug" in line or "---" in line:
+            continue
+        parts = [p.strip() for p in line.strip("|").split("|")]
+        if len(parts) < 5:
+            continue
+        insurer_slug = parts[0]
+        policy_name = parts[2]
+        doc_type = parts[3]
+        m = _re.search(r"https?://\S+", parts[4])
+        if not (insurer_slug and m):
+            continue
+        url = m.group(0)
+        # Primary key — match rag.ingest.policy_id_for: <insurer>__<filename-stem>
+        # where filename-stem is the URL's PDF filename without extension.
+        url_stem = url.rsplit("/", 1)[-1].rsplit("?", 1)[0].rsplit(".", 1)[0]
+        url_slug = _re.sub(r"[^a-z0-9]+", "-", url_stem.lower()).strip("-")
+        out[f"{insurer_slug}__{url_slug}"] = url
+        # Secondary key — derived from policy_name + doc_type (some extracted
+        # JSONs use a name-based slug when the original URL filename differs)
+        if policy_name and doc_type:
+            name_slug = _re.sub(r"[^a-z0-9]+", "-", policy_name.lower()).strip("-")
+            out.setdefault(f"{insurer_slug}__{name_slug}__{doc_type.lower()}", url)
+            out.setdefault(f"{insurer_slug}__{name_slug}", url)
+    return out
+
+
 @app.get("/api/policies/all", response_model=MarketplaceResponse)
 async def policies_all():
     """The marketplace data feed — every extracted policy + scorecard + filterable fields."""
     import json as _json
     from backend.scorecard import build_scorecard
+
+    corpus_url_index = _build_corpus_url_index()
 
     insurer_meta = {
         "aditya-birla":  ("Aditya Birla Health Insurance", "https://www.adityabirlacapital.com/healthinsurance"),
@@ -564,13 +601,22 @@ async def policies_all():
             si = []
 
         try:
+            policy_id = data.get("policy_id", fp.stem)
+            # Backfill source_pdf_url from corpus_urls.md when extraction didn't
+            # populate it. Try exact policy_id match first, then key permutations.
+            source_pdf_url = (
+                data.get("source_pdf_url")
+                or corpus_url_index.get(policy_id)
+                or corpus_url_index.get(fp.stem)
+                or ""
+            )
             out.append(MarketplacePolicy(
-                policy_id=data.get("policy_id", fp.stem),
+                policy_id=policy_id,
                 policy_name=data.get("policy_name", fp.stem),
                 insurer_slug=slug,
                 insurer_name=name,
                 insurer_home_url=home,
-                source_pdf_url=data.get("source_pdf_url") or "",
+                source_pdf_url=source_pdf_url,
                 grade=sc.grade,
                 overall_score=sc.overall_score,
                 one_liner=sc.one_liner,
@@ -755,8 +801,17 @@ class PremiumEstimateRequest(BaseModel):
     sum_insured_inr: int = Field(..., ge=100000, le=100000000)
     city_tier: str = Field("metro", pattern="^(metro|tier1|tier2)$")
     smoker: bool = False
-    family_size: int = Field(1, ge=1, le=8)
+    # family_size: 0 is the slider "self-only" sentinel (treated identical to 1)
+    family_size: int = Field(1, ge=0, le=8)
     policy_id: Optional[str] = None
+    # Pre-existing condition flag — controls PED premium load. Allowed values
+    # mirror the FALLBACK_PED keys in backend/premium_calculator.py
+    pre_existing_conditions: str = Field(
+        "none",
+        pattern="^(none|diabetes_or_hypertension|heart_disease|multiple)$",
+    )
+    # Voluntary co-payment % — reduces premium ~7% per 10pp of co-pay
+    copayment_pct: float = Field(0.0, ge=0, le=40)
 
 
 class PremiumEstimateResponse(BaseModel):
@@ -784,6 +839,8 @@ async def premium_estimate(req: PremiumEstimateRequest):
         smoker=req.smoker,
         family_size=req.family_size,
         policy_id=req.policy_id,
+        pre_existing_conditions=req.pre_existing_conditions,
+        copayment_pct=req.copayment_pct,
     )
     return PremiumEstimateResponse(
         policy_id=e.policy_id,

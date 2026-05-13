@@ -124,8 +124,10 @@ def main():
         storage_mb = dir_size_mb(ROOT / "rag" / "vectors")
         print(f"  chunks={chunk_count}  storage={storage_mb}MB  ingest={ingest_s:.0f}s")
 
-        # 3) Eval
-        eval_cmd = [py, "-m", "eval.run"]
+        # 3) Eval — use the regex grader (--no-judge) so Groq rate limits
+        # don't poison the sweep. The LLM judge is for production gating;
+        # the sweep needs consistent fast signal across cells.
+        eval_cmd = [py, "-m", "eval.run", "--no-judge"]
         if EVAL_LIMIT:
             eval_cmd += ["--limit", str(EVAL_LIMIT)]
         rc, log, eval_s = run(eval_cmd, env=env, label="eval")

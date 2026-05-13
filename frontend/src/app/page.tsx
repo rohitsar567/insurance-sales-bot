@@ -1495,6 +1495,10 @@ function PolicyDetailModal({ policy, onClose }: { policy: MarketplacePolicy; onC
   const maxSI = policy.sum_insured_options.length ? Math.max(...policy.sum_insured_options) : null;
   const siDisplay = maxSI ? (maxSI >= 10000000 ? `${maxSI/10000000} cr` : `${maxSI/100000} L`) : "—";
 
+  const pdfHref = policy.source_pdf_url ||
+    `https://www.google.com/search?q=site:${(new URL(policy.insurer_home_url || "https://www.google.com")).hostname}+${encodeURIComponent(policy.policy_name + " policy wording PDF")}`;
+  const hasRealPdf = Boolean(policy.source_pdf_url);
+
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4 animate-fade-up" onClick={onClose}>
       <div className="bg-[var(--card)] rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-thin" onClick={(e) => e.stopPropagation()}>
@@ -1508,13 +1512,17 @@ function PolicyDetailModal({ policy, onClose }: { policy: MarketplacePolicy; onC
                 </a>
               </div>
               <h3 className="text-lg font-bold">{policy.policy_name}</h3>
-              {policy.source_pdf_url && (
-                <a href={policy.source_pdf_url} target="_blank" rel="noopener" className="inline-flex items-center gap-1.5 text-xs text-[var(--primary)] hover:underline mt-1">
-                  <PdfIcon /> Open policy document
-                </a>
-              )}
             </div>
-            <button onClick={onClose} className="text-[var(--muted-foreground)] hover:text-[var(--foreground)] text-2xl leading-none">×</button>
+            <a
+              href={pdfHref}
+              target="_blank"
+              rel="noopener"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold bg-[var(--primary)] text-white hover:opacity-90 px-3 py-2 rounded-md shrink-0"
+              title={hasRealPdf ? "Open the source policy PDF" : "Search the insurer's site for the policy PDF (we don't have a direct link for this policy yet)"}
+            >
+              <PdfIcon /> {hasRealPdf ? "Policy PDF" : "Find PDF"}
+            </a>
+            <button onClick={onClose} className="text-[var(--muted-foreground)] hover:text-[var(--foreground)] text-2xl leading-none ml-1">×</button>
           </div>
         </div>
 

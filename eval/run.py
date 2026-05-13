@@ -86,8 +86,44 @@ def get_judge() -> GroqLLM:
     return _judge
 
 
-async def grade_one(gold: dict, bot_answer: str, blocked: bool) -> tuple[bool, bool, float, str]:
-    """Returns (factual_match, citation_present, score, reason)."""
+def _regex_factual_grade(gold_answer: str, bot_answer: str) -> tuple[bool, str]:
+    """Deterministic factual grader for sweep runs (no LLM judge).
+
+    Extracts numeric tokens + key noun phrases from GOLD; checks whether BOT
+    contains them. Decent for our gold set which is dominated by specific
+    numbers (24 months, ₹5L, etc.). Less precise than the LLM judge but
+    consistent + free of rate limits.
+    """
+    gold_lower = gold_answer.lower()
+    bot_lower = (bot_answer or "").lower()
+
+    # Pull numeric tokens (with optional unit) from gold
+    nums = re.findall(r"\b(\d+(?:[.,]\d+)?)(?:\s*(?:%|months?|days?|years?|lakh|crore|inr|₹|rs))?", gold_lower)
+    # Strip the unit suffix to normalize comparison
+    nums = list({n for n in nums if n and not (n.isdigit() and int(n) > 9999999)})  # drop UIN-like
+
+    if not nums:
+        # No numeric anchor — fall back to keyword overlap
+        gold_words = set(re.findall(r"[a-z]{4,}", gold_lower))
+        bot_words = set(re.findall(r"[a-z]{4,}", bot_lower))
+        # Require at least 2 content-word overlap to mark "factual_match"
+        overlap = gold_words & bot_words - {"policy", "insurance", "plan", "cover", "covered", "this", "that", "with", "from", "have", "after"}
+        if len(overlap) >= 2:
+            return True, f"keyword_overlap={sorted(overlap)[:5]}"
+        return False, f"no_overlap (gold_words={list(gold_words)[:5]})"
+
+    matched = [n for n in nums if n in bot_lower]
+    if matched:
+        return True, f"matched_nums={matched}"
+    return False, f"missing_nums={nums[:5]}"
+
+
+async def grade_one(gold: dict, bot_answer: str, blocked: bool, *, no_judge: bool = False) -> tuple[bool, bool, float, str]:
+    """Returns (factual_match, citation_present, score, reason).
+
+    When `no_judge=True`, skips the LLM-judge call and uses a regex-based
+    grader instead — much faster + free of rate limits, suitable for sweeps.
+    """
     citation_present = bool(re.search(r"\[(?:Source|Regulation):", bot_answer or "", flags=re.IGNORECASE))
 
     # Refusal handling
@@ -100,6 +136,11 @@ async def grade_one(gold: dict, bot_answer: str, blocked: bool) -> tuple[bool, b
     # If bot refused but the answer WAS expected, that's a miss
     if is_refusal:
         return (False, citation_present, 0.0, "bot refused on a question with a known answer")
+
+    # Regex-grader path (sweep mode)
+    if no_judge:
+        ok, reason = _regex_factual_grade(gold["expected_answer"], bot_answer)
+        return (ok, citation_present, 1.0 if ok else 0.0, f"regex: {reason}")
 
     # LLM-judge for factual content
     user = f"""GOLD: {gold['expected_answer']}
@@ -124,7 +165,7 @@ Grade now."""
         return (False, citation_present, 0.0, f"judge_error: {type(e).__name__}: {e}")
 
 
-async def run_one(gold: dict) -> EvalRecord:
+async def run_one(gold: dict, *, no_judge: bool = False) -> EvalRecord:
     """Single gold-question evaluation. Guarded so transient API errors (Groq
     rate limit, network timeout) don't kill the whole sweep — the question
     is recorded as failed and we move on."""
@@ -157,7 +198,7 @@ async def run_one(gold: dict) -> EvalRecord:
             latency_ms=0,
         )
     try:
-        factual, citation, score, reason = await grade_one(gold, turn.reply_text, turn.blocked)
+        factual, citation, score, reason = await grade_one(gold, turn.reply_text, turn.blocked, no_judge=no_judge)
     except Exception as e:  # noqa: BLE001
         factual = False
         citation = bool(turn.citations) if hasattr(turn, "citations") else False
@@ -188,6 +229,8 @@ async def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--policy", default=None)
+    parser.add_argument("--no-judge", action="store_true",
+                        help="Use regex grader instead of Groq LLM-judge (free of rate limits; used by sweeps)")
     args = parser.parse_args()
 
     if not GOLD_FILE.exists():
@@ -203,7 +246,7 @@ async def main():
     results: list[EvalRecord] = []
     t0 = time.time()
     for i, g in enumerate(gold, 1):
-        rec = await run_one(g)
+        rec = await run_one(g, no_judge=args.no_judge)
         results.append(rec)
         ok_factual = "✓" if rec.factual_match else "✗"
         ok_cite = "✓" if rec.citation_present else " "

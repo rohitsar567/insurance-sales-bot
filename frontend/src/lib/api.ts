@@ -165,6 +165,12 @@ export async function getScorecard(policy_id: string): Promise<ScorecardResponse
   return resp.json();
 }
 
+export type PreExistingCondition =
+  | "none"
+  | "diabetes_or_hypertension"
+  | "heart_disease"
+  | "multiple";
+
 export type PremiumEstimateRequest = {
   age: number;
   sum_insured_inr: number;
@@ -172,6 +178,8 @@ export type PremiumEstimateRequest = {
   smoker?: boolean;
   family_size?: number;
   policy_id?: string | null;
+  pre_existing_conditions?: PreExistingCondition;
+  copayment_pct?: number;
 };
 
 export type PremiumEstimateResponse = {
