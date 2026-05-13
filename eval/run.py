@@ -125,13 +125,44 @@ Grade now."""
 
 
 async def run_one(gold: dict) -> EvalRecord:
-    turn = await handle_turn(
-        user_text=gold["question"],
-        chat_history=[],
-        user_profile={},
-        policy_filter_ids=[gold["policy_id"]],
-    )
-    factual, citation, score, reason = await grade_one(gold, turn.reply_text, turn.blocked)
+    """Single gold-question evaluation. Guarded so transient API errors (Groq
+    rate limit, network timeout) don't kill the whole sweep — the question
+    is recorded as failed and we move on."""
+    try:
+        turn = await handle_turn(
+            user_text=gold["question"],
+            chat_history=[],
+            user_profile={},
+            policy_filter_ids=[gold["policy_id"]],
+        )
+    except Exception as e:  # noqa: BLE001
+        msg = f"{type(e).__name__}: {str(e)[:200]}"
+        return EvalRecord(
+            id=gold["id"],
+            policy_id=gold["policy_id"],
+            question=gold["question"],
+            expected_answer=gold["expected_answer"],
+            bot_answer=f"[ORCHESTRATOR ERROR] {msg}",
+            factual_match=False,
+            citation_present=False,
+            judge_score=0.0,
+            judge_reason=f"orchestrator_error: {msg}",
+            expected_refusal=gold["expected_refusal"],
+            question_type=gold["question_type"],
+            difficulty=gold["difficulty"],
+            blocked=False,
+            faithfulness_passed=False,
+            faithfulness_reasons=[f"orchestrator_error: {msg}"],
+            brain_used="error",
+            latency_ms=0,
+        )
+    try:
+        factual, citation, score, reason = await grade_one(gold, turn.reply_text, turn.blocked)
+    except Exception as e:  # noqa: BLE001
+        factual = False
+        citation = bool(turn.citations) if hasattr(turn, "citations") else False
+        score = 0.0
+        reason = f"grader_error: {type(e).__name__}: {str(e)[:160]}"
     return EvalRecord(
         id=gold["id"],
         policy_id=gold["policy_id"],

@@ -55,9 +55,25 @@ class GroqLLM(LLMProvider):
             "Content-Type": "application/json",
         }
 
+        import asyncio
+        # Groq free tier rate-limits aggressively (~30 req/min). Retry on 429
+        # with exponential backoff; also retry transient 5xx.
         async with httpx.AsyncClient(timeout=self.timeout) as client:
-            resp = await client.post(url, headers=headers, json=body)
-            resp.raise_for_status()
+            attempts = 4
+            delay = 1.5
+            for attempt in range(attempts):
+                resp = await client.post(url, headers=headers, json=body)
+                if resp.status_code == 429 or (500 <= resp.status_code < 600):
+                    if attempt == attempts - 1:
+                        resp.raise_for_status()
+                    # Honor Retry-After if Groq sends one; else exponential
+                    ra = resp.headers.get("Retry-After")
+                    wait = float(ra) if ra and ra.replace(".", "").isdigit() else delay
+                    await asyncio.sleep(wait)
+                    delay *= 2
+                    continue
+                resp.raise_for_status()
+                break
             payload = resp.json()
 
         choice = payload["choices"][0]
