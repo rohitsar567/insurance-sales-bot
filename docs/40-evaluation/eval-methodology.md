@@ -22,7 +22,7 @@ These directly back the success criteria in Doc 01 §6: C2 (≥95% factual), C3 
 
 ### Pipeline A — auto-generated from structured extraction (the bulk)
 
-For every successfully extracted policy in DuckDB, generate templated Q&A where the answer comes directly from the 48-field schema. Per `eval/generate_gold.py`:
+For every successfully extracted policy in DuckDB, generate templated Q&A where the answer comes directly from the 62-field schema. Per `eval/generate_gold.py`:
 
 - ~15 question templates × ~80 policies = ~1,100 candidate pairs
 - Each pair is **fully reproducible** — the answer traces to a specific field which traces to a specific clause

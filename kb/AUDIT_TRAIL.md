@@ -33,7 +33,7 @@ VECTOR INDEX              STRUCTURED EXTRACTION     SCORECARD
 - Chroma persistent       - Sarvam-M extraction     - rules-based 6-sub-score
   client                    with HealthPolicy        weighted aggregation
 - metadata per chunk        Pydantic schema         - A-F grade
-- rag/vectors/*.sqlite3   - DeepSeek-V3 fallback    - 24 of 48 fields used
+- rag/vectors/*.sqlite3   - DeepSeek-V3 fallback    - 24 of 62 fields used
                           → rag/extracted/*.json
                           → rag/policies.duckdb
 
@@ -65,7 +65,7 @@ RESPONSE                  TTS                       UI RENDER
 | 5 CHUNK | chunks (in-memory) | _ephemeral_ | `rag/ingest.py:chunk_pages` | run ingest with `--dry-run` |
 | 6 EMBED | 384-dim vectors | _embedded in Chroma_ | `backend/providers/local_embeddings.py` | re-encode the same text |
 | 7 VECTOR INDEX | persistent sqlite | `rag/vectors/chroma.sqlite3` + HNSW binaries | `chromadb.PersistentClient` | open with chromadb client |
-| 8 STRUCTURED EXTRACTION | 48-field JSON per policy | `rag/extracted/<policy_id>.json` | `rag/extract.py` (Sarvam-M → DeepSeek-V3 fallback) | re-run extraction; compare |
+| 8 STRUCTURED EXTRACTION | 62-field JSON per policy | `rag/extracted/<policy_id>.json` | `rag/extract.py` (Sarvam-M → DeepSeek-V3 fallback) | re-run extraction; compare |
 | 8 STRUCTURED EXTRACTION | aggregate table | `rag/policies.duckdb` | upsert in `rag/extract.py` | `duckdb` CLI query |
 | 9 SCORECARD | per-policy grade | `kb/policies/<policy_id>.md` (live in code via `backend/scorecard.py`) | `rag/build_kb.py` + `backend/scorecard.py` | re-run `build_kb` |
 | 10 RETRIEVAL (runtime) | top-k chunks | _ephemeral, logged_ | `rag/retrieve.py` | replay query against Chroma |
@@ -194,5 +194,5 @@ Three back-to-back curation passes brought the `data/policy_facts/` directory to
 - **EN ↔ हिं i18n** — full bilingual UI with the 13-term jargon glossary at `frontend/src/lib/i18n.ts` (mirrored to `kb/methodology/glossary.json`).
 - **Scorecard methodology expander** — every grade opens a transparency panel sourced from `METHODOLOGY_BLUEPRINT` (mirrored to `kb/methodology/scorecard.json`).
 - **Source-quote popovers** — hovering a fact on a policy card surfaces the verbatim PDF quote that backed it.
-- **2026-05-14 Stack A consolidation (D-019)** — 4 third-party LLM providers (Groq, OpenRouter, direct DeepSeek, Cerebras) collapsed onto a single NVIDIA NIM endpoint. Brain = DeepSeek-V4-Pro (heavy intents) + V4-Flash (voice + fact-find). Judge = Meta Llama-4 Maverick (different family). Sarvam scoped to voice STT/TTS + Indic translation only. Free tier, 40 req/min, no daily cap. ~600 LOC of legacy provider wiring deleted.
+- **2026-05-14 Stack A consolidation (D-019)** — 4 third-party LLM providers (Groq, OpenRouter, direct DeepSeek, Cerebras) collapsed onto a single NVIDIA NIM endpoint. Brain = Qwen 80B (current brain primary) (heavy intents) + V4-Flash (voice + fact-find). Judge = Meta Mistral Large 3 675B (different family). Sarvam scoped to voice STT/TTS + Indic translation only. Free tier, 40 req/min, no daily cap. ~600 LOC of legacy provider wiring deleted.
 - **2026-05-14 Space/data split (D-020)** — `rag/corpus/` (188 MB), `rag/vectors/` (129 MB), and `rag/extracted/` moved to companion HF dataset `rohitsar567/insurance-bot-data` (50 GB free quota). Dockerfile pulls them at image build time. Space repo collapses from 286 MB → ~3 MB code-only.

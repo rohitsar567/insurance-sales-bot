@@ -1,4 +1,4 @@
-# Scorecard Methodology — From 48 Schema Fields to a Single A-F Grade
+# Scorecard Methodology — From 62 Schema Fields to a Single A-F Grade
 
 | Field | Value |
 | --- | --- |
@@ -10,7 +10,7 @@
 
 ## 0. Why this artifact exists
 
-The 48-field structured schema captures every comparable attribute of a health policy. But a buyer reading 48 fields cannot tell whether the policy is *good*. The scorecard distils those 48 fields into:
+The 62-field structured schema captures every comparable attribute of a health policy. But a buyer reading 62 fields cannot tell whether the policy is *good*. The scorecard distils those 62 fields into:
 
 - **One letter grade** (A / B / C / D / F) — the headline
 - **One sentence** — the buyer-friendly takeaway
@@ -23,7 +23,7 @@ This is inspired by what consumer fintech has done elsewhere (Ditto Insurance, B
 
 ---
 
-## 1. Where the 48 fields came from
+## 1. Where the 62 fields came from
 
 The structured schema (`rag/schema.py`) was constructed by triangulating four sources. **Every field is grounded in a regulator-mandated or industry-standard taxonomy** — not invented by us.
 
@@ -38,7 +38,7 @@ Mandatory under the IRDAI Master Circular on Health Insurance Business, 2024. Ev
 - Exclusions
 - Claim process + grievance redressal
 
-The 48-field schema is a strict superset of the CIS fields, with each field's name and unit aligned to IRDAI's published spec.
+The 62-field schema is a strict superset of the CIS fields, with each field's name and unit aligned to IRDAI's published spec.
 
 ### Source 2 — PolicyBazaar / InsuranceDekho filter dimensions
 What aggregators expose as filterable attributes on their UI tells you what real Indian buyers actually compare on. We added fields like:
@@ -58,7 +58,7 @@ A small number of fields exist because they materially affect buyer outcomes eve
 
 ### How we did it (the actual code path)
 
-`rag/extract.py` calls Sarvam-M (with DeepSeek-V3 fallback for hard PDFs) with the full policy PDF text and the 48-field Pydantic schema as a structured-output target. The LLM extracts each field; if a field is not explicitly stated in the document, it is set to `null`. A self-critique pass scores per-field confidence (the `extraction_confidence_pct` field).
+`rag/extract.py` calls the fast-brain chain (Nemotron Nano 30B primary, Qwen 80B / GPT-OSS / Groq fallbacks) with the full policy PDF text and the 62-field Pydantic schema as a structured-output target. The LLM extracts each field; if a field is not explicitly stated in the document, it is set to `null`. A self-critique pass scores per-field confidence (the `extraction_confidence_pct` field).
 
 The full schema lives in `rag/schema.py` (see also `rag/SCHEMA.md` for groupings and gotchas).
 
@@ -66,7 +66,7 @@ The full schema lives in `rag/schema.py` (see also `rag/SCHEMA.md` for groupings
 
 ## 2. The scorecard — 6 sub-scores
 
-The 48 fields are aggregated into **6 sub-scores**, each 0-100. The aggregation reflects what the buyer actually experiences, **not** the insurer's marketing categories.
+The 62 fields are aggregated into **6 sub-scores**, each 0-100. The aggregation reflects what the buyer actually experiences, **not** the insurer's marketing categories.
 
 ### 2.1 Coverage Breadth — *how wide is the safety net?*
 
@@ -170,7 +170,7 @@ overall_score = 0.22 × Coverage Breadth
 
 ---
 
-## 4. Which of the 48 fields the scorecard touches
+## 4. Which of the 62 fields the scorecard touches
 
 | Field group | In scorecard? | Why / why not |
 | --- | --- | --- |
@@ -186,7 +186,7 @@ overall_score = 0.22 × Coverage Breadth
 | Riders (3 fields) | No (v1) | Riders are optional add-ons; scoring base-policy only |
 | Source metadata (3 fields) | No | Plumbing |
 
-**24 of 48 fields** drive the scorecard. The other 24 are either policy-specific text (exclusions, riders), filters (geography, age bands), pricing (illustrative only), or metadata.
+**24 of 62 fields** drive the scorecard. The other 38 are either policy-specific text (exclusions, riders), filters (geography, age bands), pricing (illustrative only), or metadata.
 
 This is intentional — **a scorecard that uses every field becomes noise.** We selected the 24 fields where the buyer's actual experience changes materially.
 

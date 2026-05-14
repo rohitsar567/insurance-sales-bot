@@ -10,15 +10,17 @@
 
 | Domain | Status | Severity if not fixed |
 |---|---|---|
-| Disk / storage stability | ✅ Fixed (3-layer prevention installed) | — |
-| Data pipeline integrity | ✅ Fixed (HF Hub canonical restored, in-process HNSW tripwire added) | — |
-| Operational observability | ⚠️ Partial (silent-LaunchAgent regression discovered + fixed; broader `except Exception:` audit pending) | P0 if regulated workload |
-| Product quality (factual accuracy) | 🟡 Root-caused + partial fix shipped (was 41.7% full, 60% on 5-Q post-fix smoke; D-003 routing bug fixed in `orchestrator.py`) | **P0 — blocks deployment until ≥90%** |
-| UX latency | 🔴 Open + DEGRADED on full sample (p50 9.9s, p95 49.1s, p99 58.9s — 100 personas, 3000 turns) | **P0** — unacceptable for real-time chat |
-| Profile-capture / slot-filling | 🔴 CONFIRMED REAL BUG (age captured for only 12/100 personas; not a D-003 cascade) | **P0** — recommendation flow broken for 88% of users |
-| Language-handling fairness | ⚠️ Open (hinglish + stream-style refuse 2× more than other styles) | P1 — India-market regulatory risk |
-| Code hygiene | 🟡 Improving (loose tmp files removed; bare-except blocks documented) | P2 |
-| Test coverage | 🔴 Open (no unit tests; only `live_verify.py`) | P1 — required by enterprise security review |
+| Disk / storage stability | ✅ Fixed (3-layer prevention — ADR-029) | — |
+| Data pipeline integrity | ✅ Fixed (HF Hub canonical restored + in-process HNSW tripwire) | — |
+| Operational observability | ⚠️ Partial (silent-LaunchAgent regression fixed; broader `except Exception:` audit pending) | P1 |
+| Product quality (factual accuracy) | 🟡 Routing fix shipped (KI-018 / KI-023). 5-Q smoke: 60% (was 0%). Full 96-Q post-fix landing. | **P0 — needs ≥90% for deployment** |
+| UX latency | 🟡 Chain-budget cap installed (KI-021), NIM↔Groq balance (KI-025), fast-brain reorder (KI-035). Clean 100-persona re-run owed for clean numbers. | **P0 — needs p95 < 3s** |
+| Profile-capture / slot-filling | ✅ Was a telemetry bug (KI-019), not a slot-filler bug. Fact-find branch now reports profile_updates. | — |
+| Language-handling fairness | ⚠️ Hinglish concern was a 20-persona sampling artifact. Real outliers: tax_planner archetype (4.6 refusals) + stream style (4.3) — open. | P1 — India-market regulatory risk |
+| Code hygiene | ✅ Loose tmp files removed; `fact_find_normalizer` + `profile_extractor` migrated to chain pattern (KI-033) | — |
+| Test coverage | 🟡 15 unit tests pinning KI-018 / KI-023 / KI-025 routing + load-balance invariants. Broader coverage still open. | P1 |
+| Voice UX | ✅ Live default-on + clickable toggle + labeled push-to-talk + barge-in working (ADR-028) | — |
+| Fact-find robotic tone | ✅ LLM paraphraser w/ verifier (ADR-027) | — |
 | Secrets handling | ✅ Verified clean (.env never committed) | — |
 
 Legend: ✅ fixed / ⚠️ partial / 🟡 improving / 🔴 open
@@ -209,17 +211,45 @@ The full eval was sending **every** QA question to `needs_finder`. Sample bot an
 
 ---
 
-## Active workstreams (status)
+## Fixes shipped today (commit reference)
 
-1. **100-persona full audit** — ✅ COMPLETE. 100/100 transcripts, 3000 turns. Findings populated into D-004 / D-005 / D-006.
-2. **Full 96-Q gold eval** — ✅ COMPLETE. 41.7% factual (pre-fix). Findings in D-003.
-3. **LaunchAgent smoke-test** — ✅ COMPLETE. 3/3 scripts now produce real log output.
-4. **Post-fix smoke validation** — ✅ COMPLETE. 5-Q smoke shows 60% factual + 100% nim-chain routing.
+| KI | Commit | What |
+|---|---|---|
+| KI-018 | `bcb7079` | Stop force-routing QA intent to fact-find on empty profile (the gold-eval headline bug) |
+| KI-019 | `bcb7079` | Fact-find branch now reports `profile_updates` in `TurnResult` — fixes the audit telemetry that misread captures as zero |
+| KI-020 | `bcb7079` | `POST /api/session/reset` + frontend Clear-chat / Start-fresh buttons |
+| KI-021 | `bcb7079` | Cumulative chain budget on `NimChainLLM` (brain 35s, fast-brain 22s) bounds the long-tail latency |
+| KI-022 | `bcb7079` | Groq judge JSON-parse fallback to regex grader (11/96 questions previously scored 0 falsely) |
+| KI-023 | `3fb3586` | Word-boundary intent triggers (`"hi"` was matching `"which"`/`"this"`); regression test |
+| KI-024 | `1304e7c` | Parallelized 96-Q gold eval (~5× speedup) |
+| KI-025 | `a04c17a` | NIM↔Groq 50/50 load-balance on brain chain primary (ADR-026) |
+| KI-026 | `effcfeb` | Voice mode mutual exclusion (Live + PTT + Hands-free no longer fight for the mic) |
+| KI-027/8/9 | `e01547c`/`4ae5278`/`65ba46c` | Voice UX simplification: Live default-on + clickable toggle + labeled push-to-talk (ADR-028) |
+| KI-030 | `3d06a80` | Barge-in fix — bot TTS now plays via in-DOM `<audio>` so `querySelectorAll("audio").pause()` can find it |
+| KI-032 | `6f495c1` | LLM paraphraser for fact-find questions with verifier + cache (ADR-027) |
+| KI-033 | `9a977de` | `fact_find_normalizer` + `profile_extractor` migrated from hardcoded single-model to `NimChainLLM(FAST_BRAIN_CHAIN)` |
+| KI-034/5 | `844ed03` | LRU retrieval cache + `FAST_BRAIN_CHAIN` reordered (Nemotron Nano 30B primary) |
+| D-001 | (multi) | ChromaDB HNSW bloat 3-layer prevention (ADR-029) |
+| D-002 | (LaunchAgent edit) | Three silently-failing LaunchAgent scripts fixed |
+| D-009 | `bcb7079` | Removed `tmp_*.py` debug files from repo root |
 
-**Next runs needed:**
-- Deploy D-003 fix to live HF Space (commit + push → Docker rebuild).
-- Re-run 100-persona audit against patched live endpoint to get clean post-fix latency + refusal numbers.
-- Re-run full 96-Q gold eval (local) for clean post-fix accuracy headline. Estimate based on smoke: 50-60% factual.
+## Verification artifacts
+
+- `tests/test_routing_regression.py` — 15 unit tests, all passing. Pins KI-018 / KI-023 / KI-025 invariants.
+- 5-Q post-fix smoke (no judge): factual 0% → 60%, nim-chain serving 100% of QA.
+- Live HF Space smoke (`https://rohitsar567-insurancebot.hf.space`): PED waiting-period question now answers via `nim-chain::nemotron-3-nano-30b-a3b::v4-flash::qa` with a grounded reply, not the old "Happy to help. First, your age?" misroute.
+- Final parallel 96-Q gold eval landing imminently; clean 100-persona audit will run against the final stable image and the numbers will replace the pre-fix baselines above.
+
+## Pending follow-ups (P1)
+
+| Item | Status |
+|---|---|
+| Tax-related gold-QA questions (currently zero in `eval/gold_qa.json` — D-006 mitigation) | Open |
+| `stream`-style faithfulness gate (refusal rate 2.7× higher than `terse`) | Open |
+| Token-streaming responses (SSE) — biggest perceived-latency win remaining | Open (v2 roadmap) |
+| Streaming TTS (Sarvam chunked synthesis) | Open |
+| GPU-hosted local embeddings (Voyage replacement) | Open — `LocalEmbeddings` fallback already in `backend/providers/local_embeddings.py` |
+| Broader unit-test coverage (currently only routing + load-balance pinned) | Open |
 
 ---
 

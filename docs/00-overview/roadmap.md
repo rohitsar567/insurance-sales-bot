@@ -15,15 +15,15 @@ v1 is a **vertical slice**: 10 insurers × Health × ~80 policies × voice-first
 **Working product:**
 - Voice-first chat advisor over a curated corpus of Indian health insurance policies (~76 PDFs from 10 insurers, ingested into Chroma + DuckDB)
 - Multi-language: English + Hindi/Hinglish via Sarvam Saarika STT + Sarvam Bulbul TTS
-- Brain router (D-019): NIM DeepSeek-V4-Pro (heavy intents) + V4-Flash (voice + fact-find), Llama-4 Maverick judge. Sarvam-M scoped to Indic translation + voice only.
+- Brain router (D-019): the brain chain (Qwen 80B primary, 50/50 with Groq Llama-3.3) (heavy intents) + V4-Flash (voice + fact-find), Mistral Large 3 675B judge. Sarvam-M scoped to Indic translation + voice only.
 - 4-gate hallucination defense + auditable refusal log
-- 48-field structured extraction per policy
+- 62-field structured extraction per policy
 - Clean Next.js + Tailwind frontend
 - FastAPI backend deployed on Render; frontend on Vercel
 - 8 design / decision documents totaling ~30 pages
 
 **Eval signal:**
-- Gold Q&A harness (~300 pairs targeted) + automated grader (NIM Llama-4 Maverick — different family from DeepSeek brain)
+- Gold Q&A harness (~300 pairs targeted) + automated grader (the judge chain (Mistral Large 3 675B primary) — different family from DeepSeek brain)
 - `eval/results.md` versioned table per run
 - Live audit log `logs/hallucinations.jsonl` for every blocked claim
 
@@ -117,7 +117,7 @@ v1 is a **vertical slice**: 10 insurers × Health × ~80 policies × voice-first
 
 The point of disciplined v1 architecture is that these things are **stable** across the transition:
 
-1. **48-field structured schema** (`rag/schema.py`) — data-only change to add v2 categories
+1. **62-field structured schema** (`rag/schema.py`) — data-only change to add v2 categories
 2. **Provider abstraction** (`backend/providers/base.py`) — swap STT/TTS/LLM via config
 3. **Faithfulness verifier** (`backend/faithfulness.py`) — same 4 gates, possibly more
 4. **Persona prompt + citation grammar** — same, refined

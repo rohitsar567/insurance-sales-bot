@@ -19,7 +19,7 @@ In a regulated BFSI domain, the worst failure isn't "the bot looks slow" — it'
 
 **Description:** Bot claims a policy covers something it doesn't, or quotes a wrong waiting period / sub-limit.
 **Detection:**
-- Run-time: Faithfulness Gate 4 (LLM-judge NIM Llama-4 Maverick — different family from the DeepSeek-V4 brain; see D-019).
+- Run-time: Faithfulness Gate 4 (LLM-judge the judge chain (Mistral Large 3 675B primary) — different family from the brain (Qwen 80B primary); see D-019).
 - Run-time: Faithfulness Gate 3 (regex grounding — every ₹, %, day/month/year in the reply must appear in retrieved chunks).
 - Post-hoc: Gold Q&A eval (factual_accuracy metric).
 **Mitigation:** Block reply → return safe refusal → log to `logs/hallucinations.jsonl`. Audit log enables manual review and corpus improvement.
@@ -50,7 +50,7 @@ In a regulated BFSI domain, the worst failure isn't "the bot looks slow" — it'
 
 **Description:** Sarvam-M emits `<think>...</think>` reasoning. If `max_tokens` is exhausted before `</think>` is reached, the reply is unusable. This was a recurring issue when Sarvam-M was the primary brain.
 **Detection:** `strip_think_tags()` checks for `<think>` without matching `</think>`.
-**Resolution (2026-05-14, D-019):** Sarvam-M moved out of the brain role entirely. NIM DeepSeek-V4-Pro / V4-Flash now handle all reasoning; they emit direct responses without `<think>` preambles. Sarvam-M remains only for Indic translation (Hinglish ↔ English), where its `<think>` doesn't interfere because translation outputs are short. F-04 cannot fire on the current stack.
+**Resolution (2026-05-14, D-019):** Sarvam-M moved out of the brain role entirely. The NIM brain chains (Qwen 80B / Nemotron 30B primaries, 50/50 with Groq Llama-3.3) handle all reasoning; they emit direct responses without `<think>` preambles. Sarvam-M remains only for Indic translation (Hinglish ↔ English), where its `<think>` doesn't interfere because translation outputs are short. F-04 cannot fire on the current stack.
 **Owner:** `backend/orchestrator.py`
 **Status:** Resolved by architecture change.
 
@@ -95,7 +95,7 @@ In a regulated BFSI domain, the worst failure isn't "the bot looks slow" — it'
 **Description:** End-to-end (user speech end → bot speech start) p95 > 7s (Doc 01 C1).
 **Detection:** Per-turn latency logged in `logs/turns.jsonl`. Aggregate via eval harness.
 **Mitigation v1:**
-- Tiered brain routing (D-019): voice turns and fact-find go to NIM V4-Flash (~3-4s TTFT); only `comparison` and `recommendation` intents hit V4-Pro (slower but higher quality). Sarvam-M no longer in the brain hot path.
+- Tiered brain routing (D-019): voice turns and fact-find go to the fast-brain chain (Nemotron Nano 30B primary) (~3-4s TTFT); only `comparison` and `recommendation` intents hit V4-Pro (slower but higher quality). Sarvam-M no longer in the brain hot path.
 - TTS happens server-side and is streamed via base64 in same response. Future: WebSocket for streaming TTS.
 **Status:** Mostly within budget for Llama brain (3-4s); Sarvam-M brain occasionally hits 15-25s due to reasoning.
 

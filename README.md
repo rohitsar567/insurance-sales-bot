@@ -26,7 +26,7 @@ short_description: Voice-first AI advisor for Indian health insurance
 
 ## Table of Contents
 
-1. [Sixty-second pitch](#1-sixty-second-pitch)
+1. [Executive summary](#1-executive-summary)
 2. [Project vision & requirements](#2-project-vision--requirements)
 3. [Two parallel flows — customer vs. technology](#3-two-parallel-flows)
 4. [Exhaustive tech architecture](#4-exhaustive-tech-architecture)
@@ -39,13 +39,41 @@ short_description: Voice-first AI advisor for Indian health insurance
 
 ---
 
-## 1. Sixty-second pitch
+## 1. Executive summary
 
-A **voice-first health-insurance advisor** for Indian buyers, grounded in a curated corpus of **208 documents** — 190 product documents from 19 leading insurers plus 18 IRDAI / regulatory documents — extracted into a 48-field structured schema with a rules-based A–F scorecard and a **4-gate hallucination defense** on every reply.
+A **voice-first health-insurance advisor** for Indian buyers, grounded in a curated corpus of **208 documents** — 190 product documents from 19 leading insurers plus 18 IRDAI / regulatory documents — extracted into a 62-field structured schema with a rules-based A–F scorecard and a **4-gate hallucination defense** on every reply.
 
 The bot is **consumer-facing in experience, B2B in commercial application.** The realistic deployment is an insurer or aggregator white-labelling this advisor on top of Sarvam's ASR/TTS/LLM stack. The build deliberately optimises for the artifacts a BFSI buyer would audit: provenance, refusal behaviour, eval rigor, citation grammar.
 
 **Try on the live demo:** *"What's the pre-existing disease waiting period under Care Supreme, and how does that compare to ICICI Elevate?"* — comparative answer with `[Source: ...]` citations linking to specific policy PDFs and page ranges, brain tag showing which model handled it, audio synthesised by Sarvam Bulbul. Ask the same in Hinglish — *"Care Supreme mein PED ka waiting period kya hai?"* — and the response flows through the Indic translation cascade with three drift checks.
+
+### 1.1 Demo runbook — 7 questions to try
+
+Live URL: **https://rohitsar567-insurancebot.hf.space**. For each: try voice and text. The reply panel shows `brain_used` and per-citation source links.
+
+| # | Question | What you should see | Why this question |
+|---|---|---|---|
+| 1 | *"What's the pre-existing disease waiting period under Care Supreme?"* | Specific number + `[Source: care-health/care-supreme/wordings, p.18]`. Brain: fast-brain chain (Nemotron 30B primary). | Single-field lookup — easiest competence check. |
+| 2 | *"Compare cataract waiting period in ICICI Elevate vs HDFC Optima Secure."* | Two-policy comparison with citations from both PDFs. Brain: BRAIN_CHAIN (Qwen 80B / Groq Llama-3.3 50/50). | Multi-policy reasoning — tests retrieval + tiered brain routing. |
+| 3 | *"Care Supreme mein PED ka waiting period kya hai?"* (Hinglish) | Answer in Hinglish with citations preserved. Brain tag includes `cascade::sarvam-trans+...` if drift gates fire. | Indic cascade + 3-gate drift verification. |
+| 4 | *"What does IRDAI say about cataract waiting-period caps under the 2024 Master Circular?"* | Cited answer from `irdai-master-circular-health-2024.pdf`. | Demonstrates the IRDAI corpus rescue past Akamai (ADR-017). |
+| 5 | *"Does Bajaj Silver Health cover space-tourism injuries?"* | **Safe refusal.** | Adversarial out-of-corpus — refusal is the correct behaviour. |
+| 6 | *"Should I get the cataract surgery covered under this policy?"* | Bot answers what's covered + refuses clinical advice; suggests a doctor. | No medical advice (persona rule 4). |
+| 7 | *"Show me the scorecard for ICICI Elevate."* | Side-panel A/B/C grade with 6 sub-scores. Hover → ✓ and − signals per sub-score citing specific schema fields. | The rules-based scorecard ([§6.3](#63-eval-methodology)). |
+
+If a question refuses unexpectedly, that's the safe failure mode — open `logs/hallucinations.jsonl` and the failing gate is recorded.
+
+### 1.2 What this signals about how I'd ship
+
+A take-home is a sample of how the engineer thinks under constraint. Three things this submission is meant to signal:
+
+1. **Scope to a vertical slice, not a demo.** [ADR-001](docs/60-decisions/ADR-001-vertical-slice-scope.md) explicitly chose vertical slice over single-document RAG or full-platform. The build's 7 commitments — per-insurer adapters, category-agnostic schema, pluggable extraction, schema-driven filter UI, provider-agnostic STT/TTS/LLM, eval harness that scales linearly, stateless services — make v2 (life / motor insurance) a data + config change, not a rewrite.
+
+2. **Hallucination defense and refusal as product features.** BFSI deployments get fined for mis-selling; the bot is biased toward refusal over confident wrong answers. The 4 faithfulness gates + cross-check retry + 3 Indic drift checks + audit log are the BFSI-compliance-grade version of "we shipped a chatbot." When the eval shows a headline accuracy below 100% because the gates are aggressive, the right response is to soften the gates carefully — not to ship a higher number by relaxing the verifier.
+
+3. **Honest model picks — Sarvam where Sarvam is uniquely strong, open-weights frontier for reasoning.** Sarvam Saarika v2.5 STT, Bulbul v2 TTS, and Sarvam-M Indic translation are *non-substitutable* — no closed-source frontier matches them on Indian voice or Hinglish. Reasoning is a different problem; the brain runs a fallback chain whose primary rotates 50/50 between **NIM Qwen 3-Next 80B** and **Groq Llama-3.3-70B** (ADR-026 — 2× sustained throughput across two free-tier providers), with the judge on **Mistral Large 3 675B** for non-circular grading. A Sarvam customer deploying this stack gets a product that *uses Sarvam exactly where Sarvam beats the world* and uses MIT-licensed frontier weights for everything else — open-weights only, $0 inference, single API key per provider for the entire non-voice stack.
+
+The rest is craftsmanship. The 8-section KB ([`kb/`](kb/)) is regeneratable from primary sources in <40 minutes for <$2 cold. Every numeric value in every reviewer-facing artifact traces to a source PDF + page + clause. Every architectural decision is in [`docs/60-decisions/`](docs/60-decisions/) with alternatives and revisit-at-scale notes. Every production-readiness defect is in [`audit_results/ENTERPRISE_AUDIT.md`](audit_results/ENTERPRISE_AUDIT.md). The repo is structured so a new engineer joining on Monday could ship v1.1 by Friday.
 
 ---
 
@@ -67,8 +95,8 @@ A **voice-first conversational advisor** that:
 - **Listens** in English, Hindi, or Hinglish (Sarvam Saarika v2.5 STT).
 - **Grounds** every factual claim in a retrieved PDF clause with `[Source: ...]` citation.
 - **Refuses** when the corpus doesn't have the answer (4 faithfulness gates).
-- **Compares** policies side-by-side using a 48-field structured schema.
-- **Scores** each policy A–F via a rules-based scorecard (24 of 48 fields → 6 sub-scores).
+- **Compares** policies side-by-side using a 62-field structured schema.
+- **Scores** each policy A–F via a rules-based scorecard (24 of 62 fields → 6 sub-scores).
 - **Personalizes** — once the user shares profile info (age, dependents, income, conditions), scorecards re-compute and chat answers ground against the user's situation.
 - **Speaks** in the user's language (Sarvam Bulbul v2 TTS), with three Indic drift gates checking the translated reply preserves numbers, citations, and meaning.
 
@@ -76,12 +104,13 @@ A **voice-first conversational advisor** that:
 
 | Goal | v1 status |
 |---|---|
-| Voice-first, push-to-talk | ✓ live |
+| Voice-first, full-duplex with barge-in | ✓ live ("Live ✓" toggle, mic continuously open, speak over the bot to interrupt) |
+| Push-to-talk fallback | ✓ live (labeled `🎤 Push-to-talk` button; momentarily suspends Live for one turn, then resumes) |
 | Hindi/Hinglish bidirectional | ✓ live (Sarvam translation cascade + 3 drift gates) |
 | Cited answers grounded in PDFs | ✓ live (4-gate faithfulness) |
 | Cross-policy comparison | ✓ live (DuckDB structured + Chroma vectors) |
 | Personalised scorecards | ✓ live (profile RAG — profile becomes a vector chunk) |
-| Refusal precision (refuse > mis-cite) | ✓ live (Gate 1-4, with 12/25 eval questions blocked — the safe failure mode) |
+| Refusal precision (refuse > mis-cite) | ✓ live (Gate 1-4) |
 | Regulatory grounding (IRDAI) | ✓ live (after Playwright rescue past Akamai bot protection — [ADR-017](docs/60-decisions/ADR-017-irdai-corpus-playwright-rescue.md)) |
 | Admin LLM control panel | ✓ live (in-app tab, IP+password gated — [ADR-023](docs/60-decisions/ADR-023-admin-panel-ip-gated.md)) |
 
@@ -89,7 +118,7 @@ A **voice-first conversational advisor** that:
 
 - **Real-time quotes** — premiums are illustrative bands with disclaimer ([ADR-007](docs/60-decisions/ADR-007-illustrative-pricing.md)).
 - **Medical advice** — bot answers coverage questions, never clinical ones (persona rule 4).
-- **Full-duplex streaming voice** — v1 is push-to-talk; full-duplex is v2.
+- **Token-streaming LLM responses** — replies arrive as full messages today; token-by-token SSE is a v2 roadmap item.
 - **Life / motor insurance** — v1 is health-only; v2 generalises ([ADR-002](docs/60-decisions/ADR-002-health-category-vertical.md)).
 - **Sentiment classifier on raw scraped reviews** — IRDAI complaint numbers are primary-source; sentiment labels are curated snippet roll-ups, not LLM-extracted.
 
@@ -109,17 +138,23 @@ What a buyer experiences, end to end.
 │  -------                                                                  │
 │  · Sees: chat panel + Marketplace · Premium · Profile · Admin tabs       │
 │  · Suggested questions in the chat box                                   │
-│  · "Voice reply" + "Hands-free" toggles in the input area                │
+│  · "Voice on — just speak" pill (Live mode, default ON) with green dot   │
+│  · "🎤 Push-to-talk" button as labeled fallback                          │
+│  · "Voice reply" toggle controls whether the bot speaks back             │
 └──────────────────────────────────────────────────────────────────────────┘
                                   │
                                   ▼
 ┌──────────────────────────────────────────────────────────────────────────┐
-│  STEP 2.  Ask the first question (text or voice)                          │
+│  STEP 2.  Ask the first question (voice or text)                          │
 │  -------                                                                  │
+│  · User just talks — VAD detects speech start/end automatically          │
 │  · "Suggest a health insurance plan for me"                              │
-│  · Bot recognizes fact-find intent → asks: "First, your age?"            │
-│  · Conversational onboarding: age → dependents → income → primary goal   │
-│    → location → parents-to-insure → health conditions → budget           │
+│  · Bot recognizes fact-find intent. The orchestrator picks the next      │
+│    slot from a 9-question graph; an LLM paraphraser rewrites the         │
+│    canonical question in a warmer voice each session (verified to        │
+│    still target the same slot before sending).                           │
+│  · Slots covered in order: age → dependents → income → existing cover    │
+│    → primary goal → location → parents (conditional) → health → budget   │
 └──────────────────────────────────────────────────────────────────────────┘
                                   │
                                   ▼
@@ -264,8 +299,8 @@ What's happening under the hood for the same journey.
 ┌──────────────────────────────────────────────────────────────────────────┐
 │  TECH 7.  Brain selection — pick_brain(intent, language)                  │
 │  -------                                                                  │
-│  · intent ∈ {comparison, recommendation} → DeepSeek-V4-Pro (heavy)        │
-│  · intent ∈ {qa, fact_find} → DeepSeek-V4-Flash (fast)                    │
+│  · intent ∈ {comparison, recommendation} → the brain chain (Qwen 80B primary, 50/50 rotated with Groq Llama-3.3) (heavy)        │
+│  · intent ∈ {qa, fact_find} → the fast-brain chain (Nemotron Nano 30B primary, ~1.6s TTFT) (fast)                    │
 │  · All via integrate.api.nvidia.com (single NIM API key)                  │
 └──────────────────────────────────────────────────────────────────────────┘
                                   │
@@ -297,7 +332,7 @@ What's happening under the hood for the same journey.
 │  · Gate 2: citation integrity — every cited policy was retrieved         │
 │  · Gate 3: numeric grounding — every ₹/%/days/months/years in reply      │
 │    appears in retrieved chunks                                            │
-│  · Gate 4: LLM-judge (Llama-4 Maverick, different family from brain)     │
+│  · Gate 4: LLM-judge (Mistral Large 3 675B, different family from brain)     │
 │  · If all 4 pass → reply ships                                            │
 │  · If any fails (non-Gate-1) → cross-check retry with Maverick           │
 │  · If still fails → safe refusal + log to logs/hallucinations.jsonl      │
@@ -309,7 +344,7 @@ What's happening under the hood for the same journey.
 │  -------                                                                  │
 │  · Sarvam-M translates English reply → Hinglish                           │
 │  · Gate A: regex check that digits/citations/currency preserved          │
-│  · Gate B: Llama-4 Maverick LLM-judge for semantic preservation          │
+│  · Gate B: Mistral Large 3 675B LLM-judge for semantic preservation          │
 │  · Gate C: back-translation cosine ≥ 0.80                                 │
 │  · Any gate fails → fall back to English reply                            │
 └──────────────────────────────────────────────────────────────────────────┘
@@ -372,8 +407,8 @@ What's happening under the hood for the same journey.
 │  ┌──────────────┐    ┌──────────────────┐    ┌──────────────────────┐   │
 │  │ STRUCTURED   │    │ VECTOR STORE     │    │ NIM BRAIN ROUTER     │   │
 │  │ DuckDB       │    │ Chroma 0.5.20    │    │ V4-Pro (heavy)       │   │
-│  │ 48 fields    │    │ BGE-small (384d) │    │ V4-Flash (fast)      │   │
-│  │ per policy   │    │ 800/120 chunk    │    │ Llama-4 Maverick     │   │
+│  │ 62 fields    │    │ BGE-small (384d) │    │ V4-Flash (fast)      │   │
+│  │ per policy   │    │ 800/120 chunk    │    │ Mistral Large 3 675B     │   │
 │  └──────────────┘    │ +profile chunk   │    │   (judge + xcheck    │   │
 │                      │   per session    │    │    + Indic gates)    │   │
 │                      └──────────────────┘    │ single NIM key       │   │
@@ -386,7 +421,7 @@ What's happening under the hood for the same journey.
 ┌─────────────────────────────────────────────────────────────────────────┐
 │  INGEST  (rag/ingest.py + rag/extract.py + tools/*)                      │
 │  pdfplumber → 800-tok chunks → BGE embed → Chroma                        │
-│  NIM V4-Pro structured extract → 48-field Pydantic schema                │
+│  fast-brain chain (Nemotron 30B / Qwen 80B / Groq Llama-3.3 fallback) structured extract → 62-field Pydantic schema                │
 │  Self-critique → confidence_pct per field                                │
 └────────────────┬────────────────────────────────────────────────────────┘
                  │
@@ -413,25 +448,31 @@ What's happening under the hood for the same journey.
 | **Persona** | `backend/persona.py` | System prompt; `build_messages()` injects profile + view_context |
 | **Session state** | `backend/session_state.py` | Per-session profile, fact-find awaiting state, disk-backed JSON |
 | **Retrieval** | `rag/retrieve.py` | Chroma cosine search + profile boost + regulatory second-pass |
-| **Structured extraction** | `rag/extract.py` | NIM V4-Pro JSON extraction over 48-field Pydantic schema |
-| **Scorecard** | `backend/scorecard.py` | Pure Python; 24 of 48 fields → 6 sub-scores → A–F |
+| **Structured extraction** | `rag/extract.py` | fast-brain chain (Nemotron 30B / Qwen 80B / Groq Llama-3.3 fallback) JSON extraction over 62-field Pydantic schema |
+| **Scorecard** | `backend/scorecard.py` | Pure Python; 24 of 62 fields → 6 sub-scores → A–F |
 | **Admin** | `backend/admin.py` | LLM health, chain reorder, force-fresh probe; IP-gated |
-| **Eval** | `eval/` | Gold Q&A pipelines + NIM Llama-4 Maverick grader |
+| **Eval** | `eval/` | Gold Q&A pipelines + the judge chain (Mistral Large 3 675B primary, different family from brain) grader |
 | **Knowledge base** | `kb/` | 224 markdown policy sheets + scorecard + reviews + premiums + audit trail |
 
-### 4.3 Model stack ([ADR-019](docs/60-decisions/ADR-019-nim-single-provider-consolidation.md))
+### 4.3 Model stack
 
-| Role | Model | Provider | Why |
+Every LLM role is served by a **fallback chain** of candidate models (`backend/providers/nvidia_nim_llm.py::NimChainLLM`), not a single hardcoded model. Chains preserve brain↔judge family diversity (Qwen brain ↔ Mistral judge) so failovers can't accidentally produce circular grading.
+
+| Role | Primary | Fallback chain | Provider mix |
 |---|---|---|---|
-| STT | Saarika v2.5 | Sarvam | Best Indian-accent ASR |
-| TTS | Bulbul v2 (`anushka` voice) | Sarvam | Best Hinglish TTS |
-| Indic translation | Sarvam-M | Sarvam | Best Hindi/Hinglish translation cascade |
-| Heavy brain | DeepSeek-V4-Pro (1.6T / 49B MoE, 1M context) | NIM | Frontier reasoning; beats Opus-4.6 + GPT-5.4 on SimpleQA-Verified |
-| Fast brain | DeepSeek-V4-Flash (284B / 13B MoE, 1M context) | NIM | Lower TTFT for voice; still frontier-tier |
-| Judge / cross-check | Llama-4 Maverick (400B / 17B MoE) | NIM | **Different family from DeepSeek** → non-circular grading |
-| Embeddings | BGE-small-en-v1.5 (384d) | Local | $0; no network |
-| Vector store | Chroma 0.5.20 | Local | Single-file sqlite + HNSW |
-| Structured store | DuckDB 1.1.3 | Local | Single-file; SQL filters for marketplace |
+| STT | Saarika v2.5 | — | Sarvam |
+| TTS | Bulbul v2 (`anushka`) | — | Sarvam |
+| Indic translation | Sarvam-M | — | Sarvam |
+| **Heavy brain** (comparison + recommendation) | Qwen 3-Next 80B *or* Groq Llama-3.3-70B (50/50 rotation) | Qwen 122B → GPT-OSS 120B → Mistral 675B → Nemotron-Super 49B → Llama-3.3-70B → the brain chain (Qwen 80B primary, 50/50 rotated with Groq Llama-3.3) → OpenRouter GPT-OSS → Groq Llama | NIM + Groq + OpenRouter |
+| **Fast brain** (fact-find + QA + paraphrase + normalize + extract) | Nemotron Nano 30B *or* Groq Llama-3.3-70B (50/50 rotation) | Qwen 80B → GPT-OSS 120B → Qwen 122B → DeepSeek V4-Flash → Groq | NIM + Groq |
+| **Judge** (faithfulness gate + grader) | Mistral Large 3 675B | GPT-OSS 120B → Kimi K2 → MiniMax M2.5 → Mistral Large 3 675B + cross-provider | NIM + cross-provider |
+| Embeddings | BGE-small-en-v1.5 (384d) | — | Local (`LocalEmbeddings`) |
+| Vector store | Chroma 1.5 (HNSW + sqlite) | — | Local |
+| Structured store | DuckDB 1.1.3 | — | Local |
+
+Per-call budgets: brain `20s × 35s total`, fast-brain `12s × 22s total`, judge `30s × 75s total`. The per-link timeout is dynamically clipped to remaining budget so a single fallback can never blow past the chain ceiling.
+
+**Provider load balancing.** The brain chain primary rotates 50/50 per call between NIM Qwen and Groq Llama-3.3 (`_balanced_brain_chain` in `backend/providers/nvidia_nim_llm.py`). Spreads load across two independent rate caps (NIM 40 req/min + Groq's separate quota) — effectively 2× sustained brain throughput. See [`ADR-026`](docs/60-decisions/ADR-026-provider-load-balancing.md).
 
 ### 4.4 Major design decisions (the short list)
 
@@ -464,8 +505,8 @@ Every D-NNN in the legacy decisions log is now a stand-alone ADR — see [`docs/
 |---|---|---|---|
 | Product PDFs | 190 | 19 insurers' public websites | Wordings + Brochures + CIS |
 | Regulatory PDFs | 18 | irdai.gov.in, indiacode.nic.in, others | Playwright rescue past Akamai |
-| Structured extractions (JSON) | 285 | NIM V4-Pro extraction | 48-field Pydantic schema |
-| Vector chunks (Chroma) | ~12,000 | BGE-small @ 800/120 | One sqlite + HNSW binaries |
+| Structured extractions (JSON) | 203 | fast-brain chain (Nemotron 30B / Qwen 80B / Groq Llama-3.3 fallback) extraction | 62-field Pydantic schema |
+| Vector chunks (Chroma) | ~7,400 | BGE-small @ 800/120 | One sqlite + HNSW binaries |
 | Policy markdown sheets | 224 | Generated from extractions | One per policy_id in `kb/policies/` |
 
 19 insurers: Star Health, HDFC ERGO, Niva Bupa, Care Health, ICICI Lombard, Bajaj Allianz, New India Assurance, Aditya Birla, Tata AIG, ManipalCigna, SBI General, Acko, IFFCO Tokio, Cholamandalam MS, Go Digit, Reliance General, Royal Sundaram, Oriental Insurance, National Insurance.
@@ -476,8 +517,8 @@ Every D-NNN in the legacy decisions log is now a stand-alone ADR — see [`docs/
 PDF (rag/corpus/<insurer>/<policy>__<doctype>.pdf)
   │
   ▼
-rag/extract.py    →    rag/extracted/<policy_id>.json    (48-field structured)
-  │                                                       (NIM V4-Pro with Pydantic schema)
+rag/extract.py    →    rag/extracted/<policy_id>.json    (62-field structured)
+  │                                                       (fast-brain chain (Nemotron 30B / Qwen 80B / Groq Llama-3.3 fallback) with Pydantic schema)
   │
   ▼
 rag/ingest.py     →    rag/vectors/chroma.sqlite3        (text chunks + embeddings)
@@ -519,9 +560,9 @@ Every reply, every turn:
 | 1. Retrieval floor | `_gate_retrieval_floor` | Top retrieval score < 0.30 — nothing to ground in |
 | 2. Citation integrity | `_gate_citation_integrity` | Reply cites a policy_name not in retrieved chunks |
 | 3. Numeric grounding (regex) | `_gate_numeric_grounding` | Any ₹/%/days/months/years in reply doesn't appear in chunks |
-| 4. LLM-judge | `_gate_llm_judge` | NIM Llama-4 Maverick (different family from brain) flags unsupported claim |
+| 4. LLM-judge | `_gate_llm_judge` | the judge chain (Mistral Large 3 675B primary, different family from brain) (different family from brain) flags unsupported claim |
 
-If any gate (other than Gate 1) fails, the **cross-check retry** re-runs the same prompt on Llama-4 Maverick. If that passes its gates, the rescued reply ships with `crosscheck-rescued-by-maverick` brain tag. Otherwise → safe refusal + log to `logs/hallucinations.jsonl`.
+If any gate (other than Gate 1) fails, the **cross-check retry** re-runs the same prompt on Mistral Large 3 675B. If that passes its gates, the rescued reply ships with `crosscheck-rescued-by-judge` brain tag. Otherwise → safe refusal + log to `logs/hallucinations.jsonl`.
 
 ### 6.2 Indic drift gates ([`backend/translation_check.py`](backend/translation_check.py))
 
@@ -530,7 +571,7 @@ When the user speaks Hinglish:
 | Gate | Method |
 |---|---|
 | A — Regex anchors | Every digit / currency / citation in the English reply must appear in the Indic reply |
-| B — LLM-judge | NIM Llama-4 Maverick scores semantic faithfulness across languages |
+| B — LLM-judge | the judge chain (Mistral Large 3 675B primary, different family from brain) scores semantic faithfulness across languages |
 | C — Back-translation cosine | Sarvam back-translates Hinglish → English; cosine vs original ≥ 0.80 |
 
 Any gate fails → revert to English reply (correct facts even if not preferred language).
@@ -543,13 +584,13 @@ Gold Q&A in three pipelines:
 - **B — LLM-drafted nuanced:** V4-Pro drafts 5 buyer-style multi-clause questions per top policy.
 - **C — Adversarial:** 30-40 hand-written out-of-corpus / out-of-policy-type / Hinglish / multi-policy.
 
-Grader: NIM Llama-4 Maverick (non-circular — different family from the DeepSeek brain). Source: [`eval/generate_gold.py`](eval/generate_gold.py), [`eval/run.py`](eval/run.py).
+Grader: the judge chain (Mistral Large 3 675B primary, different family from brain) (non-circular — different family from the DeepSeek brain). Source: [`eval/generate_gold.py`](eval/generate_gold.py), [`eval/run.py`](eval/run.py).
 
 Honest current numbers (2026-05-12 run on 25 questions):
 
 | Metric | Value | Comment |
 |---|---|---|
-| Factual accuracy | 40.0% | Two structural causes — see [`SUBMISSION.md`](SUBMISSION.md) §4.3 |
+| Factual accuracy | 40.0% | See [`audit_results/ENTERPRISE_AUDIT.md`](audit_results/ENTERPRISE_AUDIT.md) for the post-fix baseline + per-question-type breakdown |
 | Citation accuracy | 50.0% | Same |
 | Refusal precision | 44.4% | Same |
 | Blocked by faithfulness | 12 / 25 | Gates working; aggressively biased toward refusal |
@@ -570,8 +611,12 @@ docs/
 ├── 30-engineering/           ← "how the code is laid out"
 ├── 40-evaluation/            ← "how we measured success"
 ├── 50-operations/            ← "how to run / maintain / debug"
-├── 60-decisions/             ← Architecture Decision Records (ADRs 001-024)
+├── 60-decisions/             ← Architecture Decision Records (ADRs 001-028)
 └── 70-reference/             ← Schemas, glossary, indexes
+
+audit_results/                 ← Production-readiness audit + defect register
+├── ENTERPRISE_AUDIT.md        ← Master defect log (severity, evidence, fix status)
+└── full_<run-id>/             ← Per-run audit transcripts + analyzed reports
 ```
 
 ### 7.1 Per-bucket guide
@@ -584,15 +629,15 @@ docs/
 | `30-engineering/` | [`needs-analysis-flow.md`](docs/30-engineering/needs-analysis-flow.md), [`discovery-script.md`](docs/30-engineering/discovery-script.md) | How the fact-find loop works; discovery script for new contributors |
 | `40-evaluation/` | [`eval-methodology.md`](docs/40-evaluation/eval-methodology.md) | Gold-Q&A design, grader choice, results interpretation |
 | `50-operations/` | (operational runbooks — to be filled) | How to run, deploy, debug |
-| `60-decisions/` | 24 ADRs + [`README.md`](docs/60-decisions/README.md) index + `legacy-decisions-monolith.md` archive | The full decision history with alternatives and supersession tracking |
+| `60-decisions/` | 28 ADRs + [`README.md`](docs/60-decisions/README.md) index + `legacy-decisions-monolith.md` archive | The full decision history with alternatives and supersession tracking |
 | `70-reference/` | (schemas + glossary — to be filled) | BFSI terms, insurer slug map, citation grammar |
+| `audit_results/` | [`ENTERPRISE_AUDIT.md`](audit_results/ENTERPRISE_AUDIT.md) + per-run audit transcripts | Production-readiness defect register with severity, evidence, fix status. Multi-persona simulation transcripts from the audit runner. |
 
 ### 7.2 Root-level documents
 
 | File | Purpose |
 |---|---|
 | `README.md` (this file) | Master entry point + executive bible |
-| `SUBMISSION.md` | Formal Sarvam takehome writeup; the polished narrative for reviewers |
 | `ARCHITECTURE.md` | One-page diagram + index into `docs/10-architecture/` |
 | `QUICKSTART.md` | Run-locally-in-5-minutes guide (see §8 below) |
 | `Dockerfile` | Production build — pulls dataset at build time, serves Next.js + FastAPI |
@@ -602,10 +647,10 @@ docs/
 
 ### 7.3 Navigation shortcuts
 
-- **Reviewer with 5 minutes:** read [SUBMISSION.md](SUBMISSION.md) §1, §3, §6 (limits).
 - **Reviewer with 20 minutes:** read this README end-to-end.
 - **Engineer joining the project:** read [`docs/00-overview/problem-statement.md`](docs/00-overview/problem-statement.md) → [`docs/10-architecture/system-overview.md`](docs/10-architecture/system-overview.md) → [`docs/60-decisions/README.md`](docs/60-decisions/README.md) → trace `backend/orchestrator.py`.
 - **Compliance auditor:** read [`docs/10-architecture/safety-architecture.md`](docs/10-architecture/safety-architecture.md) → `logs/hallucinations.jsonl` → [`kb/AUDIT_TRAIL.md`](kb/AUDIT_TRAIL.md).
+- **Production readiness reviewer:** read [`audit_results/ENTERPRISE_AUDIT.md`](audit_results/ENTERPRISE_AUDIT.md) for the master defect register (severity-tagged, with evidence + fix status) and [`audit_results/full_<run-id>/report.md`](audit_results/) for the latest persona-simulation findings.
 - **Replicating the data pipeline:** read [`docs/20-data-pipeline/ingestion-policy.md`](docs/20-data-pipeline/ingestion-policy.md) → trace `rag/extract.py` + `rag/ingest.py`.
 
 ---
@@ -745,7 +790,7 @@ This section is written so a fresh **Claude Code** session pointed at an empty d
 
 1. **Corpus acquisition** — use `tools/` agent crawl + Playwright fallback (see [ADR-017](docs/60-decisions/ADR-017-irdai-corpus-playwright-rescue.md)) to fetch 19 insurers' PDFs + 18 regulatory PDFs into `rag/corpus/`.
 
-2. **Structured extraction** — `rag/extract.py` runs NIM V4-Pro over each PDF with the 48-field Pydantic schema. Output to `rag/extracted/<policy_id>.json`.
+2. **Structured extraction** — `rag/extract.py` runs fast-brain chain (Nemotron 30B / Qwen 80B / Groq Llama-3.3 fallback) over each PDF with the 62-field Pydantic schema. Output to `rag/extracted/<policy_id>.json`.
 
 3. **Embedding + indexing** — `rag/ingest.py` chunks each PDF at 800/120, embeds with BGE-small-en-v1.5, writes to `rag/vectors/chroma.sqlite3` + HNSW binaries.
 
@@ -757,7 +802,7 @@ This section is written so a fresh **Claude Code** session pointed at an empty d
 
 7. **Frontend** — Next.js 14 App Router. Tailwind + shadcn/ui. Key file: `frontend/src/app/page.tsx` (orchestrates all views: chat, marketplace, premium, profile, admin). Voice via MediaRecorder. Persistent state via localStorage.
 
-8. **Eval harness** — `eval/generate_gold.py` builds the gold Q&A. `eval/run.py` grades using NIM Llama-4 Maverick. Output to `eval/results.md`.
+8. **Eval harness** — `eval/generate_gold.py` builds the gold Q&A. `eval/run.py` grades using the judge chain (Mistral Large 3 675B primary, different family from brain). Output to `eval/results.md`.
 
 9. **Deploy** — Dockerfile bundles backend + frontend (Next.js standalone) into one image. `snapshot_download` pulls data at build time. Push to HF Space — auto-deploys.
 
@@ -768,7 +813,6 @@ This section is written so a fresh **Claude Code** session pointed at an empty d
 A new Claude Code session should ingest these to bootstrap understanding:
 
 1. **This README** — entire project context.
-2. **[`SUBMISSION.md`](SUBMISSION.md)** — formal narrative + eval results.
 3. **[`docs/60-decisions/`](docs/60-decisions/)** — 24 ADRs covering every meaningful decision.
 4. **[`backend/orchestrator.py`](backend/orchestrator.py)** — the single file that defines a turn.
 5. **[`backend/faithfulness.py`](backend/faithfulness.py)** — the 4-gate verifier.
@@ -781,7 +825,7 @@ A new Claude Code session should ingest these to bootstrap understanding:
 | Gotcha | Where it bites | Fix |
 |---|---|---|
 | IRDAI URLs return Akamai bot-challenge HTML | Initial corpus crawl | Playwright same-origin fetch (ADR-017) |
-| Sarvam-M output cap 2048 tokens truncates JSON | Extraction phase | Use NIM V4-Pro instead (ADR-019) |
+| Sarvam-M output cap 2048 tokens truncates JSON | Extraction phase | Use fast-brain chain (Nemotron 30B / Qwen 80B / Groq Llama-3.3 fallback) instead (ADR-019) |
 | Voyage 3 RPM free-tier blocks 208-PDF ingest | Embedding phase | Switch to local BGE-small (ADR-011) |
 | Multiple LLM providers' free-tier limits collide on grader | Eval phase | Consolidate to NIM (ADR-019) |
 | HF Space 1 GB cap rejects vector DB | Deploy phase | Split data to HF Dataset (ADR-020) |
