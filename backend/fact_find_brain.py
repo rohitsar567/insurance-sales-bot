@@ -527,17 +527,55 @@ def _normalize_for_slot(slot_id: str, raw_text: str) -> Any:
         return None
     text = raw_text.strip()
 
-    # NAME slot — KI-074 (2026-05-15) — explicit intro patterns ONLY.
-    # Previous version accepted "29 years old" as a name because it passed
-    # the alphabetic-ratio check. Now we require an explicit "I am X" /
-    # "my name is X" / "this is X" / "call me X" pattern, AND the captured
-    # span must look like a name (no digits, 1-4 short tokens).
-    if slot_id == "name":
+    # NAME slot — KI-074 + KI-092 (2026-05-15) — two-mode parsing.
+    # MODE A (lenient, when caller explicitly tagged awaiting=name): accept
+    #   any plain alphabetic name. Used when fallback fires after the bot
+    #   asked "what should I call you?" — the reply IS the name by
+    #   construction; no intro phrase needed. Avoids the KI-074 false-
+    #   reject on "rohit sar" (plain reply to the name prompt).
+    # MODE B (strict, default — used by greedy multi-slot capture): requires
+    #   explicit "I'm X" / "my name is X" / "this is X" / "call me X" intro
+    #   to avoid false positives on "this is correct" / "29 years old" etc.
+    # The caller signals MODE A by passing slot_id="name__awaiting" (a
+    # synthetic tag); the canonical fallback maps awaiting_question_id=name
+    # to this tag.
+    if slot_id in ("name", "name__awaiting"):
+        lenient_mode = (slot_id == "name__awaiting")
+        slot_id = "name"  # normalise so downstream logic still sees "name"
         import re as _re
         # Strip leading greeting first
         s = text.strip().strip(".,!?")
         s = _re.sub(r"^(hi|hello|hey|namaste|yo)[,!.\s]+", "", s, flags=_re.IGNORECASE)
-        # Require an explicit intro phrase
+
+        # KI-092 — LENIENT MODE: the bot just asked "what should I call you?"
+        # so any plain alphabetic reply should be accepted as the name.
+        # Examples to accept: "rohit sar" / "Anjali" / "Dr. Priya" / "Sam"
+        # Examples to reject: empty, all-digit, mostly-symbol, way too long.
+        if lenient_mode:
+            # Drop common polite-prefix scraps if present.
+            s_lc = s.lower()
+            for prefix in ("i'm ", "i am ", "this is ", "my name is ", "name is ",
+                           "name's ", "call me ", "im ", "mr ", "mrs ", "ms ", "dr "):
+                if s_lc.startswith(prefix):
+                    s = s[len(prefix):].strip()
+                    break
+            # Validation: 1-50 chars, ≥50% alphabetic, no embedded digits
+            if not s or len(s) > 50 or any(c.isdigit() for c in s):
+                return None
+            alpha = sum(1 for c in s if c.isalpha())
+            if alpha < 2 or alpha / max(1, len(s)) < 0.5:
+                return None
+            # Limit to 1-4 word tokens
+            tokens = s.split()
+            if not (1 <= len(tokens) <= 4):
+                return None
+            # Capitalise if all-lower
+            if not any(c.isupper() for c in s):
+                s = " ".join(w.capitalize() for w in tokens)
+            return s
+
+        # STRICT MODE (greedy multi-slot capture) — original KI-074 behaviour:
+        # require an explicit intro phrase to avoid false positives.
         m = _re.search(
             r"\b(?:i'?m|i\s+am|this\s+is|my\s+name\s+is|name\s+is|call\s+me|name'?s)\s+"
             r"([a-zA-Z][a-zA-Z'\-]{1,30}(?:\s+[a-zA-Z][a-zA-Z'\-]{1,30}){0,3})\b",
@@ -666,6 +704,24 @@ def _canonical_fallback(session, user_text: str, *, reason: str) -> FactFindOutc
     if (user_text or "").strip():
         try:
             from backend.needs_finder import GRAPH
+
+            # KI-092 — if the bot was explicitly awaiting the name slot,
+            # try the LENIENT name parser FIRST so a plain "rohit sar"
+            # reply gets captured instead of falling through to the strict
+            # intro-phrase requirement and never matching.
+            awaiting = getattr(session, "awaiting_question_id", None)
+            if awaiting == "name" and not getattr(profile, "name", None):
+                try:
+                    lenient_name = _normalize_for_slot("name__awaiting", user_text)
+                except Exception:
+                    lenient_name = None
+                if lenient_name:
+                    q_obj = next((q for q in GRAPH if q.id == "name"), None)
+                    if q_obj is not None:
+                        captured[q_obj.field] = lenient_name
+                        setattr(profile, q_obj.field, lenient_name)
+                        if "name" not in profile.asked:
+                            profile.asked.append("name")
 
             # Build the prioritised slot order — try high-signal slots first
             # (numbers, enums) before name (which has explicit-intro guard).
