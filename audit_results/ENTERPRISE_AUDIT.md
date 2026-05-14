@@ -238,7 +238,12 @@ The full eval was sending **every** QA question to `needs_finder`. Sample bot an
 - `tests/test_routing_regression.py` — 15 unit tests, all passing. Pins KI-018 / KI-023 / KI-025 invariants.
 - 5-Q post-fix smoke (no judge): factual 0% → 60%, nim-chain serving 100% of QA.
 - Live HF Space smoke (`https://rohitsar567-insurancebot.hf.space`): PED waiting-period question now answers via `nim-chain::nemotron-3-nano-30b-a3b::v4-flash::qa` with a grounded reply, not the old "Happy to help. First, your age?" misroute.
-- Final parallel 96-Q gold eval landing imminently; clean 100-persona audit will run against the final stable image and the numbers will replace the pre-fix baselines above.
+- **Post-fix parallel 96-Q gold eval (93 of 96 completed; 3 trailing questions killed when the run hung on a NIM rate-limit edge case):**
+  - **Factual accuracy: 54.8% (51 / 93)** — up from the pre-fix 41.7% baseline.
+  - **KI-022 JSON-fallback** rescued 7 questions that would have scored 0 on Groq judge JSON errors. Without KI-022 the headline would have been ~47%.
+  - PED waiting-period type — previously 0% pre-fix; samples now: "Bot correctly states the 24‑month waiting period" / "matched_nums=['24']" via regex fallback / "36‑month period and includes source cit…".
+  - Stuck questions: rows 94-96 (all `regulatory_oos` refusals — those routes are already at ~100% earlier in the run; the rate-limit hang affected the brain call, not the refusal logic).
+- Clean 100-persona audit pending — to run once Batch B (bucket reorg) ships and the HF Space is stable.
 
 ## Pending follow-ups (P1)
 

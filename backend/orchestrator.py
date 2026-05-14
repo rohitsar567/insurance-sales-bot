@@ -301,6 +301,66 @@ async def handle_turn(
     )
 
     if treat_as_fact_find:
+        # KI-045 (2026-05-14) — natural-conversation classifier. Previously
+        # EVERY user message during fact-find got parsed as an answer to the
+        # awaiting slot. The bot couldn't gracefully handle off-topic asides,
+        # mid-flow questions, or volunteered profile information. Now we
+        # classify the user's message first; only "direct_answer" continues
+        # into the existing normalizer flow.
+        #
+        # Heuristic-only (no LLM call — keeps latency negligible):
+        #
+        #   • question  → message ends with "?" AND has 4+ words AND no
+        #                 obvious slot-answer pattern. User is asking
+        #                 something off-topic; we exit fact-find and let
+        #                 the QA brain answer.
+        #   • intent_change → explicit phrases like "never mind", "actually
+        #                     let me ask", "wait, can you...", "forget the
+        #                     profile, just tell me...". User is steering
+        #                     away; we exit fact-find.
+        #   • otherwise → direct_answer (existing normalizer flow).
+        #
+        # In all non-answer cases we keep the awaiting slot pinned so when
+        # the user returns to fact-find next turn, we pick up where we
+        # left off — and we flip `session.free_form_session = True` so the
+        # rest of handle_turn routes to retrieval + brain, not back here.
+        if session.awaiting_question_id and session.awaiting_question_id != "name":
+            _t = user_text.lower().strip()
+            _intent_change_phrases = (
+                "never mind", "forget the profile", "forget profile",
+                "actually let me ask", "wait, can you", "wait can you",
+                "wait, tell me", "skip this", "skip that question",
+                "let's switch", "lets switch", "stop asking",
+                "i have a question", "just tell me",
+            )
+            _looks_intent_change = any(p in _t for p in _intent_change_phrases)
+            _ends_q = _t.endswith("?") or _t.rstrip(".!").endswith("?")
+            _wordy_q = _ends_q and len(_t.split()) >= 4
+            # Don't misclassify enum-answer questions like "spouse?" /
+            # "diabetes?" (short, often a clarification request)
+            _looks_off_topic_q = _wordy_q and not any(
+                kw in _t for kw in (
+                    "yes", "no", "self", "spouse", "kids", "parents",
+                    "diabetes", "bp", "thyroid", "lakh", "lac",
+                )
+            )
+            if _looks_intent_change or _looks_off_topic_q:
+                # Exit fact-find: let the rest of handle_turn route to the
+                # QA / brain path. Keep awaiting_question_id pinned so we
+                # remember where we were for next turn. Flip free-form so
+                # the should_route_to_fact_find guard returns False on the
+                # follow-up turn.
+                session.free_form_session = True
+                session._flush()
+                # Fall out of the fact-find branch entirely — the user's
+                # message is treated as a regular QA turn from here.
+                treat_as_fact_find = False  # noqa: F841 — re-checked below
+
+        # If we just exited fact-find via the classifier, skip the answer
+        # handling block + the question-emission tail; let execution fall
+        # through to the QA / retrieval path below.
+
+    if treat_as_fact_find:
         # If we were awaiting an answer, normalize + record it before picking next Q.
         # Uses backend/fact_find_normalizer.py to map free-text → schema enums.
         #
