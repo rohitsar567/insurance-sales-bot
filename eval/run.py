@@ -276,6 +276,10 @@ async def main():
     parser.add_argument("--policy", default=None)
     parser.add_argument("--no-judge", action="store_true",
                         help="Use regex grader instead of Groq LLM-judge (free of rate limits; used by sweeps)")
+    parser.add_argument("--workers", type=int, default=6,
+                        help="Concurrent questions in flight. KI-024 — was serial, now parallel. "
+                             "Cap is NIM's 40 req/min (~2 calls per question); 6 workers gives ~5× "
+                             "speedup before saturating. Drop to 1 to reproduce historical serial timing.")
     args = parser.parse_args()
 
     if not GOLD_FILE.exists():
@@ -287,16 +291,28 @@ async def main():
     if args.limit:
         gold = gold[: args.limit]
 
-    print(f"Running eval on {len(gold)} questions...\n")
-    results: list[EvalRecord] = []
+    print(f"Running eval on {len(gold)} questions with {args.workers} workers...\n")
+    results: list[EvalRecord] = [None] * len(gold)  # preserve order
     t0 = time.time()
-    for i, g in enumerate(gold, 1):
-        rec = await run_one(g, no_judge=args.no_judge)
-        results.append(rec)
-        ok_factual = "✓" if rec.factual_match else "✗"
-        ok_cite = "✓" if rec.citation_present else " "
-        print(f"[{i:>3}/{len(gold)}] {ok_factual} {ok_cite} [{rec.judge_score:.2f}] {rec.question[:60]:<60} | {rec.judge_reason[:60]}")
 
+    sema = asyncio.Semaphore(args.workers)
+    log_lock = asyncio.Lock()
+    completed_counter = {"n": 0}
+
+    async def run_with_sema(idx: int, g: dict) -> None:
+        async with sema:
+            rec = await run_one(g, no_judge=args.no_judge)
+        results[idx] = rec
+        async with log_lock:
+            completed_counter["n"] += 1
+            i = completed_counter["n"]
+            ok_factual = "✓" if rec.factual_match else "✗"
+            ok_cite = "✓" if rec.citation_present else " "
+            print(f"[{i:>3}/{len(gold)}] {ok_factual} {ok_cite} [{rec.judge_score:.2f}] "
+                  f"{rec.question[:60]:<60} | {rec.judge_reason[:60]}",
+                  flush=True)
+
+    await asyncio.gather(*(run_with_sema(i, g) for i, g in enumerate(gold)))
     elapsed = time.time() - t0
 
     # Aggregate
