@@ -62,6 +62,48 @@ ACRONYMS = {
     r"\bpp\.(\d+)": r"page \1",
 }
 
+# KI-066 (2026-05-15) — money / range shorthand that Sarvam Bulbul reads
+# letter-by-letter. The user said "₹25L+" was being spoken as "two five L
+# plus". Order in `_normalize_money` matters: handle RANGES first, then
+# PLUS-SUFFIXES, then bare unit-suffixes, then standalone "+".
+_MONEY_RANGE_L = re.compile(
+    r"₹?\s*(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)\s*L\b",
+    re.IGNORECASE,
+)
+_MONEY_RANGE_CR = re.compile(
+    r"₹?\s*(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)\s*Cr\b",
+    re.IGNORECASE,
+)
+_MONEY_PLUS_L = re.compile(r"₹?\s*(\d+(?:\.\d+)?)\s*L\s*\+", re.IGNORECASE)
+_MONEY_PLUS_CR = re.compile(r"₹?\s*(\d+(?:\.\d+)?)\s*Cr\s*\+", re.IGNORECASE)
+_MONEY_L = re.compile(r"₹?\s*(\d+(?:\.\d+)?)\s*L\b", re.IGNORECASE)
+_MONEY_CR = re.compile(r"₹?\s*(\d+(?:\.\d+)?)\s*Cr\b", re.IGNORECASE)
+_MONEY_RS_PREFIX = re.compile(r"\bRs\.?\s*", re.IGNORECASE)
+_MONEY_RUPEE_SYMBOL = re.compile(r"₹\s*(\d)")
+# Bare year ranges like "29-32" or "24/7" — leave alone; TTS handles dashes.
+
+
+def _normalize_money(text: str) -> str:
+    """Turn currency / range shorthand into spoken-language equivalents.
+
+    Examples:
+      "₹5L"      → "5 lakhs"
+      "₹25L+"    → "25 lakhs or more"
+      "₹5-10L"   → "5 to 10 lakhs"
+      "₹2Cr"     → "2 crores"
+      "Rs. 5000" → "rupees 5000"
+    """
+    text = _MONEY_RANGE_L.sub(lambda m: f"{m.group(1)} to {m.group(2)} lakhs", text)
+    text = _MONEY_RANGE_CR.sub(lambda m: f"{m.group(1)} to {m.group(2)} crores", text)
+    text = _MONEY_PLUS_L.sub(lambda m: f"{m.group(1)} lakhs or more", text)
+    text = _MONEY_PLUS_CR.sub(lambda m: f"{m.group(1)} crores or more", text)
+    text = _MONEY_L.sub(lambda m: f"{m.group(1)} lakhs", text)
+    text = _MONEY_CR.sub(lambda m: f"{m.group(1)} crores", text)
+    text = _MONEY_RS_PREFIX.sub("rupees ", text)
+    text = _MONEY_RUPEE_SYMBOL.sub(r"rupees \1", text)
+    return text
+
+
 # Strip section labels that LLMs love but ruin voice flow.
 # Require the trailing colon so we only catch actual labels, not normal prose
 # that happens to start with "Coverage applies..." etc.
@@ -124,6 +166,10 @@ def tts_preprocess(text: str, language: str = "en", max_words: int = 60) -> str:
     if not text:
         return ""
     cleaned = _strip_markdown(text)
+    # KI-066 (2026-05-15) — currency/range shorthand expansion before
+    # acronym handling so ₹5L becomes "5 lakhs" instead of getting caught
+    # by the bare-L acronym path.
+    cleaned = _normalize_money(cleaned)
     cleaned = _expand_acronyms(cleaned, language=language)
     cleaned = _compress_whitespace(cleaned)
     cleaned = _truncate_for_voice(cleaned, max_words=max_words)
