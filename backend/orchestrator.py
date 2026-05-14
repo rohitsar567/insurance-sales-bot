@@ -320,10 +320,73 @@ async def handle_turn(
         # the slot-filler was actually working — see readback summaries in
         # `needs_finder::fact_find_complete` turns).
         fact_find_profile_updates: dict = {}
+        # KI-040 — named-profile return-visit detection. Set when we resolve
+        # a name and find a stored profile for that name; used at the bottom
+        # of this branch to emit a "Welcome back" message instead of the
+        # next slot's question.
+        returning_visitor_greeting: Optional[str] = None
         if session.awaiting_question_id:
             from backend.fact_find_normalizer import is_valid_answer, normalize_answer
             qid = session.awaiting_question_id
-            if not is_valid_answer(user_text):
+            # KI-040 — special handling for the name slot: free-text, no enum.
+            if qid == "name":
+                from backend.profile_store import is_valid_name, load_profile, save_profile
+                raw_name = user_text.strip().strip(".,!?")
+                # Tolerate "I'm Rohit" / "My name is Rohit" / "call me Rohit"
+                for prefix in ("i'm ", "i am ", "my name is ", "name is ", "call me ", "this is "):
+                    if raw_name.lower().startswith(prefix):
+                        raw_name = raw_name[len(prefix):].strip()
+                        break
+                # Capitalize a sensible display form
+                if raw_name and not any(c.isupper() for c in raw_name):
+                    raw_name = " ".join(w.capitalize() for w in raw_name.split())
+                if is_valid_name(raw_name):
+                    session.update_profile_field("name", raw_name)
+                    fact_find_profile_updates["name"] = raw_name
+                    if qid not in session.profile.asked:
+                        session.profile.asked.append(qid)
+                    session.set_awaiting(None)
+                    if hasattr(session, "_reask_counts"):
+                        session._reask_counts.pop(qid, None)
+                    # Look up an existing profile for this name. If found,
+                    # MERGE its fields into the current empty session so the
+                    # user doesn't repeat the 9-question walk.
+                    stored = load_profile(raw_name)
+                    if stored is not None and any(
+                        getattr(stored, f, None) not in (None, [], "")
+                        for f in ("age", "dependents", "income_band", "primary_goal")
+                    ):
+                        for field_name in (
+                            "age", "dependents", "income_band", "existing_cover_inr",
+                            "primary_goal", "location_tier", "parents_to_insure",
+                            "parents_age_max", "parents_has_ped", "health_conditions",
+                            "budget_band",
+                        ):
+                            val = getattr(stored, field_name, None)
+                            if val not in (None, [], ""):
+                                session.update_profile_field(field_name, val)
+                                fact_find_profile_updates[field_name] = val
+                        # Mark all stored slots as already-asked so next_question
+                        # skips them.
+                        for slot_id in ("age", "dependents", "income_band",
+                                        "existing_cover", "primary_goal", "location",
+                                        "parents_age", "health_conditions", "budget"):
+                            if slot_id not in session.profile.asked:
+                                session.profile.asked.append(slot_id)
+                        session.free_form_session = True
+                        session._flush()
+                        returning_visitor_greeting = (
+                            f"Welcome back, {raw_name}! I've loaded your profile from last time. "
+                            "Want me to suggest some policies that fit your situation, or do "
+                            "you have a specific question in mind?"
+                        )
+                    else:
+                        # New visitor — record an initial profile so subsequent
+                        # turns persist; orchestrator will continue to next slot.
+                        save_profile(raw_name, session.profile, session_id=session_id)
+                else:
+                    ambiguous_or_failed = True
+            elif not is_valid_answer(user_text):
                 ambiguous_or_failed = True
             else:
                 try:
@@ -344,6 +407,14 @@ async def handle_turn(
                         # Reset re-ask counter on success
                         if hasattr(session, "_reask_counts"):
                             session._reask_counts.pop(qid, None)
+                        # KI-040 — persist the updated profile to JSON store
+                        # so next-visit lookup-by-name has the latest data.
+                        if session.profile.name:
+                            try:
+                                from backend.profile_store import save_profile
+                                save_profile(session.profile.name, session.profile, session_id=session_id)
+                            except Exception:
+                                pass
                     else:
                         ambiguous_or_failed = True
 
@@ -358,6 +429,24 @@ async def handle_turn(
                         session.profile.asked.append(qid)
                     session.set_awaiting(None)
                     ambiguous_or_failed = False  # no longer a reask situation
+
+        # KI-040 — returning-visitor short-circuit. If we recognised the user's
+        # name and loaded their stored profile, skip directly to the greeting
+        # without picking another fact-find question.
+        if returning_visitor_greeting:
+            return TurnResult(
+                reply_text=returning_visitor_greeting,
+                citations=[],
+                retrieved_chunk_ids=[],
+                brain_used="needs_finder::welcome_back",
+                intent="fact_find",
+                language=language,
+                latency_ms=int((time.time() - t0) * 1000),
+                raw_reply=returning_visitor_greeting,
+                faithfulness_passed=True,
+                blocked=False,
+                profile_updates=fact_find_profile_updates,
+            )
 
         # If the answer didn't normalize, pick the SAME question again (re-ask
         # with a gentle clarifier) instead of moving on with garbage — UNLESS

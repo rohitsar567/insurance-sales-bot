@@ -30,6 +30,7 @@ from typing import Any, Optional
 @dataclass
 class Profile:
     """User profile accumulated during fact-find."""
+    name: Optional[str] = None  # KI-040 — humanise + key for cross-session lookup
     age: Optional[int] = None
     dependents: Optional[str] = None  # "self", "self+spouse", "self+spouse+kids", "self+parents", etc.
     income_band: Optional[str] = None  # "under_5L", "5L-10L", "10L-25L", "25L+"
@@ -66,6 +67,14 @@ def _always(p: Profile) -> bool:
 
 
 GRAPH: list[Question] = [
+    Question(
+        id="name",
+        prompt_en="First — what should I call you? I'll save your profile so the next time you visit, you won't have to answer all this again.",
+        prompt_hi="सबसे पहले — आपको क्या कहूँ? आपकी profile save हो जाएगी, तो अगली बार दोबारा सवाल नहीं पूछूँगा।",
+        field="name",
+        is_core=True,
+        # Free-text — no parser; the orchestrator validates 1-50 chars
+    ),
     Question(
         id="age",
         prompt_en="First, your age? (Premium + eligibility + how long you can renew all hinge on this.)",

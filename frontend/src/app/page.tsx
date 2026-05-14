@@ -691,16 +691,18 @@ export default function Page() {
           <EmptyState onSuggest={(q) => send(q)} coverage={coverage} t={t} />
         ) : (
           <>
-            {/* KI-020 / KI-039 — single Clear-chat control. One click wipes
-                the visible chat AND clears server-side profile AND issues a
-                fresh session id. Two-button variant was confusing per user
-                feedback. */}
+            {/* KI-020 / KI-039 / KI-040 — single Clear-chat control. One
+                click wipes the visible chat history but KEEPS the server-side
+                profile so the bot doesn't have to re-fact-find the user. The
+                bot will pick up with the existing profile on the next turn.
+                (A named-profile feature for fully-different identities is on
+                the roadmap — see backend/profile_store.py.) */}
             <div className="flex items-center justify-end gap-2 mb-2 text-[11px]">
               <button
-                onClick={() => handleClearChat(true)}
+                onClick={() => handleClearChat(false)}
                 disabled={busy}
-                className="px-2 py-1 rounded-md border border-[var(--border)] text-[var(--muted-foreground)] hover:text-rose-600 hover:border-rose-400 disabled:opacity-40 transition"
-                title="Wipe this conversation — clears chat history, profile, and starts a fresh session"
+                className="px-2 py-1 rounded-md border border-[var(--border)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:border-[var(--primary)] disabled:opacity-40 transition"
+                title="Clear the visible chat. Your profile is preserved so the bot picks up where it left off."
               >
                 Clear chat
               </button>
