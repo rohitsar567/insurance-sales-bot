@@ -49,8 +49,16 @@ export type LiveConversationState = {
 };
 
 const DEFAULTS = {
-  rmsThreshold: 28, // 0-255 byte FFT magnitude floor; tune in browser
-  speechStartFrames: 5, // ~80 ms of consistent loudness to declare speech
+  // KI-041 (2026-05-14) — sensitivity bumped. Previous threshold 28 was high
+  // enough that normal speaking volume in a moderately-quiet room didn't
+  // trigger barge-in detection, so users reported "speaking over the bot
+  // doesn't interrupt it". 18 catches typical conversational volume reliably
+  // while still rejecting room hum / breathing / keyboard clatter.
+  rmsThreshold: 18,
+  // ~48ms of speech to fire. Previous 5 frames (~80ms) added perceptible
+  // latency on barge-in; 3 frames keeps false-positive immunity but cuts
+  // the response time by ~32ms.
+  speechStartFrames: 3,
   silenceEndFrames: 40, // ~640 ms of silence to declare utterance end
 };
 

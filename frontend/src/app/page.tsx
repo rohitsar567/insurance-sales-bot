@@ -184,18 +184,20 @@ export default function Page() {
   // Hands-free continuous loop: when toggled ON, immediately open mic. When
   // toggled OFF, close any in-progress recording. The send() function takes
   // care of re-opening the mic after each assistant TTS finishes.
-  // KI-028 (2026-05-14) — Live can now be explicitly turned off via the
-  // status pill (click the green dot → red dot → can click again to bring
-  // it back, OR just keep using 🎤 push-to-talk). userPrefersLive is the
-  // user's *intent*, persisted across reloads. live.live is the *actual*
-  // mic state — which PTT temporarily flips to false during a recording
+  // KI-028 + KI-042 (2026-05-14) — Live is now OFF by default on first
+  // visit. User feedback: always-on mic was uncontrollable in noisy
+  // environments and surprising for first-timers. The user must click the
+  // status pill (grey → green) to opt in; preference persists across
+  // reloads. userPrefersLive = user's *intent*, persisted; live.live =
+  // actual mic state, PTT temporarily flips it to false during a recording
   // even while userPrefersLive stays true (so Live resumes after PTT).
-  const [userPrefersLive, setUserPrefersLive] = useState(true);
-  // Load persisted preference on mount.
+  const [userPrefersLive, setUserPrefersLive] = useState(false);
+  // Load persisted preference on mount. Only "on" persists; default and
+  // explicit "off" both render grey.
   useEffect(() => {
     if (typeof window === "undefined") return;
     const pref = localStorage.getItem("insurance_live_pref");
-    if (pref === "off") setUserPrefersLive(false);
+    if (pref === "on") setUserPrefersLive(true);
   }, []);
   // Persist + sync to the live hook whenever the user toggles preference.
   useEffect(() => {
@@ -688,7 +690,16 @@ export default function Page() {
             : "max-w-6xl w-full mx-auto"
         }`}>
         {messages.length === 0 ? (
-          <EmptyState onSuggest={(q) => send(q)} coverage={coverage} t={t} />
+          <>
+            <EmptyState onSuggest={(q) => send(q)} coverage={coverage} t={t} />
+            {/* KI-038 — dots visible even on the very first turn (no messages
+                yet but the bot is hearing you / thinking) */}
+            {(busy || voicePhase) && (
+              <div className="mt-4">
+                <ThinkingDots phase={voicePhase} />
+              </div>
+            )}
+          </>
         ) : (
           <>
             {/* KI-020 / KI-039 / KI-040 — single Clear-chat control. One
@@ -797,20 +808,20 @@ export default function Page() {
                   className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs font-medium transition cursor-pointer ${
                     userPrefersLive
                       ? "border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
-                      : "border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100 dark:border-rose-700 dark:bg-rose-900/30 dark:text-rose-300"
+                      : "border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--primary)] hover:text-[var(--primary)]"
                   }`}
                   title={userPrefersLive
-                    ? "Click to turn voice OFF (you can still use 🎤 push-to-talk)"
-                    : "Click to turn voice back ON (always-on listening + barge-in)"}
+                    ? "Voice on — bot is always listening, you can speak over it. Click to turn off."
+                    : "Click to turn on always-on listening (you can also use 🎤 push-to-talk for one turn)"}
                 >
                   <span className={`inline-block w-2 h-2 rounded-full ${
                     userPrefersLive
                       ? (live.recording ? "bg-red-500 animate-pulse" : "bg-emerald-500 animate-pulse")
-                      : "bg-rose-500"
+                      : "bg-gray-400"
                   }`} />
                   {userPrefersLive
                     ? (live.recording ? "Listening…" : "Voice on — just speak")
-                    : "Voice off — click to turn on, or use 🎤"}
+                    : "Voice off — click to enable always-on"}
                 </button>
               ) : (
                 <span className="text-rose-500 text-xs" title="Allow mic in your browser site settings, or use the 🎤 push-to-talk button">
@@ -1343,10 +1354,12 @@ function EmptyState({ onSuggest, coverage, t }: { onSuggest: (q: string) => void
         <div className="text-xs font-semibold text-[var(--primary)] mb-1">{t("welcome.trust_title")}</div>
         <p className="text-xs text-[var(--muted-foreground)] leading-snug">{t("welcome.trust_body")}</p>
       </div>
-      {/* KI-027 — make it obvious that voice is always-on. */}
+      {/* KI-042 — voice is OFF by default; user opts in via the pill. */}
       <div className="flex items-center gap-2 max-w-xl mb-6 text-sm text-[var(--muted-foreground)]">
-        <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-        <span><strong className="text-[var(--foreground)]">Voice is on.</strong> Just start speaking — I&apos;m listening. Speak over me to interrupt at any time. Prefer to type? Use the box below.</span>
+        <span className="inline-block w-2.5 h-2.5 rounded-full bg-gray-400" />
+        <span>
+          You can <strong className="text-[var(--foreground)]">type</strong> below, click <strong className="text-[var(--foreground)]">🎤 Push-to-talk</strong> for one voice turn, or turn on <strong className="text-[var(--foreground)]">Voice</strong> (the grey pill at the bottom) for always-on listening with barge-in.
+        </span>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-2xl">
         {suggested.map((key, i) => {
