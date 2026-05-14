@@ -48,13 +48,13 @@ RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTr
 COPY backend ./backend
 COPY rag ./rag
 COPY eval ./eval
-COPY docs ./docs
+COPY 70-docs ./70-docs
 # Curated structured data the backend reads at request time:
 #   - 40-data/reviews/<slug>.json    → /api/insurers/{slug}/reviews
 #   - 40-data/policy_facts/*.json    → marketplace + scorecard fact cards
 #   - 40-data/premiums/*.json        → premium calculator illustrative baseline
 # Total ~2.3 MB — small enough to bake into the Space image.
-COPY data ./data
+COPY 40-data ./40-data
 
 # Pull the large data (corpus PDFs + pre-built Chroma vectors + extracted JSONs)
 # from the companion HF dataset rather than baking it into the Space repo.
