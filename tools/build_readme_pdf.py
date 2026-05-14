@@ -20,7 +20,10 @@ from markdown_pdf import MarkdownPdf, Section
 
 ROOT = Path(__file__).resolve().parent.parent
 README_PATH = ROOT / "README.md"
-OUT_PATH = ROOT / "README.pdf"
+# PDF is a sharable artifact, not a repo asset. Drop it on the Desktop so
+# the user can email / Slack / AirDrop it without digging into ~/Developer/.
+# HF Space also rejects binaries in the Space repo (Xet/LFS required).
+OUT_PATH = Path.home() / "Desktop" / "Insurance-Sales-Bot-README.pdf"
 
 
 def strip_yaml_frontmatter(text: str) -> str:
