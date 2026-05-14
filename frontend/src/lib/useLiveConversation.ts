@@ -4,11 +4,46 @@
  * useLiveConversation — full-duplex voice mode with barge-in.
  *
  * KI-044 (2026-05-14) — PCM pre-roll via AudioWorklet.
+ * KI-057 (2026-05-15) — Noise-robust VAD + flush-on-stop.
+ *
+ * Why KI-057 was needed
  * --------------------------------------------------------------------
- * Previous implementation started a MediaRecorder ONLY when VAD declared
- * "speech started" — by which point ~50-80 ms of the first word was
- * already past the mic. Users reported the bot only hearing "ello" / "i
- * am" rather than "hello" / "hi i am".
+ * Real user feedback after KI-044 shipped: "Background noise continues
+ * to play a big issue, even random noise without people speaking or
+ * just ambient noise keeps the live listening on, and it keeps
+ * processing on something and not moving on. Also, if an entire series
+ * of things have been said and I turn off the live chat, should that
+ * not auto submit?"
+ *
+ * Two failure modes:
+ *   1. Static `rmsThreshold: 18` triggered on HVAC / fan / traffic.
+ *      Once triggered, `silenceEndFrames: 40` (~640 ms of silence)
+ *      never accumulated because ambient noise kept the meter above
+ *      threshold — segment never closed, "Hearing you…" stuck on.
+ *   2. Toggling Live OFF mid-utterance ran tearDown() which silently
+ *      dropped `speechBufferRef` — user's words were lost.
+ *
+ * Fixes layered in (defaults — overridable via opts):
+ *   A. Adaptive noise floor. While not recording, EMA the ambient
+ *      energy. Effective threshold = max(noise_floor * 2 + 4,
+ *      cfg.rmsThreshold). HVAC keeps the bar high.
+ *   B. Voice-band spectral gate. Require ≥35% of FFT energy to live
+ *      in bins 2-22 (~190-2150 Hz at 48 kHz) — the voiced-speech band.
+ *      Broadband noise fails this even when loud.
+ *   C. `speechStartFrames: 3` (~48 ms) so a single click/clack
+ *      doesn't open a segment.
+ *   D. Hard cap: `maxUtteranceMs: 18 s`. If a segment runs that long
+ *      without silence-end firing, force-close it. Prevents the
+ *      "noise pinned the meter open forever" state.
+ *   E. Post-utterance cooldown (700 ms). After we close + dispatch a
+ *      segment, suppress new triggers — even with echoCancellation,
+ *      the bot's TTS attack transient sometimes bleeds in.
+ *   F. Flush-on-teardown. If the user toggles Live OFF while a
+ *      capture is in progress and the duration meets minUtteranceMs,
+ *      encode + fire `onUtterance` once before tearing down — so
+ *      whatever they were saying gets submitted.
+ *
+ * KI-044 still applies — see below.
  *
  * Current implementation:
  *   - Single getUserMedia stream + AudioContext stay open while Live is on.
@@ -50,17 +85,32 @@ export type LiveConversationState = {
 };
 
 const DEFAULTS = {
-  // KI-041 — sensitivity bumped to catch normal conversational volume.
+  // KI-041/057 — minimum bar. Effective threshold is max(this, adaptive
+  // noise_floor * 2 + 4). With KI-044's preroll buffer we can afford to
+  // require more frames before declaring speech.
   rmsThreshold: 18,
-  // KI-043/044 — fire on first loud frame (~16 ms) so the preroll buffer
-  // snapshot captures as much pre-trigger audio as possible.
-  speechStartFrames: 1,
+  // KI-057 — 3 consecutive loud frames (~48 ms). Single clicks/clacks
+  // don't open a segment. KI-044's preroll buffer still captures the
+  // first phoneme since we look back 300 ms.
+  speechStartFrames: 3,
   silenceEndFrames: 40, // ~640 ms of silence to declare utterance end
   minUtteranceMs: 400,
   // KI-044 — How much pre-trigger PCM we keep in the rolling buffer.
   // 300 ms is generous; covers the ~80 ms VAD latency + ~100 ms of
   // user onset before the first detectable frame, with margin.
   prerollMs: 300,
+  // KI-057 — hard cap. If silence-end never fires (e.g. continuous
+  // ambient noise pinned the meter open), force-close the segment.
+  maxUtteranceMs: 18000,
+  // KI-057 — suppress new triggers for this long after we close a
+  // segment. Avoids bot's TTS attack transient bleeding through even
+  // with echoCancellation on.
+  postUtteranceCooldownMs: 700,
+  // KI-057 — minimum fraction of total FFT energy that must sit in the
+  // voice band (bins 2-22 ≈ 190-2150 Hz at 48 kHz). Broadband HVAC /
+  // fan / traffic noise typically scores 0.20-0.30; voiced speech
+  // typically scores 0.40-0.70.
+  voiceBandMinProp: 0.35,
 };
 
 // AudioWorklet processor source — inlined as a Blob URL so we don't need
@@ -136,6 +186,10 @@ export function useLiveConversation(opts: LiveConversationOptions): LiveConversa
   const rafIdRef = useRef<number | null>(null);
   const inflightAbortRef = useRef<AbortController | null>(null);
   const recStartTsRef = useRef<number>(0);
+  // KI-057 — adaptive noise floor (EMA of ambient avg while idle).
+  const noiseFloorRef = useRef<number>(0);
+  // KI-057 — gates "did the bot just stop talking?" cooldown.
+  const lastUtteranceEndedAtRef = useRef<number>(0);
 
   const onUtteranceRef = useRef(opts.onUtterance);
   const onSpeechStartRef = useRef(opts.onSpeechStart);
@@ -152,6 +206,9 @@ export function useLiveConversation(opts: LiveConversationOptions): LiveConversa
     silenceEndFrames: opts.silenceEndFrames ?? DEFAULTS.silenceEndFrames,
     minUtteranceMs: DEFAULTS.minUtteranceMs,
     prerollMs: DEFAULTS.prerollMs,
+    maxUtteranceMs: DEFAULTS.maxUtteranceMs,
+    postUtteranceCooldownMs: DEFAULTS.postUtteranceCooldownMs,
+    voiceBandMinProp: DEFAULTS.voiceBandMinProp,
   };
 
   const interruptBotAudio = useCallback(() => {
@@ -178,10 +235,12 @@ export function useLiveConversation(opts: LiveConversationOptions): LiveConversa
   }, []);
 
   // KI-044 — close speech capture: encode WAV, run guards, fire onUtterance.
+  // KI-057 — also anchors the post-utterance cooldown.
   const endSpeechCapture = useCallback(async () => {
     if (!recordingRef.current) return;
     recordingRef.current = false;
     setRecording(false);
+    lastUtteranceEndedAtRef.current = Date.now();
     const durationMs = Date.now() - (recStartTsRef.current || Date.now());
     const chunks = speechBufferRef.current;
     speechBufferRef.current = [];
@@ -225,20 +284,49 @@ export function useLiveConversation(opts: LiveConversationOptions): LiveConversa
   }, [cfg.minUtteranceMs]);
 
   // VAD loop — runs while `live` is true.
+  // KI-057 — adaptive threshold + voice-band gate + max-utterance cap.
   const tickVAD = useCallback(() => {
     if (!analyserRef.current) return;
     const a = analyserRef.current;
     const buf = new Uint8Array(a.frequencyBinCount);
     let loud = 0;
     let quiet = 0;
+    // Voice band: bins 2-22 at fftSize=512 cover ~190-2150 Hz at 48 kHz —
+    // where voiced speech lives. Capped at bin count for safety.
+    const voiceBandStart = 2;
+    const voiceBandEnd = Math.min(22, buf.length - 1);
+
     const loop = () => {
       if (!analyserRef.current) return;
       a.getByteFrequencyData(buf);
-      let sum = 0;
-      for (let i = 0; i < buf.length; i++) sum += buf[i];
-      const avg = sum / buf.length;
 
-      if (avg > cfg.rmsThreshold) {
+      let sum = 0;
+      let voiceSum = 0;
+      for (let i = 0; i < buf.length; i++) {
+        sum += buf[i];
+        if (i >= voiceBandStart && i <= voiceBandEnd) voiceSum += buf[i];
+      }
+      const avg = sum / buf.length;
+      const voiceProp = sum > 0 ? voiceSum / sum : 0;
+
+      // KI-057 — adaptive threshold. Floor at cfg.rmsThreshold so
+      // genuinely quiet rooms don't open the gate too low.
+      const effectiveThreshold = Math.max(
+        cfg.rmsThreshold,
+        noiseFloorRef.current * 2.0 + 4,
+      );
+
+      // KI-057 — suppress new triggers right after we closed a segment
+      // (bot's TTS onset can bleed in via the mic loopback).
+      const cooldownActive =
+        Date.now() - lastUtteranceEndedAtRef.current < cfg.postUtteranceCooldownMs;
+
+      const speechLike =
+        avg > effectiveThreshold &&
+        voiceProp >= cfg.voiceBandMinProp &&
+        !cooldownActive;
+
+      if (speechLike) {
         loud++;
         quiet = 0;
         if (loud === cfg.speechStartFrames && !recordingRef.current) {
@@ -253,9 +341,30 @@ export function useLiveConversation(opts: LiveConversationOptions): LiveConversa
       } else {
         quiet++;
         loud = 0;
+        // KI-057 — only learn the noise floor while idle, so ongoing
+        // speech doesn't poison the EMA.
+        if (!recordingRef.current) {
+          noiseFloorRef.current =
+            noiseFloorRef.current === 0
+              ? avg
+              : noiseFloorRef.current * 0.95 + avg * 0.05;
+        }
         if (quiet === cfg.silenceEndFrames && recordingRef.current) {
           void endSpeechCapture();
         }
+      }
+
+      // KI-057 — max-utterance cap. If recording has run too long
+      // without silence-end firing, force-close it. Prevents the
+      // "noise pinned the meter open" stuck state.
+      if (
+        recordingRef.current &&
+        recStartTsRef.current > 0 &&
+        Date.now() - recStartTsRef.current > cfg.maxUtteranceMs
+      ) {
+        // eslint-disable-next-line no-console
+        console.debug("[live-mode] force-closing at max-utterance cap");
+        void endSpeechCapture();
       }
 
       rafIdRef.current = requestAnimationFrame(loop);
@@ -265,6 +374,9 @@ export function useLiveConversation(opts: LiveConversationOptions): LiveConversa
     cfg.rmsThreshold,
     cfg.silenceEndFrames,
     cfg.speechStartFrames,
+    cfg.maxUtteranceMs,
+    cfg.postUtteranceCooldownMs,
+    cfg.voiceBandMinProp,
     interruptBotAudio,
     beginSpeechCapture,
     endSpeechCapture,
@@ -278,10 +390,44 @@ export function useLiveConversation(opts: LiveConversationOptions): LiveConversa
         cancelAnimationFrame(rafIdRef.current);
         rafIdRef.current = null;
       }
-      // Drop any pending capture without firing onUtterance
+      // KI-057 — flush a mid-utterance capture before dropping refs.
+      // If the user toggled Live OFF while speaking, encode + fire
+      // onUtterance once (fire-and-forget) so their words still land.
+      if (recordingRef.current && speechBufferRef.current.length > 0) {
+        const durationMs = Date.now() - (recStartTsRef.current || Date.now());
+        if (durationMs >= DEFAULTS.minUtteranceMs) {
+          let total = 0;
+          for (const c of speechBufferRef.current) total += c.length;
+          const merged = new Float32Array(total);
+          let off = 0;
+          for (const c of speechBufferRef.current) {
+            merged.set(c, off);
+            off += c.length;
+          }
+          const wav = encodeWAV(merged, sampleRateRef.current);
+          if (wav.size >= 3000) {
+            const handler = onUtteranceRef.current;
+            const abort = new AbortController();
+            // Fire-and-forget. The page handler is independent of Live
+            // being on, so the response will still render in the chat
+            // pane after teardown completes.
+            try {
+              handler(wav, abort).catch((e) => {
+                const name = (e as { name?: string })?.name;
+                if (name !== "AbortError") {
+                  // eslint-disable-next-line no-console
+                  console.error("[live-mode] flush-on-stop failed:", e);
+                }
+              });
+            } catch {}
+          }
+        }
+      }
       recordingRef.current = false;
       speechBufferRef.current = [];
       prerollRef.current = [];
+      noiseFloorRef.current = 0;
+      recStartTsRef.current = 0;
       if (workletRef.current) {
         try { workletRef.current.disconnect(); } catch {}
         workletRef.current = null;

@@ -18,8 +18,13 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+# KI-058 (2026-05-15) — scope these to virtualenv layouts only. A bare
+# `lib/` matched `frontend/src/lib/` and made `git add` refuse new files
+# in that path even though existing files were already tracked.
+/lib/
+/lib64/
+/.venv/lib/
+/venv/lib/
 parts/
 sdist/
 var/
