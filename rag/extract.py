@@ -270,7 +270,7 @@ async def extract_one(pdf_path: Path, manifest_entry: dict, llm_primary, llm_fal
             # own 4-step backoff retry loop that can use up to ~5min on 429s,
             # so give it 120s ceiling. Sarvam (fallback) has no retries; 60s
             # is plenty.
-            attempt_timeout = 120 if llm is llm_primary else 60
+            attempt_timeout = 180 if llm is llm_primary else 120
             res = await asyncio.wait_for(
                 llm.chat(messages=messages, temperature=0.0, max_tokens=2048),
                 timeout=attempt_timeout,

@@ -41,7 +41,7 @@ async def main():
     manifest = load_manifest()
     primary = get_brain_llm()
     fallback = get_fast_brain_llm()
-    sem = asyncio.Semaphore(3)
+    sem = asyncio.Semaphore(2)
     print(f"Total PDFs: {len(all_pdfs)}, need extraction: {len(targets)}\n")
     t_start = time.time()
     tasks = [run_one(pdf, manifest, primary, fallback, sem, i + 1, len(targets))
