@@ -76,7 +76,7 @@ def main() -> None:
     pdf.save(str(OUT_PATH))
 
     size_kb = OUT_PATH.stat().st_size / 1024
-    print(f"wrote {OUT_PATH.relative_to(ROOT)}  ({size_kb:.1f} KB)")
+    print(f"wrote {OUT_PATH}  ({size_kb:.1f} KB)")
 
 
 if __name__ == "__main__":
