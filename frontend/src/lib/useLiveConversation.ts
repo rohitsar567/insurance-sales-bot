@@ -87,22 +87,26 @@ export type LiveConversationState = {
 };
 
 const DEFAULTS = {
-  // KI-041/057 — minimum bar. Effective threshold is max(this, adaptive
-  // noise_floor * 2 + 4). With KI-044's preroll buffer we can afford to
-  // require more frames before declaring speech.
-  rmsThreshold: 18,
-  // KI-057 — 3 consecutive loud frames (~48 ms). Single clicks/clacks
-  // don't open a segment. KI-044's preroll buffer still captures the
-  // first phoneme since we look back 300 ms.
-  speechStartFrames: 3,
-  // KI-060/064 (2026-05-15) — silence-end window tuning.
+  // KI-113 (2026-05-15) — raised from 18 → 26 to reject ambient background
+  // noise (HVAC, traffic, distant chatter). Effective threshold is
+  // max(this, adaptive noise_floor * 2.5 + 6) — see KI-114 in the VAD loop.
+  rmsThreshold: 26,
+  // KI-113 — raised 3 → 5 (~80 ms sustained). Single clicks / cutlery /
+  // typing transients no longer flip the gate. Preroll buffer (KI-044)
+  // still captures the first phoneme via the 300 ms look-back.
+  speechStartFrames: 5,
+  // KI-060/064/115 (2026-05-15) — silence-end window tuning.
   //   v1 (KI-057): 40 (~640 ms) — too tight; users said pause→submit.
   //   v2 (KI-060): 90 (~1.5 s) — still cut "Hi, I'm looking to buy a
   //     new insurance ..." before "policy".
   //   v3 (KI-064): 120 (~2 s) — covers a normal thinking pause between
-  //     phrases. Trade: ~0.5 s extra tail latency before the bot
-  //     responds, accepted by the user.
-  silenceEndFrames: 120,
+  //     phrases.
+  //   v4 (KI-115): 180 (~3 s) — user reported the 2s window still cut
+  //     mid-thought pauses ("um", "let me think", etc.). 3 s is the
+  //     pause length where most speakers genuinely consider the
+  //     utterance complete. Trade: +1 s tail latency before bot
+  //     responds, accepted to kill the "submit on pause" UX bug.
+  silenceEndFrames: 180,
   minUtteranceMs: 400,
   // KI-044 — How much pre-trigger PCM we keep in the rolling buffer.
   // 300 ms is generous; covers the ~80 ms VAD latency + ~100 ms of
@@ -115,11 +119,12 @@ const DEFAULTS = {
   // segment. Avoids bot's TTS attack transient bleeding through even
   // with echoCancellation on.
   postUtteranceCooldownMs: 700,
-  // KI-057 — minimum fraction of total FFT energy that must sit in the
-  // voice band (bins 2-22 ≈ 190-2150 Hz at 48 kHz). Broadband HVAC /
-  // fan / traffic noise typically scores 0.20-0.30; voiced speech
-  // typically scores 0.40-0.70.
-  voiceBandMinProp: 0.35,
+  // KI-113 — raised 0.35 → 0.50 minimum fraction of total FFT energy
+  // that must sit in the voice band (bins 2-22 ≈ 190-2150 Hz at 48 kHz).
+  // Broadband HVAC / fan / traffic noise typically scores 0.20-0.30;
+  // voiced speech typically scores 0.40-0.70. Lifting to 0.50 puts the
+  // gate squarely above noise and just below the bottom of speech.
+  voiceBandMinProp: 0.50,
 };
 
 // AudioWorklet processor source — inlined as a Blob URL so we don't need
@@ -318,11 +323,15 @@ export function useLiveConversation(opts: LiveConversationOptions): LiveConversa
       const avg = sum / buf.length;
       const voiceProp = sum > 0 ? voiceSum / sum : 0;
 
-      // KI-057 — adaptive threshold. Floor at cfg.rmsThreshold so
-      // genuinely quiet rooms don't open the gate too low.
+      // KI-057/114 — adaptive threshold. Floor at cfg.rmsThreshold so
+      // genuinely quiet rooms don't open the gate too low. KI-114 raised
+      // the multiplier 2.0→2.5 and the offset 4→6 so DISTANT speech
+      // (which sits just above ambient because high frequencies attenuate
+      // with distance) is rejected. Close-in speech still clears the gate
+      // because the speaker's directly-radiated energy is ~10-20× ambient.
       const effectiveThreshold = Math.max(
         cfg.rmsThreshold,
-        noiseFloorRef.current * 2.0 + 4,
+        noiseFloorRef.current * 2.5 + 6,
       );
 
       // KI-057 — suppress new triggers right after we closed a segment
