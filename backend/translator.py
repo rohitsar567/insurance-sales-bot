@@ -20,6 +20,8 @@ from __future__ import annotations
 import asyncio
 import logging
 
+import httpx
+
 from backend.providers.base import ChatMessage
 from backend.providers.sarvam_llm import SarvamLLM
 
@@ -30,6 +32,35 @@ from backend.providers.sarvam_llm import SarvamLLM
 # matches the inner read timeout — if httpx hasn't returned by then,
 # something is genuinely wedged.
 _SARVAM_CALL_TIMEOUT = 20.0
+
+
+# KI-110 (2026-05-15) — translator contract: NEVER raise on a Sarvam failure.
+# Callers (orchestrator inbound translate, cascade outbound translate,
+# translation_check back-translate) all degrade gracefully when passthrough
+# text is returned, but any exception escaping translate_to_english /
+# translate_to_indic is a P0: live re-smoke verified that EVERY Hindi /
+# Devanagari turn surfaced `brain_used=error_fallback` from KI-106's catch-all
+# because the translator could raise non-TimeoutError exceptions and the
+# catch only handled `asyncio.TimeoutError`.
+#
+# Specifically, post-KI-099 the inner httpx.Timeout(read=20.0) races with the
+# outer asyncio.wait_for(timeout=20.0). When httpx fires first it raises
+# `httpx.ReadTimeout` (NOT a subclass of asyncio.TimeoutError); on Sarvam 4xx
+# or 5xx (rate-limit on Indic-heavy load, auth issues, server hiccups) it
+# raises `httpx.HTTPStatusError`; on malformed payload it raises KeyError on
+# `payload["choices"][0]`. None were caught.
+#
+# Fix: catch every Sarvam-originated exception type explicitly. We do NOT
+# catch `asyncio.CancelledError` (would break task cancellation), and we do
+# NOT use a bare `except Exception` (would hide real coding bugs).
+_TRANSLATOR_FAILURE_TYPES: tuple[type[BaseException], ...] = (
+    asyncio.TimeoutError,
+    httpx.TimeoutException,  # ConnectTimeout / ReadTimeout / WriteTimeout / PoolTimeout
+    httpx.HTTPStatusError,   # 4xx/5xx from Sarvam
+    httpx.RequestError,      # network / DNS / SSL / connect errors
+    KeyError,                # malformed Sarvam payload (missing 'choices')
+    ValueError,              # malformed JSON / dataclass construction
+)
 
 _log = logging.getLogger(__name__)
 
@@ -82,10 +113,14 @@ async def translate_to_english(text: str, sarvam: SarvamLLM | None = None) -> st
             ),
             timeout=_SARVAM_CALL_TIMEOUT,
         )
-    except asyncio.TimeoutError:
+    except _TRANSLATOR_FAILURE_TYPES as e:
+        # KI-110 — passthrough on ANY Sarvam failure (timeout, http error,
+        # network error, malformed payload). The translator contract is
+        # "never raise" so callers don't see this as a chat-killing
+        # exception. Log with type-name so we can still observe Sarvam health.
         _log.warning(
-            "sarvam translate_to_english wait_for timed out after %.1fs — passthrough",
-            _SARVAM_CALL_TIMEOUT,
+            "sarvam translate_to_english passthrough (%s): %s",
+            type(e).__name__, str(e)[:200],
         )
         return text
     out = res.text.strip()
@@ -123,10 +158,14 @@ async def translate_to_indic(
             ),
             timeout=_SARVAM_CALL_TIMEOUT,
         )
-    except asyncio.TimeoutError:
+    except _TRANSLATOR_FAILURE_TYPES as e:
+        # KI-110 — see translate_to_english for full rationale. Passthrough
+        # the English on any Sarvam failure; orchestrator's indic cascade
+        # treats English-back == English-input as "no cascade translation"
+        # and serves the English reply unchanged.
         _log.warning(
-            "sarvam translate_to_indic wait_for timed out after %.1fs — passthrough",
-            _SARVAM_CALL_TIMEOUT,
+            "sarvam translate_to_indic passthrough (%s): %s",
+            type(e).__name__, str(e)[:200],
         )
         return english
     out = res.text.strip()
