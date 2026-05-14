@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0">
   <meta name="robots" content="noindex,nofollow">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LLM Control Panel</title>
+  <title>Admin Control Panel</title>
   <style>
     :root {
       --bg: #0b0d12;
@@ -20,6 +20,7 @@
       --yellow: #d29922;
       --red: #f85149;
       --blue: #58a6ff;
+      --primary: #58a6ff;
     }
     * { box-sizing: border-box; }
     body {
@@ -45,6 +46,12 @@
       margin: 0 0 16px 0;
       font-size: 16px;
       font-weight: 600;
+    }
+    h3 {
+      margin: 0 0 12px 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
     }
     .container {
       max-width: 1100px;
@@ -102,6 +109,42 @@
     .muted { color: var(--muted); }
     .small { font-size: 12px; }
 
+    /* Tab nav */
+    .tabnav {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+    .tabnav button {
+      background: transparent;
+      border: 1px solid transparent;
+      border-bottom: none;
+      border-radius: 8px 8px 0 0;
+      padding: 10px 16px;
+      color: var(--muted);
+      font-weight: 500;
+      font-size: 13px;
+      margin-bottom: -1px;
+      cursor: pointer;
+      transition: color 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+    }
+    .tabnav button:hover {
+      color: var(--text);
+      background: rgba(88, 166, 255, 0.05);
+    }
+    .tabnav button.active {
+      color: var(--text);
+      border-color: var(--primary);
+      border-bottom-color: var(--bg);
+      background: var(--card);
+      outline: 1px solid var(--primary);
+      outline-offset: -1px;
+    }
+    .tabpane { display: none; }
+    .tabpane.active { display: block; }
+
     /* Counter pills */
     .counters { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
     .counter {
@@ -138,7 +181,7 @@
     .status.down { background: rgba(248, 81, 73, 0.15); color: var(--red); border-color: rgba(248, 81, 73, 0.35); }
     .status.unknown { background: rgba(139, 149, 164, 0.15); color: var(--muted); border-color: rgba(139, 149, 164, 0.35); }
 
-    /* Health table */
+    /* Tables */
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
     thead th {
       text-align: left;
@@ -157,6 +200,15 @@
       vertical-align: middle;
     }
     tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: rgba(88, 166, 255, 0.04); }
+
+    /* Sortable column header */
+    thead th.sortable {
+      cursor: pointer;
+      user-select: none;
+    }
+    thead th.sortable:hover { color: var(--text); }
+    thead th.sortable .sort-ind { margin-left: 4px; color: var(--blue); }
 
     /* Chains */
     .chains-grid {
@@ -319,12 +371,125 @@
       font-size: 12px;
       color: var(--muted);
     }
+
+    /* Performance tab */
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .metric-tile {
+      padding: 12px 14px;
+      background: #0b0d12;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    .metric-tile .label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .metric-tile .value {
+      font-size: 20px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+    .metric-tile .sub {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .perf-sub {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+    .perf-sub:first-of-type { margin-top: 0; padding-top: 0; border-top: none; }
+    .empty-state {
+      padding: 24px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      background: #0b0d12;
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+    }
+    .empty-state strong { color: var(--text); font-weight: 600; }
+    .perf-caption {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 12px;
+    }
+
+    /* Pie / bar surrogate */
+    .bar-list { display: flex; flex-direction: column; gap: 6px; }
+    .bar-row {
+      display: grid;
+      grid-template-columns: 120px 1fr 80px;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+    }
+    .bar-row .bar-label { color: var(--text); }
+    .bar-row .bar-track {
+      height: 8px;
+      background: #0b0d12;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .bar-row .bar-fill {
+      height: 100%;
+      background: var(--blue);
+    }
+    .bar-row .bar-value {
+      text-align: right;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Profiles table */
+    .profile-table td.name-cell { font-weight: 500; }
+    .profile-table td.slug-cell {
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, monospace;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .profile-table td.num-cell { text-align: right; font-variant-numeric: tabular-nums; }
+    .profile-table td.time-cell { white-space: nowrap; font-size: 12px; }
+
+    /* Field completeness bar */
+    .field-bar {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .field-bar .track {
+      width: 60px;
+      height: 6px;
+      background: #0b0d12;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .field-bar .fill {
+      height: 100%;
+      background: var(--green);
+    }
+    .field-bar .field-count {
+      font-size: 11px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
   </style>
 </head>
 <body>
   <!-- Gate (password) -->
   <div id="gate" class="card gate-card">
-    <h1>LLM Control Panel</h1>
+    <h1>Admin Control Panel</h1>
     <p class="muted small">Enter the admin password to unlock.</p>
     <div style="margin-top: 16px;">
       <input id="gate-password" type="password" placeholder="Admin password" autocomplete="current-password">
@@ -342,39 +507,80 @@
   <!-- Main app -->
   <div id="app" class="container hidden">
     <div class="row-between" style="margin-bottom: 16px;">
-      <h1 style="margin: 0;">LLM Control Panel</h1>
+      <h1 style="margin: 0;">Admin Control Panel</h1>
       <div class="row">
         <span id="last-updated" class="last-updated"></span>
         <button id="lock-btn">Lock</button>
       </div>
     </div>
 
-    <!-- Health -->
-    <div class="card">
-      <div class="row-between" style="margin-bottom: 12px;">
-        <h2>Health snapshot</h2>
-        <div class="actions">
-          <button id="btn-refresh">Refresh (cached)</button>
-          <button id="btn-probe" class="primary">Force fresh probe (slow)</button>
+    <!-- Tab navigation -->
+    <nav class="tabnav" role="tablist">
+      <button id="tabbtn-profiles" class="active" role="tab" aria-selected="true" data-tab="profiles">Profile + Visitor Log</button>
+      <button id="tabbtn-performance" role="tab" aria-selected="false" data-tab="performance">Performance</button>
+      <button id="tabbtn-chain" role="tab" aria-selected="false" data-tab="chain">LLM Chain</button>
+    </nav>
+
+    <!-- Tab 1: Profile + Visitor Log -->
+    <section id="tab-profiles" class="tabpane active" role="tabpanel">
+      <div class="card">
+        <div class="row-between" style="margin-bottom: 12px;">
+          <h2>Named visitors</h2>
+          <div class="actions">
+            <span id="profiles-summary" class="muted small"></span>
+            <button id="btn-refresh-profiles">Refresh</button>
+          </div>
+        </div>
+        <div id="profiles-body">
+          <div class="empty-state">Loading…</div>
         </div>
       </div>
-      <div id="counters" class="counters"></div>
-      <table>
-        <thead>
-          <tr>
-            <th>Model</th>
-            <th>Status</th>
-            <th>Latency</th>
-            <th>Last error</th>
-            <th>Last success</th>
-          </tr>
-        </thead>
-        <tbody id="health-tbody"></tbody>
-      </table>
-    </div>
+    </section>
 
-    <!-- Chains -->
-    <div class="chains-grid" id="chains-grid"></div>
+    <!-- Tab 2: Performance -->
+    <section id="tab-performance" class="tabpane" role="tabpanel">
+      <div class="card">
+        <div class="row-between" style="margin-bottom: 12px;">
+          <h2>Performance snapshot</h2>
+          <div class="actions">
+            <button id="btn-refresh-performance">Refresh</button>
+          </div>
+        </div>
+        <div id="performance-body">
+          <div class="empty-state">Loading…</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 3: LLM Chain (existing functionality, preserved) -->
+    <section id="tab-chain" class="tabpane" role="tabpanel">
+      <!-- Health -->
+      <div class="card">
+        <div class="row-between" style="margin-bottom: 12px;">
+          <h2>Health snapshot</h2>
+          <div class="actions">
+            <button id="btn-refresh">Refresh (cached)</button>
+            <button id="btn-probe" class="primary">Force fresh probe (slow)</button>
+          </div>
+        </div>
+        <div id="counters" class="counters"></div>
+        <table>
+          <thead>
+            <tr>
+              <th>Model</th>
+              <th>Status</th>
+              <th>Latency</th>
+              <th>Last error</th>
+              <th>Last success</th>
+            </tr>
+          </thead>
+          <tbody id="health-tbody"></tbody>
+        </table>
+      </div>
+
+      <!-- Chains -->
+      <div class="chains-grid" id="chains-grid"></div>
+    </section>
   </div>
 
   <!-- Toast -->
@@ -387,10 +593,21 @@
       // ----- State -----
       var STATE = {
         password: '',
-        health: null,    // { models: [ { model, status, latency_ms, last_error, last_success } ], counters: { healthy, degraded, down } }
+        // LLM Chain tab
+        health: null,    // { models: [...], counters: {...} }
         chains: null,    // { brain: [...], fast_brain: [...], judge: [...] }
-        usage: null,     // { brain: {...}, fast_brain: {...}, judge: {...} } from /api/admin/usage
-        lastUpdatedAt: null  // ms-since-epoch of the most recent successful snapshot fetch
+        usage: null,     // { brain: {...}, fast_brain: {...}, judge: {...} }
+        lastUpdatedAt: null,
+        chainLoaded: false,
+        // Profiles tab
+        profiles: null,
+        profilesLoaded: false,
+        profilesSort: { key: 'last_seen', dir: 'desc' },
+        // Performance tab
+        performance: null,
+        performanceLoaded: false,
+        // Active tab
+        activeTab: 'profiles'
       };
       var ROLES = ['brain', 'fast_brain', 'judge'];
       var ROLE_COLORS = {
@@ -441,6 +658,18 @@
           var d = new Date(t);
           if (isNaN(d.getTime())) return String(t);
           return d.toLocaleString();
+        } catch (e) {
+          return String(t);
+        }
+      }
+
+      // IST timestamp formatting (en-IN locale)
+      function fmtIST(t) {
+        if (!t) return '—';
+        try {
+          var d = new Date(t);
+          if (isNaN(d.getTime())) return String(t);
+          return d.toLocaleString('en-IN');
         } catch (e) {
           return String(t);
         }
@@ -522,7 +751,28 @@
         });
       }
 
-      // ----- Renderers -----
+      // For new endpoints that may not be deployed yet — treat 404 as
+      // "pending deployment" rather than auth failure, since the user is
+      // already authenticated against /api/admin/health by this point.
+      function apiGetTolerant(path) {
+        return fetch(path, { method: 'GET', headers: apiHeaders(), cache: 'no-store' })
+          .then(function (res) {
+            if (res.status === 404) {
+              var err = new Error('Endpoint not found');
+              err.code = 404;
+              err.notDeployed = true;
+              throw err;
+            }
+            if (!res.ok) {
+              var e = new Error('Request failed (' + res.status + ')');
+              e.code = res.status;
+              throw e;
+            }
+            return res.json();
+          });
+      }
+
+      // ----- LLM Chain renderers (preserved from original) -----
       function renderCounters() {
         var wrap = $('counters');
         clearChildren(wrap);
@@ -653,8 +903,6 @@
         return 'unknown';
       }
 
-      // Index by_model array from /api/admin/usage by model id, for O(1) lookup
-      // when rendering one chain row.
       function usageStatsForRole(role) {
         var u = STATE.usage && STATE.usage[role];
         if (!u || !Array.isArray(u.by_model)) return { byModel: {}, total: 0, payload: u || null };
@@ -804,7 +1052,7 @@
 
           var revertBtn = createEl('button', { text: 'Reload' });
           revertBtn.onclick = function () {
-            refreshAll().catch(handleFetchErr);
+            refreshChain().catch(handleFetchErr);
           };
 
           actions.appendChild(saveBtn);
@@ -917,9 +1165,6 @@
         return h + 'h ' + (m % 60) + 'm';
       }
 
-      // Source-of-truth for "when the probe data was last current" is the
-      // backend's updated_at (ISO string from /api/admin/health). Falls back
-      // to local fetch time if the field is missing.
       function probeTimestampMs() {
         if (STATE.health && STATE.health.updated_at) {
           var t = Date.parse(STATE.health.updated_at);
@@ -931,23 +1176,25 @@
       function renderUpdatedLabel() {
         var el = $('last-updated');
         if (!el) return;
+        // Only show the LLM-Chain probe staleness when that tab is active —
+        // it's irrelevant on Profiles / Performance.
+        if (STATE.activeTab !== 'chain') {
+          el.textContent = '';
+          return;
+        }
         var probeAt = probeTimestampMs();
-        if (!probeAt) return;
+        if (!probeAt) { el.textContent = ''; return; }
         var now = Date.now();
         var since = formatMinSec(now - probeAt);
-        // Next auto-probe = last probe + cadence. If that's already in the
-        // past (probe loop running slow or paused), clamp to "due now".
         var nextAt = probeAt + PROBE_INTERVAL_MS;
         var untilNext = nextAt > now ? formatMinSec(nextAt - now) : 'due now';
         var wallClock = new Date(probeAt).toLocaleTimeString();
         el.textContent = 'Updated ' + wallClock + ' · ' + since + ' ago · next auto-probe in ' + untilNext;
       }
 
-      // Tick the relative portion every second so the user sees how stale
-      // the snapshot is in real time without having to click Refresh.
       setInterval(renderUpdatedLabel, 1000);
 
-      // ----- Fetchers -----
+      // ----- Fetchers (LLM Chain) -----
       function fetchHealth() {
         return apiGet('/api/admin/health').then(function (data) {
           STATE.health = data;
@@ -956,7 +1203,6 @@
 
       function fetchChains() {
         return apiGet('/api/admin/chain').then(function (data) {
-          // Accept either { brain, fast_brain, judge } or { chains: { ... } }
           var chains = data && data.chains ? data.chains : data;
           var clean = {};
           ROLES.forEach(function (r) {
@@ -968,9 +1214,6 @@
       }
 
       function fetchUsage() {
-        // Backward-compatible: usage endpoint may return empty stats when the
-        // JSONL log doesn't exist yet. Treat any failure as "no usage data"
-        // so the UI still renders the chain editor cleanly.
         return apiGet('/api/admin/usage').then(function (data) {
           STATE.usage = (data && typeof data === 'object') ? data : null;
         }).catch(function () {
@@ -978,24 +1221,544 @@
         });
       }
 
-      function refreshAll() {
+      function refreshChain() {
         return Promise.all([fetchHealth(), fetchChains(), fetchUsage()]).then(function () {
           renderCounters();
           renderHealthTable();
           renderChains();
           setLastUpdated();
+          STATE.chainLoaded = true;
         });
       }
 
       function handleFetchErr(err) {
         if (err && err.code === 404) {
-          // Token may have rotated; lock and clear
           try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
           STATE.password = '';
           showGate('Not authorized (404 = wrong password OR your IP not on allowlist)');
           toast('Session lost. Re-enter password.', 'error');
         } else {
           toast('Error: ' + (err && err.message ? err.message : 'unknown'), 'error');
+        }
+      }
+
+      // ----- Pending-deployment placeholder -----
+      function buildPendingMessage(target) {
+        var msg = createEl('div', { className: 'empty-state' });
+        var strong = createEl('strong', { text: 'Pending deployment.' });
+        msg.appendChild(strong);
+        msg.appendChild(createEl('br'));
+        var sub = createEl('span', { className: 'muted small', text: 'The ' + target + ' endpoint is not live yet. Try refreshing in a minute.' });
+        msg.appendChild(sub);
+        return msg;
+      }
+
+      // ----- Profiles tab -----
+      function fetchProfiles() {
+        return apiGetTolerant('/api/admin/profiles').then(function (data) {
+          STATE.profiles = data;
+        });
+      }
+
+      function renderProfiles() {
+        var body = $('profiles-body');
+        var summary = $('profiles-summary');
+        clearChildren(body);
+        if (summary) summary.textContent = '';
+
+        if (!STATE.profiles) {
+          var empty = createEl('div', { className: 'empty-state', text: 'Loading…' });
+          body.appendChild(empty);
+          return;
+        }
+
+        // Accept either { profiles: [...] } or [...] directly
+        var profiles = Array.isArray(STATE.profiles)
+          ? STATE.profiles
+          : (Array.isArray(STATE.profiles.profiles) ? STATE.profiles.profiles : []);
+
+        if (!profiles.length) {
+          var msg = createEl('div', { className: 'empty-state' });
+          msg.appendChild(document.createTextNode("No named profiles yet — users haven't told the bot their name."));
+          body.appendChild(msg);
+          return;
+        }
+
+        if (summary) {
+          summary.textContent = profiles.length + ' named ' + (profiles.length === 1 ? 'profile' : 'profiles');
+        }
+
+        // Sort
+        var sortKey = STATE.profilesSort.key;
+        var sortDir = STATE.profilesSort.dir;
+        var sorted = profiles.slice().sort(function (a, b) {
+          var va = a[sortKey];
+          var vb = b[sortKey];
+          // ISO date strings sort lexicographically as dates
+          if (va == null && vb == null) return 0;
+          if (va == null) return 1;
+          if (vb == null) return -1;
+          if (typeof va === 'number' && typeof vb === 'number') {
+            return sortDir === 'asc' ? va - vb : vb - va;
+          }
+          var sa = String(va);
+          var sb = String(vb);
+          return sortDir === 'asc' ? sa.localeCompare(sb) : sb.localeCompare(sa);
+        });
+
+        // Determine max field count for the completeness bar denominator
+        var maxFields = 0;
+        sorted.forEach(function (p) {
+          var fc = countFields(p.profile_complete_fields);
+          if (fc > maxFields) maxFields = fc;
+        });
+        // Fallback denominator: assume a reasonable cap so partial bars still look meaningful
+        var fieldDenom = Math.max(maxFields, 6);
+
+        var table = createEl('table', { className: 'profile-table' });
+        var thead = createEl('thead');
+        var headRow = createEl('tr');
+        var cols = [
+          { key: 'name_display', label: 'Name' },
+          { key: 'slug', label: 'Slug' },
+          { key: 'first_seen', label: 'First seen' },
+          { key: 'last_seen', label: 'Last seen' },
+          { key: 'session_count', label: 'Sessions' },
+          { key: 'profile_complete_fields', label: 'Fields' }
+        ];
+        cols.forEach(function (c) {
+          var th = createEl('th', { className: 'sortable' });
+          th.textContent = c.label;
+          if (c.key === 'session_count' || c.key === 'profile_complete_fields') {
+            th.style.textAlign = 'right';
+          }
+          if (sortKey === c.key) {
+            var ind = createEl('span', { className: 'sort-ind', text: sortDir === 'asc' ? '↑' : '↓' });
+            th.appendChild(ind);
+          }
+          th.onclick = function () {
+            if (STATE.profilesSort.key === c.key) {
+              STATE.profilesSort.dir = STATE.profilesSort.dir === 'asc' ? 'desc' : 'asc';
+            } else {
+              STATE.profilesSort.key = c.key;
+              STATE.profilesSort.dir = (c.key === 'last_seen' || c.key === 'first_seen' || c.key === 'session_count' || c.key === 'profile_complete_fields') ? 'desc' : 'asc';
+            }
+            renderProfiles();
+          };
+          headRow.appendChild(th);
+        });
+        thead.appendChild(headRow);
+        table.appendChild(thead);
+
+        var tbody = createEl('tbody');
+        sorted.forEach(function (p) {
+          var tr = createEl('tr');
+
+          var nameCell = createEl('td', { className: 'name-cell', text: p.name_display || '—' });
+          tr.appendChild(nameCell);
+
+          var slugCell = createEl('td', { className: 'slug-cell', text: p.slug || '—' });
+          tr.appendChild(slugCell);
+
+          var firstCell = createEl('td', { className: 'time-cell', text: fmtIST(p.first_seen) });
+          if (!p.first_seen) firstCell.classList.add('muted');
+          tr.appendChild(firstCell);
+
+          var lastCell = createEl('td', { className: 'time-cell', text: fmtIST(p.last_seen) });
+          if (!p.last_seen) lastCell.classList.add('muted');
+          tr.appendChild(lastCell);
+
+          var sessCell = createEl('td', { className: 'num-cell', text: p.session_count != null ? String(p.session_count) : '—' });
+          tr.appendChild(sessCell);
+
+          var fieldsCell = createEl('td', { className: 'num-cell' });
+          var fc = countFields(p.profile_complete_fields);
+          var bar = createEl('span', { className: 'field-bar' });
+          var track = createEl('span', { className: 'track' });
+          var fill = createEl('span', { className: 'fill' });
+          var pct = fieldDenom > 0 ? Math.min(100, (fc / fieldDenom) * 100) : 0;
+          fill.style.width = pct.toFixed(0) + '%';
+          track.appendChild(fill);
+          var cnt = createEl('span', { className: 'field-count', text: fc + ' / ' + fieldDenom });
+          bar.appendChild(track);
+          bar.appendChild(cnt);
+          fieldsCell.appendChild(bar);
+          tr.appendChild(fieldsCell);
+
+          tbody.appendChild(tr);
+        });
+        table.appendChild(tbody);
+        body.appendChild(table);
+      }
+
+      // profile_complete_fields may be an integer or a list of field names
+      function countFields(v) {
+        if (v == null) return 0;
+        if (typeof v === 'number') return v;
+        if (Array.isArray(v)) return v.length;
+        if (typeof v === 'object') return Object.keys(v).length;
+        return 0;
+      }
+
+      function renderProfilesPending() {
+        var body = $('profiles-body');
+        clearChildren(body);
+        body.appendChild(buildPendingMessage('/api/admin/profiles'));
+      }
+
+      function loadProfiles(forceReload) {
+        if (STATE.profilesLoaded && !forceReload) {
+          renderProfiles();
+          return Promise.resolve();
+        }
+        return fetchProfiles().then(function () {
+          STATE.profilesLoaded = true;
+          renderProfiles();
+        }).catch(function (err) {
+          if (err && err.notDeployed) {
+            renderProfilesPending();
+          } else {
+            handleFetchErr(err);
+          }
+        });
+      }
+
+      // ----- Performance tab -----
+      function fetchPerformance() {
+        return apiGetTolerant('/api/admin/performance').then(function (data) {
+          STATE.performance = data;
+        });
+      }
+
+      function loadPerformance(forceReload) {
+        if (STATE.performanceLoaded && !forceReload) {
+          renderPerformance();
+          return Promise.resolve();
+        }
+        return fetchPerformance().then(function () {
+          STATE.performanceLoaded = true;
+          renderPerformance();
+        }).catch(function (err) {
+          if (err && err.notDeployed) {
+            renderPerformancePending();
+          } else {
+            handleFetchErr(err);
+          }
+        });
+      }
+
+      function renderPerformancePending() {
+        var body = $('performance-body');
+        clearChildren(body);
+        body.appendChild(buildPendingMessage('/api/admin/performance'));
+      }
+
+      function renderPerformance() {
+        var body = $('performance-body');
+        clearChildren(body);
+        if (!STATE.performance) {
+          body.appendChild(createEl('div', { className: 'empty-state', text: 'Loading…' }));
+          return;
+        }
+        var p = STATE.performance;
+
+        // (a) Latest 96-Q gold eval
+        var goldSection = createEl('div', { className: 'perf-sub' });
+        goldSection.appendChild(createEl('h3', { text: 'Latest 96-Q gold eval' }));
+        var gold = p.gold_eval || p.eval || null;
+        if (!gold || isEmptyObj(gold)) {
+          goldSection.appendChild(createEl('div', { className: 'empty-state', text: 'No gold eval run yet.' }));
+        } else {
+          var caption = createEl('div', { className: 'perf-caption' });
+          var runAt = gold.run_at || gold.timestamp || gold.created_at;
+          if (runAt) caption.textContent = 'Run at ' + fmtIST(runAt);
+          if (caption.textContent) goldSection.appendChild(caption);
+
+          var tiles = createEl('div', { className: 'metric-grid' });
+          tiles.appendChild(metricTile('Factual', fmtPctMaybe(pickPct(gold, ['factual_pct', 'factual', 'factual_correct_pct']))));
+          tiles.appendChild(metricTile('Citation', fmtPctMaybe(pickPct(gold, ['citation_pct', 'citation', 'citation_correct_pct']))));
+          tiles.appendChild(metricTile('Refusal', fmtPctMaybe(pickPct(gold, ['refusal_pct', 'refusal', 'refusal_rate']))));
+          if (gold.total_questions != null) {
+            tiles.appendChild(metricTile('Questions', String(gold.total_questions)));
+          } else if (gold.n != null) {
+            tiles.appendChild(metricTile('Questions', String(gold.n)));
+          }
+          goldSection.appendChild(tiles);
+
+          // by_brain table
+          var byBrain = gold.by_brain;
+          if (byBrain && !isEmptyObj(byBrain)) {
+            goldSection.appendChild(createEl('h3', { text: 'By brain' }));
+            goldSection.appendChild(renderBreakdownTable(byBrain, ['Brain', 'Factual', 'Citation', 'Refusal', 'N']));
+          }
+
+          // by_type table
+          var byType = gold.by_type;
+          if (byType && !isEmptyObj(byType)) {
+            goldSection.appendChild(createEl('h3', { text: 'By type' }));
+            goldSection.appendChild(renderBreakdownTable(byType, ['Type', 'Factual', 'Citation', 'Refusal', 'N']));
+          }
+        }
+        body.appendChild(goldSection);
+
+        // (b) Latest persona audit
+        var personaSection = createEl('div', { className: 'perf-sub' });
+        personaSection.appendChild(createEl('h3', { text: 'Latest persona audit' }));
+        var persona = p.persona_audit || p.persona || null;
+        if (!persona || isEmptyObj(persona)) {
+          personaSection.appendChild(createEl('div', { className: 'empty-state', text: 'No persona audit run yet.' }));
+        } else {
+          var pCaption = createEl('div', { className: 'perf-caption' });
+          var pRunAt = persona.run_at || persona.timestamp || persona.created_at;
+          if (pRunAt) pCaption.textContent = 'Run at ' + fmtIST(pRunAt);
+          if (pCaption.textContent) personaSection.appendChild(pCaption);
+
+          var pTiles = createEl('div', { className: 'metric-grid' });
+          if (persona.personas_completed != null) {
+            pTiles.appendChild(metricTile('Personas completed', String(persona.personas_completed)));
+          }
+          pTiles.appendChild(metricTile('p50 latency', fmtLatency(persona.p50_ms != null ? persona.p50_ms : persona.p50)));
+          pTiles.appendChild(metricTile('p95 latency', fmtLatency(persona.p95_ms != null ? persona.p95_ms : persona.p95)));
+          pTiles.appendChild(metricTile('p99 latency', fmtLatency(persona.p99_ms != null ? persona.p99_ms : persona.p99)));
+          if (persona.refusals != null) {
+            pTiles.appendChild(metricTile('Refusals', String(persona.refusals)));
+          }
+          personaSection.appendChild(pTiles);
+
+          // brain_routing pie/list
+          var routing = persona.brain_routing;
+          if (routing && !isEmptyObj(routing)) {
+            personaSection.appendChild(createEl('h3', { text: 'Brain routing' }));
+            personaSection.appendChild(renderBarList(routing));
+          }
+        }
+        body.appendChild(personaSection);
+
+        // (c) Last 24 h LLM usage — per-role
+        var usageSection = createEl('div', { className: 'perf-sub' });
+        usageSection.appendChild(createEl('h3', { text: 'Last 24 h LLM usage' }));
+        var usage = p.llm_usage_24h || p.usage_24h || p.llm_usage || null;
+        if (!usage || isEmptyObj(usage)) {
+          usageSection.appendChild(createEl('div', { className: 'empty-state', text: 'No LLM usage recorded in last 24 h.' }));
+        } else {
+          var table = createEl('table');
+          var thead = createEl('thead');
+          var thr = createEl('tr');
+          ['Role', 'Count', 'Success rate', 'Avg latency'].forEach(function (h, i) {
+            var th = createEl('th', { text: h });
+            if (i > 0) th.style.textAlign = 'right';
+            thr.appendChild(th);
+          });
+          thead.appendChild(thr);
+          table.appendChild(thead);
+
+          var tbody = createEl('tbody');
+          // Accept either { role: {...} } map or [...] array
+          var entries = [];
+          if (Array.isArray(usage)) {
+            entries = usage.map(function (u) { return { role: u.role, data: u }; });
+          } else {
+            for (var k in usage) {
+              if (Object.prototype.hasOwnProperty.call(usage, k)) {
+                entries.push({ role: k, data: usage[k] });
+              }
+            }
+          }
+          if (!entries.length) {
+            var tr = createEl('tr');
+            var td = createEl('td', { text: 'No data.', attrs: { colspan: '4' } });
+            td.classList.add('muted');
+            tr.appendChild(td);
+            tbody.appendChild(tr);
+          } else {
+            entries.forEach(function (entry) {
+              var u = entry.data || {};
+              var tr = createEl('tr');
+              var roleCell = createEl('td');
+              var rbadge = createEl('span', { className: 'role-badge', text: ROLE_LABELS[entry.role] || String(entry.role).toUpperCase() });
+              rbadge.style.background = ROLE_COLORS[entry.role] || '#444';
+              roleCell.appendChild(rbadge);
+              tr.appendChild(roleCell);
+
+              var countV = u.count != null ? u.count : (u.calls != null ? u.calls : (u.total_calls_24h != null ? u.total_calls_24h : null));
+              var countCell = createEl('td', { text: countV != null ? String(countV) : '—' });
+              countCell.style.textAlign = 'right';
+              countCell.classList.add('mono');
+              tr.appendChild(countCell);
+
+              var srV = u.success_rate != null ? u.success_rate : u.success;
+              var srCell = createEl('td', { text: fmtPctMaybe(srV) });
+              srCell.style.textAlign = 'right';
+              tr.appendChild(srCell);
+
+              var latV = u.avg_latency_ms != null ? u.avg_latency_ms : (u.avg_ms != null ? u.avg_ms : u.avg_latency);
+              var latCell = createEl('td', { text: fmtLatency(latV) });
+              latCell.style.textAlign = 'right';
+              tr.appendChild(latCell);
+
+              tbody.appendChild(tr);
+            });
+          }
+          table.appendChild(tbody);
+          usageSection.appendChild(table);
+        }
+        body.appendChild(usageSection);
+      }
+
+      function metricTile(label, value, sub) {
+        var t = createEl('div', { className: 'metric-tile' });
+        t.appendChild(createEl('div', { className: 'label', text: label }));
+        t.appendChild(createEl('div', { className: 'value', text: value != null ? value : '—' }));
+        if (sub) t.appendChild(createEl('div', { className: 'sub', text: sub }));
+        return t;
+      }
+
+      function pickPct(obj, keys) {
+        for (var i = 0; i < keys.length; i++) {
+          if (obj[keys[i]] != null) return obj[keys[i]];
+        }
+        return null;
+      }
+
+      // Format a value that might be a fraction (0-1) or already a percentage (0-100).
+      // If > 1 assume percent; if <= 1 assume fraction.
+      function fmtPctMaybe(v) {
+        if (v == null || isNaN(v)) return '—';
+        var n = Number(v);
+        if (n <= 1) return (n * 100).toFixed(1) + '%';
+        return n.toFixed(1) + '%';
+      }
+
+      function isEmptyObj(o) {
+        if (o == null) return true;
+        if (Array.isArray(o)) return o.length === 0;
+        if (typeof o !== 'object') return false;
+        for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) return false;
+        return true;
+      }
+
+      // Render a breakdown table from a map { key: { factual_pct, citation_pct, refusal_pct, n } }
+      function renderBreakdownTable(map, headers) {
+        var table = createEl('table');
+        var thead = createEl('thead');
+        var thr = createEl('tr');
+        headers.forEach(function (h, i) {
+          var th = createEl('th', { text: h });
+          if (i > 0) th.style.textAlign = 'right';
+          thr.appendChild(th);
+        });
+        thead.appendChild(thr);
+        table.appendChild(thead);
+
+        var tbody = createEl('tbody');
+        var keys = Object.keys(map);
+        if (!keys.length) {
+          var tr = createEl('tr');
+          var td = createEl('td', { text: 'No data.', attrs: { colspan: String(headers.length) } });
+          td.classList.add('muted');
+          tr.appendChild(td);
+          tbody.appendChild(tr);
+        } else {
+          keys.forEach(function (k) {
+            var v = map[k] || {};
+            var tr = createEl('tr');
+            var keyCell = createEl('td', { text: k });
+            keyCell.classList.add('mono');
+            tr.appendChild(keyCell);
+
+            var fCell = createEl('td', { text: fmtPctMaybe(pickPct(v, ['factual_pct', 'factual'])) });
+            fCell.style.textAlign = 'right';
+            tr.appendChild(fCell);
+
+            var cCell = createEl('td', { text: fmtPctMaybe(pickPct(v, ['citation_pct', 'citation'])) });
+            cCell.style.textAlign = 'right';
+            tr.appendChild(cCell);
+
+            var rCell = createEl('td', { text: fmtPctMaybe(pickPct(v, ['refusal_pct', 'refusal'])) });
+            rCell.style.textAlign = 'right';
+            tr.appendChild(rCell);
+
+            var nCell = createEl('td', { text: v.n != null ? String(v.n) : (v.count != null ? String(v.count) : '—') });
+            nCell.style.textAlign = 'right';
+            nCell.classList.add('mono');
+            tr.appendChild(nCell);
+
+            tbody.appendChild(tr);
+          });
+        }
+        table.appendChild(tbody);
+        return table;
+      }
+
+      // Render a horizontal-bar list for a count/share map.
+      function renderBarList(map) {
+        // Accept either { key: count } or { key: { count, share } } or array
+        var entries = [];
+        if (Array.isArray(map)) {
+          map.forEach(function (item) {
+            entries.push({ label: item.label || item.brain || item.key || '—', value: item.count != null ? item.count : (item.value != null ? item.value : 0) });
+          });
+        } else {
+          for (var k in map) {
+            if (Object.prototype.hasOwnProperty.call(map, k)) {
+              var v = map[k];
+              if (typeof v === 'number') entries.push({ label: k, value: v });
+              else if (v && typeof v === 'object') entries.push({ label: k, value: v.count != null ? v.count : (v.value != null ? v.value : 0) });
+            }
+          }
+        }
+        var total = entries.reduce(function (acc, e) { return acc + (Number(e.value) || 0); }, 0);
+        var wrap = createEl('div', { className: 'bar-list' });
+        if (!entries.length || total === 0) {
+          var empty = createEl('div', { className: 'empty-state', text: 'No routing data.' });
+          wrap.appendChild(empty);
+          return wrap;
+        }
+        entries.sort(function (a, b) { return b.value - a.value; });
+        entries.forEach(function (e) {
+          var row = createEl('div', { className: 'bar-row' });
+          var lbl = createEl('div', { className: 'bar-label mono', text: e.label });
+          var track = createEl('div', { className: 'bar-track' });
+          var fill = createEl('div', { className: 'bar-fill' });
+          var pct = total > 0 ? (e.value / total) * 100 : 0;
+          fill.style.width = pct.toFixed(1) + '%';
+          if (ROLE_COLORS[e.label]) fill.style.background = ROLE_COLORS[e.label];
+          track.appendChild(fill);
+          var val = createEl('div', { className: 'bar-value', text: e.value + ' (' + pct.toFixed(1) + '%)' });
+          row.appendChild(lbl);
+          row.appendChild(track);
+          row.appendChild(val);
+          wrap.appendChild(row);
+        });
+        return wrap;
+      }
+
+      // ----- Tab switching -----
+      function switchTab(tab) {
+        STATE.activeTab = tab;
+        var tabs = ['profiles', 'performance', 'chain'];
+        tabs.forEach(function (t) {
+          var btn = $('tabbtn-' + t);
+          var pane = $('tab-' + t);
+          if (btn) {
+            if (t === tab) { btn.classList.add('active'); btn.setAttribute('aria-selected', 'true'); }
+            else { btn.classList.remove('active'); btn.setAttribute('aria-selected', 'false'); }
+          }
+          if (pane) {
+            if (t === tab) pane.classList.add('active');
+            else pane.classList.remove('active');
+          }
+        });
+        renderUpdatedLabel();
+        // Lazy-load this tab's data
+        if (tab === 'profiles') {
+          loadProfiles(false);
+        } else if (tab === 'performance') {
+          loadPerformance(false);
+        } else if (tab === 'chain') {
+          if (!STATE.chainLoaded) {
+            refreshChain().catch(handleFetchErr);
+          }
         }
       }
 
@@ -1020,15 +1783,20 @@
         $('app').classList.remove('hidden');
       }
 
+      // Validates the password by hitting the cheapest known-existing admin
+      // endpoint (/api/admin/health), then opens the default tab (profiles).
       function attemptUnlock(password, opts) {
         opts = opts || {};
         STATE.password = password;
-        return refreshAll().then(function () {
+        return apiGet('/api/admin/health').then(function (data) {
+          STATE.health = data;
           showApp();
           if (opts.remember) {
             try { localStorage.setItem(STORAGE_KEY, password); } catch (_) {}
           }
           toast('Unlocked', 'success');
+          // Load initial tab (profiles)
+          switchTab('profiles');
         }).catch(function (err) {
           STATE.password = '';
           if (err && err.code === 404) {
@@ -1059,16 +1827,49 @@
           STATE.password = '';
           STATE.health = null;
           STATE.chains = null;
+          STATE.usage = null;
+          STATE.profiles = null;
+          STATE.profilesLoaded = false;
+          STATE.performance = null;
+          STATE.performanceLoaded = false;
+          STATE.chainLoaded = false;
           try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
           showGate();
           toast('Locked', 'info');
         };
 
+        // Tab buttons
+        ['profiles', 'performance', 'chain'].forEach(function (t) {
+          var btn = $('tabbtn-' + t);
+          if (btn) btn.onclick = function () { switchTab(t); };
+        });
+
+        // Profiles refresh
+        $('btn-refresh-profiles').onclick = function () {
+          var btn = this;
+          btn.disabled = true;
+          btn.textContent = 'Refreshing…';
+          loadProfiles(true).then(function () { toast('Profiles refreshed', 'success'); })
+            .catch(handleFetchErr)
+            .then(function () { btn.disabled = false; btn.textContent = 'Refresh'; });
+        };
+
+        // Performance refresh
+        $('btn-refresh-performance').onclick = function () {
+          var btn = this;
+          btn.disabled = true;
+          btn.textContent = 'Refreshing…';
+          loadPerformance(true).then(function () { toast('Performance refreshed', 'success'); })
+            .catch(handleFetchErr)
+            .then(function () { btn.disabled = false; btn.textContent = 'Refresh'; });
+        };
+
+        // LLM Chain refresh + probe (preserved from original)
         $('btn-refresh').onclick = function () {
           var btn = this;
           btn.disabled = true;
           btn.textContent = 'Refreshing…';
-          refreshAll()
+          refreshChain()
             .then(function () { toast('Refreshed from cache', 'success'); })
             .catch(handleFetchErr)
             .then(function () { btn.disabled = false; btn.textContent = 'Refresh (cached)'; });
@@ -1079,7 +1880,7 @@
           btn.disabled = true;
           btn.textContent = 'Probing…';
           apiPost('/api/admin/probe', null)
-            .then(function () { return refreshAll(); })
+            .then(function () { return refreshChain(); })
             .then(function () { toast('Fresh probe complete', 'success'); })
             .catch(handleFetchErr)
             .then(function () { btn.disabled = false; btn.textContent = 'Force fresh probe (slow)'; });
