@@ -161,21 +161,58 @@ async def handle_turn(
     treat_as_fact_find = (intent == "fact_find" and not session.free_form_session) or in_fact_find_continuation
 
     if treat_as_fact_find:
-        # If we were awaiting an answer, parse + record it before picking next Q.
+        # If we were awaiting an answer, normalize + record it before picking next Q.
+        # Uses backend/fact_find_normalizer.py to map free-text → schema enums.
+        # If the input is a non-answer (STT failure / empty / gibberish), or the
+        # LLM can't confidently map it, we DON'T clear awaiting_question_id so
+        # the bot re-asks the same question rather than silently moving on.
+        ambiguous_or_failed = False
         if session.awaiting_question_id:
-            session.record_user_answer(user_text)
+            from backend.fact_find_normalizer import is_valid_answer, normalize_answer
+            qid = session.awaiting_question_id
+            if not is_valid_answer(user_text):
+                ambiguous_or_failed = True
+            else:
+                try:
+                    normalized = await normalize_answer(qid, user_text)
+                except Exception:
+                    normalized = None
+                if normalized is None:
+                    ambiguous_or_failed = True
+                else:
+                    # Apply the normalized value to the right Profile field.
+                    q_obj = next((q for q in __import__('backend.needs_finder', fromlist=['GRAPH']).GRAPH if q.id == qid), None)
+                    if q_obj is not None:
+                        session.update_profile_field(q_obj.field, normalized)
+                        if qid not in session.profile.asked:
+                            session.profile.asked.append(qid)
+                        session.set_awaiting(None)
+                    else:
+                        ambiguous_or_failed = True
 
-        q = next_question(session.profile, language=language)
+        # If the answer didn't normalize, pick the SAME question again (re-ask
+        # with a gentle clarifier) instead of moving on with garbage.
+        if ambiguous_or_failed and session.awaiting_question_id:
+            q = next((qq for qq in __import__('backend.needs_finder', fromlist=['GRAPH']).GRAPH if qq.id == session.awaiting_question_id), None)
+        else:
+            q = next_question(session.profile, language=language)
+
         if q is not None:
             session.set_awaiting(q.id)
-            if in_fact_find_continuation:
+            if ambiguous_or_failed:
+                opener_en = "Sorry, I didn't catch that. Let me ask again — "
+                opener_hi = "माफ़ कीजिए, समझ नहीं आया। दोबारा पूछता हूँ — "
+            elif in_fact_find_continuation:
                 opener_en = "Got it. "
                 opener_hi = "ठीक है। "
             else:
                 opener_en = "Happy to help. " if not user_text.lower().strip().startswith(("hi", "hello")) else "Hi! "
                 opener_hi = "मदद के लिए तैयार हूँ। "
             reply = (opener_hi + q.prompt_hi) if language == "indic" else (opener_en + q.prompt_en)
-            brain_tag = "needs_finder::fact_find_continue" if in_fact_find_continuation else "needs_finder::fact_find_start"
+            if ambiguous_or_failed:
+                brain_tag = "needs_finder::reask_clarify"
+            else:
+                brain_tag = "needs_finder::fact_find_continue" if in_fact_find_continuation else "needs_finder::fact_find_start"
         else:
             # Fact-find complete — produce a profile readback + invite next step
             from backend.needs_finder import readback_summary

@@ -218,7 +218,15 @@ def readback_summary(profile: Profile) -> str:
     if profile.parents_age_max:
         bits.append(f"parents up to age {profile.parents_age_max}")
     if profile.health_conditions:
-        bits.append(f"conditions: {', '.join(profile.health_conditions)}")
+        hc = profile.health_conditions
+        # Defensive: if a string accidentally landed here, wrap it so we don't
+        # split it character-by-character in the join. Production hit this on
+        # 2026-05-14 — a verbatim STT transcript was stored as a string, then
+        # ', '.join(str) emitted "d, i, f, f, e, r, e, n, c, e, ...".
+        if isinstance(hc, str):
+            hc = [hc] if hc.strip() else []
+        if hc:
+            bits.append(f"conditions: {', '.join(str(c) for c in hc)}")
     if profile.budget_band:
         bits.append(f"budget {profile.budget_band}")
     return "; ".join(bits) if bits else "(no profile yet)"
