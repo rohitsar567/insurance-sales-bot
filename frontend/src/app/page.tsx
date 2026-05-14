@@ -691,27 +691,18 @@ export default function Page() {
           <EmptyState onSuggest={(q) => send(q)} coverage={coverage} t={t} />
         ) : (
           <>
-            {/* KI-020 — chat-clear controls; only visible once there's a conversation */}
+            {/* KI-020 / KI-039 — single Clear-chat control. One click wipes
+                the visible chat AND clears server-side profile AND issues a
+                fresh session id. Two-button variant was confusing per user
+                feedback. */}
             <div className="flex items-center justify-end gap-2 mb-2 text-[11px]">
               <button
-                onClick={() => handleClearChat(false)}
-                disabled={busy}
-                className="px-2 py-1 rounded-md border border-[var(--border)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:border-[var(--primary)] disabled:opacity-40 transition"
-                title="Clear visible chat — bot keeps what it already knows about you"
-              >
-                Clear chat
-              </button>
-              <button
-                onClick={() => {
-                  if (confirm("Start fresh? This forgets your profile (age, dependents, etc.) and starts a brand-new session.")) {
-                    handleClearChat(true);
-                  }
-                }}
+                onClick={() => handleClearChat(true)}
                 disabled={busy}
                 className="px-2 py-1 rounded-md border border-[var(--border)] text-[var(--muted-foreground)] hover:text-rose-600 hover:border-rose-400 disabled:opacity-40 transition"
-                title="Wipe profile + start a fresh session"
+                title="Wipe this conversation — clears chat history, profile, and starts a fresh session"
               >
-                Start fresh
+                Clear chat
               </button>
             </div>
             <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-thin space-y-4 mb-4 pr-1">
