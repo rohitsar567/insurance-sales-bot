@@ -226,14 +226,25 @@ FAST_BRAIN_CHAIN = [
     # TTFT, not capability. Nemotron Nano 30B hits ~1.6s; Qwen 80B is
     # ~2-3s. Moved Nemotron to primary; Qwen 80B stays as next fallback so
     # if Nemotron's NIM pool degrades we still get quality.
+    #
+    # KI-079 (2026-05-15) — moved Groq Llama-3.3 70B from chain bottom to
+    # candidate #2 (right after Nemotron primary). Live 10-turn probe
+    # (commit 078ff45) showed 7/10 fact-find turns timing out at 26.6s with
+    # _fallback_reason="timeout" — ALL the slow links were NIM-hosted, so
+    # NIM per-key concurrency had them queueing together and the chain
+    # burned its 22s total_budget_s inside NIM before ever reaching Groq.
+    # With Groq as #2, a Nemotron hang (~6s per-link timeout) falls
+    # through to Groq's LPU (~0.3s TTFT) in ~6-7s total — well inside the
+    # 22s chain budget AND the 25s wait_for cap.
     "nvidia/nemotron-3-nano-30b-a3b",     # ~1.6s TTFT (Reddit bench), NIM
+    # CROSS-PROVIDER FALLBACK #1 — Groq Llama-3.3 70B (LPU, lowest TTFT of
+    # all free-tier options). Promoted to #2 in KI-079 so a single NIM
+    # degradation falls through to a non-NIM provider in ~6s, not 22s.
+    "groq:llama-3.3-70b-versatile",
     "qwen/qwen3-next-80b-a3b-instruct",   # ~2-3s, NIM
     "openai/gpt-oss-120b",
     "qwen/qwen3.5-122b-a10b",
     "deepseek-ai/deepseek-v4-flash",
-    # CROSS-PROVIDER FALLBACK — Groq Llama-3.3 70B (LPU, lowest TTFT of all
-    # free-tier options; OK for a fast-brain call when NIM is down).
-    "groq:llama-3.3-70b-versatile",
 ]
 
 # Judge chain — non-Qwen, non-DeepSeek (different family from brain primary)

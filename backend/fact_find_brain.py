@@ -59,11 +59,17 @@ class FactFindOutcome:
     # bailed and `_canonical_fallback` was used, this stamps WHY so the
     # orchestrator can append it to `brain_used` and admin telemetry can
     # measure the fallback-reason mix. One of:
-    #   "timeout"     — asyncio.wait_for(_TIMEOUT_S) expired
-    #   "llm_error"   — chain raised (non-timeout) before returning
+    #   "timeout"     — asyncio.wait_for(_TIMEOUT_S) expired on FAST_BRAIN_CHAIN
+    #   "llm_error"   — FAST_BRAIN_CHAIN raised (non-timeout) before returning
     #   "no_trailer"  — reply had no <FF>...</FF> JSON block, or it failed parse
     #   "empty_reply" — trailer stripped to an empty user-facing reply
-    # None when the brain succeeded.
+    # KI-079 (2026-05-15) — added two escalation-path reasons. When FAST
+    # chain times out we re-try once against BRAIN_CHAIN (heavier; Qwen 80B
+    # primary, more cross-provider fallbacks) inside a shorter budget. The
+    # _fallback_reason then captures the escalation outcome:
+    #   "timeout_after_escalation"   — both FAST + BRAIN chains timed out
+    #   "llm_error_after_escalation" — BRAIN chain raised on the retry
+    # None when the brain succeeded (either FAST primary OR BRAIN escalation).
     _fallback_reason: Optional[str] = None
 
 
@@ -293,7 +299,15 @@ def _bump_brain_history(session, slot_driving: Optional[str]) -> int:
 # after a Space rebuild; the 12s wait_for was killing the brain BEFORE
 # the cross-provider fallback links (Groq, OpenRouter) ever got tried.
 # 25s gives NIM cold-start headroom + leaves room for one chain fallback.
-_TIMEOUT_S = 25.0
+_TIMEOUT_S = 25.0             # FAST_BRAIN_CHAIN primary attempt budget
+# KI-079 (2026-05-15) — if FAST exhausted, try BRAIN_CHAIN (Qwen 80B primary
+# + more cross-provider fallbacks incl. OpenRouter + Groq) with a SHORTER
+# budget so the user doesn't wait 25+15=40s on a fully-dead network. Total
+# worst-case latency before canonical fallback: 25 + 15 = 40s, but the FAST
+# chain only hits 25s when NIM is wedged — the BRAIN escalation then has a
+# Qwen primary on a different NIM pool + OpenRouter + Groq, so realistic
+# escalation success cases land in 3-8s.
+_TIMEOUT_S_ESCALATION = 15.0
 
 
 async def drive_fact_find(
@@ -345,19 +359,47 @@ async def drive_fact_find(
                 messages.append(ChatMessage(role=role, content=content))
     messages.append(ChatMessage(role="user", content=user_text or ""))
 
-    # Hard 12-second timeout. The fast-brain chain already has its own budget
-    # but we wrap with asyncio.wait_for as a belt-and-braces stop.
-    llm = get_fast_brain_llm()
+    # Hard 25-second timeout on FAST_BRAIN_CHAIN. The fast-brain chain already
+    # has its own per-link + total-chain budget but we wrap with asyncio.wait_for
+    # as a belt-and-braces stop.
+    llm_fast = get_fast_brain_llm()
     try:
         result = await asyncio.wait_for(
-            llm.chat(messages=messages, temperature=0.6, max_tokens=420),
+            llm_fast.chat(messages=messages, temperature=0.6, max_tokens=420),
             timeout=_TIMEOUT_S,
         )
     except asyncio.TimeoutError:
+        # KI-079 (2026-05-15) — fast brain timed out. Before falling to the
+        # canonical-question fallback, escalate ONCE to BRAIN_CHAIN (Qwen 80B
+        # primary, more cross-provider fallbacks) with a shorter budget so the
+        # user doesn't wait 25+15=40s on a dead network.
         logging.warning(
-            "fact_find_brain timeout (session=%s, %.1fs)", session_id, time.time() - t0
+            "KI-079: fast brain timeout (session=%s, %.1fs) → escalating to heavy brain",
+            session_id, time.time() - t0,
         )
-        return _canonical_fallback(session, user_text, reason="timeout")
+        from backend.providers.nvidia_nim_llm import get_brain_llm
+        llm_heavy = get_brain_llm()
+        try:
+            result = await asyncio.wait_for(
+                llm_heavy.chat(messages=messages, temperature=0.6, max_tokens=420),
+                timeout=_TIMEOUT_S_ESCALATION,
+            )
+        except asyncio.TimeoutError:
+            logging.warning(
+                "KI-079: heavy brain ALSO timed out (session=%s, total=%.1fs)",
+                session_id, time.time() - t0,
+            )
+            return _canonical_fallback(
+                session, user_text, reason="timeout_after_escalation"
+            )
+        except Exception as e2:
+            logging.warning(
+                "KI-079: heavy brain escalation failed (session=%s): %s: %s",
+                session_id, type(e2).__name__, str(e2)[:200],
+            )
+            return _canonical_fallback(
+                session, user_text, reason="llm_error_after_escalation"
+            )
     except Exception as e:
         logging.warning(
             "fact_find_brain LLM call failed (session=%s): %s: %s",
