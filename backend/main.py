@@ -565,6 +565,38 @@ class ProfileUpdateRequest(BaseModel):
     budget_band: Optional[str] = None
 
 
+class SessionResetRequest(BaseModel):
+    session_id: str
+    drop_profile: bool = False  # True = nuke session entirely; False = clear chat only
+
+
+class SessionResetResponse(BaseModel):
+    ok: bool
+    session_id: Optional[str] = None  # new session_id when drop_profile=True
+    cleared_state: bool
+
+
+@app.post("/api/session/reset", response_model=SessionResetResponse)
+async def session_reset(req: SessionResetRequest):
+    """KI-020 — User-facing chat clear / fresh-start toggle.
+
+    Two modes:
+      - drop_profile=False: caller (frontend) wipes its own message history; the
+        server-side profile is preserved so the next message resumes with what
+        the bot already knows. Light-touch "clear visible chat".
+      - drop_profile=True: server-side session state (profile + awaiting_question
+        + free_form_session flag + on-disk JSON) is deleted entirely. The response
+        returns a fresh session_id the frontend should adopt as its new id.
+    """
+    from backend.session_state import reset_session
+    cleared = False
+    new_sid: Optional[str] = None
+    if req.drop_profile:
+        cleared = reset_session(req.session_id)
+        new_sid = uuid.uuid4().hex[:12]
+    return SessionResetResponse(ok=True, session_id=new_sid, cleared_state=cleared)
+
+
 @app.post("/api/profile", response_model=ProfileCompletenessResponse)
 async def profile_update(req: ProfileUpdateRequest):
     """Write user-provided profile fields into session_state. Returns the new

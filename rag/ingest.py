@@ -33,6 +33,32 @@ from backend.providers.local_embeddings import LocalEmbeddings as ActiveEmbeddin
 
 ROOT = settings.CORPUS_DIR.parent.parent  # project root
 
+# Hard cap on HNSW link_lists.bin size — guards against the ChromaDB bloat
+# pathology that filled the disk on 2026-05-14 (single file reached 277 GB
+# logical / 136 GB on-disk for only ~5K chunks). At M=16 link_lists.bin
+# should be ~1 MB for a corpus this size; 500 MB is 500× safety margin.
+# When tripped we abort the ingest run loudly rather than letting the index
+# keep growing into a disk-fill incident.
+HNSW_BLOAT_THRESHOLD_BYTES = 500 * 1024 * 1024  # 500 MB
+
+
+def _abort_if_hnsw_bloated() -> None:
+    if not settings.VECTORS_DIR.exists():
+        return
+    for f in settings.VECTORS_DIR.rglob("link_lists.bin"):
+        try:
+            sz = f.stat().st_size
+        except OSError:
+            continue
+        if sz > HNSW_BLOAT_THRESHOLD_BYTES:
+            raise RuntimeError(
+                "ChromaDB HNSW bloat tripwire: "
+                f"{f} is {sz / 1e9:.2f} GB (threshold "
+                f"{HNSW_BLOAT_THRESHOLD_BYTES / 1e6:.0f} MB). Aborting ingest. "
+                "Delete rag/vectors and re-clone the dataset from HF Hub, then "
+                "investigate the ChromaDB version / batch-size that triggered the bloat."
+            )
+
 
 # ---------- chunking ----------
 
@@ -287,11 +313,13 @@ async def ingest_one(
         embeddings=vectors,
         metadatas=metadatas,
     )
+    _abort_if_hnsw_bloated()
     return len(chunks)
 
 
 async def main():
     settings.VECTORS_DIR.mkdir(parents=True, exist_ok=True)
+    _abort_if_hnsw_bloated()  # fail fast if a prior run left a bloated index
     pdfs = discover_pdfs()
     manifest = load_manifest()
     collection = get_chroma_collection()

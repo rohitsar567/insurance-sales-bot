@@ -401,6 +401,29 @@ export async function postPremiumEstimate(req: PremiumEstimateRequest): Promise<
 }
 
 
+// KI-020 — User-facing chat clear / session restart.
+export interface SessionResetResponse {
+  ok: boolean;
+  session_id?: string | null;  // new session_id returned when drop_profile=true
+  cleared_state: boolean;
+}
+
+export async function postSessionReset(
+  args: { session_id: string; drop_profile?: boolean }
+): Promise<SessionResetResponse> {
+  const resp = await fetch(`${BACKEND_URL}/api/session/reset`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      session_id: args.session_id,
+      drop_profile: args.drop_profile ?? false,
+    }),
+  });
+  if (!resp.ok) throw new Error(`session reset failed: ${resp.status}`);
+  return resp.json();
+}
+
+
 export async function uploadPolicy(file: File): Promise<UploadResponse> {
   const fd = new FormData();
   fd.append("file", file);

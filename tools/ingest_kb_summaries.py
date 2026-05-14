@@ -162,6 +162,8 @@ async def main() -> None:
                 "local_path":   str(f.relative_to(ROOT)),
             })
         coll.add(ids=ids, documents=texts, embeddings=vecs, metadatas=metadatas)
+        from rag.ingest import _abort_if_hnsw_bloated
+        _abort_if_hnsw_bloated()
         total_policies += 1
         total_chunks += len(sections)
         if total_policies % 25 == 0:

@@ -160,6 +160,29 @@ def set_free_form(session_id: str, free_form: bool = True) -> None:
     s._flush()
 
 
+def reset_session(session_id: str) -> bool:
+    """Delete a session — evict from in-memory cache and remove the disk file.
+    Returns True if anything was actually deleted.
+    KI-020 (2026-05-14) — backs the user-facing "Clear chat / start fresh" toggle."""
+    deleted_any = False
+    with _lock:
+        if session_id in _sessions:
+            del _sessions[session_id]
+            deleted_any = True
+    target = _DATA_ROOT / f"{session_id}.json"
+    if target.exists():
+        try:
+            target.unlink()
+            deleted_any = True
+        except Exception as e:
+            import logging
+            logging.warning(
+                "reset_session unlink failed for %s: %s: %s",
+                session_id, type(e).__name__, str(e)[:200],
+            )
+    return deleted_any
+
+
 def purge_old_files() -> int:
     """Delete on-disk session files older than _DISK_TTL_SECONDS. Returns count."""
     if not _DATA_ROOT.exists():

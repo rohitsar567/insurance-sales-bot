@@ -89,6 +89,37 @@ def get_judge():
     return _judge
 
 
+def _parse_judge_json(raw: str) -> Optional[dict]:
+    """KI-022 — robust JSON parse for the Groq/NIM judge response.
+
+    Groq Llama-3.3 occasionally returns truncated or trailing-comma JSON even
+    with response_format=json_object. Try strict, then repair, then None.
+    Caller falls back to the regex grader on None instead of scoring 0.
+    """
+    if not raw or not raw.strip():
+        return None
+    try:
+        return json.loads(raw)
+    except Exception:
+        pass
+    # Repair pass: extract the first balanced {...} block + drop trailing commas
+    try:
+        m = re.search(r"\{.*\}", raw, flags=re.DOTALL)
+        if not m:
+            return None
+        candidate = m.group(0)
+        candidate = re.sub(r",(\s*[}\]])", r"\1", candidate)  # trailing commas
+        # Stitch a closing quote if the string ended mid-value
+        if candidate.count('"') % 2 == 1:
+            candidate = candidate + '"'
+        # If still missing a closing brace, append one
+        if candidate.count("{") > candidate.count("}"):
+            candidate = candidate + "}"
+        return json.loads(candidate)
+    except Exception:
+        return None
+
+
 def _regex_factual_grade(gold_answer: str, bot_answer: str) -> tuple[bool, str]:
     """Deterministic factual grader for sweep runs (no LLM judge).
 
@@ -159,13 +190,24 @@ Grade now."""
             max_tokens=200,
             response_format={"type": "json_object"},
         )
-        d = json.loads(res.text)
+        d = _parse_judge_json(res.text)
+        if d is None:
+            # KI-022 (2026-05-14) — JSON-parse failure on 11/96 questions in the
+            # 2026-05-14 baseline caused those questions to count as 0 factual
+            # even when the bot answered correctly. Fall back to the regex
+            # grader instead of dropping a 0 on the floor.
+            ok, reason = _regex_factual_grade(gold["expected_answer"], bot_answer)
+            return (ok, citation_present, 1.0 if ok else 0.0,
+                    f"judge_json_unparseable→regex_fallback: {reason}")
         return (bool(d.get("factual_match", False)),
                 citation_present,
                 float(d.get("score", 0.0)),
                 str(d.get("reason", ""))[:200])
     except Exception as e:
-        return (False, citation_present, 0.0, f"judge_error: {type(e).__name__}: {e}")
+        # KI-022 — same fallback for actual exceptions (timeout, network, etc.)
+        ok, reason = _regex_factual_grade(gold["expected_answer"], bot_answer)
+        return (ok, citation_present, 1.0 if ok else 0.0,
+                f"judge_error→regex_fallback ({type(e).__name__}): {reason}")
 
 
 async def run_one(gold: dict, *, no_judge: bool = False) -> EvalRecord:

@@ -21,6 +21,7 @@ import {
   postChat,
   postPremiumEstimate,
   postProfileUpdate,
+  postSessionReset,
   postTranscribe,
   PremiumEstimateResponse,
   ProfileCompletenessResponse,
@@ -201,6 +202,40 @@ export default function Page() {
       "say it again", "say that again", "once more", "one more time",
       "repeat", "repeat that", "ek baar aur", "phir se",
     ].includes(s);
+  }
+
+  // KI-020 — user-facing chat clear / fresh-start
+  async function handleClearChat(dropProfile: boolean) {
+    // Always wipe the visible chat + local storage.
+    setMessages([]);
+    setInput("");
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("insurance_chat_messages");
+    }
+    if (dropProfile && sessionId) {
+      try {
+        const res = await postSessionReset({ session_id: sessionId, drop_profile: true });
+        // Adopt the new server-issued session id (or clear it if backend didn't return one)
+        if (res.session_id) {
+          setSessionId(res.session_id);
+          if (typeof window !== "undefined") {
+            localStorage.setItem("insurance_session_id", res.session_id);
+          }
+        } else {
+          setSessionId(undefined);
+          if (typeof window !== "undefined") {
+            localStorage.removeItem("insurance_session_id");
+          }
+        }
+      } catch (e) {
+        console.warn("session reset failed", e);
+        // Even if backend failed, drop client-side session so next message starts fresh
+        setSessionId(undefined);
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("insurance_session_id");
+        }
+      }
+    }
   }
 
   async function send(text: string) {
@@ -615,10 +650,35 @@ export default function Page() {
         {messages.length === 0 ? (
           <EmptyState onSuggest={(q) => send(q)} coverage={coverage} t={t} />
         ) : (
-          <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-thin space-y-4 mb-4 pr-1">
-            {messages.map((m) => <Message key={m.id} m={m} />)}
-            {busy && <ThinkingDots />}
-          </div>
+          <>
+            {/* KI-020 — chat-clear controls; only visible once there's a conversation */}
+            <div className="flex items-center justify-end gap-2 mb-2 text-[11px]">
+              <button
+                onClick={() => handleClearChat(false)}
+                disabled={busy}
+                className="px-2 py-1 rounded-md border border-[var(--border)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:border-[var(--primary)] disabled:opacity-40 transition"
+                title="Clear visible chat — bot keeps what it already knows about you"
+              >
+                Clear chat
+              </button>
+              <button
+                onClick={() => {
+                  if (confirm("Start fresh? This forgets your profile (age, dependents, etc.) and starts a brand-new session.")) {
+                    handleClearChat(true);
+                  }
+                }}
+                disabled={busy}
+                className="px-2 py-1 rounded-md border border-[var(--border)] text-[var(--muted-foreground)] hover:text-rose-600 hover:border-rose-400 disabled:opacity-40 transition"
+                title="Wipe profile + start a fresh session"
+              >
+                Start fresh
+              </button>
+            </div>
+            <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-thin space-y-4 mb-4 pr-1">
+              {messages.map((m) => <Message key={m.id} m={m} />)}
+              {busy && <ThinkingDots />}
+            </div>
+          </>
         )}
 
         {uploadStatus && (

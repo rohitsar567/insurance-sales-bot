@@ -264,12 +264,18 @@ class NimChainLLM(LLMProvider):
     """
     def __init__(self, chain: list[str], api_key: Optional[str] = None,
                  timeout: float = 30.0, per_model_attempts: int = 1,
-                 role: str = "unknown"):
+                 role: str = "unknown", total_budget_s: Optional[float] = None):
         if not chain:
             raise ValueError("chain must have at least one model")
         self.chain = chain
         self.api_key = api_key or getattr(settings, "NVIDIA_NIM_API_KEY", "")
         self.timeout = timeout
+        # KI-021 (2026-05-14) — cumulative chain budget. If the chain has 8
+        # fallbacks at 30s each, worst-case wall-clock is 4 min per turn — that
+        # produced the p99 58s+ tail in the 100-persona audit. Default to a
+        # cumulative ceiling of ~2.5× the per-link timeout so a healthy primary
+        # always completes, but a cascading-failure chain bails fast.
+        self.total_budget_s = total_budget_s if total_budget_s is not None else max(timeout * 2.5, 30.0)
         self.per_model_attempts = per_model_attempts
         self.role = role  # 'brain' | 'fast_brain' | 'judge' | 'unknown' — flows into usage log
         self.model = chain[0]
@@ -375,8 +381,20 @@ class NimChainLLM(LLMProvider):
 
         last_err: Optional[Exception] = None
         for model in chain_to_try:
+            # KI-021 — bail out if the cumulative chain budget is gone so a single
+            # turn can never wedge for minutes through a long fallback cascade.
+            elapsed = time.time() - call_t0
+            if elapsed >= self.total_budget_s:
+                last_err = TimeoutError(
+                    f"chain budget exhausted ({elapsed:.1f}s ≥ {self.total_budget_s:.1f}s) "
+                    f"after trying {[m for m in chain_to_try if chain_to_try.index(m) < chain_to_try.index(model)]}"
+                )
+                break
             try:
-                worker = self._get_worker_for(model, self.timeout)
+                # Cap per-link timeout to remaining chain budget so the final
+                # link can't single-handedly blow past the ceiling.
+                per_link_timeout = min(self.timeout, max(2.0, self.total_budget_s - elapsed))
+                worker = self._get_worker_for(model, per_link_timeout)
                 result = await worker.chat(messages=messages, temperature=temperature,
                                            max_tokens=max_tokens, response_format=response_format)
                 # Successful response — record which model answered + return.
@@ -412,8 +430,13 @@ class NimChainLLM(LLMProvider):
             for model in refreshed:
                 if model in chain_to_try:
                     continue  # already tried this turn
+                # KI-021 — respect chain budget here too
+                elapsed = time.time() - call_t0
+                if elapsed >= self.total_budget_s:
+                    break
                 try:
-                    worker = self._get_worker_for(model, self.timeout)
+                    per_link_timeout = min(self.timeout, max(2.0, self.total_budget_s - elapsed))
+                    worker = self._get_worker_for(model, per_link_timeout)
                     result = await worker.chat(messages=messages, temperature=temperature,
                                                max_tokens=max_tokens, response_format=response_format)
                     self.model = model
@@ -453,14 +476,20 @@ class NimChainLLM(LLMProvider):
 
 def get_brain_llm() -> NimChainLLM:
     """Heavy brain — multi-model NIM chain with automatic fallback.
-    Primary: Qwen 3-Next 80B. See BRAIN_CHAIN for fallback order."""
-    return NimChainLLM(chain=BRAIN_CHAIN, timeout=30.0, role="brain")
+    Primary: Qwen 3-Next 80B. See BRAIN_CHAIN for fallback order.
+    KI-021 — per-link 20s, total chain budget 35s. Tail beyond that is just
+    the user staring at a blank screen on the live audit (was 49s p95)."""
+    return NimChainLLM(chain=BRAIN_CHAIN, timeout=20.0, role="brain",
+                       total_budget_s=35.0)
 
 
 def get_fast_brain_llm() -> NimChainLLM:
     """Fast brain — multi-model NIM chain optimized for low TTFT.
-    Primary: Qwen 3-Next 80B. See FAST_BRAIN_CHAIN for fallback order."""
-    return NimChainLLM(chain=FAST_BRAIN_CHAIN, timeout=20.0, role="fast_brain")
+    Primary: Qwen 3-Next 80B. See FAST_BRAIN_CHAIN for fallback order.
+    KI-021 — per-link 12s, total chain budget 22s. Fact-find / QA needs
+    sub-3s p95 to feel like chat; budget keeps the worst case bounded."""
+    return NimChainLLM(chain=FAST_BRAIN_CHAIN, timeout=12.0, role="fast_brain",
+                       total_budget_s=22.0)
 
 
 def get_judge_llm(language: str = "en") -> NimChainLLM:

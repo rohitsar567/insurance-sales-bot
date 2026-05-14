@@ -231,6 +231,8 @@ async def main():
                 "local_path":   str(f),
             })
         coll.add(ids=ids, documents=texts, embeddings=vecs, metadatas=metadatas)
+        from rag.ingest import _abort_if_hnsw_bloated
+        _abort_if_hnsw_bloated()
         print(f"  OK   {slug:18s}  {len(chunks)} chunks  ({sum(len(t) for t in texts):>5d} chars)")
         ok_insurers += 1
         ok_chunks += len(chunks)

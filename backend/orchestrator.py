@@ -165,21 +165,34 @@ async def handle_turn(
     session = get_session(session_id or "anonymous")
 
     in_fact_find_continuation = bool(session.awaiting_question_id) and not session.free_form_session
-    # KI-013 — if the user has NO profile fields yet, FORCE fact-find regardless
-    # of intent classifier. Real user testing surfaced: a vague opener
-    # ("I want health insurance") got classified as "recommendation" and the
-    # bot retrieved "Care Senior" (a senior-citizen-only policy) and pitched it.
-    # Bot should never recommend without knowing the user's age / dependents /
-    # conditions / budget. Force fact-find until ≥1 profile field is set.
+    # KI-013 — if the user has NO profile fields yet, FORCE fact-find for
+    # intents that depend on user context (recommendation, comparison).
+    # Real user testing surfaced: a vague opener ("I want health insurance")
+    # got classified as "recommendation" and the bot retrieved "Care Senior"
+    # (a senior-citizen-only policy) and pitched it. The bot must never
+    # recommend without knowing the user's age / dependents / conditions /
+    # budget.
+    #
+    # KI-018 (2026-05-14) — intent='qa' was previously also force-routed to
+    # fact-find on empty profile, which dropped factual accuracy to 30% on
+    # gold-QA: the bot answered "What is the waiting period for PED?" with
+    # "First, your age?". QA is policy-fact lookup, doesn't depend on user
+    # profile — it must pass through to retrieval. Only context-dependent
+    # intents (recommendation/comparison) need a profile first.
     profile_is_empty = (
         session.profile.age is None
         and session.profile.dependents is None
         and session.profile.income_band is None
     )
+    CONTEXT_DEPENDENT_INTENTS = {"recommendation", "comparison"}
     treat_as_fact_find = (
         (intent == "fact_find" and not session.free_form_session)
         or in_fact_find_continuation
-        or (profile_is_empty and not session.free_form_session)
+        or (
+            profile_is_empty
+            and not session.free_form_session
+            and intent in CONTEXT_DEPENDENT_INTENTS
+        )
     )
 
     if treat_as_fact_find:
@@ -194,6 +207,14 @@ async def handle_turn(
         #     and proceed to the next. Better to have an incomplete profile
         #     than an infinite reask loop.
         ambiguous_or_failed = False
+        # Telemetry: KI-019 (2026-05-14) — populate this dict whenever the
+        # slot-filler successfully captures a normalized answer so the API
+        # response's `profile_updates` field reflects fact-find captures (it
+        # previously only reflected free-form mode captures, which made the
+        # 100-persona audit appear to show age captured for only 12/100 when
+        # the slot-filler was actually working — see readback summaries in
+        # `needs_finder::fact_find_complete` turns).
+        fact_find_profile_updates: dict = {}
         if session.awaiting_question_id:
             from backend.fact_find_normalizer import is_valid_answer, normalize_answer
             qid = session.awaiting_question_id
@@ -211,6 +232,7 @@ async def handle_turn(
                     q_obj = next((q for q in __import__('backend.needs_finder', fromlist=['GRAPH']).GRAPH if q.id == qid), None)
                     if q_obj is not None:
                         session.update_profile_field(q_obj.field, normalized)
+                        fact_find_profile_updates[q_obj.field] = normalized
                         if qid not in session.profile.asked:
                             session.profile.asked.append(qid)
                         session.set_awaiting(None)
@@ -294,6 +316,7 @@ async def handle_turn(
             raw_reply=reply,
             faithfulness_passed=True,
             blocked=False,
+            profile_updates=fact_find_profile_updates,  # KI-019 telemetry fix
         )
 
     # User explicitly asked a specific question — leave fact-find mode if they were in one.
