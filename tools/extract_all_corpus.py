@@ -13,7 +13,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from rag.extract import extract_one, find_pdfs, load_manifest, init_db, EXTRACTED_DIR, ROOT
 from rag.ingest import policy_id_for
-from backend.providers.nvidia_nim_llm import get_brain_llm, get_fast_brain_llm
+from backend.providers.nvidia_nim_llm import get_brain_llm, get_fast_brain_llm, NvidiaNimLLM
 
 
 async def run_one(pdf, manifest, primary, fallback, sem, idx, total):
@@ -39,8 +39,14 @@ async def main():
         if not (EXTRACTED_DIR / f"{pid}.json").exists():
             targets.append(p)
     manifest = load_manifest()
-    primary = get_brain_llm()
-    fallback = get_fast_brain_llm()
+    # 2026-05-14 update: DeepSeek-V4 (Pro AND Flash) was ReadTimeout-ing on every
+    # chat completion (NIM's V4 inference pool is overloaded — /v1/models
+    # responds in 0.1s but /v1/chat/completions for V4 times out at 30s+).
+    # Swapped to Meta Llama-3.3-70B-Instruct (different NIM model pool, verified
+    # fast in earlier smoke tests). For extraction we don't need V4-class quality;
+    # 70B with a strict JSON prompt is more than enough.
+    primary = NvidiaNimLLM(model="meta/llama-3.3-70b-instruct")
+    fallback = NvidiaNimLLM(model="meta/llama-4-maverick-17b-128e-instruct")
     sem = asyncio.Semaphore(2)
     print(f"Total PDFs: {len(all_pdfs)}, need extraction: {len(targets)}\n")
     t_start = time.time()
