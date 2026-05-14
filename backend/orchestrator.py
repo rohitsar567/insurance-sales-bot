@@ -285,7 +285,6 @@ async def handle_turn(
             # KI-004 — surface translator failures in HF Space logs. The
             # brain will still try with the original Indic text, but with
             # degraded quality. The log lets us tune the Sarvam fallback.
-            import logging
             logging.warning(
                 "indic translator failed (session=%s lang=%s): %s: %s",
                 session_id, language, type(e).__name__, str(e)[:200],
@@ -479,7 +478,6 @@ async def handle_turn(
                     "health_conditions": p.health_conditions,
                 })
             except Exception as e:
-                import logging
                 logging.warning(
                     "fact_find_brain profile-chunk upsert failed (session=%s): %s: %s",
                     session_id, type(e).__name__, str(e)[:200],
@@ -627,7 +625,6 @@ async def handle_turn(
                 # KI-005 — log profile-chunk upsert failures so we can see
                 # when Chroma is locking or schema-drifting. The chat still
                 # ships; subsequent turns just won't see the latest profile.
-                import logging
                 logging.warning(
                     "profile-chunk upsert failed (session=%s): %s: %s",
                     session_id, type(e).__name__, str(e)[:200],
@@ -642,7 +639,6 @@ async def handle_turn(
     except Exception as e:
         # KI-006 — log profile-extraction failures (extractor LLM down,
         # malformed model output, etc.). The chat ships unaffected.
-        import logging
         logging.warning(
             "profile extractor failed (session=%s): %s: %s",
             session_id, type(e).__name__, str(e)[:200],
@@ -864,7 +860,6 @@ async def handle_turn(
                             reason="shown_in_recommendation",
                         )
                 except Exception as inner:
-                    import logging
                     logging.warning(
                         "KI-063 shown_policies log failed (session=%s): %s: %s",
                         session_id, type(inner).__name__, str(inner)[:200],
@@ -875,7 +870,6 @@ async def handle_turn(
             _asyncio.create_task(_asyncio.to_thread(_log_shown_policies))
     except Exception as e:
         # Never let logging failures break the chat reply.
-        import logging
         logging.warning(
             "KI-063 shown_policies scheduling failed (session=%s): %s: %s",
             session_id, type(e).__name__, str(e)[:200],
