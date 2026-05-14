@@ -6,7 +6,7 @@ Deliberately small. The bulk of behavioural quality lives in `eval/` (gold-QA ac
 
 | File | Role |
 | --- | --- |
-| `test_routing_regression.py` | 15 `unittest` cases pinning the KI-018 / KI-023 / KI-025 fixes — see "Routing invariants" in the root `CLAUDE.md`. Includes `TestProviderLoadBalancing` which asserts the 50/50 NIM ↔ Groq split holds over 1000 seeded calls ([ADR-026](../70-docs/60-decisions/ADR-026-provider-load-balancing.md)). |
+| `test_routing_regression.py` | 15 `unittest` cases pinning the KI-018 / KI-023 / KI-080 invariants — see "Routing invariants" in the root `CLAUDE.md`. Includes legacy `TestProviderLoadBalancing` which asserts the 50/50 NIM ↔ Groq split when `_balanced_brain_chain` is invoked directly; with KI-080 ([ADR-031](../70-docs/60-decisions/ADR-031-sticky-primary-election.md)) live traffic uses probe-elected primary instead, but the rotation invariant is retained as a regression pin for the bypassed legacy path. |
 | `live_verify.py` | End-to-end production drift detector. Hits the **deployed** API with a 20-Q gold subset and asserts HTTP 200, non-empty `reply_text`, ≥1 citation, faithfulness pass, and Doc-01 latency budget (p95 ≤ 7000ms). Writes `tests/live_results_<ts>.md`. Cron-able for nightly. |
 
 ## What each test pins
@@ -16,7 +16,7 @@ Deliberately small. The bulk of behavioural quality lives in `eval/` (gold-QA ac
 | KI-018 (D-003) | `classify_intent("What is the waiting period for PED in Activ Assure?")` returns `"qa"` and `should_route_to_fact_find` returns `False` on empty profile. | Headline 30% gold-QA accuracy bug — direct QA was force-routed to fact-find. |
 | KI-018 | `CONTEXT_DEPENDENT_INTENTS = {"recommendation", "comparison"}` — no `"qa"`. | Adding `"qa"` re-introduces the headline bug. |
 | KI-023 | `FACT_FIND_TRIGGERS` uses word-boundary regex, not substring. | Stops `"hi"` firing on `"which"` / `"this"` / `"high"`. |
-| ADR-026 / KI-025 | `_balanced_brain_chain(..., groq_first_probability=0.5)` lands Groq-primary between 400 and 600 of 1000 seeded calls. | Catches the shared-counter pathology where every brain call lands on one provider. |
+| ADR-026 / KI-025 (legacy; superseded by [ADR-031](../70-docs/60-decisions/ADR-031-sticky-primary-election.md) / KI-080) | `_balanced_brain_chain(..., groq_first_probability=0.5)` lands Groq-primary between 400 and 600 of 1000 seeded calls. | Catches the shared-counter pathology where every brain call lands on one provider. Test retained as a bypassed-path regression pin. |
 
 ## Running
 

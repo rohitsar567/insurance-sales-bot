@@ -50,7 +50,7 @@ In a regulated BFSI domain, the worst failure isn't "the bot looks slow" — it'
 
 **Description:** Sarvam-M emits `<think>...</think>` reasoning. If `max_tokens` is exhausted before `</think>` is reached, the reply is unusable. This was a recurring issue when Sarvam-M was the primary brain.
 **Detection:** `strip_think_tags()` checks for `<think>` without matching `</think>`.
-**Resolution (2026-05-14, D-019):** Sarvam-M moved out of the brain role entirely. The NIM brain chains (Qwen 80B / Nemotron 30B primaries, 50/50 with Groq Llama-3.3) handle all reasoning; they emit direct responses without `<think>` preambles. Sarvam-M remains only for Indic translation (Hinglish ↔ English), where its `<think>` doesn't interfere because translation outputs are short. F-04 cannot fire on the current stack.
+**Resolution (2026-05-14, D-019; refined 2026-05-15, KI-080):** Sarvam-M moved out of the brain role entirely. The NIM brain chains (Qwen 80B / Nemotron 30B / Groq Llama-3.3 / OpenRouter GPT-OSS as probe-elected candidates) handle all reasoning; they emit direct responses without `<think>` preambles. Per-turn primary is elected from a 60s background probe (KI-080, [ADR-031](../60-decisions/ADR-031-sticky-primary-election.md)) — adapts to live provider degradation. Sarvam-M remains only for Indic translation (Hinglish ↔ English), where its `<think>` doesn't interfere because translation outputs are short. F-04 cannot fire on the current stack.
 **Owner:** `backend/orchestrator.py`
 **Status:** Resolved by architecture change.
 

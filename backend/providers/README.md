@@ -7,8 +7,8 @@ Every external model is fronted by a small typed client here. The orchestrator a
 | File | Provider | Role | Notes |
 | --- | --- | --- | --- |
 | `base.py` | — | Abstract `LLM`, `STT`, `TTS`, `Embeddings` Protocols. Every concrete client conforms. | — |
-| `nvidia_nim_llm.py` | NVIDIA NIM | Core chain runner — `NimChainLLM(chain=[...])` walks a fallback ladder under a wall-clock budget. Exposes `get_brain_llm()`, `get_fast_brain_llm()`, `get_judge_llm()`. Also home of `_balanced_brain_chain()` (50/50 NIM ↔ Groq rotator). | [ADR-019](../../70-docs/60-decisions/ADR-019-nim-single-provider-consolidation.md), [ADR-026](../../70-docs/60-decisions/ADR-026-provider-load-balancing.md) |
-| `groq_llm.py` | Groq | Single-call Llama-3.3-70B client. Used as the 50% load-balance primary for the brain chain, never standalone. | [ADR-026](../../70-docs/60-decisions/ADR-026-provider-load-balancing.md) |
+| `nvidia_nim_llm.py` | NVIDIA NIM | Core chain runner — `NimChainLLM(chain=[...])` uses probe-driven primary election (KI-080): calls the elected PRIMARY once per turn, falls to elected BACKUP on real-time failure. Exposes `get_brain_llm()`, `get_fast_brain_llm()`, `get_judge_llm()`. Legacy `_balanced_brain_chain()` (50/50 NIM ↔ Groq rotator) retained as a bypassed feature-flag branch for one-release rollback. | [ADR-019](../../70-docs/60-decisions/ADR-019-nim-single-provider-consolidation.md), [ADR-031](../../70-docs/60-decisions/ADR-031-sticky-primary-election.md) (supersedes [ADR-026](../../70-docs/60-decisions/ADR-026-provider-load-balancing.md)) |
+| `groq_llm.py` | Groq | Single-call Llama-3.3-70B client. Used as cross-provider backup election candidate (KI-080) for both brain + fast-brain chains. | [ADR-031](../../70-docs/60-decisions/ADR-031-sticky-primary-election.md) |
 | `openrouter_llm.py` | OpenRouter | Multi-model fallback rung (DeepSeek-V3 etc.) for chains; rarely the primary in production. | — |
 | `sarvam_llm.py` | Sarvam-M | Indic-aware LLM; on the judge / translator fallback chains and used by `backend/translator.py`. | [ADR-006](../../70-docs/60-decisions/ADR-006-sarvam-first-stack.md) |
 | `sarvam_stt.py` | Sarvam Saarika v2.5 | Speech-to-text (10 Indic languages + English). | ADR-006 |
@@ -36,5 +36,5 @@ Per-link timeout is dynamically clipped to remaining budget.
 ## Related
 
 - [ADR-006](../../70-docs/60-decisions/ADR-006-sarvam-first-stack.md), [ADR-011](../../70-docs/60-decisions/ADR-011-bge-local-embeddings.md), [ADR-019](../../70-docs/60-decisions/ADR-019-nim-single-provider-consolidation.md), [ADR-026](../../70-docs/60-decisions/ADR-026-provider-load-balancing.md)
-- `tests/test_routing_regression.py::TestProviderLoadBalancing` — pins the 50/50 split
+- `tests/test_routing_regression.py::TestProviderLoadBalancing` — pins the legacy 50/50 split (kept as a bypassed-by-default invariant; KI-080's probe-driven election supersedes it for live traffic)
 - `40-data/llm_health.json` — last health-probe snapshot surfaced in the admin tab

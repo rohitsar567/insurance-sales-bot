@@ -18,16 +18,18 @@ This file is read by Claude Code (and any compatible AI tool) at the start of a 
 - **Hands-free was removed entirely** in KI-027. Anything in the codebase still referring to it is stale.
 - **Bot TTS plays via the in-DOM `<audio>` element** inside `Message` (autoplay-on-mount via ref'd `useEffect`). Never use `new Audio(url).play()` — those detached instances are invisible to `document.querySelectorAll("audio").pause()` in the barge-in handler.
 
-## LLM stack (ADR-019 + ADR-026 partial supersession)
+## LLM stack (ADR-019 + ADR-026 → ADR-031 supersession) — KI-080
 
 Every LLM role is a `NimChainLLM` fallback chain, NOT a hardcoded single model. Chains preserve brain↔judge family diversity (Qwen brain ↔ Mistral judge) so failovers can't accidentally produce circular grading.
 
-- **Brain primary** rotates 50/50 between **NIM Qwen 80B** and **Groq Llama-3.3-70B** via per-call `random.random()`. Effectively 2× throughput across two independent rate caps.
-- **Fast-brain primary** is **NIM Nemotron Nano 30B** (~1.6s TTFT) with Qwen 80B as next fallback. Fast brain serves: fact-find, QA, paraphrase, normalize, extract — every latency-sensitive role.
-- **Judge** = Mistral Large 3 675B primary. Different family from brain → non-circular grading.
+- **Probe-driven sticky primary election (KI-080, [ADR-031](70-docs/60-decisions/ADR-031-sticky-primary-election.md)).** All three chains (`BRAIN_CHAIN`, `FAST_BRAIN_CHAIN`, `JUDGE_CHAIN`) elect a sticky PRIMARY + provider-diverse BACKUP from a background probe. `backend/llm_health.py` runs a 60s probe loop that scores every candidate on (latency × success rate) and writes the current election to process state. `NimChainLLM.chat()` no longer iterates every candidate per call — it calls PRIMARY once; on real-time failure it falls to BACKUP (cross-provider by construction) and triggers an immediate probe refresh. **Per-turn LLM call count: 1 (most cases) or 2 (primary fails real-time → backup + re-probe).** Pre-KI-080 worst case under sustained NIM concurrency throttling was 5-6 NIM calls per turn, all queued and timing out.
+- **KI-025's 50/50 NIM ↔ Groq rotation ([ADR-026](70-docs/60-decisions/ADR-026-provider-load-balancing.md)) is deprecated.** `_balanced_brain_chain` is retained in `backend/providers/nvidia_nim_llm.py` behind a feature flag for one-release rollback but is bypassed by default; the probe-driven election picks the actually-faster candidate dynamically instead of a fixed coin flip.
+- **Cold-start fallback.** Before the first probe completes (process restart, HF Space rebuild), `chain[0]` is the initial primary and `chain[1]` is the initial backup; the probe overwrites both within 60s.
+- **Brain / fast-brain / judge primaries in steady state** are currently **NIM Qwen 80B** (heavy brain), **NIM Nemotron Nano 30B** (fast brain, ~1.6s TTFT), **Mistral Large 3 675B** (judge — different family from brain → non-circular grading). These are the typical probe winners but are no longer hardcoded — the elected primary follows live latency × success scores.
+- **KI-079 escalation as last bite.** If both PRIMARY and BACKUP fail in a single fact-find turn, orchestrator retries once on `BRAIN_CHAIN` (heavy brain, 35s budget) before falling to `_canonical_fallback`. Final guardrail; fires after probe + backup are exhausted, not before.
 - **STT/TTS/Translator** = Sarvam (Saarika v2.5 / Bulbul v2 / Sarvam-M).
 - **Embeddings** = local BGE-small-en-v1.5 (`backend/providers/local_embeddings.py`). Voyage is configured in `.env` for ingest if needed but not on the hot path.
-- **Chain budgets:** brain 20s × 35s total, fast-brain 12s × 22s total, judge 30s × 75s total. Per-link timeout is dynamically clipped to remaining budget.
+- **Chain budgets:** brain 20s × 35s total, fast-brain 12s × 22s total, judge 30s × 75s total. Per-link timeout is dynamically clipped to remaining budget. With KI-080, only PRIMARY + BACKUP consume the budget in the common case — leaves headroom for KI-079 escalation.
 
 ## Fact-find loop (ADR-030, supersedes ADR-027) — KI-070
 

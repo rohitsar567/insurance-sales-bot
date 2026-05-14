@@ -54,7 +54,7 @@ Live URL: **https://rohitsar567-insurancebot.hf.space**. For each: try voice and
 | # | Question | What you should see | Why this question |
 |---|---|---|---|
 | 1 | *"What's the pre-existing disease waiting period under Care Supreme?"* | Specific number + `[Source: care-health/care-supreme/wordings, p.18]`. Brain: fast-brain chain (Nemotron 30B primary). | Single-field lookup — easiest competence check. |
-| 2 | *"Compare cataract waiting period in ICICI Elevate vs HDFC Optima Secure."* | Two-policy comparison with citations from both PDFs. Brain: BRAIN_CHAIN (Qwen 80B / Groq Llama-3.3 50/50). | Multi-policy reasoning — tests retrieval + tiered brain routing. |
+| 2 | *"Compare cataract waiting period in ICICI Elevate vs HDFC Optima Secure."* | Two-policy comparison with citations from both PDFs. Brain: BRAIN_CHAIN with probe-elected primary (KI-080). | Multi-policy reasoning — tests retrieval + tiered brain routing. |
 | 3 | *"Care Supreme mein PED ka waiting period kya hai?"* (Hinglish) | Answer in Hinglish with citations preserved. Brain tag includes `cascade::sarvam-trans+...` if drift gates fire. | Indic cascade + 3-gate drift verification. |
 | 4 | *"What does IRDAI say about cataract waiting-period caps under the 2024 Master Circular?"* | Cited answer from `irdai-master-circular-health-2024.pdf`. | Demonstrates the IRDAI corpus rescue past Akamai (ADR-017). |
 | 5 | *"Does Bajaj Silver Health cover space-tourism injuries?"* | **Safe refusal.** | Adversarial out-of-corpus — refusal is the correct behaviour. |
@@ -233,9 +233,9 @@ The bot is two flows running together — the customer's experience and the tech
 </td><td>
 
 **Tech 7 — Brain selection, `pick_brain(intent, language)`**
-- `intent ∈ {comparison, recommendation}` → BRAIN_CHAIN (Qwen 80B primary, 50/50 with Groq Llama-3.3)
-- `intent ∈ {qa, fact_find}` → FAST_BRAIN_CHAIN (Nemotron Nano 30B primary)
-- Per-call rotation across two providers' independent rate caps
+- `intent ∈ {comparison, recommendation}` → BRAIN_CHAIN with probe-elected primary across NIM / Groq / OpenRouter candidates (KI-080)
+- `intent ∈ {qa, fact_find}` → FAST_BRAIN_CHAIN with probe-elected primary (typically Nemotron Nano 30B or Groq Llama-3.3 in steady state)
+- KI-080 election: 1 LLM call per turn (most cases) or 2 (primary fails real-time → cross-provider backup). Per-chain primary refreshed every 60s by background probe.
 
 **Tech 8 — System prompt construction, `build_messages()`**
 - `[System: ADVISOR_PROMPT + USER PROFILE block + USER IS LOOKING AT (view_context) block]`
@@ -391,9 +391,9 @@ The bot is two flows running together — the customer's experience and the tech
 ┌──────────────────────────────────────────────────────────────────────────┐
 │  TECH 7.  Brain selection — pick_brain(intent, language)                  │
 │  -------                                                                  │
-│  · intent ∈ {comparison, recommendation} → the brain chain (Qwen 80B primary, 50/50 rotated with Groq Llama-3.3) (heavy)        │
-│  · intent ∈ {qa, fact_find} → the fast-brain chain (Nemotron Nano 30B primary, ~1.6s TTFT) (fast)                    │
-│  · All via integrate.api.nvidia.com (single NIM API key)                  │
+│  · intent ∈ {comparison, recommendation} → BRAIN_CHAIN with probe-elected primary across NIM/Groq/OpenRouter (heavy, KI-080)      │
+│  · intent ∈ {qa, fact_find} → FAST_BRAIN_CHAIN with probe-elected primary (fast, KI-080)                                          │
+│  · NIM Qwen 80B / Nemotron 30B + Groq Llama-3.3 + OpenRouter GPT-OSS as election candidates                                       │
 └──────────────────────────────────────────────────────────────────────────┘
                                   │
                                   ▼
@@ -552,8 +552,8 @@ Every LLM role is served by a **fallback chain** of candidate models (`backend/p
 
 | Role | Primary | Fallback chain (in order) | Provider(s) | Why this primary |
 |---|---|---|---|---|
-| **Heavy brain** (comparison, recommendation, synthesis) | Qwen 3-Next 80B *or* Groq Llama-3.3-70B (50/50 per-call rotation, KI-025) | Qwen 3.5 122B → GPT-OSS 120B → Mistral Large 3 675B → Nemotron-Super 49B → Llama-3.3-70B → DeepSeek V4-Pro → OpenRouter GPT-OSS 120B → Groq Llama-3.3-70B | NIM + Groq + OpenRouter | Qwen 80B is the fastest reliable frontier-tier MoE on NIM free tier (~2s TTFT, clean JSON, multilingual). Groq LPU is the lowest-TTFT free-tier option; 50/50 split doubles sustained throughput across two independent rate caps ([ADR-026](70-docs/60-decisions/ADR-026-provider-load-balancing.md)). |
-| **Fast brain** (voice turns, fact-find, QA, paraphrase, normalize, extract) | Nemotron Nano 30B *or* Groq Llama-3.3-70B (50/50 per-call rotation) | Qwen 3-Next 80B → GPT-OSS 120B → Qwen 3.5 122B → DeepSeek V4-Flash → Groq Llama-3.3-70B | NIM + Groq | Bottleneck on these short jobs is TTFT, not capability. Nemotron Nano hits ~1.6s; Qwen 80B is ~2-3s. Reordered for latency in KI-035. |
+| **Heavy brain** (comparison, recommendation, synthesis) | Probe-elected primary (KI-080) — typically Qwen 3-Next 80B or Groq Llama-3.3-70B in steady state | Qwen 3.5 122B → GPT-OSS 120B → Mistral Large 3 675B → Nemotron-Super 49B → Llama-3.3-70B → DeepSeek V4-Pro → OpenRouter GPT-OSS 120B → Groq Llama-3.3-70B (all as election candidates; probe scores them every 60s) | NIM + Groq + OpenRouter | Probe-driven election picks the actually-faster candidate dynamically (latency × success-rate score), with provider-diverse BACKUP. Pre-KI-080 static 50/50 ([ADR-026](70-docs/60-decisions/ADR-026-provider-load-balancing.md)) was deprecated in favour of [ADR-031](70-docs/60-decisions/ADR-031-sticky-primary-election.md). |
+| **Fast brain** (voice turns, fact-find, QA, paraphrase, normalize, extract) | Probe-elected primary (KI-080) — typically Nemotron Nano 30B or Groq Llama-3.3-70B in steady state | Qwen 3-Next 80B → GPT-OSS 120B → Qwen 3.5 122B → DeepSeek V4-Flash → Groq Llama-3.3-70B (election candidates) | NIM + Groq | Bottleneck on these short jobs is TTFT, not capability. Nemotron Nano hits ~1.6s; Qwen 80B is ~2-3s. Reordered for latency in KI-035. Election adds adaptation: when one provider degrades, the probe re-elects within 60s. |
 | **Judge** (faithfulness Gate 4, Hinglish drift, eval grader) | Mistral Large 3 675B | GPT-OSS 120B → Kimi K2 → MiniMax M2.5 → Llama-4 Maverick 17B/128E → OpenRouter GPT-OSS 120B → Groq Llama-3.3-70B | NIM + OpenRouter + Groq | Different family from the Qwen brain (Mistral, not Qwen / DeepSeek / Llama family) so the judge sees the brain's output from a genuinely different decision surface. 675B dense, MIT, ~4.3s on NIM. |
 | **Profile extractor** (free-form profile updates → 9-slot schema, ADR-022) | Fast brain chain (Nemotron Nano 30B primary) | inherits FAST_BRAIN_CHAIN | NIM + Groq | Short prompt, structured JSON out — Nemotron Nano is fast and reliable enough; same chain as fact-find. |
 | **Fact-find normalizer** (user answer → typed slot value) | Fast brain chain (Nemotron Nano 30B primary) | inherits FAST_BRAIN_CHAIN | NIM + Groq | Same shape as profile extractor — narrow input, narrow JSON output. |

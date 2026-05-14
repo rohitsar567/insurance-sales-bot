@@ -24,7 +24,7 @@ The root cause is architectural: a hardcoded state machine cannot natively expre
 
 **One brain call per fact-find turn produces a natural conversational reply plus a JSON tail block describing what was captured and what's next.**
 
-Implementation: `backend/fact_find_brain.py::drive_fact_find()`. The single call is `NimChainLLM(FAST_BRAIN_CHAIN, total_budget_s=12s)` so it benefits from the [ADR-026](ADR-026-provider-load-balancing.md) NIM ↔ Groq 50/50 rotation and the cumulative budget ceiling from KI-021.
+Implementation: `backend/fact_find_brain.py::drive_fact_find()`. The single call is `NimChainLLM(FAST_BRAIN_CHAIN, total_budget_s=22s)` so it benefits from the [ADR-031](ADR-031-sticky-primary-election.md) probe-driven primary election (which supersedes ADR-026's static 50/50 rotation) and the cumulative budget ceiling from KI-021.
 
 System prompt contains:
 

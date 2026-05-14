@@ -15,7 +15,7 @@ v1 is a **vertical slice**: 10 insurers × Health × ~80 policies × voice-first
 **Working product:**
 - Voice-first chat advisor over a curated corpus of Indian health insurance policies (~76 PDFs from 10 insurers, ingested into Chroma + DuckDB)
 - Multi-language: English + Hindi/Hinglish via Sarvam Saarika STT + Sarvam Bulbul TTS
-- Brain router (D-019): the brain chain (Qwen 80B primary, 50/50 with Groq Llama-3.3) (heavy intents) + V4-Flash (voice + fact-find), Mistral Large 3 675B judge. Sarvam-M scoped to Indic translation + voice only.
+- Brain router (D-019, KI-080): BRAIN_CHAIN with probe-elected primary across NIM Qwen 80B / Groq Llama-3.3 / OpenRouter candidates (heavy intents) + FAST_BRAIN_CHAIN with probe-elected primary across Nemotron 30B / Qwen 80B / Groq (voice + fact-find), Mistral Large 3 675B judge primary. Sarvam-M scoped to Indic translation + voice only.
 - 4-gate hallucination defense + auditable refusal log
 - 62-field structured extraction per policy
 - Clean Next.js + Tailwind frontend
