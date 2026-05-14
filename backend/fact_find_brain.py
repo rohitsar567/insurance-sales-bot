@@ -419,39 +419,115 @@ def _normalize_for_slot(slot_id: str, raw_text: str) -> Any:
         return None
     text = raw_text.strip()
 
-    # NAME slot — strip greeting + intro prefix; require alphabetic content.
+    # NAME slot — KI-074 (2026-05-15) — explicit intro patterns ONLY.
+    # Previous version accepted "29 years old" as a name because it passed
+    # the alphabetic-ratio check. Now we require an explicit "I am X" /
+    # "my name is X" / "this is X" / "call me X" pattern, AND the captured
+    # span must look like a name (no digits, 1-4 short tokens).
     if slot_id == "name":
-        s = text.strip(".,!?")
-        for greet in ("hi there ", "hello there ", "hey there ",
-                      "hi, ", "hello, ", "hey, ",
-                      "hi ", "hello ", "hey ", "namaste ", "yo "):
-            if s.lower().startswith(greet):
-                s = s[len(greet):].strip()
-                break
-        for prefix in ("i'm ", "i am ", "my name is ", "name is ",
-                       "call me ", "this is ", "name's "):
-            if s.lower().startswith(prefix):
-                s = s[len(prefix):].strip()
-                break
+        import re as _re
+        # Strip leading greeting first
+        s = text.strip().strip(".,!?")
+        s = _re.sub(r"^(hi|hello|hey|namaste|yo)[,!.\s]+", "", s, flags=_re.IGNORECASE)
+        # Require an explicit intro phrase
+        m = _re.search(
+            r"\b(?:i'?m|i\s+am|this\s+is|my\s+name\s+is|name\s+is|call\s+me|name'?s)\s+"
+            r"([a-zA-Z][a-zA-Z'\-]{1,30}(?:\s+[a-zA-Z][a-zA-Z'\-]{1,30}){0,3})\b",
+            s,
+            flags=_re.IGNORECASE,
+        )
+        if not m:
+            return None
+        candidate = m.group(1).strip()
+        # KI-074 — chop at conjunctions / boundary words so "Rohit Sar and"
+        # in "My name is Rohit Sar and I am 32" becomes "Rohit Sar".
+        candidate = _re.split(
+            r"\s+(?:and|but|with|plus|also|or|&|,)\s+",
+            candidate, maxsplit=1, flags=_re.IGNORECASE,
+        )[0].strip()
+        # Also strip a TRAILING conjunction (when the connector is the
+        # last token in the captured span — e.g. "Rohit Sar and").
+        candidate = _re.sub(
+            r"\s+(?:and|but|with|plus|also|or|&)\s*$",
+            "", candidate, flags=_re.IGNORECASE,
+        ).strip()
+        # Reject if any digit or trailing words look like an age phrase
+        if any(c.isdigit() for c in candidate):
+            return None
+        first_word = candidate.split()[0].lower()
+        if first_word in {
+            # Articles + possessives + demonstratives
+            "a", "an", "the", "my", "your", "his", "her", "their", "our",
+            "this", "that", "these", "those",
+            # Ordinals (commonly follow "this is my first ...")
+            "first", "second", "third", "fourth", "fifth", "last", "next",
+            # Common adjectives mistaken for names
+            "looking", "buying", "shopping", "interested", "trying", "thinking",
+            "happy", "sad", "tired", "busy", "ready", "done", "new", "old",
+            "good", "fine", "ok", "okay", "sure", "right",
+            "correct", "wrong", "alone", "single", "married",
+            "years", "year", "from", "very", "really", "just",
+        }:
+            return None
         # Capitalise if all-lower (STT often outputs lowercase)
-        if s and not any(c.isupper() for c in s):
-            s = " ".join(w.capitalize() for w in s.split())
-        if 1 <= len(s) <= 50 and sum(1 for c in s if c.isalpha()) / max(1, len(s)) >= 0.5:
-            return s
-        return None
+        if not any(c.isupper() for c in candidate):
+            candidate = " ".join(w.capitalize() for w in candidate.split())
+        return candidate
 
-    # Numeric / cover slots — use existing sync parsers.
+    # KI-074 — slot-specific triggers prevent cross-contamination during
+    # greedy multi-slot capture. Without these guards, "29 years old" was
+    # getting written into existing_cover_inr AND parents_age_max AND age.
+    import re as _re2
+    lc = text.lower()
     try:
         from backend.fact_find_normalizer import (
             _parse_int, _parse_existing_cover, _keyword_normalize,
             _validate, _FIELD_SCHEMA,
         )
         schema = _FIELD_SCHEMA.get(slot_id)
-        if slot_id in ("age", "parents_age"):
-            return _parse_int(text, schema or {"min": 1, "max": 120})
+
+        if slot_id == "age":
+            # Require an age trigger so a bare "29" in "₹29L cover" doesn't fire.
+            if not _re2.search(r"\b(?:i'?m|i\s+am|i\s+am\s+about|age|aged|years?\s*old|yrs?\s*old|y/?o)\b", lc):
+                # Bare number on its own line is also OK (typed "29")
+                if not _re2.match(r"^\s*\d{1,3}\s*\.?\s*$", text):
+                    return None
+            val = _parse_int(text, schema or {"min": 1, "max": 120})
+            # Age sanity: 18-99
+            if val is not None and 18 <= val <= 99:
+                return val
+            return None
+
+        if slot_id == "parents_age":
+            # MUST explicitly mention parent context.
+            if not _re2.search(r"\b(parent|mom|mum|mother|dad|father|mama|papa)", lc):
+                return None
+            val = _parse_int(text, schema or {"min": 30, "max": 110})
+            if val is not None and 30 <= val <= 110:
+                return val
+            return None
+
         if slot_id == "existing_cover":
+            # KI-074 — require a cover-context trigger. Word "cover" alone
+            # is too weak (matches "looking for cover" with no amount).
+            # Need either an explicit denial OR a currency/unit token.
+            denial = _re2.search(
+                r"\b(no|none|nothing|zero|nope|nah|never|haven'?t|don'?t\s+have|first\s+(?:policy|insurance|one|time|buy)|new\s+to\s+insurance|don'?t\s+have\s+any)\b",
+                lc,
+            )
+            # Currency or unit cue. Plain "cover" word doesn't count.
+            unit_cue = _re2.search(
+                r"(₹|\brs\.?\s*\d|\d+\s*(?:lakh|lac|crore|cr)\b|"
+                r"\bsum\s+insured\b|\bcovered\s+for\b|\bemployer.*\bcover|"
+                r"\bfrom\s+work\b)",
+                lc,
+            )
+            if not denial and not unit_cue:
+                return None
             return _parse_existing_cover(text)
+
         # Enum / list slots — keyword fast path only, no LLM.
+        # Each slot has its own trigger keywords inside _keyword_normalize.
         kw = _keyword_normalize(slot_id, text)
         if kw is not None and schema is not None:
             return _validate(kw, schema)
@@ -466,34 +542,54 @@ def _canonical_fallback(session, user_text: str, *, reason: str) -> FactFindOutc
     question for the next missing slot so the user always sees a coherent
     next step.
 
-    KI-072 (2026-05-15) — CRITICAL: applies the user's current message to
-    the previously-asked slot via the legacy normalizer BEFORE picking the
-    next slot. Without this, repeated brain failures wedge the user in an
-    infinite re-ask loop (live bug: "I am Don" / "Don" / "Don Jon" all
-    re-asked "what should I call you?").
+    KI-072 (2026-05-15) — applies the user's message to the previously-asked
+    slot via the legacy normalizer BEFORE picking the next slot.
+
+    KI-074 (2026-05-15) — GREEDY multi-slot capture. Previous KI-072 logic
+    only checked `awaiting_question_id` → dropped facts when brain failed on
+    a multi-fact message ("I am 29 and just me" lost age + dependents
+    because the LLM happened to be driving the `name` slot). Now we try
+    every unfilled slot against the user_text and capture whatever
+    matches — same multi-fact spirit as KI-070, just without the LLM call.
     """
     profile = session.profile
     captured: dict[str, Any] = {}
 
-    # KI-072 — try to capture the user's answer to whichever slot we were
-    # last asking. session.awaiting_question_id was set on the previous turn
-    # from outcome.slot_driving.
-    last_slot = getattr(session, "awaiting_question_id", None)
-    if last_slot and (user_text or "").strip():
+    if (user_text or "").strip():
         try:
-            captured_value = _normalize_for_slot(last_slot, user_text)
-            if captured_value is not None:
-                # Map slot_id → Profile field name via GRAPH.
-                from backend.needs_finder import GRAPH
-                q_obj = next((q for q in GRAPH if q.id == last_slot), None)
-                if q_obj is not None:
-                    captured[q_obj.field] = captured_value
-                    # Apply to profile so next_question picks the FOLLOWING slot.
-                    setattr(profile, q_obj.field, captured_value)
-                    if last_slot not in profile.asked:
-                        profile.asked.append(last_slot)
+            from backend.needs_finder import GRAPH
+
+            # Build the prioritised slot order — try high-signal slots first
+            # (numbers, enums) before name (which has explicit-intro guard).
+            _GREEDY_ORDER = [
+                "age", "dependents", "income_band", "existing_cover",
+                "primary_goal", "location", "parents_age", "budget", "name",
+            ]
+            ordered_slots: list[str] = [
+                sid for sid in _GREEDY_ORDER
+                if any(q.id == sid for q in GRAPH)
+            ]
+
+            for slot_id in ordered_slots:
+                q_obj = next((q for q in GRAPH if q.id == slot_id), None)
+                if q_obj is None:
+                    continue
+                # Skip already-filled slots
+                current = getattr(profile, q_obj.field, None)
+                if current not in (None, "", []):
+                    continue
+                try:
+                    val = _normalize_for_slot(slot_id, user_text)
+                except Exception:
+                    val = None
+                if val is None:
+                    continue
+                captured[q_obj.field] = val
+                setattr(profile, q_obj.field, val)
+                if slot_id not in profile.asked:
+                    profile.asked.append(slot_id)
         except Exception as e:
-            logging.info("canonical_fallback capture skipped (slot=%s): %s", last_slot, e)
+            logging.info("canonical_fallback greedy capture failed: %s", e)
 
     try:
         from backend.needs_finder import next_question

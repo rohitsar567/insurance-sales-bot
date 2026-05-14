@@ -146,8 +146,8 @@ GRAPH: list[Question] = [
     ),
     Question(
         id="health_conditions",
-        prompt_en="Any pre-existing conditions on your side — diabetes, BP, thyroid, asthma, anything chronic? **Be straight with me.** Hiding it lowers your premium ₹500 today and turns into a ₹8 lakh denied claim later when the insurer matches your disclosure against hospital records. Your honest answer protects YOUR claim, not the insurer's profit.",
-        prompt_hi="आपकी side से कोई pre-existing condition — diabetes, BP, thyroid? **सच बताइए।** Hide करने से premium तो कम होगा, but claim time पर ₹8 lakh denied हो सकते हैं। आपकी ईमानदारी आपकी claim बचाती है।",
+        prompt_en="Any pre-existing conditions on your side — diabetes, BP, thyroid, asthma, anything chronic? Be straight with me here — hiding it lowers your premium ₹500 today and turns into a ₹8 lakh denied claim later when the insurer matches your disclosure against hospital records. Your honest answer protects YOUR claim, not the insurer's profit.",
+        prompt_hi="आपकी side से कोई pre-existing condition — diabetes, BP, thyroid? सच बताइए — hide करने से premium तो कम होगा, but claim time पर ₹8 lakh denied हो सकते हैं। आपकी ईमानदारी आपकी claim बचाती है।",
         field="health_conditions",
         condition=_always,
     ),
