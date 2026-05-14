@@ -5,6 +5,8 @@
  *
  * KI-044 (2026-05-14) — PCM pre-roll via AudioWorklet.
  * KI-057 (2026-05-15) — Noise-robust VAD + flush-on-stop.
+ * KI-060 (2026-05-15) — Silence-end window lengthened (40 → 90 frames,
+ *   ~640 ms → ~1.5 s) so natural mid-sentence pauses don't auto-submit.
  *
  * Why KI-057 was needed
  * --------------------------------------------------------------------
@@ -93,7 +95,13 @@ const DEFAULTS = {
   // don't open a segment. KI-044's preroll buffer still captures the
   // first phoneme since we look back 300 ms.
   speechStartFrames: 3,
-  silenceEndFrames: 40, // ~640 ms of silence to declare utterance end
+  // KI-060 (2026-05-15) — bumped 40 → 90 (~1.5 s of silence) so a
+  // natural mid-sentence pause doesn't auto-close the segment.
+  // After KI-057 made noise correctly NOT keep the segment alive,
+  // the underlying silence-end timer was exposed as too aggressive —
+  // users reported that pausing for ~1 s between phrases caused the
+  // bot to submit prematurely.
+  silenceEndFrames: 90,
   minUtteranceMs: 400,
   // KI-044 — How much pre-trigger PCM we keep in the rolling buffer.
   // 300 ms is generous; covers the ~80 ms VAD latency + ~100 ms of

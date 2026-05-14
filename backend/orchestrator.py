@@ -235,6 +235,93 @@ def _family_aware_opener(user_text: str, fallback: str) -> Optional[str]:
     return pool[idx]
 
 
+_SELF_INTRO_RE = re.compile(
+    # KI-062 (2026-05-15) — widened from 1-2 words to 1-4 words so full
+    # names like "Rohit Sar" or "Anjali Devi Kumar" get captured.
+    r"\b(?:i'?m|i\s+am|this\s+is|my\s+name\s+is|name\s+is|call\s+me|name'?s)\s+"
+    r"([a-zA-Z][a-zA-Z'\-]{1,30}"
+    r"(?:\s+[a-zA-Z][a-zA-Z'\-]{1,30}){0,3})\b",
+    re.IGNORECASE,
+)
+
+# KI-059 (2026-05-15) — leading greeting tokens to ignore so "Hi this is X"
+# and "Hello, my name is X" reach the introduction phrase.
+_GREETING_LEAD = re.compile(
+    r"^\s*(?:hi|hello|hey|namaste|yo|hola)[,!.\s]+",
+    re.IGNORECASE,
+)
+
+
+def _contains_self_introduction(text: str) -> bool:
+    """True if the message volunteers a name via "I'm X" / "this is X" /
+    "my name is X" / "call me X" — with or without a greeting prefix.
+
+    Used by KI-059 to detect when a user has supplied their name in the
+    very first turn so we don't ask "what should I call you?" right after
+    they told us.
+    """
+    if not text:
+        return False
+    stripped = _GREETING_LEAD.sub("", text.strip())
+    return bool(_SELF_INTRO_RE.search(stripped))
+
+
+# KI-061 (2026-05-15) — human-readable summaries for the welcome-back
+# greeting. Each tuple is (field name on Profile, label, formatter).
+_KNOWN_FIELD_FORMATTERS: tuple[tuple[str, str, "callable"], ...] = (
+    ("age", "age", lambda v: f"{v}"),
+    ("dependents", "covering", lambda v: str(v).replace("self+", "you+").replace("+", " + ")),
+    ("income_band", "income band", lambda v: str(v)),
+    ("existing_cover_inr", "existing cover", lambda v: f"₹{v:,}" if isinstance(v, int) else str(v)),
+    ("primary_goal", "looking for", lambda v: str(v).replace("_", " ")),
+    ("location_tier", "city tier", lambda v: str(v)),
+    ("parents_age_max", "parents' age", lambda v: f"oldest {v}"),
+    ("health_conditions", "health conditions", lambda v: ", ".join(v) if isinstance(v, list) and v else None),
+    ("budget_band", "budget", lambda v: str(v)),
+)
+
+
+def _format_known_profile_summary(profile) -> str:
+    """Return a comma-separated rundown of what we already know, e.g.
+    'age 34, covering you + spouse, income ₹10-25L, looking for first
+    health policy'. Returns '' if nothing meaningful is stored."""
+    parts: list[str] = []
+    for field_name, label, fmt in _KNOWN_FIELD_FORMATTERS:
+        val = getattr(profile, field_name, None)
+        if val in (None, "", []):
+            continue
+        try:
+            rendered = fmt(val)
+        except Exception:
+            rendered = str(val)
+        if rendered:
+            parts.append(f"{label} {rendered}")
+    return ", ".join(parts)
+
+
+_HELPFUL_GAP_LABELS = {
+    "age": "your age",
+    "dependents": "who you're covering",
+    "income_band": "your income band",
+    "primary_goal": "what you're shopping for",
+    "parents_age_max": "your parents' health context",
+    "budget_band": "your budget",
+}
+
+
+def _format_missing_slots(profile) -> list[str]:
+    """Return human-readable labels for the high-value slots we never
+    captured. Limited to the ones that genuinely shape a recommendation
+    — minor slots (location, existing_cover, health_conditions) are
+    skipped to keep the welcome-back focused."""
+    missing = []
+    for field_name, label in _HELPFUL_GAP_LABELS.items():
+        val = getattr(profile, field_name, None)
+        if val in (None, "", []):
+            missing.append(label)
+    return missing
+
+
 def _pick_opener(
     user_text: str,
     session_id: Optional[str],
@@ -500,6 +587,21 @@ async def handle_turn(
         # of this branch to emit a "Welcome back" message instead of the
         # next slot's question.
         returning_visitor_greeting: Optional[str] = None
+
+        # KI-059 (2026-05-15) — opening-turn name capture. If the user
+        # volunteered a name in their FIRST message ("Hi this is Rohit",
+        # "I'm Anjali", "My name is Ravi") before we asked, route it into
+        # the name-slot handler below so the existing extract + save +
+        # welcome-back logic fires — instead of asking "what should I
+        # call you?" right after they told us. Pre-condition: not yet
+        # awaiting any slot, no name on the profile, and not in
+        # free-form session.
+        if (not session.awaiting_question_id
+                and not session.profile.name
+                and not session.free_form_session
+                and _contains_self_introduction(user_text)):
+            session.set_awaiting("name")
+
         if session.awaiting_question_id:
             from backend.fact_find_normalizer import is_valid_answer, normalize_answer
             qid = session.awaiting_question_id
@@ -507,6 +609,15 @@ async def handle_turn(
             if qid == "name":
                 from backend.profile_store import is_valid_name, load_profile, save_profile
                 raw_name = user_text.strip().strip(".,!?")
+                # KI-059 — strip a leading greeting + comma so "Hi, this is
+                # Rohit" / "Hello I'm Anjali" reduces to the introduction
+                # phrase the next loop expects.
+                for greet in ("hi there ", "hello there ", "hey there ",
+                              "hi, ", "hello, ", "hey, ",
+                              "hi ", "hello ", "hey ", "namaste ", "yo "):
+                    if raw_name.lower().startswith(greet):
+                        raw_name = raw_name[len(greet):].strip()
+                        break
                 # Tolerate "I'm Rohit" / "My name is Rohit" / "call me Rohit"
                 for prefix in ("i'm ", "i am ", "my name is ", "name is ", "call me ", "this is "):
                     if raw_name.lower().startswith(prefix):
@@ -550,11 +661,36 @@ async def handle_turn(
                                 session.profile.asked.append(slot_id)
                         session.free_form_session = True
                         session._flush()
-                        returning_visitor_greeting = (
-                            f"Welcome back, {raw_name}! I've loaded your profile from last time. "
-                            "Want me to suggest some policies that fit your situation, or do "
-                            "you have a specific question in mind?"
-                        )
+                        # KI-061 (2026-05-15) — personalized welcome-back:
+                        # summarize what's on file, call out helpful gaps,
+                        # offer next step. So the returning visitor sees
+                        # the bot remembers them precisely, and any missing
+                        # info can be filled before recommending.
+                        known_summary = _format_known_profile_summary(stored)
+                        missing_labels = _format_missing_slots(stored)
+                        parts = [f"Welcome back, {raw_name}!"]
+                        if known_summary:
+                            parts.append(
+                                f"Here's what I have on file from your last visit: {known_summary}."
+                            )
+                        if missing_labels:
+                            if len(missing_labels) == 1:
+                                gap_phrase = missing_labels[0]
+                            elif len(missing_labels) == 2:
+                                gap_phrase = " and ".join(missing_labels)
+                            else:
+                                gap_phrase = ", ".join(missing_labels[:-1]) + f", and {missing_labels[-1]}"
+                            parts.append(
+                                f"We never got around to {gap_phrase} — happy to fill that in "
+                                "so I can grade policies more precisely, or you can jump straight "
+                                "to a recommendation or any specific question."
+                            )
+                        else:
+                            parts.append(
+                                "Looks like we have everything we need — want me to suggest some "
+                                "policies that fit, or do you have a specific question in mind?"
+                            )
+                        returning_visitor_greeting = " ".join(parts)
                     else:
                         # New visitor — record an initial profile so subsequent
                         # turns persist; orchestrator will continue to next slot.
