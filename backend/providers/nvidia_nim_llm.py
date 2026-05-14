@@ -270,14 +270,32 @@ JUDGE_CHAIN = [
 
 
 class NimChainLLM(LLMProvider):
-    """OpenRouter-style fallback router across multiple NIM models.
+    """KI-080 sticky-primary router across multiple candidate models.
 
-    Tries each model in `chain` in order; on TimeoutException / 5xx / network
-    error, advances to the next. Surfaces the first success transparently.
+    Architectural shift (KI-080, 2026-05-15):
+      PRE-KI-080: chat() iterated the full chain sequentially every turn.
+        Under NIM per-key concurrency throttling, the first 5 NIM-hosted
+        candidates queued together inside ONE turn and burned the 22s
+        budget before any cross-provider fallback was ever reached. The
+        10-turn live probe at commit 078ff45 showed 7/10 fact-find turns
+        timing out at exactly 26.6s.
 
-    `name` after a successful call reflects which model actually answered, so
-    downstream callers (orchestrator brain_used tag, eval logs) can audit
-    which model in the chain produced the output.
+      POST-KI-080: a background probe loop ELECTS a primary + cross-
+        provider backup per chain based on real probe latencies. chat()
+        calls the elected primary ONCE per turn (1 LLM call). On failure,
+        we demote the primary for ~30s and fall through to the elected
+        backup (still 2 LLM calls max). The chain list is now the
+        CANDIDATE POOL for election, not a per-call sequence.
+
+    Worst case per turn: 2 LLM calls (was 5-6). Plus a final filter_chain
+    refresh path is kept for the rare double-failure edge case so the
+    pre-KI-080 graceful-degradation behaviour is preserved.
+
+    `name` after a successful call reflects which model actually answered
+    so downstream callers (orchestrator brain_used tag, eval logs) can
+    audit which candidate produced the output. The KI-079 escalation in
+    fact_find_brain still applies — if primary+backup both fail inside
+    one turn, fact_find_brain gets one more bite via BRAIN_CHAIN.
     """
     def __init__(self, chain: list[str], api_key: Optional[str] = None,
                  timeout: float = 30.0, per_model_attempts: int = 1,
@@ -292,9 +310,14 @@ class NimChainLLM(LLMProvider):
         # produced the p99 58s+ tail in the 100-persona audit. Default to a
         # cumulative ceiling of ~2.5× the per-link timeout so a healthy primary
         # always completes, but a cascading-failure chain bails fast.
+        #
+        # KI-080 — with election we only do 1-2 LLM calls per turn, so the
+        # budget is rarely the binding constraint anymore. Kept for the
+        # final filter_chain-refresh fallback path + cold-start edge cases.
         self.total_budget_s = total_budget_s if total_budget_s is not None else max(timeout * 2.5, 30.0)
         self.per_model_attempts = per_model_attempts
         self.role = role  # 'brain' | 'fast_brain' | 'judge' | 'unknown' — flows into usage log
+        self._chain_name = role if role in ("brain", "fast_brain", "judge") else "unknown"
         self.model = chain[0]
         self.name = f"nim-chain::{self._short_id(chain[0])}"
 
@@ -358,6 +381,38 @@ class NimChainLLM(LLMProvider):
         if "nemotron" in m or m.startswith("nvidia/"): return "nvidia"
         return "unknown"
 
+    # KI-080 — per-call timeout used in the sticky-primary path. Each elected
+    # candidate gets at most this long; with at most 2 calls per turn this
+    # cleanly fits inside any caller's outer wait_for cap (25s for fact-find,
+    # higher for brain/judge).
+    _ELECTED_CALL_TIMEOUT_S = 12.0
+
+    async def _call_one(
+        self,
+        model: str,
+        *,
+        messages: list[ChatMessage],
+        temperature: float,
+        max_tokens: int,
+        response_format: Optional[dict],
+        timeout: float,
+    ) -> LLMResult:
+        """Single-model HTTP call. Extracted from the old chain-iteration
+        loop (KI-080) so chat() can call a SPECIFIC candidate ONCE without
+        the iterate-the-chain envelope.
+
+        Raises whatever the underlying provider raises (TimeoutException /
+        HTTPStatusError / network error). Caller is responsible for failure
+        handling (report_failure + fall through to backup).
+        """
+        worker = self._get_worker_for(model, timeout)
+        return await worker.chat(
+            messages=messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            response_format=response_format,
+        )
+
     async def chat(
         self,
         messages: list[ChatMessage],
@@ -367,123 +422,217 @@ class NimChainLLM(LLMProvider):
         exclude_models: Optional[list[str]] = None,
         exclude_families: Optional[list[str]] = None,
     ) -> LLMResult:
-        # Apply caller's exclusion list FIRST (brain doesn't grade own homework).
-        # exclude_models: skip exact model IDs (handles same-model collision)
-        # exclude_families: skip everything in those families (handles weight-sharing siblings)
-        chain = self.chain
-        if exclude_models or exclude_families:
-            excl_m = set(exclude_models or [])
-            excl_f = set(exclude_families or [])
-            chain = [m for m in chain
-                     if m not in excl_m and self._family_of(m) not in excl_f]
-            if not chain:
-                # Every candidate excluded — relax family constraint, keep exact model
-                # constraint (the strict one). Better to use a same-family model than
-                # to fail the request entirely.
-                chain = [m for m in self.chain if m not in excl_m]
+        """KI-080 — sticky primary election. Call ONE elected candidate per
+        turn, with at most ONE real-time fallback to the elected backup if
+        primary fails. The chain list is the candidate POOL for election —
+        NOT a per-call sequence.
 
-        # Filter out models known-down (from background probe loop). If all
-        # models are down, filter_chain returns the full chain unchanged so
-        # we still try — the infrastructure may have recovered between probes.
-        # Use the post-exclusion `chain` (NOT self.chain) so brain↔judge
-        # independence is preserved even after health filtering.
-        try:
-            from backend import llm_health
-            chain_to_try = llm_health.filter_chain(chain)
-        except Exception:
-            chain_to_try = chain  # health monitor failure must never block calls
+        Cold-start path (no probe data yet): use self.chain[0] / [1].
+        Brain/judge family-exclusion (e.g. brain doesn't grade own
+        homework): apply exclusions to both elected primary + backup; if
+        either is excluded, re-elect from the filtered pool by scanning
+        the chain in order.
+        Final fallback (both elected models fail): trigger a synchronous
+        probe refresh + try whatever filter_chain now offers, walking the
+        chain in order. This path is the pre-KI-080 graceful-degradation
+        safety net for the double-failure edge case.
+        """
+        from backend import llm_health
+
+        # Apply caller's exclusion list FIRST (brain doesn't grade own homework).
+        excl_m = set(exclude_models or [])
+        excl_f = set(exclude_families or [])
+        def _allowed(m: Optional[str]) -> bool:
+            if not m:
+                return False
+            if m in excl_m:
+                return False
+            if self._family_of(m) in excl_f:
+                return False
+            return True
+
+        # Filter the chain by exclusions (kept for the final-fallback path
+        # + cold-start primary/backup election).
+        allowed_chain = [m for m in self.chain if _allowed(m)]
+        if not allowed_chain:
+            # Every candidate excluded — relax family constraint, keep exact
+            # model constraint. Better to use a same-family model than to
+            # fail the request entirely.
+            allowed_chain = [m for m in self.chain if m not in excl_m]
+        if not allowed_chain:
+            raise RuntimeError("NimChainLLM: every chain candidate is excluded.")
 
         chain_primary = self.chain[0] if self.chain else None
         call_t0 = time.time()
 
+        # --- Election (KI-080) ----------------------------------------------
+        elected_primary: Optional[str] = None
+        elected_backup: Optional[str] = None
+        try:
+            primary_candidate = llm_health.get_primary(self._chain_name)
+            backup_candidate = llm_health.get_backup(self._chain_name)
+        except Exception:
+            primary_candidate, backup_candidate = None, None
+
+        if primary_candidate and _allowed(primary_candidate):
+            elected_primary = primary_candidate
+        else:
+            # Cold-start / excluded election → first allowed chain entry.
+            elected_primary = allowed_chain[0]
+
+        if backup_candidate and _allowed(backup_candidate) and backup_candidate != elected_primary:
+            elected_backup = backup_candidate
+        else:
+            # Cold-start / excluded election → first allowed chain entry
+            # that isn't the elected primary. Prefer a different provider.
+            for m in allowed_chain:
+                if m != elected_primary and llm_health.provider_of(m) != llm_health.provider_of(elected_primary):
+                    elected_backup = m
+                    break
+            if elected_backup is None:
+                for m in allowed_chain:
+                    if m != elected_primary:
+                        elected_backup = m
+                        break
+
+        tried: list[str] = []
         last_err: Optional[Exception] = None
-        for model in chain_to_try:
-            # KI-021 — bail out if the cumulative chain budget is gone so a single
-            # turn can never wedge for minutes through a long fallback cascade.
-            elapsed = time.time() - call_t0
-            if elapsed >= self.total_budget_s:
-                last_err = TimeoutError(
-                    f"chain budget exhausted ({elapsed:.1f}s ≥ {self.total_budget_s:.1f}s) "
-                    f"after trying {[m for m in chain_to_try if chain_to_try.index(m) < chain_to_try.index(model)]}"
-                )
-                break
+
+        async def _try(model: str) -> Optional[LLMResult]:
+            """Attempt one elected candidate. On success: stamp self.model
+            + self.name, report_success, log usage, return result. On
+            failure: report_failure, mutate last_err, return None.
+
+            CancelledError / KeyboardInterrupt / SystemExit are re-raised
+            (KI-078) so an outer wait_for cancellation bubbles up
+            instead of getting swallowed by the fallback path.
+            """
+            nonlocal last_err
+            tried.append(model)
+            attempt_t0 = time.time()
             try:
-                # Cap per-link timeout to remaining chain budget so the final
-                # link can't single-handedly blow past the ceiling.
-                per_link_timeout = min(self.timeout, max(2.0, self.total_budget_s - elapsed))
-                worker = self._get_worker_for(model, per_link_timeout)
-                result = await worker.chat(messages=messages, temperature=temperature,
-                                           max_tokens=max_tokens, response_format=response_format)
-                # Successful response — record which model answered + return.
-                # `self.name` preserves any provider prefix so audit logs make
-                # cross-provider fall-throughs (groq:/openrouter:) obvious.
+                result = await self._call_one(
+                    model,
+                    messages=messages,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    response_format=response_format,
+                    timeout=self._ELECTED_CALL_TIMEOUT_S,
+                )
+            except (asyncio.CancelledError, KeyboardInterrupt, SystemExit):
+                # KI-078 — propagate cancellation immediately.
+                raise
+            except Exception as e:
+                last_err = e
+                try:
+                    llm_health.report_failure(
+                        self._chain_name, model, type(e).__name__
+                    )
+                except Exception:
+                    pass
+                return None
+
+            # Success — stamp + log.
+            latency_ms = int((time.time() - attempt_t0) * 1000)
+            try:
+                llm_health.report_success(self._chain_name, model, latency_ms)
+            except Exception:
+                pass
+            self.model = model
+            self.name = f"nim-chain::{self._short_id(model)}"
+            total_ms = int((time.time() - call_t0) * 1000)
+            await _append_usage({
+                "ts": _now_iso_z(),
+                "role": self.role,
+                "chain_primary": chain_primary,
+                "served_model": model,
+                "latency_ms": total_ms,
+                "success": True,
+                "elected_primary": elected_primary,
+                "elected_backup": elected_backup,
+            })
+            return result
+
+        # --- Primary attempt -------------------------------------------------
+        res = await _try(elected_primary)
+        if res is not None:
+            return res
+
+        # --- Backup attempt (KI-080 single real-time fallback) ---------------
+        if elected_backup and elected_backup != elected_primary:
+            res = await _try(elected_backup)
+            if res is not None:
+                return res
+
+        # --- Both elected failed — final safety net --------------------------
+        # Trigger ONE synchronous probe refresh; whatever the refreshed
+        # filter_chain offers, walk it in order and try anything we haven't
+        # touched this turn. This is the pre-KI-080 graceful-degradation
+        # behaviour preserved for the (rare) double-failure case.
+        try:
+            await llm_health.probe_all()
+            refreshed = llm_health.filter_chain(allowed_chain)
+            for model in refreshed:
+                if model in tried:
+                    continue
+                elapsed = time.time() - call_t0
+                if elapsed >= self.total_budget_s:
+                    break
+                attempt_t0 = time.time()
+                try:
+                    per_link_timeout = min(
+                        self._ELECTED_CALL_TIMEOUT_S,
+                        max(2.0, self.total_budget_s - elapsed),
+                    )
+                    result = await self._call_one(
+                        model,
+                        messages=messages,
+                        temperature=temperature,
+                        max_tokens=max_tokens,
+                        response_format=response_format,
+                        timeout=per_link_timeout,
+                    )
+                except (asyncio.CancelledError, KeyboardInterrupt, SystemExit):
+                    raise
+                except Exception as e:
+                    last_err = e
+                    try:
+                        llm_health.report_failure(
+                            self._chain_name, model, type(e).__name__
+                        )
+                    except Exception:
+                        pass
+                    continue
+
+                try:
+                    llm_health.report_success(
+                        self._chain_name, model, int((time.time() - attempt_t0) * 1000)
+                    )
+                except Exception:
+                    pass
                 self.model = model
                 self.name = f"nim-chain::{self._short_id(model)}"
-                latency_ms = int((time.time() - call_t0) * 1000)
+                total_ms = int((time.time() - call_t0) * 1000)
                 await _append_usage({
                     "ts": _now_iso_z(),
                     "role": self.role,
                     "chain_primary": chain_primary,
                     "served_model": model,
-                    "latency_ms": latency_ms,
+                    "latency_ms": total_ms,
                     "success": True,
+                    "elected_primary": elected_primary,
+                    "elected_backup": elected_backup,
+                    "fallback_phase": "post_reprobe",
                 })
                 return result
-            except (httpx.TimeoutException, httpx.HTTPStatusError,
-                    httpx.ConnectError, httpx.NetworkError, asyncio.TimeoutError) as e:
-                last_err = e
-                continue  # try next model in chain
-            except (asyncio.CancelledError, KeyboardInterrupt, SystemExit):
-                # KI-078 (2026-05-15) — must re-raise these. The previous
-                # broad `except Exception` swallowed CancelledError, so when
-                # fact_find_brain's outer `asyncio.wait_for(_TIMEOUT_S)`
-                # fired, this loop kept consuming budget instead of bubbling
-                # the cancellation up. That cost the entire fact-find turn
-                # its fallback window.
-                raise
-            except Exception as e:
-                # Unexpected error — record + try next, but surface eventually if all fail
-                last_err = e
-                continue
-        # All models in (filtered) chain failed. Trigger one synchronous
-        # probe refresh — maybe a transient outage just recovered. If the
-        # refreshed state opens up models we previously skipped, try them.
-        try:
-            from backend import llm_health
-            await llm_health.probe_all()
-            refreshed = llm_health.filter_chain(self.chain)
-            for model in refreshed:
-                if model in chain_to_try:
-                    continue  # already tried this turn
-                # KI-021 — respect chain budget here too
-                elapsed = time.time() - call_t0
-                if elapsed >= self.total_budget_s:
-                    break
-                try:
-                    per_link_timeout = min(self.timeout, max(2.0, self.total_budget_s - elapsed))
-                    worker = self._get_worker_for(model, per_link_timeout)
-                    result = await worker.chat(messages=messages, temperature=temperature,
-                                               max_tokens=max_tokens, response_format=response_format)
-                    self.model = model
-                    self.name = f"nim-chain::{self._short_id(model)}"
-                    latency_ms = int((time.time() - call_t0) * 1000)
-                    await _append_usage({
-                        "ts": _now_iso_z(),
-                        "role": self.role,
-                        "chain_primary": chain_primary,
-                        "served_model": model,
-                        "latency_ms": latency_ms,
-                        "success": True,
-                    })
-                    return result
-                except Exception as e:
-                    last_err = e
-                    continue
+        except (asyncio.CancelledError, KeyboardInterrupt, SystemExit):
+            raise
         except Exception:
-            pass
+            pass  # probe refresh failure must never block the outer raise
 
-        # Total exhaustion — log a single failure record so the admin panel
-        # surfaces "judge has 12% failure rate over last 24h" type signal.
+        # Total exhaustion — log + raise. fact_find_brain.drive_fact_find
+        # (KI-079) catches the resulting RuntimeError + escalates one more
+        # time to BRAIN_CHAIN before falling to the canonical reply.
         latency_ms = int((time.time() - call_t0) * 1000)
         await _append_usage({
             "ts": _now_iso_z(),
@@ -492,30 +641,45 @@ class NimChainLLM(LLMProvider):
             "served_model": None,
             "latency_ms": latency_ms,
             "success": False,
+            "elected_primary": elected_primary,
+            "elected_backup": elected_backup,
+            "tried": tried,
         })
         raise RuntimeError(
-            f"NimChainLLM exhausted all {len(self.chain)} candidates. Last error: "
-            f"{type(last_err).__name__}: {str(last_err)[:120]}"
+            f"NimChainLLM ({self._chain_name}) elected primary={elected_primary} "
+            f"and backup={elected_backup} both failed; tried={tried}. "
+            f"Last error: {type(last_err).__name__ if last_err else 'None'}: "
+            f"{str(last_err)[:120] if last_err else ''}"
         ) from last_err
 
 
 # KI-025 (2026-05-14) — provider load-balancing.
-# The NIM rate cap (40 req/min) is the single biggest throughput bottleneck.
-# Groq has independent rate quota and a Llama-3.3-70B LPU primary that's
-# already in BRAIN_CHAIN as a cross-provider fallback. By rotating which
-# provider serves as the *primary* for each call (50/50 between NIM Qwen and
-# Groq Llama), we spread load across two independent quotas — effectively
-# doubling sustained brain throughput. On rotation-to-Groq, the chain still
-# falls back to NIM if Groq fails, so reliability is unchanged.
+# DEPRECATED 2026-05-15 by KI-080: primary election supersedes the 50/50
+# rotation. The probe loop now picks the actually-faster candidate
+# DYNAMICALLY (real probe latencies, not a coin flip), and the elected
+# backup is chosen with explicit cross-provider preference — both signals
+# the rotation was approximating heuristically. Kept around (not deleted)
+# because the regression suite still pins its statistical behaviour. The
+# get_*_llm factories no longer call it.
 import random as _random
 
 
 def _balanced_brain_chain(base: list[str], *, groq_first_probability: float = 0.5) -> list[str]:
-    """KI-025 — provider load-balancing. With `groq_first_probability` (default
-    50%), hoist the Groq Llama entry to the head of the chain so it serves
-    as the primary instead of the NIM Qwen entry. The remaining candidates
-    stay in their existing fallback order — Groq calls that fail (rare; LPU
-    is very reliable) still get the full NIM fallback chain.
+    """KI-025 — provider load-balancing (DEPRECATED 2026-05-15 by KI-080).
+
+    With `groq_first_probability` (default 50%), hoist the Groq Llama entry
+    to the head of the chain so it serves as the primary instead of the
+    NIM Qwen entry. The remaining candidates stay in their existing
+    fallback order — Groq calls that fail (rare; LPU is very reliable)
+    still get the full NIM fallback chain.
+
+    SUPERSESSION NOTE (KI-080): the elector in `backend.llm_health` now
+    picks the actually-faster candidate dynamically from background probe
+    data, so this static-coin-flip rotation is no longer wired into the
+    chat hot path. Kept exported because:
+      (a) regression tests still pin its statistical behaviour, and
+      (b) it remains a useful pure-function for ops / sim / overrides
+          (e.g. wanting to force a non-elected order in a debug script).
 
     Uses per-call `random.random()` so concurrent async workers (the
     100-persona audit's 4 workers, the parallel 96-Q eval's 6 workers) each
@@ -533,33 +697,48 @@ def _balanced_brain_chain(base: list[str], *, groq_first_probability: float = 0.
 
 
 def get_brain_llm() -> NimChainLLM:
-    """Heavy brain — multi-model NIM chain with automatic fallback.
-    Primary: Qwen 3-Next 80B (50% of calls) or Groq Llama-3.3-70B (50% of calls).
-    See BRAIN_CHAIN for fallback order. KI-021 — per-link 20s, total chain
-    budget 35s. KI-025 — load-balanced across NIM/Groq for 2× brain throughput."""
-    return NimChainLLM(chain=_balanced_brain_chain(BRAIN_CHAIN), timeout=20.0,
+    """Heavy brain — KI-080 sticky-primary election over BRAIN_CHAIN.
+
+    Pre-KI-080: per-call _balanced_brain_chain rotation between NIM Qwen
+    and Groq Llama (KI-025 50/50 heuristic) → 5-6 LLM calls per turn
+    under degraded conditions.
+
+    Post-KI-080: the background probe loop in backend.llm_health elects
+    the actually-fastest candidate dynamically (probe-driven, not coin-
+    flipped) and a cross-provider backup. chat() calls 1-2 candidates max
+    per turn. The rotation is preserved as a deprecated pure-function in
+    case overrides need it, but the factory no longer wires it in.
+
+    KI-021 — per-link 12s (KI-080 ELECTED_CALL_TIMEOUT_S), total chain
+    budget 35s (only binding for the final filter_chain-refresh safety net).
+    """
+    return NimChainLLM(chain=BRAIN_CHAIN, timeout=20.0,
                        role="brain", total_budget_s=35.0)
 
 
 def get_fast_brain_llm() -> NimChainLLM:
-    """Fast brain — multi-model NIM chain optimized for low TTFT.
-    Primary: Qwen 3-Next 80B (50%) or Groq Llama-3.3-70B (50%). See
-    FAST_BRAIN_CHAIN for fallback order.
+    """Fast brain — KI-080 sticky-primary election over FAST_BRAIN_CHAIN.
 
-    KI-078 (2026-05-15) — per-link timeout tightened 12s → 6s. With a 22s
-    total chain budget and a 12s per-link, only 1 candidate could complete
-    before the budget expired — i.e. the fallback chain was effectively
-    dead. Groq LPU + NIM Nemotron Nano + NIM Qwen all hit TTFT in <2s on
-    healthy paths, so 6s catches a degraded link fast and lets the chain
-    try 3-4 candidates inside the 22s budget. The cold-start case (NIM
-    pool warm-up taking 10-15s) is still handled by the outer
-    fact_find_brain `_TIMEOUT_S=25s` wait_for + Groq's cross-provider link
-    which has no NIM cold-start exposure.
+    Pre-KI-080 (KI-025 + KI-078 + KI-079): per-call rotation between NIM
+    Qwen and Groq Llama, 6s per-link timeout, 22s total chain budget,
+    Groq promoted to chain position #2 so a single NIM degradation could
+    fall through fast enough. Even so, the 10-turn live probe at commit
+    078ff45 showed 7/10 fact-find turns hitting the wait_for cap at 26.6s
+    because every chain-iteration burned the full budget exploring 5+
+    queued NIM candidates.
 
-    KI-025 — provider-balanced for 2× fast-brain throughput; Groq LPU's
-    sub-1s TTFT is actually faster than NIM Qwen on average, so this
-    rotation is a strict win for fact-find / QA latency."""
-    return NimChainLLM(chain=_balanced_brain_chain(FAST_BRAIN_CHAIN), timeout=6.0,
+    Post-KI-080: probe-driven election picks ONE primary per chain (the
+    fastest-responding healthy candidate by rolling probe data) and ONE
+    cross-provider backup. chat() invokes the primary ONCE with a 12s
+    timeout, falls to the backup ONCE on failure, and only walks the
+    filter_chain fallback as a final safety net. The KI-079 escalation in
+    fact_find_brain still runs if primary+backup both fail, providing one
+    more bite via BRAIN_CHAIN.
+
+    KI-025 supersession: the 50/50 rotation is no longer wired in — see
+    the docstring on `_balanced_brain_chain` for the reasoning.
+    """
+    return NimChainLLM(chain=FAST_BRAIN_CHAIN, timeout=6.0,
                        role="fast_brain", total_budget_s=22.0)
 
 
