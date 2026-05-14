@@ -9,7 +9,7 @@ with a tiny ping ("reply 'ok'"). Records:
   - consecutive_fail: counter (3+ => marked down)
   - tested_at:        when this row was last refreshed
 
-Persistence: data/llm_health.json (atomic write via temp+rename).
+Persistence: 40-data/llm_health.json (atomic write via temp+rename).
 
 Consumers:
   - NimChainLLM.chat() filters the chain to status != 'down' before iterating.
@@ -32,7 +32,7 @@ from typing import Optional
 import httpx
 
 ROOT = Path(__file__).resolve().parent.parent
-HEALTH_FILE = ROOT / "data" / "llm_health.json"
+HEALTH_FILE = ROOT / "40-data" / "llm_health.json"
 HEALTH_FILE.parent.mkdir(parents=True, exist_ok=True)
 
 PROBE_INTERVAL_SEC = 300          # ping each model every 5 min

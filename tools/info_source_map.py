@@ -4,9 +4,9 @@ info_source_map.py — 100% link-integrity + claim-to-source two-part audit.
 Walks every claim with provenance triple {value, source_pdf_path|source_url,
 source_quote} across:
 
-  1. data/policy_facts/*.json   (per-policy curated facts; ~102 files)
-  2. data/reviews/*.json        (per-insurer claim metrics + aggregator URLs)
-  3. data/premiums/illustrative_premiums.json  (premium samples with source_url)
+  1. 40-data/policy_facts/*.json   (per-policy curated facts; ~102 files)
+  2. 40-data/reviews/*.json        (per-insurer claim metrics + aggregator URLs)
+  3. 40-data/premiums/illustrative_premiums.json  (premium samples with source_url)
 
 For every (policy_id / insurer_slug, field, value, source) triple it runs:
 
@@ -29,7 +29,7 @@ Verdicts (per claim):
 
 Output:
   - eval/info_source_map.json   (machine-readable; ~one row per claim)
-  - data/information_source_map.md  (human-readable audit report)
+  - 40-data/information_source_map.md  (human-readable audit report)
 """
 
 from __future__ import annotations
@@ -48,12 +48,12 @@ import httpx
 import pdfplumber
 
 ROOT = Path(__file__).resolve().parent.parent
-POLICY_FACTS_DIR = ROOT / "data" / "policy_facts"
-REVIEWS_DIR = ROOT / "data" / "reviews"
-PREMIUMS_FILE = ROOT / "data" / "premiums" / "illustrative_premiums.json"
+POLICY_FACTS_DIR = ROOT / "40-data" / "policy_facts"
+REVIEWS_DIR = ROOT / "40-data" / "reviews"
+PREMIUMS_FILE = ROOT / "40-data" / "premiums" / "illustrative_premiums.json"
 BROWSER_VERIFIED = ROOT / "tools" / "browser_verified.json"
 JSON_OUT = ROOT / "eval" / "info_source_map.json"
-MD_OUT = ROOT / "data" / "information_source_map.md"
+MD_OUT = ROOT / "40-data" / "information_source_map.md"
 
 PDF_TEXT_CACHE: dict[str, str] = {}
 URL_TEXT_CACHE: dict[str, str] = {}

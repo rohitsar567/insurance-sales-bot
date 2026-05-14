@@ -38,7 +38,7 @@ step "PDF freshness pass"     "$PY" tools/check_pdf_etags.py || true
 step "Premium anchor refresh" "$PY" tools/refresh_premiums.py || true
 
 # Full corpus re-ingest — wipe Chroma first so every PDF is re-processed
-step "Wipe Chroma vectors"    bash -c 'rm -rf data/vectors/* 2>/dev/null || true'
+step "Wipe Chroma vectors"    bash -c 'rm -rf 40-data/vectors/* 2>/dev/null || true'
 step "Re-ingest full corpus"  "$PY" -m rag.ingest
 
 # Re-extract structured schema for any newly added policies

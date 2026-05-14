@@ -175,7 +175,7 @@ def score_waiting_friction(p: dict) -> SubScore:
 def score_claim_experience(p: dict, insurer_reviews: Optional[dict] = None) -> SubScore:
     """Will claims actually be paid? Network size, settlement ratio, cashless support.
 
-    Now also uses INSURER-LEVEL data from data/reviews/<slug>.json — the IRDAI
+    Now also uses INSURER-LEVEL data from 40-data/reviews/<slug>.json — the IRDAI
     Annual Report claim_settlement_ratio + complaints_per_10k_policies feed
     directly into this sub-score. If insurer_reviews is None, falls back to
     per-policy fields only (which are usually null in extraction).

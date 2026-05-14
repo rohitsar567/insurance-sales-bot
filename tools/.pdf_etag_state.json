@@ -1,4 +1,10 @@
 {
+  "http://www.newindia.co.in/assets/70-docs/know-more/health/asha-kiran-policy/Customer%20Information%20Sheet%20NEW%20INDIA%20ASHA%20KIRAN%20POLICY.pdf": {
+    "content_length": "",
+    "etag": "W/\"3d7d96-kxU7Y5YwWsfqWtiGDDHq1JMu6W0-gzip:dtagent10257230921194352Ckbr:dtagent10257230921194352Ckbr\"",
+    "last_modified": "",
+    "status": 200
+  },
   "https://bajajallianz.com/download-documents/health-insurance/health-guard-individual-policy/HG_Gold_Policy_Wording_&_CIS.pdf": {
     "content_length": "644131",
     "etag": "\"0x8DD49EEF25EBF0B\"",
@@ -70,6 +76,12 @@
     "etag": "",
     "last_modified": "",
     "status": 404
+  },
+  "https://irdai.gov.in/documents/37343/931203/MCIHLIP22211V062122.pdf/b3a179da-4a2e-b4f2-27db-11779ec9a3cf?version=1.1&t=1668851771621&download=true": {
+    "content_length": "",
+    "etag": "",
+    "last_modified": "Sat, 19 Nov 2022 09:56:11 GMT",
+    "status": 200
   },
   "https://transactions.nivabupa.com/pages/doc/brochure/Health_Companion_V2022_Br.pdf?v=1.1": {
     "content_length": "284149",
@@ -247,67 +259,73 @@
     "last_modified": "Mon, 10 Feb 2025 16:17:41 GMT",
     "status": 200
   },
-  "https://www.hdfcergo.com/docs/default-source/downloads/brochures/myhealth-women-suraksha-with-premium-table.pdf": {
+  "https://www.bajajgeneralinsurance.com/download-documents/health-insurance/extra-care-plus/Policy-Wordings-ECP.pdf": {
+    "content_length": "600497",
+    "etag": "\"0x8DD49EF5B02E822\"",
+    "last_modified": "Mon, 10 Feb 2025 16:24:12 GMT",
+    "status": 200
+  },
+  "https://www.hdfcergo.com/70-docs/default-source/downloads/brochures/myhealth-women-suraksha-with-premium-table.pdf": {
     "content_length": "1075799",
     "etag": "",
     "last_modified": "Mon, 05 May 2025 07:43:29 GMT",
     "status": 200
   },
-  "https://www.hdfcergo.com/docs/default-source/downloads/policy-wordings/health/energy-combined-pw-cis.pdf": {
+  "https://www.hdfcergo.com/70-docs/default-source/downloads/policy-wordings/health/energy-combined-pw-cis.pdf": {
     "content_length": "408865",
     "etag": "",
     "last_modified": "Thu, 11 Sep 2025 11:40:56 GMT",
     "status": 200
   },
-  "https://www.hdfcergo.com/docs/default-source/downloads/policy-wordings/health/group-health-insurance---pw.pdf": {
+  "https://www.hdfcergo.com/70-docs/default-source/downloads/policy-wordings/health/group-health-insurance---pw.pdf": {
     "content_length": "1068477",
     "etag": "",
     "last_modified": "Thu, 24 Jul 2025 07:27:11 GMT",
     "status": 200
   },
-  "https://www.hdfcergo.com/docs/default-source/downloads/policy-wordings/health/my-optima-secure_old_pws.pdf": {
+  "https://www.hdfcergo.com/70-docs/default-source/downloads/policy-wordings/health/my-optima-secure_old_pws.pdf": {
     "content_length": "502553",
     "etag": "",
     "last_modified": "Mon, 13 Feb 2023 13:11:44 GMT",
     "status": 200
   },
-  "https://www.hdfcergo.com/docs/default-source/downloads/policy-wordings/health/optima-plus-policy-wordings.pdf": {
+  "https://www.hdfcergo.com/70-docs/default-source/downloads/policy-wordings/health/optima-plus-policy-wordings.pdf": {
     "content_length": "345712",
     "etag": "",
     "last_modified": "Fri, 11 Jul 2025 13:28:38 GMT",
     "status": 200
   },
-  "https://www.hdfcergo.com/docs/default-source/downloads/policy-wordings/health/optima-secure-revision-pw.pdf": {
+  "https://www.hdfcergo.com/70-docs/default-source/downloads/policy-wordings/health/optima-secure-revision-pw.pdf": {
     "content_length": "625359",
     "etag": "",
     "last_modified": "Fri, 11 Jul 2025 13:52:34 GMT",
     "status": 200
   },
-  "https://www.hdfcergo.com/docs/default-source/downloads/policy-wordings/health/total-health-plan--oct-2021.pdf": {
+  "https://www.hdfcergo.com/70-docs/default-source/downloads/policy-wordings/health/total-health-plan--oct-2021.pdf": {
     "content_length": "342798",
     "etag": "",
     "last_modified": "Fri, 01 Oct 2021 12:56:15 GMT",
     "status": 200
   },
-  "https://www.hdfcergo.com/docs/default-source/downloads/policy-wordings/others/optima-enhance-policy-wording.pdf": {
+  "https://www.hdfcergo.com/70-docs/default-source/downloads/policy-wordings/others/optima-enhance-policy-wording.pdf": {
     "content_length": "905652",
     "etag": "",
     "last_modified": "Thu, 05 Oct 2023 11:02:21 GMT",
     "status": 200
   },
-  "https://www.hdfcergo.com/docs/default-source/downloads/policy-wordings/others/policy-wordings---prime---hrc.pdf": {
+  "https://www.hdfcergo.com/70-docs/default-source/downloads/policy-wordings/others/policy-wordings---prime---hrc.pdf": {
     "content_length": "698083",
     "etag": "",
     "last_modified": "Thu, 05 Oct 2023 11:02:27 GMT",
     "status": 200
   },
-  "https://www.hdfcergo.com/docs/default-source/downloads/prospectus/health/my_sampoorna_suraksha.pdf": {
+  "https://www.hdfcergo.com/70-docs/default-source/downloads/prospectus/health/my_sampoorna_suraksha.pdf": {
     "content_length": "647174",
     "etag": "",
     "last_modified": "Fri, 14 Mar 2025 20:02:35 GMT",
     "status": 200
   },
-  "https://www.hdfcergo.com/docs/default-source/downloads/prospectus/health/myhealth-suraksha---prospectus.pdf": {
+  "https://www.hdfcergo.com/70-docs/default-source/downloads/prospectus/health/myhealth-suraksha---prospectus.pdf": {
     "content_length": "444631",
     "etag": "",
     "last_modified": "Sat, 15 Mar 2025 04:46:49 GMT",
@@ -319,55 +337,55 @@
     "last_modified": "Thu, 12 Nov 2020 16:40:26 GMT",
     "status": 200
   },
-  "https://www.icicilombard.com/docs/default-source/apps/elevateapp/assets/pdf/elevate-policy-wordings.pdf": {
+  "https://www.icicilombard.com/70-docs/default-source/apps/elevateapp/assets/pdf/elevate-policy-wordings.pdf": {
     "content_length": "488",
     "etag": "",
     "last_modified": "",
     "status": 403
   },
-  "https://www.icicilombard.com/docs/default-source/apps/healthclientapp/assets/pdf/health-advantedge-policy-wordings.pdf": {
+  "https://www.icicilombard.com/70-docs/default-source/apps/healthclientapp/assets/pdf/health-advantedge-policy-wordings.pdf": {
     "content_length": "507",
     "etag": "",
     "last_modified": "",
     "status": 403
   },
-  "https://www.icicilombard.com/docs/default-source/default-document-library/health-booster_policy-wordings.pdf": {
+  "https://www.icicilombard.com/70-docs/default-source/default-document-library/health-booster_policy-wordings.pdf": {
     "content_length": "493",
     "etag": "",
     "last_modified": "",
     "status": 403
   },
-  "https://www.icicilombard.com/docs/default-source/default-document-library/health-shield-360-retail_pw.pdf": {
+  "https://www.icicilombard.com/70-docs/default-source/default-document-library/health-shield-360-retail_pw.pdf": {
     "content_length": "494",
     "etag": "",
     "last_modified": "",
     "status": 403
   },
-  "https://www.icicilombard.com/docs/default-source/default-document-library/icihlip23144v072223-icici-lombard-complete-health-insurance.pdf": {
+  "https://www.icicilombard.com/70-docs/default-source/default-document-library/icihlip23144v072223-icici-lombard-complete-health-insurance.pdf": {
     "content_length": "530",
     "etag": "",
     "last_modified": "",
     "status": 403
   },
-  "https://www.icicilombard.com/docs/default-source/policy-wordings-product-brochure/arogya-sanjeevani-policy-policy-wordings.pdf": {
+  "https://www.icicilombard.com/70-docs/default-source/policy-wordings-product-brochure/arogya-sanjeevani-policy-policy-wordings.pdf": {
     "content_length": "519",
     "etag": "",
     "last_modified": "",
     "status": 403
   },
-  "https://www.icicilombard.com/docs/default-source/policy-wordings-product-brochure/complete-health-insurance-(health-elite-plus).pdf": {
+  "https://www.icicilombard.com/70-docs/default-source/policy-wordings-product-brochure/complete-health-insurance-(health-elite-plus).pdf": {
     "content_length": "536",
     "etag": "",
     "last_modified": "",
     "status": 403
   },
-  "https://www.icicilombard.com/docs/default-source/policy-wordings-product-brochure/complete-health-insurance-(health-shield).pdf": {
+  "https://www.icicilombard.com/70-docs/default-source/policy-wordings-product-brochure/complete-health-insurance-(health-shield).pdf": {
     "content_length": "528",
     "etag": "",
     "last_modified": "",
     "status": 403
   },
-  "https://www.icicilombard.com/docs/default-source/policy-wordings-product-brochure/health-shield-360-retail---cis.pdf": {
+  "https://www.icicilombard.com/70-docs/default-source/policy-wordings-product-brochure/health-shield-360-retail---cis.pdf": {
     "content_length": "517",
     "etag": "",
     "last_modified": "",
@@ -378,6 +396,18 @@
     "etag": "",
     "last_modified": "",
     "status": 404
+  },
+  "https://www.manipalcigna.com/documents/20124/0/ProHealthPrime-Protect-and-Advantage-Accordion/8aa36945-b0a9-1037-e9c4-579b9a44149e": {
+    "content_length": "2841958",
+    "etag": "",
+    "last_modified": "Tue, 09 Dec 2025 10:18:31 GMT",
+    "status": 200
+  },
+  "https://www.manipalcigna.com/documents/20124/0/ProHealthPrime-Rider-P-A-Plan-Prospectus/bad30bd2-2394-7a8d-4072-8d73b2b7b3fa": {
+    "content_length": "1160913",
+    "etag": "",
+    "last_modified": "Mon, 21 Jul 2025 08:00:24 GMT",
+    "status": 200
   },
   "https://www.manipalcigna.com/documents/20124/0/Sarvah-Param-Prospectus/c2543c7b-764d-2157-7f4c-214616f20ff4": {
     "content_length": "452029",
@@ -403,49 +433,49 @@
     "last_modified": "Thu, 21 Jan 2021 15:39:53 GMT",
     "status": 200
   },
-  "https://www.newindia.co.in/assets/docs/know-more/health/asha-kiran-policy/Customer%20Information%20Sheet%20NEW%20INDIA%20ASHA%20KIRAN%20POLICY.pdf": {
+  "https://www.newindia.co.in/assets/70-docs/know-more/health/asha-kiran-policy/Customer%20Information%20Sheet%20NEW%20INDIA%20ASHA%20KIRAN%20POLICY.pdf": {
     "content_length": "",
     "etag": "W/\"3d7d94-qsGY6odTtwNUwlHf6J7LkLaYcJ0-gzip:dtagent10257230921194352Ckbr:dtagent10257230921194352Ckbr\"",
     "last_modified": "",
     "status": 200
   },
-  "https://www.newindia.co.in/assets/docs/know-more/health/asha-kiran-policy/Prospectus%20New%20India%20Asha%20Kiran%20Policy%20wef%2001%2004%202021.pdf": {
+  "https://www.newindia.co.in/assets/70-docs/know-more/health/asha-kiran-policy/Prospectus%20New%20India%20Asha%20Kiran%20Policy%20wef%2001%2004%202021.pdf": {
     "content_length": "",
     "etag": "W/\"3d7d94-BPRC/p1F7hq/oq7h6vmF4POZiWo-gzip:dtagent10257230921194352Ckbr:dtagent10257230921194352Ckbr\"",
     "last_modified": "",
     "status": 200
   },
-  "https://www.newindia.co.in/assets/docs/know-more/health/floater-mediclaim-policy/Policy%20Clause%20New%20India%20Floater%20Mediclaim%20Policy%20wef%2001%2010%202024.pdf": {
+  "https://www.newindia.co.in/assets/70-docs/know-more/health/floater-mediclaim-policy/Policy%20Clause%20New%20India%20Floater%20Mediclaim%20Policy%20wef%2001%2010%202024.pdf": {
     "content_length": "",
     "etag": "W/\"3d7d94-nGJziGU7LrVj1pFBNx28D5lKq/E-gzip:dtagent10257230921194352Ckbr:dtagent10257230921194352Ckbr\"",
     "last_modified": "",
     "status": 200
   },
-  "https://www.newindia.co.in/assets/docs/know-more/health/janata-mediclaim-policy/Policy%20Clause%20Janata%20Mediclaim%20Policy.pdf": {
+  "https://www.newindia.co.in/assets/70-docs/know-more/health/janata-mediclaim-policy/Policy%20Clause%20Janata%20Mediclaim%20Policy.pdf": {
     "content_length": "",
     "etag": "W/\"3d7d94-0DOSZhfzACAdWn0tUR9HGTxgUe0-gzip:dtagent10257230921194352Ckbr:dtagent10257230921194352Ckbr\"",
     "last_modified": "",
     "status": 200
   },
-  "https://www.newindia.co.in/assets/docs/know-more/health/new-india-mediclaim-policy/PolicyClauseNewIndiaMediclaimPolicy(NIAHLIP23187V052223).pdf": {
+  "https://www.newindia.co.in/assets/70-docs/know-more/health/new-india-mediclaim-policy/PolicyClauseNewIndiaMediclaimPolicy(NIAHLIP23187V052223).pdf": {
     "content_length": "",
     "etag": "W/\"3d7d94-fMfGWQmXsWkTTc+wQE0A3aHK71o-gzip:dtagent10257230921194352Ckbr:dtagent10257230921194352Ckbr\"",
     "last_modified": "",
     "status": 200
   },
-  "https://www.newindia.co.in/assets/docs/know-more/health/new-india-mediclaim-policy/Prospectus%20New%20India%20Mediclaim%20Policy.pdf": {
+  "https://www.newindia.co.in/assets/70-docs/know-more/health/new-india-mediclaim-policy/Prospectus%20New%20India%20Mediclaim%20Policy.pdf": {
     "content_length": "",
     "etag": "W/\"3d7d94-nPX4qLlcoXP40Vz01riDqkx5Fuo-gzip:dtagent10257230921194352Ckbr:dtagent10257230921194352Ckbr\"",
     "last_modified": "",
     "status": 200
   },
-  "https://www.newindia.co.in/assets/docs/know-more/health/universal-health-insurance/Policy%20Clause%20Universal%20Health%20Insurance%20Policy.pdf": {
+  "https://www.newindia.co.in/assets/70-docs/know-more/health/universal-health-insurance/Policy%20Clause%20Universal%20Health%20Insurance%20Policy.pdf": {
     "content_length": "",
     "etag": "W/\"3d7d94-7RnkZDXTl9bnifr+E+UeeViQDtw-gzip:dtagent10257230921194352Ckbr:dtagent10257230921194352Ckbr\"",
     "last_modified": "",
     "status": 200
   },
-  "https://www.newindia.co.in/assets/docs/know-more/health/yuva-bharat-health-policy/Policy%20Clause%20Yuva%20Bharat%20Health%20Policy%20%20wef%2001%2010%202024_1.pdf": {
+  "https://www.newindia.co.in/assets/70-docs/know-more/health/yuva-bharat-health-policy/Policy%20Clause%20Yuva%20Bharat%20Health%20Policy%20%20wef%2001%2010%202024_1.pdf": {
     "content_length": "",
     "etag": "W/\"3d7d94-BZhtk430IzfR9myivyfzo72czXw-gzip:dtagent10257230921194352Ckbr:dtagent10257230921194352Ckbr\"",
     "last_modified": "",

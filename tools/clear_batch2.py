@@ -2,7 +2,7 @@
 import os, sys
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUT_DIR = os.path.join(BASE, "data/policy_facts")
+OUT_DIR = os.path.join(BASE, "40-data/policy_facts")
 
 BATCH1 = {
     "aditya-birla__activ-assure-diamond",

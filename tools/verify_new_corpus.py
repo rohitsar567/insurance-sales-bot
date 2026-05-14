@@ -22,7 +22,7 @@ Run:
   .venv/bin/python tools/verify_new_corpus.py
 
 Outputs:
-  - data/new_corpus_verification.json   (machine-readable audit)
+  - 40-data/new_corpus_verification.json   (machine-readable audit)
   - logs/new_corpus_verification.log    (human-readable rejection trail)
   - rejected entries DELETED from _manifest.json + .pdf files removed
 """
@@ -43,7 +43,7 @@ sys.path.insert(0, str(ROOT))
 
 MANIFEST = ROOT / "rag" / "corpus" / "_manifest.json"
 LOG = ROOT / "logs" / "new_corpus_verification.log"
-AUDIT = ROOT / "data" / "new_corpus_verification.json"
+AUDIT = ROOT / "40-data" / "new_corpus_verification.json"
 LOG.parent.mkdir(parents=True, exist_ok=True)
 AUDIT.parent.mkdir(parents=True, exist_ok=True)
 

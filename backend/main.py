@@ -185,7 +185,7 @@ async def _startup_load_admin_overrides():
     """Re-apply any persisted chain reorderings from the previous process."""
     import asyncio
     from pathlib import Path
-    override_path = Path(__file__).resolve().parent.parent / "data" / "admin_overrides.json"
+    override_path = Path(__file__).resolve().parent.parent / "40-data" / "admin_overrides.json"
     if override_path.exists():
         try:
             overrides = json.loads(override_path.read_text())
@@ -793,11 +793,11 @@ async def scorecard_methodology():
 
 
 def _build_corpus_url_index() -> dict[str, str]:
-    """Parse data/corpus_urls.md and return {policy_id: source_url}. Used to
+    """Parse 40-data/corpus_urls.md and return {policy_id: source_url}. Used to
     backfill source_pdf_url when the LLM extraction didn't capture it."""
     import re as _re
     out: dict[str, str] = {}
-    md_path = settings.CORPUS_DIR.parent.parent / "data" / "corpus_urls.md"
+    md_path = settings.CORPUS_DIR.parent.parent / "40-data" / "corpus_urls.md"
     if not md_path.exists():
         return out
     for line in md_path.read_text().splitlines():
@@ -828,14 +828,14 @@ def _build_corpus_url_index() -> dict[str, str]:
 
 
 def _load_curated_facts() -> dict[str, dict]:
-    """Load the data/policy_facts/*.json curated layer. Each file has a
+    """Load the 40-data/policy_facts/*.json curated layer. Each file has a
     `{field: {value, source_pdf_path, source_quote}}` shape. We unwrap to a
     flat `{field: value}` dict for the marketplace endpoint, preserving the
     provenance in a `_facts_provenance` field for transparency.
     """
     import json as _json
     facts: dict[str, dict] = {}
-    facts_dir = settings.CORPUS_DIR.parent.parent / "data" / "policy_facts"
+    facts_dir = settings.CORPUS_DIR.parent.parent / "40-data" / "policy_facts"
     if not facts_dir.exists():
         return facts
     for f in facts_dir.glob("*.json"):
@@ -953,7 +953,7 @@ async def policies_all(session_id: Optional[str] = None):
         # Get insurer reviews if available for the scorecard
         ir = None
         if slug:
-            rp = settings.CORPUS_DIR.parent.parent / "data" / "reviews" / f"{slug}.json"
+            rp = settings.CORPUS_DIR.parent.parent / "40-data" / "reviews" / f"{slug}.json"
             if rp.exists():
                 try: ir = _json.loads(rp.read_text())
                 except Exception: pass
@@ -1007,7 +1007,7 @@ async def policies_all(session_id: Optional[str] = None):
             continue
 
     # Pass 2: curated policies that don't yet have an LLM extraction.
-    # These come straight from data/policy_facts/*.json — fully human-curated
+    # These come straight from 40-data/policy_facts/*.json — fully human-curated
     # with verbatim source quotes per field.
     for curated_policy_id, data in curated_facts.items():
         # Skip permutation keys (we set __wordings / __brochure / __cis aliases
@@ -1025,7 +1025,7 @@ async def policies_all(session_id: Optional[str] = None):
         # Insurer reviews for scorecard
         ir = None
         if slug:
-            rp = settings.CORPUS_DIR.parent.parent / "data" / "reviews" / f"{slug}.json"
+            rp = settings.CORPUS_DIR.parent.parent / "40-data" / "reviews" / f"{slug}.json"
             if rp.exists():
                 try:
                     ir = _json.loads(rp.read_text())
@@ -1103,7 +1103,7 @@ async def compare_policies(policy_ids: list[str] = None):
         slug = data.get("insurer_slug")
         ir = None
         if slug:
-            rp = settings.CORPUS_DIR.parent.parent / "data" / "reviews" / f"{slug}.json"
+            rp = settings.CORPUS_DIR.parent.parent / "40-data" / "reviews" / f"{slug}.json"
             if rp.exists():
                 try: ir = _json.loads(rp.read_text())
                 except Exception: pass
@@ -1170,7 +1170,7 @@ async def policy_scorecard(
     insurer_reviews = None
     slug = policy.get("insurer_slug")
     if slug:
-        rp = settings.CORPUS_DIR.parent.parent / "data" / "reviews" / f"{slug}.json"
+        rp = settings.CORPUS_DIR.parent.parent / "40-data" / "reviews" / f"{slug}.json"
         if rp.exists():
             try:
                 insurer_reviews = _json.loads(rp.read_text())
@@ -1215,11 +1215,11 @@ async def get_reviews(insurer_slug: str):
 
     Data sourced from IRDAI annual report + PolicyBazaar/InsuranceDekho +
     Reddit r/IndianFinance + YouTube finance creators (Ditto et al) +
-    news mentions. Per-insurer JSON at data/reviews/<slug>.json — see
-    data/reviews/INDEX.md for leaderboard.
+    news mentions. Per-insurer JSON at 40-data/reviews/<slug>.json — see
+    40-data/reviews/INDEX.md for leaderboard.
     """
     import json
-    p = settings.CORPUS_DIR.parent.parent / "data" / "reviews" / f"{insurer_slug}.json"
+    p = settings.CORPUS_DIR.parent.parent / "40-data" / "reviews" / f"{insurer_slug}.json"
     if not p.exists():
         raise HTTPException(404, f"No reviews for insurer={insurer_slug}")
     try:

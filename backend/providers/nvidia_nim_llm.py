@@ -46,7 +46,7 @@ from backend.providers.groq_llm import GroqLLM
 # Usage log — append-only JSONL with cheap 1 MB rotation. Consumed by
 # GET /api/admin/usage for the admin control panel. Path is two parents up
 # from this file (backend/providers/nvidia_nim_llm.py → repo root / data).
-_USAGE_LOG_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "llm_usage.jsonl"
+_USAGE_LOG_PATH = Path(__file__).resolve().parent.parent.parent / "40-data" / "llm_usage.jsonl"
 _USAGE_LOG_MAX_BYTES = 1_000_000  # 1 MB cap — rotate to .bak when exceeded
 _usage_lock = asyncio.Lock()
 
@@ -56,7 +56,7 @@ def _now_iso_z() -> str:
 
 
 async def _append_usage(record: dict) -> None:
-    """Append one JSONL record to data/llm_usage.jsonl with 1 MB rotation.
+    """Append one JSONL record to 40-data/llm_usage.jsonl with 1 MB rotation.
 
     Best-effort: never raises. Usage logging must NEVER break a chat call.
     Rotation: if file is >1 MB, rename to ``llm_usage.jsonl.bak`` (overwriting

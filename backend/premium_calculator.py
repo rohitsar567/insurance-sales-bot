@@ -5,7 +5,7 @@ The output is explicitly an **illustrative band**, not a quote. See decisions.md
 D-007 — we are an advisor, not a broker. Real premiums depend on underwriting.
 
 How it works:
-  1. Load `data/premiums/illustrative_premiums.json` (curated by research agent
+  1. Load `40-data/premiums/illustrative_premiums.json` (curated by research agent
      from real quote-page scrapes; every value has a source_url).
   2. Given user inputs (age, sum_insured, city_tier, smoker, family_size,
      optional policy_id):
@@ -28,7 +28,7 @@ from typing import Optional
 from backend.config import settings
 
 ROOT = settings.CORPUS_DIR.parent.parent
-PREMIUM_DATA = ROOT / "data" / "premiums" / "illustrative_premiums.json"
+PREMIUM_DATA = ROOT / "40-data" / "premiums" / "illustrative_premiums.json"
 
 
 @dataclass

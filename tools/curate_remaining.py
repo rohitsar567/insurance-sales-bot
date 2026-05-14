@@ -1,5 +1,5 @@
 """Curate every policy PDF in rag/corpus/ that doesn't have a matching
-data/policy_facts/<policy_id>.json yet. Includes group/B2B/specialty plans
+40-data/policy_facts/<policy_id>.json yet. Includes group/B2B/specialty plans
 the batch-2 agent excluded.
 
 Uses pdfplumber to read PDF text + regex patterns from curate_batch2 to
@@ -20,7 +20,7 @@ from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
 CORPUS = BASE / "rag" / "corpus"
-OUT_DIR = BASE / "data" / "policy_facts"
+OUT_DIR = BASE / "40-data" / "policy_facts"
 OUT_DIR.mkdir(exist_ok=True, parents=True)
 
 # Reuse the same regex extractors as batch 2 by importing the module

@@ -38,7 +38,7 @@ from backend import llm_health
 router = APIRouter()
 
 
-# Cap how many tail lines of data/llm_usage.jsonl we hold in memory while
+# Cap how many tail lines of 40-data/llm_usage.jsonl we hold in memory while
 # computing per-role stats. 1000 lines @ ~150B each = ~150 KB peak — bounded.
 USAGE_TAIL_LINES = 1000
 
@@ -125,8 +125,8 @@ async def admin_chain_set(
     name = {"brain": "BRAIN_CHAIN", "fast_brain": "FAST_BRAIN_CHAIN", "judge": "JUDGE_CHAIN"}[body.role]
     setattr(nim, name, list(body.order))
 
-    # Persist for next process restart — write to data/admin_overrides.json
-    override_path = Path(__file__).resolve().parent.parent / "data" / "admin_overrides.json"
+    # Persist for next process restart — write to 40-data/admin_overrides.json
+    override_path = Path(__file__).resolve().parent.parent / "40-data" / "admin_overrides.json"
     override_path.parent.mkdir(parents=True, exist_ok=True)
     state = {}
     if override_path.exists():
@@ -247,7 +247,7 @@ async def admin_usage(
 ):
     """Per-role usage stats over the last USAGE_TAIL_LINES log entries.
 
-    Backward-compatible: if data/llm_usage.jsonl doesn't exist yet, returns
+    Backward-compatible: if 40-data/llm_usage.jsonl doesn't exist yet, returns
     zero-stat blocks with primary_model = current chain[0]. The frontend can
     render an empty-state without any extra branching.
     """
@@ -262,7 +262,7 @@ async def admin_usage(
         "judge":      list(getattr(nim, "JUDGE_CHAIN", [])),
     }
 
-    usage_path = Path(__file__).resolve().parent.parent / "data" / "llm_usage.jsonl"
+    usage_path = Path(__file__).resolve().parent.parent / "40-data" / "llm_usage.jsonl"
     rows = _tail_jsonl(usage_path, USAGE_TAIL_LINES)
     health_state = llm_health.load()  # {model: ModelHealth} dict
 
@@ -455,14 +455,14 @@ def _read_audit_summary() -> Optional[dict]:
 
 def _read_usage_24h() -> Optional[dict]:
     """Compute {role: {count, success_rate, avg_latency_ms}} from the last
-    USAGE_TAIL_LINES entries of data/llm_usage.jsonl. Returns None if the
+    USAGE_TAIL_LINES entries of 40-data/llm_usage.jsonl. Returns None if the
     file is missing OR empty so the frontend can render an empty-state.
 
     Note: "24h" in the field name is conventional — the actual window is the
     last USAGE_TAIL_LINES rows (typically covers ≈24h of activity at current
     traffic). Keeping the name aligns with the admin UI label.
     """
-    usage_path = _REPO_ROOT / "data" / "llm_usage.jsonl"
+    usage_path = _REPO_ROOT / "40-data" / "llm_usage.jsonl"
     rows = _tail_jsonl(usage_path, USAGE_TAIL_LINES)
     if not rows:
         return None

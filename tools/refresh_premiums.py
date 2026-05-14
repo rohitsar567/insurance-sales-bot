@@ -1,6 +1,6 @@
 """Monthly premium-anchor refresh + auto-fix.
 
-For each real (non-derived) premium sample in data/premiums/illustrative_premiums.json:
+For each real (non-derived) premium sample in 40-data/premiums/illustrative_premiums.json:
   1. Re-fetch the source URL (HEAD then partial GET)
   2. If the URL is dead → run link-rot auto-fix (Wayback / canonicalise)
   3. If the page is alive but the numeric anchor on the page has shifted, log
@@ -10,7 +10,7 @@ For each real (non-derived) premium sample in data/premiums/illustrative_premium
      source_url == "derived_from_anchor" using the same scaling factors
      stored in the JSON itself.
 
-For aggregator ratings (data/reviews/*.json), re-HEAD every aggregator URL
+For aggregator ratings (40-data/reviews/*.json), re-HEAD every aggregator URL
 and same auto-fix routine.
 
 Exit codes:
@@ -34,7 +34,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 LOG_DIR = Path.home() / "Library" / "Logs" / "insurance-bot"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 LOG_FILE = LOG_DIR / "premium_refresh.log"
-PREM_FILE = PROJECT_ROOT / "data" / "premiums" / "illustrative_premiums.json"
+PREM_FILE = PROJECT_ROOT / "40-data" / "premiums" / "illustrative_premiums.json"
 MUST_FIX = PROJECT_ROOT / "MUST_FIX.md"
 
 UA = (
@@ -175,7 +175,7 @@ def main() -> int:
                 fp.write(json.dumps(row) + "\n")
 
         # reviews aggregator URLs
-        reviews_dir = PROJECT_ROOT / "data" / "reviews"
+        reviews_dir = PROJECT_ROOT / "40-data" / "reviews"
         for f in reviews_dir.glob("*.json") if reviews_dir.exists() else []:
             data = json.loads(f.read_text())
             ratings = data.get("aggregator_ratings", {}) or {}

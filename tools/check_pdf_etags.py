@@ -1,6 +1,6 @@
 """Weekly PDF freshness check + auto-fix.
 
-For each policy PDF URL in data/corpus_urls.md:
+For each policy PDF URL in 40-data/corpus_urls.md:
   1. Fetch HTTP ETag + Last-Modified
   2. Compare against tools/.pdf_etag_state.json
   3. If changed: download the new PDF, re-run rag/ingest for that policy_id,
@@ -59,7 +59,7 @@ def notify(title: str, body: str) -> None:
 
 def parse_corpus_urls() -> list[dict]:
     """Return [{insurer_slug, policy_name, url}, ...] from the markdown table."""
-    md = (PROJECT_ROOT / "data" / "corpus_urls.md").read_text()
+    md = (PROJECT_ROOT / "40-data" / "corpus_urls.md").read_text()
     out: list[dict] = []
     for line in md.splitlines():
         if not line.startswith("|") or line.startswith("| insurer"):
@@ -115,7 +115,7 @@ def reingest_policy(insurer_slug: str, policy_name: str, url: str) -> bool:
     """
     slug = re.sub(r"[^a-z0-9]+", "-", policy_name.lower()).strip("-")
     policy_id = f"{insurer_slug}__{slug}"
-    out_dir = PROJECT_ROOT / "data" / "policies" / insurer_slug
+    out_dir = PROJECT_ROOT / "40-data" / "policies" / insurer_slug
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / f"{slug}.pdf"
 

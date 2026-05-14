@@ -1,7 +1,7 @@
 """Curate batch 2 policy_facts JSONs from extracted text cache.
 
 Pattern-based field extraction matched to the schema used by batch 1.
-Writes one JSON per policy into data/policy_facts/.
+Writes one JSON per policy into 40-data/policy_facts/.
 """
 import os
 import re
@@ -10,7 +10,7 @@ import sys
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CACHE = "/tmp/claude/policy_extract/text_cache"
-OUT_DIR = os.path.join(BASE, "data/policy_facts")
+OUT_DIR = os.path.join(BASE, "40-data/policy_facts")
 os.makedirs(OUT_DIR, exist_ok=True)
 
 # ---------------------------------------------------------------------------

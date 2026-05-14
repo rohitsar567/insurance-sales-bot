@@ -167,7 +167,7 @@ def build_policy_md(p: dict) -> str:
     sections.append(f"| Field | Value | Source |")
     sections.append(f"| --- | --- | --- |")
     sections.append(f"| Insurer | [{insurer}]({home}) | curated · verified `eval/verified_urls.json` |")
-    sections.append(f"| Insurer slug | `{slug}` | derived from `data/corpus_urls.md` |")
+    sections.append(f"| Insurer slug | `{slug}` | derived from `40-data/corpus_urls.md` |")
     sections.append(f"| Policy | **{pname}** | extracted from policy wordings |")
     sections.append(f"| Policy id | `{pid}` | minted by us (`<insurer-slug>__<doc-slug>`) |")
     sections.append(f"| Source PDF | [{src_url[:80]}…]({src_url}) | downloaded + verified at ingest time |")
@@ -322,7 +322,7 @@ def build_research_corpus_acquisition() -> str:
     rows.append("")
     rows.append("## How we did it")
     rows.append("- Dispatched a research agent to find direct PDF URLs for all health policies across 10 target insurers")
-    rows.append("- Source list saved to `data/corpus_urls.md` (75 URLs)")
+    rows.append("- Source list saved to `40-data/corpus_urls.md` (75 URLs)")
     rows.append("- `rag/download_corpus.py` downloads with PDF magic-byte verification + size floor (50KB)")
     rows.append("- `rag/download_retry.py` retried failed downloads with browser-grade headers (rescued ICICI Lombard 9/9)")
     rows.append("- Star Health (11 PDFs) blocked by CDN bot protection — deferred to v2 (see `70-docs/04-failure-modes.md` + ROADMAP)")
@@ -551,7 +551,7 @@ def build_reviews_kb_for(slug: str, data: dict) -> str:
     rows = []
     rows.append(f"# {data.get('insurer_name', slug)} — Reputation Sheet")
     rows.append("")
-    rows.append(f"_Auto-generated from `data/reviews/{slug}.json`. Reviews are the v1 substitute for live regulator + sentiment monitoring. Re-build with `python -m rag.build_kb`._")
+    rows.append(f"_Auto-generated from `40-data/reviews/{slug}.json`. Reviews are the v1 substitute for live regulator + sentiment monitoring. Re-build with `python -m rag.build_kb`._")
     rows.append("")
     rows.append(f"**Aggregate score:** **{score.get('value_0_100', 'n/a')}** ({score.get('letter_grade', '?')}). _{score.get('headline', '')}_")
     rows.append("")
@@ -600,7 +600,7 @@ def build_reviews_kb_for(slug: str, data: dict) -> str:
     rows.append("")
     rows.append("---")
     rows.append("")
-    rows.append(f"_Aggregate score formula: 0.40 × CSR + 0.20 × inverse-complaints + 0.15 × avg-aggregator-star + 0.10 × reddit + 0.10 × youtube + 0.05 × news. See `data/reviews/INDEX.md` for the leaderboard._")
+    rows.append(f"_Aggregate score formula: 0.40 × CSR + 0.20 × inverse-complaints + 0.15 × avg-aggregator-star + 0.10 × reddit + 0.10 × youtube + 0.05 × news. See `40-data/reviews/INDEX.md` for the leaderboard._")
     rows.append("")
     rows.append(f"**Flows into the bot via:** `score_claim_experience()` in `backend/scorecard.py` — IRDAI CSR + complaints become Claim Experience sub-score signals for every policy this insurer offers.")
     return "\n".join(rows)
@@ -610,7 +610,7 @@ def build_reviews_index(all_reviews: list[dict]) -> str:
     rows = []
     rows.append("# Reviews — Insurer Reputation Index")
     rows.append("")
-    rows.append(f"_Auto-generated. Source: `data/reviews/*.json`. Per-insurer sheets in `kb/reviews/<slug>.md`._")
+    rows.append(f"_Auto-generated. Source: `40-data/reviews/*.json`. Per-insurer sheets in `kb/reviews/<slug>.md`._")
     rows.append("")
     rows.append("## Leaderboard")
     rows.append("")
@@ -641,9 +641,9 @@ def build_premiums_kb() -> str:
     rows = []
     rows.append("# Premiums — Illustrative Pricing Data")
     rows.append("")
-    rows.append("_Auto-generated from `data/premiums/illustrative_premiums.json`. Real PolicyBazaar / InsuranceDekho / rate-chart anchors plus derived scaling factors. NEVER a binding quote._")
+    rows.append("_Auto-generated from `40-data/premiums/illustrative_premiums.json`. Real PolicyBazaar / InsuranceDekho / rate-chart anchors plus derived scaling factors. NEVER a binding quote._")
     rows.append("")
-    pf = ROOT / "data" / "premiums" / "illustrative_premiums.json"
+    pf = ROOT / "40-data" / "premiums" / "illustrative_premiums.json"
     if not pf.exists():
         rows.append("_Premium data file not yet generated._")
         return "\n".join(rows)
@@ -876,7 +876,7 @@ def main():
     (CALCULATIONS_DIR / "extraction_quality_audit.md").write_text(build_calc_extraction_audit(policies))
 
     # Reviews KB
-    reviews_dir = ROOT / "data" / "reviews"
+    reviews_dir = ROOT / "40-data" / "reviews"
     all_reviews = []
     if reviews_dir.exists():
         for rf in sorted(reviews_dir.glob("*.json")):

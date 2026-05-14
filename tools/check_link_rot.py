@@ -13,9 +13,9 @@ Three-phase pipeline run unattended by launchd every night:
 The cron job is idempotent. Re-running after a successful auto-fix is a no-op.
 
 URLs are pulled from three places:
-  - data/corpus_urls.md           — policy PDF index (markdown table)
-  - data/premiums/illustrative_premiums.json — premium anchors
-  - data/reviews/*.json           — aggregator + news + IRDAI + Reddit + YouTube
+  - 40-data/corpus_urls.md           — policy PDF index (markdown table)
+  - 40-data/premiums/illustrative_premiums.json — premium anchors
+  - 40-data/reviews/*.json           — aggregator + news + IRDAI + Reddit + YouTube
 
 Exit codes:
   0 — all URLs reachable, OR all dead URLs were auto-fixed
@@ -113,7 +113,7 @@ def collect_urls() -> dict[str, list[tuple[str, Path]]]:
             return
         urls.setdefault(u, []).append((label, source))
 
-    corpus_md = PROJECT_ROOT / "data" / "corpus_urls.md"
+    corpus_md = PROJECT_ROOT / "40-data" / "corpus_urls.md"
     if corpus_md.exists():
         # Markdown tables use `|` as column separator. URLs themselves may
         # contain parens (e.g. care-advantage-(health-insurance-product...) so
@@ -127,14 +127,14 @@ def collect_urls() -> dict[str, list[tuple[str, Path]]]:
                 if m:
                     add(m.group(0), "corpus_urls.md", corpus_md)
 
-    prem_json = PROJECT_ROOT / "data" / "premiums" / "illustrative_premiums.json"
+    prem_json = PROJECT_ROOT / "40-data" / "premiums" / "illustrative_premiums.json"
     if prem_json.exists():
         d = json.loads(prem_json.read_text())
         for pid, entry in d.get("base_premiums", {}).items():
             for s in entry.get("samples", []):
                 add(s.get("source_url", ""), f"premiums:{pid}", prem_json)
 
-    reviews_dir = PROJECT_ROOT / "data" / "reviews"
+    reviews_dir = PROJECT_ROOT / "40-data" / "reviews"
     if reviews_dir.exists():
         for f in reviews_dir.glob("*.json"):
             text = f.read_text()

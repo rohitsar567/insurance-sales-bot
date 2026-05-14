@@ -7,7 +7,7 @@ and got routed to RAG retrieval (which then refused). This module fixes that.
 
 Persistence model (changed 2026-05-14):
   - In-memory dict for hot reads (avoids hitting disk every turn).
-  - JSON file per session at data/sessions/<session_id>.json — survives
+  - JSON file per session at 40-data/sessions/<session_id>.json — survives
     Space restarts so a user returning after HF hibernation finds their
     profile intact.
   - Loaded lazily on first get_session(); flushed on every state mutation.
@@ -38,7 +38,7 @@ from typing import Optional
 from backend.needs_finder import Profile, record_answer
 
 # On-disk storage root. Created on first write.
-_DATA_ROOT = Path(__file__).resolve().parent.parent / "data" / "sessions"
+_DATA_ROOT = Path(__file__).resolve().parent.parent / "40-data" / "sessions"
 
 
 @dataclass
@@ -50,7 +50,7 @@ class SessionState:
     last_touched: float = field(default_factory=time.time)
 
     def _flush(self) -> None:
-        """Atomic write to data/sessions/<id>.json so a restart doesn't lose state."""
+        """Atomic write to 40-data/sessions/<id>.json so a restart doesn't lose state."""
         try:
             _DATA_ROOT.mkdir(parents=True, exist_ok=True)
             target = _DATA_ROOT / f"{self.session_id}.json"
@@ -98,7 +98,7 @@ class SessionState:
 
 
 def _load_from_disk(session_id: str) -> Optional[SessionState]:
-    """Rehydrate from data/sessions/<id>.json if it exists."""
+    """Rehydrate from 40-data/sessions/<id>.json if it exists."""
     target = _DATA_ROOT / f"{session_id}.json"
     if not target.exists():
         return None

@@ -1,4 +1,4 @@
-"""Bulk-download every PDF URL from data/corpus_urls.md.
+"""Bulk-download every PDF URL from 40-data/corpus_urls.md.
 
 Per-URL flow:
   1. HEAD-check (or fall back to Range GET) — confirm Content-Type is PDF-ish
@@ -27,7 +27,7 @@ import requests
 
 ROOT = Path(__file__).resolve().parent.parent
 CORPUS_DIR = ROOT / "rag" / "corpus"
-URL_FILE = ROOT / "data" / "corpus_urls.md"
+URL_FILE = ROOT / "40-data" / "corpus_urls.md"
 MANIFEST_FILE = CORPUS_DIR / "_manifest.json"
 
 # Generous headers — some insurer CDNs reject default Python UA

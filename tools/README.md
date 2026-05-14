@@ -10,8 +10,8 @@ Scheduling for the long-running ones is wired via macOS LaunchAgents — see `CR
 | --- | --- |
 | `extract_all_corpus.py`, `extract_batch_5.py`, `extract_failed.py`, `extract_pdf_range.py`, `reextract_all.py` | Batch re-extractions over `rag/corpus/`. Useful when the schema or extraction prompt changes. |
 | `extract_pdf_text.py`, `extract_policy_text.py`, `extract_policy_text_batch2.py` | Raw text dumps for manual inspection / regex curation. |
-| `curate_batch2.py`, `curate_remaining.py`, `clear_batch2.py` | Verbatim-quote curation passes that produced `data/policy_facts/`. See [`data/policy_facts/_curation_report.md`](../data/policy_facts/_curation_report.md). |
-| `generate_policy_facts.py` | Convert extraction outputs to the `data/policy_facts/<id>.json` shape with `{value, unit, source_pdf_path, source_quote}` provenance. |
+| `curate_batch2.py`, `curate_remaining.py`, `clear_batch2.py` | Verbatim-quote curation passes that produced `40-data/policy_facts/`. See [`40-data/policy_facts/_curation_report.md`](../40-data/policy_facts/_curation_report.md). |
+| `generate_policy_facts.py` | Convert extraction outputs to the `40-data/policy_facts/<id>.json` shape with `{value, unit, source_pdf_path, source_quote}` provenance. |
 | `pydantic_validate_batch_5.py`, `validate_batch_5.py`, `validate_json.py`, `validate_schema.py` | Schema validators for the 62-field `HealthPolicy`. |
 | `count_fields.py` | Per-policy completeness scorer that feeds the `kb/INDEX.md` completeness % column. |
 
@@ -19,20 +19,20 @@ Scheduling for the long-running ones is wired via macOS LaunchAgents — see `CR
 
 | Script | Purpose |
 | --- | --- |
-| `info_source_map.py` | Builds `eval/info_source_map.json` + `data/information_source_map.md` — claim → URL → verdict (✅ / ⚠️ / ❌ / ⏳). The canonical KPI for source-grounding quality. |
+| `info_source_map.py` | Builds `eval/info_source_map.json` + `40-data/information_source_map.md` — claim → URL → verdict (✅ / ⚠️ / ❌ / ⏳). The canonical KPI for source-grounding quality. |
 | `verify_urls.py` | HEAD-checks every URL in the corpus / facts; writes `eval/verified_urls.json`. |
 | `verify_review_urls.py`, `verify_new_corpus.py` | Sub-verifiers for the reviews dataset and freshly-added corpus URLs. |
 | `browser_verify.py` | Playwright-backed verifier for URLs that block HEAD requests. Output: `tools/browser_verified.json`. |
 | `check_link_rot.py`, `check_pdf_etags.py` | LaunchAgent-driven freshness checks — corpus URL rot + PDF eTag drift. |
-| `refresh_premiums.py` | LaunchAgent-driven refresh of `data/premiums/illustrative_premiums.json`. |
+| `refresh_premiums.py` | LaunchAgent-driven refresh of `40-data/premiums/illustrative_premiums.json`. |
 
 ## KB + dataset builders
 
 | Script | Purpose |
 | --- | --- |
-| `build_kb_mirror.py` | Regenerates the entire `kb/policies/<id>.md` tree from `data/policy_facts/`. Idempotent. |
+| `build_kb_mirror.py` | Regenerates the entire `kb/policies/<id>.md` tree from `40-data/policy_facts/`. Idempotent. |
 | `ingest_kb_summaries.py` | Ingests `kb/policies/*.md` summaries into Chroma so policy meta is retrievable. Carries the HNSW bloat tripwire. |
-| `ingest_reviews.py` | Ingests `data/reviews/<insurer>.json` into Chroma. Carries the HNSW bloat tripwire. |
+| `ingest_reviews.py` | Ingests `40-data/reviews/<insurer>.json` into Chroma. Carries the HNSW bloat tripwire. |
 | `build_readme_pdf.py` | Renders the master `README.md` to PDF for offline review. |
 
 ## HF Hub uploads (data-side mirror)

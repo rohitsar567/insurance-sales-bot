@@ -1,4 +1,4 @@
-"""Download regulatory PDFs from data/regulatory_urls.md.
+"""Download regulatory PDFs from 40-data/regulatory_urls.md.
 
 Two tricky cases handled:
   1. IRDAI URLs are behind Akamai bot-check — solved with a session that GETs
@@ -23,7 +23,7 @@ import requests
 
 ROOT = Path(__file__).resolve().parent.parent
 CORPUS_DIR = ROOT / "rag" / "corpus" / "regulatory"
-URL_FILE = ROOT / "data" / "regulatory_urls.md"
+URL_FILE = ROOT / "40-data" / "regulatory_urls.md"
 MANIFEST_FILE = CORPUS_DIR / "_manifest.json"
 
 UA = (

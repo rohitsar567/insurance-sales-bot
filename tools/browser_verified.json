@@ -1,76 +1,76 @@
 {
   "https://web.starhealth.in/sites/default/files/brochure/Health-Premier-Insurance-Policy-brochure.pdf": {
-    "reason": "Akamai bot manager rejects all automated clients; PDF downloads + opens in user-facing browsers; local copy exists in data/policies/star-health/",
+    "reason": "Akamai bot manager rejects all automated clients; PDF downloads + opens in user-facing browsers; local copy exists in 40-data/policies/star-health/",
     "status": 200,
     "title": "[pdf]",
     "ts": "2026-05-13T18:00:58+0530",
     "verdict": "ALIVE_AKAMAI_BLOCKED"
   },
   "https://web.starhealth.in/sites/default/files/brochure/Senior-Citizens-Red-Carpet-Health-Insurance-Policy.pdf": {
-    "reason": "Akamai bot manager rejects all automated clients; PDF downloads + opens in user-facing browsers; local copy exists in data/policies/star-health/",
+    "reason": "Akamai bot manager rejects all automated clients; PDF downloads + opens in user-facing browsers; local copy exists in 40-data/policies/star-health/",
     "status": 200,
     "title": "[pdf]",
     "ts": "2026-05-13T18:00:58+0530",
     "verdict": "ALIVE_AKAMAI_BLOCKED"
   },
   "https://web.starhealth.in/sites/default/files/brochure/hospital_cash_ebrochure_new.pdf": {
-    "reason": "Akamai bot manager rejects all automated clients; PDF downloads + opens in user-facing browsers; local copy exists in data/policies/star-health/",
+    "reason": "Akamai bot manager rejects all automated clients; PDF downloads + opens in user-facing browsers; local copy exists in 40-data/policies/star-health/",
     "status": 200,
     "title": "[pdf]",
     "ts": "2026-05-13T18:00:58+0530",
     "verdict": "ALIVE_AKAMAI_BLOCKED"
   },
   "https://web.starhealth.in/sites/default/files/policy-clauses/Family-Health-Optima-Accident-Care-Policy.pdf": {
-    "reason": "Akamai bot manager rejects all automated clients; PDF downloads + opens in user-facing browsers; local copy exists in data/policies/star-health/",
+    "reason": "Akamai bot manager rejects all automated clients; PDF downloads + opens in user-facing browsers; local copy exists in 40-data/policies/star-health/",
     "status": 200,
     "title": "[pdf]",
     "ts": "2026-05-13T18:00:58+0530",
     "verdict": "ALIVE_AKAMAI_BLOCKED"
   },
   "https://web.starhealth.in/sites/default/files/policy-clauses/Health-Premier-Insurance-Policy.pdf": {
-    "reason": "Akamai bot manager rejects all automated clients; PDF downloads + opens in user-facing browsers; local copy exists in data/policies/star-health/",
+    "reason": "Akamai bot manager rejects all automated clients; PDF downloads + opens in user-facing browsers; local copy exists in 40-data/policies/star-health/",
     "status": 200,
     "title": "[pdf]",
     "ts": "2026-05-13T18:00:58+0530",
     "verdict": "ALIVE_AKAMAI_BLOCKED"
   },
   "https://web.starhealth.in/sites/default/files/policy-clauses/Star-Cardiac-Care-Insurance-Policy.pdf": {
-    "reason": "Akamai bot manager rejects all automated clients; PDF downloads + opens in user-facing browsers; local copy exists in data/policies/star-health/",
+    "reason": "Akamai bot manager rejects all automated clients; PDF downloads + opens in user-facing browsers; local copy exists in 40-data/policies/star-health/",
     "status": 200,
     "title": "[pdf]",
     "ts": "2026-05-13T18:00:58+0530",
     "verdict": "ALIVE_AKAMAI_BLOCKED"
   },
   "https://web.starhealth.in/sites/default/files/policy-clauses/Star-Cardiac-Care-Insurance-Policy_Platinum.pdf": {
-    "reason": "Akamai bot manager rejects all automated clients; PDF downloads + opens in user-facing browsers; local copy exists in data/policies/star-health/",
+    "reason": "Akamai bot manager rejects all automated clients; PDF downloads + opens in user-facing browsers; local copy exists in 40-data/policies/star-health/",
     "status": 200,
     "title": "[pdf]",
     "ts": "2026-05-13T18:00:58+0530",
     "verdict": "ALIVE_AKAMAI_BLOCKED"
   },
   "https://web.starhealth.in/sites/default/files/policy-clauses/Star-First-Comprehensive-Policy.pdf": {
-    "reason": "Akamai bot manager rejects all automated clients; PDF downloads + opens in user-facing browsers; local copy exists in data/policies/star-health/",
+    "reason": "Akamai bot manager rejects all automated clients; PDF downloads + opens in user-facing browsers; local copy exists in 40-data/policies/star-health/",
     "status": 200,
     "title": "[pdf]",
     "ts": "2026-05-13T18:00:58+0530",
     "verdict": "ALIVE_AKAMAI_BLOCKED"
   },
   "https://web.starhealth.in/sites/default/files/policy-clauses/StarHealthAssureInsurancePolicy-Policy.pdf": {
-    "reason": "Akamai bot manager rejects all automated clients; PDF downloads + opens in user-facing browsers; local copy exists in data/policies/star-health/",
+    "reason": "Akamai bot manager rejects all automated clients; PDF downloads + opens in user-facing browsers; local copy exists in 40-data/policies/star-health/",
     "status": 200,
     "title": "[pdf]",
     "ts": "2026-05-13T18:00:58+0530",
     "verdict": "ALIVE_AKAMAI_BLOCKED"
   },
   "https://web.starhealth.in/sites/default/files/policy-clauses/star-cancer-care-platinum-policy-clauses.pdf": {
-    "reason": "Akamai bot manager rejects all automated clients; PDF downloads + opens in user-facing browsers; local copy exists in data/policies/star-health/",
+    "reason": "Akamai bot manager rejects all automated clients; PDF downloads + opens in user-facing browsers; local copy exists in 40-data/policies/star-health/",
     "status": 200,
     "title": "[pdf]",
     "ts": "2026-05-13T18:00:58+0530",
     "verdict": "ALIVE_AKAMAI_BLOCKED"
   },
   "https://web.starhealth.in/sites/default/files/prospectus/Family-Health-Optima-Accident-Care-Policy.pdf": {
-    "reason": "Akamai bot manager rejects all automated clients; PDF downloads + opens in user-facing browsers; local copy exists in data/policies/star-health/",
+    "reason": "Akamai bot manager rejects all automated clients; PDF downloads + opens in user-facing browsers; local copy exists in 40-data/policies/star-health/",
     "status": 200,
     "title": "[pdf]",
     "ts": "2026-05-13T18:00:58+0530",

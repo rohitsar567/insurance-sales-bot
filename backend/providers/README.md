@@ -37,4 +37,4 @@ Per-link timeout is dynamically clipped to remaining budget.
 
 - [ADR-006](../../70-docs/60-decisions/ADR-006-sarvam-first-stack.md), [ADR-011](../../70-docs/60-decisions/ADR-011-bge-local-embeddings.md), [ADR-019](../../70-docs/60-decisions/ADR-019-nim-single-provider-consolidation.md), [ADR-026](../../70-docs/60-decisions/ADR-026-provider-load-balancing.md)
 - `tests/test_routing_regression.py::TestProviderLoadBalancing` — pins the 50/50 split
-- `data/llm_health.json` — last health-probe snapshot surfaced in the admin tab
+- `40-data/llm_health.json` — last health-probe snapshot surfaced in the admin tab

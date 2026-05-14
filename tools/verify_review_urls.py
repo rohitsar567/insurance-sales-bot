@@ -1,4 +1,4 @@
-"""HEAD-check every URL we surface in data/reviews/*.json.
+"""HEAD-check every URL we surface in 40-data/reviews/*.json.
 
 We commit hard to the 'no fake / no broken URLs' invariant. This script:
   1. Walks every reviews JSON and harvests every URL field
@@ -11,7 +11,7 @@ We commit hard to the 'no fake / no broken URLs' invariant. This script:
 Run:
   python tools/verify_review_urls.py [--annotate]
 
-  --annotate writes verification flags back into data/reviews/*.json.
+  --annotate writes verification flags back into 40-data/reviews/*.json.
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ from pathlib import Path
 import requests
 
 ROOT = Path(__file__).resolve().parent.parent
-REVIEWS_DIR = ROOT / "data" / "reviews"
+REVIEWS_DIR = ROOT / "40-data" / "reviews"
 OUTPUT = ROOT / "eval" / "reviews_url_verification.json"
 
 UA = (
@@ -159,7 +159,7 @@ def main():
             err = b.get("error") or f"HTTP {b.get('status')}"
             print(f"  [{b['insurer']}] {b['path']:<40} {err:<25} {b['url'][:80]}")
     if args.annotate:
-        print(f"\nWrote verification flags to data/reviews/*.json")
+        print(f"\nWrote verification flags to 40-data/reviews/*.json")
     print(f"Summary: {OUTPUT.relative_to(ROOT)}")
 
 

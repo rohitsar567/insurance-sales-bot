@@ -2,9 +2,9 @@
 # Full post-extraction pipeline:
 #   1. wait for extraction PID
 #   2. run info_source_map.py (URL/content audit)
-#   3. generate data/policy_facts/*.json from rag/extracted/*.json
+#   3. generate 40-data/policy_facts/*.json from rag/extracted/*.json
 #   4. build_kb_mirror.py (regenerate kb/policies/*.md)
-#   5. sync rag/extracted + data/policy_facts to dataset
+#   5. sync rag/extracted + 40-data/policy_facts to dataset
 #   6. re-ingest Chroma over the full 190-PDF corpus
 #   7. sync rag/vectors to dataset
 #   8. factory-restart HF Space + wait for RUNNING
@@ -43,7 +43,7 @@ from dotenv import load_dotenv
 from huggingface_hub import HfApi
 load_dotenv('.env')
 api = HfApi(token=os.environ['HF_TOKEN'])
-for folder, path_in_repo in [('rag/extracted','rag/extracted'),('data/policy_facts','data/policy_facts'),('rag/corpus','rag/corpus')]:
+for folder, path_in_repo in [('rag/extracted','rag/extracted'),('40-data/policy_facts','40-data/policy_facts'),('rag/corpus','rag/corpus')]:
     api.upload_folder(folder_path=folder, path_in_repo=path_in_repo,
         repo_id='rohitsar567/insurance-bot-data', repo_type='dataset',
         commit_message=f'sync {folder} post-extraction (190 PDFs, 19 insurers)',

@@ -2,7 +2,7 @@
 """Mirror today's data + design work into kb/.
 
 Reads:
-  - data/policy_facts/*.json  -> kb/policies/<id>.md (yaml frontmatter + per-field MD)
+  - 40-data/policy_facts/*.json  -> kb/policies/<id>.md (yaml frontmatter + per-field MD)
   - backend.scorecard METHODOLOGY_BLUEPRINT / WEIGHTS / SCORED_FIELDS -> kb/methodology/scorecard.json
   - frontend/src/lib/i18n.ts GLOSSARY (hand-mirrored)                  -> kb/methodology/glossary.json
   - 70-docs/discovery-script.md                                            -> kb/methodology/discovery-script.md
@@ -30,7 +30,7 @@ ROOT = Path(__file__).resolve().parent.parent
 KB = ROOT / "kb"
 POLICIES_OUT = KB / "policies"
 METHOD_OUT = KB / "methodology"
-DATA_IN = ROOT / "data" / "policy_facts"
+DATA_IN = ROOT / "40-data" / "policy_facts"
 DOCS = ROOT / "docs"
 
 POLICIES_OUT.mkdir(parents=True, exist_ok=True)
@@ -268,7 +268,7 @@ def render_policy_md(p: dict, source_json_path: Path) -> str:
     lines.append("---")
     lines.append("")
     lines.append(
-        f"_Mirrored from `data/policy_facts/{source_json_path.name}`. "
+        f"_Mirrored from `40-data/policy_facts/{source_json_path.name}`. "
         "Provenance — every field's verbatim quote and source PDF path is "
         "preserved exactly as curated. Do not hand-edit; regenerate via "
         "`tools/build_kb_mirror.py`._"
@@ -478,7 +478,7 @@ def main() -> int:
             else:
                 new_files += 1
 
-    # 4d. one MD per data/policy_facts/*.json
+    # 4d. one MD per 40-data/policy_facts/*.json
     index_rows: list[tuple[str, str, str, str, str]] = []  # insurer, name, uin, completeness, kb path
     written = 0
     skipped = 0
@@ -516,14 +516,14 @@ def main() -> int:
         rel = f"policies/{pid}.md"
         index_rows.append((insurer_name, policy_name, uin or "—", completeness_str, rel))
 
-    # 4d-clean. remove stale MD files (no longer backed by data/policy_facts/)
+    # 4d-clean. remove stale MD files (no longer backed by 40-data/policy_facts/)
     stale_removed = 0
     for f in POLICIES_OUT.glob("*.md"):
         if f.stem not in written_pids:
             f.unlink()
             stale_removed += 1
     if stale_removed:
-        print(f"  (removed {stale_removed} stale MD files no longer in data/policy_facts/)", file=sys.stderr)
+        print(f"  (removed {stale_removed} stale MD files no longer in 40-data/policy_facts/)", file=sys.stderr)
 
     # 4e. kb/INDEX.md
     today = date.today().isoformat()
@@ -615,7 +615,7 @@ def main() -> int:
     idx.append("")
     idx.append(
         "Every `policies/<id>.md` file is generated from "
-        "`data/policy_facts/<id>.json` and preserves the verbatim source quote and "
+        "`40-data/policy_facts/<id>.json` and preserves the verbatim source quote and "
         "source PDF path for every field. JSON is the machine source; markdown is "
         "the human-readable mirror. Regenerate the entire kb/ tree by running "
         "`.venv/bin/python3 tools/build_kb_mirror.py`."
@@ -641,7 +641,7 @@ def main() -> int:
         ap.append(batch_marker)
         ap.append("")
         ap.append(
-            "Three back-to-back curation passes brought the `data/policy_facts/` "
+            "Three back-to-back curation passes brought the `40-data/policy_facts/` "
             f"directory to **{len(index_rows)} policies** with verbatim-quote "
             "provenance. Mirrored into `kb/policies/` today."
         )
@@ -653,7 +653,7 @@ def main() -> int:
             "`{value, unit?, source_pdf_path, source_quote}` per field with a "
             "`_meta` block (`curated_at`, `primary_source_pdf`, `completeness_pct`, "
             "`notes`). Average completeness ≈83.5%. Recorded in "
-            "[`data/policy_facts/_curation_report.md`](../data/policy_facts/_curation_report.md)."
+            "[`40-data/policy_facts/_curation_report.md`](../40-data/policy_facts/_curation_report.md)."
         )
         ap.append(
             "- **Batch 2 — regex + pdfplumber pass (43 policies).** Automated "
@@ -672,7 +672,7 @@ def main() -> int:
         ap.append(
             "**Verification.** `tools/info_source_map.py` produced "
             "[`eval/info_source_map.json`](../eval/info_source_map.json) and "
-            "[`data/information_source_map.md`](../data/information_source_map.md) "
+            "[`40-data/information_source_map.md`](../40-data/information_source_map.md) "
             "with verdict counts: **✅ 798 / ⚠️ 321 / ❌ 0 / ⏳ 1385.** No ❌ "
             "(broken-link) verdicts remain; the ⏳ tail tracks deferred "
             "verifications. The ✅:⚠️ ratio is the canonical KPI for "

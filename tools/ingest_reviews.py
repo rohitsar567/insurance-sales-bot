@@ -1,6 +1,6 @@
 """Ingest insurer reviews into the main Chroma `policies` collection.
 
-For each insurer review JSON in `data/reviews/`:
+For each insurer review JSON in `40-data/reviews/`:
   1. Render the structured review into a natural-language paragraph that
      captures the gist of an insurer's reputation: claim settlement %,
      complaint rate, aggregator ratings, sentiment summary, news flags.
@@ -33,7 +33,7 @@ from backend.providers.local_embeddings import LocalEmbeddings
 
 
 ROOT = Path(__file__).resolve().parent.parent
-REVIEWS_DIR = ROOT / "data" / "reviews"
+REVIEWS_DIR = ROOT / "40-data" / "reviews"
 
 
 def review_to_chunks(d: dict) -> list[dict]:

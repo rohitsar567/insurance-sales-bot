@@ -1,7 +1,7 @@
-"""Generate data/policy_facts/<policy_id>.json (marketplace cards) from
+"""Generate 40-data/policy_facts/<policy_id>.json (marketplace cards) from
 rag/extracted/<policy_id>.json (LLM-extracted structured fields).
 
-The marketplace UI reads data/policy_facts/. Each card needs the wrapped-value
+The marketplace UI reads 40-data/policy_facts/. Each card needs the wrapped-value
 + source-quote shape ({value, source_pdf_path, source_quote, unit}). We
 convert from the flat HealthPolicy schema and wire the source_pdf_path from
 the manifest's local_path field.
@@ -16,7 +16,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 EXTRACTED = ROOT / "rag" / "extracted"
-FACTS = ROOT / "data" / "policy_facts"
+FACTS = ROOT / "40-data" / "policy_facts"
 MANIFEST = ROOT / "rag" / "corpus" / "_manifest.json"
 
 FACTS.mkdir(parents=True, exist_ok=True)
@@ -126,7 +126,7 @@ def main():
 
     print(f"Generated {new} new policy_facts cards.")
     print(f"Skipped {skipped_existing} that already exist (hand-curated cards preserved).")
-    print(f"  Total cards in data/policy_facts/: {len(list(FACTS.glob('*.json')))}")
+    print(f"  Total cards in 40-data/policy_facts/: {len(list(FACTS.glob('*.json')))}")
 
 
 if __name__ == "__main__":

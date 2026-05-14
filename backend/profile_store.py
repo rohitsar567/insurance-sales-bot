@@ -17,7 +17,7 @@ Both layers stay in sync: when `save_profile()` is called here, the
 orchestrator also fires `profile_rag.upsert_profile_chunk()` so the
 Chroma side reflects the new state.
 
-Files live under `data/profiles/<normalised-name>.json`. Names are
+Files live under `40-data/profiles/<normalised-name>.json`. Names are
 normalised to lowercase + alpha-only for the filename so "Rohit" and
 "rohit." both resolve to the same profile. The original (capitalised)
 display name is preserved inside the JSON.
@@ -36,7 +36,7 @@ from typing import Optional
 from backend.config import settings
 from backend.needs_finder import Profile
 
-_PROFILES_DIR = settings.CORPUS_DIR.parent.parent / "data" / "profiles"
+_PROFILES_DIR = settings.CORPUS_DIR.parent.parent / "40-data" / "profiles"
 
 
 def _normalise_name(name: str) -> str:
