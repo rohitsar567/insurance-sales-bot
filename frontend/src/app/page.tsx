@@ -600,15 +600,15 @@ export default function Page() {
                   <div className="text-[10px] uppercase tracking-wider opacity-85 leading-none">{t("header.policy_library_kicker")}</div>
                   <div className="text-xs font-bold leading-tight whitespace-nowrap">{t("header.policy_library")}</div>
                 </div>
-                {marketplace && (
+                {coverage && (
                   <div className="flex flex-col items-center justify-center px-3 py-1 bg-white/15 border-l border-white/20">
-                    <div className="text-sm font-bold leading-none">{marketplace.total}</div>
+                    <div className="text-sm font-bold leading-none">{coverage.total_policies}</div>
                     <div className="text-[9px] uppercase tracking-wider opacity-90 leading-none mt-0.5">{t("header.policies_label")}</div>
                   </div>
                 )}
-                {marketplace && (
+                {coverage && (
                   <div className="hidden sm:flex flex-col items-center justify-center px-3 py-1 bg-black/10">
-                    <div className="text-sm font-bold leading-none">{marketplace.insurers_indexed}</div>
+                    <div className="text-sm font-bold leading-none">{coverage.total_insurers}</div>
                     <div className="text-[9px] uppercase tracking-wider opacity-90 leading-none mt-0.5">{t("header.insurers_label")}</div>
                   </div>
                 )}
