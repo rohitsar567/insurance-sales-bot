@@ -62,6 +62,10 @@ export default function Page() {
   const [showPremium, setShowPremium] = useState(false);
   const [showMarketplace, setShowMarketplace] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  // Admin panel: iframe-embedded LLM control surface. Backend admin API is
+  // IP-gated (ADMIN_IP_ALLOWLIST), so the panel itself silently renders the
+  // dashboard's "not authorized" view for non-allowlisted IPs.
+  const [showAdmin, setShowAdmin] = useState(false);
   const [marketplace, setMarketplace] = useState<MarketplaceResponse | null>(null);
   const [openPolicy, setOpenPolicy] = useState<MarketplacePolicy | null>(null);
   const [sessionId, setSessionId] = useState<string | undefined>();
@@ -370,7 +374,7 @@ export default function Page() {
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
             <button
-              onClick={() => { setShowMarketplace(!showMarketplace); setShowPremium(false); setShowCoverage(false); }}
+              onClick={() => { setShowMarketplace(!showMarketplace); setShowPremium(false); setShowCoverage(false); setShowAdmin(false); }}
               className={`group relative overflow-hidden rounded-xl transition-all shadow-sm hover:shadow-md ${
                 showMarketplace
                   ? "ring-2 ring-[var(--primary)]"
@@ -402,7 +406,7 @@ export default function Page() {
               </div>
             </button>
             <button
-              onClick={() => { setShowPremium(!showPremium); setShowMarketplace(false); setShowCoverage(false); setShowProfile(false); }}
+              onClick={() => { setShowPremium(!showPremium); setShowMarketplace(false); setShowCoverage(false); setShowProfile(false); setShowAdmin(false); }}
               className={`group relative overflow-hidden rounded-xl transition-all shadow-sm hover:shadow-md ${
                 showPremium ? "ring-2 ring-[var(--primary)]" : ""
               }`}
@@ -420,7 +424,7 @@ export default function Page() {
               </div>
             </button>
             <button
-              onClick={() => { setShowProfile(!showProfile); setShowMarketplace(false); setShowPremium(false); setShowCoverage(false); }}
+              onClick={() => { setShowProfile(!showProfile); setShowMarketplace(false); setShowPremium(false); setShowCoverage(false); setShowAdmin(false); }}
               className={`group relative overflow-hidden rounded-xl transition-all shadow-sm hover:shadow-md ${
                 showProfile ? "ring-2 ring-[var(--primary)]" : ""
               }`}
@@ -441,6 +445,27 @@ export default function Page() {
                     <div className="text-[9px] uppercase tracking-wider opacity-90 leading-none mt-0.5">{uiLang === "hi" ? "पूर्ण" : "DONE"}</div>
                   </div>
                 )}
+              </div>
+            </button>
+            {/* Admin access — opens the LLM control panel in an embedded view.
+                Backend admin API is IP-gated, so the panel works only from the
+                allowlisted home IP; from other networks it shows "not authorized". */}
+            <button
+              onClick={() => { setShowAdmin(!showAdmin); setShowMarketplace(false); setShowPremium(false); setShowProfile(false); setShowCoverage(false); }}
+              className={`group relative overflow-hidden rounded-xl transition-all shadow-sm hover:shadow-md ${
+                showAdmin ? "ring-2 ring-[var(--primary)]" : ""
+              }`}
+              title="LLM control panel — health, chain order, usage (admin-only, IP-gated)"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-slate-700 via-slate-600 to-zinc-700" />
+              <div className="relative flex items-stretch text-white">
+                <div className="flex items-center justify-center px-3 py-2 bg-black/15">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2 4 6v6c0 5 3.5 9 8 10 4.5-1 8-5 8-10V6l-8-4z" /><path d="M9 12l2 2 4-4" /></svg>
+                </div>
+                <div className="px-3 py-2 text-left">
+                  <div className="text-[10px] uppercase tracking-wider opacity-85 leading-none">Admin</div>
+                  <div className="text-xs font-bold leading-tight whitespace-nowrap">Access panel</div>
+                </div>
               </div>
             </button>
             {/* UI language toggle — flips visual chrome + voice TTS together */}
@@ -552,7 +577,7 @@ export default function Page() {
         {/* Panel column — sits beside the chat on desktop, takes over on
             mobile. Stays mounted as long as a panel is open; chat in the
             other column remains fully interactive (real-time copilot). */}
-        {(showMarketplace || showPremium || showProfile) && (
+        {(showMarketplace || showPremium || showProfile || showAdmin) && (
           <aside className="lg:w-3/5 w-full overflow-y-auto bg-[var(--background)]">
             {showMarketplace && marketplace && (
               <MarketplacePanel
@@ -573,6 +598,30 @@ export default function Page() {
                 onClose={() => setShowProfile(false)}
                 uiLang={uiLang}
               />
+            )}
+            {showAdmin && (
+              <div className="flex flex-col h-full">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)] bg-[var(--card)]">
+                  <div>
+                    <h2 className="text-sm font-semibold">Admin · LLM Control Panel</h2>
+                    <p className="text-xs text-[var(--muted-foreground)]">
+                      IP-gated. Only the home network IP can interact with chain reordering / probes.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowAdmin(false)}
+                    className="text-xs text-[var(--muted-foreground)] hover:underline"
+                  >
+                    close
+                  </button>
+                </div>
+                <iframe
+                  src="/admin/llm-control.html"
+                  title="LLM Control Panel"
+                  className="flex-1 w-full border-0 bg-white"
+                  sandbox="allow-scripts allow-same-origin allow-forms"
+                />
+              </div>
             )}
           </aside>
         )}
