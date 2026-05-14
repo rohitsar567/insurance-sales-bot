@@ -749,7 +749,10 @@ def _canonical_fallback(session, user_text: str, *, reason: str) -> FactFindOutc
                 if val is None:
                     continue
                 captured[q_obj.field] = val
-                setattr(profile, q_obj.field, val)
+                # KI-095 — route through session.update_profile_field for
+                # consistency with the rest of the codebase (centralised
+                # write + flush); val is guarded non-None just above.
+                session.update_profile_field(q_obj.field, val)
                 if slot_id not in profile.asked:
                     profile.asked.append(slot_id)
         except Exception as e:

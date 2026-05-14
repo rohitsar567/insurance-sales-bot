@@ -569,6 +569,7 @@ class ProfileUpdateRequest(BaseModel):
 class SessionResetRequest(BaseModel):
     session_id: str
     drop_profile: bool = False  # True = nuke session entirely; False = clear chat only
+    confirm: bool = False  # KI-095 — must be True when drop_profile=True; guards accidental wipes
 
 
 class SessionResetResponse(BaseModel):
@@ -593,6 +594,10 @@ async def session_reset(req: SessionResetRequest):
     cleared = False
     new_sid: Optional[str] = None
     if req.drop_profile:
+        # KI-095 — require explicit confirm=True so a misclick or replayed
+        # request cannot wipe a populated session by accident.
+        if not req.confirm:
+            raise HTTPException(status_code=400, detail="confirm=true required to drop session")
         cleared = reset_session(req.session_id)
         new_sid = uuid.uuid4().hex[:12]
     return SessionResetResponse(ok=True, session_id=new_sid, cleared_state=cleared)
@@ -623,8 +628,10 @@ async def profile_update(req: ProfileUpdateRequest):
         "health_conditions", "budget_band",
     ):
         v = getattr(req, field_name, None)
-        if v is not None:
-            setattr(sess.profile, field_name, v)
+        if v in (None, "", []):
+            # KI-095 — never clobber a filled field with empty input from the client
+            continue
+        setattr(sess.profile, field_name, v)
 
     # KI-077 — if name is set, also persist to the named-profile store so a
     # returning visitor's profile is recoverable across sessions.

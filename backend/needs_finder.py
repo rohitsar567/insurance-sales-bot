@@ -205,7 +205,6 @@ def record_answer(profile: Profile, question_id: str, raw_answer: str) -> Profil
     q = next((x for x in GRAPH if x.id == question_id), None)
     if q is None:
         return profile
-    profile.asked.append(question_id)
     value: Any = raw_answer
     if q.parser:
         try:
@@ -214,6 +213,9 @@ def record_answer(profile: Profile, question_id: str, raw_answer: str) -> Profil
             value = None
     if value is not None and value != "":
         setattr(profile, q.field, value)
+        # KI-095 — only mark slot asked once setattr succeeds, so a parse
+        # failure doesn't leave the slot in an asked-but-empty desync state.
+        profile.asked.append(question_id)
     return profile
 
 

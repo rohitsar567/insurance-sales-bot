@@ -104,12 +104,20 @@ def _load_from_disk(session_id: str) -> Optional[SessionState]:
         return None
     try:
         raw = json.loads(target.read_text())
-        prof_dict = raw.get("profile", {}) or {}
+        raw_profile_dict = raw.get("profile", {}) or {}
         # Profile may have new fields added since this file was written —
         # filter to only what the current Profile dataclass accepts so we
         # never crash on schema drift.
         valid_fields = {f for f in Profile.__dataclass_fields__.keys()}
-        prof_dict = {k: v for k, v in prof_dict.items() if k in valid_fields}
+        dropped = set(raw_profile_dict.keys()) - valid_fields
+        if dropped:
+            # KI-095 — log schema-drift drops so silent data loss is visible.
+            import logging
+            logging.warning(
+                "session_state load_from_disk dropped %d unknown profile keys for %s: %s",
+                len(dropped), session_id, sorted(dropped),
+            )
+        prof_dict = {k: v for k, v in raw_profile_dict.items() if k in valid_fields}
         return SessionState(
             session_id=raw["session_id"],
             profile=Profile(**prof_dict),
