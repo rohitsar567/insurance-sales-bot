@@ -303,6 +303,81 @@ async def admin_profiles(
 
 
 # ---------------------------------------------------------------------------
+# KI-063 (2026-05-15) — user-facing profile-event endpoints.
+#
+# These are NOT admin-gated — they're invoked by the frontend when a logged-
+# in user (one with a stored profile.name) clicks the select/reject buttons
+# on a policy card. Both look up the session, validate that the session has
+# a named profile, then append the event through `profile_store.record_policy_event`.
+#
+# Anonymous sessions (no profile.name) get 400 — there's no key to persist
+# against. The frontend should hide the buttons in that case.
+# ---------------------------------------------------------------------------
+
+
+class _PolicyEventBody(BaseModel):
+    session_id: str
+    policy_slug: str
+    insurer: str
+    reason: Optional[str] = None
+
+
+def _do_record_policy_event(body: _PolicyEventBody, event_type: str) -> dict:
+    """Shared handler for /api/profile/select + /api/profile/reject."""
+    if not body.session_id or not body.policy_slug or not body.insurer:
+        raise HTTPException(
+            status_code=400,
+            detail="session_id, policy_slug, and insurer are required",
+        )
+    from backend.session_state import get_session
+    from backend.profile_store import record_policy_event
+
+    session = get_session(body.session_id)
+    if not session.profile.name:
+        raise HTTPException(
+            status_code=400,
+            detail="No named profile on this session — cannot persist event.",
+        )
+    ok = record_policy_event(
+        persona_id_or_name=session.profile.name,
+        profile=session.profile,
+        event_type=event_type,  # type: ignore[arg-type]
+        policy_slug=body.policy_slug,
+        insurer=body.insurer,
+        session_id=body.session_id,
+        reason=body.reason,
+    )
+    if not ok:
+        raise HTTPException(status_code=500, detail="profile save failed")
+    # Also persist via the session flush so an in-memory consumer (e.g. the
+    # welcome-back greeter) reads the same state without a full disk reload.
+    session._flush()
+    field_name = {
+        "shown": "shown_policies",
+        "selected": "selected_policies",
+        "rejected": "rejected_policies",
+    }[event_type]
+    return {
+        "ok": True,
+        "event_type": event_type,
+        "policy_slug": body.policy_slug,
+        "count": len(getattr(session.profile, field_name, []) or []),
+    }
+
+
+@router.post("/api/profile/select")
+async def profile_select(body: _PolicyEventBody):
+    """Record a user clicking "shortlist / save" on a policy card."""
+    return _do_record_policy_event(body, "selected")
+
+
+@router.post("/api/profile/reject")
+async def profile_reject(body: _PolicyEventBody):
+    """Record a user clicking "not for me / reject" on a policy card."""
+    return _do_record_policy_event(body, "rejected")
+
+
+# ---------------------------------------------------------------------------
 # /api/admin/performance — aggregated performance/quality metrics
 # ---------------------------------------------------------------------------
 

@@ -45,6 +45,15 @@ class Profile:
     health_conditions: Optional[list[str]] = field(default_factory=list)  # ["diabetes", "hypertension", ...]
     asked: list[str] = field(default_factory=list)  # question IDs already asked
     free_form_session: bool = False  # True = user asks free questions, not driven by us
+    # KI-063 (2026-05-15) — per-user policy interaction log so the bot
+    # remembers which policies were shown / selected / rejected across
+    # sessions. Each entry is a dict with shape:
+    #   {policy_slug, insurer, event_at (ISO Z), session_id, reason}
+    # Dedup at write-time on (policy_slug, event_type) — re-events just
+    # bump event_at + session_id rather than appending duplicates.
+    shown_policies: list[dict] = field(default_factory=list)     # KI-063
+    selected_policies: list[dict] = field(default_factory=list)  # KI-063
+    rejected_policies: list[dict] = field(default_factory=list)  # KI-063
 
 
 # ----------------------------------------------------------------------------

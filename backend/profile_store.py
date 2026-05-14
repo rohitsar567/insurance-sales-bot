@@ -32,7 +32,7 @@ import re
 import time
 from dataclasses import asdict
 from pathlib import Path
-from typing import Optional
+from typing import Literal, Optional
 
 from backend.config import settings
 from backend.needs_finder import Profile
@@ -205,6 +205,101 @@ def save_profile(name: str, profile: Profile, *, session_id: Optional[str] = Non
     except Exception as e:
         logging.warning("profile_store save failed name=%s: %s", name, e)
         return False
+
+
+# ---------------------------------------------------------------------------
+# KI-063 (2026-05-15) — per-user policy interaction tracking.
+#
+# Three event types are tracked on the Profile:
+#   shown    — auto-logged by orchestrator when a policy is cited in a
+#              recommendation / comparison turn that passed faithfulness.
+#   selected — user clicked "save / shortlist" on a policy card (frontend
+#              POSTs to /api/profile/select).
+#   rejected — user clicked "not for me" (frontend POSTs to /api/profile/reject).
+#
+# Each entry persists across sessions on the JSON profile, so a returning
+# visitor sees their shortlist and the bot can avoid re-pitching rejected
+# policies.
+# ---------------------------------------------------------------------------
+
+_EVENT_TYPE_TO_FIELD = {
+    "shown": "shown_policies",
+    "selected": "selected_policies",
+    "rejected": "rejected_policies",
+}
+
+
+def record_policy_event(
+    persona_id_or_name: str,
+    profile: Profile,
+    event_type: Literal["shown", "selected", "rejected"],
+    policy_slug: str,
+    insurer: str,
+    session_id: Optional[str] = None,
+    reason: Optional[str] = None,
+) -> bool:
+    """Append a single policy-interaction event to the profile and persist.
+
+    Dedup: if the SAME `policy_slug` already exists in the matching list for
+    this event_type, the existing entry is updated in place (event_at +
+    session_id refreshed) rather than appending a duplicate. This keeps the
+    list bounded and chronologically meaningful — repeated shows of the same
+    policy collapse to the most recent timestamp.
+
+    Returns True on successful save, False on any failure (missing fields,
+    invalid event type, save error).
+    """
+    if event_type not in _EVENT_TYPE_TO_FIELD:
+        return False
+    if not policy_slug or not insurer:
+        return False
+    field_name = _EVENT_TYPE_TO_FIELD[event_type]
+    entries: list[dict] = list(getattr(profile, field_name, None) or [])
+    now_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    default_reason = {
+        "shown": "shown_in_recommendation",
+        "selected": "user_clicked_select",
+        "rejected": "user_clicked_reject",
+    }[event_type]
+    payload = {
+        "policy_slug": policy_slug,
+        "insurer": insurer,
+        "event_at": now_iso,
+        "session_id": session_id,
+        "reason": reason or default_reason,
+    }
+    # Dedup on policy_slug within this event-type list. Bump timestamp +
+    # session_id; preserve original reason unless caller passed a new one.
+    dedup_idx = next(
+        (i for i, e in enumerate(entries) if e.get("policy_slug") == policy_slug),
+        None,
+    )
+    if dedup_idx is not None:
+        existing = dict(entries[dedup_idx])
+        existing["event_at"] = now_iso
+        if session_id:
+            existing["session_id"] = session_id
+        if reason:
+            existing["reason"] = reason
+        entries[dedup_idx] = existing
+    else:
+        entries.append(payload)
+    setattr(profile, field_name, entries)
+    # Persist through the existing save path so persona-id resolution + Chroma
+    # sync (if any) stay consistent.
+    save_name = profile.name or persona_id_or_name
+    if not save_name:
+        return False
+    return save_profile(save_name, profile, session_id=session_id)
+
+
+def get_shortlist(profile: Profile) -> list[dict]:
+    """Return the user's selected (shortlisted) policies.
+
+    Thin convenience wrapper used by the admin panel + welcome-back greeting
+    so callers don't have to remember the field name.
+    """
+    return list(getattr(profile, "selected_policies", None) or [])
 
 
 def list_profiles() -> list[dict]:

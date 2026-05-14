@@ -284,7 +284,12 @@ _KNOWN_FIELD_FORMATTERS: tuple[tuple[str, str, "callable"], ...] = (
 def _format_known_profile_summary(profile) -> str:
     """Return a comma-separated rundown of what we already know, e.g.
     'age 34, covering you + spouse, income ₹10-25L, looking for first
-    health policy'. Returns '' if nothing meaningful is stored."""
+    health policy'. Returns '' if nothing meaningful is stored.
+
+    KI-063 (2026-05-15) — if the user has selected (shortlisted) policies
+    on file, append a "Your shortlist: <insurer · policy>, ..." line so the
+    returning-visitor greeting surfaces what they previously saved.
+    """
     parts: list[str] = []
     for field_name, label, fmt in _KNOWN_FIELD_FORMATTERS:
         val = getattr(profile, field_name, None)
@@ -296,7 +301,22 @@ def _format_known_profile_summary(profile) -> str:
             rendered = str(val)
         if rendered:
             parts.append(f"{label} {rendered}")
-    return ", ".join(parts)
+    summary = ", ".join(parts)
+    # KI-063 — append shortlist line if any selected policies on file.
+    shortlist = list(getattr(profile, "selected_policies", None) or [])
+    if shortlist:
+        bits = []
+        for entry in shortlist:
+            insurer = (entry.get("insurer") or "").strip()
+            slug = (entry.get("policy_slug") or "").strip()
+            if insurer and slug:
+                bits.append(f"{insurer} · {slug}")
+            elif slug:
+                bits.append(slug)
+        if bits:
+            line = "Your shortlist: " + ", ".join(bits)
+            summary = f"{summary}. {line}" if summary else line
+    return summary
 
 
 _HELPFUL_GAP_LABELS = {
@@ -1099,6 +1119,45 @@ async def handle_turn(
                             final_brain_tag = f"cascade::sarvam-trans+{pick.provider.name}+sarvam-trans"
         except Exception:
             pass  # if any step fails, return English — better than mis-translated
+
+    # KI-063 (2026-05-15) — auto-log "shown" policy events on the persisted
+    # profile so a returning visitor's bot remembers which policies they've
+    # seen. Only fires for context-dependent intents (recommendation /
+    # comparison) AND only when faithfulness passed (we don't log cites that
+    # the safety gates rejected). Anonymous users (no profile.name) get no
+    # log — there's no key to persist against.
+    try:
+        if (
+            intent in ("recommendation", "comparison")
+            and verdict.passed
+            and not blocked
+            and session.profile.name
+            and citations
+        ):
+            from backend.profile_store import record_policy_event
+            seen_slugs: set[str] = set()
+            for cite in citations:
+                slug = cite.get("policy_id") or cite.get("policy_slug")
+                insurer = cite.get("insurer_slug") or cite.get("insurer")
+                if not slug or not insurer or slug in seen_slugs:
+                    continue
+                seen_slugs.add(slug)
+                record_policy_event(
+                    persona_id_or_name=session.profile.name,
+                    profile=session.profile,
+                    event_type="shown",
+                    policy_slug=slug,
+                    insurer=insurer,
+                    session_id=session_id,
+                    reason="shown_in_recommendation",
+                )
+    except Exception as e:
+        # Never let logging failures break the chat reply.
+        import logging
+        logging.warning(
+            "KI-063 shown_policies log failed (session=%s): %s: %s",
+            session_id, type(e).__name__, str(e)[:200],
+        )
 
     return TurnResult(
         reply_text=reply,
