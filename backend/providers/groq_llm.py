@@ -45,10 +45,14 @@ class GroqLLM(LLMProvider):
         model: str = DEFAULT_MODEL,
         api_key: Optional[str] = None,
         timeout: float = 120.0,
+        chain_name: str = "unknown",
     ):
         self.api_key = api_key or getattr(settings, "GROQ_API_KEY", "")
         self.model = model
         self.timeout = timeout
+        # KI-085 — chain_name plumbs through so update_credits_from_groq
+        # can route the response-header signal to the right chain state.
+        self.chain_name = chain_name
         if not self.api_key:
             raise RuntimeError(
                 "GROQ_API_KEY not set. Get a key at https://console.groq.com/keys "
@@ -100,6 +104,21 @@ class GroqLLM(LLMProvider):
                     continue
                 resp.raise_for_status()
                 break
+            # KI-085 (2026-05-15) — stamp credits_remaining from Groq's
+            # x-ratelimit-* headers BEFORE we drop the response. Groq is
+            # the highest-fidelity provider on this front: every successful
+            # call returns the daily-tokens remaining, so we get a
+            # continuously-updated election signal at zero extra cost.
+            try:
+                from backend import llm_health
+                chain_for_credits = (
+                    f"groq:{self.model}"  # chain entries are prefixed
+                )
+                llm_health.update_credits_from_groq(
+                    self.chain_name, chain_for_credits, dict(resp.headers)
+                )
+            except Exception:
+                pass  # credit tracking must never break the chat path
             payload = resp.json()
 
         choice = payload["choices"][0]

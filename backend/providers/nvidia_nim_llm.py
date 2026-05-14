@@ -384,16 +384,22 @@ class NimChainLLM(LLMProvider):
           - 'openrouter:<model>' -> OpenRouterLLM
           - 'groq:<model>'       -> GroqLLM
           - <anything else>      -> NvidiaNimLLM (existing default)
+
+        KI-085 — passes `chain_name=self._chain_name` so the credit
+        trackers in the provider clients route their response-header
+        signals to the right chain state.
         """
         if model_id.startswith("openrouter:"):
             return OpenRouterLLM(
                 model=model_id[len("openrouter:"):],
                 timeout=timeout,
+                chain_name=self._chain_name,
             )
         if model_id.startswith("groq:"):
             return GroqLLM(
                 model=model_id[len("groq:"):],
                 timeout=timeout,
+                chain_name=self._chain_name,
             )
         return NvidiaNimLLM(model=model_id, api_key=self.api_key, timeout=timeout)
 
@@ -578,6 +584,16 @@ class NimChainLLM(LLMProvider):
                 llm_health.report_success(self._chain_name, model, latency_ms)
             except Exception:
                 pass
+            # KI-085 (2026-05-15) — NIM has no clean rate-limit header, so
+            # we maintain a local 60s rate-meter for every NIM-prefixed
+            # candidate (i.e. anything without an openrouter:/groq: prefix).
+            # Groq + OpenRouter stamp credits from response headers inside
+            # their own .chat() methods.
+            if not model.startswith(("openrouter:", "groq:")):
+                try:
+                    llm_health.record_nim_call(self._chain_name, model)
+                except Exception:
+                    pass
             self.model = model
             self.name = f"nim-chain::{self._short_id(model)}"
             total_ms = int((time.time() - call_t0) * 1000)
@@ -650,6 +666,12 @@ class NimChainLLM(LLMProvider):
                     )
                 except Exception:
                     pass
+                # KI-085 — bump NIM rate-meter on post-reprobe successes too.
+                if not model.startswith(("openrouter:", "groq:")):
+                    try:
+                        llm_health.record_nim_call(self._chain_name, model)
+                    except Exception:
+                        pass
                 self.model = model
                 self.name = f"nim-chain::{self._short_id(model)}"
                 total_ms = int((time.time() - call_t0) * 1000)

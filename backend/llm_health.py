@@ -64,7 +64,9 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import os
+import re
 import threading
 import time
 from dataclasses import dataclass, field, asdict
@@ -72,6 +74,8 @@ from pathlib import Path
 from typing import Optional
 
 import httpx
+
+logger = logging.getLogger(__name__)
 
 ROOT = Path(__file__).resolve().parent.parent
 HEALTH_FILE = ROOT / "40-data" / "llm_health.json"
@@ -105,6 +109,31 @@ DEGRADED_WINDOW_SEC = 30          # report_failure sidelines a model this long
 # elector falls through to a non-rate-limited provider instead of
 # bouncing back to the dead candidate on every chat turn.
 DEGRADE_DURATION_LONG_S = 3600.0
+
+# KI-085 (2026-05-15) — proactive credit tracking. KI-084 demotes a candidate
+# for 1h AFTER a 429 hits; that costs one user-facing failure per dead quota.
+# KI-085 promotes llm_health to liveness+credits so election excludes
+# quota-exhausted candidates BEFORE the user gets stuck behind a 429.
+#
+# Three signal sources:
+#   1) GROQ — response headers (x-ratelimit-remaining-tokens-day etc.) on
+#      every successful Groq call. Low-water 5000 tokens (>= one fact-find
+#      ~2K-input + ~400-output round-trip with margin).
+#   2) OPENROUTER — dedicated GET /api/v1/credits endpoint, polled every
+#      10min from the probe loop. Low-water 0.05 USD (5¢ safety margin —
+#      OpenRouter free models charge $0 but the account-level signal still
+#      tells us if the user's prepaid credits are gone).
+#   3) NIM — no clean header. Local rate-meter: count successful calls in
+#      the last 60s. Free tier is 40 req/min; gate at >=35 to stay clear.
+GROQ_TOKENS_LOW_WATER = 5000.0          # tokens-per-day remaining
+OPENROUTER_USD_LOW_WATER = 0.05         # USD balance remaining
+NIM_REQ_PER_MIN_CAP = 40                # free-tier hard cap
+NIM_REQ_PER_MIN_HEADROOM = 5            # gate at cap - headroom = 35
+NIM_REQ_PER_MIN_LOW_WATER = 5.0         # below this remaining-in-window, gate
+
+# OpenRouter credits poll cadence — every ~10 min, piggybacked on the
+# probe loop tick counter. With PROBE_INTERVAL_SEC=300 that's every 2 ticks.
+OPENROUTER_CREDITS_POLL_EVERY_N_TICKS = 2
 
 # Per-provider endpoints + env-var names. The chain entries embed the
 # provider via a prefix ('openrouter:<id>' / 'groq:<id>'); unprefixed entries
@@ -182,6 +211,17 @@ class ModelHealth:
     # KI-080 — set by report_failure(); model is excluded from election
     # while monotonic time < degraded_until_monotonic.
     degraded_until_monotonic: float = 0.0
+    # KI-085 (2026-05-15) — proactive credit tracking. Stamped by
+    # update_credits_from_groq / update_credits_from_openrouter (response
+    # headers + account endpoint) and by the NIM local rate-meter. The
+    # elector gates on `credits_remaining is None OR > credits_low_water`
+    # so None (no signal yet) is permissive (cold-start = electable).
+    credits_remaining: Optional[float] = None    # tokens / USD / req-slots
+    credits_unit: Optional[str] = None           # "tokens_day" / "tokens_min" /
+                                                 # "usd_balance" / "requests_min"
+    credits_reset_at: Optional[float] = None     # monotonic time when quota resets
+    credits_observed_at: Optional[float] = None  # monotonic time of snapshot
+    credits_low_water: float = 0.0               # below this, gated out
 
 
 def _now_iso() -> str:
@@ -248,9 +288,15 @@ def _load_into_memory() -> None:
                 raw = json.loads(HEALTH_FILE.read_text())
                 for k, v in raw.get("models", {}).items():
                     # Tolerate older schema (pre-KI-080 records missing
-                    # probe_history / degraded_until_monotonic).
+                    # probe_history / degraded_until_monotonic; pre-KI-085
+                    # records missing the five credits_* fields).
                     v.setdefault("probe_history", [])
                     v.setdefault("degraded_until_monotonic", 0.0)
+                    v.setdefault("credits_remaining", None)
+                    v.setdefault("credits_unit", None)
+                    v.setdefault("credits_reset_at", None)
+                    v.setdefault("credits_observed_at", None)
+                    v.setdefault("credits_low_water", 0.0)
                     _STATE[k] = ModelHealth(**v)
             except Exception:
                 _STATE = {}
@@ -314,6 +360,8 @@ def _is_election_eligible(h: ModelHealth, now_mono: float) -> bool:
       - status is healthy (or degraded with a recent success)
       - last probe was within HEALTHY_PROBE_AGE_SEC
       - it is NOT currently in the degraded-window sin-bin
+      - KI-085 (2026-05-15): it has credits remaining above its low-water
+        mark, OR no credit signal yet (cold-start = permissive).
     """
     if h.degraded_until_monotonic > now_mono:
         return False
@@ -324,7 +372,32 @@ def _is_election_eligible(h: ModelHealth, now_mono: float) -> bool:
         return False
     if h.latency_ms is None:
         return False
+    if not _has_credits(h, now_mono):
+        logger.info(
+            "election: skipping %s — credits %s/%s below water %s",
+            h.model, h.credits_remaining, h.credits_unit, h.credits_low_water,
+        )
+        return False
     return True
+
+
+def _has_credits(h: ModelHealth, now_mono: float) -> bool:
+    """KI-085 — credit-gate predicate for election eligibility.
+
+    Rules:
+      - If `credits_reset_at` has elapsed, treat the signal as stale and
+        permissive (next call will refresh). We don't auto-zero the
+        snapshot here so other readers (admin UI / status_summary) still
+        see the LAST observed value with its observed_at timestamp.
+      - If `credits_remaining is None` (no signal yet), return True —
+        cold-start must not penalize a fresh candidate.
+      - Otherwise gate on `credits_remaining > credits_low_water`.
+    """
+    if h.credits_reset_at is not None and now_mono >= h.credits_reset_at:
+        return True
+    if h.credits_remaining is None:
+        return True
+    return h.credits_remaining > h.credits_low_water
 
 
 def _ranked_candidates(chain_name: str) -> list[ModelHealth]:
@@ -492,6 +565,291 @@ async def _reprobe_one(model: str) -> None:
 
 
 # ---------------------------------------------------------------------------
+# KI-085 — proactive credit tracking. Three signal sources:
+#   (1) Groq response headers (per-call, real-time)
+#   (2) OpenRouter dedicated /credits endpoint (10-min poll)
+#   (3) NIM local rate-meter (no clean header; count successes in last 60s)
+# ---------------------------------------------------------------------------
+
+# Match formats observed in the wild for Groq reset headers. Three shapes
+# coexist on the Groq API:
+#   - duration string: "1h2m"  /  "30m"  /  "45s"  /  "1h2m30s"
+#   - bare seconds-from-now (float-ish): "60.5"  /  "3600"
+#   - epoch unix seconds (only when value is large enough): "1747326123"
+_DURATION_RE = re.compile(r"^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+(?:\.\d+)?)s)?$")
+
+
+def _parse_reset_seconds(raw: Optional[str], now_mono: float) -> Optional[float]:
+    """Parse a Groq-style reset header into a monotonic deadline.
+
+    Returns the monotonic timestamp at which the quota resets (or None
+    when the value is missing/malformed). Accepts three shapes:
+      - "1h2m30s" / "30m" / "60s"   → seconds offset from now
+      - "60.5"                       → seconds offset (bare numeric)
+      - "1747326123"                 → unix epoch (treated as absolute
+                                       wall-clock; converted to monotonic
+                                       relative to current time.time()).
+    """
+    if raw is None:
+        return None
+    s = raw.strip()
+    if not s:
+        return None
+    # Duration string ("1h2m" / "30m45s" / "45s")
+    m = _DURATION_RE.match(s)
+    if m and any(m.groups()):
+        h = int(m.group(1) or 0)
+        mn = int(m.group(2) or 0)
+        sec = float(m.group(3) or 0)
+        offset = h * 3600 + mn * 60 + sec
+        if offset > 0:
+            return now_mono + offset
+        return None
+    # Bare numeric — seconds-from-now or unix epoch
+    try:
+        v = float(s)
+    except ValueError:
+        return None
+    # Heuristic: > 1e9 means it's almost certainly a unix epoch (after 2001).
+    # Convert to seconds-from-now first, then to monotonic.
+    if v > 1e9:
+        offset = v - time.time()
+        if offset <= 0:
+            return now_mono  # already reset
+        return now_mono + offset
+    if v <= 0:
+        return None
+    return now_mono + v
+
+
+def update_credits_from_groq(chain_name: str, model: str, headers: dict) -> None:
+    """Stamp credits_remaining from a Groq response's x-ratelimit-* headers.
+
+    Called from GroqLLM.chat() after a successful HTTP response. The
+    `headers` dict is the response's headers (case-insensitive via httpx).
+    We prefer the DAILY tokens signal (`x-ratelimit-remaining-tokens-day`)
+    because Groq's free-tier daily TPD cap is what bit us in KI-084.
+
+    Missing header → no-op. Malformed value → log warning + no-op.
+    """
+    if not headers:
+        return
+    # httpx headers are case-insensitive; index defensively for plain dicts.
+    def _h(k: str) -> Optional[str]:
+        try:
+            v = headers.get(k)
+        except AttributeError:
+            return None
+        if v is not None:
+            return v
+        # Plain dict fallback — case-fold lookup.
+        for hk, hv in headers.items():
+            if hk.lower() == k.lower():
+                return hv
+        return None
+
+    remaining_raw = _h("x-ratelimit-remaining-tokens-day")
+    reset_raw = _h("x-ratelimit-reset-tokens-day")
+
+    if remaining_raw is None:
+        # No daily-tokens header — Groq sometimes only sends the minute
+        # window; that's not the signal we care about for KI-085 (KI-084's
+        # 1h sin-bin already covers minute-window blips).
+        return
+
+    try:
+        remaining = float(remaining_raw)
+    except (TypeError, ValueError):
+        logger.warning(
+            "update_credits_from_groq: malformed remaining value %r for %s",
+            remaining_raw, model,
+        )
+        return
+
+    now_mono = time.monotonic()
+    reset_at = _parse_reset_seconds(reset_raw, now_mono)
+
+    _load_into_memory()
+    with _STATE_LOCK:
+        h = _STATE.get(model) or ModelHealth(model=model)
+        h.credits_remaining = remaining
+        h.credits_unit = "tokens_day"
+        h.credits_reset_at = reset_at
+        h.credits_observed_at = now_mono
+        h.credits_low_water = GROQ_TOKENS_LOW_WATER
+        _STATE[model] = h
+
+
+def update_credits_from_openrouter_headers(chain_name: str, model: str, headers: dict) -> None:
+    """OpenRouter sometimes surfaces per-call remaining credits on response
+    headers (`x-ratelimit-remaining` etc.). Lower fidelity than the
+    dedicated /credits endpoint but useful as a between-poll signal so the
+    elector reacts inside the 10-min poll window.
+
+    Header shape varies by model — we accept `x-ratelimit-remaining` (raw
+    count, no unit semantics) and treat it as request-slots so the gate
+    catches a near-empty bucket. Missing header → no-op.
+    """
+    if not headers:
+        return
+
+    def _h(k: str) -> Optional[str]:
+        try:
+            v = headers.get(k)
+        except AttributeError:
+            return None
+        if v is not None:
+            return v
+        for hk, hv in headers.items():
+            if hk.lower() == k.lower():
+                return hv
+        return None
+
+    remaining_raw = _h("x-ratelimit-remaining")
+    if remaining_raw is None:
+        return
+    try:
+        remaining = float(remaining_raw)
+    except (TypeError, ValueError):
+        logger.warning(
+            "update_credits_from_openrouter_headers: malformed remaining value %r for %s",
+            remaining_raw, model,
+        )
+        return
+
+    now_mono = time.monotonic()
+    _load_into_memory()
+    with _STATE_LOCK:
+        h = _STATE.get(model) or ModelHealth(model=model)
+        # Only stamp from headers if we DON'T already have a fresher
+        # account-level signal from the dedicated endpoint. usd_balance is
+        # the authoritative truth for OpenRouter; per-call requests_min is
+        # a between-poll approximation.
+        if h.credits_unit != "usd_balance":
+            h.credits_remaining = remaining
+            h.credits_unit = "requests_min"
+            h.credits_observed_at = now_mono
+            # Low-water: stay 5 slots above zero so a near-empty bucket
+            # gates out the candidate.
+            h.credits_low_water = float(NIM_REQ_PER_MIN_LOW_WATER)
+            _STATE[model] = h
+
+
+# NIM local rate-meter (no clean header). Per-chain-entry deque of monotonic
+# success timestamps; we trim to last 60s on each read.
+_NIM_CALL_TIMES_LOCK = threading.Lock()
+_NIM_CALL_TIMES: dict[str, list[float]] = {}
+
+
+def record_nim_call(chain_name: str, model: str) -> None:
+    """Bump the local NIM rate-meter on a successful call. Also stamps
+    credits_remaining on the ModelHealth so the elector can gate.
+
+    NIM free tier = 40 req/min per API key. We gate at >= 35 in-window
+    calls (`NIM_REQ_PER_MIN_CAP - NIM_REQ_PER_MIN_HEADROOM`) so the
+    elector sidelines the candidate before we burn the cap.
+    """
+    if not model:
+        return
+    now_mono = time.monotonic()
+    cutoff = now_mono - 60.0
+    with _NIM_CALL_TIMES_LOCK:
+        times = _NIM_CALL_TIMES.get(model, [])
+        times = [t for t in times if t > cutoff]
+        times.append(now_mono)
+        _NIM_CALL_TIMES[model] = times
+        in_window = len(times)
+
+    remaining = max(0.0, float(NIM_REQ_PER_MIN_CAP - in_window))
+    # Window resets 60s after the OLDEST in-window call.
+    reset_at = (times[0] + 60.0) if times else (now_mono + 60.0)
+
+    _load_into_memory()
+    with _STATE_LOCK:
+        h = _STATE.get(model) or ModelHealth(model=model)
+        h.credits_remaining = remaining
+        h.credits_unit = "requests_min"
+        h.credits_reset_at = reset_at
+        h.credits_observed_at = now_mono
+        h.credits_low_water = float(NIM_REQ_PER_MIN_LOW_WATER)
+        _STATE[model] = h
+
+
+async def poll_openrouter_credits() -> Optional[dict]:
+    """Hit GET https://openrouter.ai/api/v1/credits and stamp every
+    OpenRouter-prefixed candidate with the account-level USD balance.
+
+    Returns the parsed `{total_credits, total_usage}` dict on success, or
+    None on any failure (missing key / HTTP error / parse fail). Best-
+    effort: never raises. Called from background_probe_loop on a counter
+    every OPENROUTER_CREDITS_POLL_EVERY_N_TICKS ticks.
+    """
+    api_key = os.environ.get("OPENROUTER_API_KEY", "")
+    if not api_key:
+        return None
+    url = "https://openrouter.ai/api/v1/credits"
+    headers = {"Authorization": f"Bearer {api_key}"}
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            r = await client.get(url, headers=headers)
+            if r.status_code != 200:
+                logger.info(
+                    "poll_openrouter_credits: HTTP %d — skipping update",
+                    r.status_code,
+                )
+                return None
+            payload = r.json()
+    except Exception as e:
+        logger.info("poll_openrouter_credits: exception %s — skipping update", type(e).__name__)
+        return None
+
+    data = payload.get("data") or payload
+    try:
+        total_credits = float(data.get("total_credits", 0.0))
+        total_usage = float(data.get("total_usage", 0.0))
+    except (TypeError, ValueError):
+        logger.warning("poll_openrouter_credits: malformed payload %r", payload)
+        return None
+
+    remaining = max(0.0, total_credits - total_usage)
+    now_mono = time.monotonic()
+
+    _load_into_memory()
+    # Stamp every OpenRouter-prefixed candidate in every known chain.
+    with _STATE_LOCK:
+        for model in list(_STATE.keys()):
+            if not model.startswith("openrouter:"):
+                continue
+            h = _STATE[model]
+            h.credits_remaining = remaining
+            h.credits_unit = "usd_balance"
+            # OpenRouter credits don't auto-reset on a clock — they're a
+            # prepaid wallet. Use None to mean "no scheduled reset"; the
+            # elector treats None reset_at as a static gate (recheck on
+            # every election; refreshed by next poll).
+            h.credits_reset_at = None
+            h.credits_observed_at = now_mono
+            h.credits_low_water = OPENROUTER_USD_LOW_WATER
+            _STATE[model] = h
+        # Also seed entries that haven't been probed yet (chain entries
+        # discovered at import time but no probe completed).
+        for chain_model in _all_known_models():
+            if not chain_model.startswith("openrouter:"):
+                continue
+            if chain_model in _STATE:
+                continue
+            h = ModelHealth(model=chain_model)
+            h.credits_remaining = remaining
+            h.credits_unit = "usd_balance"
+            h.credits_observed_at = now_mono
+            h.credits_low_water = OPENROUTER_USD_LOW_WATER
+            _STATE[chain_model] = h
+
+    return {"total_credits": total_credits, "total_usage": total_usage,
+            "remaining": remaining}
+
+
+# ---------------------------------------------------------------------------
 # Probing (mostly unchanged from pre-KI-080 — extended to record
 # probe_history + skip degraded-window models on the regular tick).
 # ---------------------------------------------------------------------------
@@ -639,6 +997,10 @@ def status_summary() -> dict:
             "last_failure_at": h.last_failure_at,
             "last_error": h.last_error,
             "tested_at": h.tested_at,
+            # KI-085 — surface credits state for the admin UI.
+            "credits_remaining": h.credits_remaining,
+            "credits_unit": h.credits_unit,
+            "credits_low_water": h.credits_low_water,
         })
     summary["models"].sort(key=lambda x: (x["status"] != "healthy", x["model"]))
     if summary["models"]:
@@ -654,12 +1016,32 @@ def status_summary() -> dict:
 
 async def background_probe_loop() -> None:
     """Long-running task — probes every PROBE_INTERVAL_SEC (300s; KI-084).
-    Started from main.py."""
+    Started from main.py.
+
+    KI-085 (2026-05-15) — also polls OpenRouter's account-level credits
+    endpoint every OPENROUTER_CREDITS_POLL_EVERY_N_TICKS ticks (10 min by
+    default at the 300s probe cadence). Groq + NIM signals come from the
+    chat hot path (response headers + local rate-meter respectively) so
+    only OpenRouter needs an out-of-band poll.
+    """
+    tick = 0
+    # Initial credits poll on startup so the elector has a non-None
+    # account-level signal before the first chat call.
+    try:
+        await poll_openrouter_credits()
+    except Exception:
+        pass
     while True:
         try:
             await probe_all()
         except Exception:
             pass  # never let one bad probe kill the loop
+        tick += 1
+        if tick % OPENROUTER_CREDITS_POLL_EVERY_N_TICKS == 0:
+            try:
+                await poll_openrouter_credits()
+            except Exception:
+                pass
         await asyncio.sleep(PROBE_INTERVAL_SEC)
 
 

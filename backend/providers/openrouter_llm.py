@@ -48,10 +48,13 @@ class OpenRouterLLM(LLMProvider):
         model: str = DEFAULT_MODEL,
         api_key: Optional[str] = None,
         timeout: float = 120.0,
+        chain_name: str = "unknown",
     ):
         self.api_key = api_key or getattr(settings, "OPENROUTER_API_KEY", "")
         self.model = model
         self.timeout = timeout
+        # KI-085 — chain_name plumbs through to update_credits_*.
+        self.chain_name = chain_name
         if not self.api_key:
             raise RuntimeError(
                 "OPENROUTER_API_KEY not set. Get a key at https://openrouter.ai/keys "
@@ -109,6 +112,19 @@ class OpenRouterLLM(LLMProvider):
                     continue
                 resp.raise_for_status()
                 break
+            # KI-085 (2026-05-15) — opportunistic between-poll signal from
+            # OpenRouter response headers. The authoritative truth (usd_balance)
+            # comes from poll_openrouter_credits() every 10 min; this is a
+            # finer-grained per-call backup that catches per-minute bucket
+            # exhaustion before the next poll tick.
+            try:
+                from backend import llm_health
+                chain_for_credits = f"openrouter:{self.model}"
+                llm_health.update_credits_from_openrouter_headers(
+                    self.chain_name, chain_for_credits, dict(resp.headers)
+                )
+            except Exception:
+                pass
             payload = resp.json()
 
         choice = payload["choices"][0]
