@@ -515,12 +515,35 @@ async def handle_turn(
     # request per question without contributing to grading. Skipping it cuts
     # ~25% off eval wall time at zero quality cost. Production runs (env unset)
     # behaviour is identical to before.
+    #
+    # KI-091 (2026-05-15) — fact-find-turn skip. Live admin /llm-health showed
+    # BRAIN_CHAIN + JUDGE_CHAIN credit_exhausted while FAST_BRAIN_CHAIN was
+    # healthy. The fact_find_brain (FAST_BRAIN_CHAIN) succeeded but per-turn
+    # telemetry showed profile_extractor calls hitting 10-20s on the saturated
+    # heavy brain, which combined with the 25s _TIMEOUT_S in the fact-find
+    # path was tripping outer wait_for and emitting canonical fallback.
+    # Skipping the extractor on fact-find turns is safe: fact_find_brain's
+    # <FF>{"captured": ...} trailer already extracts every slot it needs and
+    # populated session.profile upstream (see the early-return block above).
+    # Gate: only run extractor when we're in free-form AND not in a fact-find
+    # continuation.
     profile_updates_applied: dict = {}
     import os as _os_pe
     _skip_extract = _os_pe.environ.get("INSURANCE_BOT_SKIP_PROFILE_EXTRACTOR") == "1"
+    # KI-091 — fact-find branch already returned at line ~499. Anything past
+    # this point is free-form OR an explicit-question turn. The flag pair
+    # below is the belt-and-braces gate: only call the extractor when we're
+    # genuinely in free-form chat (session.free_form_session=True) and not
+    # mid-fact-find-continuation. Eval mode (env var) still wins.
+    _in_fact_find_now = bool(in_fact_find_continuation) or intent == "fact_find"
+    _run_extractor = (
+        not _skip_extract
+        and bool(getattr(session, "free_form_session", False))
+        and not _in_fact_find_now
+    )
     try:
-        if _skip_extract:
-            extracted = None  # eval mode — bypass LLM extractor entirely
+        if not _run_extractor:
+            extracted = None  # eval mode OR fact-find turn — bypass LLM extractor
         else:
             from backend.profile_extractor import extract_profile_updates
             extracted = await extract_profile_updates(user_text, session.profile)
@@ -618,13 +641,27 @@ async def handle_turn(
     # 5. FAITHFULNESS GATE — every reply runs through 4-gate verification.
     #    If any gate fails, replace the reply with a safe refusal. The original
     #    blocked reply is logged to logs/hallucinations.jsonl for audit.
-    verdict: FaithfulnessVerdict = await check_faithfulness(
-        reply=reply,
-        chunks=chunks,
-        user_text=user_text,
-        run_llm_judge=True,
-        brain_model_used=brain_model_actual,
-    )
+    #
+    # KI-091 (2026-05-15) — skip on fact-find turns. The judge LLM runs on
+    # JUDGE_CHAIN, which the admin /api/admin/llm-health endpoint just showed
+    # as credit_exhausted=TRUE. Fact-find replies don't cite policy text and
+    # carry no factual claim about coverage/exclusions/waiting-periods — the
+    # judge has nothing to grade. Running it on a saturated chain hung one
+    # production call for 12 minutes (733760ms). Fact-find prose is generated
+    # by fact_find_brain which has its own slot-extraction validation; the
+    # judge gate is additive overhead with negative production value here.
+    # Gate: skip if intent=='fact_find' OR we're mid-fact-find continuation.
+    _skip_judge = (intent == "fact_find") or bool(in_fact_find_continuation)
+    if _skip_judge:
+        verdict = FaithfulnessVerdict(passed=True, reasons=["ki091_skip_on_fact_find"])
+    else:
+        verdict: FaithfulnessVerdict = await check_faithfulness(
+            reply=reply,
+            chunks=chunks,
+            user_text=user_text,
+            run_llm_judge=True,
+            brain_model_used=brain_model_actual,
+        )
 
     # 5a. CROSS-CHECK RETRY — if faithfulness blocked AND the failure isn't
     # Gate 1 (no evidence at all), retry with a DIFFERENT-ARCHITECTURE NIM
