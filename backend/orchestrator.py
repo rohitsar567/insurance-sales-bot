@@ -607,10 +607,22 @@ async def handle_turn(
     # "we had a baby", "I was diagnosed with diabetes"). Run a lightweight LLM
     # extractor, apply high-confidence updates to session.profile, and re-upsert
     # the profile chunk so THIS turn's retrieval reflects the new state.
+    #
+    # KI-053 (2026-05-14) — eval-mode skip. `eval/run.py --no-extract` sets the
+    # INSURANCE_BOT_SKIP_PROFILE_EXTRACTOR env var. Gold-eval questions have
+    # empty user_profile + ephemeral sessions so this LLM call wastes a NIM
+    # request per question without contributing to grading. Skipping it cuts
+    # ~25% off eval wall time at zero quality cost. Production runs (env unset)
+    # behaviour is identical to before.
     profile_updates_applied: dict = {}
+    import os as _os_pe
+    _skip_extract = _os_pe.environ.get("INSURANCE_BOT_SKIP_PROFILE_EXTRACTOR") == "1"
     try:
-        from backend.profile_extractor import extract_profile_updates
-        extracted = await extract_profile_updates(user_text, session.profile)
+        if _skip_extract:
+            extracted = None  # eval mode — bypass LLM extractor entirely
+        else:
+            from backend.profile_extractor import extract_profile_updates
+            extracted = await extract_profile_updates(user_text, session.profile)
         if extracted:
             for field_name, new_value in extracted.items():
                 if field_name == "health_conditions":

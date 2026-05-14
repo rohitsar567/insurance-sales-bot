@@ -609,9 +609,9 @@ rag/ingest.py     →    rag/vectors/chroma.sqlite3        (text chunks + embedd
   │                    + HNSW binary files in vectors/   (800-token chunks, 120 overlap)
   │
   ▼
-data/policy_facts/<policy_id>.json                       (hand-curated facts for marketplace UI)
-data/premiums/illustrative_premiums.json                  (anchor table for premium calculator)
-data/reviews/<insurer-slug>.json                          (IRDAI complaints/10K + sentiment roll-ups)
+40-data/policy_facts/<policy_id>.json                       (hand-curated facts for marketplace UI)
+40-data/premiums/illustrative_premiums.json                  (anchor table for premium calculator)
+40-data/reviews/<insurer-slug>.json                          (IRDAI complaints/10K + sentiment roll-ups)
   │
   ▼
 kb/policies/<policy_id>.md                               (markdown writeup; regen via rag/build_kb.py)
@@ -623,7 +623,7 @@ Full per-stage detail: [`70-docs/20-data-pipeline/ingestion-policy.md`](70-docs/
 
 | Storage | What lives there | Quota |
 |---|---|---|
-| HF Space repo (origin) | Code only (`backend/`, `frontend/`, `rag/*.py`, `eval/`, `kb/`, `data/`, configs) | 1 GB free tier |
+| HF Space repo (origin) | Code only (`backend/`, `frontend/`, `rag/*.py`, `eval/`, `kb/`, `40-data/`, configs) | 1 GB free tier |
 | HF Dataset | Heavy data: `rag/corpus/`, `rag/vectors/`, `rag/extracted/` | 50 GB free tier (we use ~500 MB) |
 | GitHub code repo | Mirror of HF Space | Standard GitHub |
 | GitHub data repo (LFS) | Mirror of HF Dataset | 1 GB LFS + 1 GB/mo bandwidth |

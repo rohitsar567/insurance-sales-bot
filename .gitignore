@@ -82,3 +82,10 @@ rag/_hf_dataset_backup/
 # HF Space rejects binaries in the repo (use Xet/Releases instead).
 # Regenerate locally any time via 'python tools/build_readme_pdf.py'.
 README.pdf
+
+# Runtime + heavy binary: never commit
+40-data/policies/
+40-data/sessions/
+80-audit/full_*/
+80-audit/postfix_*/
+MUST_FIX.md

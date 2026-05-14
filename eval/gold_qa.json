@@ -1120,5 +1120,159 @@
     "expected_refusal": true,
     "language": "en",
     "generated_by": "pipeline_c_refusal"
+  },
+  {
+    "id": "tax_planning::section_80d_self_below_60::REFUSE::tax_planning::medium",
+    "policy_id": null,
+    "question": "What is the Section 80D tax deduction limit for a self/family health insurance premium if I am under 60?",
+    "expected_answer": "Bot should refuse or say it cannot advise on Income Tax Act provisions \u2014 the policy corpus does not include Section 80D limits.",
+    "question_type": "tax_planning",
+    "difficulty": "medium",
+    "expected_refusal": true,
+    "language": "en",
+    "generated_by": "pipeline_d_tax"
+  },
+  {
+    "id": "tax_planning::section_80d_senior_parents::REFUSE::tax_planning::medium",
+    "policy_id": null,
+    "question": "If I pay the premium for my parents who are 65 and 68, how much can I claim as a deduction under Section 80D?",
+    "expected_answer": "Bot should refuse or say it cannot advise on Income Tax Act deductions \u2014 80D senior-citizen limits are not stated in any policy document in the corpus.",
+    "question_type": "tax_planning",
+    "difficulty": "hard",
+    "expected_refusal": true,
+    "language": "en",
+    "generated_by": "pipeline_d_tax"
+  },
+  {
+    "id": "tax_planning::section_80ddb_critical_illness::REFUSE::tax_planning::hard",
+    "policy_id": null,
+    "question": "Can I claim a deduction under Section 80DDB for cancer treatment expenses?",
+    "expected_answer": "Bot should refuse \u2014 Section 80DDB rules are part of the Income Tax Act and are not covered in the policy corpus.",
+    "question_type": "tax_planning",
+    "difficulty": "hard",
+    "expected_refusal": true,
+    "language": "en",
+    "generated_by": "pipeline_d_tax"
+  },
+  {
+    "id": "tax_planning::section_80u_disability::REFUSE::tax_planning::hard",
+    "policy_id": null,
+    "question": "I have a 40% disability certificate \u2014 what is my Section 80U deduction?",
+    "expected_answer": "Bot should refuse \u2014 Section 80U personal-disability deductions are an Income Tax Act provision, not a health-policy detail; the corpus does not contain ITA limits.",
+    "question_type": "tax_planning",
+    "difficulty": "hard",
+    "expected_refusal": true,
+    "language": "en",
+    "generated_by": "pipeline_d_tax"
+  },
+  {
+    "id": "tax_planning::gst_rate_health_premium::REFUSE::tax_planning::medium",
+    "policy_id": null,
+    "question": "What is the current GST rate charged on health insurance premiums in India?",
+    "expected_answer": "Bot should refuse or say the policy documents do not state the applicable GST percentage \u2014 GST rates are set by the GST Council, not the insurer's product document.",
+    "question_type": "tax_planning",
+    "difficulty": "medium",
+    "expected_refusal": true,
+    "language": "en",
+    "generated_by": "pipeline_d_tax"
+  },
+  {
+    "id": "tax_planning::topup_plan_tax_savings::REFUSE::tax_planning::medium",
+    "policy_id": null,
+    "question": "If I buy a top-up health plan in addition to my base policy, is the top-up premium also eligible for tax deduction?",
+    "expected_answer": "Bot should refuse on tax-eligibility advice \u2014 deduction eligibility under Section 80D is governed by the Income Tax Act, not the policy document; the bot can only describe policy features.",
+    "question_type": "tax_planning",
+    "difficulty": "medium",
+    "expected_refusal": true,
+    "language": "en",
+    "generated_by": "pipeline_d_tax"
+  },
+  {
+    "id": "tax_planning::section_10_10d_life::REFUSE::tax_planning::hard",
+    "policy_id": null,
+    "question": "Are maturity proceeds from my health insurance policy tax-free under Section 10(10D)?",
+    "expected_answer": "Bot should refuse or clarify that Section 10(10D) applies to life-insurance proceeds and is outside the health-policy corpus; health indemnity policies do not pay maturity proceeds.",
+    "question_type": "tax_planning",
+    "difficulty": "hard",
+    "expected_refusal": true,
+    "language": "en",
+    "generated_by": "pipeline_d_tax"
+  },
+  {
+    "id": "bajaj-allianz__tax-gain__cis::tax_benefit_section::REFUSE::tax_planning::medium",
+    "policy_id": "bajaj-allianz__tax-gain__cis",
+    "question": "The plan is called Tax Gain \u2014 what specific Section 80D tax deduction amount can I claim by buying this policy?",
+    "expected_answer": "Bot should refuse or note that the Tax Gain policy document in the corpus does not state any Section 80D limit \u2014 deduction eligibility and amounts are governed by the Income Tax Act, not the policy document.",
+    "question_type": "tax_planning",
+    "difficulty": "medium",
+    "expected_refusal": true,
+    "language": "en",
+    "generated_by": "pipeline_d_tax"
+  },
+  {
+    "id": "bajaj-allianz__tax-gain__cis::tax_saving_calc::REFUSE::tax_planning::hard",
+    "policy_id": "bajaj-allianz__tax-gain__cis",
+    "question": "If I pay \u20b915,000 premium for Tax Gain at a 30% tax bracket, exactly how much tax will I save in the financial year?",
+    "expected_answer": "Bot should refuse \u2014 the Tax Gain policy document does not contain Section 80D limits or marginal tax-rate guidance; tax-saving calculations require Income Tax Act knowledge that is outside the corpus.",
+    "question_type": "tax_planning",
+    "difficulty": "hard",
+    "expected_refusal": true,
+    "language": "en",
+    "generated_by": "pipeline_d_tax"
+  },
+  {
+    "id": "tax_planning::tds_on_claim_payouts::REFUSE::tax_planning::medium",
+    "policy_id": null,
+    "question": "Will TDS be deducted on the cashless claim amount paid by the insurer to the hospital?",
+    "expected_answer": "Bot should refuse or say TDS treatment of insurance claim payouts is governed by the Income Tax Act and is not addressed in the policy document corpus.",
+    "question_type": "tax_planning",
+    "difficulty": "medium",
+    "expected_refusal": true,
+    "language": "en",
+    "generated_by": "pipeline_d_tax"
+  },
+  {
+    "id": "tax_planning::premium_prepay_tax_year::REFUSE::tax_planning::medium",
+    "policy_id": null,
+    "question": "If I pay a 2-year premium in lump sum in March, can I claim the entire amount as a Section 80D deduction in the same financial year?",
+    "expected_answer": "Bot should refuse \u2014 single-premium vs. multi-year apportionment rules under Section 80D are Income Tax Act provisions; the policy corpus does not include tax-treatment of lump-sum premiums.",
+    "question_type": "tax_planning",
+    "difficulty": "hard",
+    "expected_refusal": true,
+    "language": "en",
+    "generated_by": "pipeline_d_tax"
+  },
+  {
+    "id": "tax_planning::hra_medical_interplay::REFUSE::tax_planning::hard",
+    "policy_id": null,
+    "question": "Can I claim HRA exemption and Section 80D health insurance deduction together in the same year?",
+    "expected_answer": "Bot should refuse \u2014 HRA exemption rules and inter-section deduction interactions are Income Tax Act provisions outside the policy corpus.",
+    "question_type": "tax_planning",
+    "difficulty": "hard",
+    "expected_refusal": true,
+    "language": "en",
+    "generated_by": "pipeline_d_tax"
+  },
+  {
+    "id": "tax_planning::preventive_checkup_80d_sublimit::REFUSE::tax_planning::medium",
+    "policy_id": null,
+    "question": "How much of my preventive health check-up cost can I claim as a deduction under Section 80D, separately from the premium?",
+    "expected_answer": "Bot should refuse on the deduction-amount question \u2014 the policy corpus describes preventive check-up coverage limits, but Section 80D sub-limit for preventive HCU (\u20b95,000 within the overall cap) is an Income Tax Act provision not stated in the documents.",
+    "question_type": "tax_planning",
+    "difficulty": "medium",
+    "expected_refusal": true,
+    "language": "en",
+    "generated_by": "pipeline_d_tax"
+  },
+  {
+    "id": "tax_planning::cash_premium_80d_eligibility::REFUSE::tax_planning::medium",
+    "policy_id": null,
+    "question": "If I pay my health insurance premium in cash, can I still claim the Section 80D deduction?",
+    "expected_answer": "Bot should refuse \u2014 the rule that 80D deductions require non-cash payment (except for preventive check-up) is an Income Tax Act provision; the policy documents in the corpus do not state payment-mode rules for tax eligibility.",
+    "question_type": "tax_planning",
+    "difficulty": "medium",
+    "expected_refusal": true,
+    "language": "en",
+    "generated_by": "pipeline_d_tax"
   }
 ]

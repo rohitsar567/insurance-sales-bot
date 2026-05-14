@@ -1,6 +1,6 @@
 # Reviews — Insurer Reputation Index
 
-_Auto-generated. Source: `data/reviews/*.json`. Per-insurer sheets in `kb/reviews/<slug>.md`._
+_Auto-generated. Source: `40-data/reviews/*.json`. Per-insurer sheets in `kb/reviews/<slug>.md`._
 
 ## Leaderboard
 

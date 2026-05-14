@@ -260,4 +260,4 @@ Room Rent Modification** No Limit
 
 ---
 
-_Mirrored from `data/policy_facts/care-health__supreme-enhance__brochure.json`. Provenance — every field's verbatim quote and source PDF path is preserved exactly as curated. Do not hand-edit; regenerate via `tools/build_kb_mirror.py`._
+_Mirrored from `40-data/policy_facts/care-health__supreme-enhance__brochure.json`. Provenance — every field's verbatim quote and source PDF path is preserved exactly as curated. Do not hand-edit; regenerate via `tools/build_kb_mirror.py`._

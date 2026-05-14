@@ -1,6 +1,6 @@
 # Star Health & Allied Insurance — Reputation Sheet
 
-_Auto-generated from `data/reviews/star-health.json`. Reviews are the v1 substitute for live regulator + sentiment monitoring. Re-build with `python -m rag.build_kb`._
+_Auto-generated from `40-data/reviews/star-health.json`. Reviews are the v1 substitute for live regulator + sentiment monitoring. Re-build with `python -m rag.build_kb`._
 
 **Aggregate score:** **60.4** (C). _India's largest standalone health insurer by premium, but under IRDAI scrutiny for the sector's highest complaint volume (13,308 in FY24) and lowest CSR (82.3%) among standalone insurers_
 
@@ -48,6 +48,6 @@ _Auto-generated from `data/reviews/star-health.json`. Reviews are the v1 substit
 
 ---
 
-_Aggregate score formula: 0.40 × CSR + 0.20 × inverse-complaints + 0.15 × avg-aggregator-star + 0.10 × reddit + 0.10 × youtube + 0.05 × news. See `data/reviews/INDEX.md` for the leaderboard._
+_Aggregate score formula: 0.40 × CSR + 0.20 × inverse-complaints + 0.15 × avg-aggregator-star + 0.10 × reddit + 0.10 × youtube + 0.05 × news. See `40-data/reviews/INDEX.md` for the leaderboard._
 
 **Flows into the bot via:** `score_claim_experience()` in `backend/scorecard.py` — IRDAI CSR + complaints become Claim Experience sub-score signals for every policy this insurer offers.

@@ -49,19 +49,19 @@ The original design considered embedding-only. The "why JSON" trade-offs:
 - **Deterministic name lookup.** `Rohit` → `rohit.json` is exact; vector search is approximate and can collide on common first names.
 - **Human-readable.** A BFSI auditor can `cat` the file and see the full profile.
 - **Manually editable.** Quick repair without a re-embed pipeline.
-- **No HNSW bloat exposure.** Profile updates do not touch the policy vector store ([ADR-029](../docs/60-decisions/ADR-029-disk-storage-hardening.md)).
+- **No HNSW bloat exposure.** Profile updates do not touch the policy vector store ([ADR-029](../70-docs/60-decisions/ADR-029-disk-storage-hardening.md)).
 
 The Chroma chunk is purely a retrieval-time view of the canonical JSON.
 
 ## Privacy + retention
 
 - Profiles are local to the deployed instance. No third-party share.
-- Per [ADR-010](../docs/60-decisions/ADR-010-secret-handling.md), the folder is not exposed via the HTTP API except through the user's own `session_id`.
+- Per [ADR-010](../70-docs/60-decisions/ADR-010-secret-handling.md), the folder is not exposed via the HTTP API except through the user's own `session_id`.
 - The folder is committed empty (placeholder) — actual profiles are runtime artefacts.
 
 ## Related
 
 - `backend/profile_store.py` — the canonical store implementation
-- `backend/profile_extractor.py` + [ADR-022](../docs/60-decisions/ADR-022-conversational-profile-updates.md) — how conversational asides flow into the profile
+- `backend/profile_extractor.py` + [ADR-022](../70-docs/60-decisions/ADR-022-conversational-profile-updates.md) — how conversational asides flow into the profile
 - `backend/profile_rag.py` — the embedding mirror
 - `backend/needs_finder.py::GRAPH` — the 9-slot schema the `profile` block conforms to

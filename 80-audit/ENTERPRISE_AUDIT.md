@@ -229,6 +229,19 @@ The full eval was sending **every** QA question to `needs_finder`. Sample bot an
 | KI-032 | `6f495c1` | LLM paraphraser for fact-find questions with verifier + cache (ADR-027) |
 | KI-033 | `9a977de` | `fact_find_normalizer` + `profile_extractor` migrated from hardcoded single-model to `NimChainLLM(FAST_BRAIN_CHAIN)` |
 | KI-034/5 | `844ed03` | LRU retrieval cache + `FAST_BRAIN_CHAIN` reordered (Nemotron Nano 30B primary) |
+| KI-036/7/8 | `36ef017` | Greeting flow, strict paraphrase verifier, waiting dots — tightens the first-impression UX surface |
+| KI-039 | `a774b91` | Single Clear-chat button (full reset) — removes ambiguity between "reset" vs "new session" |
+| KI-040 | `4449d44` | Named profiles + Clear-chat that preserves profile — lets users iterate without re-doing fact-find |
+| KI-041/2 | `748ce54` | VAD sensitivity tuning + Live OFF by default + dots on first turn — fixes accidental barge-in on quiet rooms |
+| KI-044 | `86fcc31` | PCM pre-roll via AudioWorklet + 11 folder READMEs — eliminates first-syllable clipping on TTS playback |
+| KI-045 | `930e11e` | Natural-conversation classifier in fact-find: intent_change / off-topic-question escapes fact-find branch into QA. Prevents the bot from droning past a user's pivot. |
+| KI-046 | `28b6114` | Explicit refusal on adversarial/fanciful out-of-corpus questions (space tourism, diamond-tipped surgery). Closes the "absence of exclusion ≠ inclusion" reasoning leak. |
+| KI-047 | `e2d09f9` | Bucket reorg (`docs/` → `70-docs/`, `audit_results/` → `80-audit/`) — Option A safe subset, keeps code dirs untouched |
+| KI-048 | `13a1cf4` | Admin backend: `GET /api/admin/profiles` + `GET /api/admin/performance`, both behind `_check_admin` (IP allowlist + password, 404 on auth fail) |
+| KI-049 | `c8bf1a1` | Retrieval top-k 5 → 10 for table-cell questions (room rent / sub-limit / cap / NCB / etc.). Boosts the chance the policy's structured cap-table chunk lands in context — directly targets the `sub_limit` accuracy gap from D-003. |
+| KI-050 | `52c6351` | Complete `data/` → `40-data/` rename across all Python string-path refs. Finishes KI-047 for runtime code. |
+| KI-051 | `2eae364` | Dockerfile `COPY` paths updated (`data → 40-data`, `docs → 70-docs`). Without this the HF Space rebuild fails on the renamed source dirs. |
+| KI-052 | `c53d167` | Admin panel HTML: 3 lazy-loaded tabs (Profile + Visitor Log, Performance, LLM Chain). Performance pulls KI-048's new endpoint; auth state preserved across tab switches. |
 | D-001 | (multi) | ChromaDB HNSW bloat 3-layer prevention (ADR-029) |
 | D-002 | (LaunchAgent edit) | Three silently-failing LaunchAgent scripts fixed |
 | D-009 | `bcb7079` | Removed `tmp_*.py` debug files from repo root |
@@ -238,11 +251,12 @@ The full eval was sending **every** QA question to `needs_finder`. Sample bot an
 - `tests/test_routing_regression.py` — 15 unit tests, all passing. Pins KI-018 / KI-023 / KI-025 invariants.
 - 5-Q post-fix smoke (no judge): factual 0% → 60%, nim-chain serving 100% of QA.
 - Live HF Space smoke (`https://rohitsar567-insurancebot.hf.space`): PED waiting-period question now answers via `nim-chain::nemotron-3-nano-30b-a3b::v4-flash::qa` with a grounded reply, not the old "Happy to help. First, your age?" misroute.
-- **Post-fix parallel 96-Q gold eval (93 of 96 completed; 3 trailing questions killed when the run hung on a NIM rate-limit edge case):**
-  - **Factual accuracy: 54.8% (51 / 93)** — up from the pre-fix 41.7% baseline.
+- **Post-fix parallel 96-Q gold eval (93 of 96 completed; 3 trailing questions killed when the run hung on a NIM rate-limit edge case) — captured BEFORE KI-046 (refusal precision) and KI-049 (retrieval top-k boost) shipped:**
+  - **Factual accuracy: 54.8% (51 / 93)** — up from the pre-fix 41.7% baseline. **This number is now stale; a fresh eval is running to measure the KI-046 + KI-049 lift and the headline will be updated once it lands.**
   - **KI-022 JSON-fallback** rescued 7 questions that would have scored 0 on Groq judge JSON errors. Without KI-022 the headline would have been ~47%.
   - PED waiting-period type — previously 0% pre-fix; samples now: "Bot correctly states the 24‑month waiting period" / "matched_nums=['24']" via regex fallback / "36‑month period and includes source cit…".
   - Stuck questions: rows 94-96 (all `regulatory_oos` refusals — those routes are already at ~100% earlier in the run; the rate-limit hang affected the brain call, not the refusal logic).
+  - **Expected directional lift from the two pending fixes:** KI-049 directly targets the `sub_limit` accuracy gap called out under D-003 (structured cap-table chunks now have ~2× chance of landing in context); KI-046 directly targets the `exclusions_oos` refusal-logic gap. Both gaps were the explicit "next bottleneck" in the 54.8% post-mortem.
 - Clean 100-persona audit pending — to run once Batch B (bucket reorg) ships and the HF Space is stable.
 
 ## Pending follow-ups (P1)

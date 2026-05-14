@@ -1,6 +1,6 @@
 # ManipalCigna Health Insurance — Reputation Sheet
 
-_Auto-generated from `data/reviews/manipalcigna.json`. Reviews are the v1 substitute for live regulator + sentiment monitoring. Re-build with `python -m rag.build_kb`._
+_Auto-generated from `40-data/reviews/manipalcigna.json`. Reviews are the v1 substitute for live regulator + sentiment monitoring. Re-build with `python -m rag.build_kb`._
 
 **Aggregate score:** **76.3** (B). _High reported CSR (99%) and Manipal-hospital network advantage; smaller scale and above-median complaints temper the score_
 
@@ -43,6 +43,6 @@ _Auto-generated from `data/reviews/manipalcigna.json`. Reviews are the v1 substi
 
 ---
 
-_Aggregate score formula: 0.40 × CSR + 0.20 × inverse-complaints + 0.15 × avg-aggregator-star + 0.10 × reddit + 0.10 × youtube + 0.05 × news. See `data/reviews/INDEX.md` for the leaderboard._
+_Aggregate score formula: 0.40 × CSR + 0.20 × inverse-complaints + 0.15 × avg-aggregator-star + 0.10 × reddit + 0.10 × youtube + 0.05 × news. See `40-data/reviews/INDEX.md` for the leaderboard._
 
 **Flows into the bot via:** `score_claim_experience()` in `backend/scorecard.py` — IRDAI CSR + complaints become Claim Experience sub-score signals for every policy this insurer offers.

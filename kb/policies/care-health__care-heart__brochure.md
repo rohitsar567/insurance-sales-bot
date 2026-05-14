@@ -259,4 +259,4 @@ medical and alternative treatments such as Ayurveda, Unani, Sidha and 30%
 
 ---
 
-_Mirrored from `data/policy_facts/care-health__care-heart__brochure.json`. Provenance — every field's verbatim quote and source PDF path is preserved exactly as curated. Do not hand-edit; regenerate via `tools/build_kb_mirror.py`._
+_Mirrored from `40-data/policy_facts/care-health__care-heart__brochure.json`. Provenance — every field's verbatim quote and source PDF path is preserved exactly as curated. Do not hand-edit; regenerate via `tools/build_kb_mirror.py`._

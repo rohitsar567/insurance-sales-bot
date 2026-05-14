@@ -16,7 +16,7 @@
     "https://joinditto.in/articles/health-insurance/niva-bupa-reassure-2-0-premium-chart/",
     "https://joinditto.in/articles/health-insurance/care-supreme-health-insurance-premium-chart/",
     "https://joinditto.in/articles/health-insurance/tata-aig-health-insurance-premium-rate-chart/",
-    "https://www.axisbank.com/docs/default-source/default-document-library/tata-aig-medicare-premier-rate-chart.pdf",
+    "https://www.axisbank.com/70-docs/default-source/default-document-library/tata-aig-medicare-premier-rate-chart.pdf",
     "https://transactions.nivabupa.com/pages/doc/premium_chart/Health%20Premia%20-%20Rate%20Card.pdf",
     "https://www.scribd.com/document/667873826/Annexure-2-Premium-Chart-Family-Health-Optima-Insurance-Plan-Revised",
     "https://www.scribd.com/document/682628786/ReAssure-2-0-Rate-Card-with-Tax",
@@ -762,7 +762,7 @@
           "smoker": false,
           "family_size": 1,
           "annual_premium_inr": 7100,
-          "source_url": "https://www.axisbank.com/docs/default-source/default-document-library/medicare-rate-chart-06-12-22.pdf",
+          "source_url": "https://www.axisbank.com/70-docs/default-source/default-document-library/medicare-rate-chart-06-12-22.pdf",
           "source_note": "Tata AIG MediCare base variant rate chart - 19-35 / 5L = Rs 7,108 ex-tax"
         },
         {
@@ -772,7 +772,7 @@
           "smoker": false,
           "family_size": 1,
           "annual_premium_inr": 8800,
-          "source_url": "https://www.axisbank.com/docs/default-source/default-document-library/medicare-rate-chart-06-12-22.pdf"
+          "source_url": "https://www.axisbank.com/70-docs/default-source/default-document-library/medicare-rate-chart-06-12-22.pdf"
         },
         {
           "age": 40,
@@ -796,7 +796,7 @@
           "smoker": false,
           "family_size": 1,
           "annual_premium_inr": 8362,
-          "source_url": "https://www.axisbank.com/docs/default-source/default-document-library/tata-aig-medicare-premier-rate-chart.pdf",
+          "source_url": "https://www.axisbank.com/70-docs/default-source/default-document-library/tata-aig-medicare-premier-rate-chart.pdf",
           "source_note": "Official Tata AIG MediCare Premier rate chart: 19-35 age band, 5L SI = Rs 8,362 ex-tax"
         },
         {
@@ -806,7 +806,7 @@
           "smoker": false,
           "family_size": 1,
           "annual_premium_inr": 10319,
-          "source_url": "https://www.axisbank.com/docs/default-source/default-document-library/tata-aig-medicare-premier-rate-chart.pdf",
+          "source_url": "https://www.axisbank.com/70-docs/default-source/default-document-library/tata-aig-medicare-premier-rate-chart.pdf",
           "source_note": "Official rate chart: 19-35 / 10L = Rs 10,319 ex-tax"
         },
         {
@@ -816,7 +816,7 @@
           "smoker": false,
           "family_size": 1,
           "annual_premium_inr": 9868,
-          "source_url": "https://www.axisbank.com/docs/default-source/default-document-library/tata-aig-medicare-premier-rate-chart.pdf",
+          "source_url": "https://www.axisbank.com/70-docs/default-source/default-document-library/tata-aig-medicare-premier-rate-chart.pdf",
           "source_note": "Official rate chart: 36-45 / 5L = Rs 9,868 ex-tax"
         },
         {
@@ -826,7 +826,7 @@
           "smoker": false,
           "family_size": 1,
           "annual_premium_inr": 12266,
-          "source_url": "https://www.axisbank.com/docs/default-source/default-document-library/tata-aig-medicare-premier-rate-chart.pdf",
+          "source_url": "https://www.axisbank.com/70-docs/default-source/default-document-library/tata-aig-medicare-premier-rate-chart.pdf",
           "source_note": "Official rate chart: 36-45 / 10L = Rs 12,266 ex-tax"
         },
         {

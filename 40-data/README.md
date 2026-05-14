@@ -13,7 +13,7 @@ The structured policy schema and PDFs themselves live under `rag/`. This folder 
 | File | What it is | Owner |
 | --- | --- | --- |
 | `corpus_urls.md` | Discovery manifest — every PDF URL ingested into `rag/corpus/`. | discovery agent / `tools/check_link_rot.py` |
-| `regulatory_urls.md` | IRDAI / regulatory PDF URLs. See [ADR-017](../docs/60-decisions/ADR-017-irdai-corpus-playwright-rescue.md). | discovery agent |
+| `regulatory_urls.md` | IRDAI / regulatory PDF URLs. See [ADR-017](../70-docs/60-decisions/ADR-017-irdai-corpus-playwright-rescue.md). | discovery agent |
 | `information_source_map.md` | Human-readable claim → URL → verdict map. Master audit doc for the Source Methodology directive. Mirror of `eval/info_source_map.json`. | `tools/info_source_map.py` |
 | `llm_health.json` | Last per-provider health-probe snapshot (latency, success, last error). Powers the admin tab. | `backend/llm_health.py` |
 | `llm_usage.jsonl` | Append-only per-call log: provider, model, tokens, latency, success. Aggregated in the admin tab. | `backend/main.py` |
@@ -26,7 +26,7 @@ The structured policy schema and PDFs themselves live under `rag/`. This folder 
 | `sessions/` | runtime | Per-session conversation state JSONs. Ephemeral — pruned periodically. Currently includes `anonymous.json` (no-name fallback). |
 | `policy_facts/` | pre-computed | **256 curated JSONs**, one per policy variant. Each field carries `{value, unit?, source_pdf_path, source_quote}` provenance. The Indian-BFSI-audit-grade machine source; `kb/policies/*.md` are the human-readable mirror. See `_curation_report.md` for the three batches that built it. |
 | `policies/` | pre-computed | Subfolder per insurer with PDFs / supplementary text used for one-off lookups outside the main ingest pipeline. |
-| `premiums/` | pre-computed | `illustrative_premiums.json` — sample starting premiums pulled from PolicyBazaar / JoinDitto / Beshak + insurer rate cards (2026-05-13). Refreshed by `tools/refresh_premiums.py`. **Illustrative only** per [ADR-007](../docs/60-decisions/ADR-007-illustrative-pricing.md). |
+| `premiums/` | pre-computed | `illustrative_premiums.json` — sample starting premiums pulled from PolicyBazaar / JoinDitto / Beshak + insurer rate cards (2026-05-13). Refreshed by `tools/refresh_premiums.py`. **Illustrative only** per [ADR-007](../70-docs/60-decisions/ADR-007-illustrative-pricing.md). |
 | `reviews/` | pre-computed | One JSON per insurer with IRDAI claim-settlement metrics, complaints/10K, aggregator sentiment, news tone. Index + leaderboard in `reviews/INDEX.md`. Source: IRDAI Annual Report 2023-24. |
 
 ## Provenance + KPIs
@@ -41,5 +41,5 @@ The structured policy schema and PDFs themselves live under `rag/`. This folder 
 
 - [`kb/AUDIT_TRAIL.md`](../kb/AUDIT_TRAIL.md) — end-to-end lineage; `data/policy_facts/` is stage 8 output
 - [`kb/INDEX.md`](../kb/INDEX.md) — policy index with completeness % per file
-- [ADR-007](../docs/60-decisions/ADR-007-illustrative-pricing.md) — pricing is illustrative, never a real quote
-- [ADR-009](../docs/60-decisions/ADR-009-19-insurer-comprehensive-schema.md) — 19-insurer scope + 48-field schema
+- [ADR-007](../70-docs/60-decisions/ADR-007-illustrative-pricing.md) — pricing is illustrative, never a real quote
+- [ADR-009](../70-docs/60-decisions/ADR-009-19-insurer-comprehensive-schema.md) — 19-insurer scope + 48-field schema

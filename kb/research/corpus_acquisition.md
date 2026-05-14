@@ -33,7 +33,7 @@ _Auto-generated from `rag/corpus/_manifest.json` at 2026-05-12T23:59:58Z_
 
 ## How we did it
 - Dispatched a research agent to find direct PDF URLs for all health policies across 10 target insurers
-- Source list saved to `data/corpus_urls.md` (75 URLs)
+- Source list saved to `40-data/corpus_urls.md` (75 URLs)
 - `rag/download_corpus.py` downloads with PDF magic-byte verification + size floor (50KB)
 - `rag/download_retry.py` retried failed downloads with browser-grade headers (rescued ICICI Lombard 9/9)
 - Star Health (11 PDFs) blocked by CDN bot protection — deferred to v2 (see `70-docs/04-failure-modes.md` + ROADMAP)

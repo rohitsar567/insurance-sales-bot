@@ -36,6 +36,12 @@ Every LLM role is a `NimChainLLM` fallback chain, NOT a hardcoded single model. 
 - Paraphrases cached per `(session_id, slot_id)` → max 9 paraphrase calls per session.
 - Re-asks (`"Sorry, I didn't catch that..."`) skip paraphrase so the user has a stable anchor.
 - Indic queries use canonical Hindi text (paraphraser is English-only).
+- **Natural-conversation escape (KI-045):** mid-fact-find, if the user message is intent_change (`"never mind"`, `"actually let me ask"`, `"stop asking"`, etc.) OR off-topic question (ends with `?`, ≥4 words, no slot keywords), `orchestrator.py` exits the fact-find branch, sets `session.free_form_session=True`, and lets the QA path handle it. Prevents the bot from droning past a user's pivot.
+
+## Refusal precision (KI-046)
+
+- Persona prompt now explicitly instructs the bot to refuse on **fanciful / out-of-scope scenarios** (space tourism, diamond-tipped surgery, fictional procedures) with a specific refusal sentence.
+- Anti-pattern guarded against: "policy doesn't explicitly exclude it → maybe it's covered". This is wrong; absence-of-exclusion is not evidence-of-inclusion.
 
 ## Routing invariants (ADR-N/A — orchestrator.py)
 
@@ -49,6 +55,23 @@ These are pinned by `tests/test_routing_regression.py`:
 ## Retrieval cache (ADR not yet written — code self-documents)
 
 `rag/retrieve.py` has an in-process LRU cache keyed by `(query_normalized, top_k, sorted policy_ids, sorted insurer_slugs)`. Cap 256. Cache hit skips both Voyage embed + Chroma query. Invalidates on process restart.
+
+**Top-k boost for table-cell questions (KI-049):** room rent / sub-limit / cap on / single-private / NCB / co-pay / day-care-limit / etc. triggers bump `top_k` from 5 → 10 for that one query, so the policy's structured cap-table chunk has a higher chance of landing in context. Confined to the trigger query only — does not pollute the cache for downstream non-table queries.
+
+## Repo bucket layout (KI-047 / KI-050 / KI-051)
+
+Numbered top-level buckets for non-code artifacts (sort lexicographically in `ls`):
+
+- `40-data/` ← formerly `data/` — runtime/cached data. All Python string-path refs updated (KI-050). Dockerfile `COPY` paths updated (KI-051).
+- `70-docs/` ← formerly `docs/` — ADRs, design notes, decisions.
+- `80-audit/` ← formerly `audit_results/` — defect register + eval artifacts (this audit lives here).
+
+**Code dirs (`backend/`, `frontend/`, `rag/`, `tools/`, `eval/`, `tests/`, `kb/`) kept as-is** — Python forbids leading-digit / hyphen package names, so renaming code dirs would break imports.
+
+## Admin panel (KI-048 / KI-052)
+
+- **Backend:** `GET /api/admin/profiles` + `GET /api/admin/performance`, both behind `_check_admin` (IP allowlist + `X-Admin-Password` header). Auth failure returns 404 (not 401) so unauthenticated probes can't enumerate endpoints.
+- **Frontend:** admin HTML has 3 lazy-loaded tabs — **Profile + Visitor Log** (pulls `/api/admin/profiles`), **Performance** (pulls `/api/admin/performance`), **LLM Chain** (unchanged from prior). Auth state preserved across tab switches.
 
 ## Disk + storage hardening (ADR-029)
 
@@ -67,6 +90,10 @@ Three independent safety layers against ChromaDB HNSW bloat:
 - **Production-readiness defect register:** `80-audit/ENTERPRISE_AUDIT.md`.
 - **Data lineage:** `kb/AUDIT_TRAIL.md`.
 - **Tests:** `tests/test_routing_regression.py` (15 tests pinning routing + load-balance invariants).
+
+## Working-style note (personal memory, not a project decision)
+
+**Always parallelize independent work** (per `feedback_always_parallelize.md` in personal memory). On any task touching this project: dispatch agents in parallel when subtasks are independent, batch tool calls in a single message when there are no dependencies. Sequential-by-default wastes wall-clock time.
 
 ## Watch-outs
 

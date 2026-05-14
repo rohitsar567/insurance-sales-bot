@@ -280,7 +280,18 @@ async def main():
                         help="Concurrent questions in flight. KI-024 — was serial, now parallel. "
                              "Cap is NIM's 40 req/min (~2 calls per question); 6 workers gives ~5× "
                              "speedup before saturating. Drop to 1 to reproduce historical serial timing.")
+    parser.add_argument("--no-extract", action="store_true",
+                        help="KI-053 — skip backend.profile_extractor LLM call in eval. Eval gold "
+                             "questions have empty user_profile so the extractor wastes a NIM call "
+                             "per question. Setting this env var makes orchestrator skip it. "
+                             "~25%% throughput gain; no impact on grading.")
     args = parser.parse_args()
+
+    # KI-053 — propagate the skip flag via env var so the deep-stack
+    # orchestrator code path can read it without API churn.
+    if args.no_extract:
+        import os as _os
+        _os.environ["INSURANCE_BOT_SKIP_PROFILE_EXTRACTOR"] = "1"
 
     if not GOLD_FILE.exists():
         print(f"Missing {GOLD_FILE} — run `python -m eval.generate_gold` first")

@@ -303,4 +303,4 @@ kb/
 
 ## Provenance convention
 
-Every `policies/<id>.md` file is generated from `data/policy_facts/<id>.json` and preserves the verbatim source quote and source PDF path for every field. JSON is the machine source; markdown is the human-readable mirror. Regenerate the entire kb/ tree by running `.venv/bin/python3 tools/build_kb_mirror.py`.
+Every `policies/<id>.md` file is generated from `40-data/policy_facts/<id>.json` and preserves the verbatim source quote and source PDF path for every field. JSON is the machine source; markdown is the human-readable mirror. Regenerate the entire kb/ tree by running `.venv/bin/python3 tools/build_kb_mirror.py`.

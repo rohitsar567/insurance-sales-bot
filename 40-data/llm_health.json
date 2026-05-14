@@ -1,125 +1,145 @@
 {
-  "updated_at": "2026-05-14T01:03:07Z",
+  "updated_at": "2026-05-14T16:35:39Z",
   "models": {
     "qwen/qwen3-next-80b-a3b-instruct": {
       "model": "qwen/qwen3-next-80b-a3b-instruct",
       "status": "healthy",
-      "last_success_at": "2026-05-14T01:03:07Z",
+      "last_success_at": "2026-05-14T16:35:39Z",
       "last_failure_at": null,
       "last_error": null,
-      "latency_ms": 329,
+      "latency_ms": 286,
       "consecutive_failures": 0,
-      "tested_at": "2026-05-14T01:03:07Z"
+      "tested_at": "2026-05-14T16:35:39Z"
     },
     "qwen/qwen3.5-122b-a10b": {
       "model": "qwen/qwen3.5-122b-a10b",
-      "status": "degraded",
+      "status": "down",
       "last_success_at": null,
-      "last_failure_at": "2026-05-14T01:03:07Z",
-      "last_error": "empty_content",
+      "last_failure_at": "2026-05-14T16:35:39Z",
+      "last_error": "timeout",
       "latency_ms": null,
-      "consecutive_failures": 1,
-      "tested_at": "2026-05-14T01:03:07Z"
+      "consecutive_failures": 5,
+      "tested_at": "2026-05-14T16:35:39Z"
     },
     "openai/gpt-oss-120b": {
       "model": "openai/gpt-oss-120b",
-      "status": "degraded",
+      "status": "down",
       "last_success_at": null,
-      "last_failure_at": "2026-05-14T01:03:07Z",
+      "last_failure_at": "2026-05-14T16:35:39Z",
       "last_error": "empty_content",
       "latency_ms": null,
-      "consecutive_failures": 1,
-      "tested_at": "2026-05-14T01:03:07Z"
+      "consecutive_failures": 5,
+      "tested_at": "2026-05-14T16:35:39Z"
     },
     "mistralai/mistral-large-3-675b-instruct-2512": {
       "model": "mistralai/mistral-large-3-675b-instruct-2512",
-      "status": "degraded",
+      "status": "down",
       "last_success_at": null,
-      "last_failure_at": "2026-05-14T01:03:07Z",
+      "last_failure_at": "2026-05-14T16:35:39Z",
       "last_error": "timeout",
       "latency_ms": null,
-      "consecutive_failures": 1,
-      "tested_at": "2026-05-14T01:03:07Z"
+      "consecutive_failures": 5,
+      "tested_at": "2026-05-14T16:35:39Z"
     },
     "nvidia/llama-3.3-nemotron-super-49b-v1.5": {
       "model": "nvidia/llama-3.3-nemotron-super-49b-v1.5",
-      "status": "degraded",
+      "status": "down",
       "last_success_at": null,
-      "last_failure_at": "2026-05-14T01:03:07Z",
+      "last_failure_at": "2026-05-14T16:35:39Z",
       "last_error": "empty_content",
       "latency_ms": null,
-      "consecutive_failures": 1,
-      "tested_at": "2026-05-14T01:03:07Z"
+      "consecutive_failures": 5,
+      "tested_at": "2026-05-14T16:35:39Z"
     },
     "meta/llama-3.3-70b-instruct": {
       "model": "meta/llama-3.3-70b-instruct",
-      "status": "degraded",
-      "last_success_at": "2026-05-14T01:03:07Z",
-      "last_failure_at": null,
+      "status": "healthy",
+      "last_success_at": "2026-05-14T16:35:39Z",
+      "last_failure_at": "2026-05-14T15:58:40Z",
       "last_error": null,
-      "latency_ms": 8163,
+      "latency_ms": 479,
       "consecutive_failures": 0,
-      "tested_at": "2026-05-14T01:03:07Z"
+      "tested_at": "2026-05-14T16:35:39Z"
     },
     "deepseek-ai/deepseek-v4-pro": {
       "model": "deepseek-ai/deepseek-v4-pro",
-      "status": "degraded",
+      "status": "down",
       "last_success_at": null,
-      "last_failure_at": "2026-05-14T01:03:07Z",
+      "last_failure_at": "2026-05-14T16:35:39Z",
       "last_error": "timeout",
       "latency_ms": null,
-      "consecutive_failures": 1,
-      "tested_at": "2026-05-14T01:03:07Z"
+      "consecutive_failures": 5,
+      "tested_at": "2026-05-14T16:35:39Z"
     },
     "nvidia/nemotron-3-nano-30b-a3b": {
       "model": "nvidia/nemotron-3-nano-30b-a3b",
-      "status": "degraded",
+      "status": "down",
       "last_success_at": null,
-      "last_failure_at": "2026-05-14T01:03:07Z",
+      "last_failure_at": "2026-05-14T16:35:39Z",
       "last_error": "empty_content",
       "latency_ms": null,
-      "consecutive_failures": 1,
-      "tested_at": "2026-05-14T01:03:07Z"
+      "consecutive_failures": 5,
+      "tested_at": "2026-05-14T16:35:39Z"
     },
     "deepseek-ai/deepseek-v4-flash": {
       "model": "deepseek-ai/deepseek-v4-flash",
-      "status": "degraded",
+      "status": "down",
       "last_success_at": null,
-      "last_failure_at": "2026-05-14T01:03:07Z",
+      "last_failure_at": "2026-05-14T16:35:39Z",
       "last_error": "timeout",
       "latency_ms": null,
-      "consecutive_failures": 1,
-      "tested_at": "2026-05-14T01:03:07Z"
+      "consecutive_failures": 5,
+      "tested_at": "2026-05-14T16:35:39Z"
     },
     "moonshotai/kimi-k2-instruct-0905": {
       "model": "moonshotai/kimi-k2-instruct-0905",
-      "status": "degraded",
+      "status": "down",
       "last_success_at": null,
-      "last_failure_at": "2026-05-14T01:03:07Z",
+      "last_failure_at": "2026-05-14T16:35:39Z",
       "last_error": "http_404",
       "latency_ms": null,
-      "consecutive_failures": 1,
-      "tested_at": "2026-05-14T01:03:07Z"
+      "consecutive_failures": 5,
+      "tested_at": "2026-05-14T16:35:39Z"
     },
     "minimaxai/minimax-m2.5": {
       "model": "minimaxai/minimax-m2.5",
-      "status": "degraded",
+      "status": "down",
       "last_success_at": null,
-      "last_failure_at": "2026-05-14T01:03:07Z",
+      "last_failure_at": "2026-05-14T16:35:39Z",
       "last_error": "http_410",
       "latency_ms": null,
-      "consecutive_failures": 1,
-      "tested_at": "2026-05-14T01:03:07Z"
+      "consecutive_failures": 5,
+      "tested_at": "2026-05-14T16:35:39Z"
     },
     "meta/llama-4-maverick-17b-128e-instruct": {
       "model": "meta/llama-4-maverick-17b-128e-instruct",
       "status": "degraded",
-      "last_success_at": null,
+      "last_success_at": "2026-05-14T16:35:39Z",
       "last_failure_at": "2026-05-14T01:03:07Z",
-      "last_error": "timeout",
+      "last_error": null,
+      "latency_ms": 7197,
+      "consecutive_failures": 0,
+      "tested_at": "2026-05-14T16:35:39Z"
+    },
+    "openrouter:openai/gpt-oss-120b": {
+      "model": "openrouter:openai/gpt-oss-120b",
+      "status": "down",
+      "last_success_at": null,
+      "last_failure_at": "2026-05-14T16:35:39Z",
+      "last_error": "empty_content",
       "latency_ms": null,
-      "consecutive_failures": 1,
-      "tested_at": "2026-05-14T01:03:07Z"
+      "consecutive_failures": 4,
+      "tested_at": "2026-05-14T16:35:39Z"
+    },
+    "groq:llama-3.3-70b-versatile": {
+      "model": "groq:llama-3.3-70b-versatile",
+      "status": "healthy",
+      "last_success_at": "2026-05-14T16:35:39Z",
+      "last_failure_at": null,
+      "last_error": null,
+      "latency_ms": 200,
+      "consecutive_failures": 0,
+      "tested_at": "2026-05-14T16:35:39Z"
     }
   }
 }

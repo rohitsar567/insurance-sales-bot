@@ -258,4 +258,4 @@ under any circumstances unless in a vegetative state as certified by the tre
 
 ---
 
-_Mirrored from `data/policy_facts/new-india__asha-kiran-policy__brochure.json`. Provenance — every field's verbatim quote and source PDF path is preserved exactly as curated. Do not hand-edit; regenerate via `tools/build_kb_mirror.py`._
+_Mirrored from `40-data/policy_facts/new-india__asha-kiran-policy__brochure.json`. Provenance — every field's verbatim quote and source PDF path is preserved exactly as curated. Do not hand-edit; regenerate via `tools/build_kb_mirror.py`._
