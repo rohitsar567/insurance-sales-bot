@@ -47,6 +47,44 @@ export type ViewContext = {
   filters?: Record<string, unknown>;
 };
 
+/** HF Space's first request after ~15min idle takes ~50s for cold-start.
+ *  Add retry-with-backoff so a single "Load failed" doesn't surface as an
+ *  error in the chat — instead we wait and try again silently. AbortError
+ *  is NOT retried (it's intentional cancellation from Live mode's barge-in).
+ */
+async function _fetchWithRetry(
+  url: string,
+  init: RequestInit,
+  signal: AbortSignal | undefined,
+  onRetry?: (attempt: number) => void,
+): Promise<Response> {
+  const retryDelaysMs = [1500, 3500, 7000];
+  let lastErr: unknown = null;
+  for (let attempt = 0; attempt <= retryDelaysMs.length; attempt++) {
+    if (signal?.aborted) throw new DOMException("aborted", "AbortError");
+    try {
+      const resp = await fetch(url, { ...init, signal });
+      if (resp.status >= 500 && attempt < retryDelaysMs.length) {
+        // 502/503 commonly means HF Space cold-start; retry
+        await new Promise((r) => setTimeout(r, retryDelaysMs[attempt]));
+        onRetry?.(attempt + 1);
+        continue;
+      }
+      return resp;
+    } catch (e) {
+      const name = (e as { name?: string })?.name;
+      if (name === "AbortError") throw e;
+      lastErr = e;
+      if (attempt < retryDelaysMs.length) {
+        await new Promise((r) => setTimeout(r, retryDelaysMs[attempt]));
+        onRetry?.(attempt + 1);
+        continue;
+      }
+    }
+  }
+  throw lastErr ?? new Error("network failed after retries");
+}
+
 export async function postChat(args: {
   user_text: string;
   session_id?: string;
@@ -57,22 +95,27 @@ export async function postChat(args: {
   tts_language_code?: string;
   view_context?: ViewContext;
   signal?: AbortSignal;
+  onRetry?: (attempt: number) => void;
 }): Promise<ChatResponse> {
-  const resp = await fetch(`${BACKEND_URL}/api/chat`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      user_text: args.user_text,
-      session_id: args.session_id,
-      chat_history: args.chat_history ?? [],
-      profile: args.profile ?? {},
-      policy_filter_ids: args.policy_filter_ids,
-      return_audio: args.return_audio ?? false,
-      tts_language_code: args.tts_language_code ?? "en-IN",
-      view_context: args.view_context,
-    }),
-    signal: args.signal,
-  });
+  const resp = await _fetchWithRetry(
+    `${BACKEND_URL}/api/chat`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_text: args.user_text,
+        session_id: args.session_id,
+        chat_history: args.chat_history ?? [],
+        profile: args.profile ?? {},
+        policy_filter_ids: args.policy_filter_ids,
+        return_audio: args.return_audio ?? false,
+        tts_language_code: args.tts_language_code ?? "en-IN",
+        view_context: args.view_context,
+      }),
+    },
+    args.signal,
+    args.onRetry,
+  );
   if (!resp.ok) {
     const t = await resp.text();
     throw new Error(`chat failed: ${resp.status} ${t}`);

@@ -189,11 +189,40 @@ export default function Page() {
     setMessages((m) => [...m, { id: `a_${Date.now()}`, role: "assistant", content, ...extras }]);
   }
 
+  // Last user message that actually went to the LLM (post retry-detection).
+  // Used to resolve "try again" / "retry" intent back to the original turn.
+  const lastSubmittedTextRef = useRef<string>("");
+
+  // Phrases that mean "resend my previous turn", not "answer this literally".
+  function _isRetryIntent(text: string): boolean {
+    const s = text.toLowerCase().trim().replace(/[.!?,]+$/, "");
+    return [
+      "try again", "try that again", "retry", "retry that",
+      "say it again", "say that again", "once more", "one more time",
+      "repeat", "repeat that", "ek baar aur", "phir se",
+    ].includes(s);
+  }
+
   async function send(text: string) {
     if (!text.trim() || busy) return;
     setBusy(true);
     setInput("");
-    pushUser(text);
+
+    // Bug C — if the user is asking us to retry, resubmit the previous user
+    // turn (the one that actually had policy / fact-find context) instead of
+    // hitting Gate-1 with no retrieval.
+    let actualText = text;
+    if (_isRetryIntent(text) && lastSubmittedTextRef.current) {
+      actualText = lastSubmittedTextRef.current;
+      // Show the user we understood the retry — surface a system note instead
+      // of echoing "try again" back through retrieval.
+      pushUser(text);
+      pushAssistant(`Retrying: "${actualText}"`, {});
+    } else {
+      pushUser(text);
+    }
+    lastSubmittedTextRef.current = actualText;
+
     try {
       const history: ChatMessage[] = messages.map((m) => ({ role: m.role, content: m.content }));
       // Real-time copilot context — tells the backend what the user is
@@ -206,7 +235,7 @@ export default function Page() {
         showPremium ? "premium" :
         "chat";
       const res = await postChat({
-        user_text: text,
+        user_text: actualText,
         session_id: sessionId,
         chat_history: history,
         return_audio: returnAudio,
@@ -215,7 +244,18 @@ export default function Page() {
           active_view,
           active_policy_id: openPolicy?.policy_id,
         },
+        onRetry: (attempt) => {
+          // Show transient "warming up" hint while postChat retries the
+          // cold-started Space behind the scenes. Don't push as a message;
+          // use the input area's status string so it doesn't clutter chat.
+          setUploadStatus(
+            attempt === 1
+              ? "Connection slow — retrying…"
+              : `Still warming up (attempt ${attempt} of 3)…`,
+          );
+        },
       });
+      setUploadStatus(null);
       setSessionId(res.session_id);
       // Refresh profileCompleteness after every chat turn so that any profile
       // fields the backend extracted from the user's message (age, conditions,
@@ -254,8 +294,25 @@ export default function Page() {
         setTimeout(() => { if (handsFreeRef.current) startRecording(); }, 500);
       }
     } catch (e: unknown) {
-      pushAssistant(`Sorry — backend error: ${e instanceof Error ? e.message : String(e)}`);
+      const err = e as { name?: string; message?: string };
+      if (err?.name === "AbortError") {
+        // Live-mode barge-in cancelled this turn intentionally; stay silent.
+        return;
+      }
+      const msg = err?.message || String(e);
+      // Bug A — friendlier message for the cold-start / network failure case
+      // that Safari surfaces as "Load failed". Suggest the retry-intent path
+      // so the user doesn't lose their actual question.
+      if (/Load failed|Failed to fetch|NetworkError|chat failed: 5\d\d/i.test(msg)) {
+        pushAssistant(
+          `Connection hiccup — the bot may have been sleeping (HF Space cold-start). ` +
+          `Say "try again" or tap Send again and I'll re-run your last question.`,
+        );
+      } else {
+        pushAssistant(`Sorry — backend error: ${msg}`);
+      }
     } finally {
+      setUploadStatus(null);
       setBusy(false);
     }
   }
@@ -1257,7 +1314,17 @@ function PolicyChipsFromCitations({ citations }: { citations: Citation[] }) {
                 title={sc?.one_liner || c.policy_name}
               >
                 {sc && <span className={`inline-flex items-center justify-center w-5 h-5 rounded font-bold text-[11px] ${gradeColor(sc.grade)}`}>{sc.grade}</span>}
-                <span className="font-medium truncate max-w-[140px]">{c.policy_name}</span>
+                <span className="flex flex-col items-start leading-tight">
+                  {/* Bug B — show the insurer label above the policy name so
+                      "Sarvah Param" reads as "ManipalCigna · Sarvah Param"
+                      instead of an unattributed policy fragment. */}
+                  {c.insurer_slug && (
+                    <span className="text-[9px] uppercase tracking-wider text-[var(--muted-foreground)]">
+                      {c.insurer_slug.replace(/-/g, " ")}
+                    </span>
+                  )}
+                  <span className="font-medium truncate max-w-[160px]">{c.policy_name}</span>
+                </span>
               </button>
               {c.source_url && (
                 <a
