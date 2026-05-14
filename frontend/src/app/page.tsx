@@ -925,6 +925,10 @@ function ProfileBuilderPanel({
   onClose: () => void;
   uiLang: UILang;
 }) {
+  // KI-077 — pre-fill from initialProfile (the chat-captured state). If the
+  // chat already heard "I am Rohit Sar, 29, just me, Mumbai", every chip
+  // below renders with those values selected when the panel opens.
+  const [name, setName] = useState<string>(initialProfile.name ?? "");
   const [age, setAge] = useState<number | null>(initialProfile.age ?? null);
   const [dependents, setDependents] = useState<string>(initialProfile.dependents ?? "self");
   const [budget, setBudget] = useState<string>(initialProfile.budget_band ?? "");
@@ -936,6 +940,23 @@ function ProfileBuilderPanel({
   const [parentsHasPed, setParentsHasPed] = useState<boolean | null>(initialProfile.parents_has_ped ?? null);
   const [parentsAgeMax, setParentsAgeMax] = useState<number | null>(initialProfile.parents_age_max ?? null);
   const [busy, setBusy] = useState(false);
+
+  // KI-077 — keep panel in sync if the chat captures new fields while the
+  // panel is open. Otherwise the user sees stale state.
+  useEffect(() => {
+    if (initialProfile.name && !name) setName(initialProfile.name);
+    if (initialProfile.age != null && age == null) setAge(initialProfile.age);
+    if (initialProfile.dependents && dependents === "self") setDependents(initialProfile.dependents);
+    if (initialProfile.budget_band && !budget) setBudget(initialProfile.budget_band);
+    if (initialProfile.income_band && !income) setIncome(initialProfile.income_band);
+    if (initialProfile.location_tier && !city) setCity(initialProfile.location_tier);
+    if (initialProfile.health_conditions?.length && !conditions.length) setConditions(initialProfile.health_conditions);
+    if (initialProfile.existing_cover_inr != null && existingCover == null) setExistingCover(initialProfile.existing_cover_inr);
+    if (initialProfile.primary_goal && !primaryGoal) setPrimaryGoal(initialProfile.primary_goal);
+    if (initialProfile.parents_age_max != null && parentsAgeMax == null) setParentsAgeMax(initialProfile.parents_age_max);
+    if (initialProfile.parents_has_ped != null && parentsHasPed == null) setParentsHasPed(initialProfile.parents_has_ped);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialProfile]);
 
   const hindi = uiLang === "hi";
 
@@ -955,6 +976,7 @@ function ProfileBuilderPanel({
     try {
       const resp = await postProfileUpdate({
         session_id: sid,
+        name: name.trim() || undefined,  // KI-077 — submit the name too
         age: age ?? undefined,
         dependents: dependents || undefined,
         budget_band: budget || undefined,
@@ -1000,6 +1022,33 @@ function ProfileBuilderPanel({
         </div>
 
         <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 space-y-5">
+          {/* KI-077 — Name (free text). Captured from chat if user introduced
+              themselves; saved to the named-profile store so returning visits
+              auto-load. */}
+          <div>
+            <label className="flex items-baseline justify-between text-xs mb-1.5">
+              <span className="font-semibold">{hindi ? "आपका नाम" : "Your name"}</span>
+              {initialProfile.name && (
+                <span className="text-[10px] text-[var(--primary)]">
+                  {hindi ? "chat से लिया गया" : "captured from chat"}
+                </span>
+              )}
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={hindi ? "जैसे, रोहित" : "e.g., Rohit Sar"}
+              maxLength={50}
+              className="w-full text-sm px-3 py-1.5 rounded-md border border-[var(--border)] bg-[var(--card)] focus:outline-none focus:border-[var(--primary)]"
+            />
+            <p className="text-[10px] text-[var(--muted-foreground)] mt-0.5">
+              {hindi
+                ? "अगली बार आने पर मैं आपकी profile पहचान लूंगा।"
+                : "I'll recognise you on your next visit so you don't repeat this."}
+            </p>
+          </div>
+
           {/* Age */}
           <div>
             <label className="flex items-baseline justify-between text-xs mb-1.5">

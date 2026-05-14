@@ -333,6 +333,7 @@ export async function getMarketplace(session_id?: string): Promise<MarketplaceRe
 }
 
 export type UserProfile = {
+  name?: string | null;  // KI-077 — captured from chat or entered in profile panel
   age?: number | null;
   dependents?: string | null;
   income_band?: string | null;

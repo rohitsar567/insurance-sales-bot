@@ -552,6 +552,7 @@ class ProfileCompletenessResponse(BaseModel):
 
 class ProfileUpdateRequest(BaseModel):
     session_id: str
+    name: Optional[str] = None  # KI-077
     age: Optional[int] = None
     dependents: Optional[str] = None
     income_band: Optional[str] = None
@@ -616,6 +617,7 @@ async def profile_update(req: ProfileUpdateRequest):
     # Update only fields the client explicitly sent (non-None) — keeps partial
     # save flows clean
     for field_name in (
+        "name",  # KI-077 — accept name updates from the profile-builder UI
         "age", "dependents", "income_band", "existing_cover_inr", "primary_goal",
         "location_tier", "parents_to_insure", "parents_age_max", "parents_has_ped",
         "health_conditions", "budget_band",
@@ -624,8 +626,18 @@ async def profile_update(req: ProfileUpdateRequest):
         if v is not None:
             setattr(sess.profile, field_name, v)
 
+    # KI-077 — if name is set, also persist to the named-profile store so a
+    # returning visitor's profile is recoverable across sessions.
+    if req.name:
+        try:
+            from backend.profile_store import save_profile
+            save_profile(req.name, sess.profile, session_id=req.session_id)
+        except Exception as e:
+            print(f"[profile_store] save failed for {req.name}: {type(e).__name__}: {e}")
+
     p = sess.profile
     profile_dict = {
+        "name": p.name,  # KI-077
         "age": p.age, "dependents": p.dependents, "income_band": p.income_band,
         "existing_cover_inr": p.existing_cover_inr, "primary_goal": p.primary_goal,
         "location_tier": p.location_tier, "parents_to_insure": p.parents_to_insure,
