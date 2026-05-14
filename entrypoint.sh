@@ -1,9 +1,16 @@
 #!/bin/sh
-# Container entrypoint:
-#   1. If the Chroma vector store is empty, run ingestion from rag/corpus/
-#      (one-time ~5 min on first boot; cached on HF persistent disk for
-#      subsequent boots)
-#   2. Start uvicorn
+# Container entrypoint (2026-05-14 policy update):
+#   1. Validate Chroma is readable + populated.
+#   2. If empty/broken: FAIL FAST with a loud error — DO NOT auto-ingest.
+#      Ingestion runs on the developer's local Mac (faster CPU, visible
+#      progress). The deployed Space serves pre-built indexes only.
+#      The single exception is the user_uploads_quarantine collection,
+#      which /api/upload-policy embeds on-demand per uploading session.
+#   3. Start uvicorn.
+#
+# Why: previously the Space silently re-ingested for 20+ min during APP_STARTING
+# (output piped through `tail -30` so nothing visible), making schema breakage
+# look identical to "still booting". Fail-fast surfaces ingest gaps immediately.
 
 set -e
 
@@ -46,9 +53,16 @@ except Exception as e:
     print(f'[entrypoint] Chroma load FAILED: {type(e).__name__}: {e}')
     sys.exit(1)
 " || (
-    echo "[entrypoint] Wiping vector store and re-ingesting from corpus..."
-    rm -rf /app/rag/vectors/* 2>/dev/null || true
-    python -m rag.ingest 2>&1 | tail -30
+    echo "[entrypoint] ============================================================"
+    echo "[entrypoint] FATAL: Chroma vector store is empty or schema-incompatible."
+    echo "[entrypoint] Auto-ingest is DISABLED (2026-05-14 policy)."
+    echo "[entrypoint]"
+    echo "[entrypoint] Fix on the developer Mac:"
+    echo "[entrypoint]   .venv/bin/python -m rag.ingest"
+    echo "[entrypoint]   .venv/bin/python tools/upload_extracted_to_dataset.py"
+    echo "[entrypoint]   # plus sync rag/vectors/ to the dataset, then redeploy"
+    echo "[entrypoint] ============================================================"
+    exit 1
 )
 
 # Start the server

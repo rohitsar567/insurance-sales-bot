@@ -23,10 +23,18 @@ ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(ROOT / ".env")
 
 REPO_ID = "rohitsar567/InsuranceBot"
-# Active secrets (D-019 Stack A): only these are read by the running code.
-SECRETS_TO_SET = ["SARVAM_API_KEY", "VOYAGE_API_KEY", "NVIDIA_NIM_API_KEY"]
-# Legacy secrets to delete (retired providers — see D-019).
-SECRETS_TO_DELETE = ["GROQ_API_KEY", "OPENROUTER_API_KEY", "CEREBRAS_API_KEY", "DEEPSEEK_API_KEY"]
+# Active secrets read by the running code (post-D-022 + admin panel):
+#   - SARVAM / NIM = the live providers
+#   - VOYAGE       = legacy (kept for back-compat with old extracted artifacts)
+#   - OPENROUTER / GROQ = optional cross-provider fallbacks (re-added 2026-05-14)
+#   - ADMIN_*      = control-panel gate (IP allowlist + password)
+SECRETS_TO_SET = [
+    "SARVAM_API_KEY", "VOYAGE_API_KEY", "NVIDIA_NIM_API_KEY",
+    "OPENROUTER_API_KEY", "GROQ_API_KEY",
+    "ADMIN_IP_ALLOWLIST", "ADMIN_PASSWORD",
+]
+# Truly retired providers — delete from Space to prevent confusion.
+SECRETS_TO_DELETE = ["CEREBRAS_API_KEY", "DEEPSEEK_API_KEY"]
 
 
 def main():

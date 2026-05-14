@@ -68,6 +68,24 @@ def _is_regulatory_intent(query: str) -> bool:
     return bool(_REGULATORY_TRIGGERS.search(query or ""))
 
 
+# Review-intent triggers: when a query is about insurer reputation /
+# claim experience / customer satisfaction, surface the review chunks
+# (ingested via tools/ingest_reviews.py, doc_type='review').
+_REVIEW_TRIGGERS = _re.compile(
+    r"\b(review|reviews|rating|ratings|reputation|complaint|complaints|"
+    r"trustpilot|policybazaar|insurancedekho|joinditto|claim experience|"
+    r"claim settlement|claim ratio|complaint ratio|customer service|"
+    r"good service|bad service|user experience|reddit|youtube|"
+    r"feedback|testimonial|sentiment|trust|reliable|reliability)\b",
+    flags=_re.IGNORECASE,
+)
+REVIEW_BOOST = 1.15  # slight boost so reviews appear in reputation Qs
+
+
+def _is_review_intent(query: str) -> bool:
+    return bool(_REVIEW_TRIGGERS.search(query or ""))
+
+
 def _build_chunk(cid: str, doc: str, meta: dict, score: float) -> RetrievedChunk:
     return RetrievedChunk(
         chunk_id=cid,
@@ -213,6 +231,42 @@ async def retrieve(
                 out = merged[:top_k]
         except Exception:
             # Regulatory boost is additive; failure shouldn't kill the main result
+            pass
+
+    # Review boost pass — when query asks about insurer reputation / claim
+    # experience / service quality. Filters to the relevant insurer if
+    # insurer_slugs is set; otherwise queries across all reviews.
+    if _is_review_intent(query):
+        try:
+            where_review: dict = {"doc_type": "review"}
+            if insurer_slugs:
+                # Combine doc_type + insurer filter
+                where_review = {
+                    "$and": [
+                        {"doc_type": "review"},
+                        {"insurer_slug": {"$in": insurer_slugs}},
+                    ]
+                }
+            rev_res = collection.query(
+                query_embeddings=[query_vec],
+                n_results=3,
+                where=where_review,
+            )
+            if rev_res["ids"] and rev_res["ids"][0]:
+                seen = {c.chunk_id for c in out}
+                rev_chunks: list[RetrievedChunk] = []
+                for cid, doc, meta, dist in zip(
+                    rev_res["ids"][0], rev_res["documents"][0],
+                    rev_res["metadatas"][0], rev_res["distances"][0],
+                ):
+                    if cid in seen:
+                        continue
+                    boosted = (1.0 - dist) * REVIEW_BOOST
+                    rev_chunks.append(_build_chunk(cid, doc, meta, boosted))
+                merged = sorted(out + rev_chunks, key=lambda c: c.score, reverse=True)
+                out = merged[:top_k]
+        except Exception:
+            # Review boost is additive; failure shouldn't kill the main result
             pass
 
     return out

@@ -27,11 +27,39 @@ class LocalEmbeddings(EmbeddingsProvider):
         device: Optional[str] = None,
     ):
         # Lazy import so this module loads fast even if model isn't downloaded
+        import os
         from sentence_transformers import SentenceTransformer
 
+        # Device autodetect: MPS on Apple Silicon when available (2-3x faster
+        # than CPU on long chunks), CUDA if present, else CPU. Honor explicit
+        # override via constructor arg OR EMBED_DEVICE env var so HF Space
+        # (no MPS) and local Mac (with MPS) pick the right path.
+        if device is None:
+            device = os.environ.get("EMBED_DEVICE", "").strip() or None
+        if device is None:
+            try:
+                import torch
+                if torch.backends.mps.is_available():
+                    device = "mps"
+                elif torch.cuda.is_available():
+                    device = "cuda"
+                else:
+                    device = "cpu"
+            except Exception:
+                device = "cpu"
+
         self.model_name = model_name
+        self.device = device
         self.model = SentenceTransformer(model_name, device=device)
         self.dimension = self.model.get_sentence_embedding_dimension()
+        # Warm-up call on MPS — first kernel JIT compile is ~3-5s; doing it
+        # in __init__ rather than first encode() makes the first user request
+        # fast. CPU/CUDA skip this (their first call has no JIT penalty).
+        if device == "mps":
+            try:
+                self.model.encode(["warmup"] * 2, batch_size=2, show_progress_bar=False)
+            except Exception:
+                pass
 
     async def embed(
         self,
@@ -43,10 +71,13 @@ class LocalEmbeddings(EmbeddingsProvider):
         # BGE recommends a small query-side instruction; not strictly required
         if input_type == "query":
             texts = [f"Represent this sentence for searching relevant passages: {t}" for t in texts]
-        # Encode synchronously on CPU/GPU; small batches don't need true async
+        # Batch size scales by device: MPS / CUDA throughput benefits from
+        # bigger batches; CPU prefers smaller to avoid memory pressure on M1.
+        # 800-token chunks at batch_size=64 is ~50 MB which fits 8GB M1 fine.
+        batch = 64 if self.device in ("mps", "cuda") else 32
         vectors = self.model.encode(
             texts,
-            batch_size=32,
+            batch_size=batch,
             show_progress_bar=False,
             convert_to_numpy=True,
             normalize_embeddings=True,

@@ -72,3 +72,14 @@ See [`docs/01-requirements.md` §7](docs/01-requirements.md).
 - **UI**: Streamlit
 
 Each pick is justified in [`docs/decisions.md`](docs/decisions.md).
+
+## Deploying changes
+
+All extraction, embedding, and Chroma writes for the curated corpus run on the developer's Mac. The deployed HF Space serves pre-built indexes and does not auto-ingest (the one exception is user-uploaded PDFs, which embed on-demand into an isolated `user_uploads_quarantine` collection). Full rationale and the per-stage where-it-runs table: [`docs/ingestion_policy.md`](docs/ingestion_policy.md).
+
+After any corpus change, run these four commands sequentially from the project root with the local `.venv` active:
+
+- [ ] `.venv/bin/python -m rag.ingest` — rebuild the Chroma index locally
+- [ ] `.venv/bin/python tools/upload_vectors_to_dataset.py` — push `rag/vectors/` to the HF dataset
+- [ ] `.venv/bin/python tools/upload_extracted_to_dataset.py` — push `rag/extracted/` (only if structured JSONs changed)
+- [ ] `.venv/bin/python tools/upload_to_hf.py` — push code to the Space (triggers a Docker rebuild that pulls the dataset)
