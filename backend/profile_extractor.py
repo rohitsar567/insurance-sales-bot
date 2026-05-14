@@ -72,8 +72,8 @@ async def extract_profile_updates(
     if not user_text or not user_text.strip():
         return {}
 
-    from backend.providers.nvidia_nim_llm import NvidiaNimLLM
     from backend.providers.base import ChatMessage
+    from backend.providers.nvidia_nim_llm import FAST_BRAIN_CHAIN, NimChainLLM
 
     summary_parts = []
     for k, v in current_profile.__dict__.items():
@@ -94,7 +94,10 @@ async def extract_profile_updates(
     ]
 
     try:
-        llm = NvidiaNimLLM(model="meta/llama-3.3-70b-instruct")
+        # KI-033 — was hardcoded NvidiaNimLLM(llama-3.3-70b); moved to chain so
+        # NIM pool failures fall through to Groq instead of silently returning {}.
+        llm = NimChainLLM(chain=FAST_BRAIN_CHAIN, timeout=10.0,
+                          role="profile_extractor", total_budget_s=15.0)
         result = await llm.chat(messages=messages, temperature=0.0, max_tokens=300)
         raw = (result.text or "").strip()
     except Exception as e:

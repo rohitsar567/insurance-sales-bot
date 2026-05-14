@@ -338,13 +338,20 @@ Examples for guidance:
 
 async def _llm_normalize(question_id: str, raw_text: str, schema: dict) -> Any:
     from backend.providers.base import ChatMessage
-    from backend.providers.nvidia_nim_llm import NvidiaNimLLM
+    from backend.providers.nvidia_nim_llm import FAST_BRAIN_CHAIN, NimChainLLM
 
     sys_msg = _LLM_SYSTEM_TEMPLATE.format(qid=question_id, schema=json.dumps(schema))
     user_msg = f'User said: "{raw_text[:600]}"\n\nReturn the JSON value.'
 
     try:
-        llm = NvidiaNimLLM(model="meta/llama-3.3-70b-instruct")
+        # KI-033 (2026-05-14) — was hardcoded NvidiaNimLLM(meta/llama-3.3-70b);
+        # moved to fast-brain chain so when that one NIM pool rate-limits we
+        # fall through to Qwen/Nemotron/Groq instead of silently returning None
+        # (which made valid Indian-accented answers like "twenty-five" appear
+        # to fail the verifier, then trip the 2-reask cap, then move on with
+        # no profile captured — the D-005 cascade).
+        llm = NimChainLLM(chain=FAST_BRAIN_CHAIN, timeout=10.0,
+                          role="fact_find_normalizer", total_budget_s=15.0)
         result = await llm.chat(
             messages=[
                 ChatMessage(role="system", content=sys_msg),
