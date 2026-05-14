@@ -26,6 +26,11 @@ duckdb==1.1.3
 sentence-transformers==5.1.2
 torch==2.11.0  # CPU-only fine for our usage
 
+# Audio transcoding — browser MediaRecorder emits webm/opus by default;
+# Sarvam STT accepts WAV/MP3/FLAC/OGG/M4A but NOT webm. pydub (ffmpeg-backed)
+# converts in-process. The Dockerfile installs the ffmpeg apt package.
+pydub==0.25.1
+
 # Utility
 numpy==1.26.4
 tqdm==4.66.6

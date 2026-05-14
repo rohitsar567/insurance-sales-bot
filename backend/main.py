@@ -233,10 +233,12 @@ async def transcribe(
     t0 = time.time()
     audio_bytes = await file.read()
     ext = (file.filename or "audio.wav").rsplit(".", 1)[-1].lower()
+    # Pass the real extension through; sarvam_stt.py transcodes non-native
+    # containers (webm/opus from browser MediaRecorder) to WAV before upload.
     try:
         result = await get_stt().transcribe(
             audio_bytes=audio_bytes,
-            audio_format=ext if ext in ("wav", "mp3", "flac", "ogg", "m4a") else "wav",
+            audio_format=ext if ext in ("wav", "mp3", "flac", "ogg", "m4a", "webm", "opus", "mp4") else "wav",
             language_code=language_code,
         )
     except Exception as e:

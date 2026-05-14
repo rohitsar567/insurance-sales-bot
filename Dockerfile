@@ -25,12 +25,15 @@ RUN npm run build
 FROM python:3.11-slim
 WORKDIR /app
 
-# System deps for pdfplumber + torch CPU + sentence-transformers
+# System deps:
+#   pdfplumber + torch CPU + sentence-transformers → build-essential, libpoppler
+#   pydub (webm→wav transcode for Sarvam STT) → ffmpeg
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpoppler-cpp-dev \
     pkg-config \
     poppler-utils \
+    ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python deps
