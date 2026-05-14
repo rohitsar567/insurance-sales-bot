@@ -1,4 +1,4 @@
-# `audit_results/` — Audit output + production-readiness register
+# `80-audit/` — Audit output + production-readiness register
 
 Two artefact classes coexist here:
 
@@ -19,7 +19,7 @@ Status emoji: ✅ fixed · ⚠️ partial · 🟡 improving · 🔴 open.
 ## Run-directory layout
 
 ```
-audit_results/
+80-audit/
 ├── ENTERPRISE_AUDIT.md
 └── <run_id>/
     ├── transcripts/
@@ -55,7 +55,7 @@ audit_results/
 ## How runs flow into the register
 
 1. `python tools/audit/run_audit.py` writes per-persona transcripts.
-2. `python tools/audit/analyze.py audit_results/<run_id>/` rolls up `report.md` + `summary.json`.
+2. `python tools/audit/analyze.py 80-audit/<run_id>/` rolls up `report.md` + `summary.json`.
 3. New defects → new `D-NNN` row in `ENTERPRISE_AUDIT.md`.
 4. Fixes → status flipped, run re-executed as `postfix_…`, evidence linked.
 

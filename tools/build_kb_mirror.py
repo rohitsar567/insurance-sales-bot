@@ -5,9 +5,9 @@ Reads:
   - data/policy_facts/*.json  -> kb/policies/<id>.md (yaml frontmatter + per-field MD)
   - backend.scorecard METHODOLOGY_BLUEPRINT / WEIGHTS / SCORED_FIELDS -> kb/methodology/scorecard.json
   - frontend/src/lib/i18n.ts GLOSSARY (hand-mirrored)                  -> kb/methodology/glossary.json
-  - docs/discovery-script.md                                            -> kb/methodology/discovery-script.md
-  - docs/scorecard-knowledge-graph.md                                   -> kb/methodology/knowledge-graph.md
-  - docs/tie-breaker-rubric.md                                          -> kb/methodology/tie-breakers.md
+  - 70-docs/discovery-script.md                                            -> kb/methodology/discovery-script.md
+  - 70-docs/scorecard-knowledge-graph.md                                   -> kb/methodology/knowledge-graph.md
+  - 70-docs/tie-breaker-rubric.md                                          -> kb/methodology/tie-breakers.md
 
 Rewrites:
   - kb/INDEX.md  (top-level index with policies table + methodology links)
@@ -461,7 +461,7 @@ def main() -> int:
     else:
         new_files += 1
 
-    # 4c. verbatim copies of three docs/*.md files
+    # 4c. verbatim copies of three 70-docs/*.md files
     copy_map = {
         "discovery-script.md": "discovery-script.md",
         "scorecard-knowledge-graph.md": "knowledge-graph.md",
@@ -563,16 +563,16 @@ def main() -> int:
     )
     idx.append(
         "| [`methodology/discovery-script.md`](methodology/discovery-script.md) | "
-        "Profile Builder discovery script — verbatim copy of `docs/discovery-script.md`. |"
+        "Profile Builder discovery script — verbatim copy of `70-docs/discovery-script.md`. |"
     )
     idx.append(
         "| [`methodology/knowledge-graph.md`](methodology/knowledge-graph.md) | "
         "Profile-field ↔ sub-score weight-shift map — verbatim copy of "
-        "`docs/scorecard-knowledge-graph.md`. |"
+        "`70-docs/scorecard-knowledge-graph.md`. |"
     )
     idx.append(
         "| [`methodology/tie-breakers.md`](methodology/tie-breakers.md) | "
-        "Recommendation tie-breaker rubric — verbatim copy of `docs/tie-breaker-rubric.md`. |"
+        "Recommendation tie-breaker rubric — verbatim copy of `70-docs/tie-breaker-rubric.md`. |"
     )
     idx.append(
         "| [`methodology/INDEX.md`](methodology/INDEX.md) | "
@@ -683,7 +683,7 @@ def main() -> int:
         ap.append("")
         ap.append(
             "- **Profile Builder tab** — guided 8-question discovery flow "
-            "(`docs/discovery-script.md`). Profile-completeness gate (≥0.6) "
+            "(`70-docs/discovery-script.md`). Profile-completeness gate (≥0.6) "
             "controls whether the personalised scorecard renders."
         )
         ap.append(

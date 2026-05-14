@@ -1,6 +1,6 @@
 """Regression tests for the KI-018 routing fix.
 
-The original bug (D-003 in audit_results/ENTERPRISE_AUDIT.md): when a session
+The original bug (D-003 in 80-audit/ENTERPRISE_AUDIT.md): when a session
 had no profile, the orchestrator force-routed EVERY turn to fact-find — even
 direct QA. So when a user asked "What is the waiting period for pre-existing
 diseases under Activ Assure?", the bot answered "Happy to help. First, your
@@ -81,7 +81,7 @@ class TestFactFindRouting(unittest.TestCase):
                 free_form_session=False,
             ),
             "REGRESSION: qa intent with empty profile is being trapped in fact-find. "
-            "See D-003 in audit_results/ENTERPRISE_AUDIT.md — this is the bug "
+            "See D-003 in 80-audit/ENTERPRISE_AUDIT.md — this is the bug "
             "that caused the 'Happy to help. First, your age?' answer to "
             "'What is the waiting period for PED?'.",
         )

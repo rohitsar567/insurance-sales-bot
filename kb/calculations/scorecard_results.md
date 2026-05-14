@@ -2,7 +2,7 @@
 
 _Computed by `backend/scorecard.py` at 2026-05-12T23:59:58Z on 11 extracted policies._
 
-Methodology: [`docs/scorecard-methodology.md`](../../docs/scorecard-methodology.md)
+Methodology: [`70-docs/scorecard-methodology.md`](../../70-docs/scorecard-methodology.md)
 
 ## All policies — overall
 

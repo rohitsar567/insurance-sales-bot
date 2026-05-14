@@ -2,7 +2,7 @@
 
 **Status:** Accepted — 2026-05-14
 **Owner:** Rohit Saraf
-**Trigger incident:** D-001 in [`audit_results/ENTERPRISE_AUDIT.md`](../../audit_results/ENTERPRISE_AUDIT.md)
+**Trigger incident:** D-001 in [`80-audit/ENTERPRISE_AUDIT.md`](../../80-audit/ENTERPRISE_AUDIT.md)
 
 ## Context
 
@@ -57,7 +57,7 @@ All three layer-2 + layer-3 scripts live under `~/Library/Scripts/` (NOT `~/Docu
 
 ## Related
 
-- D-001 in [`audit_results/ENTERPRISE_AUDIT.md`](../../audit_results/ENTERPRISE_AUDIT.md)
+- D-001 in [`80-audit/ENTERPRISE_AUDIT.md`](../../80-audit/ENTERPRISE_AUDIT.md)
 - [`rag/ingest.py::_abort_if_hnsw_bloated`](../../rag/ingest.py)
 - `~/Library/Scripts/insurance-bot/check-vector-bloat.sh`
 - `~/Library/Scripts/cache-prevention/disk-free-tripwire.sh`

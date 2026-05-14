@@ -203,7 +203,7 @@ progress prints. Document for future tooling.
 ## Quality-sprint cadence
 
 Every batch of fixes ships as one commit referencing the KI numbers it
-closes. The audit run (`audit_results/<run_id>/report.md`) is the
+closes. The audit run (`80-audit/<run_id>/report.md`) is the
 empirical signal for whether a fix is actually working in production.
 
 The standing ratio target: **for every 1 user-facing bug a reviewer

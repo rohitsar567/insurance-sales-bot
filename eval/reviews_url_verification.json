@@ -270,7 +270,7 @@
         },
         {
           "path": "_url_verification.broken_urls.[2]",
-          "url": "https://www.icicilombard.com/docs/default-source/financial-information/annualreport2024.pdf",
+          "url": "https://www.icicilombard.com/70-docs/default-source/financial-information/annualreport2024.pdf",
           "status": 403,
           "error": null
         }
@@ -818,7 +818,7 @@
     {
       "insurer": "icici-lombard",
       "path": "_url_verification.broken_urls.[2]",
-      "url": "https://www.icicilombard.com/docs/default-source/financial-information/annualreport2024.pdf",
+      "url": "https://www.icicilombard.com/70-docs/default-source/financial-information/annualreport2024.pdf",
       "status": 403,
       "error": null
     },

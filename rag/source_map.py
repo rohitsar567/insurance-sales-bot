@@ -4,7 +4,7 @@ faithfulness verification at runtime.
 
 Outputs two artifacts after ingestion + extraction have run:
 
-  1. docs/information_source_map.md
+  1. 70-docs/information_source_map.md
      Human-readable per-policy catalog: insurer, policy, doc type, chunk count,
      pages covered, extracted-field summary, source URL. The "what does the bot
      know" reference.

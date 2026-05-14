@@ -2,7 +2,7 @@
 
 Each major technical or product decision is captured as a single ADR using a lightly adapted Michael Nygard template: **Status · Context · Decision · Alternatives · Consequences · Revisit-at-scale**.
 
-ADR numbers map 1:1 to the original `D-NNN` entries that lived in the legacy `docs/decisions.md` (now split into individual files for easier review, citation, and supersession tracking).
+ADR numbers map 1:1 to the original `D-NNN` entries that lived in the legacy `70-docs/decisions.md` (now split into individual files for easier review, citation, and supersession tracking).
 
 ## Index
 

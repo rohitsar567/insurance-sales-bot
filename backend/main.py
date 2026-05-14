@@ -1150,7 +1150,7 @@ async def policy_scorecard(
     """Compute the 6-sub-score A-F scorecard for an extracted policy.
 
     Now also pulls insurer-level reviews (IRDAI claim ratio + complaints) into
-    the Claim Experience sub-score. See docs/scorecard-methodology.md.
+    the Claim Experience sub-score. See 70-docs/scorecard-methodology.md.
     """
     import json as _json
 

@@ -95,7 +95,7 @@ RESPONSE                  TTS                       UI RENDER
 ### Scorecard (Stage 9)
 - **Provenance**: pure function of the extracted JSON via `backend/scorecard.py`
 - **Verifiable**: rules-based, no LLM — anyone can re-run on the JSON
-- **Methodology**: [`docs/scorecard-methodology.md`](../docs/scorecard-methodology.md)
+- **Methodology**: [`70-docs/scorecard-methodology.md`](../70-docs/scorecard-methodology.md)
 
 ### Live bot replies (Stages 10-15)
 - **Provenance**: traceable via `logs/turns.jsonl` per session/turn
@@ -104,7 +104,7 @@ RESPONSE                  TTS                       UI RENDER
 
 ## 4. Decision-to-artifact map
 
-Every architectural decision in `docs/decisions.md` produces a specific artifact:
+Every architectural decision in `70-docs/decisions.md` produces a specific artifact:
 
 | Decision | Artifact produced |
 | --- | --- |
@@ -124,7 +124,7 @@ Every architectural decision in `docs/decisions.md` produces a specific artifact
 | D-014 Groq Llama grader | _superseded by D-019 NIM Maverick — see `backend/providers/nvidia_nim_llm.py:get_judge_llm`_ |
 | D-015 OpenAPI codegen | `backend/main.py` (auto-served) |
 | D-016 Brain router | `backend/orchestrator.py:pick_brain` |
-| D-017 Regulatory corpus deferred | `docs/04-failure-modes.md` F-07 |
+| D-017 Regulatory corpus deferred | `70-docs/04-failure-modes.md` F-07 |
 | D-018 Chunk-size sweep | `tools/chunk_sweep.py` + `eval/chunk_sweep_results.json` |
 | D-019 Stack A: NVIDIA NIM consolidation | `backend/providers/nvidia_nim_llm.py` |
 | D-020 Space/dataset split | `Dockerfile` snapshot_download + `rohitsar567/insurance-bot-data` |
@@ -189,7 +189,7 @@ Three back-to-back curation passes brought the `data/policy_facts/` directory to
 
 **UI / runtime changes shipped today:**
 
-- **Profile Builder tab** — guided 8-question discovery flow (`docs/discovery-script.md`). Profile-completeness gate (≥0.6) controls whether the personalised scorecard renders.
+- **Profile Builder tab** — guided 8-question discovery flow (`70-docs/discovery-script.md`). Profile-completeness gate (≥0.6) controls whether the personalised scorecard renders.
 - **Score gate on policy cards** — recommendations suppress the per-buyer letter grade until completeness ≥ 0.6 (universal IRDAI metrics like CSR and complaints/10K still render, since they're insurer-level).
 - **EN ↔ हिं i18n** — full bilingual UI with the 13-term jargon glossary at `frontend/src/lib/i18n.ts` (mirrored to `kb/methodology/glossary.json`).
 - **Scorecard methodology expander** — every grade opens a transparency panel sourced from `METHODOLOGY_BLUEPRINT` (mirrored to `kb/methodology/scorecard.json`).

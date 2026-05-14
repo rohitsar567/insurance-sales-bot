@@ -2,7 +2,7 @@
 
 Loose collection of CLI scripts: corpus operations, data uploads, probes, KB regeneration, scheduled-job runners. Nothing under `tools/` is imported by the live server — `backend/` and `rag/` are the runtime surface.
 
-Scheduling for the long-running ones is wired via macOS LaunchAgents — see `CRON_README.md` in this folder for cadence + script paths, and [ADR-029](../docs/60-decisions/ADR-029-disk-storage-hardening.md) for the disk-safety LaunchAgents.
+Scheduling for the long-running ones is wired via macOS LaunchAgents — see `CRON_README.md` in this folder for cadence + script paths, and [ADR-029](../70-docs/60-decisions/ADR-029-disk-storage-hardening.md) for the disk-safety LaunchAgents.
 
 ## Corpus + extraction batch ops
 
@@ -40,7 +40,7 @@ Scheduling for the long-running ones is wired via macOS LaunchAgents — see `CR
 | Script | Target |
 | --- | --- |
 | `upload_to_hf.py` | Code-side push to the HF Space repo (`huggingface.co/spaces/rohitsar567/InsuranceBot`). |
-| `upload_corpus_to_dataset.py`, `upload_extracted_to_dataset.py`, `upload_vectors_to_dataset.py`, `upload_all_to_dataset.py` | Push specific slices of `rag/` to the companion HF Dataset `rohitsar567/insurance-bot-data`. See [ADR-020](../docs/60-decisions/ADR-020-code-data-split-hf-dataset.md) and [ADR-024](../docs/60-decisions/ADR-024-triple-mirror-code-and-data.md). |
+| `upload_corpus_to_dataset.py`, `upload_extracted_to_dataset.py`, `upload_vectors_to_dataset.py`, `upload_all_to_dataset.py` | Push specific slices of `rag/` to the companion HF Dataset `rohitsar567/insurance-bot-data`. See [ADR-020](../70-docs/60-decisions/ADR-020-code-data-split-hf-dataset.md) and [ADR-024](../70-docs/60-decisions/ADR-024-triple-mirror-code-and-data.md). |
 | `set_hf_secrets.py` | One-shot helper that pushes the runtime secrets into the HF Space (idempotent). |
 
 ## Probes + diagnostics
@@ -57,7 +57,7 @@ Scheduling for the long-running ones is wired via macOS LaunchAgents — see `CR
 
 | Script | Purpose |
 | --- | --- |
-| `chunk_sweep.py`, `chunk_sweep_diagnostic.py` | Grid-search over chunk size / overlap. Output: `eval/chunk_sweep_results.json`. See [ADR-018](../docs/60-decisions/ADR-018-chunk-size-sweep-deferred.md). |
+| `chunk_sweep.py`, `chunk_sweep_diagnostic.py` | Grid-search over chunk size / overlap. Output: `eval/chunk_sweep_results.json`. See [ADR-018](../70-docs/60-decisions/ADR-018-chunk-size-sweep-deferred.md). |
 | `sweep_retrieval.py` | Retrieval-strategy A/B (filter vs no-filter, top-k variants). |
 
 ## Scheduled jobs / shell wrappers
@@ -76,5 +76,5 @@ Scheduling for the long-running ones is wired via macOS LaunchAgents — see `CR
 ## Related
 
 - `CRON_README.md` (this folder) — LaunchAgent cadence reference
-- [ADR-020](../docs/60-decisions/ADR-020-code-data-split-hf-dataset.md), [ADR-024](../docs/60-decisions/ADR-024-triple-mirror-code-and-data.md), [ADR-029](../docs/60-decisions/ADR-029-disk-storage-hardening.md)
-- `audit_results/ENTERPRISE_AUDIT.md` — defect register, including silent-LaunchAgent regressions (D-002)
+- [ADR-020](../70-docs/60-decisions/ADR-020-code-data-split-hf-dataset.md), [ADR-024](../70-docs/60-decisions/ADR-024-triple-mirror-code-and-data.md), [ADR-029](../70-docs/60-decisions/ADR-029-disk-storage-hardening.md)
+- `80-audit/ENTERPRISE_AUDIT.md` — defect register, including silent-LaunchAgent regressions (D-002)

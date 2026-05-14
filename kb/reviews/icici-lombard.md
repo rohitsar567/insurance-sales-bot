@@ -40,7 +40,7 @@ _Auto-generated from `data/reviews/icici-lombard.json`. Reviews are the v1 subst
 
 - **ICICI Lombard Q1FY25 net profit grows 48.7% YoY to Rs 580 crore** (ICICI Lombard IR, 2024-07, tone: positive) — [https://www.icicilombard.com/investor-relations](https://www.icicilombard.com/investor-relations)
 - **ICICI Lombard, Bajaj Allianz and New India are the most profitable non-life players in FY 2024** (Cafemutual, 2024, tone: positive) — [https://cafemutual.com/news/insurance/33076-icici-lombard-bajaj-allianz-and-new-](https://cafemutual.com/news/insurance/33076-icici-lombard-bajaj-allianz-and-new-india-are-the-most-profitable-non-life-players-in-fy-2024)
-- **Integrated Annual Report 2023-24: Uniting for a Singular Purpose** (ICICI Lombard, 2024, tone: neutral) — [https://www.icicilombard.com/docs/default-source/financial-information/annualrep](https://www.icicilombard.com/docs/default-source/financial-information/annualreport2024.pdf)
+- **Integrated Annual Report 2023-24: Uniting for a Singular Purpose** (ICICI Lombard, 2024, tone: neutral) — [https://www.icicilombard.com/70-docs/default-source/financial-information/annualrep](https://www.icicilombard.com/70-docs/default-source/financial-information/annualreport2024.pdf)
 
 ---
 

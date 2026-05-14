@@ -45,4 +45,4 @@ Buyers expect to see premium estimates. Indian insurers hide real pricing behind
 
 ## Revisit at scale
 
-v2 path: B2B partnership with an aggregator (PolicyBazaar, Ditto, InsuranceDekho) or direct insurer APIs to get real quotes. See `docs/00-overview/roadmap.md` §v2.2.
+v2 path: B2B partnership with an aggregator (PolicyBazaar, Ditto, InsuranceDekho) or direct insurer APIs to get real quotes. See `70-docs/00-overview/roadmap.md` §v2.2.

@@ -26,8 +26,8 @@ Build the vertical slice. One category (Health) — but every architectural surf
 
 **Positive:** Demonstrates senior-engineer scoping discipline. Every part of the bot a BFSI buyer would audit (provenance, refusal, eval rigor) is real, not stubbed.
 
-**Negative:** Life, Motor, and other categories are not covered. The seven "c-readiness commitments" in `docs/10-architecture/system-overview.md` §7 become real v2 work.
+**Negative:** Life, Motor, and other categories are not covered. The seven "c-readiness commitments" in `70-docs/10-architecture/system-overview.md` §7 become real v2 work.
 
 ## Revisit at scale (v2)
 
-Category expansion plan in `docs/00-overview/roadmap.md`. Each new category requires: (1) corpus acquisition, (2) per-category schema extension, (3) eval gold set, (4) scorecard sub-score weights. No core code changes.
+Category expansion plan in `70-docs/00-overview/roadmap.md`. Each new category requires: (1) corpus acquisition, (2) per-category schema extension, (3) eval gold set, (4) scorecard sub-score weights. No core code changes.

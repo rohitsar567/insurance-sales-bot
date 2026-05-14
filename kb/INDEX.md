@@ -270,9 +270,9 @@ Canonical knowledge base for the Insurance Sales Bot. Every user-facing answer, 
 | --- | --- |
 | [`methodology/scorecard.json`](methodology/scorecard.json) | Authoritative methodology contract: 6 sub-scores, weights, scored-field list, consumer rationale, anchors. Exported from `backend/scorecard.py`. |
 | [`methodology/glossary.json`](methodology/glossary.json) | User-facing jargon explanation contract — 13 terms × {en, hi} × {title, body}. Mirror of `frontend/src/lib/i18n.ts` GLOSSARY. |
-| [`methodology/discovery-script.md`](methodology/discovery-script.md) | Profile Builder discovery script — verbatim copy of `docs/discovery-script.md`. |
-| [`methodology/knowledge-graph.md`](methodology/knowledge-graph.md) | Profile-field ↔ sub-score weight-shift map — verbatim copy of `docs/scorecard-knowledge-graph.md`. |
-| [`methodology/tie-breakers.md`](methodology/tie-breakers.md) | Recommendation tie-breaker rubric — verbatim copy of `docs/tie-breaker-rubric.md`. |
+| [`methodology/discovery-script.md`](methodology/discovery-script.md) | Profile Builder discovery script — verbatim copy of `70-docs/discovery-script.md`. |
+| [`methodology/knowledge-graph.md`](methodology/knowledge-graph.md) | Profile-field ↔ sub-score weight-shift map — verbatim copy of `70-docs/scorecard-knowledge-graph.md`. |
+| [`methodology/tie-breakers.md`](methodology/tie-breakers.md) | Recommendation tie-breaker rubric — verbatim copy of `70-docs/tie-breaker-rubric.md`. |
 | [`methodology/INDEX.md`](methodology/INDEX.md) | Pointer index to all design / decision docs. |
 
 ## Data lineage

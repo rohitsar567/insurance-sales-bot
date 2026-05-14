@@ -66,7 +66,7 @@ Plus the system-prompt reinforcement for KI-013 (rules 8 + 9 in `ADVISOR_SYSTEM_
 - **Sample:** 100 personas × 30 turns = 3000 chat calls against live HF Space
 - **Concurrency:** 4 async workers with 2.0s/dispatch global rate limit (under NIM's 40 req/min cap)
 - **Expected wall time:** ~2 hours
-- **Output:** `audit_results/full_20260514_145243/transcripts/<persona_id>.json` + `report.md` after analyzer pass
+- **Output:** `80-audit/full_20260514_145243/transcripts/<persona_id>.json` + `report.md` after analyzer pass
 - **Resumable:** completed personas' JSONs persist; re-running the script skips them.
 
 The audit is the empirical truth-source for the quality sprint. Pre-sprint we expected: high refusal rate, infinite re-ask loops, demographic-mismatched recommendations. Post-sprint we expect: 0 infinite loops (KI-011 + KI-012 fixed), fact-find always asked before recommendations (KI-013), and verbose/casual/Hinglish styles handled gracefully (keyword fast-path in KI-011 fix).

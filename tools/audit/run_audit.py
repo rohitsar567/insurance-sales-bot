@@ -1,7 +1,7 @@
 """Run the audit — walks each persona's 30-turn flow against the live API.
 
 Design notes:
-  - Resumable: completed personas land in audit_results/<run_id>/transcripts/
+  - Resumable: completed personas land in 80-audit/<run_id>/transcripts/
     as soon as they finish; if re-run, already-saved IDs are skipped.
   - Rate-limited: NIM's 40 req/min cap is the bottleneck. Each /api/chat
     triggers ~1-3 NIM calls (brain + sometimes judge + sometimes cross-check).
@@ -92,14 +92,16 @@ async def run_persona(
     log_lock: asyncio.Lock,
 ) -> None:
     out_file = out_dir / f"{persona['persona_id']}.json"
+    partial_file = out_dir / f"{persona['persona_id']}.partial.json"
     if out_file.exists():
         async with log_lock:
-            print(f"  skip {persona['persona_id']} (already done)")
+            print(f"  skip {persona['persona_id']} (already done)", flush=True)
         return
 
     session_id = f"audit_{persona['persona_id']}_{uuid.uuid4().hex[:6]}"
     history: list[dict] = []
     transcript: list[dict] = []
+    t_persona_start = time.monotonic()
 
     for turn_idx, user_text in enumerate(flow, 1):
         resp = await post_chat(client, base, user_text, session_id, history, sema, delay_s)
@@ -111,7 +113,8 @@ async def run_persona(
                 "body": resp.get("body"),
                 "latency_ms": resp.get("latency_ms") or resp.get("_latency_ms"),
             })
-            # Don't break — keep going so we get partial transcript for analysis.
+            async with log_lock:
+                print(f"  ERR  {persona['persona_id']} t{turn_idx:02d}: {resp.get('error')}", flush=True)
             continue
         reply_text = resp.get("reply_text", "")
         transcript.append({
@@ -132,6 +135,21 @@ async def run_persona(
         history.append({"role": "user", "content": user_text})
         history.append({"role": "assistant", "content": reply_text})
 
+        # Save partial every 5 turns so a kill doesn't lose all work.
+        if turn_idx % 5 == 0:
+            partial_file.write_text(json.dumps({
+                "persona": persona,
+                "session_id": session_id,
+                "turns": transcript,
+                "in_progress": True,
+            }, indent=2, ensure_ascii=False))
+            async with log_lock:
+                blk = sum(1 for t in transcript if t.get("blocked"))
+                elapsed = time.monotonic() - t_persona_start
+                print(f"  ... {persona['persona_id']} t{turn_idx:02d}/30 "
+                      f"({elapsed:.0f}s, refusals={blk}, last_brain={resp.get('brain_used')})",
+                      flush=True)
+
     payload = {
         "persona": persona,
         "session_id": session_id,
@@ -140,11 +158,14 @@ async def run_persona(
         "errors": sum(1 for t in transcript if t.get("error")),
     }
     out_file.write_text(json.dumps(payload, indent=2, ensure_ascii=False))
+    if partial_file.exists():
+        partial_file.unlink()
     async with log_lock:
         ok = sum(1 for t in transcript if not t.get("error"))
+        elapsed = time.monotonic() - t_persona_start
         print(f"  done {persona['persona_id']:<5} | {ok}/{len(transcript)} ok | "
               f"refusals={sum(1 for t in transcript if t.get('blocked'))} | "
-              f"out={out_file.name}")
+              f"{elapsed:.0f}s | out={out_file.name}", flush=True)
 
 
 async def worker(

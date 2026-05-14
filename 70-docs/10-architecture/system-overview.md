@@ -281,7 +281,7 @@ insurance-sales-bot/
 ├── data/
 │   ├── insurers.json           # 10 insurers metadata
 │   └── corpus_urls.md          # output of corpus-discovery sub-agent
-├── docs/
+├── 70-docs/
 │   ├── 01-requirements.md
 │   ├── 02-architecture.md      # THIS FILE
 │   ├── 03-eval-plan.md

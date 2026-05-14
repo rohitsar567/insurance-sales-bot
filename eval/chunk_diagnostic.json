@@ -210,7 +210,7 @@
         "factual_match": false,
         "brain": "sarvam-m::simple-qa",
         "bot_answer": "The initial waiting period under Silver Health (Bajaj Allianz) is **30 days for all illnesses** as per the policy clauses [Source: Silver Health (bajaj-allianz), pp.2-4]. This applies to all covered treatments except specific procedures listed under the 12-month waiting period. Note: This is the policy's standard waiting period \u2013 confirm with the insurer if your specific condition/procedure has additional waiting periods.",
-        "judge_reason": "judge_error: HTTPStatusError: Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429",
+        "judge_reason": "judge_error: HTTPStatusError: Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/70-docs/Web/HTTP/Status/429",
         "faithfulness_reasons": []
       },
       {
@@ -513,7 +513,7 @@
         "factual_match": false,
         "brain": "sarvam-m::simple-qa",
         "bot_answer": "The initial waiting period under Silver Health (Bajaj Allianz) is **30 days for all illnesses** as per the policy clauses [Source: Silver Health (bajaj-allianz), pp.2-4]. This applies to all covered treatments except specific procedures listed under the 12-month waiting period. Note: This is the policy's standard waiting period \u2013 confirm with the insurer if your specific condition/procedure has additional waiting periods.",
-        "judge_reason": "judge_error: HTTPStatusError: Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429",
+        "judge_reason": "judge_error: HTTPStatusError: Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/70-docs/Web/HTTP/Status/429",
         "faithfulness_reasons": []
       },
       {

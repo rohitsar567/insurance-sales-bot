@@ -121,7 +121,7 @@ The point of disciplined v1 architecture is that these things are **stable** acr
 2. **Provider abstraction** (`backend/providers/base.py`) — swap STT/TTS/LLM via config
 3. **Faithfulness verifier** (`backend/faithfulness.py`) — same 4 gates, possibly more
 4. **Persona prompt + citation grammar** — same, refined
-5. **Eval methodology** (`docs/03-eval-plan.md`) — same harness, more gold data
+5. **Eval methodology** (`70-docs/03-eval-plan.md`) — same harness, more gold data
 
 The "c-readiness commitments" in Doc 02 §7 are the contract. Every v2 feature is a commitment honored.
 

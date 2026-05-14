@@ -132,7 +132,7 @@ This is the customer-protection framing. It tells the user honesty is **self-pro
 The questions live in `backend/needs_finder.py::GRAPH`. To add a new question:
 
 1. Add a `Question(...)` entry with `id`, `prompt_en` (plain language + WHY), `prompt_hi` (Hindi rendering), `field` (which Profile attribute it sets), `is_core` (boolean — counts toward completeness), optional `condition` callable, optional `parser`.
-2. Add a row in `docs/scorecard-knowledge-graph.md` Part B showing how the new input shifts weights.
+2. Add a row in `70-docs/scorecard-knowledge-graph.md` Part B showing how the new input shifts weights.
 3. Wire the shift into `_profile_tuned_weights()` in `backend/scorecard.py`.
 
 Drift between these three places breaks the transparency promise. Keep them in sync.

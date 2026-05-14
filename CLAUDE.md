@@ -1,6 +1,6 @@
 # CLAUDE.md — project memory for AI assistants
 
-This file is read by Claude Code (and any compatible AI tool) at the start of a session in this repo. Keep it under ~200 lines and focused on **stable, non-obvious facts a new contributor would need**. For change history, look at git log, `audit_results/ENTERPRISE_AUDIT.md`, and `docs/60-decisions/`.
+This file is read by Claude Code (and any compatible AI tool) at the start of a session in this repo. Keep it under ~200 lines and focused on **stable, non-obvious facts a new contributor would need**. For change history, look at git log, `80-audit/ENTERPRISE_AUDIT.md`, and `70-docs/60-decisions/`.
 
 ## Project at a glance
 
@@ -63,8 +63,8 @@ Three independent safety layers against ChromaDB HNSW bloat:
 ## What to read for what
 
 - **System tour:** `README.md` (the master entry).
-- **Decisions with alternatives:** `docs/60-decisions/ADR-*.md` (28 ADRs as of 2026-05-14).
-- **Production-readiness defect register:** `audit_results/ENTERPRISE_AUDIT.md`.
+- **Decisions with alternatives:** `70-docs/60-decisions/ADR-*.md` (28 ADRs as of 2026-05-14).
+- **Production-readiness defect register:** `80-audit/ENTERPRISE_AUDIT.md`.
 - **Data lineage:** `kb/AUDIT_TRAIL.md`.
 - **Tests:** `tests/test_routing_regression.py` (15 tests pinning routing + load-balance invariants).
 

@@ -1,6 +1,6 @@
 """Analyze audit transcripts → produce a markdown report.
 
-Looks across all transcripts in audit_results/<run_id>/transcripts/ for:
+Looks across all transcripts in 80-audit/<run_id>/transcripts/ for:
   - completion rates (turns reached / 30)
   - error / timeout rates (HTTP 5xx, network failures)
   - refusal rate (blocked=true or faithfulness_passed=false)
@@ -12,7 +12,7 @@ Looks across all transcripts in audit_results/<run_id>/transcripts/ for:
   - failure-pattern clusters (recurring failure modes by archetype / style)
   - stuck-in-fact-find: where the bot kept re-asking the same question
 
-Output: audit_results/<run_id>/report.md
+Output: 80-audit/<run_id>/report.md
 """
 from __future__ import annotations
 
@@ -295,7 +295,7 @@ def main() -> None:
     else:
         runs = sorted([d for d in RESULTS_ROOT.iterdir() if d.is_dir()], key=lambda d: d.stat().st_mtime)
         if not runs:
-            print("no audit runs found in audit_results/")
+            print("no audit runs found in 80-audit/")
             return
         run_dir = runs[-1]
     build_report(run_dir)

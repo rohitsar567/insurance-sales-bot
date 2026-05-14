@@ -13,12 +13,12 @@ This is the framework that surfaced the headline KI-018 (QA→fact-find misrouti
 | `personas.json` | Materialised 100-persona list. Stable input to `run_audit.py`. |
 | `flows.py` | Generator: per persona produces a 30-turn user-text sequence in 5 phases — opening (1) · fact-find answers (9) · free-form Qs (10) · edge-case probes (5) · adversarial + close (5). |
 | `flows.json` | Materialised flows. `dict[persona_id, list[str]]` of the 30 turns each persona sends. |
-| `analyze.py` | Post-run aggregator: reads `audit_results/<run_id>/transcripts/*.json`, computes per-archetype / per-language / per-style breakdowns of faithfulness, blocked rate, p95 latency. Emits `report.md` + `summary.json` into the run dir. |
+| `analyze.py` | Post-run aggregator: reads `80-audit/<run_id>/transcripts/*.json`, computes per-archetype / per-language / per-style breakdowns of faithfulness, blocked rate, p95 latency. Emits `report.md` + `summary.json` into the run dir. |
 
 ## Output layout
 
 ```
-audit_results/<run_id>/
+80-audit/<run_id>/
 ├── transcripts/
 │   ├── P001.json          (complete persona)
 │   ├── P002.json
@@ -40,7 +40,7 @@ python tools/audit/run_audit.py --workers 4
 python tools/audit/run_audit.py --max-personas 5 --base http://localhost:8000
 
 # Aggregate after
-python tools/audit/analyze.py audit_results/full_20260514_145243/
+python tools/audit/analyze.py 80-audit/full_20260514_145243/
 ```
 
 ## Watch-outs
@@ -51,6 +51,6 @@ python tools/audit/analyze.py audit_results/full_20260514_145243/
 
 ## Related
 
-- `audit_results/ENTERPRISE_AUDIT.md` — defect register fed by audit output
-- `audit_results/README.md` — output-folder layout reference
+- `80-audit/ENTERPRISE_AUDIT.md` — defect register fed by audit output
+- `80-audit/README.md` — output-folder layout reference
 - Root `CLAUDE.md` § Routing invariants — the KI-018 / KI-023 regressions the audit catches

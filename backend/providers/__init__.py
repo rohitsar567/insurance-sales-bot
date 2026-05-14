@@ -10,7 +10,7 @@ After the 2026-05-14 Stack A consolidation (D-019), the provider stack is:
 
 Four legacy providers were retired in the same change: openrouter_llm.py,
 deepseek_llm.py, cerebras_llm.py, groq_llm.py. Single NIM key replaces all
-four. See docs/decisions.md D-019.
+four. See 70-docs/decisions.md D-019.
 
 All clients are async (use httpx.AsyncClient) so the FastAPI handlers can
 parallelize provider calls without blocking the event loop.

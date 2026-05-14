@@ -67,13 +67,13 @@ If a question refuses unexpectedly, that's the safe failure mode — open `logs/
 
 A take-home is a sample of how the engineer thinks under constraint. Three things this submission is meant to signal:
 
-1. **Scope to a vertical slice, not a demo.** [ADR-001](docs/60-decisions/ADR-001-vertical-slice-scope.md) explicitly chose vertical slice over single-document RAG or full-platform. The build's 7 commitments — per-insurer adapters, category-agnostic schema, pluggable extraction, schema-driven filter UI, provider-agnostic STT/TTS/LLM, eval harness that scales linearly, stateless services — make v2 (life / motor insurance) a data + config change, not a rewrite.
+1. **Scope to a vertical slice, not a demo.** [ADR-001](70-docs/60-decisions/ADR-001-vertical-slice-scope.md) explicitly chose vertical slice over single-document RAG or full-platform. The build's 7 commitments — per-insurer adapters, category-agnostic schema, pluggable extraction, schema-driven filter UI, provider-agnostic STT/TTS/LLM, eval harness that scales linearly, stateless services — make v2 (life / motor insurance) a data + config change, not a rewrite.
 
 2. **Hallucination defense and refusal as product features.** BFSI deployments get fined for mis-selling; the bot is biased toward refusal over confident wrong answers. The 4 faithfulness gates + cross-check retry + 3 Indic drift checks + audit log are the BFSI-compliance-grade version of "we shipped a chatbot." When the eval shows a headline accuracy below 100% because the gates are aggressive, the right response is to soften the gates carefully — not to ship a higher number by relaxing the verifier.
 
 3. **Honest model picks — Sarvam where Sarvam is uniquely strong, open-weights frontier for reasoning.** Sarvam Saarika v2.5 STT, Bulbul v2 TTS, and Sarvam-M Indic translation are *non-substitutable* — no closed-source frontier matches them on Indian voice or Hinglish. Reasoning is a different problem; the brain runs a fallback chain whose primary rotates 50/50 between **NIM Qwen 3-Next 80B** and **Groq Llama-3.3-70B** (ADR-026 — 2× sustained throughput across two free-tier providers), with the judge on **Mistral Large 3 675B** for non-circular grading. A Sarvam customer deploying this stack gets a product that *uses Sarvam exactly where Sarvam beats the world* and uses MIT-licensed frontier weights for everything else — open-weights only, $0 inference, single API key per provider for the entire non-voice stack.
 
-The rest is craftsmanship. The 8-section KB ([`kb/`](kb/)) is regeneratable from primary sources in <40 minutes for <$2 cold. Every numeric value in every reviewer-facing artifact traces to a source PDF + page + clause. Every architectural decision is in [`docs/60-decisions/`](docs/60-decisions/) with alternatives and revisit-at-scale notes. Every production-readiness defect is in [`audit_results/ENTERPRISE_AUDIT.md`](audit_results/ENTERPRISE_AUDIT.md). The repo is structured so a new engineer joining on Monday could ship v1.1 by Friday.
+The rest is craftsmanship. The 8-section KB ([`kb/`](kb/)) is regeneratable from primary sources in <40 minutes for <$2 cold. Every numeric value in every reviewer-facing artifact traces to a source PDF + page + clause. Every architectural decision is in [`70-docs/60-decisions/`](70-docs/60-decisions/) with alternatives and revisit-at-scale notes. Every production-readiness defect is in [`80-audit/ENTERPRISE_AUDIT.md`](80-audit/ENTERPRISE_AUDIT.md). The repo is structured so a new engineer joining on Monday could ship v1.1 by Friday.
 
 ---
 
@@ -111,15 +111,15 @@ A **voice-first conversational advisor** that:
 | Cross-policy comparison | ✓ live (DuckDB structured + Chroma vectors) |
 | Personalised scorecards | ✓ live (profile RAG — profile becomes a vector chunk) |
 | Refusal precision (refuse > mis-cite) | ✓ live (Gate 1-4) |
-| Regulatory grounding (IRDAI) | ✓ live (after Playwright rescue past Akamai bot protection — [ADR-017](docs/60-decisions/ADR-017-irdai-corpus-playwright-rescue.md)) |
-| Admin LLM control panel | ✓ live (in-app tab, IP+password gated — [ADR-023](docs/60-decisions/ADR-023-admin-panel-ip-gated.md)) |
+| Regulatory grounding (IRDAI) | ✓ live (after Playwright rescue past Akamai bot protection — [ADR-017](70-docs/60-decisions/ADR-017-irdai-corpus-playwright-rescue.md)) |
+| Admin LLM control panel | ✓ live (in-app tab, IP+password gated — [ADR-023](70-docs/60-decisions/ADR-023-admin-panel-ip-gated.md)) |
 
 ### 2.4 Explicit non-goals (v1)
 
-- **Real-time quotes** — premiums are illustrative bands with disclaimer ([ADR-007](docs/60-decisions/ADR-007-illustrative-pricing.md)).
+- **Real-time quotes** — premiums are illustrative bands with disclaimer ([ADR-007](70-docs/60-decisions/ADR-007-illustrative-pricing.md)).
 - **Medical advice** — bot answers coverage questions, never clinical ones (persona rule 4).
 - **Token-streaming LLM responses** — replies arrive as full messages today; token-by-token SSE is a v2 roadmap item.
-- **Life / motor insurance** — v1 is health-only; v2 generalises ([ADR-002](docs/60-decisions/ADR-002-health-category-vertical.md)).
+- **Life / motor insurance** — v1 is health-only; v2 generalises ([ADR-002](70-docs/60-decisions/ADR-002-health-category-vertical.md)).
 - **Sentiment classifier on raw scraped reviews** — IRDAI complaint numbers are primary-source; sentiment labels are curated snippet roll-ups, not LLM-extracted.
 
 ---
@@ -556,28 +556,28 @@ Every LLM role is served by a **fallback chain** of candidate models (`backend/p
 
 Per-call budgets: brain `20s × 35s total`, fast-brain `12s × 22s total`, judge `30s × 75s total`. The per-link timeout is dynamically clipped to remaining budget so a single fallback can never blow past the chain ceiling.
 
-**Provider load balancing.** The brain chain primary rotates 50/50 per call between NIM Qwen and Groq Llama-3.3 (`_balanced_brain_chain` in `backend/providers/nvidia_nim_llm.py`). Spreads load across two independent rate caps (NIM 40 req/min + Groq's separate quota) — effectively 2× sustained brain throughput. See [`ADR-026`](docs/60-decisions/ADR-026-provider-load-balancing.md).
+**Provider load balancing.** The brain chain primary rotates 50/50 per call between NIM Qwen and Groq Llama-3.3 (`_balanced_brain_chain` in `backend/providers/nvidia_nim_llm.py`). Spreads load across two independent rate caps (NIM 40 req/min + Groq's separate quota) — effectively 2× sustained brain throughput. See [`ADR-026`](70-docs/60-decisions/ADR-026-provider-load-balancing.md).
 
 ### 4.4 Major design decisions (the short list)
 
 | Decision | Choice | Detail |
 |---|---|---|
-| Scope shape | Vertical slice, one category | [ADR-001](docs/60-decisions/ADR-001-vertical-slice-scope.md) |
-| Category | Health | [ADR-002](docs/60-decisions/ADR-002-health-category-vertical.md) |
-| Corpus origin | Curated, not user-upload | [ADR-003](docs/60-decisions/ADR-003-curated-corpus.md) |
-| Retrieval | Hybrid structured + vector | [ADR-004](docs/60-decisions/ADR-004-hybrid-structured-vector.md) |
-| Frontend stack | Next.js 14 + FastAPI | [ADR-005](docs/60-decisions/ADR-005-nextjs-fastapi-frontend.md) |
-| Pricing | Illustrative, never quote | [ADR-007](docs/60-decisions/ADR-007-illustrative-pricing.md) |
-| Persona | Consultative advisor (IFA) | [ADR-008](docs/60-decisions/ADR-008-consultative-advisor-persona.md) |
-| Embeddings | Local BGE-small | [ADR-011](docs/60-decisions/ADR-011-bge-local-embeddings.md) |
-| LLM provider | NIM single provider | [ADR-019](docs/60-decisions/ADR-019-nim-single-provider-consolidation.md) |
-| Code vs data | Two-repo + HF Dataset | [ADR-020](docs/60-decisions/ADR-020-code-data-split-hf-dataset.md) |
-| View-aware chat | system prompt injection | [ADR-021](docs/60-decisions/ADR-021-view-aware-system-prompt.md) |
-| Profile updates in chat | LLM extractor | [ADR-022](docs/60-decisions/ADR-022-conversational-profile-updates.md) |
-| Admin panel | IP+password gated, in-app tab | [ADR-023](docs/60-decisions/ADR-023-admin-panel-ip-gated.md) |
-| Resilience | Triple-mirror code + data | [ADR-024](docs/60-decisions/ADR-024-triple-mirror-code-and-data.md) |
+| Scope shape | Vertical slice, one category | [ADR-001](70-docs/60-decisions/ADR-001-vertical-slice-scope.md) |
+| Category | Health | [ADR-002](70-docs/60-decisions/ADR-002-health-category-vertical.md) |
+| Corpus origin | Curated, not user-upload | [ADR-003](70-docs/60-decisions/ADR-003-curated-corpus.md) |
+| Retrieval | Hybrid structured + vector | [ADR-004](70-docs/60-decisions/ADR-004-hybrid-structured-vector.md) |
+| Frontend stack | Next.js 14 + FastAPI | [ADR-005](70-docs/60-decisions/ADR-005-nextjs-fastapi-frontend.md) |
+| Pricing | Illustrative, never quote | [ADR-007](70-docs/60-decisions/ADR-007-illustrative-pricing.md) |
+| Persona | Consultative advisor (IFA) | [ADR-008](70-docs/60-decisions/ADR-008-consultative-advisor-persona.md) |
+| Embeddings | Local BGE-small | [ADR-011](70-docs/60-decisions/ADR-011-bge-local-embeddings.md) |
+| LLM provider | NIM single provider | [ADR-019](70-docs/60-decisions/ADR-019-nim-single-provider-consolidation.md) |
+| Code vs data | Two-repo + HF Dataset | [ADR-020](70-docs/60-decisions/ADR-020-code-data-split-hf-dataset.md) |
+| View-aware chat | system prompt injection | [ADR-021](70-docs/60-decisions/ADR-021-view-aware-system-prompt.md) |
+| Profile updates in chat | LLM extractor | [ADR-022](70-docs/60-decisions/ADR-022-conversational-profile-updates.md) |
+| Admin panel | IP+password gated, in-app tab | [ADR-023](70-docs/60-decisions/ADR-023-admin-panel-ip-gated.md) |
+| Resilience | Triple-mirror code + data | [ADR-024](70-docs/60-decisions/ADR-024-triple-mirror-code-and-data.md) |
 
-Every D-NNN in the legacy decisions log is now a stand-alone ADR — see [`docs/60-decisions/README.md`](docs/60-decisions/README.md) for the full 24-entry index.
+Every D-NNN in the legacy decisions log is now a stand-alone ADR — see [`70-docs/60-decisions/README.md`](70-docs/60-decisions/README.md) for the full 24-entry index.
 
 ---
 
@@ -617,7 +617,7 @@ data/reviews/<insurer-slug>.json                          (IRDAI complaints/10K 
 kb/policies/<policy_id>.md                               (markdown writeup; regen via rag/build_kb.py)
 ```
 
-Full per-stage detail: [`docs/20-data-pipeline/ingestion-policy.md`](docs/20-data-pipeline/ingestion-policy.md).
+Full per-stage detail: [`70-docs/20-data-pipeline/ingestion-policy.md`](70-docs/20-data-pipeline/ingestion-policy.md).
 
 ### 5.3 Storage topology
 
@@ -674,7 +674,7 @@ Honest current numbers (2026-05-12 run on 25 questions):
 
 | Metric | Value | Comment |
 |---|---|---|
-| Factual accuracy | 40.0% | See [`audit_results/ENTERPRISE_AUDIT.md`](audit_results/ENTERPRISE_AUDIT.md) for the post-fix baseline + per-question-type breakdown |
+| Factual accuracy | 40.0% | See [`80-audit/ENTERPRISE_AUDIT.md`](80-audit/ENTERPRISE_AUDIT.md) for the post-fix baseline + per-question-type breakdown |
 | Citation accuracy | 50.0% | Same |
 | Refusal precision | 44.4% | Same |
 | Blocked by faithfulness | 12 / 25 | Gates working; aggressively biased toward refusal |
@@ -685,10 +685,10 @@ The headline number reflects an aggressive gate posture (refuse > mis-cite) — 
 
 ## 7. Document ecosystem guide
 
-The repo's documentation lives in `docs/`, organised into 8 numbered buckets. Numeric prefixes sort buckets in reading order; files inside each bucket use `kebab-case` for URL safety and grep-friendliness.
+The repo's documentation lives in `70-docs/`, organised into 8 numbered buckets. Numeric prefixes sort buckets in reading order; files inside each bucket use `kebab-case` for URL safety and grep-friendliness.
 
 ```
-docs/
+70-docs/
 ├── 00-overview/              ← "what is this and why does it exist"
 ├── 10-architecture/          ← "how it works" (deep dives)
 ├── 20-data-pipeline/         ← "where the knowledge comes from"
@@ -698,7 +698,7 @@ docs/
 ├── 60-decisions/             ← Architecture Decision Records (ADRs 001-028)
 └── 70-reference/             ← Schemas, glossary, indexes
 
-audit_results/                 ← Production-readiness audit + defect register
+80-audit/                 ← Production-readiness audit + defect register
 ├── ENTERPRISE_AUDIT.md        ← Master defect log (severity, evidence, fix status)
 └── full_<run-id>/             ← Per-run audit transcripts + analyzed reports
 ```
@@ -707,22 +707,22 @@ audit_results/                 ← Production-readiness audit + defect register
 
 | Bucket | What's there now | What to read for what |
 |---|---|---|
-| `00-overview/` | [`problem-statement.md`](docs/00-overview/problem-statement.md), [`roadmap.md`](docs/00-overview/roadmap.md) | Start here for product context, requirements, success criteria, v2 plan |
-| `10-architecture/` | [`system-overview.md`](docs/10-architecture/system-overview.md), [`stack-rationale.md`](docs/10-architecture/stack-rationale.md), [`safety-architecture.md`](docs/10-architecture/safety-architecture.md), [`scoring-methodology.md`](docs/10-architecture/scoring-methodology.md), [`scoring-knowledge-graph.md`](docs/10-architecture/scoring-knowledge-graph.md), [`scoring-tie-breaker-rubric.md`](docs/10-architecture/scoring-tie-breaker-rubric.md) | How the system is built; the why behind each stack choice; how scoring works |
-| `20-data-pipeline/` | [`ingestion-policy.md`](docs/20-data-pipeline/ingestion-policy.md), [`information-source-map.md`](docs/20-data-pipeline/information-source-map.md) | How PDFs become chunks; where every source URL lives + audit status |
-| `30-engineering/` | [`needs-analysis-flow.md`](docs/30-engineering/needs-analysis-flow.md), [`discovery-script.md`](docs/30-engineering/discovery-script.md) | How the fact-find loop works; discovery script for new contributors |
-| `40-evaluation/` | [`eval-methodology.md`](docs/40-evaluation/eval-methodology.md) | Gold-Q&A design, grader choice, results interpretation |
+| `00-overview/` | [`problem-statement.md`](70-docs/00-overview/problem-statement.md), [`roadmap.md`](70-docs/00-overview/roadmap.md) | Start here for product context, requirements, success criteria, v2 plan |
+| `10-architecture/` | [`system-overview.md`](70-docs/10-architecture/system-overview.md), [`stack-rationale.md`](70-docs/10-architecture/stack-rationale.md), [`safety-architecture.md`](70-docs/10-architecture/safety-architecture.md), [`scoring-methodology.md`](70-docs/10-architecture/scoring-methodology.md), [`scoring-knowledge-graph.md`](70-docs/10-architecture/scoring-knowledge-graph.md), [`scoring-tie-breaker-rubric.md`](70-docs/10-architecture/scoring-tie-breaker-rubric.md) | How the system is built; the why behind each stack choice; how scoring works |
+| `20-data-pipeline/` | [`ingestion-policy.md`](70-docs/20-data-pipeline/ingestion-policy.md), [`information-source-map.md`](70-docs/20-data-pipeline/information-source-map.md) | How PDFs become chunks; where every source URL lives + audit status |
+| `30-engineering/` | [`needs-analysis-flow.md`](70-docs/30-engineering/needs-analysis-flow.md), [`discovery-script.md`](70-docs/30-engineering/discovery-script.md) | How the fact-find loop works; discovery script for new contributors |
+| `40-evaluation/` | [`eval-methodology.md`](70-docs/40-evaluation/eval-methodology.md) | Gold-Q&A design, grader choice, results interpretation |
 | `50-operations/` | (operational runbooks — to be filled) | How to run, deploy, debug |
-| `60-decisions/` | 28 ADRs + [`README.md`](docs/60-decisions/README.md) index + `legacy-decisions-monolith.md` archive | The full decision history with alternatives and supersession tracking |
+| `60-decisions/` | 28 ADRs + [`README.md`](70-docs/60-decisions/README.md) index + `legacy-decisions-monolith.md` archive | The full decision history with alternatives and supersession tracking |
 | `70-reference/` | (schemas + glossary — to be filled) | BFSI terms, insurer slug map, citation grammar |
-| `audit_results/` | [`ENTERPRISE_AUDIT.md`](audit_results/ENTERPRISE_AUDIT.md) + per-run audit transcripts | Production-readiness defect register with severity, evidence, fix status. Multi-persona simulation transcripts from the audit runner. |
+| `80-audit/` | [`ENTERPRISE_AUDIT.md`](80-audit/ENTERPRISE_AUDIT.md) + per-run audit transcripts | Production-readiness defect register with severity, evidence, fix status. Multi-persona simulation transcripts from the audit runner. |
 
 ### 7.2 Root-level documents
 
 | File | Purpose |
 |---|---|
 | `README.md` (this file) | Master entry point + executive bible |
-| `ARCHITECTURE.md` | One-page diagram + index into `docs/10-architecture/` |
+| `ARCHITECTURE.md` | One-page diagram + index into `70-docs/10-architecture/` |
 | `QUICKSTART.md` | Run-locally-in-5-minutes guide (see §8 below) |
 | `Dockerfile` | Production build — pulls dataset at build time, serves Next.js + FastAPI |
 | `entrypoint.sh` | Docker entrypoint — boots both processes |
@@ -732,10 +732,10 @@ audit_results/                 ← Production-readiness audit + defect register
 ### 7.3 Navigation shortcuts
 
 - **Reviewer with 20 minutes:** read this README end-to-end.
-- **Engineer joining the project:** read [`docs/00-overview/problem-statement.md`](docs/00-overview/problem-statement.md) → [`docs/10-architecture/system-overview.md`](docs/10-architecture/system-overview.md) → [`docs/60-decisions/README.md`](docs/60-decisions/README.md) → trace `backend/orchestrator.py`.
-- **Compliance auditor:** read [`docs/10-architecture/safety-architecture.md`](docs/10-architecture/safety-architecture.md) → `logs/hallucinations.jsonl` → [`kb/AUDIT_TRAIL.md`](kb/AUDIT_TRAIL.md).
-- **Production readiness reviewer:** read [`audit_results/ENTERPRISE_AUDIT.md`](audit_results/ENTERPRISE_AUDIT.md) for the master defect register (severity-tagged, with evidence + fix status) and [`audit_results/full_<run-id>/report.md`](audit_results/) for the latest persona-simulation findings.
-- **Replicating the data pipeline:** read [`docs/20-data-pipeline/ingestion-policy.md`](docs/20-data-pipeline/ingestion-policy.md) → trace `rag/extract.py` + `rag/ingest.py`.
+- **Engineer joining the project:** read [`70-docs/00-overview/problem-statement.md`](70-docs/00-overview/problem-statement.md) → [`70-docs/10-architecture/system-overview.md`](70-docs/10-architecture/system-overview.md) → [`70-docs/60-decisions/README.md`](70-docs/60-decisions/README.md) → trace `backend/orchestrator.py`.
+- **Compliance auditor:** read [`70-docs/10-architecture/safety-architecture.md`](70-docs/10-architecture/safety-architecture.md) → `logs/hallucinations.jsonl` → [`kb/AUDIT_TRAIL.md`](kb/AUDIT_TRAIL.md).
+- **Production readiness reviewer:** read [`80-audit/ENTERPRISE_AUDIT.md`](80-audit/ENTERPRISE_AUDIT.md) for the master defect register (severity-tagged, with evidence + fix status) and [`80-audit/full_<run-id>/report.md`](80-audit/) for the latest persona-simulation findings.
+- **Replicating the data pipeline:** read [`70-docs/20-data-pipeline/ingestion-policy.md`](70-docs/20-data-pipeline/ingestion-policy.md) → trace `rag/extract.py` + `rag/ingest.py`.
 
 ---
 
@@ -770,7 +770,7 @@ cp -R rag/_hf_dataset_backup/rag/* rag/   # corpus/, extracted/, vectors/
 
 ```bash
 cp .env.example .env
-# Edit .env and fill in the 8 keys (see docs/60-decisions/ADR-010-secret-handling.md):
+# Edit .env and fill in the 8 keys (see 70-docs/60-decisions/ADR-010-secret-handling.md):
 #   SARVAM_API_KEY, VOYAGE_API_KEY, NVIDIA_NIM_API_KEY, HF_TOKEN,
 #   ADMIN_PASSWORD, ADMIN_IP_ALLOWLIST, GROQ_API_KEY, OPENROUTER_API_KEY
 chmod 600 .env
@@ -872,7 +872,7 @@ This section is written so a fresh **Claude Code** session pointed at an empty d
 
 ### 10.2 Build sequence
 
-1. **Corpus acquisition** — use `tools/` agent crawl + Playwright fallback (see [ADR-017](docs/60-decisions/ADR-017-irdai-corpus-playwright-rescue.md)) to fetch 19 insurers' PDFs + 18 regulatory PDFs into `rag/corpus/`.
+1. **Corpus acquisition** — use `tools/` agent crawl + Playwright fallback (see [ADR-017](70-docs/60-decisions/ADR-017-irdai-corpus-playwright-rescue.md)) to fetch 19 insurers' PDFs + 18 regulatory PDFs into `rag/corpus/`.
 
 2. **Structured extraction** — `rag/extract.py` runs fast-brain chain (Nemotron 30B / Qwen 80B / Groq Llama-3.3 fallback) over each PDF with the 62-field Pydantic schema. Output to `rag/extracted/<policy_id>.json`.
 
@@ -897,7 +897,7 @@ This section is written so a fresh **Claude Code** session pointed at an empty d
 A new Claude Code session should ingest these to bootstrap understanding:
 
 1. **This README** — entire project context.
-3. **[`docs/60-decisions/`](docs/60-decisions/)** — 24 ADRs covering every meaningful decision.
+3. **[`70-docs/60-decisions/`](70-docs/60-decisions/)** — 24 ADRs covering every meaningful decision.
 4. **[`backend/orchestrator.py`](backend/orchestrator.py)** — the single file that defines a turn.
 5. **[`backend/faithfulness.py`](backend/faithfulness.py)** — the 4-gate verifier.
 6. **[`backend/persona.py`](backend/persona.py)** — the system prompt + message builder.
@@ -929,4 +929,4 @@ Code: https://github.com/rohitsar567/insurance-sales-bot
 Data: https://github.com/rohitsar567/insurance-sales-bot-data  
 Contact: rohitsar567@gmail.com
 
-If you're reviewing this for Sarvam: thank you for your time. Every architectural choice is in [`docs/60-decisions/`](docs/60-decisions/) with alternatives and reasoning. Every refusal in the demo is logged in `logs/hallucinations.jsonl` with the failing gate. The project is structured so a new engineer could ship v1.1 by Friday.
+If you're reviewing this for Sarvam: thank you for your time. Every architectural choice is in [`70-docs/60-decisions/`](70-docs/60-decisions/) with alternatives and reasoning. Every refusal in the demo is logged in `logs/hallucinations.jsonl` with the failing gate. The project is structured so a new engineer could ship v1.1 by Friday.

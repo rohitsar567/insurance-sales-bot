@@ -6,7 +6,7 @@ Deliberately small. The bulk of behavioural quality lives in `eval/` (gold-QA ac
 
 | File | Role |
 | --- | --- |
-| `test_routing_regression.py` | 15 `unittest` cases pinning the KI-018 / KI-023 / KI-025 fixes — see "Routing invariants" in the root `CLAUDE.md`. Includes `TestProviderLoadBalancing` which asserts the 50/50 NIM ↔ Groq split holds over 1000 seeded calls ([ADR-026](../docs/60-decisions/ADR-026-provider-load-balancing.md)). |
+| `test_routing_regression.py` | 15 `unittest` cases pinning the KI-018 / KI-023 / KI-025 fixes — see "Routing invariants" in the root `CLAUDE.md`. Includes `TestProviderLoadBalancing` which asserts the 50/50 NIM ↔ Groq split holds over 1000 seeded calls ([ADR-026](../70-docs/60-decisions/ADR-026-provider-load-balancing.md)). |
 | `live_verify.py` | End-to-end production drift detector. Hits the **deployed** API with a 20-Q gold subset and asserts HTTP 200, non-empty `reply_text`, ≥1 citation, faithfulness pass, and Doc-01 latency budget (p95 ≤ 7000ms). Writes `tests/live_results_<ts>.md`. Cron-able for nightly. |
 
 ## What each test pins
@@ -34,6 +34,6 @@ TARGET_URL=http://localhost:8000 python tests/live_verify.py
 ## Related
 
 - Root `CLAUDE.md` § Routing invariants — the four lines this folder protects
-- `audit_results/ENTERPRISE_AUDIT.md` D-003 — full incident report for KI-018
-- [ADR-026](../docs/60-decisions/ADR-026-provider-load-balancing.md) — load-balance behaviour pinned by `TestProviderLoadBalancing`
+- `80-audit/ENTERPRISE_AUDIT.md` D-003 — full incident report for KI-018
+- [ADR-026](../70-docs/60-decisions/ADR-026-provider-load-balancing.md) — load-balance behaviour pinned by `TestProviderLoadBalancing`
 - `eval/run.py` — the broader 96-Q accuracy eval (different surface, same underlying orchestrator)

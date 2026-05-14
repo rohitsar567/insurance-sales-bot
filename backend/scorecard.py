@@ -38,7 +38,7 @@ class Scorecard:
     one_liner: str
     sub_scores: list[SubScore]
     data_completeness_pct: float  # how many of the scoring fields actually have data
-    methodology_link: str = "/docs/scorecard-methodology.md"
+    methodology_link: str = "/70-docs/scorecard-methodology.md"
 
 
 # ---- helpers ----
@@ -466,7 +466,7 @@ def _profile_tuned_weights(profile: Optional[dict]) -> dict[str, float]:
     the end. Each adjustment is small (typically ±0.02–0.06) so accumulated
     drift never crosses the validity boundary of the rules.
 
-    Audit trail per delta is in docs/scorecard-methodology.md §6 (knowledge
+    Audit trail per delta is in 70-docs/scorecard-methodology.md §6 (knowledge
     graph: profile-field → weight-shift table).
     """
     if not profile:
