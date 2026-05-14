@@ -178,16 +178,27 @@ export default function Page() {
   // Hands-free continuous loop: when toggled ON, immediately open mic. When
   // toggled OFF, close any in-progress recording. The send() function takes
   // care of re-opening the mic after each assistant TTS finishes.
-  // KI-027 — Live mode is the SOLE voice mode. Always on (no toggle off).
-  // The only thing that suspends it is an explicit press of the 🎤
-  // push-to-talk button — and even then, Live resumes immediately after
-  // the one-shot PTT recording finishes. If mic permission is denied,
-  // useLiveConversation flips micPermissionDenied=true and the UI shows a
-  // "mic blocked — type to chat" hint; the textarea + Send still work.
+  // KI-028 (2026-05-14) — Live can now be explicitly turned off via the
+  // status pill (click the green dot → red dot → can click again to bring
+  // it back, OR just keep using 🎤 push-to-talk). userPrefersLive is the
+  // user's *intent*, persisted across reloads. live.live is the *actual*
+  // mic state — which PTT temporarily flips to false during a recording
+  // even while userPrefersLive stays true (so Live resumes after PTT).
+  const [userPrefersLive, setUserPrefersLive] = useState(true);
+  // Load persisted preference on mount.
   useEffect(() => {
-    live.setLive(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (typeof window === "undefined") return;
+    const pref = localStorage.getItem("insurance_live_pref");
+    if (pref === "off") setUserPrefersLive(false);
   }, []);
+  // Persist + sync to the live hook whenever the user toggles preference.
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("insurance_live_pref", userPrefersLive ? "on" : "off");
+    }
+    live.setLive(userPrefersLive);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userPrefersLive]);
 
   function pushUser(text: string) {
     setMessages((m) => [...m, { id: `u_${Date.now()}`, role: "user", content: text }]);
@@ -423,10 +434,12 @@ export default function Page() {
         stream.getTracks().forEach((t) => t.stop());
         const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType || "audio/webm" });
         setRecording(false);
-        // KI-027 — PTT done: resume Live mode so the user goes right back to
-        // hands-free conversation without a button press.
-        const resumeLive = () => { live.setLive(true); };
-        if (blob.size < 1000) { resumeLive(); return; }
+        // KI-028 — Resume Live ONLY if the user's persistent preference is
+        // still "on". If the user explicitly turned Live off (red dot), PTT
+        // does its one turn and leaves Live off. They'll keep using PTT
+        // until they click the dot back to green themselves.
+        const maybeResumeLive = () => { if (userPrefersLive) live.setLive(true); };
+        if (blob.size < 1000) { maybeResumeLive(); return; }
         setBusy(true);
         try {
           const { text } = await postTranscribe(blob, ttsLang);
@@ -436,7 +449,7 @@ export default function Page() {
           pushAssistant(`Sorry — transcribe error: ${e instanceof Error ? e.message : String(e)}`);
         } finally {
           setBusy(false);
-          resumeLive();
+          maybeResumeLive();
         }
       };
       recorder.start();
@@ -751,21 +764,33 @@ export default function Page() {
           </div>
           <div className="flex items-center justify-between gap-3 mt-2 pt-2 px-2 text-xs text-[var(--muted-foreground)]">
             <div className="flex items-center gap-3">
-              {/* KI-027 — Live mode is the default + only voice mode. This is
-                  a STATUS pill, not a toggle. The only way to "pause" Live is
-                  to press the 🎤 push-to-talk button for one turn. */}
+              {/* KI-028 — Clickable Live toggle. Green = always-on listening,
+                  red = off (user explicitly disabled). PTT works in BOTH states:
+                  in green it temporarily suspends then resumes; in red it does
+                  its one turn and leaves Live off so the user keeps using PTT
+                  until they click back to green. */}
               {!live.micPermissionDenied ? (
-                <span
-                  className="flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-[var(--border)] text-xs font-medium text-[var(--muted-foreground)]"
-                  title={live.live
-                    ? "Always-on voice. Just speak — I'm listening. Speak over me to interrupt at any time."
-                    : "Voice paused for push-to-talk; resumes after this turn."}
+                <button
+                  type="button"
+                  onClick={() => setUserPrefersLive((p) => !p)}
+                  className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs font-medium transition cursor-pointer ${
+                    userPrefersLive
+                      ? "border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+                      : "border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100 dark:border-rose-700 dark:bg-rose-900/30 dark:text-rose-300"
+                  }`}
+                  title={userPrefersLive
+                    ? "Click to turn voice OFF (you can still use 🎤 push-to-talk)"
+                    : "Click to turn voice back ON (always-on listening + barge-in)"}
                 >
                   <span className={`inline-block w-2 h-2 rounded-full ${
-                    live.live ? (live.recording ? "bg-red-500 animate-pulse" : "bg-emerald-500 animate-pulse") : "bg-gray-400"
+                    userPrefersLive
+                      ? (live.recording ? "bg-red-500 animate-pulse" : "bg-emerald-500 animate-pulse")
+                      : "bg-rose-500"
                   }`} />
-                  {live.live ? (live.recording ? "Listening…" : "Just speak — I'm listening") : "Push-to-talk active"}
-                </span>
+                  {userPrefersLive
+                    ? (live.recording ? "Listening…" : "Voice on — just speak")
+                    : "Voice off — click to turn on, or use 🎤"}
+                </button>
               ) : (
                 <span className="text-rose-500 text-xs" title="Allow mic in your browser site settings, or use the 🎤 push-to-talk button">
                   🔇 Mic blocked — use 🎤 to speak, or type below
