@@ -134,8 +134,45 @@ async def upsert_profile_chunk(session_id: str, profile_dict: dict) -> None:
     if not text or len(text) < 30:
         return
 
+    # KI-112 (2026-05-15) — input guard 1: session_id must be a non-empty str.
+    # Pre-fix, a missing/empty session_id caused upsert under id "profile_"
+    # with `policy_id` colliding across all anonymous sessions — and the
+    # initial KI-102 deploy wrote a `profile_anonymous` chunk WITHOUT a
+    # session_id metadata field. That legacy chunk poisoned every subsequent
+    # query whose `where` clause referenced session_id ($ne / $eq) — Chroma's
+    # HNSW + metadata-filter plan executor raised "Error finding id" against
+    # the dangling row. Reject early with a noisy log so the bad write never
+    # reaches Chroma.
+    if not isinstance(session_id, str) or not session_id.strip():
+        _log.warning(
+            "profile_rag.upsert_profile_chunk: refusing to write — session_id "
+            "must be a non-empty str, got %r. Profile not persisted.",
+            session_id,
+        )
+        return
+
     embedder = LocalEmbeddings()
     [vec] = await embedder.embed([text], input_type="document")
+
+    # KI-112 (2026-05-15) — input guard 2: embedding must be a list of finite
+    # floats whose length matches the embedder's declared dimension. Pre-fix,
+    # an empty / None / mis-shaped embedding could be added to Chroma where it
+    # would silently corrupt HNSW (dangling pointer or shape mismatch). The
+    # corpus uses 384-dim BAAI/bge-small-en-v1.5; any other shape is a bug.
+    expected_dim = getattr(embedder, "dimension", None) or 384
+    if (
+        not isinstance(vec, (list, tuple))
+        or len(vec) != expected_dim
+        or any((v is None) for v in vec)
+    ):
+        _log.warning(
+            "profile_rag.upsert_profile_chunk: refusing to write — embedding "
+            "shape invalid for session_id=%s (expected %d-dim list of floats, "
+            "got type=%s len=%s). Profile not persisted.",
+            session_id, expected_dim, type(vec).__name__,
+            (len(vec) if hasattr(vec, "__len__") else "?"),
+        )
+        return
 
     coll = _get_collection()
     chunk_id = f"profile_{session_id}"

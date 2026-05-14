@@ -700,12 +700,25 @@ def _chain_summary(role: str, chains: dict[str, list[str]],
     # is at-or-below its low-water mark. Chains with no signal at all are
     # NOT flagged exhausted (cold-start should be permissive — election will
     # try them and surface a real failure if any).
+    #
+    # KI-116 (2026-05-15) — mirror the `is_credit_eligible` reset-window logic.
+    # When credits_reset_at has elapsed, the LAST observed credits_remaining
+    # is stale (e.g., NIM 40-RPM cap from a spike 10 minutes ago says
+    # `remaining=0` but the 60s window has long since cycled). The elector
+    # treats elapsed-reset as permissive; the banner must match or the UI
+    # contradicts itself ("HEALTHY 100% success" + "credit-exhausted" at the
+    # same time, which user reported on the live admin panel).
     any_signal = False
     all_exhausted = True
     for m in chain:
         h = state.get(m)
         if h is None or h.credits_remaining is None:
             continue
+        # If the credit signal's reset window has elapsed, skip — the snapshot
+        # is stale and the elector will try this candidate next call.
+        if h.credits_reset_at is not None and now_mono >= h.credits_reset_at:
+            all_exhausted = False
+            break
         any_signal = True
         if h.credits_remaining > (h.credits_low_water or 0.0):
             all_exhausted = False

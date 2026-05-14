@@ -879,9 +879,9 @@ export default function Page() {
               <div className="flex flex-col h-full">
                 <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)] bg-[var(--card)]">
                   <div>
-                    <h2 className="text-sm font-semibold">Admin · LLM Control Panel</h2>
+                    <h2 className="text-sm font-semibold">Admin Console</h2>
                     <p className="text-xs text-[var(--muted-foreground)]">
-                      IP-gated. Only the home network IP can interact with chain reordering / probes.
+                      Password-gated. Enter the admin password to view LLM health, usage rollups, saved profiles, and chain controls.
                     </p>
                   </div>
                   <button

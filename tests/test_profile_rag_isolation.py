@@ -460,8 +460,15 @@ class TestUpsertStampsSessionId(unittest.TestCase):
                 captured["deleted_where"] = where
 
         class _FakeEmbedder:
+            # KI-112 (2026-05-15) — the upsert path now validates that the
+            # embedding length matches embedder.dimension. Set both to 384 so
+            # the realistic-shape vector passes the shape check; the test's
+            # subject under scrutiny is the metadata stamping, not the shape
+            # guard (those have dedicated cases below).
+            dimension = 384
+
             async def embed(self, texts, input_type="document"):
-                return [[0.1] * 8 for _ in texts]
+                return [[0.1] * 384 for _ in texts]
 
         fake_coll = _FakeColl()
         sid = f"test_{uuid.uuid4().hex[:6]}"
@@ -484,6 +491,156 @@ class TestUpsertStampsSessionId(unittest.TestCase):
         )
         self.assertEqual(meta.get("doc_type"), "profile")
         self.assertEqual(captured["ids"], [f"profile_{sid}"])
+
+
+# ---------------------------------------------------------------------------
+# KI-112 (2026-05-15) — input validation hardening.
+#
+# Root cause of the HNSW corruption: KI-102's initial deploy wrote a profile
+# chunk under id "profile_anonymous" with NO session_id metadata. That legacy
+# chunk poisoned every subsequent collection.query() that referenced
+# session_id or doc_type$ne in the where clause — Chroma's plan executor
+# raised "Error finding id" against the dangling row's HNSW pointer, and
+# corruption propagated across HNSW segments (1580 / 7356 chunks turned
+# unfetchable on full collection rebuild).
+#
+# Two guards added in upsert_profile_chunk:
+#   1) session_id must be a non-empty str (rejects "", None, falsy values
+#      that would write under "profile_" / "profile_anonymous" etc).
+#   2) embedding shape must match the embedder's declared dimension and
+#      contain no None values (rejects mis-shaped vectors that would
+#      corrupt HNSW segment files).
+#
+# These tests pin the contract: bad inputs MUST be rejected at write time,
+# not silently corrupt the index for future sessions.
+# ---------------------------------------------------------------------------
+
+
+class TestUpsertRejectsBadInputs(unittest.TestCase):
+    """KI-112 — bad session_id or embedding shape must NOT reach Chroma."""
+
+    def test_upsert_rejects_empty_session_id(self):
+        from backend import profile_rag
+
+        captured: dict = {"add_called": False}
+
+        class _FakeColl:
+            def add(self, ids, documents, embeddings, metadatas):
+                captured["add_called"] = True
+
+            def delete(self, where=None):
+                captured["delete_called"] = True
+
+        class _FakeEmbedder:
+            dimension = 384
+
+            async def embed(self, texts, input_type="document"):
+                return [[0.1] * 384 for _ in texts]
+
+        for bad_sid in ["", "   ", None]:
+            with mock.patch.object(profile_rag, "_get_collection", return_value=_FakeColl()), \
+                 mock.patch("backend.providers.local_embeddings.LocalEmbeddings", _FakeEmbedder):
+                captured["add_called"] = False
+                asyncio.run(profile_rag.upsert_profile_chunk(bad_sid, {"age": 30}))
+            self.assertFalse(
+                captured["add_called"],
+                f"upsert MUST refuse session_id={bad_sid!r} — bad write would "
+                "corrupt the policies collection.",
+            )
+
+    def test_upsert_rejects_mismatched_embedding_dim(self):
+        """If the embedder somehow returns the wrong dim (model drift,
+        misconfig), upsert must NOT write it to Chroma."""
+        from backend import profile_rag
+
+        captured: dict = {"add_called": False}
+
+        class _FakeColl:
+            def add(self, ids, documents, embeddings, metadatas):
+                captured["add_called"] = True
+
+            def delete(self, where=None):
+                pass
+
+        class _BadDimEmbedder:
+            dimension = 384
+
+            async def embed(self, texts, input_type="document"):
+                # Wrong dim — 8-dim stub like other tests, but profile_rag
+                # expects 384.
+                return [[0.1] * 8 for _ in texts]
+
+        with mock.patch.object(profile_rag, "_get_collection", return_value=_FakeColl()), \
+             mock.patch("backend.providers.local_embeddings.LocalEmbeddings", _BadDimEmbedder):
+            asyncio.run(profile_rag.upsert_profile_chunk(
+                "valid_session_xyz", {"age": 30, "dependents": "self"},
+            ))
+
+        self.assertFalse(
+            captured["add_called"],
+            "upsert MUST refuse a mis-shaped embedding to prevent HNSW "
+            "corruption from a model drift event.",
+        )
+
+    def test_upsert_rejects_none_in_embedding(self):
+        from backend import profile_rag
+
+        captured: dict = {"add_called": False}
+
+        class _FakeColl:
+            def add(self, ids, documents, embeddings, metadatas):
+                captured["add_called"] = True
+
+            def delete(self, where=None):
+                pass
+
+        class _NoneVecEmbedder:
+            dimension = 384
+
+            async def embed(self, texts, input_type="document"):
+                vec = [0.1] * 384
+                vec[42] = None  # one None value
+                return [vec for _ in texts]
+
+        with mock.patch.object(profile_rag, "_get_collection", return_value=_FakeColl()), \
+             mock.patch("backend.providers.local_embeddings.LocalEmbeddings", _NoneVecEmbedder):
+            asyncio.run(profile_rag.upsert_profile_chunk(
+                "valid_session_xyz", {"age": 30, "dependents": "self"},
+            ))
+
+        self.assertFalse(
+            captured["add_called"],
+            "upsert MUST refuse a vector containing None values.",
+        )
+
+    def test_upsert_accepts_correct_shape(self):
+        """Positive path — a well-formed 384-dim list must be persisted."""
+        from backend import profile_rag
+
+        captured: dict = {}
+
+        class _FakeColl:
+            def add(self, ids, documents, embeddings, metadatas):
+                captured["ids"] = ids
+                captured["embeddings"] = embeddings
+
+            def delete(self, where=None):
+                pass
+
+        class _GoodEmbedder:
+            dimension = 384
+
+            async def embed(self, texts, input_type="document"):
+                return [[0.1] * 384 for _ in texts]
+
+        with mock.patch.object(profile_rag, "_get_collection", return_value=_FakeColl()), \
+             mock.patch("backend.providers.local_embeddings.LocalEmbeddings", _GoodEmbedder):
+            asyncio.run(profile_rag.upsert_profile_chunk(
+                "good_session", {"age": 30, "dependents": "self"},
+            ))
+
+        self.assertEqual(captured.get("ids"), ["profile_good_session"])
+        self.assertEqual(len(captured["embeddings"][0]), 384)
 
 
 if __name__ == "__main__":
