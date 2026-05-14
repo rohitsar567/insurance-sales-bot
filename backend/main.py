@@ -250,8 +250,16 @@ async def _startup_purge_dangling_profile_chunks():
         metas = res.get("metadatas") or []
         bad_ids: list[str] = []
         for cid, meta in zip(ids, metas):
+            # KI-118 (2026-05-15) — profile chunks are now keyed by name_slug;
+            # accept EITHER a non-empty name_slug (new) OR a non-empty
+            # session_id (legacy KI-102 row) as proof-of-ownership. A profile
+            # chunk with neither key is the dangling-row corruption case and
+            # must be purged.
+            slug = (meta or {}).get("name_slug")
             sid = (meta or {}).get("session_id")
-            if not (isinstance(sid, str) and sid.strip()):
+            slug_ok = isinstance(slug, str) and slug.strip()
+            sid_ok = isinstance(sid, str) and sid.strip()
+            if not (slug_ok or sid_ok):
                 bad_ids.append(cid)
 
         if bad_ids:
@@ -849,8 +857,15 @@ async def profile_update(req: ProfileUpdateRequest):
     # Ingest the profile into the RAG store so the brain sees user context
     # at retrieval time alongside policy + regulatory chunks. Fire-and-forget
     # — a profile upsert failure shouldn't block the API response.
+    # KI-118 (2026-05-15) — gated on a known name; anonymous saves don't
+    # write to Chroma. The chunk is keyed by canonical name slug, not the
+    # session_id which is now opaque/in-memory.
     try:
-        await upsert_profile_chunk(req.session_id, profile_dict)
+        if p.name:
+            from backend.profile_store import _normalise_name
+            name_slug = _normalise_name(p.name)
+            if name_slug:
+                await upsert_profile_chunk(name_slug, profile_dict)
     except Exception as e:
         print(f"[profile_rag] upsert failed for {req.session_id}: {type(e).__name__}: {e}")
 

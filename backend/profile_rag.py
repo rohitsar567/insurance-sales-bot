@@ -1,27 +1,26 @@
 """Customer-profile-as-RAG layer.
 
-When a user saves their profile (POST /api/profile), the profile dict is
-serialised into a natural-language paragraph and ingested into the same
-Chroma collection that holds policy + regulatory chunks. Metadata fields
-`doc_type='profile'` and `policy_id='profile_<session_id>'` distinguish it.
+KI-118 (2026-05-15) — profile chunks are now keyed by `name_slug` (the
+canonicalised user name), NOT by session_id. Only NAMED users ever get
+embedded; anonymous sessions never write to Chroma. This eliminates the
+corruption surface that the session_id-keyed chunks introduced (a missing
+session_id metadata field on the legacy `profile_anonymous` row poisoned
+every subsequent retrieval query — see KI-117 boot cleanup).
 
-At retrieval time, `rag/retrieve.py::retrieve(..., session_id=...)` can
-preferentially boost the matching profile chunk so the LLM sees the user's
-context inline with the retrieved policy/regulatory text — answers become
-personalised at the BRAIN level, not just at scorecard re-weighting.
-
-This is what the user meant by "we need an architecture to store customer
-profiles for RAG, complementing the brain alongside policy + regulation".
+At retrieval time, `rag/retrieve.py::retrieve(..., profile_name_slug=...)`
+boosts the user's profile chunk so the LLM sees the user's context inline
+with the retrieved policy/regulatory text — answers become personalised at
+the BRAIN level, not just at scorecard re-weighting.
 
 Public API:
     profile_to_chunk_text(profile_dict) -> str
         Render the structured profile as a single English paragraph.
-    upsert_profile_chunk(session_id, profile_dict, embedder) -> None
-        Ingest / update the chunk for this session in Chroma.
-    remove_profile_chunk(session_id) -> None
-        Optional cleanup on session expiry.
+    upsert_profile_chunk(name_slug, profile_dict, embedder) -> None
+        Ingest / update the chunk for this named user in Chroma.
+    remove_profile_chunk(name_slug) -> None
+        Optional cleanup.
 
-Storage model — one chunk per session_id. Replaced on each profile update.
+Storage model — one chunk per name_slug. Replaced on each profile update.
 Profile chunks live in the SAME collection as policies so retrieval can
 naturally surface them when scoring policies for the user.
 """
@@ -122,11 +121,16 @@ def _get_collection():
     )
 
 
-async def upsert_profile_chunk(session_id: str, profile_dict: dict) -> None:
+async def upsert_profile_chunk(name_slug: str, profile_dict: dict) -> None:
     """Embed the profile paragraph and store as a single chunk in Chroma.
 
+    KI-118 (2026-05-15) — keyed by `name_slug` (canonical user name) instead
+    of `session_id`. Only NAMED users ever get embedded — anonymous chats
+    never write to Chroma, which eliminates the corruption surface that the
+    session_id keying introduced.
+
     Idempotent — calling this on every profile update is safe; existing
-    chunks for the same session_id get replaced.
+    chunks for the same name_slug get replaced.
     """
     from backend.providers.local_embeddings import LocalEmbeddings
 
@@ -134,20 +138,19 @@ async def upsert_profile_chunk(session_id: str, profile_dict: dict) -> None:
     if not text or len(text) < 30:
         return
 
-    # KI-112 (2026-05-15) — input guard 1: session_id must be a non-empty str.
-    # Pre-fix, a missing/empty session_id caused upsert under id "profile_"
-    # with `policy_id` colliding across all anonymous sessions — and the
-    # initial KI-102 deploy wrote a `profile_anonymous` chunk WITHOUT a
-    # session_id metadata field. That legacy chunk poisoned every subsequent
-    # query whose `where` clause referenced session_id ($ne / $eq) — Chroma's
-    # HNSW + metadata-filter plan executor raised "Error finding id" against
-    # the dangling row. Reject early with a noisy log so the bad write never
-    # reaches Chroma.
-    if not isinstance(session_id, str) or not session_id.strip():
+    # KI-112 (2026-05-15) / KI-118 — input guard 1: name_slug must be a
+    # non-empty str. Pre-fix, a missing/empty key caused upsert under id
+    # "profile_" with `policy_id` colliding across all anonymous sessions;
+    # the initial KI-102 deploy wrote a `profile_anonymous` chunk WITHOUT a
+    # session_id metadata field that poisoned every subsequent query whose
+    # `where` clause referenced session_id. Anonymous users no longer reach
+    # this function at all (the orchestrator gates on
+    # `session.profile.name` before calling) — this guard is belt-and-braces.
+    if not isinstance(name_slug, str) or not name_slug.strip():
         _log.warning(
-            "profile_rag.upsert_profile_chunk: refusing to write — session_id "
+            "profile_rag.upsert_profile_chunk: refusing to write — name_slug "
             "must be a non-empty str, got %r. Profile not persisted.",
-            session_id,
+            name_slug,
         )
         return
 
@@ -167,17 +170,17 @@ async def upsert_profile_chunk(session_id: str, profile_dict: dict) -> None:
     ):
         _log.warning(
             "profile_rag.upsert_profile_chunk: refusing to write — embedding "
-            "shape invalid for session_id=%s (expected %d-dim list of floats, "
+            "shape invalid for name_slug=%s (expected %d-dim list of floats, "
             "got type=%s len=%s). Profile not persisted.",
-            session_id, expected_dim, type(vec).__name__,
+            name_slug, expected_dim, type(vec).__name__,
             (len(vec) if hasattr(vec, "__len__") else "?"),
         )
         return
 
     coll = _get_collection()
-    chunk_id = f"profile_{session_id}"
+    chunk_id = f"profile_{name_slug}"
 
-    # Replace any existing chunk for this session
+    # Replace any existing chunk for this name
     try:
         coll.delete(where={"policy_id": chunk_id})
     except Exception as e:
@@ -203,49 +206,46 @@ async def upsert_profile_chunk(session_id: str, profile_dict: dict) -> None:
             metadatas=[{
                 "policy_id": chunk_id,
                 "insurer_slug": "profile",
-                "policy_name": f"User profile (session {session_id[:8]})",
+                "policy_name": f"User profile ({name_slug[:16]})",
                 "doc_type": "profile",
-                # KI-102 (2026-05-15) — privacy P0. Stamp the owning session_id so
-                # the retrieve path can hard-exclude any OTHER session's profile
-                # chunk via where={"session_id": current}. Pre-fix, profile chunks
-                # had no session_id metadata and the main retrieval pass had no
-                # doc_type filter, so chunks from sessions smokeA_1, ki100_ve, etc.
-                # surfaced as cosine matches in session smokeB_B4's context —
-                # leaking one user's profile facts into another user's reply.
-                "session_id": session_id,
+                # KI-118 (2026-05-15) — stamp name_slug instead of session_id.
+                # The retrieve path filters profile chunks via this field.
+                "name_slug": name_slug,
                 "source_url": "",
                 "page_start": 0,
                 "page_end": 0,
                 "chunk_idx": 0,
-                "local_path": "in-memory session profile",
+                "local_path": "in-memory named-profile chunk",
             }],
         )
     except Exception as e:
         _log.warning(
             "profile_rag.upsert_profile_chunk: add(id=%s) failed: %s: %s — "
-            "user reply will proceed without per-session profile context; "
+            "user reply will proceed without per-user profile context; "
             "next profile change will retry.",
             chunk_id, type(e).__name__, str(e)[:200],
         )
 
 
-def remove_profile_chunk(session_id: str) -> None:
-    """Optional cleanup. Called on session expiry (1h TTL in session_state)."""
+def remove_profile_chunk(name_slug: str) -> None:
+    """Optional cleanup. KI-118 — keyed by name_slug."""
+    if not name_slug:
+        return
     try:
         coll = _get_collection()
-        coll.delete(where={"policy_id": f"profile_{session_id}"})
+        coll.delete(where={"policy_id": f"profile_{name_slug}"})
     except Exception:
         pass
 
 
-def upsert_profile_chunk_sync(session_id: str, profile_dict: dict) -> None:
+def upsert_profile_chunk_sync(name_slug: str, profile_dict: dict) -> None:
     """Sync wrapper for callers that aren't async — schedules + waits."""
     try:
         loop = asyncio.get_event_loop()
         if loop.is_running():
             # Already inside an async context — schedule on the loop
-            asyncio.ensure_future(upsert_profile_chunk(session_id, profile_dict))
+            asyncio.ensure_future(upsert_profile_chunk(name_slug, profile_dict))
             return
     except RuntimeError:
         pass
-    asyncio.run(upsert_profile_chunk(session_id, profile_dict))
+    asyncio.run(upsert_profile_chunk(name_slug, profile_dict))

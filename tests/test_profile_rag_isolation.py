@@ -1,31 +1,29 @@
-"""Regression tests for KI-102 — profile-RAG cross-session privacy leak.
+"""Regression tests for KI-102 / KI-112 / KI-117 / KI-118 — profile-RAG safety.
 
-Pre-fix bug (caught by live 15-persona smoke test 2026-05-15):
-    1. User A saves profile → upsert_profile_chunk(session_id=A) writes a
-       chunk to the shared 'policies' Chroma collection with metadata
-       {policy_id: 'profile_A', doc_type: 'profile'} — NO session_id field.
-    2. User B sends a chat → retrieve(query, session_id=B) runs the main
-       cosine pass with no doc_type filter, so user A's profile chunk is
-       a candidate for top-k by raw cosine.
-    3. If user B's query is profile-shaped (age / dependents / health),
-       user A's profile chunk surfaces in B's context and the LLM cites
-       it as B's "User profile" — leaking A's facts into B's reply.
+KI-118 (2026-05-15) rewrites the threat model. Profile chunks are NO LONGER
+keyed by session_id; they are keyed by `name_slug` (canonical user name)
+and only NAMED users ever get embedded. Anonymous chats never write to
+Chroma — the corruption surface that the session_id keying introduced
+(the legacy `profile_anonymous` dangling row that poisoned every query
+with a `where` clause referencing session_id) is now structurally
+unreachable.
 
-Three fixes ship together:
-    KI-102.a — upsert_profile_chunk stamps session_id into Chroma metadata,
-               so the retrieve path can filter by it.
-    KI-102.b — retrieve()'s main cosine pass now passes
-               where={'doc_type': {'$ne': 'profile'}} so NO profile chunk
-               can ever surface via the cosine path. Profile chunks are
-               exclusively surfaced via the explicit per-session
-               collection.get(ids=[f'profile_{session_id}']) lookup.
-    KI-102.c — that per-session lookup gates on metadata.session_id ==
-               current session_id (triple-check) so even an ID collision
-               or legacy chunk without session_id metadata cannot leak.
+The remaining safety guarantees these tests pin:
 
-These tests run WITHOUT touching a real LLM / network. We stub the
-embedder and use chromadb's in-memory ephemeral client to verify the
-retrieve path's filter behaviour end-to-end.
+  KI-102 / KI-118 — main retrieval cosine pass MUST NOT return profile
+                    chunks (`where={'doc_type': {'$ne': 'profile'}}`).
+                    Profile chunks are exclusively surfaced via the
+                    explicit per-name lookup
+                    `collection.get(ids=[f'profile_{name_slug}'])`.
+
+  KI-118.a — upsert_profile_chunk stamps `name_slug` into Chroma metadata.
+  KI-118.b — retrieve()'s per-name lookup gates on metadata.name_slug ==
+             caller's slug (triple-check), so cross-name leakage is blocked.
+
+  KI-112 — input guards: empty/None name_slug refused; mis-shaped embeddings
+           refused. These remain in place.
+
+  KI-107 — retrieve() with a missing/non-existent profile must NEVER raise.
 
 Run:
     cd /Users/rohitsar/Developer/Insurance\\ Sales\\ Bot
@@ -68,7 +66,7 @@ def _make_ephemeral_collection():
 
 class _StubEmbedder:
     """Deterministic 8-dim embedder so semantically-similar text gets
-    semantically-similar vectors. Two profile chunks (one for each session)
+    semantically-similar vectors. Two profile chunks (one per named user)
     will end up with near-identical embeddings, which is exactly what
     triggers the pre-fix leak in the wild."""
 
@@ -92,23 +90,24 @@ class _StubEmbedder:
 
 
 # ---------------------------------------------------------------------------
-# Test cases
+# Test cases — KI-118 threat model. Profile chunks keyed by name_slug.
 # ---------------------------------------------------------------------------
 
 
 class TestProfileIsolation(unittest.TestCase):
-    """KI-102 — session A's profile must NEVER surface in session B's retrieve."""
+    """KI-118 — anonymous sessions never write to Chroma; named user A's
+    profile must NEVER surface in named user B's retrieve."""
 
     def setUp(self):
         self.coll = _make_ephemeral_collection()
-        self.session_a = f"sessA_{uuid.uuid4().hex[:6]}"
-        self.session_b = f"sessB_{uuid.uuid4().hex[:6]}"
+        self.name_a = f"alice_{uuid.uuid4().hex[:4]}"
+        self.name_b = f"bob_{uuid.uuid4().hex[:4]}"
 
-    def _seed_profile(self, session_id: str, text: str) -> None:
-        """Write a profile chunk for `session_id` directly to the test
+    def _seed_profile(self, name_slug: str, text: str) -> None:
+        """Write a profile chunk for `name_slug` directly to the test
         collection, mirroring what upsert_profile_chunk does in prod."""
         vec = asyncio.run(_StubEmbedder().embed([text]))[0]
-        chunk_id = f"profile_{session_id}"
+        chunk_id = f"profile_{name_slug}"
         self.coll.add(
             ids=[chunk_id],
             documents=[text],
@@ -116,9 +115,9 @@ class TestProfileIsolation(unittest.TestCase):
             metadatas=[{
                 "policy_id": chunk_id,
                 "insurer_slug": "profile",
-                "policy_name": f"User profile (session {session_id[:8]})",
+                "policy_name": f"User profile ({name_slug[:16]})",
                 "doc_type": "profile",
-                "session_id": session_id,  # KI-102.a — stamped at write time
+                "name_slug": name_slug,  # KI-118.a — stamped at write time
                 "source_url": "",
                 "page_start": 0,
                 "page_end": 0,
@@ -147,7 +146,7 @@ class TestProfileIsolation(unittest.TestCase):
             }],
         )
 
-    def _run_retrieve(self, query: str, session_id: str, top_k: int = 5):
+    def _run_retrieve(self, query: str, profile_name_slug: str, top_k: int = 5):
         """Invoke rag.retrieve.retrieve() with the test collection +
         stub embedder patched in."""
         from rag import retrieve as retrieve_mod
@@ -158,46 +157,46 @@ class TestProfileIsolation(unittest.TestCase):
                 query=query,
                 top_k=top_k,
                 embedder=_StubEmbedder(),
-                session_id=session_id,
+                profile_name_slug=profile_name_slug,
             ))
 
     # -----------------------------------------------------------------
-    # CASE 1 — pre-fix leak repro: session A's profile must NOT show up
-    # in session B's retrieved context.
+    # CASE 1 — pre-fix leak repro: named user A's profile must NOT show
+    # up in named user B's retrieved context.
     # -----------------------------------------------------------------
-    def test_session_a_profile_never_leaks_into_session_b(self):
+    def test_name_a_profile_never_leaks_into_name_b(self):
         self._seed_profile(
-            self.session_a,
+            self.name_a,
             "USER CONTEXT — facts about the person asking this question:\n"
             "- Age: 45 years.\n- User's own pre-existing conditions: diabetes, hypertension.",
         )
         self._seed_profile(
-            self.session_b,
+            self.name_b,
             "USER CONTEXT — facts about the person asking this question:\n"
             "- Age: 28 years.\n- First-time buyer; no existing health insurance.",
         )
         # Add a generic policy chunk so there's something to retrieve.
         self._seed_policy("hdfc_ergo_optima_secure_v1", "Standard health policy text about waiting periods.")
 
-        # Session B asks a profile-flavoured query
+        # User B asks a profile-flavoured query
         chunks = self._run_retrieve(
             query="what plan suits my age and dependents",
-            session_id=self.session_b,
+            profile_name_slug=self.name_b,
         )
 
-        leaked = [c for c in chunks if c.policy_id == f"profile_{self.session_a}"]
+        leaked = [c for c in chunks if c.policy_id == f"profile_{self.name_a}"]
         self.assertEqual(
             leaked, [],
-            f"PRIVACY LEAK: session A's profile chunk surfaced in session B's "
+            f"PRIVACY LEAK: user A's profile chunk surfaced in user B's "
             f"retrieval. Found: {[c.policy_id for c in chunks]}",
         )
 
     # -----------------------------------------------------------------
-    # CASE 2 — session B's OWN profile must still surface (positive path).
+    # CASE 2 — named user B's OWN profile must still surface (positive path).
     # -----------------------------------------------------------------
-    def test_session_b_own_profile_is_surfaced(self):
+    def test_name_b_own_profile_is_surfaced(self):
         self._seed_profile(
-            self.session_b,
+            self.name_b,
             "USER CONTEXT — facts about the person asking this question:\n"
             "- Age: 28 years.",
         )
@@ -205,62 +204,62 @@ class TestProfileIsolation(unittest.TestCase):
 
         chunks = self._run_retrieve(
             query="recommend a plan for me",
-            session_id=self.session_b,
+            profile_name_slug=self.name_b,
         )
-        own = [c for c in chunks if c.policy_id == f"profile_{self.session_b}"]
+        own = [c for c in chunks if c.policy_id == f"profile_{self.name_b}"]
         self.assertEqual(
             len(own), 1,
-            f"Session B should see its OWN profile chunk. Got: {[c.policy_id for c in chunks]}",
+            f"User B should see its OWN profile chunk. Got: {[c.policy_id for c in chunks]}",
         )
 
     # -----------------------------------------------------------------
     # CASE 3 — multiple foreign profiles + one own profile. Only the
-    # current session's chunk may be present.
+    # current user's chunk may be present.
     # -----------------------------------------------------------------
     def test_three_foreign_profiles_none_leak(self):
-        for sid in ["smokeA_1", "ki100_ve", "smokeB_B2"]:
+        for name in ["alice_1", "carol_2", "dave_3"]:
             self._seed_profile(
-                sid,
+                name,
                 f"USER CONTEXT — facts about the person asking this question:\n"
-                f"- Age: {30 + len(sid)} years.\n- Health conditions: PII for {sid}.",
+                f"- Age: {30 + len(name)} years.\n- Health conditions: PII for {name}.",
             )
         self._seed_profile(
-            self.session_b,
+            self.name_b,
             "USER CONTEXT — facts about the person asking this question:\n- Age: 28 years.",
         )
         self._seed_policy("test_policy_2", "Generic policy text.")
 
         chunks = self._run_retrieve(
             query="my age health conditions dependents",
-            session_id=self.session_b,
+            profile_name_slug=self.name_b,
             top_k=10,
         )
         profile_pids = [c.policy_id for c in chunks if c.doc_type == "profile"]
-        # Only ONE profile chunk may appear, and it must be session_b's
+        # Only ONE profile chunk may appear, and it must be name_b's
         self.assertEqual(
-            profile_pids, [f"profile_{self.session_b}"],
+            profile_pids, [f"profile_{self.name_b}"],
             f"Foreign profile leaked. profile chunks in result: {profile_pids}",
         )
 
     # -----------------------------------------------------------------
-    # CASE 4 — legacy chunk without session_id metadata is refused even
-    # if its id happens to match (defence-in-depth from KI-102.c).
+    # CASE 4 — legacy chunk without name_slug metadata is refused even
+    # if its id happens to match (defence-in-depth from KI-118.b).
     # -----------------------------------------------------------------
-    def test_legacy_chunk_without_session_id_metadata_is_refused(self):
-        # Write a chunk under id 'profile_<session_b>' but with NO
-        # session_id field (simulating a pre-fix legacy row).
+    def test_legacy_chunk_without_name_slug_metadata_is_refused(self):
+        # Write a chunk under id 'profile_<name_b>' but with NO
+        # name_slug field (simulating a pre-KI-118 legacy row).
         vec = asyncio.run(_StubEmbedder().embed(["USER CONTEXT — legacy"]))[0]
-        chunk_id = f"profile_{self.session_b}"
+        chunk_id = f"profile_{self.name_b}"
         self.coll.add(
             ids=[chunk_id],
-            documents=["USER CONTEXT — legacy row from before KI-102 deploy"],
+            documents=["USER CONTEXT — legacy row from before KI-118 deploy"],
             embeddings=[vec],
             metadatas=[{
                 "policy_id": chunk_id,
                 "insurer_slug": "profile",
                 "policy_name": "legacy profile",
                 "doc_type": "profile",
-                # No 'session_id' — simulating pre-fix state
+                # No 'name_slug' — simulating pre-fix state
                 "source_url": "",
                 "page_start": 0,
                 "page_end": 0,
@@ -271,14 +270,42 @@ class TestProfileIsolation(unittest.TestCase):
 
         chunks = self._run_retrieve(
             query="anything",
-            session_id=self.session_b,
+            profile_name_slug=self.name_b,
         )
         # Legacy chunk must be refused — the triple-check at retrieve's
-        # per-session lookup gates on metadata.session_id match.
+        # per-name lookup gates on metadata.name_slug match.
         legacy_hits = [c for c in chunks if c.policy_id == chunk_id]
         self.assertEqual(
             legacy_hits, [],
-            "Legacy profile chunk without session_id metadata must be refused. "
+            "Legacy profile chunk without name_slug metadata must be refused. "
+            f"Got: {[c.policy_id for c in chunks]}",
+        )
+
+    # -----------------------------------------------------------------
+    # CASE 5 — KI-118 core invariant: anonymous calls (no profile_name_slug)
+    # produce NO profile chunks at all, even if the collection contains
+    # foreign profile rows that match the query.
+    # -----------------------------------------------------------------
+    def test_anonymous_retrieve_never_surfaces_any_profile_chunk(self):
+        # Seed two named-user profiles
+        self._seed_profile(self.name_a, "USER CONTEXT — Age: 45 years.")
+        self._seed_profile(self.name_b, "USER CONTEXT — Age: 28 years.")
+        self._seed_policy("test_policy_anon", "Generic policy text.")
+
+        # Anonymous call — no profile_name_slug
+        from rag import retrieve as retrieve_mod
+        retrieve_mod._RETRIEVAL_CACHE.clear()
+        with mock.patch.object(retrieve_mod, "get_collection", return_value=self.coll):
+            chunks = asyncio.run(retrieve_mod.retrieve(
+                query="my age health conditions",
+                top_k=5,
+                embedder=_StubEmbedder(),
+                profile_name_slug=None,
+            ))
+        profile_chunks = [c for c in chunks if c.doc_type == "profile"]
+        self.assertEqual(
+            profile_chunks, [],
+            "PRIVACY LEAK: anonymous retrieve surfaced a profile chunk. "
             f"Got: {[c.policy_id for c in chunks]}",
         )
 
@@ -287,19 +314,18 @@ class TestProfileIsolation(unittest.TestCase):
 # KI-107 (2026-05-15) — graceful handling of Chroma get(ids=[missing]).
 # C5 port-in persona saw 3× HTTP 500 "Error executing plan: Internal error:
 # Error finding id". After KI-102 added the per-session profile-chunk
-# lookup, retrieve() runs collection.get(ids=[f"profile_{sid}"]) on EVERY
-# query — and for new sessions (no profile saved yet) and certain Chroma
-# sqlite states, that call can raise. The bare `except: pass` in the
-# pre-KI-107 code masked the failure into the orchestrator's plan executor.
-# These tests pin the contract: retrieve() with a never-existed session_id
-# must NEVER raise and must NEVER return a profile chunk.
+# lookup, retrieve() runs collection.get(ids=[f"profile_{slug}"]) on EVERY
+# named query — and for new users (no profile saved yet) and certain
+# Chroma sqlite states, that call can raise. These tests pin the contract:
+# retrieve() with a never-existed name_slug must NEVER raise and must
+# NEVER return a profile chunk.
 # ---------------------------------------------------------------------------
 
 
 class TestRetrieveSurvivesMissingProfileId(unittest.TestCase):
-    """KI-107 — retrieve(session_id=...) must be exception-safe across:
-    (1) brand-new sessions with no profile chunk yet,
-    (2) Chroma.get raising on the per-session lookup,
+    """KI-107 — retrieve(profile_name_slug=...) must be exception-safe across:
+    (1) first-time named users with no profile chunk yet,
+    (2) Chroma.get raising on the per-name lookup,
     (3) Chroma.get returning empty lists for missing ids."""
 
     def setUp(self):
@@ -324,7 +350,7 @@ class TestRetrieveSurvivesMissingProfileId(unittest.TestCase):
             }],
         )
 
-    def _run_retrieve(self, query: str, session_id: str, top_k: int = 5):
+    def _run_retrieve(self, query: str, profile_name_slug: str, top_k: int = 5):
         from rag import retrieve as retrieve_mod
         retrieve_mod._RETRIEVAL_CACHE.clear()
         with mock.patch.object(retrieve_mod, "get_collection", return_value=self.coll):
@@ -332,12 +358,12 @@ class TestRetrieveSurvivesMissingProfileId(unittest.TestCase):
                 query=query,
                 top_k=top_k,
                 embedder=_StubEmbedder(),
-                session_id=session_id,
+                profile_name_slug=profile_name_slug,
             ))
 
-    def test_retrieve_with_never_existed_session_does_not_raise(self):
-        """New session, no profile saved yet — must return policy chunks
-        without raising. Pre-KI-107 this surfaced as HTTP 500 "Error
+    def test_retrieve_with_never_existed_name_does_not_raise(self):
+        """First-time named user, no profile saved yet — must return policy
+        chunks without raising. Pre-KI-107 this surfaced as HTTP 500 "Error
         finding id" because get(ids=[missing]) raised + bare except: pass
         let downstream code index into a None result."""
         self._seed_one_policy()
@@ -345,14 +371,14 @@ class TestRetrieveSurvivesMissingProfileId(unittest.TestCase):
         # Should not raise
         chunks = self._run_retrieve(
             query="what is the waiting period for cataract",
-            session_id="never_existed_session_xyz",
+            profile_name_slug="never_existed_name_xyz",
         )
 
         # No profile chunk should appear (none was ever written)
         profile_chunks = [c for c in chunks if c.doc_type == "profile"]
         self.assertEqual(
             profile_chunks, [],
-            f"never-existed session should not produce profile chunks. "
+            f"never-existed name should not produce profile chunks. "
             f"Got: {[(c.chunk_id, c.doc_type) for c in chunks]}",
         )
         # But main cosine retrieval must still work
@@ -361,10 +387,10 @@ class TestRetrieveSurvivesMissingProfileId(unittest.TestCase):
             "main cosine pass should still return the seeded policy chunk.",
         )
 
-    def test_retrieve_handles_chroma_get_raising_on_per_session_lookup(self):
-        """Simulate the worst case: Chroma raises on the per-session
-        profile lookup (e.g. transient sqlite lock during compaction).
-        retrieve() must still return main cosine results, not 500."""
+    def test_retrieve_handles_chroma_get_raising_on_per_name_lookup(self):
+        """Simulate the worst case: Chroma raises on the per-name profile
+        lookup (e.g. transient sqlite lock during compaction). retrieve()
+        must still return main cosine results, not 500."""
         self._seed_one_policy()
 
         # Wrap the real collection so .get() raises but .query() works
@@ -390,14 +416,14 @@ class TestRetrieveSurvivesMissingProfileId(unittest.TestCase):
                 query="what is the waiting period",
                 top_k=5,
                 embedder=_StubEmbedder(),
-                session_id="some_session_id",
+                profile_name_slug="some_name_slug",
             ))
 
         # Main cosine still works → at least the seeded policy chunk returns
         self.assertGreater(
             len(chunks), 0,
             "retrieve() should fall back to main cosine results when "
-            "the per-session profile lookup raises.",
+            "the per-name profile lookup raises.",
         )
         # No profile chunk surfaced
         self.assertEqual(
@@ -437,16 +463,16 @@ class TestRetrieveSurvivesMissingProfileId(unittest.TestCase):
 
 # ---------------------------------------------------------------------------
 # Standalone upsert metadata test — no Chroma client; just verify the
-# upsert builds metadata containing session_id.
+# upsert builds metadata containing name_slug.
 # ---------------------------------------------------------------------------
 
 
-class TestUpsertStampsSessionId(unittest.TestCase):
-    """KI-102.a — upsert_profile_chunk MUST write session_id into the
+class TestUpsertStampsNameSlug(unittest.TestCase):
+    """KI-118.a — upsert_profile_chunk MUST write name_slug into the
     chunk's Chroma metadata. Without it, the retrieve filter can't
-    distinguish session A's profile from session B's."""
+    distinguish user A's profile from user B's."""
 
-    def test_upsert_writes_session_id_to_metadata(self):
+    def test_upsert_writes_name_slug_to_metadata(self):
         from backend import profile_rag
 
         captured: dict = {}
@@ -471,7 +497,7 @@ class TestUpsertStampsSessionId(unittest.TestCase):
                 return [[0.1] * 384 for _ in texts]
 
         fake_coll = _FakeColl()
-        sid = f"test_{uuid.uuid4().hex[:6]}"
+        slug = f"alice_{uuid.uuid4().hex[:6]}"
         profile = {
             "age": 32,
             "dependents": "self_spouse",
@@ -481,45 +507,37 @@ class TestUpsertStampsSessionId(unittest.TestCase):
 
         with mock.patch.object(profile_rag, "_get_collection", return_value=fake_coll), \
              mock.patch("backend.providers.local_embeddings.LocalEmbeddings", _FakeEmbedder):
-            asyncio.run(profile_rag.upsert_profile_chunk(sid, profile))
+            asyncio.run(profile_rag.upsert_profile_chunk(slug, profile))
 
         self.assertIn("metadatas", captured, "upsert never called coll.add")
         meta = captured["metadatas"][0]
         self.assertEqual(
-            meta.get("session_id"), sid,
-            f"profile chunk metadata missing session_id. Got: {meta}",
+            meta.get("name_slug"), slug,
+            f"profile chunk metadata missing name_slug. Got: {meta}",
         )
         self.assertEqual(meta.get("doc_type"), "profile")
-        self.assertEqual(captured["ids"], [f"profile_{sid}"])
+        self.assertEqual(captured["ids"], [f"profile_{slug}"])
 
 
 # ---------------------------------------------------------------------------
-# KI-112 (2026-05-15) — input validation hardening.
+# KI-112 (2026-05-15) — input validation hardening (still applies post-KI-118).
 #
-# Root cause of the HNSW corruption: KI-102's initial deploy wrote a profile
-# chunk under id "profile_anonymous" with NO session_id metadata. That legacy
-# chunk poisoned every subsequent collection.query() that referenced
-# session_id or doc_type$ne in the where clause — Chroma's plan executor
-# raised "Error finding id" against the dangling row's HNSW pointer, and
-# corruption propagated across HNSW segments (1580 / 7356 chunks turned
-# unfetchable on full collection rebuild).
+# Root cause of the historical HNSW corruption: KI-102's initial deploy wrote
+# a profile chunk under id "profile_anonymous" with NO session_id metadata.
+# That legacy chunk poisoned every subsequent collection.query() that
+# referenced session_id or doc_type$ne in the where clause — Chroma's plan
+# executor raised "Error finding id" against the dangling row's HNSW pointer.
 #
-# Two guards added in upsert_profile_chunk:
-#   1) session_id must be a non-empty str (rejects "", None, falsy values
-#      that would write under "profile_" / "profile_anonymous" etc).
-#   2) embedding shape must match the embedder's declared dimension and
-#      contain no None values (rejects mis-shaped vectors that would
-#      corrupt HNSW segment files).
-#
+# KI-118 moved the key from session_id to name_slug; the guards are the same.
 # These tests pin the contract: bad inputs MUST be rejected at write time,
-# not silently corrupt the index for future sessions.
+# not silently corrupt the index for future users.
 # ---------------------------------------------------------------------------
 
 
 class TestUpsertRejectsBadInputs(unittest.TestCase):
-    """KI-112 — bad session_id or embedding shape must NOT reach Chroma."""
+    """KI-112 / KI-118 — bad name_slug or embedding shape must NOT reach Chroma."""
 
-    def test_upsert_rejects_empty_session_id(self):
+    def test_upsert_rejects_empty_name_slug(self):
         from backend import profile_rag
 
         captured: dict = {"add_called": False}
@@ -537,14 +555,14 @@ class TestUpsertRejectsBadInputs(unittest.TestCase):
             async def embed(self, texts, input_type="document"):
                 return [[0.1] * 384 for _ in texts]
 
-        for bad_sid in ["", "   ", None]:
+        for bad_slug in ["", "   ", None]:
             with mock.patch.object(profile_rag, "_get_collection", return_value=_FakeColl()), \
                  mock.patch("backend.providers.local_embeddings.LocalEmbeddings", _FakeEmbedder):
                 captured["add_called"] = False
-                asyncio.run(profile_rag.upsert_profile_chunk(bad_sid, {"age": 30}))
+                asyncio.run(profile_rag.upsert_profile_chunk(bad_slug, {"age": 30}))
             self.assertFalse(
                 captured["add_called"],
-                f"upsert MUST refuse session_id={bad_sid!r} — bad write would "
+                f"upsert MUST refuse name_slug={bad_slug!r} — bad write would "
                 "corrupt the policies collection.",
             )
 
@@ -573,7 +591,7 @@ class TestUpsertRejectsBadInputs(unittest.TestCase):
         with mock.patch.object(profile_rag, "_get_collection", return_value=_FakeColl()), \
              mock.patch("backend.providers.local_embeddings.LocalEmbeddings", _BadDimEmbedder):
             asyncio.run(profile_rag.upsert_profile_chunk(
-                "valid_session_xyz", {"age": 30, "dependents": "self"},
+                "valid_slug_xyz", {"age": 30, "dependents": "self"},
             ))
 
         self.assertFalse(
@@ -605,7 +623,7 @@ class TestUpsertRejectsBadInputs(unittest.TestCase):
         with mock.patch.object(profile_rag, "_get_collection", return_value=_FakeColl()), \
              mock.patch("backend.providers.local_embeddings.LocalEmbeddings", _NoneVecEmbedder):
             asyncio.run(profile_rag.upsert_profile_chunk(
-                "valid_session_xyz", {"age": 30, "dependents": "self"},
+                "valid_slug_xyz", {"age": 30, "dependents": "self"},
             ))
 
         self.assertFalse(
@@ -636,10 +654,10 @@ class TestUpsertRejectsBadInputs(unittest.TestCase):
         with mock.patch.object(profile_rag, "_get_collection", return_value=_FakeColl()), \
              mock.patch("backend.providers.local_embeddings.LocalEmbeddings", _GoodEmbedder):
             asyncio.run(profile_rag.upsert_profile_chunk(
-                "good_session", {"age": 30, "dependents": "self"},
+                "good_slug", {"age": 30, "dependents": "self"},
             ))
 
-        self.assertEqual(captured.get("ids"), ["profile_good_session"])
+        self.assertEqual(captured.get("ids"), ["profile_good_slug"])
         self.assertEqual(len(captured["embeddings"][0]), 384)
 
 

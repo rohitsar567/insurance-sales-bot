@@ -73,7 +73,7 @@ def _stub_brain_pick(intent: str, language: str):
     return BrainPick(_StubProvider(), f"stub::{intent}")
 
 
-async def _stub_retrieve(query, top_k=5, policy_ids=None, session_id=None):
+async def _stub_retrieve(query, top_k=5, policy_ids=None, profile_name_slug=None, session_id=None):
     return []  # empty context — perfectly valid for these tests
 
 

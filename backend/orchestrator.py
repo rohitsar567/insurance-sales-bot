@@ -548,26 +548,30 @@ async def handle_turn(
             session.free_form_session = True
             session._flush()
 
-        # KI-063 — opportunistic profile-chunk re-upsert if any field changed
-        # so this turn's downstream retrieval (when complete=true triggers a
-        # follow-up recommendation) sees the latest profile.
-        if fact_find_profile_updates:
+        # KI-118 (2026-05-15) — profile-chunk upsert is gated on a known
+        # name. Anonymous sessions never write to Chroma; the corruption
+        # surface (profile_anonymous dangling row) is eliminated. Named
+        # users get their chunk keyed by canonical name slug, not session_id.
+        if fact_find_profile_updates and session.profile.name:
             try:
                 from backend.profile_rag import upsert_profile_chunk
+                from backend.profile_store import _normalise_name
                 p = session.profile
-                await upsert_profile_chunk(session_id or "anonymous", {
-                    "age": p.age,
-                    "dependents": p.dependents,
-                    "income_band": p.income_band,
-                    "existing_cover_inr": p.existing_cover_inr,
-                    "primary_goal": p.primary_goal,
-                    "location_tier": p.location_tier,
-                    "parents_to_insure": p.parents_to_insure,
-                    "parents_age_max": p.parents_age_max,
-                    "parents_has_ped": p.parents_has_ped,
-                    "budget_band": p.budget_band,
-                    "health_conditions": p.health_conditions,
-                })
+                slug = _normalise_name(p.name or "")
+                if slug:
+                    await upsert_profile_chunk(slug, {
+                        "age": p.age,
+                        "dependents": p.dependents,
+                        "income_band": p.income_band,
+                        "existing_cover_inr": p.existing_cover_inr,
+                        "primary_goal": p.primary_goal,
+                        "location_tier": p.location_tier,
+                        "parents_to_insure": p.parents_to_insure,
+                        "parents_age_max": p.parents_age_max,
+                        "parents_has_ped": p.parents_has_ped,
+                        "budget_band": p.budget_band,
+                        "health_conditions": p.health_conditions,
+                    })
             except Exception as e:
                 logging.warning(
                     "fact_find_brain profile-chunk upsert failed (session=%s): %s: %s",
@@ -577,9 +581,18 @@ async def handle_turn(
         # KI-040 / KI-062 — named-profile persistence preserved. If the brain
         # captured (or already has) a name on the profile, write the merged
         # profile to disk so the next visit can welcome the user back.
+        # KI-118 — also trigger one-shot rehydrate when name was newly captured
+        # this turn so any stored profile from a prior visit gets merged in.
         if session.profile.name:
             try:
                 from backend.profile_store import save_profile
+                # If name was newly captured this turn AND there's a stored
+                # profile under that name, merge in the stored fields BEFORE
+                # writing back (so we don't immediately overwrite the stored
+                # snapshot with a partial new one).
+                if "name" in fact_find_profile_updates:
+                    from backend.session_state import rehydrate_by_name
+                    rehydrate_by_name(session, session.profile.name)
                 save_profile(session.profile.name, session.profile, session_id=session_id)
             except Exception:
                 pass
@@ -707,23 +720,29 @@ async def handle_turn(
                 else:
                     session.update_profile_field(field_name, new_value)
                     profile_updates_applied[field_name] = new_value
-            # Re-upsert profile chunk so retrieval sees fresh profile THIS turn
+            # Re-upsert profile chunk so retrieval sees fresh profile THIS turn.
+            # KI-118 (2026-05-15) — gated on a known name; anonymous sessions
+            # never write to Chroma.
             try:
-                from backend.profile_rag import upsert_profile_chunk
-                profile_dict_for_chunk = {
-                    "age": session.profile.age,
-                    "dependents": session.profile.dependents,
-                    "income_band": session.profile.income_band,
-                    "existing_cover_inr": session.profile.existing_cover_inr,
-                    "primary_goal": session.profile.primary_goal,
-                    "location_tier": session.profile.location_tier,
-                    "parents_to_insure": session.profile.parents_to_insure,
-                    "parents_age_max": session.profile.parents_age_max,
-                    "parents_has_ped": session.profile.parents_has_ped,
-                    "budget_band": session.profile.budget_band,
-                    "health_conditions": session.profile.health_conditions,
-                }
-                await upsert_profile_chunk(session_id or "anonymous", profile_dict_for_chunk)
+                if session.profile.name:
+                    from backend.profile_rag import upsert_profile_chunk
+                    from backend.profile_store import _normalise_name
+                    slug = _normalise_name(session.profile.name)
+                    if slug:
+                        profile_dict_for_chunk = {
+                            "age": session.profile.age,
+                            "dependents": session.profile.dependents,
+                            "income_band": session.profile.income_band,
+                            "existing_cover_inr": session.profile.existing_cover_inr,
+                            "primary_goal": session.profile.primary_goal,
+                            "location_tier": session.profile.location_tier,
+                            "parents_to_insure": session.profile.parents_to_insure,
+                            "parents_age_max": session.profile.parents_age_max,
+                            "parents_has_ped": session.profile.parents_has_ped,
+                            "budget_band": session.profile.budget_band,
+                            "health_conditions": session.profile.health_conditions,
+                        }
+                        await upsert_profile_chunk(slug, profile_dict_for_chunk)
             except Exception as e:
                 # KI-005 — log profile-chunk upsert failures so we can see
                 # when Chroma is locking or schema-drifting. The chat still
@@ -764,10 +783,22 @@ async def handle_turn(
     if intent in ("recommendation", "comparison") and not policy_filter_ids:
         effective_top_k = max(top_k, 12)
 
+    # KI-118 (2026-05-15) — profile chunks are keyed by name_slug, not
+    # session_id. Pass the slug only when the live session has a captured
+    # name; anonymous sessions get retrieval without a profile-boost pass.
+    profile_slug_for_retrieve: Optional[str] = None
+    if session.profile.name:
+        try:
+            from backend.profile_store import _normalise_name
+            profile_slug_for_retrieve = _normalise_name(session.profile.name) or None
+        except Exception:
+            profile_slug_for_retrieve = None
+
     chunks: list[RetrievedChunk] = await retrieve(
         query=user_text,
         top_k=effective_top_k,
         policy_ids=policy_filter_ids,
+        profile_name_slug=profile_slug_for_retrieve,
         session_id=session_id,
     )
     context_str = format_for_llm_context(chunks)

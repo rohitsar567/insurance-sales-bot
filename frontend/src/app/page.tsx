@@ -83,7 +83,9 @@ export default function Page() {
   // turn) — drives the score-gate on marketplace cards + detail modal.
   useEffect(() => {
     if (typeof window !== "undefined" && sessionId) {
-      localStorage.setItem("insurance_session_id", sessionId);
+      // KI-118 (2026-05-15) — sessionStorage clears on tab close so no
+      // persistent ghost session. Within-tab refresh still rehydrates.
+      sessionStorage.setItem("insurance_session_id", sessionId);
       getProfileCompleteness(sessionId)
         .then(setProfileCompleteness)
         .catch(() => setProfileCompleteness(null));
@@ -104,7 +106,10 @@ export default function Page() {
         localStorage.removeItem("insurance_chat_messages");
       }
     }
-    const savedSession = localStorage.getItem("insurance_session_id");
+    // KI-118 (2026-05-15) — sessionStorage clears on tab close. Cross-tab
+    // re-entry is name-based: when the user provides their name in chat,
+    // the backend pulls the named profile via profile_store.load_profile().
+    const savedSession = sessionStorage.getItem("insurance_session_id");
     if (savedSession) setSessionId(savedSession);
   }, []);
 
@@ -250,12 +255,12 @@ export default function Page() {
         if (res.session_id) {
           setSessionId(res.session_id);
           if (typeof window !== "undefined") {
-            localStorage.setItem("insurance_session_id", res.session_id);
+            sessionStorage.setItem("insurance_session_id", res.session_id);
           }
         } else {
           setSessionId(undefined);
           if (typeof window !== "undefined") {
-            localStorage.removeItem("insurance_session_id");
+            sessionStorage.removeItem("insurance_session_id");
           }
         }
       } catch (e) {
@@ -263,7 +268,7 @@ export default function Page() {
         // Even if backend failed, drop client-side session so next message starts fresh
         setSessionId(undefined);
         if (typeof window !== "undefined") {
-          localStorage.removeItem("insurance_session_id");
+          sessionStorage.removeItem("insurance_session_id");
         }
       }
     }
@@ -971,7 +976,7 @@ function ProfileBuilderPanel({
     if (!sid) {
       sid = `s_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
       setSessionId(sid);
-      if (typeof window !== "undefined") localStorage.setItem("insurance_session_id", sid);
+      if (typeof window !== "undefined") sessionStorage.setItem("insurance_session_id", sid);
     }
     try {
       const resp = await postProfileUpdate({
@@ -2619,7 +2624,7 @@ function PolicyDetailModal({ policy, onClose }: { policy: MarketplacePolicy; onC
     // Profile completeness gates whether we render the per-user grade.
     // Below threshold: show universal grade only (insurer-quality-led) with a
     // CTA to complete the profile.
-    const sid = typeof window !== "undefined" ? localStorage.getItem("insurance_session_id") || undefined : undefined;
+    const sid = typeof window !== "undefined" ? sessionStorage.getItem("insurance_session_id") || undefined : undefined;
     getProfileCompleteness(sid).then(setCompleteness).catch(() => setCompleteness(null));
   }, [policy.policy_id, policy.insurer_slug]);
   const isPersonalized = completeness?.is_personalized === true;

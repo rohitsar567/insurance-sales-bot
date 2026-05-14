@@ -198,6 +198,7 @@ async def retrieve(
     policy_ids: Optional[list[str]] = None,
     insurer_slugs: Optional[list[str]] = None,
     embedder: Optional[VoyageEmbeddings] = None,
+    profile_name_slug: Optional[str] = None,
     session_id: Optional[str] = None,
 ) -> list[RetrievedChunk]:
     """Embed the query and return top-k most similar chunks.
@@ -210,6 +211,12 @@ async def retrieve(
     merges the top 3 of those (score-boosted ×1.2) into the result set.
     This ensures the brain sees regulatory ceilings even when policy
     chunks dominate raw cosine.
+
+    KI-118 (2026-05-15) — profile chunks are keyed by `profile_name_slug`
+    (canonical user name) instead of session_id. Only named users have a
+    profile chunk to boost. `session_id` is retained for the per-session
+    quarantine (user-uploaded PDF) lookup but is no longer used for
+    profile boosting.
     """
     # KI-034 — short-circuit identical-query re-asks via the LRU cache.
     cache_key = _cache_key(query, top_k, policy_ids, insurer_slugs)
@@ -295,29 +302,28 @@ async def retrieve(
             effective_top_k, where, type(e).__name__, str(e)[:300],
         )
 
-    # Profile boost pass — when the orchestrator passes a session_id, look
-    # up THAT user's profile chunk in Chroma. Inject it at the top of the
-    # context (always, not just on high cosine) so the LLM sees the user
-    # context block before any policy text. Mirrors the regulatory-boost
-    # pattern below.
-    if session_id:
-        profile_chunk_id = f"profile_{session_id}"
-        # KI-102 — defence-in-depth. Filter by BOTH id AND session_id
-        # metadata so any future ID collision (or migration-era chunk
-        # written under a shared id) still can't leak another user's
-        # profile into this session's context.
+    # Profile boost pass — KI-118 (2026-05-15). Profile chunks are now
+    # keyed by `profile_name_slug` (canonical user name), not session_id.
+    # The orchestrator passes the slug only when the live session has a
+    # known name; anonymous chats skip this branch entirely.
+    if profile_name_slug:
+        profile_chunk_id = f"profile_{profile_name_slug}"
+        # KI-118 — filter by BOTH id AND name_slug metadata so any future
+        # ID collision (or migration-era chunk written under a shared id)
+        # still can't leak the wrong profile into this user's context.
         #
-        # KI-107 (2026-05-15) — route through _safe_collection_get because new
-        # sessions (no profile saved yet) and certain transient Chroma sqlite
-        # states cause collection.get(ids=[missing_id]) to raise instead of
-        # returning empty lists. Before this fix the bare `except: pass` here
-        # masked the failure, the orchestrator's plan-executor still saw an
-        # AttributeError on the swallowed-None path, and the user got HTTP
-        # 500 "Error executing plan: Internal error: Error finding id".
+        # KI-107 (2026-05-15) — route through _safe_collection_get because
+        # first-time named users (no profile saved yet) and certain transient
+        # Chroma sqlite states cause collection.get(ids=[missing_id]) to
+        # raise instead of returning empty lists. Before this fix the bare
+        # `except: pass` masked the failure, the orchestrator's plan-executor
+        # still saw an AttributeError on the swallowed-None path, and the
+        # user got HTTP 500 "Error executing plan: Internal error: Error
+        # finding id".
         prof_res = _safe_collection_get(
             collection,
             ids=[profile_chunk_id],
-            where={"session_id": session_id},
+            where={"name_slug": profile_name_slug},
             include=["documents", "metadatas"],
         )
         # prof_res is None on exception, a dict (possibly with empty lists) on success.
@@ -326,9 +332,9 @@ async def retrieve(
             metadatas = prof_res.get("metadatas") or []
             p_doc = documents[0] if documents else ""
             p_meta = metadatas[0] if metadatas else {}
-            # Triple-check: even if Chroma returns a row, refuse it unless
-            # metadata.session_id matches. Belt + suspenders + parachute.
-            if p_doc and p_meta.get("session_id") == session_id:
+            # Triple-check: refuse the row unless its metadata.name_slug
+            # matches the caller's slug. Belt + suspenders + parachute.
+            if p_doc and p_meta.get("name_slug") == profile_name_slug:
                 # Profile gets max score (1.0) so it always tops the context
                 profile_chunk = _build_chunk(profile_chunk_id, p_doc, p_meta, 1.0)
                 # Prepend; trim to top_k so we keep budget
