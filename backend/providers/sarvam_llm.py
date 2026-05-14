@@ -10,12 +10,21 @@ Auth: header `api-subscription-key: <SARVAM_API_KEY>` (Sarvam) or
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, Union
 
 import httpx
 
 from backend.config import settings
 from backend.providers.base import ChatMessage, LLMProvider, LLMResult
+
+
+# KI-099 — split httpx.Timeout mirrors KI-084 on NIM. Connect/write/pool
+# tight; read still generous since Sarvam can legitimately stream long.
+# Replaces the prior monolithic timeout=60.0 which let a stalled socket
+# hold a slot past any outer cancellation — amplified by Sarvam's 3x
+# per-turn call pattern (EN-translate inbound, Indic-translate outbound,
+# Hinglish back-translate check).
+_SARVAM_TIMEOUT = httpx.Timeout(connect=2.0, read=20.0, write=2.0, pool=2.0)
 
 
 class SarvamLLM(LLMProvider):
@@ -26,11 +35,13 @@ class SarvamLLM(LLMProvider):
         self,
         api_key: Optional[str] = None,
         model: str = settings.SARVAM_LLM_MODEL,
-        timeout: float = 60.0,
+        timeout: Optional[Union[float, httpx.Timeout]] = None,
     ):
         self.api_key = api_key or settings.SARVAM_API_KEY
         self.model = model
-        self.timeout = timeout
+        # KI-099 — default to the split-Timeout; only override when caller
+        # explicitly passes a value (preserves backward-compat for tests).
+        self.timeout = timeout if timeout is not None else _SARVAM_TIMEOUT
         if not self.api_key:
             raise RuntimeError("SARVAM_API_KEY not set in .env")
 

@@ -17,8 +17,21 @@ Why this is better than either model alone:
 
 from __future__ import annotations
 
+import asyncio
+import logging
+
 from backend.providers.base import ChatMessage
 from backend.providers.sarvam_llm import SarvamLLM
+
+
+# KI-099 — outer per-call wait_for. Even with KI-099's split httpx.Timeout
+# in sarvam_llm.py, an outer asyncio.wait_for guarantees the orchestrator
+# slot can't be held by a wedged Sarvam call past this ceiling. 20s
+# matches the inner read timeout — if httpx hasn't returned by then,
+# something is genuinely wedged.
+_SARVAM_CALL_TIMEOUT = 20.0
+
+_log = logging.getLogger(__name__)
 
 
 _TRANSLATE_TO_EN_SYSTEM = """You are a precise translator from Hindi / Hinglish / code-switched Indian English to clean standard English.
@@ -52,14 +65,29 @@ async def translate_to_english(text: str, sarvam: SarvamLLM | None = None) -> st
     if not text.strip():
         return text
     sarvam = sarvam or SarvamLLM()
-    res = await sarvam.chat(
-        messages=[
-            ChatMessage(role="system", content=_TRANSLATE_TO_EN_SYSTEM),
-            ChatMessage(role="user", content=text),
-        ],
-        temperature=0.0,
-        max_tokens=400,
-    )
+    try:
+        # KI-099 — outer wait_for caps end-to-end Sarvam latency at 20s even
+        # if httpx's inner read-timeout fails to fire. On timeout we
+        # passthrough the original text — callers in orchestrator.py /
+        # translation_check.py already tolerate the original text (they
+        # log + degrade gracefully, see KI-004 path).
+        res = await asyncio.wait_for(
+            sarvam.chat(
+                messages=[
+                    ChatMessage(role="system", content=_TRANSLATE_TO_EN_SYSTEM),
+                    ChatMessage(role="user", content=text),
+                ],
+                temperature=0.0,
+                max_tokens=400,
+            ),
+            timeout=_SARVAM_CALL_TIMEOUT,
+        )
+    except asyncio.TimeoutError:
+        _log.warning(
+            "sarvam translate_to_english wait_for timed out after %.1fs — passthrough",
+            _SARVAM_CALL_TIMEOUT,
+        )
+        return text
     out = res.text.strip()
     # Strip <think> tags if Sarvam-M went into reasoning mode
     from backend.persona import strip_think_tags
@@ -79,14 +107,28 @@ async def translate_to_indic(
     if not english.strip():
         return english
     sarvam = sarvam or SarvamLLM()
-    res = await sarvam.chat(
-        messages=[
-            ChatMessage(role="system", content=_TRANSLATE_TO_INDIC_SYSTEM),
-            ChatMessage(role="user", content=english),
-        ],
-        temperature=0.2,
-        max_tokens=600,
-    )
+    try:
+        # KI-099 — see translate_to_english for rationale. On timeout we
+        # passthrough the English; orchestrator.py treats an empty/equal
+        # Indic reply as "no cascade translation" and falls back to the
+        # English reply unchanged (existing behaviour for empty reply_indic).
+        res = await asyncio.wait_for(
+            sarvam.chat(
+                messages=[
+                    ChatMessage(role="system", content=_TRANSLATE_TO_INDIC_SYSTEM),
+                    ChatMessage(role="user", content=english),
+                ],
+                temperature=0.2,
+                max_tokens=600,
+            ),
+            timeout=_SARVAM_CALL_TIMEOUT,
+        )
+    except asyncio.TimeoutError:
+        _log.warning(
+            "sarvam translate_to_indic wait_for timed out after %.1fs — passthrough",
+            _SARVAM_CALL_TIMEOUT,
+        )
+        return english
     out = res.text.strip()
     from backend.persona import strip_think_tags
     return strip_think_tags(out) or english

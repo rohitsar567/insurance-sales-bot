@@ -662,6 +662,18 @@ class NimChainLLM(LLMProvider):
         # touched this turn. This is the pre-KI-080 graceful-degradation
         # behaviour preserved for the (rare) double-failure case.
         try:
+            # KI-099 — bound the probe-refresh cost. On a hot user-facing turn, a
+            # 60-80s probe walk through ~10 candidates is unacceptable. If we've
+            # already spent half the call's total_budget_s before reaching here,
+            # skip the probe refresh and raise immediately — the next turn will
+            # benefit from the existing probe cache or the background probe loop
+            # (300s cadence) will refresh it.
+            elapsed = time.time() - call_t0
+            if elapsed > self.total_budget_s * 0.4:
+                raise RuntimeError(
+                    f"NimChainLLM budget exhausted before probe-refresh ({elapsed:.1f}s > {self.total_budget_s * 0.4:.1f}s); "
+                    f"skipping probe_all + raising"
+                )
             await llm_health.probe_all()
             refreshed = llm_health.filter_chain(allowed_chain)
             for model in refreshed:

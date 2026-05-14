@@ -12,6 +12,8 @@ For each user turn:
 
 from __future__ import annotations
 
+import asyncio
+import logging
 import re
 import time
 from dataclasses import dataclass, field
@@ -546,7 +548,20 @@ async def handle_turn(
             extracted = None  # eval mode OR fact-find turn — bypass LLM extractor
         else:
             from backend.profile_extractor import extract_profile_updates
-            extracted = await extract_profile_updates(user_text, session.profile)
+            # KI-098 — outer budget cap. extract_profile_updates calls a
+            # NIM LLM which can hang up to 120s on its default timeout when
+            # the upstream chain is in synchronous probe_all() refresh. Skip
+            # the merge on timeout rather than stall the user-facing turn.
+            try:
+                extracted = await asyncio.wait_for(
+                    extract_profile_updates(user_text, session.profile),
+                    timeout=12.0,
+                )
+            except asyncio.TimeoutError:
+                extracted = None
+                logging.warning(
+                    "extractor timeout, skipping merge (session=%s)", session_id,
+                )
         if extracted:
             for field_name, new_value in extracted.items():
                 # KI-094 — never let the LLM extractor CLEAR a filled field.
@@ -596,6 +611,13 @@ async def handle_turn(
                     "profile-chunk upsert failed (session=%s): %s: %s",
                     session_id, type(e).__name__, str(e)[:200],
                 )
+    except asyncio.TimeoutError:
+        # KI-098 — explicit timeout path (in case any awaited call inside the
+        # try-block other than extract_profile_updates raises TimeoutError).
+        extracted = None
+        logging.warning(
+            "extractor timeout, skipping merge (session=%s)", session_id,
+        )
     except Exception as e:
         # KI-006 — log profile-extraction failures (extractor LLM down,
         # malformed model output, etc.). The chat ships unaffected.
@@ -636,7 +658,15 @@ async def handle_turn(
     # responses with low voice latency. The judge model (Meta Llama-4 Maverick)
     # in faithfulness.py is from a different company, architecture, and
     # training corpus — the brain does not mark its own homework.
-    llm_result = await pick.provider.chat(messages=messages, temperature=0.2, max_tokens=1500)
+    # KI-098 — outer budget cap on the main brain call. Provider default
+    # timeouts (120s) can hang the user-facing turn when the upstream chain
+    # is in synchronous probe_all() refresh. 30s is generous enough for
+    # normal MoE responses but short enough to fall through to the chain's
+    # error path before the user gives up.
+    llm_result = await asyncio.wait_for(
+        pick.provider.chat(messages=messages, temperature=0.2, max_tokens=1500),
+        timeout=30.0,
+    )
 
     raw = llm_result.text
     reply = strip_think_tags(raw)
@@ -683,21 +713,37 @@ async def handle_turn(
         if not gate1_failure:
             try:
                 secondary = NvidiaNimLLM(model=NIM_JUDGE_MODEL)
-                second = await secondary.chat(messages=messages, temperature=0.1, max_tokens=1500)
-                second_reply = strip_think_tags(second.text)
-                # Cross-check brain was NIM_JUDGE_MODEL — pass its id so the
-                # judge for THIS retry also excludes that model+family.
-                second_verdict = await check_faithfulness(
-                    reply=second_reply, chunks=chunks, user_text=user_text, run_llm_judge=True,
-                    brain_model_used=getattr(second, "model", None) or NIM_JUDGE_MODEL,
-                )
-                if second_verdict.passed:
-                    reply = second_reply
-                    pick = BrainPick(secondary, f"crosscheck-rescued-by-maverick")
-                    verdict = second_verdict
-                else:
+                # KI-098 — outer budget cap on the cross-check retry. This is
+                # a RARE fallback for hallucination-blocked replies; skipping
+                # it on timeout is strictly safer than hanging the turn 60-120s
+                # while the upstream chain refreshes via probe_all().
+                try:
+                    second = await asyncio.wait_for(
+                        secondary.chat(messages=messages, temperature=0.1, max_tokens=1500),
+                        timeout=20.0,
+                    )
+                except asyncio.TimeoutError:
+                    logging.warning(
+                        "crosscheck retry timeout, skipping retry (session=%s)", session_id,
+                    )
                     blocked = True
                     reply = verdict.suggested_reply or "I don't have grounded evidence for that. Could you rephrase?"
+                    second = None
+                if second is not None:
+                    second_reply = strip_think_tags(second.text)
+                    # Cross-check brain was NIM_JUDGE_MODEL — pass its id so the
+                    # judge for THIS retry also excludes that model+family.
+                    second_verdict = await check_faithfulness(
+                        reply=second_reply, chunks=chunks, user_text=user_text, run_llm_judge=True,
+                        brain_model_used=getattr(second, "model", None) or NIM_JUDGE_MODEL,
+                    )
+                    if second_verdict.passed:
+                        reply = second_reply
+                        pick = BrainPick(secondary, f"crosscheck-rescued-by-maverick")
+                        verdict = second_verdict
+                    else:
+                        blocked = True
+                        reply = verdict.suggested_reply or "I don't have grounded evidence for that. Could you rephrase?"
             except Exception:
                 blocked = True
                 reply = verdict.suggested_reply or "I don't have grounded evidence for that. Could you rephrase?"
