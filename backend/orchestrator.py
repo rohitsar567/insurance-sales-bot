@@ -238,6 +238,11 @@ async def handle_turn(
     raw = llm_result.text
     reply = strip_think_tags(raw)
 
+    # Capture the EXACT model that produced the reply — flows into the
+    # faithfulness LLM-judge so it can never grade its own homework
+    # (same model OR same family is excluded from the judge chain).
+    brain_model_actual = getattr(llm_result, "model", None) or getattr(pick.provider, "model", None)
+
     # 5. FAITHFULNESS GATE — every reply runs through 4-gate verification.
     #    If any gate fails, replace the reply with a safe refusal. The original
     #    blocked reply is logged to logs/hallucinations.jsonl for audit.
@@ -246,6 +251,7 @@ async def handle_turn(
         chunks=chunks,
         user_text=user_text,
         run_llm_judge=True,
+        brain_model_used=brain_model_actual,
     )
 
     # 5a. CROSS-CHECK RETRY — if faithfulness blocked AND the failure isn't
@@ -262,8 +268,11 @@ async def handle_turn(
                 secondary = NvidiaNimLLM(model=NIM_JUDGE_MODEL)
                 second = await secondary.chat(messages=messages, temperature=0.1, max_tokens=1500)
                 second_reply = strip_think_tags(second.text)
+                # Cross-check brain was NIM_JUDGE_MODEL — pass its id so the
+                # judge for THIS retry also excludes that model+family.
                 second_verdict = await check_faithfulness(
                     reply=second_reply, chunks=chunks, user_text=user_text, run_llm_judge=True,
+                    brain_model_used=getattr(second, "model", None) or NIM_JUDGE_MODEL,
                 )
                 if second_verdict.passed:
                     reply = second_reply

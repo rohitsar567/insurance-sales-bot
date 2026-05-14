@@ -311,21 +311,64 @@ class NimChainLLM(LLMProvider):
             )
         return NvidiaNimLLM(model=model_id, api_key=self.api_key, timeout=timeout)
 
+    @staticmethod
+    def _family_of(model_id: str) -> str:
+        """Coarse family bucket for cross-grading-independence checks.
+
+        Two models in the SAME family must never be paired as brain ↔ judge
+        because they share weights / training corpus / decision surface, so
+        the judge would effectively grade its own siblings' output.
+        Families: 'qwen', 'mistral', 'meta', 'openai', 'deepseek', 'moonshot',
+        'minimax', 'nvidia', 'unknown'.
+        """
+        m = model_id.lower()
+        # Strip provider prefix first so 'groq:llama-3.3-70b' → 'meta' (it IS Meta Llama)
+        if ":" in m:
+            m = m.split(":", 1)[1]
+        if "qwen" in m: return "qwen"
+        if "mistral" in m: return "mistral"
+        if "llama" in m or m.startswith("meta/"): return "meta"
+        if "gpt-oss" in m or m.startswith("openai/"): return "openai"
+        if "deepseek" in m: return "deepseek"
+        if "kimi" in m or m.startswith("moonshot"): return "moonshot"
+        if "minimax" in m: return "minimax"
+        if "nemotron" in m or m.startswith("nvidia/"): return "nvidia"
+        return "unknown"
+
     async def chat(
         self,
         messages: list[ChatMessage],
         temperature: float = 0.2,
         max_tokens: int = 1024,
         response_format: Optional[dict] = None,
+        exclude_models: Optional[list[str]] = None,
+        exclude_families: Optional[list[str]] = None,
     ) -> LLMResult:
+        # Apply caller's exclusion list FIRST (brain doesn't grade own homework).
+        # exclude_models: skip exact model IDs (handles same-model collision)
+        # exclude_families: skip everything in those families (handles weight-sharing siblings)
+        chain = self.chain
+        if exclude_models or exclude_families:
+            excl_m = set(exclude_models or [])
+            excl_f = set(exclude_families or [])
+            chain = [m for m in chain
+                     if m not in excl_m and self._family_of(m) not in excl_f]
+            if not chain:
+                # Every candidate excluded — relax family constraint, keep exact model
+                # constraint (the strict one). Better to use a same-family model than
+                # to fail the request entirely.
+                chain = [m for m in self.chain if m not in excl_m]
+
         # Filter out models known-down (from background probe loop). If all
         # models are down, filter_chain returns the full chain unchanged so
         # we still try — the infrastructure may have recovered between probes.
+        # Use the post-exclusion `chain` (NOT self.chain) so brain↔judge
+        # independence is preserved even after health filtering.
         try:
             from backend import llm_health
-            chain_to_try = llm_health.filter_chain(self.chain)
+            chain_to_try = llm_health.filter_chain(chain)
         except Exception:
-            chain_to_try = self.chain  # health monitor failure must never block calls
+            chain_to_try = chain  # health monitor failure must never block calls
 
         chain_primary = self.chain[0] if self.chain else None
         call_t0 = time.time()

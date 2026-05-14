@@ -192,7 +192,20 @@ Be strict. The bot's job is to NOT hallucinate. If a claim is ambiguously suppor
 """
 
 
-async def _gate_llm_judge(reply: str, chunks: list[RetrievedChunk]) -> tuple[bool, list[str]]:
+async def _gate_llm_judge(
+    reply: str,
+    chunks: list[RetrievedChunk],
+    brain_model_used: Optional[str] = None,
+) -> tuple[bool, list[str]]:
+    """LLM judge for faithfulness Gate 4 with cross-family independence guard.
+
+    `brain_model_used` is the EXACT model id that produced `reply` (e.g.
+    'qwen/qwen3-next-80b-a3b-instruct'). It and its family are excluded from
+    the judge's chain so the brain never grades its own homework. If the
+    exclusion would empty the chain, NimChainLLM relaxes the family
+    constraint but still enforces exact-model exclusion — strictly weaker
+    than letting the same model grade itself.
+    """
     if not reply or len(reply) < 30:
         return True, []
     if not chunks:
@@ -209,6 +222,17 @@ REPLY:
 
 Verify."""
 
+    # Compute exclusion set for cross-grading independence
+    exclude_models: list[str] = []
+    exclude_families: list[str] = []
+    if brain_model_used:
+        exclude_models.append(brain_model_used)
+        try:
+            from backend.providers.nvidia_nim_llm import NimChainLLM
+            exclude_families.append(NimChainLLM._family_of(brain_model_used))
+        except Exception:
+            pass  # family helper unavailable → still enforce exact-model exclusion
+
     try:
         judge = _get_judge()
         res = await judge.chat(
@@ -219,6 +243,8 @@ Verify."""
             temperature=0.0,
             max_tokens=400,
             response_format={"type": "json_object"},
+            exclude_models=exclude_models or None,
+            exclude_families=exclude_families or None,
         )
         data = json.loads(res.text)
         supported = bool(data.get("supported", False))
@@ -244,8 +270,14 @@ async def check_faithfulness(
     chunks: list[RetrievedChunk],
     user_text: str = "",
     run_llm_judge: bool = True,
+    brain_model_used: Optional[str] = None,
 ) -> FaithfulnessVerdict:
-    """Run all gates. Return verdict with reasons + a safe reply to show user if blocked."""
+    """Run all gates. Return verdict with reasons + a safe reply to show user if blocked.
+
+    `brain_model_used` is forwarded to Gate 4 so the judge can never be the
+    same model (or same family) as the brain that produced `reply` —
+    enforces the cross-grading independence invariant.
+    """
     verdict = FaithfulnessVerdict(passed=True)
 
     # Gate 1 — retrieval floor
@@ -280,7 +312,7 @@ async def check_faithfulness(
     HIGH_CONFIDENCE_FLOOR = 0.50
     top_score = max((c.score for c in chunks), default=0.0) if chunks else 0.0
     if verdict.passed and run_llm_judge and top_score < HIGH_CONFIDENCE_FLOOR:
-        ok4, unsupported = await _gate_llm_judge(reply, chunks)
+        ok4, unsupported = await _gate_llm_judge(reply, chunks, brain_model_used=brain_model_used)
         if not ok4:
             verdict.passed = False
             verdict.reasons.append("gate4_llm_judge: claims unsupported")
