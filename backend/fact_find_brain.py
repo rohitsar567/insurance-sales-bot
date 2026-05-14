@@ -338,6 +338,51 @@ def _bump_brain_history(session, slot_driving: Optional[str]) -> int:
 
 
 # ----------------------------------------------------------------------------
+# KI-103 (2026-05-15) — Canonical-fallback loop breaker
+# ----------------------------------------------------------------------------
+# When the LLM brain returns `no_trailer` (or any reason that drives
+# `_canonical_fallback`) on consecutive turns, the legacy code re-surfaced
+# the SAME unfilled slot indefinitely. Live 15-persona smoke test caught
+# the brain repeating "First, your age?" 7-8 times in a row even after the
+# user explicitly stated their age. Root cause: `next_question(profile)`
+# iterates GRAPH skipping ids in `profile.asked` and filled fields — but
+# the greedy capture in `_canonical_fallback` only appends to `asked` when
+# a value was successfully extracted, so a failed capture loop keeps the
+# slot un-asked forever.
+#
+# Fix: track per-slot failed-fallback counts on the session. After
+# `_MAX_FAILED_ATTEMPTS` (=2) consecutive surfaces of the same unfilled
+# slot via canonical fallback WITHOUT capturing anything, mark the slot as
+# asked (so `next_question` advances) AND record it on `session._ff_skipped_slots`
+# so the orchestrator / scorecard can render it as intentionally unanswered.
+#
+# Counters live on the SessionState (not the Profile) — they are transient
+# fact-find-turn state, not part of the persisted profile schema. Resetting
+# them happens automatically on greedy-capture success below.
+_MAX_FAILED_ATTEMPTS = 2
+
+
+def _failed_attempts(session) -> dict[str, int]:
+    """Per-slot canonical-fallback failure counter, lazily attached to the
+    session. Maps `question.id` (NOT field name) → consecutive failure count.
+    """
+    if not hasattr(session, "_ff_failed_attempts"):
+        session._ff_failed_attempts = {}
+    return session._ff_failed_attempts
+
+
+def _skipped_slots(session) -> list[str]:
+    """Per-session list of slot ids the loop-breaker has marked SKIPPED
+    after `_MAX_FAILED_ATTEMPTS` failed canonical-fallback surfaces. The
+    orchestrator / scorecard reads this to render the skipped slots as
+    intentionally unanswered (not silently dropped).
+    """
+    if not hasattr(session, "_ff_skipped_slots"):
+        session._ff_skipped_slots = []
+    return session._ff_skipped_slots
+
+
+# ----------------------------------------------------------------------------
 # Public entry
 # ----------------------------------------------------------------------------
 
@@ -755,12 +800,60 @@ def _canonical_fallback(session, user_text: str, *, reason: str) -> FactFindOutc
                 session.update_profile_field(q_obj.field, val)
                 if slot_id not in profile.asked:
                     profile.asked.append(slot_id)
+                # KI-103 — successful capture resets the failed-attempt
+                # counter for this slot so a temporary loss of the LLM
+                # brain doesn't permanently ghost the slot.
+                _failed_attempts(session).pop(slot_id, None)
         except Exception as e:
             logging.info("canonical_fallback greedy capture failed: %s", e)
 
+    # KI-103 (2026-05-15) — loop breaker. The legacy code surfaced the SAME
+    # unfilled slot every turn the brain returned `no_trailer`, even when
+    # the user explicitly answered it on turn 1. Now we track per-slot
+    # consecutive failed-fallback surfaces on the session; after
+    # _MAX_FAILED_ATTEMPTS consecutive surfaces of slot S with NO capture
+    # for S, we mark S as asked (so `next_question` advances) and append
+    # it to `_ff_skipped_slots` so the orchestrator/scorecard can render
+    # it as intentionally unanswered.
     try:
         from backend.needs_finder import next_question
-        q = next_question(profile)
+        attempts = _failed_attempts(session)
+        skipped = _skipped_slots(session)
+        # Bounded loop: at most len(GRAPH)+1 iterations so we can never
+        # infinite-loop on a pathological state. In practice we exit on
+        # the first slot that's either fresh OR has been skipped now.
+        q = None
+        for _ in range(20):
+            q = next_question(profile)
+            if q is None:
+                break
+            slot_id = q.id
+            # If this turn's greedy capture filled this slot, surface
+            # the NEXT slot (we already captured the answer; don't re-ask).
+            if q.field in captured:
+                profile.asked.append(slot_id) if slot_id not in profile.asked else None
+                continue
+            # Count this as a failed surface for the slot — we're about
+            # to re-ask it without having captured a value for it.
+            attempts[slot_id] = attempts.get(slot_id, 0) + 1
+            if attempts[slot_id] > _MAX_FAILED_ATTEMPTS:
+                # 3rd-or-later attempt: degrade gracefully — skip the slot
+                # entirely so we don't re-ask. Mark asked + record in
+                # _ff_skipped_slots and loop to pick the next unfilled slot.
+                logging.info(
+                    "KI-103: canonical fallback skipping slot=%s after %d failed attempts",
+                    slot_id, attempts[slot_id] - 1,
+                )
+                if slot_id not in profile.asked:
+                    profile.asked.append(slot_id)
+                if slot_id not in skipped:
+                    skipped.append(slot_id)
+                # Reset the counter so if we ever do capture later via a
+                # different code path, the slot can be re-introduced cleanly.
+                attempts.pop(slot_id, None)
+                continue
+            # Within tolerance — surface this slot to the user.
+            break
     except Exception:
         q = None
     if q is not None:
