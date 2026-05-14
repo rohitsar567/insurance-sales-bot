@@ -264,10 +264,27 @@ def _parse_int(text: str, schema: dict) -> int | None:
 
 
 def _parse_existing_cover(text: str) -> int | None:
-    """Handle "no" / "none" / "5 lakh" / "₹500000" / "5L" / "haven't got any" / "30k"."""
+    """Handle "no" / "none" / "5 lakh" / "₹500000" / "5L" / "haven't got any" / "30k".
+
+    KI-067 (2026-05-15) — also recognises first-time-buyer phrasings
+    ("first policy", "first time buying", "new to insurance"). The previous
+    pattern caught "No, this is my first policy" via the "no" word but
+    rejected "This is my first policy" alone — user had to retry.
+    """
     s = text.lower().strip()
     # Negative answers map to 0 (no existing cover).
-    if re.search(r"\b(no|none|nothing|zero|nope|nah|haven'?t|don'?t)\b", s):
+    if re.search(r"\b(no|none|nothing|zero|nope|nah|haven'?t|don'?t|never)\b", s):
+        return 0
+    # KI-067 — first-time-buyer signals also imply zero existing cover.
+    _first_time_patterns = (
+        r"first\s+(?:policy|insurance|one|time|buy|cover)",
+        r"buying\s+(?:my\s+)?first",
+        r"new\s+(?:to\s+)?(?:health\s+)?insurance",
+        r"never\s+(?:bought|had|got|taken)",
+        r"haven'?t\s+(?:bought|had|got|taken)",
+        r"don'?t\s+have\s+(?:any|insurance|cover|a\s+policy)",
+    )
+    if any(re.search(p, s) for p in _first_time_patterns):
         return 0
 
     # Look for a number followed by a unit suffix (digit-attached OR separated).
