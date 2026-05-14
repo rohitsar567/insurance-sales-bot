@@ -234,6 +234,12 @@ export default function Page() {
     // Always wipe the visible chat + local storage.
     setMessages([]);
     setInput("");
+    // KI-073 (2026-05-15) — clear the profile-completeness chip immediately
+    // so the header doesn't show stale "55% DONE" for a brand-new visitor
+    // while the new session_id fetch is in flight. The useEffect on sessionId
+    // will repopulate this from the fresh backend session as soon as the new
+    // id lands.
+    setProfileCompleteness(null);
     if (typeof window !== "undefined") {
       localStorage.removeItem("insurance_chat_messages");
     }
