@@ -138,6 +138,13 @@ def strip_think_tags(text: str) -> str:
       - truncated reasoning (no </think>):  <think>... cut off  →  fallback message
       - reasoning followed by clean answer:  <think>...</think> answer  →  answer
       - well-formed with extra text after close: take only text after </think>
+
+    KI-104 (2026-05-15) — after the <think> strip, also run
+    `strip_cot_preamble` to kill instruction-echo / scratchpad lines that
+    leaked outside of `<think>` tags. Live smoke caught Qwen3-Next 80B and
+    the judge model leaking "We need to respond to user question…",
+    "We must ground every factual claim…", and bare reasoning labels
+    (`**Reasoning:**`, `[INTERNAL]…`) into user-visible reply_text.
     """
     if "<think>" in text.lower() and "</think>" not in text.lower():
         # Reasoning was truncated mid-thought — no final answer was produced.
@@ -148,4 +155,11 @@ def strip_think_tags(text: str) -> str:
     # If anything else got truncated, fall back gracefully.
     if not cleaned:
         return "I'm thinking through that. Could you rephrase or ask a follow-up?"
+
+    # KI-104 — second-layer strip for CoT / instruction-echo leakage that
+    # didn't come wrapped in <think> tags. Imported locally to avoid an
+    # import cycle (voice_format has no persona deps; persona has no
+    # voice_format deps at module level).
+    from backend.voice_format import strip_cot_preamble
+    cleaned = strip_cot_preamble(cleaned)
     return cleaned
