@@ -14,20 +14,39 @@
 
 set -e
 
-# Use HF Spaces persistent disk if mounted at /data, else fall back to /app
+# KI-119 (2026-05-15) — DISABLE persistent-disk symlink for vectors.
+#
+# Pre-fix, this block unconditionally rm -rf'd the /app/rag/vectors
+# directory (freshly snapshot_downloaded from the HF dataset at build
+# time) and replaced it with a symlink to /data/vectors. On second+
+# builds, /data/vectors held STALE Chroma from a prior run — including
+# the corrupted profile_anonymous row from the KI-102 deploy that broke
+# every collection.query() call. The dataset upload couldn't help because
+# the entrypoint's symlink overrode it.
+#
+# We don't need persistent vectors. The whole point of pushing rag/vectors
+# to the companion HF Dataset is that EVERY Space rebuild pulls a fresh
+# copy. /data persistence is now disabled for vectors; the app reads
+# directly from /app/rag/vectors which contains the just-downloaded fresh
+# snapshot. DuckDB persistence kept (it's only used for cached metadata
+# and benefits from cross-rebuild persistence with no corruption surface).
+#
+# If you NEED to test with a clean /data, manually `rm -rf /data/vectors`
+# on the Space's persistent disk via Settings → Reset.
 if [ -d "/data" ] && [ -w "/data" ]; then
-    export VECTOR_DIR="/data/vectors"
     export DUCKDB_PATH="/data/policies.duckdb"
-    # Symlink so the app code (which reads from rag/vectors and
-    # rag/policies.duckdb) finds them on the persistent disk
-    mkdir -p /data/vectors
-    rm -rf /app/rag/vectors
-    ln -sf /data/vectors /app/rag/vectors
     if [ ! -f /data/policies.duckdb ] && [ -f /app/rag/policies.duckdb ]; then
         cp /app/rag/policies.duckdb /data/policies.duckdb
     fi
     rm -f /app/rag/policies.duckdb
     ln -sf /data/policies.duckdb /app/rag/policies.duckdb
+    # Vectors stay at /app/rag/vectors — read from the fresh dataset
+    # snapshot. The previous /data/vectors symlink is intentionally removed.
+    if [ -L "/app/rag/vectors" ]; then
+        # Pre-existing symlink from older deploys — unlink it so /app reads
+        # the fresh snapshot_download'd directory underneath.
+        rm /app/rag/vectors 2>/dev/null || true
+    fi
 fi
 
 # Validate Chroma is readable + populated; rebuild if not.
