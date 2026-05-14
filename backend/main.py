@@ -194,11 +194,12 @@ async def _startup_llm_health_probe():
 @app.get("/api/health", response_model=HealthResponse)
 async def health():
     missing = settings.validate()
+    # Post-D-019 the stack is Sarvam (voice + Indic) + NVIDIA NIM (brain +
+    # judge). GROQ + OpenRouter were retired; don't reference them here or
+    # this endpoint AttributeError's on every call.
     providers_ok = {
-        "sarvam": bool(settings.SARVAM_API_KEY),
-        "voyage": bool(settings.VOYAGE_API_KEY),
-        "groq": bool(settings.GROQ_API_KEY),
-        "openrouter": bool(settings.OPENROUTER_API_KEY),
+        "sarvam":     bool(settings.SARVAM_API_KEY),
+        "nvidia_nim": bool(settings.NVIDIA_NIM_API_KEY),
     }
     return HealthResponse(
         status="ok" if not missing else "degraded",
