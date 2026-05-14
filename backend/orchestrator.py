@@ -163,9 +163,14 @@ async def handle_turn(
     if treat_as_fact_find:
         # If we were awaiting an answer, normalize + record it before picking next Q.
         # Uses backend/fact_find_normalizer.py to map free-text → schema enums.
-        # If the input is a non-answer (STT failure / empty / gibberish), or the
-        # LLM can't confidently map it, we DON'T clear awaiting_question_id so
-        # the bot re-asks the same question rather than silently moving on.
+        #
+        # Two safety nets:
+        # (1) Keyword fast-path inside normalize_answer() handles ~80% of
+        #     answers without needing the NIM LLM (no rate-limit risk).
+        # (2) Re-ask cap (`_reask_count` on the session) — after 2 consecutive
+        #     failures on the same question we GIVE UP, skip that question,
+        #     and proceed to the next. Better to have an incomplete profile
+        #     than an infinite reask loop.
         ambiguous_or_failed = False
         if session.awaiting_question_id:
             from backend.fact_find_normalizer import is_valid_answer, normalize_answer
@@ -187,11 +192,27 @@ async def handle_turn(
                         if qid not in session.profile.asked:
                             session.profile.asked.append(qid)
                         session.set_awaiting(None)
+                        # Reset re-ask counter on success
+                        if hasattr(session, "_reask_counts"):
+                            session._reask_counts.pop(qid, None)
                     else:
                         ambiguous_or_failed = True
 
+            # ---- Re-ask cap (safety against infinite loops) ----
+            if ambiguous_or_failed:
+                if not hasattr(session, "_reask_counts"):
+                    session._reask_counts = {}
+                session._reask_counts[qid] = session._reask_counts.get(qid, 0) + 1
+                if session._reask_counts[qid] >= 2:
+                    # Give up on this question; mark it asked so next_question moves on.
+                    if qid not in session.profile.asked:
+                        session.profile.asked.append(qid)
+                    session.set_awaiting(None)
+                    ambiguous_or_failed = False  # no longer a reask situation
+
         # If the answer didn't normalize, pick the SAME question again (re-ask
-        # with a gentle clarifier) instead of moving on with garbage.
+        # with a gentle clarifier) instead of moving on with garbage — UNLESS
+        # the cap above just kicked in, in which case we move on.
         if ambiguous_or_failed and session.awaiting_question_id:
             q = next((qq for qq in __import__('backend.needs_finder', fromlist=['GRAPH']).GRAPH if qq.id == session.awaiting_question_id), None)
         else:

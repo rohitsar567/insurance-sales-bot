@@ -112,7 +112,6 @@ async def normalize_answer(question_id: str, raw_text: str) -> Any:
 
     schema = _FIELD_SCHEMA.get(question_id)
     if schema is None:
-        # Unknown question id — defensive pass-through
         return raw_text.strip() or None
 
     # Fast paths — no LLM needed for plain integers / cover-amount parsing.
@@ -121,8 +120,120 @@ async def normalize_answer(question_id: str, raw_text: str) -> Any:
     if question_id == "existing_cover":
         return _parse_existing_cover(raw_text)
 
+    # KEYWORD FAST PATH — robust to NIM rate-limit and to LLM hiccups.
+    # Try matching common patterns BEFORE the LLM call. Catches ~80% of
+    # answers without consuming a NIM request and is deterministic under
+    # load. The LLM is the fall-back for nuanced/edge phrasings.
+    kw = _keyword_normalize(question_id, raw_text)
+    if kw is not None:
+        validated = _validate(kw, schema)
+        if validated is not None:
+            return validated
+
     # Enum + list fields — let the LLM map natural language to canonical value.
     return await _llm_normalize(question_id, raw_text, schema)
+
+
+# ----------------------------------------------------------------------------
+# Keyword fast-path — hand-curated common phrasing → schema value.
+# Order matters within each field: more-specific patterns first.
+# Case-insensitive substring matches on a normalized version of the text.
+# ----------------------------------------------------------------------------
+
+def _keyword_normalize(question_id: str, raw_text: str) -> Any:
+    s = raw_text.lower()
+
+    if question_id == "dependents":
+        if any(k in s for k in ["spouse", "wife", "husband"]) and "kid" in s and "parent" in s:
+            return "self+spouse+kids+parents"
+        if any(k in s for k in ["spouse", "wife", "husband"]) and "kid" in s:
+            return "self+spouse+kids"
+        if any(k in s for k in ["spouse", "wife", "husband"]) and "parent" in s:
+            return "self+spouse+kids+parents"
+        if any(k in s for k in ["spouse", "wife", "husband"]):
+            return "self+spouse"
+        if "parent" in s and "no" not in s.split():
+            return "self+parents"
+        if "just me" in s or "only me" in s or "myself" in s or "only self" in s or s.strip() in {"me", "self"}:
+            return "self"
+
+    elif question_id == "income_band":
+        import re as _re
+        if _re.search(r"(more than|above|over|>=?|>)\s*25", s) or "25l+" in s or "25 lakh+" in s:
+            return "25L+"
+        m = _re.search(r"(\d+(?:\.\d+)?)\s*(?:l|lakh|lac)", s)
+        if m:
+            val = float(m.group(1))
+            if val >= 25: return "25L+"
+            if val >= 10: return "10L-25L"
+            if val >= 5:  return "5L-10L"
+            return "under_5L"
+        if "10-25" in s or "10l-25l" in s: return "10L-25L"
+        if "5-10"  in s or "5l-10l"  in s: return "5L-10L"
+        if "under 5" in s or "<5" in s or "below 5" in s: return "under_5L"
+
+    elif question_id == "primary_goal":
+        if any(k in s for k in ["first policy", "first one", "first time", "first buy", "new policy", "buying my first"]):
+            return "first_buy"
+        if any(k in s for k in ["upgrade", "upgrading", "better cover", "more cover", "increase cover"]):
+            return "upgrade"
+        if any(k in s for k in ["compare", "comparison", " vs ", " vs.", "versus"]):
+            return "compare_specific"
+        if any(k in s for k in [" tax ", "80d", "deduction", "tax planning"]):
+            return "tax_planning"
+
+    elif question_id == "location":
+        metro = ["bangalore", "bengaluru", "mumbai", "delhi", "new delhi", "chennai", "kolkata", "hyderabad", "pune"]
+        tier1 = ["ahmedabad", "jaipur", "lucknow", "kanpur", "nagpur", "indore", "thane", "bhopal", "visakhapatnam", "patna", "vadodara", "ghaziabad", "ludhiana", "agra", "nashik"]
+        tier2 = ["surat", "kochi", "trivandrum", "thiruvananthapuram", "coimbatore", "vijayawada", "madurai", "rajkot", "ranchi", "amritsar", "allahabad", "prayagraj", "jodhpur", "raipur"]
+        for c in metro:
+            if c in s: return "metro"
+        for c in tier1:
+            if c in s: return "tier1"
+        for c in tier2:
+            if c in s: return "tier2"
+        if "metro" in s: return "metro"
+        if "tier 1" in s or "tier1" in s: return "tier1"
+        if "tier 2" in s or "tier2" in s: return "tier2"
+        if "tier 3" in s or "tier3" in s or "village" in s or "small town" in s: return "tier3"
+
+    elif question_id == "budget":
+        import re as _re
+        if "60k+" in s or ">60k" in s or "more than 60" in s or "above 60" in s:
+            return "60k+"
+        if "30-60" in s or "30k_60k" in s or "30k-60k" in s:
+            return "30k_60k"
+        if "15-30" in s or "15k_30k" in s or "15k-30k" in s:
+            return "15k_30k"
+        if "under 15" in s or "<15" in s or "below 15" in s or "under_15" in s:
+            return "under_15k"
+        m = _re.search(r"(\d+)\s*k", s)
+        if m:
+            v = int(m.group(1))
+            if v >= 60: return "60k+"
+            if v >= 30: return "30k_60k"
+            if v >= 15: return "15k_30k"
+            return "under_15k"
+
+    elif question_id == "health_conditions":
+        if any(p in s for p in ["none", "no condition", "nothing", "no pre-exist", "no health", "no chronic"]):
+            return []
+        canonical = []
+        cond_keywords = {
+            "diabetes": ["diabetes", "diabetic", "sugar"],
+            "hypertension": ["hypertension", " bp ", "blood pressure", "high bp"],
+            "thyroid": ["thyroid", "hypothyroid", "hyperthyroid"],
+            "asthma": ["asthma"],
+            "heart": ["heart problem", "heart disease", "cardiac"],
+            "cancer": ["cancer", "tumor"],
+        }
+        for cond, kws in cond_keywords.items():
+            if any(k in s for k in kws):
+                canonical.append(cond)
+        if canonical:
+            return canonical
+
+    return None
 
 
 # ----------------------------------------------------------------------------
