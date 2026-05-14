@@ -400,12 +400,33 @@ async def handle_turn(
             drive_fact_find,
         )
 
-        outcome = await drive_fact_find(
-            user_text=user_text,
-            session=session,
-            chat_history=chat_history,
-            session_id=session_id,
-        )
+        # KI-100 — bound drive_fact_find at the orchestrator. KI-079's
+        # internal FAST(25s) + BRAIN(15s) escalation can compound to ~40s on
+        # a doubly-saturated chain, which breaches the user's <30s per-turn
+        # target. Cap at 25s; on outer timeout, fall through to the
+        # canonical fallback that drive_fact_find itself uses on internal
+        # timeout (build the outcome from current session state).
+        try:
+            outcome = await asyncio.wait_for(
+                drive_fact_find(
+                    user_text=user_text,
+                    session=session,
+                    chat_history=chat_history,
+                    session_id=session_id,
+                ),
+                timeout=25.0,
+            )
+        except asyncio.TimeoutError:
+            logging.warning(
+                "fact_find_brain outer wait_for(25s) tripped — falling back to canonical (session=%s)",
+                session_id,
+            )
+            from backend.fact_find_brain import _canonical_fallback
+            outcome = _canonical_fallback(
+                session=session,
+                user_text=user_text,
+                reason="outer_timeout_25s",
+            )
 
         # Apply captured updates to profile + mark matching slot ids as asked
         # so the orchestrator's downstream `next_question` (used in the
