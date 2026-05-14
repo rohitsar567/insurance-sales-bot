@@ -45,8 +45,26 @@ FACT_FIND_TRIGGERS = (
     "hi", "hello", "hey", "namaste",
 )
 
-COMPARISON_KEYWORDS = ("compare", "comparison", "vs", "versus", "between policy", "which is better")
-RECOMMEND_KEYWORDS = ("recommend", "should i", "which one", "best for", "suit me")
+COMPARISON_KEYWORDS = (
+    "compare", "comparison", "vs", "versus", "between policy", "which is better",
+    # KI-105 (2026-05-15) — live 15-persona smoke surfaced that closer phrases
+    # like "compare top 3", "rank the best", "shortlist" were misrouted to qa
+    # because they didn't hit any keyword here. "rank" + "shortlist" are
+    # comparison-shaped requests across the candidate set.
+    "rank", "ranking", "shortlist", "side by side", "side-by-side",
+)
+RECOMMEND_KEYWORDS = (
+    "recommend", "should i", "which one", "best for", "suit me",
+    # KI-105 (2026-05-15) — closer phrases that the live smoke caught as
+    # misclassified to qa instead of recommendation. Without these the
+    # orchestrator never routes to the heavy brain + never templates a
+    # ranked output, so the bot either re-asks a slot or refuses.
+    "show me", "show me policies", "show me policy", "show me the top",
+    "top 3", "top three", "top policies", "give me the top",
+    "what would you recommend", "what do you suggest", "your top picks",
+    "your top pick", "your best", "my best option", "my best options",
+    "pitch me", "pitch your", "policies for me", "policy for me",
+)
 INDIC_KEYWORDS = (
     # Devanagari letters
     "क", "ख", "ग", "घ", "च", "ज", "ट", "ड", "त", "द", "न", "प", "ब", "म", "य", "र", "ल", "व", "स", "ह",
@@ -70,8 +88,46 @@ def _phrase_present(phrase: str, q: str) -> bool:
     return re.search(pattern, q) is not None
 
 
+# KI-105 (2026-05-15) — explicit closer phrases that ALWAYS win the
+# comparison / recommendation label, even when a fact-find trigger
+# also matches. Live 15-persona smoke caught "show me the top 3
+# policies" being routed to fact_find (because "show me" is not in
+# FACT_FIND_TRIGGERS but the q itself is parsed as qa) or to fact-find
+# on phrases like "what would you recommend" (matched
+# FACT_FIND_TRIGGERS["what do you recommend"]). The bot then re-asked
+# slots the user had already filled instead of producing a ranked
+# shortlist. These phrases unambiguously mean "produce a ranked
+# output now"; the downstream session-state-aware routing
+# (`should_route_to_fact_find`) still keeps the KI-013 guard against
+# pitching to empty profiles.
+_EXPLICIT_CLOSER_COMPARISON = (
+    "compare top", "compare the top", "rank the top", "rank top",
+    "side by side", "side-by-side",
+    "compare these", "compare those", "compare them",
+)
+_EXPLICIT_CLOSER_RECOMMENDATION = (
+    "show me policies", "show me the policies", "show me policy",
+    "show me the top", "show me top",
+    "top 3", "top three", "top policies", "top picks",
+    "give me the top", "give me top", "give me your top",
+    "your top picks", "your top pick", "your best policy",
+    "pitch me", "pitch your top",
+    "what would you recommend", "what do you suggest",
+)
+
+
 def classify_intent(query: str) -> str:
     q = query.lower().strip()
+
+    # KI-105 — explicit closer override. These phrases are unambiguous
+    # ranked-output requests; they must beat the fact-find trigger
+    # short-circuit below (which would otherwise misroute "show me the
+    # top 3 policies" or "what would you recommend" to fact-find).
+    if any(_phrase_present(kw, q) for kw in _EXPLICIT_CLOSER_COMPARISON):
+        return "comparison"
+    if any(_phrase_present(kw, q) for kw in _EXPLICIT_CLOSER_RECOMMENDATION):
+        return "recommendation"
+
     # Greeting / advice-seeking openers → fact-find flow
     if any(_phrase_present(kw, q) for kw in FACT_FIND_TRIGGERS) and len(q.split()) < 25:
         return "fact_find"
@@ -648,9 +704,22 @@ async def handle_turn(
     # Chroma at POST /api/profile time) gets boosted to the top of the
     # context. Without session_id this path is dormant and the brain never
     # sees the user's profile inline with policy text.
+    #
+    # KI-105 (2026-05-15) — closer-intent retrieval widening. When the user
+    # explicitly asks for a ranked shortlist ("show me the top 3 policies",
+    # "what would you recommend", "compare top 3"), top_k=5 was sometimes
+    # returning 4 chunks from the SAME policy plus 1 profile chunk — leaving
+    # the brain only one named insurer to rank. Widen to top_k=12 on closer
+    # intents so the candidate set has enough cross-insurer diversity for the
+    # closer-mode addendum (which asks for 3 distinct named policies) to
+    # actually fire instead of refusing.
+    effective_top_k = top_k
+    if intent in ("recommendation", "comparison") and not policy_filter_ids:
+        effective_top_k = max(top_k, 12)
+
     chunks: list[RetrievedChunk] = await retrieve(
         query=user_text,
-        top_k=top_k,
+        top_k=effective_top_k,
         policy_ids=policy_filter_ids,
         session_id=session_id,
     )
@@ -660,12 +729,44 @@ async def handle_turn(
     pick = pick_brain(intent, language)
 
     # 4. Generate
+    #
+    # KI-105 — pass intent through so build_messages can append the
+    # CLOSER MODE addendum on recommendation/comparison turns. The
+    # addendum forces a ranked top-3 output instead of the default
+    # conservative 60-word advisor reply that re-asked slots or refused
+    # on weak grounding (live 15-persona smoke caught this gap).
+    #
+    # Two sources of "user_profile" exist: the dict passed in by callers
+    # AND the session.profile we built up via fact-find. The dict is the
+    # historical wire format; when it's None on a closer turn but the
+    # session has captured facts, synthesize a profile dict so the
+    # closer-mode contract still fires (rank-grounding requires SOME
+    # context to anchor on).
+    profile_for_prompt = user_profile
+    if (
+        intent in ("recommendation", "comparison")
+        and not profile_for_prompt
+        and getattr(session, "profile", None) is not None
+    ):
+        sp = session.profile
+        candidate: dict = {}
+        for fld in ("age", "dependents", "income_band", "existing_cover_inr",
+                    "primary_goal", "location_tier", "parents_to_insure",
+                    "parents_age_max", "parents_has_ped", "budget_band",
+                    "health_conditions"):
+            v = getattr(sp, fld, None)
+            if v not in (None, "", []):
+                candidate[fld] = v
+        if candidate:
+            profile_for_prompt = candidate
+
     messages_dict = build_messages(
         user_query=user_text,
         retrieved_context=context_str,
         chat_history=chat_history,
-        user_profile=user_profile,
+        user_profile=profile_for_prompt,
         view_context=view_context,
+        intent=intent,
     )
     messages = [ChatMessage(role=m["role"], content=m["content"]) for m in messages_dict]
 
@@ -680,8 +781,19 @@ async def handle_turn(
     # is in synchronous probe_all() refresh. 30s is generous enough for
     # normal MoE responses but short enough to fall through to the chain's
     # error path before the user gives up.
+    # KI-105 — closer turns produce a 3-policy ranked shortlist
+    # (~150-220 words + per-line citations + acknowledger + caveat).
+    # 1500 tokens is comfortably enough; we keep it but bump
+    # temperature slightly so the rationale prose doesn't read as a
+    # boilerplate copy of the previous closer turn. Faithfulness gate
+    # still validates every cited claim against the retrieved chunks.
+    _closer_turn = intent in ("recommendation", "comparison")
     llm_result = await asyncio.wait_for(
-        pick.provider.chat(messages=messages, temperature=0.2, max_tokens=1500),
+        pick.provider.chat(
+            messages=messages,
+            temperature=0.3 if _closer_turn else 0.2,
+            max_tokens=1500,
+        ),
         timeout=30.0,
     )
 

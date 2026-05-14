@@ -67,6 +67,110 @@ class TestIntentClassification(unittest.TestCase):
         # recommending anyway. Pinned here so we notice if the order changes.
         self.assertEqual(classify_intent("Which one should I get?"), "fact_find")
 
+    def test_ki105_closer_phrases_classify_as_recommendation(self) -> None:
+        """KI-105 (2026-05-15) — explicit-closer regression.
+
+        Live 15-persona smoke caught these phrases being routed to qa or
+        fact_find instead of recommendation, so the heavy brain was never
+        called + no ranked shortlist was ever produced. The explicit-closer
+        override (checked BEFORE FACT_FIND_TRIGGERS) lifts them into the
+        recommendation lane unambiguously.
+        """
+        recommendation_closers = [
+            "show me the top 3 policies",
+            "show me policies",
+            "give me the top 3",
+            "what would you recommend",
+            "your top picks",
+            "pitch me the top 3",
+        ]
+        for q in recommendation_closers:
+            with self.subTest(question=q):
+                self.assertEqual(
+                    classify_intent(q),
+                    "recommendation",
+                    f"REGRESSION: {q!r} should classify as recommendation. "
+                    f"See KI-105 — without this the bot doesn't produce a "
+                    f"ranked shortlist on the closer turn.",
+                )
+
+    def test_ki105_closer_phrases_classify_as_comparison(self) -> None:
+        """KI-105 — comparison-shaped closer phrases.
+
+        'compare HDFC Ergo and Niva Bupa' and 'rank top 3' both explicitly
+        ask for a side-by-side / ranked output across the candidate set.
+        They must NOT fall through to qa or fact_find.
+        """
+        comparison_closers = [
+            "compare HDFC Ergo and Niva Bupa",
+            "compare top 3",
+            "compare the top 3 policies",
+            "rank top 3 for me",
+            "side-by-side these policies",
+        ]
+        for q in comparison_closers:
+            with self.subTest(question=q):
+                self.assertEqual(
+                    classify_intent(q),
+                    "comparison",
+                    f"REGRESSION: {q!r} should classify as comparison.",
+                )
+
+
+class TestKI105CloserPersona(unittest.TestCase):
+    """KI-105 (2026-05-15) — the persona must append the CLOSER MODE
+    addendum ONLY on recommendation/comparison turns AND only when a
+    profile is present. Otherwise the brain reverts to its default
+    60-word conservative reply that re-asks slots or refuses."""
+
+    def test_closer_addendum_present_on_recommendation_turn(self) -> None:
+        from backend.persona import build_messages
+        msgs = build_messages(
+            user_query="show me the top 3 policies",
+            retrieved_context="[Source: Care Supreme (care-health), p.5]\nSample chunk text.",
+            user_profile={"age": 34, "dependents": "self+spouse", "budget_band": "30k_60k"},
+            intent="recommendation",
+        )
+        system = msgs[0]["content"]
+        self.assertIn("CLOSER MODE", system)
+        self.assertIn("ranked shortlist", system.lower() + "")  # phrase appears in addendum
+
+    def test_closer_addendum_present_on_comparison_turn(self) -> None:
+        from backend.persona import build_messages
+        msgs = build_messages(
+            user_query="compare HDFC Ergo and Niva Bupa",
+            retrieved_context="[Source: Optima Secure (hdfc-ergo), p.5]\nSample.",
+            user_profile={"age": 34, "dependents": "self+spouse"},
+            intent="comparison",
+        )
+        self.assertIn("CLOSER MODE", msgs[0]["content"])
+
+    def test_closer_addendum_absent_on_qa_turn(self) -> None:
+        """A 'what is the PED waiting period?' turn must NOT get the
+        ranked-shortlist contract appended — that would force the brain
+        to invent 3 policies on a single-policy factual lookup."""
+        from backend.persona import build_messages
+        msgs = build_messages(
+            user_query="What is the PED waiting period under Activ Assure?",
+            retrieved_context="[Source: Activ Assure (aditya-birla), p.10]\nClause text.",
+            user_profile={"age": 34},
+            intent="qa",
+        )
+        self.assertNotIn("CLOSER MODE", msgs[0]["content"])
+
+    def test_closer_addendum_absent_on_empty_profile(self) -> None:
+        """KI-013 belt-and-braces: even if a closer intent slips
+        through with no profile, the addendum must NOT fire — otherwise
+        the brain might pitch a senior-only policy to an anonymous user."""
+        from backend.persona import build_messages
+        msgs = build_messages(
+            user_query="show me the top 3 policies",
+            retrieved_context="[Source: Care Senior (care-health), p.5]\nSample.",
+            user_profile=None,
+            intent="recommendation",
+        )
+        self.assertNotIn("CLOSER MODE", msgs[0]["content"])
+
 
 class TestFactFindRouting(unittest.TestCase):
     """KI-018 regression: empty-profile sessions must NOT trap qa in fact-find."""

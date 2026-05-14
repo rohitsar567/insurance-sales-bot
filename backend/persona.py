@@ -68,20 +68,62 @@ FORMAT FOR YOUR REPLIES
 """
 
 
+RECOMMENDATION_CLOSER_ADDENDUM = """
+
+CLOSER MODE (intent = recommendation OR comparison, profile is mostly filled).
+The user has explicitly asked for a ranked shortlist or a side-by-side comparison.
+Your job on THIS turn is to deliver one — NOT to ask more fact-find questions.
+
+OUTPUT CONTRACT (override the 60-word default just for this turn — go to ~150-220 words):
+1. Open with one sentence acknowledging the user's profile drivers (age, dependents, budget, conditions). Example: "Based on your profile — 34, self+spouse, ₹10-25L income, mild hypertension — here are the three best-fit policies."
+2. Produce EXACTLY 3 ranked policies, in priority order. For each:
+   - LINE 1: "<rank>. <Insurer> — <Policy Name>" (use insurer + policy_name straight from the cited chunk header)
+   - LINE 2: 2-3 sentences of rationale grounded in the retrieved clauses, citing the specific feature that makes it a fit (room rent, copay, PED waiting, network size, NCB). End each cited fact with the [Source: ...] citation as usual.
+3. Close with ONE caveat sentence + the standard "confirm with the insurer directly before finalizing" line.
+
+ABSOLUTE RULES FOR CLOSER MODE:
+- DO NOT ask any new fact-find question on a closer turn. The user explicitly asked to be sold to.
+- DO NOT refuse with "I'd rather not speculate" unless ZERO retrieved chunks are relevant — if the retrieved context has 3+ named policies, you MUST rank them.
+- DO NOT echo profile back as a question ("you're 34, right?"). State it as fact and move on.
+- DO NOT recommend any policy whose retrieved chunk implies a demographic mismatch (senior-citizen-only when user is <60; critical-illness-only when user didn't ask about it).
+- If FEWER than 3 distinct named policies appear in the retrieved context, rank whatever you have (1 or 2) and explicitly say "I only have grounded evidence for these N policies right now."
+- Citation grammar is unchanged — every factual claim still ends with [Source: <Policy Name> (<insurer>), p.X].
+"""
+
+
 def build_messages(
     user_query: str,
     retrieved_context: str,
     chat_history: list[dict] | None = None,
     user_profile: dict | None = None,
     view_context: dict | None = None,
+    intent: str | None = None,
 ) -> list[dict]:
-    """Assemble the message list for the LLM call."""
+    """Assemble the message list for the LLM call.
+
+    KI-105 (2026-05-15) — when intent is 'recommendation' or 'comparison'
+    AND a user_profile is provided (i.e., fact-find has produced enough
+    context to rank), append the CLOSER MODE addendum. This tells the
+    brain to produce a ranked top-3 shortlist instead of falling back to
+    the default conservative 60-word advisor reply that re-asks slots or
+    refuses on weak grounding. The addendum is intent-gated so it never
+    leaks into pure QA or fact-find turns.
+    """
     system = ADVISOR_SYSTEM_PROMPT_V1
     if user_profile:
         profile_summary = "\nUSER PROFILE (for personalization, do not echo verbatim):\n" + "\n".join(
             f"- {k}: {v}" for k, v in user_profile.items() if v not in (None, "", [])
         )
         system = system + profile_summary
+
+    # KI-105 — closer mode: ranked-shortlist contract appended only when
+    # the orchestrator says this turn is a recommendation/comparison.
+    # Gate on profile presence too — empty-profile closer turns are
+    # already redirected to fact-find by `should_route_to_fact_find`,
+    # but defence in depth: if a future caller bypasses that guard, the
+    # addendum still won't fire without a profile to ground on.
+    if intent in ("recommendation", "comparison") and user_profile:
+        system = system + RECOMMENDATION_CLOSER_ADDENDUM
 
     if view_context:
         bits: list[str] = []
