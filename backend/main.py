@@ -211,6 +211,91 @@ async def _startup_llm_health_probe():
     asyncio.create_task(llm_health.background_probe_loop())
 
 
+async def _startup_purge_dangling_profile_chunks():
+    """KI-117 — boot-time self-heal of dangling `doc_type='profile'` chunks.
+
+    Background: KI-102's earliest deploy wrote a `profile_anonymous` chunk
+    WITHOUT a `session_id` metadata field. That legacy row poisoned every
+    subsequent retrieval whose `where` clause referenced session_id, because
+    Chroma raises when a filtered row is missing the filtered key. KI-112
+    added input guards so no new bad rows can be written, and the local DB
+    was cleaned manually. But the HF Space carries its OWN copy of the
+    Chroma DB and still contains the dangling row.
+
+    This handler scans the collection for any `doc_type='profile'` chunks
+    whose metadata lacks a non-empty `session_id` and deletes them. Runs
+    idempotently — if there are no bad rows, it's a no-op. After HF rebuilds
+    with this code, the boot task self-heals HF's DB on first request.
+
+    Wrapped in try/except so a Chroma hiccup never crashes boot.
+    """
+    def _do_purge() -> None:
+        from rag.retrieve import get_collection
+
+        coll = get_collection()
+        try:
+            res = coll.get(
+                where={"doc_type": "profile"},
+                limit=10000,
+                include=["metadatas"],
+            )
+        except Exception as e:
+            logging.warning(
+                "KI-117: profile-chunk scan failed (%s: %s) — skipping cleanup",
+                type(e).__name__, e,
+            )
+            return
+
+        ids = res.get("ids") or []
+        metas = res.get("metadatas") or []
+        bad_ids: list[str] = []
+        for cid, meta in zip(ids, metas):
+            sid = (meta or {}).get("session_id")
+            if not (isinstance(sid, str) and sid.strip()):
+                bad_ids.append(cid)
+
+        if bad_ids:
+            try:
+                coll.delete(ids=bad_ids)
+                logging.info(
+                    "KI-117: purged %d dangling profile chunks at boot (ids=%s)",
+                    len(bad_ids),
+                    bad_ids[:10] + (["..."] if len(bad_ids) > 10 else []),
+                )
+            except Exception as e:
+                logging.warning(
+                    "KI-117: delete(ids=...) failed (%s: %s) — bad rows remain",
+                    type(e).__name__, e,
+                )
+                return
+        else:
+            logging.info("KI-117: no dangling profile chunks found (DB clean)")
+
+        try:
+            total = coll.count()
+            logging.info("KI-117: total chunks after cleanup: %d", total)
+        except Exception as e:
+            logging.warning(
+                "KI-117: post-cleanup count() failed (%s: %s)",
+                type(e).__name__, e,
+            )
+
+    try:
+        await asyncio.to_thread(_do_purge)
+    except Exception as e:
+        # Belt + suspenders — boot must never crash.
+        logging.warning(
+            "KI-117: boot cleanup raised at top level (%s: %s) — continuing boot",
+            type(e).__name__, e,
+        )
+
+
+@app.on_event("startup")
+async def _startup_purge_dangling_profile_chunks_handler():
+    """KI-117 — register the boot-time cleanup as a FastAPI startup hook."""
+    await _startup_purge_dangling_profile_chunks()
+
+
 @app.get("/api/health", response_model=HealthResponse)
 async def health():
     missing = settings.validate()
