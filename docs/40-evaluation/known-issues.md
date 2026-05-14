@@ -323,3 +323,32 @@ explicitly demote it via the admin panel's chain reorder.
 **Fix plan:** Run eval/run.py on the gold set with each model
 isolated as primary, compare factual/citation/refusal scores. If
 V4-Flash wins, reorder via /api/admin/chain.
+
+### KI-017 — Reviews underrepresented in vector store — **FIXED in `next commit`**
+
+**Severity:** P2 → user-facing (sparse review retrieval)
+**Source:** `tools/ingest_reviews.py` produced 1 chunk per insurer (~500 chars)
+**Discovered:** Architecture audit 2026-05-14
+
+Pre-fix state: 10 review chunks in Chroma vs ~116 KB of structured
+review data in `data/reviews/*.json` (10 insurers, each with claim
+metrics, aggregator ratings, Reddit sentiment, YouTube coverage,
+news, aggregate score). A user asking "what do customers say about
+Star Health?" retrieved only ONE generic paragraph per insurer,
+losing the nuance of metrics-vs-sentiment-vs-news.
+
+**Fix:** Refactored `review_to_paragraph()` → `review_to_chunks()`
+that yields 4-6 semantically distinct chunks per insurer:
+  1. CLAIM METRICS (IRDAI primary-source numbers)
+  2. AGGREGATOR RATINGS (Policybazaar, InsuranceDekho, MouthShut, Trustpilot)
+  3. REDDIT/QUORA SENTIMENT (notable themes + sample post URLs)
+  4. YOUTUBE COVERAGE (creator reviews + sentiment)
+  5. RECENT NEWS (verified press coverage, one line per item)
+  6. OVERALL TRUST SCORE (aggregate + letter grade + computation notes)
+
+Each chunk gets a `review_facet` metadata field so retrieval can
+filter or boost by facet when intent is clear. Live count:
+60 chunks total (was 10), all 10 insurers × 6 facets.
+
+Verified locally; pushed to HF Dataset; live HF Space picks up
+on next rebuild.
