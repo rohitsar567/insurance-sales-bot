@@ -147,5 +147,47 @@ class TestFactFindRouting(unittest.TestCase):
         self.assertEqual(CONTEXT_DEPENDENT_INTENTS, frozenset({"recommendation", "comparison"}))
 
 
+class TestProviderLoadBalancing(unittest.TestCase):
+    """KI-025: brain chain primary rotates 50/50 between NIM Qwen and Groq Llama
+    to spread load across two independent rate-cap quotas."""
+
+    def test_rotation_deterministic_modes(self) -> None:
+        """Pin both ends of the probability dial — 0% never picks Groq, 100% always does."""
+        from backend.providers.nvidia_nim_llm import _balanced_brain_chain, BRAIN_CHAIN
+        never_groq = _balanced_brain_chain(BRAIN_CHAIN, groq_first_probability=0.0)
+        self.assertFalse(never_groq[0].startswith("groq:"),
+                         "groq_first_probability=0 must keep NIM as primary")
+        always_groq = _balanced_brain_chain(BRAIN_CHAIN, groq_first_probability=1.0)
+        self.assertTrue(always_groq[0].startswith("groq:"),
+                        "groq_first_probability=1 must hoist Groq to primary")
+
+    def test_rotation_preserves_chain_membership(self) -> None:
+        """Whatever the primary, the FULL set of fallback candidates must still be reachable."""
+        from backend.providers.nvidia_nim_llm import _balanced_brain_chain, BRAIN_CHAIN
+        rotated = _balanced_brain_chain(BRAIN_CHAIN, groq_first_probability=1.0)
+        self.assertEqual(sorted(rotated), sorted(BRAIN_CHAIN),
+                         "Rotation must not lose or duplicate any chain candidate.")
+
+    def test_rotation_50_50_in_aggregate(self) -> None:
+        """Over many calls, ~50% should land on Groq primary (binomial; allow ±10% slack)."""
+        from backend.providers.nvidia_nim_llm import _balanced_brain_chain, BRAIN_CHAIN
+        import random
+        random.seed(42)  # deterministic for CI
+        n = 1000
+        groq_first = sum(
+            1 for _ in range(n)
+            if _balanced_brain_chain(BRAIN_CHAIN)[0].startswith("groq:")
+        )
+        self.assertGreater(groq_first, 400, f"Expected ~500 groq-firsts, got {groq_first}")
+        self.assertLess(groq_first, 600, f"Expected ~500 groq-firsts, got {groq_first}")
+
+    def test_groq_present_in_brain_chain(self) -> None:
+        from backend.providers.nvidia_nim_llm import BRAIN_CHAIN, FAST_BRAIN_CHAIN
+        self.assertTrue(any(m.startswith("groq:") for m in BRAIN_CHAIN),
+                        "BRAIN_CHAIN must have a Groq fallback for the rotation to balance against.")
+        self.assertTrue(any(m.startswith("groq:") for m in FAST_BRAIN_CHAIN),
+                        "FAST_BRAIN_CHAIN must have a Groq fallback for the rotation to balance against.")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

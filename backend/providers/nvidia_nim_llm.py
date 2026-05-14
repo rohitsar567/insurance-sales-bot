@@ -474,22 +474,57 @@ class NimChainLLM(LLMProvider):
         ) from last_err
 
 
+# KI-025 (2026-05-14) — provider load-balancing.
+# The NIM rate cap (40 req/min) is the single biggest throughput bottleneck.
+# Groq has independent rate quota and a Llama-3.3-70B LPU primary that's
+# already in BRAIN_CHAIN as a cross-provider fallback. By rotating which
+# provider serves as the *primary* for each call (50/50 between NIM Qwen and
+# Groq Llama), we spread load across two independent quotas — effectively
+# doubling sustained brain throughput. On rotation-to-Groq, the chain still
+# falls back to NIM if Groq fails, so reliability is unchanged.
+import random as _random
+
+
+def _balanced_brain_chain(base: list[str], *, groq_first_probability: float = 0.5) -> list[str]:
+    """KI-025 — provider load-balancing. With `groq_first_probability` (default
+    50%), hoist the Groq Llama entry to the head of the chain so it serves
+    as the primary instead of the NIM Qwen entry. The remaining candidates
+    stay in their existing fallback order — Groq calls that fail (rare; LPU
+    is very reliable) still get the full NIM fallback chain.
+
+    Uses per-call `random.random()` so concurrent async workers (the
+    100-persona audit's 4 workers, the parallel 96-Q eval's 6 workers) each
+    flip independently — no shared mutable cycle state, no GIL races, fair
+    distribution in aggregate. `groq_first_probability` is overrideable
+    primarily for testing."""
+    if _random.random() >= groq_first_probability:
+        return list(base)  # standard NIM-primary order
+    groq_idx = next((i for i, m in enumerate(base) if m.startswith("groq:")), None)
+    if groq_idx is None:
+        return list(base)
+    rotated = list(base)
+    groq_model = rotated.pop(groq_idx)
+    return [groq_model, *rotated]
+
+
 def get_brain_llm() -> NimChainLLM:
     """Heavy brain — multi-model NIM chain with automatic fallback.
-    Primary: Qwen 3-Next 80B. See BRAIN_CHAIN for fallback order.
-    KI-021 — per-link 20s, total chain budget 35s. Tail beyond that is just
-    the user staring at a blank screen on the live audit (was 49s p95)."""
-    return NimChainLLM(chain=BRAIN_CHAIN, timeout=20.0, role="brain",
-                       total_budget_s=35.0)
+    Primary: Qwen 3-Next 80B (50% of calls) or Groq Llama-3.3-70B (50% of calls).
+    See BRAIN_CHAIN for fallback order. KI-021 — per-link 20s, total chain
+    budget 35s. KI-025 — load-balanced across NIM/Groq for 2× brain throughput."""
+    return NimChainLLM(chain=_balanced_brain_chain(BRAIN_CHAIN), timeout=20.0,
+                       role="brain", total_budget_s=35.0)
 
 
 def get_fast_brain_llm() -> NimChainLLM:
     """Fast brain — multi-model NIM chain optimized for low TTFT.
-    Primary: Qwen 3-Next 80B. See FAST_BRAIN_CHAIN for fallback order.
-    KI-021 — per-link 12s, total chain budget 22s. Fact-find / QA needs
-    sub-3s p95 to feel like chat; budget keeps the worst case bounded."""
-    return NimChainLLM(chain=FAST_BRAIN_CHAIN, timeout=12.0, role="fast_brain",
-                       total_budget_s=22.0)
+    Primary: Qwen 3-Next 80B (50%) or Groq Llama-3.3-70B (50%). See
+    FAST_BRAIN_CHAIN for fallback order. KI-021 — per-link 12s, total chain
+    budget 22s. KI-025 — provider-balanced for 2× fast-brain throughput;
+    Groq LPU's sub-1s TTFT is actually faster than NIM Qwen on average,
+    so this rotation is a strict win for fact-find / QA latency."""
+    return NimChainLLM(chain=_balanced_brain_chain(FAST_BRAIN_CHAIN), timeout=12.0,
+                       role="fast_brain", total_budget_s=22.0)
 
 
 def get_judge_llm(language: str = "en") -> NimChainLLM:
