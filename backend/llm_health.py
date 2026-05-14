@@ -15,7 +15,8 @@ backup per chain based on real probe latencies; chat() calls the elected
 primary ONCE per turn, with at most ONE real-time fallback to the elected
 backup. Worst case per turn drops from 5-6 LLM calls to 1-2.
 
-Probes every PROBE_INTERVAL_SEC tick with a tiny ping ("Reply with exactly: ok").
+Probes every PROBE_INTERVAL_SEC tick (300s) with a tiny ping ("Reply with
+exactly: ok"), `max_tokens=1` so probe-driven token spend is negligible.
 Records per model:
   - status:           healthy / degraded / down / unknown
   - last_success_at:  timestamp of last 2xx response
@@ -34,9 +35,12 @@ Election (KI-080):
     provider (NIM vs Groq vs OpenRouter) than primary; falls back to next-
     best same-provider candidate when no cross-provider option qualifies.
   - DEGRADED window: when chat() calls report_failure(model), that model is
-    sidelined for DEGRADED_WINDOW_SEC so the same turn's failure doesn't
-    recycle to the same broken primary on the next turn. The next probe
-    tick reconsiders the model normally.
+    sidelined for either DEGRADED_WINDOW_SEC (transient, 30s) or
+    DEGRADE_DURATION_LONG_S (rate-limit / HTTP 429, 1h — KI-084) so the
+    same turn's failure doesn't recycle to the same broken primary on the
+    next turn. The next probe tick reconsiders the model normally for the
+    short window; rate-limit demotions persist past several probe ticks
+    so the elector doesn't keep bouncing back to a quota-exhausted model.
 
 Persistence: 40-data/llm_health.json (atomic write via temp+rename).
 
@@ -73,17 +77,34 @@ ROOT = Path(__file__).resolve().parent.parent
 HEALTH_FILE = ROOT / "40-data" / "llm_health.json"
 HEALTH_FILE.parent.mkdir(parents=True, exist_ok=True)
 
-# KI-080 — probe every 60s so election reflects real-time pool health
-# fast enough that a NIM pool brownout is rotated out within a minute.
-# The 5-min cadence pre-KI-080 was fine for a "filter the dead" use case
-# but too slow when probe results drive primary election.
-PROBE_INTERVAL_SEC = 60
+# KI-084 (2026-05-15) — probe cadence raised 60s → 300s. With ~25
+# candidates per tick × 4 token round-trip each (prompt "Reply with
+# exactly: ok" plus a 1-token completion), the prior 60s cadence burned
+# ~30-50K tokens/day on Groq alone — enough to push the brain to HTTP 429
+# on Groq's 100K free-tier TPD cap and elect a degraded provider for
+# every chat call. 300s cadence keeps election responsive within 5 min
+# of a pool degradation (more than fast enough at our chat volume) and
+# drops probe-driven Groq spend to ~3K/day baseline (well inside quota).
+PROBE_INTERVAL_SEC = 300
+# KI-084 — completion size on probes cut from 5 → 1. The probe only
+# needs a non-empty 200 response to mark a candidate healthy; we never
+# parse the body content. max_tokens=1 keeps the same response shape +
+# ~50× less token spend per probe.
+PROBE_MAX_TOKENS = 1
 PROBE_TIMEOUT_SEC = 8             # per-probe HTTP timeout
 DOWN_AFTER_CONSECUTIVE_FAILS = 3  # 3 fails in a row = mark down
 PROBE_HISTORY_LEN = 5             # rolling window for success_rate signal
-HEALTHY_PROBE_AGE_SEC = 90        # election candidates need a probe within
-                                  # the last 90s — stale data excluded
+HEALTHY_PROBE_AGE_SEC = 600       # KI-084 — election candidates need a probe
+                                  # within the last 600s (tracks 300s cadence
+                                  # plus headroom for one missed tick).
 DEGRADED_WINDOW_SEC = 30          # report_failure sidelines a model this long
+                                  # for transient failures (timeout / 5xx).
+# KI-084 — rate-limit failures (HTTP 429 + provider 'RateLimit' bodies) are
+# almost always the daily quota on free tiers (Groq TPD, etc.) — they do
+# NOT reset in 30s. Demote the model from election for an hour so the
+# elector falls through to a non-rate-limited provider instead of
+# bouncing back to the dead candidate on every chat turn.
+DEGRADE_DURATION_LONG_S = 3600.0
 
 # Per-provider endpoints + env-var names. The chain entries embed the
 # provider via a prefix ('openrouter:<id>' / 'groq:<id>'); unprefixed entries
@@ -352,22 +373,61 @@ def get_backup(chain_name: str) -> Optional[str]:
     return ranked[1].model
 
 
+def _is_rate_limit_error(error_class: str) -> bool:
+    """KI-084 — true when the failure looks like a provider rate-limit
+    rather than a transient network/server error.
+
+    The hot-path producer is NimChainLLM._classify_error, which inspects
+    the underlying HTTPStatusError's response.status_code and mints
+    `"Status429"` for 429s explicitly (vs `"HTTPStatusError:503"` for
+    server errors). We match:
+      - `"Status429"` / any string containing `"429"`  — explicit 429 tag.
+      - `"RateLimit"` / `"rate_limit"`                 — defensive upstream
+                                                         text tag (some
+                                                         providers embed
+                                                         this in the body).
+    Crucially we DO NOT match bare `"HTTPStatusError"` here, because
+    `_classify_error` only emits that string for non-429 HTTP failures
+    (e.g. 503), which deserve the SHORT sin-bin, not the 1h quota window.
+    """
+    if not error_class:
+        return False
+    needle = error_class.lower()
+    return (
+        "429" in needle
+        or "ratelimit" in needle
+        or "rate_limit" in needle
+    )
+
+
 def report_failure(chain_name: str, model: str, error_class: str) -> None:
     """Called by NimChainLLM.chat() when primary OR backup throws.
 
     Effects:
-      - Sidelines `model` from election for DEGRADED_WINDOW_SEC so the
-        same turn's failure doesn't immediately re-elect the same model.
+      - Sidelines `model` from election. For rate-limit failures
+        (HTTP 429 / "RateLimit" body — KI-084) the sin-bin is
+        DEGRADE_DURATION_LONG_S (1 hour) because free-tier daily token
+        quotas don't reset for hours; for all other transient failures
+        (timeout / 5xx / parse) it's the short DEGRADED_WINDOW_SEC (30s).
       - Appends a synthetic 'failed' entry to probe_history so the next
         election's success_rate reflects the live failure even before
         the next probe tick.
       - Schedules an async re-probe (best-effort) so the next turn gets
-        fresh data instead of waiting up to 60s for the next tick.
+        fresh data instead of waiting up to PROBE_INTERVAL_SEC for the
+        next tick. (For 429s the reprobe is cheap and informative — if
+        Groq's quota happens to have reset early we'll find out
+        immediately rather than waiting an hour.)
     """
     _load_into_memory()
+    # KI-084 — 429-class failures get a long sin-bin, everything else
+    # the existing 30s window.
+    if _is_rate_limit_error(error_class):
+        degrade_for_s = DEGRADE_DURATION_LONG_S
+    else:
+        degrade_for_s = DEGRADED_WINDOW_SEC
     with _STATE_LOCK:
         h = _STATE.get(model) or ModelHealth(model=model)
-        h.degraded_until_monotonic = time.monotonic() + DEGRADED_WINDOW_SEC
+        h.degraded_until_monotonic = time.monotonic() + degrade_for_s
         h.last_failure_at = _now_iso()
         h.last_error = f"chat_failure: {error_class}"
         h.probe_history.append({
@@ -466,7 +526,10 @@ async def probe_one(client: httpx.AsyncClient, model: str, api_key: str) -> tupl
             json={
                 "model": upstream_model,
                 "messages": [{"role": "user", "content": "Reply with exactly: ok"}],
-                "max_tokens": 5,
+                # KI-084 — max_tokens cut 5 → 1. Same 200 envelope, ~50×
+                # less token spend; probe never inspects the body content
+                # beyond `choices[0].message.content` existing.
+                "max_tokens": PROBE_MAX_TOKENS,
                 "temperature": 0.0,
             },
             timeout=PROBE_TIMEOUT_SEC,
@@ -590,7 +653,8 @@ def status_summary() -> dict:
 
 
 async def background_probe_loop() -> None:
-    """Long-running task — probes every PROBE_INTERVAL_SEC. Started from main.py."""
+    """Long-running task — probes every PROBE_INTERVAL_SEC (300s; KI-084).
+    Started from main.py."""
     while True:
         try:
             await probe_all()

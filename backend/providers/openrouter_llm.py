@@ -85,7 +85,16 @@ class OpenRouterLLM(LLMProvider):
             "X-Title": "Insurance Bot",
         }
 
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
+        # KI-084 — per-phase httpx timeouts (connect / read / write / pool)
+        # so a stuck OpenRouter connection releases its slot on its own
+        # deadline, independent of the outer wait_for cancellation.
+        client_timeout = httpx.Timeout(
+            connect=2.0,
+            read=self.timeout,
+            write=2.0,
+            pool=2.0,
+        )
+        async with httpx.AsyncClient(timeout=client_timeout) as client:
             attempts = 4
             delay = 1.0
             for attempt in range(attempts):

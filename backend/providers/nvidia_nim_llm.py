@@ -141,7 +141,21 @@ class NvidiaNimLLM(LLMProvider):
             "Content-Type": "application/json",
         }
 
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
+        # KI-084 — per-phase httpx timeouts. Previously `timeout=self.timeout`
+        # collapsed to a single read deadline; httpx applied it to the *whole*
+        # connection lifecycle, so a stuck NIM pool could occupy the
+        # connection past the outer wait_for cancellation (the BACKUP elected
+        # model starts but the PRIMARY socket is still held → NIM concurrency
+        # slot leaks). Explicit connect/read/write/pool deadlines guarantee
+        # the TCP connection itself times out independently and the slot is
+        # freed even if the upstream is mid-response.
+        client_timeout = httpx.Timeout(
+            connect=2.0,
+            read=self.timeout,
+            write=2.0,
+            pool=2.0,
+        )
+        async with httpx.AsyncClient(timeout=client_timeout) as client:
             attempts = 4
             delay = 1.0
             for attempt in range(attempts):
@@ -267,6 +281,32 @@ JUDGE_CHAIN = [
     # 6th fallback: Groq Llama-3.3 70B (different provider, LPU inference)
     "groq:llama-3.3-70b-versatile",
 ]
+
+
+def _classify_error(e: BaseException) -> str:
+    """KI-084 — classify a chat exception into a stable string passed to
+    llm_health.report_failure(). The string drives degradation duration:
+    rate-limit failures (HTTP 429) get a 1h sin-bin; everything else 30s.
+
+    We surface the HTTP status code explicitly because `type(e).__name__`
+    is just `"HTTPStatusError"` for both 429 and 503 — losing the signal
+    the elector needs to demote-long vs demote-short. When the exception
+    carries `.response.status_code == 429` we tag it `"Status429"`; for
+    other HTTP statuses we surface e.g. `"HTTPStatusError:503"`; for
+    non-HTTP exceptions we keep the class name (`TimeoutException`,
+    `ReadTimeout`, etc.) — matching the pre-KI-084 contract.
+    """
+    cls = type(e).__name__
+    try:
+        resp = getattr(e, "response", None)
+        status = getattr(resp, "status_code", None) if resp is not None else None
+        if status == 429:
+            return "Status429"
+        if status is not None:
+            return f"{cls}:{status}"
+    except Exception:
+        pass
+    return cls
 
 
 class NimChainLLM(LLMProvider):
@@ -526,7 +566,7 @@ class NimChainLLM(LLMProvider):
                 last_err = e
                 try:
                     llm_health.report_failure(
-                        self._chain_name, model, type(e).__name__
+                        self._chain_name, model, _classify_error(e)
                     )
                 except Exception:
                     pass
@@ -598,7 +638,7 @@ class NimChainLLM(LLMProvider):
                     last_err = e
                     try:
                         llm_health.report_failure(
-                            self._chain_name, model, type(e).__name__
+                            self._chain_name, model, _classify_error(e)
                         )
                     except Exception:
                         pass

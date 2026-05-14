@@ -77,7 +77,15 @@ class GroqLLM(LLMProvider):
             "Content-Type": "application/json",
         }
 
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
+        # KI-084 — per-phase httpx timeouts so a stuck Groq connection
+        # frees its slot independently of the connection-level deadline.
+        client_timeout = httpx.Timeout(
+            connect=2.0,
+            read=self.timeout,
+            write=2.0,
+            pool=2.0,
+        )
+        async with httpx.AsyncClient(timeout=client_timeout) as client:
             attempts = 4
             delay = 1.0
             for attempt in range(attempts):
