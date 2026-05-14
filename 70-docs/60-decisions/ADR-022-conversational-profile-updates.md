@@ -90,3 +90,17 @@ backend/profile_extractor.py
 
 - Add a confidence score to the extractor output; only auto-apply at high confidence, flag medium-confidence updates for user confirmation.
 - Run the extractor in parallel with retrieval+brain to hide the latency.
+
+## Session isolation for profile RAG (KI-102, `4bb8da0`, 2026-05-15)
+
+The extractor above writes profile updates into `session.profile`. The profile is then embedded as a Chroma chunk via `backend/profile_rag.py::upsert_profile_chunk(profile, session_id)` so the brain sees the user's profile alongside policy chunks during retrieval. Pre-KI-102 the chunk was stored without a `session_id` tag, which meant Chroma's nearest-neighbour retrieval could return User A's profile chunk when User B's session ran retrieval — a cross-session PII leak (age / dependents / health conditions).
+
+**Three-layer fix in `backend/profile_rag.py`:**
+
+1. **Metadata stamp.** `upsert_profile_chunk(profile, session_id)` writes `metadata={"doc_type": "profile", "session_id": session_id, ...}` on every chunk. Sessions written before KI-102 lack `session_id` and are treated as legacy (see layer 3).
+2. **Exclude from main retrieval.** The general `retrieve()` pass adds `where={"doc_type": {"$ne": "profile"}}` so profile docs never enter the general policy / regulatory retrieval pool. Profile chunks are read ONLY by the dedicated per-session lookup.
+3. **Per-session lookup triple-checks `session_id`.** `_get_profile_chunk_for_session(session_id)` pulls with `where={"$and": [{"doc_type": "profile"}, {"session_id": session_id}]}` AND re-verifies `result.metadata["session_id"] == session_id` in Python after Chroma returns. Defence-in-depth against a Chroma where-clause bug. Legacy chunks (no `session_id` in metadata) fail the Python check and are silently refused (fail-closed, not fail-open).
+
+**Companion: KI-107 `_safe_collection_get`.** The per-session lookup `collection.get(where=...)` raised on never-existed sessions on the HF Space build (Chroma version-dependent behaviour). KI-107 wraps every `.get()` call in `_safe_collection_get` which catches `Exception`, logs a WARNING, and returns `None`. A `None` return is treated identically to "session_id mismatch" — both fail-closed, brain runs without profile context that turn.
+
+**Privacy invariant.** Session B can NEVER read Session A's profile chunk, regardless of embedding similarity, where-clause behaviour, or never-existed-session edge cases.

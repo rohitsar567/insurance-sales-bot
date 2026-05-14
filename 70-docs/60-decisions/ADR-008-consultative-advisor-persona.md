@@ -51,3 +51,20 @@ The choice has direct legal, ethical, and commercial consequences.
 ## Revisit at scale
 
 Same. Add A/B mode for deploying partners with strict guard-rails (no mis-selling phrases, persona transparency to the user).
+
+## Closer-mode subsection (KI-105, `8a58fa1`, 2026-05-15)
+
+The consultative persona above is the steady-state default. When the user issues an **explicit closer phrase** the persona is augmented (not replaced) with a strict ranked-shortlist contract.
+
+**Trigger.** `classify_intent()` in `backend/orchestrator.py` matches the user message against `RECOMMENDATION_CLOSER_PHRASES` (frozenset, word-boundary regex). Matched phrases include `"show me the top 3"`, `"rank"`, `"pitch me"`, `"which is best for me"`, `"compare X vs Y"`. The closer-phrase check fires BEFORE the `FACT_FIND_TRIGGERS` check, so a fully-fact-found user can never get bounced back into fact-find by a closer phrase that contains words like `"me"`.
+
+**Persona augmentation.** The base `ADVISOR_SYSTEM_PROMPT_V1` is concatenated with `RECOMMENDATION_CLOSER_ADDENDUM` for the closer turn only:
+
+1. Output **exactly 3 ranked policies** — no more, no less.
+2. One-line rationale per pick **tied to the user's profile** (age / dependents / income_band / city_tier / pre-existing conditions).
+3. End with the **3-policy sum + IRDAI disclaimer** ("confirm policy details with the insurer before purchase; premium quoted is illustrative").
+4. **No hedging language.** "You might want to consider..." / "It depends on..." / "Personal preference matters..." are explicitly forbidden in the addendum. The user asked for a ranked shortlist; deliver a ranked shortlist.
+
+The core persona rules from the section above (grounded answers, citation grammar, no medical advice, no scare tactics, no final transactional advice — confirm with insurer) all still apply. The closer addendum is additive, not a replacement.
+
+**Rationale.** Without KI-105, a user who has completed fact-find and then says "OK, now pitch me the top 3" got either (a) re-routed into fact-find (because "me" sat inside `FACT_FIND_TRIGGERS` before KI-023's word-boundary fix), or (b) a hedge-heavy 6-bullet exploration of options without a clear ranked recommendation. Both UX failures — the bot needs to be able to close the conversation when the user explicitly asks it to, while staying inside the consultative guard-rails (still cites, still discloses, still refuses transactional advice).
