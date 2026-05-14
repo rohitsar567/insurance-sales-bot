@@ -325,15 +325,12 @@ export default function Page() {
         latencyMs: res.latency_ms,
         blocked: res.blocked,
       });
-      if (audioUrl) {
-        const audio = new Audio(audioUrl);
-        audio.play().catch(() => {
-          /* autoplay blocked — user can click the inline audio player to hear it */
-        });
-      }
-      // KI-027 — Hands-free auto-reopen loop removed. Live mode provides the
-      // continuous-conversation behavior; push-to-talk is now strictly
-      // one-shot per click.
+      // KI-030 (2026-05-14) — playback moved into the in-DOM <audio> element
+      // owned by the Message component (autoplay on mount). Detached
+      // `new Audio()` instances were invisible to
+      // useLiveConversation.interruptBotAudio()'s document.querySelectorAll
+      // pause, which broke barge-in. Now the DOM audio handles playback +
+      // can be paused by querySelectorAll when the user speaks over the bot.
     } catch (e: unknown) {
       const err = e as { name?: string; message?: string };
       if (err?.name === "AbortError") {
@@ -397,10 +394,9 @@ export default function Page() {
           latencyMs: res.latency_ms,
           blocked: res.blocked,
         });
-        if (audioUrl) {
-          const audio = new Audio(audioUrl);
-          audio.play().catch(() => {});
-        }
+        // KI-030 — playback handled by the in-DOM <audio> in Message component
+        // (autoplay-on-mount); needed so barge-in's querySelectorAll("audio")
+        // can pause it. See comment in the typed-send branch.
       } catch (e: unknown) {
         const name = (e as { name?: string })?.name;
         if (name === "AbortError") return; // user barged in; intentional
@@ -1367,13 +1363,43 @@ function stripInlineCitations(text: string): string {
 function Message({ m }: { m: DisplayMessage }) {
   const isUser = m.role === "user";
   const displayContent = isUser ? m.content : stripInlineCitations(m.content);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // KI-030 — Auto-play the bot's TTS reply when the message first mounts.
+  // Replaces the old detached `new Audio(url).play()` approach which created
+  // an element OUTSIDE the DOM tree — that element couldn't be found by the
+  // `document.querySelectorAll("audio")` call in useLiveConversation's
+  // barge-in handler, so the bot kept reading the full TTS even when the
+  // user spoke over it. Now playback lives on a DOM audio element, which
+  // querySelectorAll DOES find — so saying anything during the bot's reply
+  // pauses it instantly.
+  // Played only on mount (one-shot) so chat-history rehydration doesn't
+  // replay every old reply. (audioUrl is also stripped from localStorage on
+  // persist, so old messages don't have URLs to replay anyway.)
+  useEffect(() => {
+    if (m.audioUrl && audioRef.current) {
+      audioRef.current.play().catch(() => {
+        /* autoplay blocked — user can click the inline control to listen */
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div className={`flex animate-fade-up ${isUser ? "justify-end" : "justify-start"}`}>
       <div className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-3 ${
         isUser ? "bg-[var(--primary)] text-[var(--primary-foreground)]" : "bg-[var(--card)] border border-[var(--border)]"
       }`}>
         <div className="text-sm sm:text-base whitespace-pre-wrap leading-relaxed">{displayContent}</div>
-        {m.audioUrl && <audio controls src={m.audioUrl} className="mt-2 w-full max-w-xs" style={{ height: 32 }} />}
+        {m.audioUrl && (
+          <audio
+            ref={audioRef}
+            controls
+            src={m.audioUrl}
+            className="mt-2 w-full max-w-xs"
+            style={{ height: 32 }}
+          />
+        )}
         {!isUser && m.citations && m.citations.length > 0 && (
           <PolicyChipsFromCitations citations={m.citations} />
         )}
