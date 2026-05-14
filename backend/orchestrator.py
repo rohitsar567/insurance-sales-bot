@@ -259,17 +259,27 @@ async def handle_turn(
         else:
             # Fact-find complete — produce a profile readback + invite next step.
             # CRITICAL (KI-012): flip free_form_session=True so subsequent turns
-            # don't re-enter the fact-find branch and repeat the readback. Before
-            # this, every post-fact-find turn returned the same readback summary
-            # because next_question() kept returning None.
+            # don't re-enter the fact-find branch and repeat the readback.
+            #
+            # KI-015 — explicitly invite corrections in the readback message
+            # before recommending. Real user testing surfaced that the bot
+            # captured age=30 when user said 31, and the readback only said
+            # "Want me to suggest…" — no explicit "correct me if wrong" prompt.
+            # Corrections in the next turn flow through the conversational
+            # profile-update extractor (free-form mode), so the bot WILL
+            # absorb "actually I'm 31" — but the user has to know they can
+            # say that. This message tells them.
             from backend.needs_finder import readback_summary
             session.set_awaiting(None)
             session.free_form_session = True
             session._flush()
             summary = readback_summary(session.profile)
             reply = (
-                f"Got it — here's what I've understood: {summary}. Want me to suggest 2-3 policies that fit your profile, "
-                "or do you have a specific policy in mind to dig into?"
+                f"Got it — here's what I've understood: {summary}. "
+                f"**If anything's wrong, just tell me** (e.g., \"actually I'm 31\", or "
+                f"\"I want to cover my parents too\"). "
+                f"Otherwise — want me to suggest 2-3 policies that fit your profile, "
+                f"or do you have a specific policy in mind to dig into?"
             )
             brain_tag = "needs_finder::fact_find_complete"
 
