@@ -115,10 +115,15 @@ export default function Page() {
     }
   }, [messages]);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
-  const [handsFree, setHandsFree] = useState(false);  // VAD auto-cutoff mode
-  // Live ref of handsFree so async TTS-ended callbacks read the latest value
-  // (closure captured at audio.play() time would otherwise be stale)
-  const handsFreeRef = useRef(false);
+  // KI-027 (2026-05-14) — voice UX simplification. The legacy `handsFree`
+  // mode (its own VAD auto-cutoff + post-turn mic re-open loop) has been
+  // removed. We now have exactly two voice paths, mutually exclusive:
+  //   • Live ✓ — full-duplex with barge-in (the default, owned by
+  //     useLiveConversation).
+  //   • 🎤 push-to-talk — click to start, VAD auto-stops on 2s silence,
+  //     submits, mic closes. One utterance per click.
+  // The "Hands-free continuous loop" was the source of the duplicate-mic
+  // bug in the 2026-05-14 user screenshot and added zero value over Live.
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -173,19 +178,16 @@ export default function Page() {
   // Hands-free continuous loop: when toggled ON, immediately open mic. When
   // toggled OFF, close any in-progress recording. The send() function takes
   // care of re-opening the mic after each assistant TTS finishes.
+  // KI-027 — Live mode is the SOLE voice mode. Always on (no toggle off).
+  // The only thing that suspends it is an explicit press of the 🎤
+  // push-to-talk button — and even then, Live resumes immediately after
+  // the one-shot PTT recording finishes. If mic permission is denied,
+  // useLiveConversation flips micPermissionDenied=true and the UI shows a
+  // "mic blocked — type to chat" hint; the textarea + Send still work.
   useEffect(() => {
-    handsFreeRef.current = handsFree;
-    // KI-026 — when Live mode is active it owns the mic; Hands-free must NOT
-    // also try to open it. If user enables Hands-free while Live is on, just
-    // ignore the request.
-    if (live.live) return;
-    if (handsFree && !recording && !busy) {
-      startRecording();
-    } else if (!handsFree && recording) {
-      stopRecording();
-    }
+    live.setLive(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [handsFree, live.live]);
+  }, []);
 
   function pushUser(text: string) {
     setMessages((m) => [...m, { id: `u_${Date.now()}`, role: "user", content: text }]);
@@ -314,24 +316,13 @@ export default function Page() {
       });
       if (audioUrl) {
         const audio = new Audio(audioUrl);
-        // In hands-free mode, re-open the mic AFTER the assistant's TTS reply
-        // finishes playing — that's how a Siri/Alexa loop feels natural.
-        audio.addEventListener("ended", () => {
-          if (handsFreeRef.current) {
-            setTimeout(() => { if (handsFreeRef.current) startRecording(); }, 250);
-          }
-        });
         audio.play().catch(() => {
-          // Audio playback failed (e.g. browser blocked autoplay) — still
-          // continue the hands-free loop if enabled.
-          if (handsFreeRef.current) {
-            setTimeout(() => { if (handsFreeRef.current) startRecording(); }, 250);
-          }
+          /* autoplay blocked — user can click the inline audio player to hear it */
         });
-      } else if (handsFreeRef.current) {
-        // No audio reply (voice toggle off) — restart mic after a short pause
-        setTimeout(() => { if (handsFreeRef.current) startRecording(); }, 500);
       }
+      // KI-027 — Hands-free auto-reopen loop removed. Live mode provides the
+      // continuous-conversation behavior; push-to-talk is now strictly
+      // one-shot per click.
     } catch (e: unknown) {
       const err = e as { name?: string; message?: string };
       if (err?.name === "AbortError") {
@@ -409,14 +400,16 @@ export default function Page() {
   }, [messages, sessionId, ttsLang, openPolicy, showMarketplace, showProfile, showPremium]);
 
   async function startRecording() {
-    // KI-026 (2026-05-14) — voice mode mutual exclusion. If Live mode is
-    // active it owns the mic + the chat dispatch; the legacy push-to-talk
-    // and Hands-free paths must NOT run in parallel or we get duplicate
-    // user transcripts + duplicate /api/chat dispatches + duplicate TTS
-    // playback (the bug visible in the 2026-05-14 user screenshot).
+    // KI-027 — Push-to-talk briefly SUSPENDS Live mode (which is otherwise
+    // always on). This avoids the duplicate-mic / duplicate-/api/chat bug
+    // from the 2026-05-14 screenshot: only one path captures + dispatches
+    // any given utterance. Live resumes when PTT finishes (recorder.onstop).
     if (live.live) {
-      console.warn("[voice] startRecording blocked — Live mode is active");
-      return;
+      live.setLive(false);
+      // Small wait so useLiveConversation tears down its stream before we
+      // open a fresh one; without this, two AudioContexts can briefly grab
+      // the same input device.
+      await new Promise((r) => setTimeout(r, 120));
     }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -430,7 +423,10 @@ export default function Page() {
         stream.getTracks().forEach((t) => t.stop());
         const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType || "audio/webm" });
         setRecording(false);
-        if (blob.size < 1000) return;
+        // KI-027 — PTT done: resume Live mode so the user goes right back to
+        // hands-free conversation without a button press.
+        const resumeLive = () => { live.setLive(true); };
+        if (blob.size < 1000) { resumeLive(); return; }
         setBusy(true);
         try {
           const { text } = await postTranscribe(blob, ttsLang);
@@ -438,15 +434,19 @@ export default function Page() {
           else pushAssistant("Sorry, I couldn't hear that clearly. Please try again.");
         } catch (e: unknown) {
           pushAssistant(`Sorry — transcribe error: ${e instanceof Error ? e.message : String(e)}`);
-        } finally { setBusy(false); }
+        } finally {
+          setBusy(false);
+          resumeLive();
+        }
       };
       recorder.start();
       setRecording(true);
 
-      // Hands-free / VAD auto-cutoff mode: listen for ~1.5s of silence
-      // (RMS level below threshold) and auto-stop the recording. Falls back
-      // gracefully if AudioContext unsupported.
-      if (handsFree) {
+      // KI-027 — VAD auto-cutoff is now ALWAYS on for the push-to-talk
+      // fallback. Click the mic, talk, and the recording auto-stops after
+      // ~2s of silence. Was previously gated behind `handsFree` which we
+      // removed. Push-to-talk is one-shot per click — no auto re-open.
+      if (true) {
         try {
           const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
           const audioCtx = new AC();
@@ -730,11 +730,13 @@ export default function Page() {
             <button
               type="button"
               onClick={recording ? stopRecording : startRecording}
-              disabled={(busy && !recording) || live.live}
+              disabled={busy && !recording}
               className={`shrink-0 w-11 h-11 rounded-xl flex items-center justify-center transition-all ${
                 recording ? "bg-[var(--error)] text-white animate-record-pulse" : "bg-[var(--muted)] hover:bg-[var(--border)]"
               } disabled:opacity-40`}
-              title={live.live ? "Live mode is active — voice is handled automatically" : recording ? "Stop recording" : "Voice input"}
+              title={recording
+                ? "Push-to-talk: recording… click to stop or stay silent for 2s"
+                : "Push-to-talk (pauses always-on listening for one turn)"}
             >
               {recording ? <StopIcon /> : <MicIcon />}
             </button>
@@ -749,40 +751,29 @@ export default function Page() {
           </div>
           <div className="flex items-center justify-between gap-3 mt-2 pt-2 px-2 text-xs text-[var(--muted-foreground)]">
             <div className="flex items-center gap-3">
-              <label className="flex items-center gap-1.5 cursor-pointer">
+              {/* KI-027 — Live mode is the default + only voice mode. This is
+                  a STATUS pill, not a toggle. The only way to "pause" Live is
+                  to press the 🎤 push-to-talk button for one turn. */}
+              {!live.micPermissionDenied ? (
+                <span
+                  className="flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-[var(--border)] text-xs font-medium text-[var(--muted-foreground)]"
+                  title={live.live
+                    ? "Always-on voice. Just speak — I'm listening. Speak over me to interrupt at any time."
+                    : "Voice paused for push-to-talk; resumes after this turn."}
+                >
+                  <span className={`inline-block w-2 h-2 rounded-full ${
+                    live.live ? (live.recording ? "bg-red-500 animate-pulse" : "bg-emerald-500 animate-pulse") : "bg-gray-400"
+                  }`} />
+                  {live.live ? (live.recording ? "Listening…" : "Just speak — I'm listening") : "Push-to-talk active"}
+                </span>
+              ) : (
+                <span className="text-rose-500 text-xs" title="Allow mic in your browser site settings, or use the 🎤 push-to-talk button">
+                  🔇 Mic blocked — use 🎤 to speak, or type below
+                </span>
+              )}
+              <label className="flex items-center gap-1.5 cursor-pointer" title="Bot replies with both text and audio">
                 <input type="checkbox" checked={returnAudio} onChange={(e) => setReturnAudio(e.target.checked)} className="w-3.5 h-3.5 accent-[var(--primary)]" /> Voice reply
               </label>
-              <label
-                className={`flex items-center gap-1.5 ${live.live ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
-                title={live.live ? "Disabled — Live mode is on. Turn off Live to use Hands-free." : "Hands-free voice — auto-submits when you stop speaking"}
-              >
-                <input
-                  type="checkbox"
-                  checked={handsFree && !live.live}
-                  disabled={live.live}
-                  onChange={(e) => setHandsFree(e.target.checked)}
-                  className="w-3.5 h-3.5 accent-[var(--primary)]"
-                /> Hands-free
-              </label>
-              {/* Live conversation — full-duplex with VAD barge-in. Speak any
-                  time, even while the bot is still talking, and it stops mid-
-                  sentence and listens to you. No button press needed. */}
-              <button
-                type="button"
-                onClick={() => live.setLive(!live.live)}
-                className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs font-medium transition ${
-                  live.live
-                    ? "bg-red-500/15 border-red-400 text-red-600"
-                    : "border-[var(--border)] hover:border-[var(--primary)] hover:text-[var(--primary)]"
-                }`}
-                title="Live conversation: continuous mic, interrupt the bot by speaking"
-              >
-                <span className={`inline-block w-2 h-2 rounded-full ${live.live ? (live.recording ? "bg-red-500 animate-pulse" : "bg-green-500 animate-pulse") : "bg-gray-400"}`} />
-                {live.live ? (live.recording ? "Listening…" : "Live ✓") : "Go Live"}
-              </button>
-              {live.micPermissionDenied && (
-                <span className="text-red-500" title="Browser blocked microphone access — check site permissions">mic blocked</span>
-              )}
               <label className="flex items-center gap-1.5">
                 Lang:
                 <select value={ttsLang} onChange={(e) => setTtsLang(e.target.value as "en-IN" | "hi-IN")} className="bg-transparent border border-[var(--border)] rounded px-1.5 py-0.5">
@@ -791,7 +782,7 @@ export default function Page() {
                 </select>
               </label>
             </div>
-            <div className="hidden sm:block">Enter to send · 📎 to upload your own PDF</div>
+            <div className="hidden sm:block">Enter to send · 🎤 to push-to-talk · 📎 PDF</div>
           </div>
         </div>
       </main>
@@ -1302,9 +1293,14 @@ function EmptyState({ onSuggest, coverage, t }: { onSuggest: (q: string) => void
           {t("welcome.coverage_template", { policies: coverage.total_policies, insurers: coverage.total_insurers })}
         </p>
       )}
-      <div className="bg-[var(--accent)] border border-[var(--primary)] rounded-xl px-4 py-3 max-w-xl mb-6 text-left">
+      <div className="bg-[var(--accent)] border border-[var(--primary)] rounded-xl px-4 py-3 max-w-xl mb-4 text-left">
         <div className="text-xs font-semibold text-[var(--primary)] mb-1">{t("welcome.trust_title")}</div>
         <p className="text-xs text-[var(--muted-foreground)] leading-snug">{t("welcome.trust_body")}</p>
+      </div>
+      {/* KI-027 — make it obvious that voice is always-on. */}
+      <div className="flex items-center gap-2 max-w-xl mb-6 text-sm text-[var(--muted-foreground)]">
+        <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+        <span><strong className="text-[var(--foreground)]">Voice is on.</strong> Just start speaking — I&apos;m listening. Speak over me to interrupt at any time. Prefer to type? Use the box below.</span>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-2xl">
         {suggested.map((key, i) => {
