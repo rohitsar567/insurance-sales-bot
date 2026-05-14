@@ -14,8 +14,9 @@ FastAPI + Pydantic service that fronts every chat turn. The HTTP entry point is 
 
 | File | Role | Related ADR |
 | --- | --- | --- |
-| `needs_finder.py` | 9-slot fact-find graph (`GRAPH`) + slot detection from free text. | [ADR-027](../70-docs/60-decisions/ADR-027-fact-find-llm-paraphraser.md) |
-| `question_paraphraser.py` | LLM rewrite of the canonical slot question so each session sounds fresh; verifier rejects off-slot drift. Cached per `(session_id, slot_id)`. | ADR-027 |
+| `needs_finder.py` | 9-slot fact-find schema (`GRAPH`) + canonical question prompts. Post-KI-070 used as **safeguard fallback only** — primary path is `fact_find_brain.py::drive_fact_find` (single LLM call per turn). | [ADR-030](../70-docs/60-decisions/ADR-030-llm-driven-fact-find.md) |
+| `fact_find_brain.py` | KI-070 single-LLM-call fact-find driver. One brain call per turn produces natural prose + `<FF>{...}</FF>` JSON tail (captured slots + next slot + complete flag). KI-090 made the tail parser lenient (strict / fenced / bare-JSON-tail). | [ADR-030](../70-docs/60-decisions/ADR-030-llm-driven-fact-find.md), [ADR-032](../70-docs/60-decisions/ADR-032-llm-chain-architecture.md) |
+| ~~`question_paraphraser.py`~~ *(deleted in KI-070)* | Was an LLM rewrite of canonical slot questions (ADR-027). Superseded by `fact_find_brain.py`'s single-call architecture. | superseded by [ADR-030](../70-docs/60-decisions/ADR-030-llm-driven-fact-find.md) |
 | `fact_find_normalizer.py` | LLM-driven free-text → slot-value coercion (e.g. "32 lakh" → `3200000`). Goes through `NimChainLLM`, not a single client (KI-033). | — |
 | `profile_extractor.py` | LLM extractor that pulls profile updates out of conversational asides ("by the way, my dad has diabetes"). Chain-pattern, never a hardcoded model. | [ADR-022](../70-docs/60-decisions/ADR-022-conversational-profile-updates.md) |
 | `profile_store.py` | **NEW (KI-040).** Persistent named-profile JSON store under `40-data/profiles/`. O(1) name-keyed lookup; mirrors into `profile_rag` on every save. | — |
