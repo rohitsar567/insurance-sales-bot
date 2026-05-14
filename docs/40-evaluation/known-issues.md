@@ -306,3 +306,20 @@ free-form recommendations. After fact-find readback, the bot should
 ask "Does this all look right? Reply 'yes' or correct anything that's
 off." Then proceed only if user confirms. Also: log the raw fact-find
 inputs vs the captured profile so we can debug mismatches.
+
+### KI-016 — NIM has promoted Qwen3-next-80B over DeepSeek-V4-Flash
+
+**Severity:** P2
+**Source:** Live audit log: `brain=nim-chain::qwen3-next-80b-a3b-instruct::v4-flash::qa`
+**Discovered:** Audit run 2026-05-14
+
+The NIM chain now tries Qwen3-next-80B BEFORE DeepSeek-V4-Flash for
+`qa` intents. NIM-side catalog change (not ours). Latency per turn
+~10s — slower than V4-Flash's ~3s. Worth investigating whether
+Qwen3-next is empirically a better fit than V4-Flash for our use
+case (Indian health-insurance grounded Q&A), or whether we should
+explicitly demote it via the admin panel's chain reorder.
+
+**Fix plan:** Run eval/run.py on the gold set with each model
+isolated as primary, compare factual/citation/refusal scores. If
+V4-Flash wins, reorder via /api/admin/chain.
