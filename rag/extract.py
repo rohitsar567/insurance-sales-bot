@@ -338,10 +338,10 @@ async def main():
     #     different MoE routing path so a Pro timeout doesn't always reproduce
     #     in Flash. Sarvam-M was the old fallback but its <think> tags ate the
     #     2048 output cap before reaching JSON, causing ~20 truncation failures.
-    primary = get_brain_llm()       # DeepSeek-V4-Pro
-    fallback = get_fast_brain_llm() # DeepSeek-V4-Flash
+    primary = get_brain_llm()       # BRAIN_CHAIN — Qwen 3-Next 80B primary (D-022)
+    fallback = get_fast_brain_llm() # FAST_BRAIN_CHAIN — Nemotron Nano 30B primary (D-022)
 
-    print(f"Extracting {len(pdfs)} policies. Primary=NIM V4-Pro, Fallback=NIM V4-Flash.\n")
+    print(f"Extracting {len(pdfs)} policies. Primary=BRAIN_CHAIN (Qwen 80B), Fallback=FAST_BRAIN_CHAIN (Nemotron 30B).\n")
     t0 = time.time()
     ok = 0
     for i, pdf in enumerate(pdfs, 1):

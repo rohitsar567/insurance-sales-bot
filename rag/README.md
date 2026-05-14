@@ -11,8 +11,8 @@ Lineage for every artefact below is documented in [`kb/AUDIT_TRAIL.md`](../kb/AU
 | `download_corpus.py` | 1. SOURCE → 3. DOWNLOAD | `rag/corpus/<insurer>/*.pdf` + `_manifest.json`. HEAD-checks + magic-byte sniff + retry on 403/timeout. |
 | `download_retry.py` | 3. DOWNLOAD | Retries the failures from the previous run. |
 | `download_regulatory.py` | 3. DOWNLOAD | IRDAI / regulatory PDFs (deferred from v1; see [ADR-017](../70-docs/60-decisions/ADR-017-irdai-corpus-playwright-rescue.md)). |
-| `ingest.py` | 4. PARSE → 5. CHUNK → 6. EMBED → 7. INDEX | The big one. `read_pdf_pages` (pdfplumber) → `chunk_pages` (800-tok / 120 overlap, sentence-aware) → BGE embed → `chromadb.PersistentClient.add(...)`. Carries the in-process HNSW bloat tripwire ([ADR-029](../70-docs/60-decisions/ADR-029-disk-storage-hardening.md)). |
-| `extract.py` | 8. STRUCTURED EXTRACTION | LLM extraction over each PDF using `schema.py::HealthPolicy` (62 fields). Sarvam-M primary → DeepSeek-V3 fallback. Writes `rag/extracted/<policy_id>.json` + upserts `policies.duckdb`. |
+| `ingest.py` | 4. PARSE → 5. CHUNK → 6. EMBED → 7. INDEX | The big one. `read_pdf_pages` (pdfplumber) → `chunk_pages` (800-tok / 120 overlap, sentence-aware) → BGE embed → `chromadb.PersistentClient.add(...)`. Carries the in-process HNSW bloat tripwire ([ADR-029](../70-docs/60-decisions/ADR-029-hnsw-bloat-tripwire.md)). |
+| `extract.py` | 8. STRUCTURED EXTRACTION | LLM extraction over each PDF using `schema.py::HealthPolicy` (62 fields). `get_brain_llm()` (Qwen 3-Next 80B primary) + `get_fast_brain_llm()` (Nemotron Nano 30B) — both `NimChainLLM` fallback chains. Writes `rag/extracted/<policy_id>.json` + upserts `policies.duckdb`. |
 | `build_kb.py` | 9. SCORECARD → KB MIRROR | Runs `backend/scorecard.py` per policy and regenerates the human-readable `kb/policies/<id>.md` tree. |
 | `source_map.py` | post-build | Builds `source_map.json` — every chunk → (PDF path, page, span) for citation rendering. |
 
@@ -62,5 +62,5 @@ Total cost from cold: < $2 (BGE local + ~80 LLM extractions). Wall-time: ~30-40 
 - [ADR-011](../70-docs/60-decisions/ADR-011-bge-local-embeddings.md) — why local BGE replaced Voyage
 - [ADR-018](../70-docs/60-decisions/ADR-018-chunk-size-sweep-deferred.md) — 800/120 chunk-size baseline
 - [ADR-020](../70-docs/60-decisions/ADR-020-code-data-split-hf-dataset.md) — code-vs-data repo split
-- [ADR-029](../70-docs/60-decisions/ADR-029-disk-storage-hardening.md) — HNSW bloat tripwire (3-layer defence)
+- [ADR-029](../70-docs/60-decisions/ADR-029-hnsw-bloat-tripwire.md) — HNSW bloat tripwire (3-layer defence)
 - [`kb/AUDIT_TRAIL.md`](../kb/AUDIT_TRAIL.md) — end-to-end lineage doc

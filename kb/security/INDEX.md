@@ -24,7 +24,7 @@ All gates run for EVERY upload. Block on any failure; the audit trail captures t
 | 1 | Retrieval floor | Top-1 cosine < 0.30 OR avg top-5 < 0.22 → refuse outright |
 | 2 | Citation integrity | Any `[Source:…]` in the bot's reply must point to a real retrieved chunk's policy_name |
 | 3 | Numeric grounding | Every ₹, %, day/month/year in the reply must appear in retrieved chunks (regex) |
-| 4 | LLM-judge faithfulness | NIM Llama-4 Maverick (Meta MoE) inspects the reply against retrieved chunks; outputs strict JSON; different family from DeepSeek-V4 brain → non-circular eval (D-019). |
+| 4 | LLM-judge faithfulness | NIM Mistral Large 3 675B (primary judge per D-022) + Llama-4 Maverick (fallback) inspects the reply against retrieved chunks; outputs strict JSON; different family from Qwen 3-Next 80B brain (primary per D-022) + DeepSeek-V4 (fallback) → non-circular eval (D-019). |
 | 5 (Indic) | Hinglish drift LLM-judge | Same idea on the Hinglish back-translation vs the English source |
 
 Plus **regex anchors + back-translate cosine** as additional drift checks

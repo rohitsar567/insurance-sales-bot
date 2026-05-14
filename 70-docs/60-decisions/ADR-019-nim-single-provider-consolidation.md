@@ -3,6 +3,8 @@
 **Status:** Locked
 **Date:** 2026-05-14
 
+**Partial supersession (D-022, 2026-05-14):** NIM's DeepSeek V4-Pro / V4-Flash and Llama-4 Maverick inference pools degraded with hours-long timeouts during a production incident. The chains were re-ordered to put **Qwen 3-Next 80B** (brain primary), **Nemotron Nano 30B** (fast brain primary), and **Mistral Large 3 675B** (judge primary) at the head, with DeepSeek + Maverick retained as fallback chain entries that re-enter rotation when those pools recover. The single-provider consolidation decision in this ADR still stands (NIM remains the primary inference provider); only the *specific model picks* were swapped. See `backend/providers/nvidia_nim_llm.py` for the current chain definitions.
+
 ## Context
 
 By mid-May 2026 the LLM stack had accreted **four third-party providers** in overlapping roles, each with its own free-tier ceiling that surfaced as quality problems:

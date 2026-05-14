@@ -2,7 +2,7 @@
 
 Loose collection of CLI scripts: corpus operations, data uploads, probes, KB regeneration, scheduled-job runners. Nothing under `tools/` is imported by the live server — `backend/` and `rag/` are the runtime surface.
 
-Scheduling for the long-running ones is wired via macOS LaunchAgents — see `CRON_README.md` in this folder for cadence + script paths, and [ADR-029](../70-docs/60-decisions/ADR-029-disk-storage-hardening.md) for the disk-safety LaunchAgents.
+Scheduling for the long-running ones is wired via macOS LaunchAgents — see `CRON_README.md` in this folder for cadence + script paths, and [ADR-029](../70-docs/60-decisions/ADR-029-hnsw-bloat-tripwire.md) for the disk-safety LaunchAgents.
 
 ## Corpus + extraction batch ops
 
@@ -76,5 +76,5 @@ Scheduling for the long-running ones is wired via macOS LaunchAgents — see `CR
 ## Related
 
 - `CRON_README.md` (this folder) — LaunchAgent cadence reference
-- [ADR-020](../70-docs/60-decisions/ADR-020-code-data-split-hf-dataset.md), [ADR-024](../70-docs/60-decisions/ADR-024-triple-mirror-code-and-data.md), [ADR-029](../70-docs/60-decisions/ADR-029-disk-storage-hardening.md)
+- [ADR-020](../70-docs/60-decisions/ADR-020-code-data-split-hf-dataset.md), [ADR-024](../70-docs/60-decisions/ADR-024-triple-mirror-code-and-data.md), [ADR-029](../70-docs/60-decisions/ADR-029-hnsw-bloat-tripwire.md)
 - `80-audit/ENTERPRISE_AUDIT.md` — defect register, including silent-LaunchAgent regressions (D-002)

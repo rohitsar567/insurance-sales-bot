@@ -49,7 +49,7 @@ The original design considered embedding-only. The "why JSON" trade-offs:
 - **Deterministic name lookup.** `Rohit` → `rohit.json` is exact; vector search is approximate and can collide on common first names.
 - **Human-readable.** A BFSI auditor can `cat` the file and see the full profile.
 - **Manually editable.** Quick repair without a re-embed pipeline.
-- **No HNSW bloat exposure.** Profile updates do not touch the policy vector store ([ADR-029](../70-docs/60-decisions/ADR-029-disk-storage-hardening.md)).
+- **No HNSW bloat exposure.** Profile updates do not touch the policy vector store ([ADR-029](../70-docs/60-decisions/ADR-029-hnsw-bloat-tripwire.md)).
 
 The Chroma chunk is purely a retrieval-time view of the canonical JSON.
 
