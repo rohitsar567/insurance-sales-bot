@@ -170,6 +170,26 @@ async def retrieve(
     if cached is not None:
         return cached
 
+    # KI-049 (2026-05-14) — wider net for table-cell questions. The
+    # post-fix 96-Q eval surfaced 8 failures on room-rent / sub-limit /
+    # cap questions where the bot's reply omitted the room category
+    # ("Single Private", "Twin Sharing", "General Ward"). Root cause:
+    # the policy table with the cap structure is one chunk in Chroma,
+    # but at top_k=5 it can lose to other relevant prose chunks. For
+    # queries clearly asking about a structured cap, retrieve more
+    # candidates so the table chunk has a higher chance of landing in
+    # the LLM's context window.
+    _TABLE_CELL_TRIGGERS = _re.compile(
+        r"\b(room\s*rent|sub[\s\-]?limit|sub[\s\-]?limits|copay|co[\s\-]?pay|"
+        r"cap\s+on|capped\s+at|sum\s+insured\s+limit|"
+        r"single\s+private|twin\s+sharing|general\s+ward|"
+        r"no[\s\-]?claim\s+bonus|ncb)\b",
+        flags=_re.IGNORECASE,
+    )
+    effective_top_k = top_k
+    if _TABLE_CELL_TRIGGERS.search(query or ""):
+        effective_top_k = max(top_k, 10)
+
     embedder = embedder or VoyageEmbeddings()
     [query_vec] = await embedder.embed([query], input_type="query")
 
@@ -184,7 +204,7 @@ async def retrieve(
     # Standard retrieval
     res = collection.query(
         query_embeddings=[query_vec],
-        n_results=top_k,
+        n_results=effective_top_k,
         where=where if where else None,
     )
 
