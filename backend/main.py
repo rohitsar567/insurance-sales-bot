@@ -8,8 +8,10 @@ Interactive docs at http://localhost:8000/docs
 
 from __future__ import annotations
 
+import asyncio
 import base64
 import json
+import logging
 import time
 import uuid
 from pathlib import Path
@@ -300,22 +302,81 @@ async def transcribe(
 @app.post("/api/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest):
     session_id = req.session_id or str(uuid.uuid4())
+    t_chat0 = time.time()
+    # KI-106 — never let an inner TimeoutError / unhandled exception bubble out
+    # of handle_turn as a 500. C4 NRI persona saw 5× HTTP 500s with
+    # "Orchestrator failed: TimeoutError" because the outer non-fact-find
+    # brain call propagated asyncio.TimeoutError from KI-099/100 wait_for
+    # wrappers. We also wrap the whole call in an outer 45s budget so even a
+    # pathological hang inside handle_turn surfaces as a graceful reply,
+    # not a connection-reset to the user. 45s is generous but tighter than
+    # HF Space's gateway timeout, so the user always gets a response.
     try:
-        turn = await handle_turn(
-            user_text=req.user_text,
-            chat_history=req.chat_history,
-            user_profile=req.profile,
-            policy_filter_ids=req.policy_filter_ids,
+        turn = await asyncio.wait_for(
+            handle_turn(
+                user_text=req.user_text,
+                chat_history=req.chat_history,
+                user_profile=req.profile,
+                policy_filter_ids=req.policy_filter_ids,
+                session_id=session_id,
+                view_context=req.view_context,
+            ),
+            timeout=45.0,
+        )
+    except asyncio.TimeoutError:
+        logging.warning(
+            "handle_turn outer TimeoutError; returning graceful reply (session=%s)",
+            session_id,
+        )
+        log_turn({
+            "session_id": session_id,
+            "user_text": req.user_text,
+            "error": "asyncio.TimeoutError (outer 45s budget or inner wait_for)",
+            "graceful": True,
+        })
+        return ChatResponse(
+            reply_text=(
+                "That took longer than expected — let me try a smaller answer. "
+                "Could you ask me again, maybe more specifically?"
+            ),
+            citations=[],
+            brain_used="timeout_fallback",
+            intent="qa",
+            language="en",
+            latency_ms=int((time.time() - t_chat0) * 1000),
             session_id=session_id,
-            view_context=req.view_context,
+            audio_base64=None,
+            faithfulness_passed=True,
+            faithfulness_reasons=[],
+            blocked=False,
+            profile_updates={},
         )
     except Exception as e:
+        logging.exception(
+            "handle_turn unhandled exception (session=%s)", session_id
+        )
         log_turn({
             "session_id": session_id,
             "user_text": req.user_text,
             "error": f"{type(e).__name__}: {e}",
+            "graceful": True,
         })
-        raise HTTPException(500, f"Orchestrator failed: {type(e).__name__}: {e}")
+        return ChatResponse(
+            reply_text=(
+                "Hmm, something went wrong on my end. Could you try once more?"
+            ),
+            citations=[],
+            brain_used="error_fallback",
+            intent="qa",
+            language="en",
+            latency_ms=int((time.time() - t_chat0) * 1000),
+            session_id=session_id,
+            audio_base64=None,
+            faithfulness_passed=True,
+            faithfulness_reasons=[],
+            blocked=False,
+            profile_updates={},
+        )
 
     audio_b64 = None
     if req.return_audio and turn.reply_text:

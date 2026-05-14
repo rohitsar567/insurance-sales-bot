@@ -189,5 +189,87 @@ class TestProviderLoadBalancing(unittest.TestCase):
                         "FAST_BRAIN_CHAIN must have a Groq fallback for the rotation to balance against.")
 
 
+class TestChatEndpointGracefulFailures(unittest.TestCase):
+    """KI-106: /api/chat must NEVER return HTTP 500 to the user when
+    handle_turn raises (asyncio.TimeoutError or any other exception).
+
+    Pre-fix: C4 NRI persona saw 5× HTTP 500 with
+    'Orchestrator failed: TimeoutError'. The inner asyncio.wait_for handlers
+    caught their local timeouts but the outer non-fact-find brain call let
+    TimeoutError propagate, and FastAPI converted it to 500.
+
+    Post-fix: TimeoutError + any Exception are caught at the /api/chat
+    layer and converted into a 200 OK ChatResponse with a graceful
+    'try again' message.
+    """
+
+    def _client(self):
+        from fastapi.testclient import TestClient
+
+        from backend import main as backend_main
+        return TestClient(backend_main.app), backend_main
+
+    def test_handle_turn_timeout_returns_200_with_graceful_reply(self) -> None:
+        import asyncio as _asyncio
+
+        client, backend_main = self._client()
+
+        async def _raise_timeout(**_kwargs):
+            raise _asyncio.TimeoutError("simulated wait_for timeout")
+
+        original = backend_main.handle_turn
+        backend_main.handle_turn = _raise_timeout
+        try:
+            resp = client.post(
+                "/api/chat",
+                json={"user_text": "What is the waiting period under Activ Assure?"},
+            )
+        finally:
+            backend_main.handle_turn = original
+
+        self.assertEqual(
+            resp.status_code,
+            200,
+            f"Expected 200 graceful reply, got {resp.status_code}: {resp.text[:200]}",
+        )
+        body = resp.json()
+        self.assertIn(
+            "longer than expected",
+            body.get("reply_text", "").lower(),
+            f"Reply should mention timeout grace phrasing, got: {body.get('reply_text')!r}",
+        )
+        self.assertEqual(body.get("brain_used"), "timeout_fallback")
+        self.assertEqual(body.get("citations"), [])
+
+    def test_handle_turn_unhandled_exception_returns_200_with_graceful_reply(self) -> None:
+        client, backend_main = self._client()
+
+        async def _raise_runtime(**_kwargs):
+            raise RuntimeError("simulated provider blow-up")
+
+        original = backend_main.handle_turn
+        backend_main.handle_turn = _raise_runtime
+        try:
+            resp = client.post(
+                "/api/chat",
+                json={"user_text": "Hi"},
+            )
+        finally:
+            backend_main.handle_turn = original
+
+        self.assertEqual(
+            resp.status_code,
+            200,
+            f"Expected 200 graceful reply, got {resp.status_code}: {resp.text[:200]}",
+        )
+        body = resp.json()
+        self.assertIn(
+            "something went wrong",
+            body.get("reply_text", "").lower(),
+            f"Reply should mention error grace phrasing, got: {body.get('reply_text')!r}",
+        )
+        self.assertEqual(body.get("brain_used"), "error_fallback")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
