@@ -549,6 +549,14 @@ async def handle_turn(
             extracted = await extract_profile_updates(user_text, session.profile)
         if extracted:
             for field_name, new_value in extracted.items():
+                # KI-094 — never let the LLM extractor CLEAR a filled field.
+                # The extractor LLM periodically returns {"name": null} for
+                # turns where the user didn't restate the name; without this
+                # guard `update_profile_field("name", None)` overwrites the
+                # captured value mid-session, sending next_question() back to
+                # the name slot and breaking fact-find progression.
+                if new_value in (None, "", []):
+                    continue
                 if field_name == "health_conditions":
                     existing = list(session.profile.health_conditions or [])
                     existing_lower = {c.lower() for c in existing if c}
