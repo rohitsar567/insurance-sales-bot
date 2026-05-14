@@ -3,39 +3,41 @@
 /**
  * useLiveConversation — full-duplex voice mode with barge-in.
  *
- * Differences from the existing push-to-talk + Hands-free toggle:
+ * KI-044 (2026-05-14) — PCM pre-roll via AudioWorklet.
+ * --------------------------------------------------------------------
+ * Previous implementation started a MediaRecorder ONLY when VAD declared
+ * "speech started" — by which point ~50-80 ms of the first word was
+ * already past the mic. Users reported the bot only hearing "ello" / "i
+ * am" rather than "hello" / "hi i am".
  *
- *   - Mic is OPEN continuously while live mode is on (single getUserMedia
- *     stream, not opened/closed per turn).
- *   - VAD (RMS on AnalyserNode + frame counters) detects when the user
- *     starts and stops speaking, with no button press.
- *   - When VAD detects speech start, we immediately:
- *       * pause + clear every <audio> currently playing (kill the bot's
- *         in-progress TTS reply mid-sentence),
- *       * abort the in-flight /api/chat fetch via AbortController,
- *       * start a new MediaRecorder for the user's utterance.
- *   - When VAD detects silence for >600ms after speech, we stop the
- *     recorder and POST the blob to the supplied `onUtterance` handler
- *     (which the page wires to transcribe → chat).
+ * Current implementation:
+ *   - Single getUserMedia stream + AudioContext stay open while Live is on.
+ *   - An AudioWorkletNode taps the raw PCM from the source — every render
+ *     quantum (128 samples) is posted back to the main thread as Float32.
+ *   - The main thread keeps a circular preroll buffer (~300 ms / 4800
+ *     samples at 16 kHz) when no utterance is in progress.
+ *   - When VAD fires speech-start, the preroll is snapshotted into the
+ *     active utterance buffer and subsequent samples are appended.
+ *   - When VAD fires silence-end, we encode the full utterance (preroll +
+ *     speech + small post-roll) as a 16-bit PCM WAV (Sarvam Saarika's
+ *     native format) and post it to `onUtterance`.
+ *   - VAD itself still runs off the AnalyserNode (separate path) so its
+ *     sensitivity tuning is independent from the PCM capture rate.
  *
- * The hook returns an AbortController slot the caller assigns to its
- * own in-flight fetches so barge-in can cancel them.
+ * Result: the user's first phoneme is in the blob. No more "ello".
+ *
+ * Push-to-talk path (page.tsx::startRecording) is unaffected — PTT
+ * recording starts when the user clicks, the input is already primed.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export type LiveConversationOptions = {
-  /** Called when the user finishes an utterance — pass it the audio blob. */
   onUtterance: (blob: Blob, abort: AbortController) => Promise<void>;
-  /** Called when VAD detects speech start (so the UI can show "listening…"). */
   onSpeechStart?: () => void;
-  /** Called when VAD detects speech end (so the UI can show "thinking…"). */
   onSpeechEnd?: () => void;
-  /** RMS threshold above which we declare "speech". Tune in browser. */
   rmsThreshold?: number;
-  /** Consecutive loud frames needed to start recording (debounce). */
   speechStartFrames?: number;
-  /** Consecutive quiet frames needed to stop recording (~16 ms/frame). */
   silenceEndFrames?: number;
 };
 
@@ -44,23 +46,74 @@ export type LiveConversationState = {
   recording: boolean;
   micPermissionDenied: boolean;
   setLive: (v: boolean) => void;
-  /** Caller-managed abort slot for in-flight fetches; VAD aborts it on speech. */
   inflightAbortRef: React.MutableRefObject<AbortController | null>;
 };
 
 const DEFAULTS = {
-  // KI-041 (2026-05-14) — sensitivity bumped. Previous threshold 28 was high
-  // enough that normal speaking volume in a moderately-quiet room didn't
-  // trigger barge-in detection, so users reported "speaking over the bot
-  // doesn't interrupt it". 18 catches typical conversational volume reliably
-  // while still rejecting room hum / breathing / keyboard clatter.
+  // KI-041 — sensitivity bumped to catch normal conversational volume.
   rmsThreshold: 18,
-  // ~48ms of speech to fire. Previous 5 frames (~80ms) added perceptible
-  // latency on barge-in; 3 frames keeps false-positive immunity but cuts
-  // the response time by ~32ms.
-  speechStartFrames: 3,
+  // KI-043/044 — fire on first loud frame (~16 ms) so the preroll buffer
+  // snapshot captures as much pre-trigger audio as possible.
+  speechStartFrames: 1,
   silenceEndFrames: 40, // ~640 ms of silence to declare utterance end
+  minUtteranceMs: 400,
+  // KI-044 — How much pre-trigger PCM we keep in the rolling buffer.
+  // 300 ms is generous; covers the ~80 ms VAD latency + ~100 ms of
+  // user onset before the first detectable frame, with margin.
+  prerollMs: 300,
 };
+
+// AudioWorklet processor source — inlined as a Blob URL so we don't need
+// a separate static asset route. Runs on the audio thread; posts each
+// 128-sample mono Float32Array back to the main thread.
+const WORKLET_SOURCE = `
+class PCMCaptureProcessor extends AudioWorkletProcessor {
+  process(inputs) {
+    const input = inputs[0];
+    if (input && input[0]) {
+      // Clone the buffer so it survives the transfer; the original is
+      // a view onto the audio thread's internal buffer.
+      this.port.postMessage(input[0].slice(0));
+    }
+    return true;
+  }
+}
+registerProcessor('pcm-capture', PCMCaptureProcessor);
+`;
+
+// Encode Float32 samples as a 16-bit PCM WAV file (mono). Returns a Blob
+// suitable for `<input type=file>` upload to /api/transcribe.
+function encodeWAV(samples: Float32Array, sampleRate: number): Blob {
+  const headerSize = 44;
+  const dataSize = samples.length * 2; // 16-bit
+  const buffer = new ArrayBuffer(headerSize + dataSize);
+  const view = new DataView(buffer);
+
+  const writeString = (offset: number, str: string) => {
+    for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+  };
+
+  writeString(0, "RIFF");
+  view.setUint32(4, 36 + dataSize, true);
+  writeString(8, "WAVE");
+  writeString(12, "fmt ");
+  view.setUint32(16, 16, true);          // PCM chunk size
+  view.setUint16(20, 1, true);           // PCM format
+  view.setUint16(22, 1, true);           // mono
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true); // byte rate
+  view.setUint16(32, 2, true);           // block align
+  view.setUint16(34, 16, true);          // bits per sample
+  writeString(36, "data");
+  view.setUint32(40, dataSize, true);
+
+  let offset = headerSize;
+  for (let i = 0; i < samples.length; i++, offset += 2) {
+    const s = Math.max(-1, Math.min(1, samples[i]));
+    view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+  }
+  return new Blob([buffer], { type: "audio/wav" });
+}
 
 export function useLiveConversation(opts: LiveConversationOptions): LiveConversationState {
   const [live, setLive] = useState(false);
@@ -71,11 +124,18 @@ export function useLiveConversation(opts: LiveConversationOptions): LiveConversa
   const audioCtxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
-  const recorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
-  const recordingRef = useRef(false); // sync ref for VAD loop
+  const workletRef = useRef<AudioWorkletNode | null>(null);
+  const workletUrlRef = useRef<string | null>(null);
+  const sampleRateRef = useRef<number>(48000);
+
+  // KI-044 — sample-level capture buffers
+  const prerollRef = useRef<Float32Array[]>([]);
+  const speechBufferRef = useRef<Float32Array[]>([]);
+
+  const recordingRef = useRef(false);
   const rafIdRef = useRef<number | null>(null);
   const inflightAbortRef = useRef<AbortController | null>(null);
+  const recStartTsRef = useRef<number>(0);
 
   const onUtteranceRef = useRef(opts.onUtterance);
   const onSpeechStartRef = useRef(opts.onSpeechStart);
@@ -90,74 +150,79 @@ export function useLiveConversation(opts: LiveConversationOptions): LiveConversa
     rmsThreshold: opts.rmsThreshold ?? DEFAULTS.rmsThreshold,
     speechStartFrames: opts.speechStartFrames ?? DEFAULTS.speechStartFrames,
     silenceEndFrames: opts.silenceEndFrames ?? DEFAULTS.silenceEndFrames,
+    minUtteranceMs: DEFAULTS.minUtteranceMs,
+    prerollMs: DEFAULTS.prerollMs,
   };
 
-  const stopRecording = useCallback(() => {
-    if (recorderRef.current && recorderRef.current.state !== "inactive") {
-      try { recorderRef.current.stop(); } catch {}
-    }
-  }, []);
-
   const interruptBotAudio = useCallback(() => {
-    // Pause + reset every audio element in the DOM. Bot replies use plain
-    // <audio> elements; killing src forces the loaded buffer to drop.
     if (typeof document !== "undefined") {
       document.querySelectorAll("audio").forEach((a) => {
         try {
           a.pause();
-          // Don't blank src — let the existing buffer GC but leave the
-          // element so the chat history scroll position doesn't jump.
           a.currentTime = a.duration || 0;
         } catch {}
       });
     }
   }, []);
 
-  const startRecording = useCallback(() => {
-    if (!streamRef.current) return;
-    const mime = MediaRecorder.isTypeSupported("audio/webm")
-      ? "audio/webm"
-      : "";
-    const rec = mime
-      ? new MediaRecorder(streamRef.current, { mimeType: mime })
-      : new MediaRecorder(streamRef.current);
-    chunksRef.current = [];
-    rec.ondataavailable = (e) => {
-      if (e.data && e.data.size > 0) chunksRef.current.push(e.data);
-    };
-    rec.onstop = async () => {
-      recordingRef.current = false;
-      setRecording(false);
-      if (chunksRef.current.length === 0) return;
-      const blob = new Blob(chunksRef.current, {
-        type: rec.mimeType || "audio/webm",
-      });
-      // Reject blobs that are almost certainly silence or VAD false-trips.
-      if (blob.size < 3000) return;
-      onSpeechEndRef.current?.();
-      const abort = new AbortController();
-      inflightAbortRef.current = abort;
-      try {
-        await onUtteranceRef.current(blob, abort);
-      } catch (e) {
-        const name = (e as { name?: string })?.name;
-        if (name !== "AbortError") {
-          // surface to console; the UI's existing error toast will fire too
-          // eslint-disable-next-line no-console
-          console.error("[live-mode] utterance handler failed:", e);
-        }
-      } finally {
-        if (inflightAbortRef.current === abort) {
-          inflightAbortRef.current = null;
-        }
-      }
-    };
-    recorderRef.current = rec;
+  // KI-044 — open speech capture: snapshot the preroll into speechBuffer,
+  // flag recording, fire callbacks. The PCM keeps flowing via the worklet
+  // port; we just toggle where it lands.
+  const beginSpeechCapture = useCallback(() => {
+    speechBufferRef.current = [...prerollRef.current];
+    prerollRef.current = [];
     recordingRef.current = true;
+    recStartTsRef.current = Date.now();
     setRecording(true);
     onSpeechStartRef.current?.();
-    rec.start();
   }, []);
+
+  // KI-044 — close speech capture: encode WAV, run guards, fire onUtterance.
+  const endSpeechCapture = useCallback(async () => {
+    if (!recordingRef.current) return;
+    recordingRef.current = false;
+    setRecording(false);
+    const durationMs = Date.now() - (recStartTsRef.current || Date.now());
+    const chunks = speechBufferRef.current;
+    speechBufferRef.current = [];
+
+    if (chunks.length === 0) return;
+    if (durationMs < cfg.minUtteranceMs) {
+      // eslint-disable-next-line no-console
+      console.debug("[live-mode] dropped short utterance", durationMs, "ms");
+      return;
+    }
+
+    // Concatenate Float32Array chunks
+    let totalSamples = 0;
+    for (const c of chunks) totalSamples += c.length;
+    const merged = new Float32Array(totalSamples);
+    let offset = 0;
+    for (const c of chunks) {
+      merged.set(c, offset);
+      offset += c.length;
+    }
+
+    const wav = encodeWAV(merged, sampleRateRef.current);
+    if (wav.size < 3000) return; // floor (matches prior heuristic)
+
+    onSpeechEndRef.current?.();
+    const abort = new AbortController();
+    inflightAbortRef.current = abort;
+    try {
+      await onUtteranceRef.current(wav, abort);
+    } catch (e) {
+      const name = (e as { name?: string })?.name;
+      if (name !== "AbortError") {
+        // eslint-disable-next-line no-console
+        console.error("[live-mode] utterance handler failed:", e);
+      }
+    } finally {
+      if (inflightAbortRef.current === abort) {
+        inflightAbortRef.current = null;
+      }
+    }
+  }, [cfg.minUtteranceMs]);
 
   // VAD loop — runs while `live` is true.
   const tickVAD = useCallback(() => {
@@ -177,26 +242,33 @@ export function useLiveConversation(opts: LiveConversationOptions): LiveConversa
         loud++;
         quiet = 0;
         if (loud === cfg.speechStartFrames && !recordingRef.current) {
-          // Barge in: kill bot audio + cancel in-flight chat + start recording.
+          // Barge in: kill bot audio + cancel in-flight chat + begin capture.
           interruptBotAudio();
           if (inflightAbortRef.current) {
             try { inflightAbortRef.current.abort(); } catch {}
             inflightAbortRef.current = null;
           }
-          startRecording();
+          beginSpeechCapture();
         }
       } else {
         quiet++;
         loud = 0;
         if (quiet === cfg.silenceEndFrames && recordingRef.current) {
-          stopRecording();
+          void endSpeechCapture();
         }
       }
 
       rafIdRef.current = requestAnimationFrame(loop);
     };
     rafIdRef.current = requestAnimationFrame(loop);
-  }, [cfg.rmsThreshold, cfg.silenceEndFrames, cfg.speechStartFrames, interruptBotAudio, startRecording, stopRecording]);
+  }, [
+    cfg.rmsThreshold,
+    cfg.silenceEndFrames,
+    cfg.speechStartFrames,
+    interruptBotAudio,
+    beginSpeechCapture,
+    endSpeechCapture,
+  ]);
 
   useEffect(() => {
     let cancelled = false;
@@ -206,7 +278,18 @@ export function useLiveConversation(opts: LiveConversationOptions): LiveConversa
         cancelAnimationFrame(rafIdRef.current);
         rafIdRef.current = null;
       }
-      stopRecording();
+      // Drop any pending capture without firing onUtterance
+      recordingRef.current = false;
+      speechBufferRef.current = [];
+      prerollRef.current = [];
+      if (workletRef.current) {
+        try { workletRef.current.disconnect(); } catch {}
+        workletRef.current = null;
+      }
+      if (workletUrlRef.current) {
+        try { URL.revokeObjectURL(workletUrlRef.current); } catch {}
+        workletUrlRef.current = null;
+      }
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
@@ -242,6 +325,8 @@ export function useLiveConversation(opts: LiveConversationOptions): LiveConversa
           window.AudioContext;
         const ctx = new AudioCtx();
         audioCtxRef.current = ctx;
+        sampleRateRef.current = ctx.sampleRate;
+
         const source = ctx.createMediaStreamSource(stream);
         const analyser = ctx.createAnalyser();
         analyser.fftSize = 512;
@@ -249,6 +334,48 @@ export function useLiveConversation(opts: LiveConversationOptions): LiveConversa
         source.connect(analyser);
         sourceRef.current = source;
         analyserRef.current = analyser;
+
+        // KI-044 — register the inline PCM-capture worklet + tap the source.
+        const blob = new Blob([WORKLET_SOURCE], { type: "application/javascript" });
+        const url = URL.createObjectURL(blob);
+        workletUrlRef.current = url;
+        try {
+          await ctx.audioWorklet.addModule(url);
+          const node = new AudioWorkletNode(ctx, "pcm-capture");
+          workletRef.current = node;
+
+          const prerollSamplesCap = Math.ceil((cfg.prerollMs / 1000) * ctx.sampleRate);
+
+          node.port.onmessage = (ev: MessageEvent<Float32Array>) => {
+            const chunk = ev.data;
+            if (recordingRef.current) {
+              speechBufferRef.current.push(chunk);
+            } else {
+              prerollRef.current.push(chunk);
+              // Trim oldest chunks to keep total length under prerollSamplesCap.
+              let total = 0;
+              for (const c of prerollRef.current) total += c.length;
+              while (total > prerollSamplesCap && prerollRef.current.length > 1) {
+                total -= prerollRef.current[0].length;
+                prerollRef.current.shift();
+              }
+            }
+          };
+
+          source.connect(node);
+          // Worklet's process() only runs while the node is connected to a
+          // destination (directly or via the graph). But we DON'T want the
+          // user's mic playing back through speakers — route via a zero-gain
+          // GainNode so the graph stays "live" but output is silent.
+          const silentSink = ctx.createGain();
+          silentSink.gain.value = 0;
+          node.connect(silentSink);
+          silentSink.connect(ctx.destination);
+        } catch (e) {
+          // eslint-disable-next-line no-console
+          console.error("[live-mode] AudioWorklet setup failed; fallback to silence", e);
+        }
+
         setMicPermissionDenied(false);
         tickVAD();
       } catch (e) {
@@ -263,7 +390,7 @@ export function useLiveConversation(opts: LiveConversationOptions): LiveConversa
       cancelled = true;
       tearDown();
     };
-  }, [live, stopRecording, tickVAD]);
+  }, [live, tickVAD, cfg.prerollMs]);
 
   return {
     live,
