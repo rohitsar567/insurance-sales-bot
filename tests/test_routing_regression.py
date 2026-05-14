@@ -68,13 +68,23 @@ class TestIntentClassification(unittest.TestCase):
         self.assertEqual(classify_intent("Which one should I get?"), "fact_find")
 
     def test_ki105_closer_phrases_classify_as_recommendation(self) -> None:
-        """KI-105 (2026-05-15) — explicit-closer regression.
+        """KI-105 / KI-109 (2026-05-15) — explicit-closer regression.
 
         Live 15-persona smoke caught these phrases being routed to qa or
         fact_find instead of recommendation, so the heavy brain was never
         called + no ranked shortlist was ever produced. The explicit-closer
         override (checked BEFORE FACT_FIND_TRIGGERS) lifts them into the
         recommendation lane unambiguously.
+
+        KI-109 (2026-05-15) — live re-smoke caught
+        "Show me the top 3 policies you'd recommend" still misrouting to
+        fact_find_brain::fallback:no_trailer (the regex matched but the
+        downstream profile-empty branch trapped it). The fix broadens the
+        trigger set AND adds phrases that the KI-105 list missed entirely:
+        "what should I get", "best policies for me",
+        "which policies should I consider", and the "rank the top N" verb
+        (re-classified as recommendation — producing a ranked shortlist
+        with rationale, not a pairwise feature table).
         """
         recommendation_closers = [
             "show me the top 3 policies",
@@ -83,6 +93,13 @@ class TestIntentClassification(unittest.TestCase):
             "what would you recommend",
             "your top picks",
             "pitch me the top 3",
+            # KI-109 additions — phrases that misrouted on live re-smoke.
+            "Show me the top 3 policies you'd recommend",
+            "rank the top 3",
+            "rank them",
+            "what should I get",
+            "best policies for me",
+            "which policies should I consider",
         ]
         for q in recommendation_closers:
             with self.subTest(question=q):
@@ -90,22 +107,25 @@ class TestIntentClassification(unittest.TestCase):
                     classify_intent(q),
                     "recommendation",
                     f"REGRESSION: {q!r} should classify as recommendation. "
-                    f"See KI-105 — without this the bot doesn't produce a "
-                    f"ranked shortlist on the closer turn.",
+                    f"See KI-105 / KI-109 — without this the bot doesn't "
+                    f"produce a ranked shortlist on the closer turn.",
                 )
 
     def test_ki105_closer_phrases_classify_as_comparison(self) -> None:
         """KI-105 — comparison-shaped closer phrases.
 
-        'compare HDFC Ergo and Niva Bupa' and 'rank top 3' both explicitly
-        ask for a side-by-side / ranked output across the candidate set.
-        They must NOT fall through to qa or fact_find.
+        'compare HDFC Ergo and Niva Bupa' and 'compare top 3' both
+        explicitly ask for a side-by-side comparison across the candidate
+        set. They must NOT fall through to qa or fact_find.
+
+        KI-109 (2026-05-15) — 'rank' verbs were moved to recommendation
+        (they ask for a ranked shortlist, not pairwise comparison). Only
+        explicit `compare` / `side-by-side` phrasing remains here.
         """
         comparison_closers = [
             "compare HDFC Ergo and Niva Bupa",
             "compare top 3",
             "compare the top 3 policies",
-            "rank top 3 for me",
             "side-by-side these policies",
         ]
         for q in comparison_closers:

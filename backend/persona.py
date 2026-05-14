@@ -172,6 +172,24 @@ OPEN_THINK = re.compile(r"<think>", flags=re.IGNORECASE)
 CLOSE_THINK = re.compile(r"</think>", flags=re.IGNORECASE)
 
 
+# KI-108 (2026-05-15) — supplementary CoT verb pattern catalogued in this
+# module (NOT in voice_format which a sibling agent may be touching). The
+# `strip_cot_preamble` helper in voice_format already strips a handful of
+# "We need to <verb>" phrases (respond / answer / follow / ground / check /
+# ensure / make sure / consider / think / address) but live re-smoke S4
+# T3+T4 leaked "We need to process user message..." and "We need to
+# respond naturally..." — `respond` IS in the whitelist but only when
+# followed by another whitelisted verb, and the sentence-level matcher
+# requires the FULL sentence to match the starter. This local pre-pass
+# strips a leading "We (need to|must|should) <any-verb> ..." sentence
+# regardless of verb, applied ONLY when that sentence appears at position 0
+# and ends within ~200 chars — same conservative window as voice_format.
+_LOCAL_COT_LEAD_SENTENCE = re.compile(
+    r"^\s*(?:We (?:need to|must|should)|I (?:need to|must|should|will))\s+\w+[^.!?\n]{0,200}[.!?]\s*",
+    flags=re.IGNORECASE,
+)
+
+
 def strip_think_tags(text: str) -> str:
     """Sarvam-M emits <think>...</think> chain-of-thought before the final answer.
 
@@ -187,6 +205,16 @@ def strip_think_tags(text: str) -> str:
     the judge model leaking "We need to respond to user question…",
     "We must ground every factual claim…", and bare reasoning labels
     (`**Reasoning:**`, `[INTERNAL]…`) into user-visible reply_text.
+
+    KI-108 (2026-05-15) — additional local pre-pass that strips a leading
+    "We need to ... / We must ... / We should ... / I need to ..." sentence
+    regardless of the verb that follows. Live re-smoke S4 T3+T4 caught
+    "We need to process user message…" which `strip_cot_preamble`'s
+    whitelist (respond / answer / follow / ground / check / etc.) misses
+    because `process` isn't in it. We strip ONE such leading sentence here
+    before delegating, so any "We need to <verb>" preamble dies regardless
+    of verb. Conservative: only matches the very first sentence (no MULTILINE)
+    and caps at 200 chars to avoid eating substantive prose.
     """
     if "<think>" in text.lower() and "</think>" not in text.lower():
         # Reasoning was truncated mid-thought — no final answer was produced.
@@ -197,6 +225,16 @@ def strip_think_tags(text: str) -> str:
     # If anything else got truncated, fall back gracefully.
     if not cleaned:
         return "I'm thinking through that. Could you rephrase or ask a follow-up?"
+
+    # KI-108 — local pre-pass: strip a single leading CoT-shaped sentence
+    # whose verb falls outside `strip_cot_preamble`'s whitelist. Bounded so
+    # we never eat past the first sentence and never run more than once.
+    # Note: an empty `_stripped` is a valid result (the whole reply was one
+    # CoT sentence) — accept it; voice_format.strip_cot_preamble's emergency
+    # fallback takes over on empty input.
+    _stripped = _LOCAL_COT_LEAD_SENTENCE.sub("", cleaned, count=1)
+    if _stripped != cleaned:
+        cleaned = _stripped.lstrip()
 
     # KI-104 — second-layer strip for CoT / instruction-echo leakage that
     # didn't come wrapped in <think> tags. Imported locally to avoid an

@@ -101,11 +101,12 @@ def _phrase_present(phrase: str, q: str) -> bool:
 # (`should_route_to_fact_find`) still keeps the KI-013 guard against
 # pitching to empty profiles.
 _EXPLICIT_CLOSER_COMPARISON = (
-    "compare top", "compare the top", "rank the top", "rank top",
+    "compare top", "compare the top",
     "side by side", "side-by-side",
     "compare these", "compare those", "compare them",
 )
 _EXPLICIT_CLOSER_RECOMMENDATION = (
+    # KI-105 — original list.
     "show me policies", "show me the policies", "show me policy",
     "show me the top", "show me top",
     "top 3", "top three", "top policies", "top picks",
@@ -113,6 +114,40 @@ _EXPLICIT_CLOSER_RECOMMENDATION = (
     "your top picks", "your top pick", "your best policy",
     "pitch me", "pitch your top",
     "what would you recommend", "what do you suggest",
+    # KI-109 (2026-05-15) — "rank the top N" and bare "rank them" are
+    # ranked-recommendation requests (the user wants a ranked shortlist of
+    # the candidate set), not pairwise comparison requests. Moved here from
+    # _EXPLICIT_CLOSER_COMPARISON in KI-105 because the live re-smoke
+    # treated them as ranked-output asks and the user-facing reply should
+    # be a recommendation shortlist with rationale, not a feature-by-feature
+    # comparison table.
+    "rank the top", "rank top", "rank them", "rank these", "rank those",
+    # KI-109 (2026-05-15) — live re-smoke caught
+    # "Show me the top 3 policies you'd recommend" routing to
+    # fact_find_brain::fallback:no_trailer because the regex above only
+    # caught the prefix "show me the top" — but in this folder the actual
+    # short-circuit happens in classify_intent via `_phrase_present`, and
+    # since `_phrase_present` is word-boundary based ("\b<phrase>\b"), the
+    # match DOES succeed; the regression is downstream: orchestrator's
+    # `should_route_to_fact_find` still routes context-dependent intents
+    # (recommendation / comparison) to fact-find when profile_is_empty
+    # (KI-018). Even so we broaden the trigger set so the explicit-closer
+    # override lands on EVERY phrasing the user types — particularly
+    # phrases that didn't appear in KI-105's list at all:
+    #   - "best policies for me" (matched RECOMMEND_KEYWORDS["best for"]
+    #     before but only as a generic recommendation, not as an
+    #     unambiguous closer that beats fact-find triggers)
+    #   - "what should I get" (currently matches FACT_FIND_TRIGGERS via
+    #     "should i get"; needs to be lifted into closer lane)
+    #   - "which policies should I consider" (currently falls to qa)
+    #   - "pitch me the top X" (already partly covered; cement it)
+    "best policies for me", "best policy for me", "best for me",
+    "what should i get", "what policy should i get",
+    "which policies should i consider", "which policy should i consider",
+    "which one should i pick", "which one should i go with",
+    "what would you suggest", "what do you recommend",
+    "your top recommendations", "your recommendations",
+    "shortlist for me", "policies you'd recommend", "policy you'd recommend",
 )
 
 
@@ -561,8 +596,20 @@ async def handle_turn(
         else:
             brain_tag = "fact_find_brain::continue"
 
+        # KI-108 (2026-05-15) — strip CoT preamble / instruction-echo leakage
+        # from the fact-find brain reply BEFORE returning to ChatResponse.
+        # Live re-smoke caught Scenario S4 T3+T4 leaking raw model reasoning
+        # ("We need to respond naturally...", "We need to process user
+        # message...") into reply_text because the fact_find brain path was
+        # the only producer of user-facing text NOT routed through
+        # strip_think_tags (which internally calls strip_cot_preamble via
+        # voice_format). KI-104 had wired the strip into tts_preprocess
+        # (audio) + persona.strip_think_tags (qa/recommendation paths) but
+        # missed this branch. Apply uniformly here so every reply_text the
+        # API returns is leak-free regardless of brain used.
+        ff_reply_clean = strip_think_tags(outcome.reply_text)
         return TurnResult(
-            reply_text=outcome.reply_text,
+            reply_text=ff_reply_clean,
             citations=[],
             retrieved_chunk_ids=[],
             brain_used=brain_tag,
@@ -926,7 +973,14 @@ async def handle_turn(
                         if drift_c.drift_detected:
                             final_brain_tag = f"cascade::drift-cosine-fallback+{pick.provider.name}"
                         else:
-                            reply = reply_indic
+                            # KI-108 (2026-05-15) — strip CoT preamble after
+                            # the indic translation too. Sarvam's <think>
+                            # blocks + bare scratchpad lines (e.g. "हमें
+                            # natural respond करना है") have leaked through
+                            # the translator before; the strip is idempotent
+                            # and inexpensive so apply defensively even when
+                            # the English source was already cleaned.
+                            reply = strip_think_tags(reply_indic)
                             final_brain_tag = f"cascade::sarvam-trans+{pick.provider.name}+sarvam-trans"
         except Exception:
             pass  # if any step fails, return English — better than mis-translated
@@ -987,6 +1041,14 @@ async def handle_turn(
             session_id, type(e).__name__, str(e)[:200],
         )
 
+    # KI-108 (2026-05-15) — defensive final strip on every QA / recommendation
+    # / comparison reply path. `reply` was stripped at line 801 when produced
+    # by the brain, but the faithfulness-blocked branch + the cross-check
+    # retry can overwrite it with `verdict.suggested_reply` (judge LLM output)
+    # which has not been routed through strip_cot_preamble. Apply once more
+    # at the boundary so no user-facing text ever leaves this function
+    # carrying a "We need to respond..." preamble.
+    reply = strip_think_tags(reply)
     return TurnResult(
         reply_text=reply,
         citations=citations,
