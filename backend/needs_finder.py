@@ -23,6 +23,7 @@ free-form questions — the graph supports both.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
@@ -114,8 +115,8 @@ GRAPH: list[Question] = [
     ),
     Question(
         id="primary_goal",
-        prompt_en="What's brought you here — first health policy, upgrading existing cover, comparing specific policies, or tax planning?",
-        prompt_hi="आप यहाँ क्यों हैं — पहली policy, upgrade, specific compare, या tax planning?",
+        prompt_en="What's brought you here — first health policy, upgrading existing cover, comparing specific policies, or tax planning? (Tells us whether to grade you on price, breadth of cover, claim experience, or tax savings.)",
+        prompt_hi="आप यहाँ क्यों हैं — पहली policy, upgrade, specific compare, या tax planning? (इससे हम तय करते हैं कि आपको price, coverage, claim experience या tax savings पर grade करें।)",
         field="primary_goal",
         is_core=True,
     ),
@@ -197,6 +198,63 @@ def record_answer(profile: Profile, question_id: str, raw_answer: str) -> Profil
     if value is not None and value != "":
         setattr(profile, q.field, value)
     return profile
+
+
+# ----------------------------------------------------------------------------
+# Opportunistic family/dependents extractor — KI-056 (2026-05-15)
+# ----------------------------------------------------------------------------
+# Real-user testing surfaced: when the user mentions a spouse / kids / parents
+# while answering an UNRELATED slot ("my wife also doesn't have anything" in
+# response to existing_cover), the bot just acknowledges and moves on without
+# capturing the family signal. By the time we reach the dependents slot the
+# information has been thrown away. This helper detects family mentions in any
+# free-text turn so the orchestrator can pre-fill `profile.dependents`.
+#
+# Returns one of the canonical `dependents` enum values, or None if no clear
+# family signal is present. Conservative on purpose — only the explicit
+# combinations are recognised.
+
+_FAMILY_TERM_RE = re.compile(
+    r"\b(wife|husband|spouse|partner|kids?|children|child|parents?)\b",
+    re.IGNORECASE,
+)
+_SPOUSE_RE = re.compile(r"\b(wife|husband|spouse|partner)\b", re.IGNORECASE)
+_KIDS_RE = re.compile(r"\b(kids?|children|child)\b", re.IGNORECASE)
+_PARENTS_RE = re.compile(r"\bparents?\b", re.IGNORECASE)
+
+
+def infer_dependents_from_text(text: str) -> Optional[str]:
+    """Detect spouse/kids/parents mentions in a free-text user message and
+    return the matching canonical `dependents` enum value, or None.
+
+    KI-056 (2026-05-15). Used by the orchestrator to pre-fill the dependents
+    slot opportunistically when the user volunteers family information while
+    answering a different slot.
+
+    Decision tree (in order of specificity):
+      - spouse + kids                  → "self+spouse+kids"
+      - spouse + parents               → "self+spouse+parents"
+      - spouse only                    → "self+spouse"
+      - kids only                      → "self+kids"
+      - parents only                   → "self+parents"
+      - nothing recognised             → None
+    """
+    if not text or not _FAMILY_TERM_RE.search(text):
+        return None
+    has_spouse = bool(_SPOUSE_RE.search(text))
+    has_kids = bool(_KIDS_RE.search(text))
+    has_parents = bool(_PARENTS_RE.search(text))
+    if has_spouse and has_kids:
+        return "self+spouse+kids"
+    if has_spouse and has_parents:
+        return "self+spouse+parents"
+    if has_spouse:
+        return "self+spouse"
+    if has_kids:
+        return "self+kids"
+    if has_parents:
+        return "self+parents"
+    return None
 
 
 def readback_summary(profile: Profile) -> str:

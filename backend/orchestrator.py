@@ -12,6 +12,7 @@ For each user turn:
 
 from __future__ import annotations
 
+import hashlib
 import re
 import time
 from dataclasses import dataclass, field
@@ -147,6 +148,120 @@ def pick_brain(intent: str, language: str) -> BrainPick:
     if intent in HEAVY_INTENTS:
         return BrainPick(get_brain_llm(), f"v4-pro::{intent}")
     return BrainPick(get_fast_brain_llm(), f"v4-flash::{intent}")
+
+
+# ---------- conversational acknowledgers (KI-056, 2026-05-15) ----------
+#
+# Previous behaviour: every fact-find continuation turn started with the
+# literal "Got it. " — three turns in a row with the same opener felt robotic
+# and triggered user feedback. We now rotate through a small set of natural
+# acknowledgers (deterministic per session+turn so the wording is stable on
+# replay) AND, when the user's message mentions family, swap in a
+# family-aware opener that explicitly acknowledges the disclosure.
+
+_FAMILY_DISCLOSURE_RE = re.compile(
+    r"\b(wife|husband|spouse|partner|kids?|children|child|parents?|family)\b",
+    re.IGNORECASE,
+)
+
+# Plain rotation — when nothing special is going on. Trailing space included so
+# callers can concatenate directly; `""` lets some turns skip the opener
+# entirely and go straight into the next question.
+_NEUTRAL_OPENERS_EN: tuple[str, ...] = (
+    "Thanks for that. ",
+    "Noted. ",
+    "Helpful — ",
+    "Right, ",
+    "OK. ",
+    "Got it. ",
+    "Makes sense. ",
+    "",
+)
+
+# Family-aware variants — picked when the user's message references a spouse,
+# kids, or parents. The bot should signal that it actually heard the family
+# mention rather than mechanically advancing.
+_FAMILY_OPENERS_EN: tuple[str, ...] = (
+    "Understood — for you and your family, then. ",
+    "Noted — covering your family. ",
+    "OK, family coverage to think about. ",
+)
+_SPOUSE_OPENERS_EN: tuple[str, ...] = (
+    "Understood — for you and your spouse, then. ",
+    "Noted — covering you and your spouse. ",
+    "OK, that means two people on the policy. ",
+)
+_KIDS_OPENERS_EN: tuple[str, ...] = (
+    "Noted — covering your kids too. ",
+    "OK, family-floater territory then. ",
+)
+_PARENTS_OPENERS_EN: tuple[str, ...] = (
+    "Noted — your parents in the mix as well. ",
+    "OK, parent coverage to factor in. ",
+)
+
+
+def _family_aware_opener(user_text: str, fallback: str) -> Optional[str]:
+    """Pick a family-aware acknowledger if `user_text` mentions a spouse,
+    kids, or parents; otherwise return None so the caller uses `fallback`.
+
+    KI-056 (2026-05-15). The opener picked here is intentionally more
+    specific than the neutral rotation so the user feels heard when they
+    volunteer family information mid-flow.
+    """
+    if not user_text:
+        return None
+    t = user_text.lower()
+    has_spouse = bool(re.search(r"\b(wife|husband|spouse|partner)\b", t))
+    has_kids = bool(re.search(r"\b(kids?|children|child)\b", t))
+    has_parents = bool(re.search(r"\bparents?\b", t))
+    has_family_word = "family" in t
+    if not (has_spouse or has_kids or has_parents or has_family_word):
+        return None
+    # Pick the most specific variant available — order matters.
+    if has_spouse and (has_kids or has_parents):
+        pool = _FAMILY_OPENERS_EN
+    elif has_spouse:
+        pool = _SPOUSE_OPENERS_EN
+    elif has_kids:
+        pool = _KIDS_OPENERS_EN
+    elif has_parents:
+        pool = _PARENTS_OPENERS_EN
+    else:  # has_family_word only
+        pool = _FAMILY_OPENERS_EN
+    # Deterministic pick based on the fallback string so two consecutive calls
+    # with similar context don't collide on the same variant.
+    idx = (sum(ord(c) for c in (fallback or "x")) % len(pool))
+    return pool[idx]
+
+
+def _pick_opener(
+    user_text: str,
+    session_id: Optional[str],
+    turn_idx: int,
+    slot_just_filled: Optional[str],
+) -> str:
+    """Choose a natural-language acknowledger for the bot's next reply.
+
+    KI-056 (2026-05-15). Replaces the hardcoded literal "Got it. " opener
+    that appeared on every fact-find continuation turn. The opener varies
+    deterministically by (session_id, turn_idx) so the same user gets a
+    different acknowledger each turn — but two replays of the same session
+    produce the same wording (testable).
+
+    If the user's message contains a spouse/family/parents disclosure, the
+    opener swaps to a family-aware variant that explicitly acknowledges it,
+    so the user feels heard rather than ignored.
+    """
+    # Family-aware override takes precedence over the neutral rotation.
+    fam = _family_aware_opener(user_text, fallback=f"{session_id}:{turn_idx}:{slot_just_filled or ''}")
+    if fam is not None:
+        return fam
+    # Deterministic neutral rotation. Hash (session_id, turn_idx, slot)
+    # so each turn rotates and different sessions decorrelate.
+    seed = f"{session_id or 'anon'}|{turn_idx}|{slot_just_filled or ''}"
+    h = int(hashlib.sha1(seed.encode("utf-8")).hexdigest()[:8], 16)
+    return _NEUTRAL_OPENERS_EN[h % len(_NEUTRAL_OPENERS_EN)]
 
 
 # ---------- main entrypoint ----------
@@ -490,6 +605,22 @@ async def handle_turn(
                     session.set_awaiting(None)
                     ambiguous_or_failed = False  # no longer a reask situation
 
+        # KI-056 (2026-05-15) — opportunistic dependents capture from any
+        # free-text fact-find turn. If the user mentioned spouse / kids /
+        # parents while answering an UNRELATED slot ("my wife also doesn't
+        # have anything" in response to existing_cover), pre-fill the
+        # dependents slot so we don't waste a turn asking again later.
+        # Only fires when the slot is still empty — never overwrites an
+        # explicit user-provided answer to the dependents question.
+        if session.profile.dependents in (None, ""):
+            from backend.needs_finder import infer_dependents_from_text
+            inferred = infer_dependents_from_text(user_text)
+            if inferred:
+                session.update_profile_field("dependents", inferred)
+                fact_find_profile_updates["dependents"] = inferred
+                if "dependents" not in session.profile.asked:
+                    session.profile.asked.append("dependents")
+
         # KI-040 — returning-visitor short-circuit. If we recognised the user's
         # name and loaded their stored profile, skip directly to the greeting
         # without picking another fact-find question.
@@ -522,7 +653,17 @@ async def handle_turn(
                 opener_en = "Sorry, I didn't catch that. Let me ask again — "
                 opener_hi = "माफ़ कीजिए, समझ नहीं आया। दोबारा पूछता हूँ — "
             elif in_fact_find_continuation:
-                opener_en = "Got it. "
+                # KI-056 (2026-05-15) — dynamic acknowledger. Replaces the
+                # literal "Got it. " that previously appeared at the start of
+                # every continuation turn. Family disclosures get an explicit
+                # acknowledgement; neutral turns rotate through 8 variants
+                # deterministic on (session_id, turn_idx, slot).
+                opener_en = _pick_opener(
+                    user_text=user_text,
+                    session_id=session_id,
+                    turn_idx=len(session.profile.asked),
+                    slot_just_filled=session.awaiting_question_id or None,
+                )
                 opener_hi = "ठीक है। "
             else:
                 opener_en = "Happy to help. " if not user_text.lower().strip().startswith(("hi", "hello")) else "Hi! "
@@ -574,8 +715,21 @@ async def handle_turn(
             session.free_form_session = True
             session._flush()
             summary = readback_summary(session.profile)
+            # KI-056 (2026-05-15) — dynamic readback opener. Picks a varied
+            # acknowledger so the completion turn doesn't always start with
+            # "Got it — here's what I've understood:".
+            readback_opener = _pick_opener(
+                user_text=user_text,
+                session_id=session_id,
+                turn_idx=len(session.profile.asked),
+                slot_just_filled="__readback__",
+            ).rstrip()
+            if not readback_opener:
+                readback_opener = "Here's what I've understood:"
+            else:
+                readback_opener = f"{readback_opener} Here's what I've understood:"
             reply = (
-                f"Got it — here's what I've understood: {summary}. "
+                f"{readback_opener} {summary}. "
                 f"**If anything's wrong, just tell me** (e.g., \"actually I'm 31\", or "
                 f"\"I want to cover my parents too\"). "
                 f"Otherwise — want me to suggest 2-3 policies that fit your profile, "
