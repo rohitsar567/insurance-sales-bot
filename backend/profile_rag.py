@@ -29,9 +29,12 @@ naturally surface them when scoring policies for the user.
 from __future__ import annotations
 
 import asyncio
+import logging
 from typing import Optional
 
 from backend.config import settings
+
+_log = logging.getLogger(__name__)
 
 
 def profile_to_chunk_text(profile: dict) -> str:
@@ -140,33 +143,53 @@ async def upsert_profile_chunk(session_id: str, profile_dict: dict) -> None:
     # Replace any existing chunk for this session
     try:
         coll.delete(where={"policy_id": chunk_id})
-    except Exception:
-        pass
+    except Exception as e:
+        # Non-fatal: chunk may not exist yet. KI-107 — at least log so
+        # silent corruption of the profile store is observable.
+        _log.debug(
+            "profile_rag.upsert_profile_chunk: delete(where=policy_id=%s) "
+            "non-fatal failure: %s: %s",
+            chunk_id, type(e).__name__, str(e)[:200],
+        )
 
-    coll.add(
-        ids=[chunk_id],
-        documents=[text],
-        embeddings=[vec],
-        metadatas=[{
-            "policy_id": chunk_id,
-            "insurer_slug": "profile",
-            "policy_name": f"User profile (session {session_id[:8]})",
-            "doc_type": "profile",
-            # KI-102 (2026-05-15) — privacy P0. Stamp the owning session_id so
-            # the retrieve path can hard-exclude any OTHER session's profile
-            # chunk via where={"session_id": current}. Pre-fix, profile chunks
-            # had no session_id metadata and the main retrieval pass had no
-            # doc_type filter, so chunks from sessions smokeA_1, ki100_ve, etc.
-            # surfaced as cosine matches in session smokeB_B4's context —
-            # leaking one user's profile facts into another user's reply.
-            "session_id": session_id,
-            "source_url": "",
-            "page_start": 0,
-            "page_end": 0,
-            "chunk_idx": 0,
-            "local_path": "in-memory session profile",
-        }],
-    )
+    # KI-107 (2026-05-15) — wrap coll.add() in try/except. C5 port-in saw
+    # 3× HTTP 500 "Error finding id" cascade; one possible vector is a
+    # transient Chroma sqlite lock during HNSW compaction when add()
+    # interleaves with the retrieve path's get(). Make upsert non-fatal so
+    # the chat reply still returns even if the profile-chunk write fails.
+    # On next upsert (next profile field change), the retry will succeed.
+    try:
+        coll.add(
+            ids=[chunk_id],
+            documents=[text],
+            embeddings=[vec],
+            metadatas=[{
+                "policy_id": chunk_id,
+                "insurer_slug": "profile",
+                "policy_name": f"User profile (session {session_id[:8]})",
+                "doc_type": "profile",
+                # KI-102 (2026-05-15) — privacy P0. Stamp the owning session_id so
+                # the retrieve path can hard-exclude any OTHER session's profile
+                # chunk via where={"session_id": current}. Pre-fix, profile chunks
+                # had no session_id metadata and the main retrieval pass had no
+                # doc_type filter, so chunks from sessions smokeA_1, ki100_ve, etc.
+                # surfaced as cosine matches in session smokeB_B4's context —
+                # leaking one user's profile facts into another user's reply.
+                "session_id": session_id,
+                "source_url": "",
+                "page_start": 0,
+                "page_end": 0,
+                "chunk_idx": 0,
+                "local_path": "in-memory session profile",
+            }],
+        )
+    except Exception as e:
+        _log.warning(
+            "profile_rag.upsert_profile_chunk: add(id=%s) failed: %s: %s — "
+            "user reply will proceed without per-session profile context; "
+            "next profile change will retry.",
+            chunk_id, type(e).__name__, str(e)[:200],
+        )
 
 
 def remove_profile_chunk(session_id: str) -> None:

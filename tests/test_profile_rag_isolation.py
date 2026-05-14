@@ -284,6 +284,158 @@ class TestProfileIsolation(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
+# KI-107 (2026-05-15) — graceful handling of Chroma get(ids=[missing]).
+# C5 port-in persona saw 3× HTTP 500 "Error executing plan: Internal error:
+# Error finding id". After KI-102 added the per-session profile-chunk
+# lookup, retrieve() runs collection.get(ids=[f"profile_{sid}"]) on EVERY
+# query — and for new sessions (no profile saved yet) and certain Chroma
+# sqlite states, that call can raise. The bare `except: pass` in the
+# pre-KI-107 code masked the failure into the orchestrator's plan executor.
+# These tests pin the contract: retrieve() with a never-existed session_id
+# must NEVER raise and must NEVER return a profile chunk.
+# ---------------------------------------------------------------------------
+
+
+class TestRetrieveSurvivesMissingProfileId(unittest.TestCase):
+    """KI-107 — retrieve(session_id=...) must be exception-safe across:
+    (1) brand-new sessions with no profile chunk yet,
+    (2) Chroma.get raising on the per-session lookup,
+    (3) Chroma.get returning empty lists for missing ids."""
+
+    def setUp(self):
+        self.coll = _make_ephemeral_collection()
+
+    def _seed_one_policy(self):
+        """Seed a single policy chunk so the main cosine pass returns something."""
+        vec = asyncio.run(_StubEmbedder().embed(["Standard policy text."]))[0]
+        self.coll.add(
+            ids=["policy_seed_1"],
+            documents=["Standard policy text about waiting periods."],
+            embeddings=[vec],
+            metadatas=[{
+                "policy_id": "policy_seed_1",
+                "insurer_slug": "test-insurer",
+                "policy_name": "Test Policy",
+                "doc_type": "policy",
+                "source_url": "",
+                "page_start": 1,
+                "page_end": 1,
+                "chunk_idx": 0,
+            }],
+        )
+
+    def _run_retrieve(self, query: str, session_id: str, top_k: int = 5):
+        from rag import retrieve as retrieve_mod
+        retrieve_mod._RETRIEVAL_CACHE.clear()
+        with mock.patch.object(retrieve_mod, "get_collection", return_value=self.coll):
+            return asyncio.run(retrieve_mod.retrieve(
+                query=query,
+                top_k=top_k,
+                embedder=_StubEmbedder(),
+                session_id=session_id,
+            ))
+
+    def test_retrieve_with_never_existed_session_does_not_raise(self):
+        """New session, no profile saved yet — must return policy chunks
+        without raising. Pre-KI-107 this surfaced as HTTP 500 "Error
+        finding id" because get(ids=[missing]) raised + bare except: pass
+        let downstream code index into a None result."""
+        self._seed_one_policy()
+
+        # Should not raise
+        chunks = self._run_retrieve(
+            query="what is the waiting period for cataract",
+            session_id="never_existed_session_xyz",
+        )
+
+        # No profile chunk should appear (none was ever written)
+        profile_chunks = [c for c in chunks if c.doc_type == "profile"]
+        self.assertEqual(
+            profile_chunks, [],
+            f"never-existed session should not produce profile chunks. "
+            f"Got: {[(c.chunk_id, c.doc_type) for c in chunks]}",
+        )
+        # But main cosine retrieval must still work
+        self.assertGreater(
+            len(chunks), 0,
+            "main cosine pass should still return the seeded policy chunk.",
+        )
+
+    def test_retrieve_handles_chroma_get_raising_on_per_session_lookup(self):
+        """Simulate the worst case: Chroma raises on the per-session
+        profile lookup (e.g. transient sqlite lock during compaction).
+        retrieve() must still return main cosine results, not 500."""
+        self._seed_one_policy()
+
+        # Wrap the real collection so .get() raises but .query() works
+        real_coll = self.coll
+
+        class _RaisingGetWrapper:
+            def __init__(self, inner):
+                self._inner = inner
+
+            def query(self, *args, **kwargs):
+                return self._inner.query(*args, **kwargs)
+
+            def get(self, *args, **kwargs):
+                raise RuntimeError("Error finding id: simulated chroma failure")
+
+        wrapped = _RaisingGetWrapper(real_coll)
+
+        from rag import retrieve as retrieve_mod
+        retrieve_mod._RETRIEVAL_CACHE.clear()
+        with mock.patch.object(retrieve_mod, "get_collection", return_value=wrapped):
+            # Must NOT raise — _safe_collection_get swallows + logs
+            chunks = asyncio.run(retrieve_mod.retrieve(
+                query="what is the waiting period",
+                top_k=5,
+                embedder=_StubEmbedder(),
+                session_id="some_session_id",
+            ))
+
+        # Main cosine still works → at least the seeded policy chunk returns
+        self.assertGreater(
+            len(chunks), 0,
+            "retrieve() should fall back to main cosine results when "
+            "the per-session profile lookup raises.",
+        )
+        # No profile chunk surfaced
+        self.assertEqual(
+            [c for c in chunks if c.doc_type == "profile"], [],
+            "raising get() must NOT produce a profile chunk in the result.",
+        )
+
+    def test_safe_collection_get_returns_none_on_exception(self):
+        """Unit-test the _safe_collection_get helper directly."""
+        from rag.retrieve import _safe_collection_get
+
+        class _Raiser:
+            def get(self, **kw):
+                raise RuntimeError("Error finding id")
+
+        result = _safe_collection_get(_Raiser(), ids=["x"], include=["documents"])
+        self.assertIsNone(
+            result,
+            "_safe_collection_get must return None on exception, not re-raise.",
+        )
+
+    def test_safe_collection_get_returns_empty_dict_on_miss(self):
+        """When ids miss but Chroma returns empty lists (the normal case),
+        _safe_collection_get returns the raw dict — caller decides what to
+        do with empty lists (the truthiness check filters them out)."""
+        from rag.retrieve import _safe_collection_get
+
+        result = _safe_collection_get(
+            self.coll,
+            ids=["definitely_does_not_exist"],
+            include=["documents", "metadatas"],
+        )
+        # Should return a dict (not None), with empty ids list
+        self.assertIsNotNone(result, "missing-id get must not return None")
+        self.assertEqual(result.get("ids"), [], "missing id should yield empty ids list")
+
+
+# ---------------------------------------------------------------------------
 # Standalone upsert metadata test — no Chroma client; just verify the
 # upsert builds metadata containing session_id.
 # ---------------------------------------------------------------------------

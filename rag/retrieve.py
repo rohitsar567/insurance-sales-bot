@@ -10,15 +10,62 @@ Run a quick interactive smoke test from project root:
 from __future__ import annotations
 
 import asyncio
+import logging
 import sys
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Optional
 
 import chromadb
 from chromadb.config import Settings as ChromaSettings
 
 from backend.config import settings
 from backend.providers.local_embeddings import LocalEmbeddings as VoyageEmbeddings  # alias kept
+
+_log = logging.getLogger(__name__)
+
+
+def _safe_collection_get(
+    collection: Any,
+    *,
+    ids: Optional[list[str]] = None,
+    where: Optional[dict] = None,
+    include: Optional[list[str]] = None,
+) -> Optional[dict]:
+    """KI-107 (2026-05-15) — defensive wrapper around `collection.get(...)`.
+
+    C5 port-in persona logged 3× HTTP 500 "Error executing plan: Internal
+    error: Error finding id" against the live HF Space. Chroma's
+    `collection.get(ids=[...])` is documented to return empty lists when ids
+    miss — but the Rust-backed client can still raise on certain edge cases
+    (legacy schema rows, where-clause + missing-id combinations, transient
+    sqlite lock contention during HNSW compaction). The pre-KI-107 code
+    wrapped these calls in bare `except: pass`, which silently masked the
+    failure and let downstream callers index into None — producing the
+    confusing "Error finding id" plan-executor message instead of a
+    coherent retrieval fallback.
+
+    This helper:
+      - Returns None on ANY exception (caller MUST treat None as "miss").
+      - Returns the raw dict (may have empty lists) on success.
+      - Logs at WARNING level so the failure is observable in HF Space logs
+        instead of swallowed silently. Critical for post-mortem of similar
+        regressions.
+    """
+    try:
+        kwargs: dict = {}
+        if ids is not None:
+            kwargs["ids"] = ids
+        if where is not None:
+            kwargs["where"] = where
+        if include is not None:
+            kwargs["include"] = include
+        return collection.get(**kwargs)
+    except Exception as e:  # broad: Chroma raises bare RuntimeError, ValueError, sqlite errors
+        _log.warning(
+            "Chroma get(ids=%r, where=%r) failed: %s: %s",
+            ids, where, type(e).__name__, str(e)[:200],
+        )
+        return None
 
 
 @dataclass
@@ -237,30 +284,39 @@ async def retrieve(
     # context block before any policy text. Mirrors the regulatory-boost
     # pattern below.
     if session_id:
-        try:
-            profile_chunk_id = f"profile_{session_id}"
-            # KI-102 — defence-in-depth. Filter by BOTH id AND session_id
-            # metadata so any future ID collision (or migration-era chunk
-            # written under a shared id) still can't leak another user's
-            # profile into this session's context.
-            prof_res = collection.get(
-                ids=[profile_chunk_id],
-                where={"session_id": session_id},
-                include=["documents", "metadatas"],
-            )
-            if prof_res.get("ids"):
-                p_doc = prof_res["documents"][0] if prof_res.get("documents") else ""
-                p_meta = prof_res["metadatas"][0] if prof_res.get("metadatas") else {}
-                # Triple-check: even if Chroma returns a row, refuse it unless
-                # metadata.session_id matches. Belt + suspenders + parachute.
-                if p_doc and p_meta.get("session_id") == session_id:
-                    # Profile gets max score (1.0) so it always tops the context
-                    profile_chunk = _build_chunk(profile_chunk_id, p_doc, p_meta, 1.0)
-                    # Prepend; trim to top_k so we keep budget
-                    out = [profile_chunk] + [c for c in out if c.chunk_id != profile_chunk_id]
-                    out = out[:top_k]
-        except Exception:
-            pass
+        profile_chunk_id = f"profile_{session_id}"
+        # KI-102 — defence-in-depth. Filter by BOTH id AND session_id
+        # metadata so any future ID collision (or migration-era chunk
+        # written under a shared id) still can't leak another user's
+        # profile into this session's context.
+        #
+        # KI-107 (2026-05-15) — route through _safe_collection_get because new
+        # sessions (no profile saved yet) and certain transient Chroma sqlite
+        # states cause collection.get(ids=[missing_id]) to raise instead of
+        # returning empty lists. Before this fix the bare `except: pass` here
+        # masked the failure, the orchestrator's plan-executor still saw an
+        # AttributeError on the swallowed-None path, and the user got HTTP
+        # 500 "Error executing plan: Internal error: Error finding id".
+        prof_res = _safe_collection_get(
+            collection,
+            ids=[profile_chunk_id],
+            where={"session_id": session_id},
+            include=["documents", "metadatas"],
+        )
+        # prof_res is None on exception, a dict (possibly with empty lists) on success.
+        if prof_res and prof_res.get("ids"):
+            documents = prof_res.get("documents") or []
+            metadatas = prof_res.get("metadatas") or []
+            p_doc = documents[0] if documents else ""
+            p_meta = metadatas[0] if metadatas else {}
+            # Triple-check: even if Chroma returns a row, refuse it unless
+            # metadata.session_id matches. Belt + suspenders + parachute.
+            if p_doc and p_meta.get("session_id") == session_id:
+                # Profile gets max score (1.0) so it always tops the context
+                profile_chunk = _build_chunk(profile_chunk_id, p_doc, p_meta, 1.0)
+                # Prepend; trim to top_k so we keep budget
+                out = [profile_chunk] + [c for c in out if c.chunk_id != profile_chunk_id]
+                out = out[:top_k]
 
     # Quarantine boost pass — when the orchestrator passes a session_id, also
     # query the SEPARATE quarantine collection (user-uploaded PDFs) scoped to
