@@ -276,7 +276,14 @@ def _bump_brain_history(session, slot_driving: Optional[str]) -> int:
 # Public entry
 # ----------------------------------------------------------------------------
 
-_TIMEOUT_S = 12.0
+# KI-075 (2026-05-15) — bumped 12s → 25s. Live probe on production showed
+# 4 of 5 fact-find turns hitting the 12s wait_for cap at exactly 13.2s
+# latency, falling to canonical fallback even though FAST_BRAIN_CHAIN's
+# total_budget_s is 22s. NIM cold-start eats 10-15s on the first call
+# after a Space rebuild; the 12s wait_for was killing the brain BEFORE
+# the cross-provider fallback links (Groq, OpenRouter) ever got tried.
+# 25s gives NIM cold-start headroom + leaves room for one chain fallback.
+_TIMEOUT_S = 25.0
 
 
 async def drive_fact_find(
