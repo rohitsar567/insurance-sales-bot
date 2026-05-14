@@ -62,7 +62,16 @@ COPY 40-data ./40-data
 # ~310 MB and would have made the Space repo unviable on top of the regular
 # code. HF datasets get 50 GB free quota — the right place for this data.
 # Public dataset, no token needed at build time. See D-019.
-RUN python -c "\
+#
+# KI-119 (2026-05-15) — CACHE_BUST arg forces this layer to re-execute
+# whenever we update the dataset. Without it, Docker reuses the cached
+# snapshot_download layer (command string unchanged) even though the
+# remote dataset's content changed. Symptom: HF Space served stale Chroma
+# (7356 chunks from a prior ingest) instead of the freshly-uploaded
+# cleaned one (3799 chunks). Bump CACHE_BUST manually each time the
+# dataset is re-uploaded; the value just needs to change.
+ARG DATASET_CACHE_BUST=2026-05-15-ki119-v2
+RUN echo "Dataset cache bust: ${DATASET_CACHE_BUST}" && python -c "\
 from huggingface_hub import snapshot_download; \
 snapshot_download(\
     repo_id='rohitsar567/insurance-bot-data', \
