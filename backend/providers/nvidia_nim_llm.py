@@ -422,6 +422,14 @@ class NimChainLLM(LLMProvider):
                     httpx.ConnectError, httpx.NetworkError, asyncio.TimeoutError) as e:
                 last_err = e
                 continue  # try next model in chain
+            except (asyncio.CancelledError, KeyboardInterrupt, SystemExit):
+                # KI-078 (2026-05-15) — must re-raise these. The previous
+                # broad `except Exception` swallowed CancelledError, so when
+                # fact_find_brain's outer `asyncio.wait_for(_TIMEOUT_S)`
+                # fired, this loop kept consuming budget instead of bubbling
+                # the cancellation up. That cost the entire fact-find turn
+                # its fallback window.
+                raise
             except Exception as e:
                 # Unexpected error — record + try next, but surface eventually if all fail
                 last_err = e
@@ -525,11 +533,22 @@ def get_brain_llm() -> NimChainLLM:
 def get_fast_brain_llm() -> NimChainLLM:
     """Fast brain — multi-model NIM chain optimized for low TTFT.
     Primary: Qwen 3-Next 80B (50%) or Groq Llama-3.3-70B (50%). See
-    FAST_BRAIN_CHAIN for fallback order. KI-021 — per-link 12s, total chain
-    budget 22s. KI-025 — provider-balanced for 2× fast-brain throughput;
-    Groq LPU's sub-1s TTFT is actually faster than NIM Qwen on average,
-    so this rotation is a strict win for fact-find / QA latency."""
-    return NimChainLLM(chain=_balanced_brain_chain(FAST_BRAIN_CHAIN), timeout=12.0,
+    FAST_BRAIN_CHAIN for fallback order.
+
+    KI-078 (2026-05-15) — per-link timeout tightened 12s → 6s. With a 22s
+    total chain budget and a 12s per-link, only 1 candidate could complete
+    before the budget expired — i.e. the fallback chain was effectively
+    dead. Groq LPU + NIM Nemotron Nano + NIM Qwen all hit TTFT in <2s on
+    healthy paths, so 6s catches a degraded link fast and lets the chain
+    try 3-4 candidates inside the 22s budget. The cold-start case (NIM
+    pool warm-up taking 10-15s) is still handled by the outer
+    fact_find_brain `_TIMEOUT_S=25s` wait_for + Groq's cross-provider link
+    which has no NIM cold-start exposure.
+
+    KI-025 — provider-balanced for 2× fast-brain throughput; Groq LPU's
+    sub-1s TTFT is actually faster than NIM Qwen on average, so this
+    rotation is a strict win for fact-find / QA latency."""
+    return NimChainLLM(chain=_balanced_brain_chain(FAST_BRAIN_CHAIN), timeout=6.0,
                        role="fast_brain", total_budget_s=22.0)
 
 

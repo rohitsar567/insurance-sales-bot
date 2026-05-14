@@ -473,7 +473,12 @@ async def handle_turn(
                 pass
 
         if outcome.ambiguous:
-            brain_tag = "fact_find_brain::fallback"
+            # KI-078 (2026-05-15) — append fallback reason so admin telemetry
+            # can measure the fallback-cause mix (timeout vs llm_error vs
+            # no_trailer vs empty_reply). Essential for measuring KI-075 +
+            # KI-078 impact in production.
+            reason = getattr(outcome, "_fallback_reason", None) or "unknown"
+            brain_tag = f"fact_find_brain::fallback:{reason}"
         elif outcome.fact_find_complete:
             brain_tag = "fact_find_brain::complete"
         else:

@@ -55,6 +55,16 @@ class FactFindOutcome:
     slot_driving: Optional[str] = None
     fact_find_complete: bool = False
     ambiguous: bool = False
+    # KI-078 (2026-05-15) — when `ambiguous=True` because the LLM brain
+    # bailed and `_canonical_fallback` was used, this stamps WHY so the
+    # orchestrator can append it to `brain_used` and admin telemetry can
+    # measure the fallback-reason mix. One of:
+    #   "timeout"     — asyncio.wait_for(_TIMEOUT_S) expired
+    #   "llm_error"   — chain raised (non-timeout) before returning
+    #   "no_trailer"  — reply had no <FF>...</FF> JSON block, or it failed parse
+    #   "empty_reply" — trailer stripped to an empty user-facing reply
+    # None when the brain succeeded.
+    _fallback_reason: Optional[str] = None
 
 
 # ----------------------------------------------------------------------------
@@ -612,6 +622,7 @@ def _canonical_fallback(session, user_text: str, *, reason: str) -> FactFindOutc
             slot_driving=slot,
             fact_find_complete=False,
             ambiguous=True,
+            _fallback_reason=reason,  # KI-078 — telemetry stamp
         )
     # Nothing left to ask — gentle hand-off.
     reply = (
@@ -625,4 +636,5 @@ def _canonical_fallback(session, user_text: str, *, reason: str) -> FactFindOutc
         slot_driving=None,
         fact_find_complete=False,
         ambiguous=True,
+        _fallback_reason=reason,  # KI-078 — telemetry stamp
     )
