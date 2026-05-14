@@ -94,6 +94,14 @@ GRAPH: list[Question] = [
         prompt_hi="पहले से कोई health insurance है — employer का या personal? Sum insured कितना? (Top-up plan ज़्यादा सही हो सकता है।)",
         field="existing_cover_inr",
         is_core=True,
+        parser=lambda s: (
+            0 if any(k in str(s).lower() for k in ("no", "none", "nothing", "zero", "not"))
+            else (
+                (int("".join(c for c in str(s) if c.isdigit())[:6] or 0) *
+                 (100000 if any(k in str(s).lower() for k in ("l", "lakh", "lac")) else 1))
+                or None
+            )
+        ),
     ),
     Question(
         id="primary_goal",
@@ -191,10 +199,16 @@ def readback_summary(profile: Profile) -> str:
         bits.append(f"covering {profile.dependents}")
     if profile.income_band:
         bits.append(f"income {profile.income_band}")
-    if profile.existing_cover_inr is not None:
+    ec = profile.existing_cover_inr
+    if isinstance(ec, str):
+        try:
+            ec = int("".join(c for c in ec if c.isdigit())[:8] or 0)
+        except Exception:
+            ec = None
+    if isinstance(ec, (int, float)):
         bits.append(
-            f"existing cover ₹{profile.existing_cover_inr:,}"
-            if profile.existing_cover_inr > 0
+            f"existing cover ₹{int(ec):,}"
+            if ec > 0
             else "no existing cover"
         )
     if profile.primary_goal:
