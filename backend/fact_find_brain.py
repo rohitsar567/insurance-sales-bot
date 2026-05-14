@@ -147,38 +147,87 @@ Bot reply: Most policies in India have a 24-36 month waiting period for pre-exis
 # ----------------------------------------------------------------------------
 
 _FF_BLOCK_RE = re.compile(r"<FF>\s*(\{.*?\})\s*</FF>", re.DOTALL)
+# KI-090 (2026-05-15) — lenient fallback for FF parsing. Many LLMs drop
+# the literal <FF>...</FF> tags and emit a bare JSON tail (or inline
+# fenced JSON). When the strict tag match fails, try these regexes in
+# order so we accept whatever the brain actually produces.
+_FF_FENCED_RE = re.compile(r"```(?:json)?\s*(\{[\s\S]*?\})\s*```", re.IGNORECASE)
+_FF_TAIL_JSON_RE = re.compile(r"(\{[\s\S]*\})\s*\Z")
 
 
 def _parse_ff_block(text: str) -> Optional[dict]:
-    """Extract + parse the <FF>...</FF> JSON trailer from an LLM reply.
+    """Extract + parse the structured trailer dict from an LLM reply.
 
-    Returns the parsed dict on success, None when the trailer is missing,
-    malformed, or fails JSON parse. The caller should treat None as
-    `ambiguous=True` and fall through to the canonical fallback.
+    Returns the parsed dict on success, None when no parseable JSON object
+    can be located. Caller treats None as `ambiguous=True` and falls
+    through to the canonical fallback.
+
+    KI-090 (2026-05-15) — lenient parsing. The original strict
+    `<FF>{...}</FF>` regex was correct per the system-prompt contract, but
+    real LLMs (Qwen, Nemotron under load, Groq Llama-3.3 at times) drop
+    the literal tags and emit only the JSON. Pre-KI-090 those replies
+    fell to `fallback:no_trailer` even though the brain had produced a
+    perfectly valid structured tail. Now we try:
+      1. Strict `<FF>{...}</FF>` (the contract — still preferred).
+      2. ```` ```json {...} ``` ```` fenced (a common LLM habit).
+      3. Bare `{...}` at the very end of the reply.
+    Any candidate that parses as a JSON dict with at least one of the
+    expected keys (`captured` / `slot_driving` / `complete`) wins.
     """
     if not text:
         return None
+    candidates: list[str] = []
     m = _FF_BLOCK_RE.search(text)
-    if not m:
-        return None
-    raw_json = m.group(1).strip()
-    try:
-        data = json.loads(raw_json)
-    except json.JSONDecodeError:
-        return None
-    if not isinstance(data, dict):
-        return None
-    return data
+    if m:
+        candidates.append(m.group(1).strip())
+    for fenced in _FF_FENCED_RE.finditer(text):
+        candidates.append(fenced.group(1).strip())
+    tail = _FF_TAIL_JSON_RE.search(text.rstrip())
+    if tail:
+        candidates.append(tail.group(1).strip())
+    seen: set[str] = set()
+    for raw in candidates:
+        if raw in seen:
+            continue
+        seen.add(raw)
+        try:
+            data = json.loads(raw)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(data, dict):
+            continue
+        # Require at least one of the contract keys so we don't accept
+        # a stray JSON object from the prose (e.g. a quoted example).
+        if any(k in data for k in ("captured", "slot_driving", "complete")):
+            return data
+    return None
 
 
 def _strip_ff_block(text: str) -> str:
-    """Remove the <FF>...</FF> trailer (and any trailing whitespace) so the
-    user-facing reply doesn't leak the schema tag."""
+    """Remove the FF trailer (tagged, fenced, or bare-JSON tail) so the
+    user-facing reply doesn't leak the schema tag.
+
+    KI-090 — mirrors the lenient `_parse_ff_block` strategies in reverse:
+    strip strict `<FF>...</FF>`, then ```` ```json ... ``` ````, then any
+    bare-JSON tail that contains a contract key.
+    """
     if not text:
         return text
     cleaned = _FF_BLOCK_RE.sub("", text).strip()
-    # Remove any orphaned partial tags too — defensive against LLMs that emit
-    # an opening <FF> without a close, or a malformed inner block.
+    cleaned = _FF_FENCED_RE.sub("", cleaned).strip()
+    # Strip a bare-JSON tail ONLY if it contains a contract key — otherwise
+    # we might delete prose that happens to end with a JSON-ish bracket.
+    tail = _FF_TAIL_JSON_RE.search(cleaned)
+    if tail:
+        try:
+            tail_json = json.loads(tail.group(1))
+            if isinstance(tail_json, dict) and any(
+                k in tail_json for k in ("captured", "slot_driving", "complete")
+            ):
+                cleaned = cleaned[: tail.start()].rstrip()
+        except json.JSONDecodeError:
+            pass
+    # Defensive: any orphan partial tags
     cleaned = re.sub(r"<FF>.*$", "", cleaned, flags=re.DOTALL).strip()
     cleaned = re.sub(r"</FF>", "", cleaned).strip()
     return cleaned
