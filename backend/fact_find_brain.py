@@ -340,13 +340,13 @@ async def drive_fact_find(
         logging.warning(
             "fact_find_brain timeout (session=%s, %.1fs)", session_id, time.time() - t0
         )
-        return _canonical_fallback(profile, reason="timeout")
+        return _canonical_fallback(session, user_text, reason="timeout")
     except Exception as e:
         logging.warning(
             "fact_find_brain LLM call failed (session=%s): %s: %s",
             session_id, type(e).__name__, str(e)[:200],
         )
-        return _canonical_fallback(profile, reason="llm_error")
+        return _canonical_fallback(session, user_text, reason="llm_error")
 
     raw = (result.text or "").strip()
     parsed = _parse_ff_block(raw)
@@ -355,11 +355,11 @@ async def drive_fact_find(
             "fact_find_brain trailer missing/malformed (session=%s, raw=%r)",
             session_id, raw[:200],
         )
-        return _canonical_fallback(profile, reason="no_trailer")
+        return _canonical_fallback(session, user_text, reason="no_trailer")
 
     reply_text = _strip_ff_block(raw)
     if not reply_text.strip():
-        return _canonical_fallback(profile, reason="empty_reply")
+        return _canonical_fallback(session, user_text, reason="empty_reply")
 
     captured_raw = parsed.get("captured") or {}
     if not isinstance(captured_raw, dict):
@@ -406,11 +406,95 @@ async def drive_fact_find(
     )
 
 
-def _canonical_fallback(profile, *, reason: str) -> FactFindOutcome:
+def _normalize_for_slot(slot_id: str, raw_text: str) -> Any:
+    """Synchronous slot normalizer used by KI-072 canonical fallback.
+
+    Mirrors the keyword/int/cover fast-paths from `fact_find_normalizer.py`
+    but stays sync so it can be called from the non-async `_canonical_fallback`.
+    LLM-only enum normalization is skipped — fallback prefers re-asking over
+    blocking on another LLM call (which is presumably already failing if we
+    got here).
+    """
+    if not raw_text or not raw_text.strip():
+        return None
+    text = raw_text.strip()
+
+    # NAME slot — strip greeting + intro prefix; require alphabetic content.
+    if slot_id == "name":
+        s = text.strip(".,!?")
+        for greet in ("hi there ", "hello there ", "hey there ",
+                      "hi, ", "hello, ", "hey, ",
+                      "hi ", "hello ", "hey ", "namaste ", "yo "):
+            if s.lower().startswith(greet):
+                s = s[len(greet):].strip()
+                break
+        for prefix in ("i'm ", "i am ", "my name is ", "name is ",
+                       "call me ", "this is ", "name's "):
+            if s.lower().startswith(prefix):
+                s = s[len(prefix):].strip()
+                break
+        # Capitalise if all-lower (STT often outputs lowercase)
+        if s and not any(c.isupper() for c in s):
+            s = " ".join(w.capitalize() for w in s.split())
+        if 1 <= len(s) <= 50 and sum(1 for c in s if c.isalpha()) / max(1, len(s)) >= 0.5:
+            return s
+        return None
+
+    # Numeric / cover slots — use existing sync parsers.
+    try:
+        from backend.fact_find_normalizer import (
+            _parse_int, _parse_existing_cover, _keyword_normalize,
+            _validate, _FIELD_SCHEMA,
+        )
+        schema = _FIELD_SCHEMA.get(slot_id)
+        if slot_id in ("age", "parents_age"):
+            return _parse_int(text, schema or {"min": 1, "max": 120})
+        if slot_id == "existing_cover":
+            return _parse_existing_cover(text)
+        # Enum / list slots — keyword fast path only, no LLM.
+        kw = _keyword_normalize(slot_id, text)
+        if kw is not None and schema is not None:
+            return _validate(kw, schema)
+        return kw
+    except Exception:
+        return None
+
+
+def _canonical_fallback(session, user_text: str, *, reason: str) -> FactFindOutcome:
     """Produce a deterministic, on-rails fallback reply when the LLM brain
     times out or returns unparseable output. Uses the canonical needs_finder
     question for the next missing slot so the user always sees a coherent
-    next step."""
+    next step.
+
+    KI-072 (2026-05-15) — CRITICAL: applies the user's current message to
+    the previously-asked slot via the legacy normalizer BEFORE picking the
+    next slot. Without this, repeated brain failures wedge the user in an
+    infinite re-ask loop (live bug: "I am Don" / "Don" / "Don Jon" all
+    re-asked "what should I call you?").
+    """
+    profile = session.profile
+    captured: dict[str, Any] = {}
+
+    # KI-072 — try to capture the user's answer to whichever slot we were
+    # last asking. session.awaiting_question_id was set on the previous turn
+    # from outcome.slot_driving.
+    last_slot = getattr(session, "awaiting_question_id", None)
+    if last_slot and (user_text or "").strip():
+        try:
+            captured_value = _normalize_for_slot(last_slot, user_text)
+            if captured_value is not None:
+                # Map slot_id → Profile field name via GRAPH.
+                from backend.needs_finder import GRAPH
+                q_obj = next((q for q in GRAPH if q.id == last_slot), None)
+                if q_obj is not None:
+                    captured[q_obj.field] = captured_value
+                    # Apply to profile so next_question picks the FOLLOWING slot.
+                    setattr(profile, q_obj.field, captured_value)
+                    if last_slot not in profile.asked:
+                        profile.asked.append(last_slot)
+        except Exception as e:
+            logging.info("canonical_fallback capture skipped (slot=%s): %s", last_slot, e)
+
     try:
         from backend.needs_finder import next_question
         q = next_question(profile)
@@ -421,7 +505,7 @@ def _canonical_fallback(profile, *, reason: str) -> FactFindOutcome:
         slot = q.field
         return FactFindOutcome(
             reply_text=reply,
-            captured_updates={},
+            captured_updates=captured,  # KI-072 — propagate the captured answer
             slot_driving=slot,
             fact_find_complete=False,
             ambiguous=True,

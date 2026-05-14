@@ -29,14 +29,16 @@ Every LLM role is a `NimChainLLM` fallback chain, NOT a hardcoded single model. 
 - **Embeddings** = local BGE-small-en-v1.5 (`backend/providers/local_embeddings.py`). Voyage is configured in `.env` for ingest if needed but not on the hot path.
 - **Chain budgets:** brain 20s × 35s total, fast-brain 12s × 22s total, judge 30s × 75s total. Per-link timeout is dynamically clipped to remaining budget.
 
-## Fact-find loop (ADR-027)
+## Fact-find loop (ADR-030, supersedes ADR-027) — KI-070
 
-- 9 canonical slots in `backend/needs_finder.py::GRAPH`, asked in order.
-- The canonical question text is **rewritten by an LLM paraphraser** (`backend/question_paraphraser.py`) so each session sounds fresh. A verifier rejects paraphrases that drift off-slot, lack a question mark, or are out of length bounds.
-- Paraphrases cached per `(session_id, slot_id)` → max 9 paraphrase calls per session.
-- Re-asks (`"Sorry, I didn't catch that..."`) skip paraphrase so the user has a stable anchor.
-- Indic queries use canonical Hindi text (paraphraser is English-only).
-- **Natural-conversation escape (KI-045):** mid-fact-find, if the user message is intent_change (`"never mind"`, `"actually let me ask"`, `"stop asking"`, etc.) OR off-topic question (ends with `?`, ≥4 words, no slot keywords), `orchestrator.py` exits the fact-find branch, sets `session.free_form_session=True`, and lets the QA path handle it. Prevents the bot from droning past a user's pivot.
+**One LLM call per turn drives the entire fact-find conversation.** The pre-KI-070 three-layer stitching (hardcoded `GRAPH` question text + paraphraser + opener / acknowledger rotation) read as robotic copy-paste in user testing and is retired. `backend/fact_find_brain.py::drive_fact_find()` issues a single `NimChainLLM(FAST_BRAIN_CHAIN, timeout=12s)` call whose system prompt contains the 9-slot schema + current profile state + recent chat history, and emits natural conversational prose followed by a JSON tail block `<FF>{"captured":{...}, "slot_driving":"...", "complete":<bool>}</FF>`. Orchestrator strips the `<FF>` block before sending prose to the user; the JSON updates `session.profile` and selects the next slot in one pass.
+
+- **Native multi-fact capture.** A single user utterance like *"I'm 34, in Mumbai, just myself"* fills age + city + dependents in one turn. Verified live on 2026-05-15: `profile_updates: {name: 'Rohit Sar', age: 32, dependents: 'self', location_tier: 'metro'}` from one opener.
+- **Safeguards.** JSON-block-must-parse → fall to canonical `next_question(slot_id)`. Slot-not-progressing (3 turns same slot, no captures) → bail to canonical. Hard 12s budget. Any chain exhaustion → canonical fallback. Fact-find can never wedge.
+- **`backend/needs_finder.py::GRAPH`** retained as the safeguard fallback path only — never the primary path in steady state, but always available.
+- **DELETED in KI-070** (~500 LOC): `backend/question_paraphraser.py` module, `_pick_opener`, `_NEUTRAL_OPENERS` / `_FAMILY_OPENERS` constants, `_contains_self_introduction`, the KI-067 first-policy regex (brain captures natively from prose), the acknowledger template selection.
+- **Natural-conversation escape (KI-045):** intent_change phrases or off-topic questions still exit fact-find by routing through `should_route_to_fact_find` — handled upstream of `drive_fact_find` so the safeguard mechanism here applies to in-fact-find pivots.
+- **Indic queries** route through Sarvam-M for translation on input + output; the fact-find brain itself runs in English on the translated text.
 
 ## Refusal precision (KI-046)
 
