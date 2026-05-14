@@ -263,20 +263,37 @@ async def retrieve(
 
     collection = get_collection()
 
-    # Standard retrieval
-    res = collection.query(
-        query_embeddings=[query_vec],
-        n_results=effective_top_k,
-        where=where,
-    )
-
+    # Standard retrieval — KI-108 (2026-05-15) wraps collection.query() with
+    # the same defensive pattern as KI-107's _safe_collection_get. Live test
+    # post-KI-107 caught the bare query raising
+    # `chromadb.errors.InternalError: Error executing plan: Internal error:
+    # Error finding id` on EVERY user turn (HNSW index entry pointing to a
+    # missing doc — likely from a partial KI-102 profile-chunk write
+    # corrupting the collection state). KI-107 only wrapped .get(); .query()
+    # has the same failure mode. On error we degrade to empty retrieval:
+    # the brain still answers (acknowledging it can't access the catalog)
+    # instead of the user seeing KI-106's generic "something went wrong"
+    # fallback for every message.
     out: list[RetrievedChunk] = []
-    if res["ids"] and res["ids"][0]:
-        for cid, doc, meta, dist in zip(
-            res["ids"][0], res["documents"][0],
-            res["metadatas"][0], res["distances"][0],
-        ):
-            out.append(_build_chunk(cid, doc, meta, 1.0 - dist))
+    try:
+        res = collection.query(
+            query_embeddings=[query_vec],
+            n_results=effective_top_k,
+            where=where,
+        )
+        if res["ids"] and res["ids"][0]:
+            for cid, doc, meta, dist in zip(
+                res["ids"][0], res["documents"][0],
+                res["metadatas"][0], res["distances"][0],
+            ):
+                out.append(_build_chunk(cid, doc, meta, 1.0 - dist))
+    except Exception as e:
+        import logging
+        logging.warning(
+            "Chroma collection.query() failed (top_k=%d, where=%s); "
+            "degrading to empty retrieval. %s: %s",
+            effective_top_k, where, type(e).__name__, str(e)[:300],
+        )
 
     # Profile boost pass — when the orchestrator passes a session_id, look
     # up THAT user's profile chunk in Chroma. Inject it at the top of the
