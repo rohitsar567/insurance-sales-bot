@@ -4,7 +4,7 @@
 **Type:** Architecture reference (not a decision ADR)
 **Owner:** Rohit Saraf
 **Consolidates:** [ADR-019](ADR-019-nim-single-provider-consolidation.md), [ADR-026](ADR-026-provider-load-balancing.md) (superseded), [ADR-030](ADR-030-llm-driven-fact-find.md), [ADR-031](ADR-031-sticky-primary-election.md)
-**Related KIs:** KI-079 (`87ee522`), KI-080 (`6159c54`), KI-081 (HF Space env), KI-084 (`119e0fd`), KI-085 (`8fc7979`)
+**Related KIs:** KI-079 (`87ee522`), KI-080 (`6159c54`), KI-081 (HF Space env), KI-084 (`119e0fd`), KI-085 (`8fc7979`), KI-091 (`9813994` — skip `profile_extractor` + faithfulness judge on fact-find turns; saturated-chain hang + mid-session field-clear), KI-094 (`f068094` — defensive `None`-guard in extractor merge; extractor cannot clear a filled profile field even when it runs)
 
 > This is **not a decision ADR.** No alternatives or trade-offs are weighed here.
 > ADR-032 is the single readable spec for how the LLM chain works in production
