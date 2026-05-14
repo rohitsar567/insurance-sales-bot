@@ -548,7 +548,7 @@ The bot is two flows running together — the customer's experience and the tech
 
 ### 4.3 Model stack
 
-Every LLM role is served by a **fallback chain** of candidate models (`backend/providers/nvidia_nim_llm.py::NimChainLLM`), never a single hardcoded model. Chains were curated to preserve brain ↔ judge family diversity (Qwen brain ↔ Mistral judge) so any failover still produces non-circular grading. Cross-provider entries (OpenRouter, Groq) sit at the bottom of every chain so the whole reasoning stack survives a full NIM regional outage.
+Every LLM role is served by a **candidate pool** of models elected over by a probe-driven sticky-primary scheme ([ADR-031](70-docs/60-decisions/ADR-031-sticky-primary-election.md), end-to-end spec in [ADR-032](70-docs/60-decisions/ADR-032-llm-chain-architecture.md)), never a hardcoded single model. Chains were curated to preserve brain ↔ judge family diversity (Qwen brain ↔ Mistral judge) so any failover still produces non-circular grading. Cross-provider entries (OpenRouter, Groq) sit inside every chain so the whole reasoning stack survives a full NIM regional outage.
 
 | Role | Primary | Fallback chain (in order) | Provider(s) | Why this primary |
 |---|---|---|---|---|
