@@ -175,7 +175,15 @@ def is_field_set(profile: Profile, field_name: str) -> bool:
 
 
 def next_question(profile: Profile, language: str = "en") -> Optional[Question]:
-    """Return the next question to ask, or None if we have enough to recommend."""
+    """Return the next question to ask, or None if we have enough to recommend.
+
+    KI-070 (2026-05-15) — the orchestrator no longer drives fact-find via this
+    function; the new `backend/fact_find_brain.py` single-LLM-call brain
+    handles question phrasing natively. This is now used as a fallback
+    (canonical reply when the brain times out / emits malformed JSON), as a
+    slot-not-progressing safeguard, and by `/api/profile/completeness` to
+    surface "next question hint" to the frontend.
+    """
     if profile.free_form_session:
         return None
 
