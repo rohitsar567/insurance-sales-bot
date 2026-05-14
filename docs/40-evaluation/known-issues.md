@@ -209,3 +209,48 @@ empirical signal for whether a fix is actually working in production.
 The standing ratio target: **for every 1 user-facing bug a reviewer
 catches, we should close 5 internal issues from this log before the next
 review.**
+
+### KI-011 — Fact-find re-ask infinite loop under load — **FIXED in `171f2a4`**
+
+**Severity:** P0
+**Source:** `backend/orchestrator.py` fact-find branch + `backend/fact_find_normalizer.py` LLM-only path
+**Discovered:** First persona of the 100-persona audit (P002, verbose style)
+
+When NIM rate-limited the Llama-3.3-70B normalizer under audit
+concurrency, the LLM call raised, the orchestrator marked the answer
+ambiguous, kept `awaiting_question_id` set, and re-asked the same
+question on the next turn. User moved on with answers to OTHER
+questions. Normalizer rejected them. Bot re-asked again. Infinite loop.
+
+**Fix:** Keyword fast-path in `fact_find_normalizer.py` (hand-curated
+substring matchers for 9 metros, 15 tier1 cities, dependents
+combinations, income/budget bands, primary goals, common health
+conditions) bypasses the LLM for ~80% of answers. Re-ask cap in
+`orchestrator.py` gives up after 2 failed normalizations on the same
+question and marks it asked. Production audit on persona P002
+post-fix: 30/30 turns completed in 85s with 0 refusals (vs. infinite
+loop before).
+
+### KI-012 — Bot stuck in fact_find_complete readback loop — **FIXED in next commit**
+
+**Severity:** P0
+**Source:** `backend/orchestrator.py` fact-find-complete branch
+**Discovered:** Reviewing audit transcript of P002 post-KI-011-fix
+
+After fact-find completes, the orchestrator only calls
+`session.set_awaiting(None)` — it does NOT flip
+`session.free_form_session = True`. On every subsequent turn, the
+classifier still routes through the fact-find branch (because
+`free_form_session` is false), `next_question()` returns None (all
+fields captured), and the code path emits the readback summary AGAIN
+instead of going to retrieval + brain.
+
+**Effect:** P002 used 19 of 30 turns repeating the same readback
+"Got it — here's what I've understood: …" instead of answering the
+user's real policy questions. Every persona that completes fact-find
+hits this.
+
+**Fix:** When fact-find completes, set
+`session.free_form_session = True` and flush to disk. Subsequent turns
+skip the fact-find branch entirely and go through retrieval + brain
+as intended.

@@ -242,9 +242,15 @@ async def handle_turn(
             else:
                 brain_tag = "needs_finder::fact_find_continue" if in_fact_find_continuation else "needs_finder::fact_find_start"
         else:
-            # Fact-find complete — produce a profile readback + invite next step
+            # Fact-find complete — produce a profile readback + invite next step.
+            # CRITICAL (KI-012): flip free_form_session=True so subsequent turns
+            # don't re-enter the fact-find branch and repeat the readback. Before
+            # this, every post-fact-find turn returned the same readback summary
+            # because next_question() kept returning None.
             from backend.needs_finder import readback_summary
             session.set_awaiting(None)
+            session.free_form_session = True
+            session._flush()
             summary = readback_summary(session.profile)
             reply = (
                 f"Got it — here's what I've understood: {summary}. Want me to suggest 2-3 policies that fit your profile, "
