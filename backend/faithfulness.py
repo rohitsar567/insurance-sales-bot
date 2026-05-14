@@ -251,7 +251,19 @@ Verify."""
         unsupported = list(data.get("unsupported_claims", []))
         return supported, unsupported
     except Exception as e:
-        # If judge fails, fail-open with a warning (don't block valid replies on infra hiccup)
+        # KI-001 — BFSI compliance posture: in production we FAIL CLOSED
+        # (block when the judge is unavailable) so an unsupported claim
+        # never leaks past Gate 4 just because NIM hiccupped. Set
+        # FAITHFULNESS_FAIL_CLOSED=0 in dev/smoke to revert to fail-open.
+        import logging
+        import os
+        logging.warning(
+            "faithfulness gate 4 judge failure (%s: %s)",
+            type(e).__name__, str(e)[:200],
+        )
+        fail_closed = os.environ.get("FAITHFULNESS_FAIL_CLOSED", "1") == "1"
+        if fail_closed:
+            return False, [f"judge_unavailable_failclosed: {type(e).__name__}"]
         return True, [f"judge_error_failopen: {type(e).__name__}"]
 
 

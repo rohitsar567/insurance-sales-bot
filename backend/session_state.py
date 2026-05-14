@@ -64,8 +64,14 @@ class SessionState:
             tmp = target.with_suffix(".json.tmp")
             tmp.write_text(json.dumps(payload, indent=2))
             tmp.replace(target)
-        except Exception:
-            pass  # never let a disk hiccup kill the request
+        except Exception as e:
+            # KI-002 — Log silent failures so HF Space logs reveal them.
+            # Don't crash the request — disk hiccups shouldn't kill chat.
+            import logging
+            logging.warning(
+                "session_state flush failed for %s: %s: %s",
+                self.session_id, type(e).__name__, str(e)[:200],
+            )
 
     def set_awaiting(self, question_id: Optional[str]) -> None:
         self.awaiting_question_id = question_id
@@ -111,7 +117,15 @@ def _load_from_disk(session_id: str) -> Optional[SessionState]:
             free_form_session=bool(raw.get("free_form_session", False)),
             last_touched=float(raw.get("last_touched", time.time())),
         )
-    except Exception:
+    except Exception as e:
+        # KI-003 — Log schema-drift / corrupt-JSON failures. The user will
+        # get a fresh session either way, but the log lets us detect when
+        # the Profile dataclass evolves in a way that breaks old sessions.
+        import logging
+        logging.warning(
+            "session_state load_from_disk failed for %s: %s: %s",
+            session_id, type(e).__name__, str(e)[:200],
+        )
         return None
 
 

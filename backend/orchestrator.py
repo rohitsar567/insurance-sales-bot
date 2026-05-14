@@ -145,8 +145,15 @@ async def handle_turn(
             translated_query = await translate_to_english(user_text)
             if translated_query and translated_query.strip() and translated_query != user_text:
                 user_text = translated_query  # use English for retrieval + reasoning
-        except Exception:
-            pass  # fall through with original; if Sarvam translator fails, DeepSeek can still try
+        except Exception as e:
+            # KI-004 — surface translator failures in HF Space logs. The
+            # brain will still try with the original Indic text, but with
+            # degraded quality. The log lets us tune the Sarvam fallback.
+            import logging
+            logging.warning(
+                "indic translator failed (session=%s lang=%s): %s: %s",
+                session_id, language, type(e).__name__, str(e)[:200],
+            )
 
     # 1b. SESSION-STATE-AWARE FACT-FIND
     # Load session state. If we're already in fact-find (awaiting an answer to a
@@ -304,10 +311,23 @@ async def handle_turn(
                     "health_conditions": session.profile.health_conditions,
                 }
                 await upsert_profile_chunk(session_id or "anonymous", profile_dict_for_chunk)
-            except Exception:
-                pass  # chunk upsert failure must not block the chat
-    except Exception:
-        pass  # extraction failure must never block the chat
+            except Exception as e:
+                # KI-005 — log profile-chunk upsert failures so we can see
+                # when Chroma is locking or schema-drifting. The chat still
+                # ships; subsequent turns just won't see the latest profile.
+                import logging
+                logging.warning(
+                    "profile-chunk upsert failed (session=%s): %s: %s",
+                    session_id, type(e).__name__, str(e)[:200],
+                )
+    except Exception as e:
+        # KI-006 — log profile-extraction failures (extractor LLM down,
+        # malformed model output, etc.). The chat ships unaffected.
+        import logging
+        logging.warning(
+            "profile extractor failed (session=%s): %s: %s",
+            session_id, type(e).__name__, str(e)[:200],
+        )
 
     # 2. Retrieve — pass session_id so the user's profile chunk (stored in
     # Chroma at POST /api/profile time) gets boosted to the top of the
