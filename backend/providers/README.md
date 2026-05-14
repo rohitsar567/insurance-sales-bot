@@ -31,7 +31,37 @@ Every external model is fronted by a small typed client here. The orchestrator a
 | Fast brain | 12 | 22 | `nvidia_nim_llm.py::get_fast_brain_llm` |
 | Judge | 30 | 75 | `nvidia_nim_llm.py::get_judge_llm` |
 
-Per-link timeout is dynamically clipped to remaining budget.
+Per-link timeout is dynamically clipped to remaining budget. KI-084 explicit per-phase `httpx.Timeout(connect=2, read=<per-link>, write=2, pool=2)` is nested inside.
+
+## Credit-aware election (KI-085)
+
+Beyond liveness, election in `backend/llm_health.py` is gated on `credits_remaining > credits_low_water` per candidate so quota-exhausted providers are excluded BEFORE producing a user-facing 429. KI-087 further prefers NIM as primary; Groq/OpenRouter serve as emergency fallback.
+
+### Per-provider signal sources
+
+| Provider | Producer | Signal | Unit | Low-water |
+|---|---|---|---|---|
+| **Groq** | `update_credits_from_groq` from `groq_llm.py::chat` | `x-ratelimit-remaining-tokens-day` header + `x-ratelimit-reset-tokens-day` for reset | `tokens_day` | **5,000** (one fact-find round-trip ~2.4K + margin) |
+| **OpenRouter** | `poll_openrouter_credits` (every 10 min) + `update_credits_from_openrouter_headers` per-call fallback | `GET /api/v1/credits` → `{total_credits, total_usage}` | `usd_balance` | **$0.05** USD |
+| **NIM** | `record_nim_call` from `NimChainLLM._try` | Local 60s deque of monotonic timestamps per model | `requests_min` (remaining in current 60s window) | **5.0** slots (gate at 35/40 req/min) |
+
+### Election predicate
+
+In `_is_election_eligible(h, now_mono)`:
+
+```python
+if h.credits_reset_at is not None and now_mono >= h.credits_reset_at:
+    return True                                # quota already reset
+if h.credits_remaining is None:                # cold-start permissive
+    return True
+return h.credits_remaining > h.credits_low_water
+```
+
+### Cold-start
+
+`credits_remaining = None` is permissive — fresh process restarts don't grind to a halt before the first call has stamped credit state. OpenRouter poll fires on startup so the USD balance is non-None within seconds.
+
+See [ADR-032](../../70-docs/60-decisions/ADR-032-llm-chain-architecture.md) §6 for the full table and §12 for the operational runbook.
 
 ## Related
 
