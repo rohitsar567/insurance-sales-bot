@@ -39,7 +39,48 @@ PROBE_INTERVAL_SEC = 300          # ping each model every 5 min
 PROBE_TIMEOUT_SEC = 12            # per-probe HTTP timeout
 DOWN_AFTER_CONSECUTIVE_FAILS = 3  # 3 fails in a row = mark down
 
+# Per-provider endpoints + env-var names. The chain entries embed the
+# provider via a prefix ('openrouter:<id>' / 'groq:<id>'); unprefixed entries
+# fall through to NIM. Keep these dicts in sync with the providers in
+# backend/providers/{openrouter_llm,groq_llm,nvidia_nim_llm}.py.
 NIM_BASE = "https://integrate.api.nvidia.com/v1/chat/completions"
+OPENROUTER_BASE = "https://openrouter.ai/api/v1/chat/completions"
+GROQ_BASE = "https://api.groq.com/openai/v1/chat/completions"
+
+
+def _base_url_for(model_id: str) -> str:
+    if model_id.startswith("openrouter:"):
+        return OPENROUTER_BASE
+    if model_id.startswith("groq:"):
+        return GROQ_BASE
+    return NIM_BASE
+
+
+def _api_key_for(model_id: str) -> str:
+    if model_id.startswith("openrouter:"):
+        return os.environ.get("OPENROUTER_API_KEY", "")
+    if model_id.startswith("groq:"):
+        return os.environ.get("GROQ_API_KEY", "")
+    return os.environ.get("NVIDIA_NIM_API_KEY", "")
+
+
+def _model_id_for(model_id: str) -> str:
+    """Strip the provider prefix before sending to the upstream API."""
+    if model_id.startswith("openrouter:"):
+        return model_id[len("openrouter:"):]
+    if model_id.startswith("groq:"):
+        return model_id[len("groq:"):]
+    return model_id
+
+
+def _headers_for(model_id: str, api_key: str) -> dict[str, str]:
+    """OpenRouter needs HTTP-Referer + X-Title to avoid being treated as
+    anonymous traffic. NIM + Groq just need Bearer + Content-Type."""
+    h = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+    if model_id.startswith("openrouter:"):
+        h["HTTP-Referer"] = "https://huggingface.co/spaces/rohitsar567/InsuranceBot"
+        h["X-Title"] = "Insurance Bot"
+    return h
 
 
 @dataclass
@@ -93,14 +134,34 @@ def save(state: dict[str, ModelHealth]) -> None:
 
 
 async def probe_one(client: httpx.AsyncClient, model: str, api_key: str) -> tuple[bool, str, Optional[int]]:
-    """Returns (ok, error_msg, latency_ms)."""
+    """Probe a single chain entry (NIM or cross-provider).
+
+    `model` is the chain entry exactly as it appears in BRAIN_CHAIN etc., so
+    it may carry a provider prefix (`openrouter:` / `groq:`). The resolvers
+    pick the right base URL, headers, and stripped model id. `api_key` here
+    is intentionally ignored — we always pick the right key for the model's
+    provider via `_api_key_for()`, so a missing prefix-specific key skips
+    that probe with a clear error rather than spuriously using the NIM key.
+    Returns (ok, error_msg, latency_ms).
+    """
+    url = _base_url_for(model)
+    upstream_model = _model_id_for(model)
+    provider_key = _api_key_for(model)
+    headers = _headers_for(model, provider_key)
+
+    if not provider_key:
+        # No key configured for this provider — treat as benign-skip. The
+        # background loop will keep probing; once the user sets the key the
+        # next tick will succeed.
+        return False, "no_api_key", None
+
     t0 = time.time()
     try:
         r = await client.post(
-            NIM_BASE,
-            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            url,
+            headers=headers,
             json={
-                "model": model,
+                "model": upstream_model,
                 "messages": [{"role": "user", "content": "Reply with exactly: ok"}],
                 "max_tokens": 5,
                 "temperature": 0.0,

@@ -216,6 +216,98 @@
     #toast.error { border-color: var(--red); }
     #toast.info { border-color: var(--blue); }
 
+    /* Role badge — colored pill (BRAIN / FAST_BRAIN / JUDGE) */
+    .role-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: #fff;
+      vertical-align: middle;
+      margin-right: 8px;
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, monospace;
+    }
+
+    /* Compact summary blocks above the chain table */
+    .summary-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 12px 0 16px;
+    }
+    .summary-block {
+      padding: 10px 12px;
+      background: #0b0d12;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    .summary-block .label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .summary-block .model-name {
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, monospace;
+      font-size: 13px;
+      word-break: break-all;
+      line-height: 1.35;
+    }
+    .summary-block .stats-line {
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .summary-block .stats-line .sep {
+      margin: 0 6px;
+      color: #3a4250;
+    }
+    .primary-mark { color: var(--green); margin-right: 4px; }
+
+    /* Chain table */
+    .chain-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 12px; }
+    .chain-table thead th {
+      text-align: left;
+      padding: 8px 8px;
+      background: #0b0d12;
+      border-bottom: 1px solid var(--border);
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .chain-table tbody td {
+      padding: 8px 8px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .chain-table tbody tr:last-child td { border-bottom: none; }
+    .chain-table .model-cell {
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, monospace;
+      word-break: break-all;
+      max-width: 280px;
+    }
+    .chain-table .num-cell { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .chain-table .icon-btn { padding: 2px 7px; font-size: 12px; line-height: 1.2; }
+    .chain-table tbody tr.is-primary td { background: rgba(63, 185, 80, 0.05); }
+
+    .unverified-flag {
+      display: inline-block;
+      margin-left: 6px;
+      padding: 1px 6px;
+      font-size: 10px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      border-radius: 4px;
+      background: rgba(210, 153, 34, 0.18);
+      color: var(--yellow);
+      border: 1px solid rgba(210, 153, 34, 0.35);
+    }
+
     .hidden { display: none !important; }
     .actions { display: flex; gap: 8px; flex-wrap: wrap; }
     .gate-error {
@@ -296,9 +388,20 @@
       var STATE = {
         password: '',
         health: null,    // { models: [ { model, status, latency_ms, last_error, last_success } ], counters: { healthy, degraded, down } }
-        chains: null     // { brain: [...], fast_brain: [...], judge: [...] }
+        chains: null,    // { brain: [...], fast_brain: [...], judge: [...] }
+        usage: null      // { brain: {...}, fast_brain: {...}, judge: {...} } from /api/admin/usage
       };
       var ROLES = ['brain', 'fast_brain', 'judge'];
+      var ROLE_COLORS = {
+        brain:      '#58a6ff',  // blue
+        fast_brain: '#39c5cf',  // cyan
+        judge:      '#a371f7'   // purple
+      };
+      var ROLE_LABELS = {
+        brain:      'BRAIN',
+        fast_brain: 'FAST_BRAIN',
+        judge:      'JUDGE'
+      };
       var STORAGE_KEY = 'admin_password';
 
       // ----- Utilities -----
@@ -549,6 +652,21 @@
         return 'unknown';
       }
 
+      // Index by_model array from /api/admin/usage by model id, for O(1) lookup
+      // when rendering one chain row.
+      function usageStatsForRole(role) {
+        var u = STATE.usage && STATE.usage[role];
+        if (!u || !Array.isArray(u.by_model)) return { byModel: {}, total: 0, payload: u || null };
+        var map = {};
+        u.by_model.forEach(function (m) { if (m && m.model) map[m.model] = m; });
+        return { byModel: map, total: Number(u.total_calls_24h) || 0, payload: u };
+      }
+
+      function fmtPct(x) {
+        if (x == null || isNaN(x)) return '—';
+        return (Number(x) * 100).toFixed(1) + '%';
+      }
+
       function renderChains() {
         var grid = $('chains-grid');
         clearChildren(grid);
@@ -559,25 +677,111 @@
           var chain = STATE.chains[role];
           if (!Array.isArray(chain)) chain = [];
 
+          var stats = usageStatsForRole(role);
+          var payload = stats.payload || {};
+          var primaryModel = payload.primary_model || chain[0] || null;
+          var nextBest = payload.next_best_recommended || null;
+          var nextBestUnverified = !!payload.next_best_is_unverified;
+
           var card = createEl('div', { className: 'card chain-card' });
 
+          // --- Header: colored badge + role label + 24h call count ---
           var header = createEl('div', { className: 'row-between' });
-          var h2 = createEl('h2');
-          h2.appendChild(document.createTextNode('Chain'));
-          var roleTag = createEl('span', { className: 'role-tag', text: role });
-          h2.appendChild(roleTag);
-          header.appendChild(h2);
+          var headerLeft = createEl('div');
+          var badge = createEl('span', { className: 'role-badge', text: ROLE_LABELS[role] || String(role).toUpperCase() });
+          badge.style.background = ROLE_COLORS[role] || '#444';
+          headerLeft.appendChild(badge);
+          var roleTitle = createEl('span', { text: 'Chain configuration' });
+          roleTitle.style.fontSize = '15px';
+          roleTitle.style.fontWeight = '600';
+          headerLeft.appendChild(roleTitle);
+          header.appendChild(headerLeft);
+
+          var headerRight = createEl('div', { className: 'small muted' });
+          var totalCalls = stats.total;
+          var sr = (payload && payload.success_rate != null) ? fmtPct(payload.success_rate) : '—';
+          headerRight.textContent = totalCalls + ' calls / 24h · ' + sr + ' success';
+          header.appendChild(headerRight);
           card.appendChild(header);
 
-          var hint = createEl('div', { className: 'muted small', text: 'Primary at top. Use ↑ / ↓ to reorder, then Save.' });
-          card.appendChild(hint);
+          // --- Summary row: Currently primary + Next best recommended ---
+          var summary = createEl('div', { className: 'summary-row' });
 
-          var list = createEl('div', { className: 'chain-list' });
-          card.appendChild(list);
+          var primaryBlock = createEl('div', { className: 'summary-block' });
+          var primaryLabel = createEl('div', { className: 'label', text: 'Currently primary' });
+          primaryBlock.appendChild(primaryLabel);
+          var primaryNameLine = createEl('div', { className: 'model-name' });
+          var primaryStar = createEl('span', { className: 'primary-mark', text: '★' });
+          primaryStar.style.color = 'var(--green)';
+          primaryNameLine.appendChild(primaryStar);
+          primaryNameLine.appendChild(document.createTextNode(primaryModel || '—'));
+          primaryBlock.appendChild(primaryNameLine);
+          var primaryStatsRow = stats.byModel[primaryModel];
+          var primaryStatsLine = createEl('div', { className: 'stats-line' });
+          if (primaryStatsRow) {
+            primaryStatsLine.appendChild(document.createTextNode(fmtPct(primaryStatsRow.share) + ' share'));
+            primaryStatsLine.appendChild(createEl('span', { className: 'sep', text: '·' }));
+            primaryStatsLine.appendChild(document.createTextNode(fmtLatency(primaryStatsRow.avg_latency_ms) + ' avg'));
+            primaryStatsLine.appendChild(createEl('span', { className: 'sep', text: '·' }));
+            primaryStatsLine.appendChild(document.createTextNode(fmtPct(primaryStatsRow.success_rate) + ' success'));
+          } else {
+            primaryStatsLine.textContent = 'No 24h traffic recorded yet.';
+          }
+          primaryBlock.appendChild(primaryStatsLine);
+          summary.appendChild(primaryBlock);
 
-          function rerender() { renderChainList(list, role); }
-          rerender();
+          var nextBlock = createEl('div', { className: 'summary-block' });
+          var nextLabel = createEl('div', { className: 'label', text: 'Next best recommended' });
+          nextBlock.appendChild(nextLabel);
+          var nextNameLine = createEl('div', { className: 'model-name' });
+          nextNameLine.appendChild(document.createTextNode(nextBest || '—'));
+          if (nextBest && nextBestUnverified) {
+            var flag = createEl('span', { className: 'unverified-flag', text: 'unverified' });
+            nextNameLine.appendChild(flag);
+          }
+          nextBlock.appendChild(nextNameLine);
+          var nextStatsLine = createEl('div', { className: 'stats-line' });
+          if (nextBest) {
+            var nextHealth = statusForModel(nextBest);
+            var nextHealthRow = healthRowFor(nextBest);
+            var latStr = nextHealthRow ? fmtLatency(nextHealthRow.latency_ms != null ? nextHealthRow.latency_ms : nextHealthRow.latency) : '—';
+            nextStatsLine.appendChild(document.createTextNode('health: ' + normalizeStatus(nextHealth)));
+            nextStatsLine.appendChild(createEl('span', { className: 'sep', text: '·' }));
+            nextStatsLine.appendChild(document.createTextNode(latStr + ' last probe'));
+            if (nextBestUnverified) {
+              nextStatsLine.appendChild(createEl('span', { className: 'sep', text: '·' }));
+              nextStatsLine.appendChild(document.createTextNode('no healthy alternative — fallback choice'));
+            }
+          } else {
+            nextStatsLine.textContent = 'No alternative in chain.';
+          }
+          nextBlock.appendChild(nextStatsLine);
+          summary.appendChild(nextBlock);
 
+          card.appendChild(summary);
+
+          // --- Full chain table ---
+          var table = createEl('table', { className: 'chain-table' });
+          var thead = createEl('thead');
+          var headRow = createEl('tr');
+          ['#', 'Model', 'Status', '24h calls', 'Share', 'Avg ms', 'Success', 'Actions'].forEach(function (h) {
+            var th = createEl('th', { text: h });
+            if (h === '24h calls' || h === 'Share' || h === 'Avg ms' || h === 'Success' || h === '#') {
+              th.style.textAlign = 'right';
+            }
+            headRow.appendChild(th);
+          });
+          thead.appendChild(headRow);
+          table.appendChild(thead);
+
+          var tbody = createEl('tbody');
+          table.appendChild(tbody);
+          card.appendChild(table);
+
+          function rerenderTable() { renderChainTableRows(tbody, role, stats); }
+          rerenderTable();
+
+          // --- Save / Reload actions ---
           var actions = createEl('div', { className: 'actions' });
           var saveBtn = createEl('button', { className: 'primary', text: 'Save' });
           saveBtn.onclick = function () {
@@ -598,7 +802,9 @@
           };
 
           var revertBtn = createEl('button', { text: 'Reload' });
-          revertBtn.onclick = function () { fetchChains().then(renderChains).catch(handleFetchErr); };
+          revertBtn.onclick = function () {
+            refreshAll().catch(handleFetchErr);
+          };
 
           actions.appendChild(saveBtn);
           actions.appendChild(revertBtn);
@@ -608,27 +814,50 @@
         });
       }
 
-      function renderChainList(listEl, role) {
-        clearChildren(listEl);
+      function renderChainTableRows(tbody, role, stats) {
+        clearChildren(tbody);
         var chain = STATE.chains[role] || [];
         if (!chain.length) {
-          var empty = createEl('div', { className: 'muted small', text: 'Empty chain.' });
-          listEl.appendChild(empty);
+          var tr = createEl('tr');
+          var td = createEl('td', { text: 'Empty chain.', attrs: { colspan: '8' } });
+          td.classList.add('muted');
+          tr.appendChild(td);
+          tbody.appendChild(tr);
           return;
         }
         chain.forEach(function (model, idx) {
-          var item = createEl('div', { className: 'chain-item' });
+          var tr = createEl('tr');
+          if (idx === 0) tr.classList.add('is-primary');
 
-          item.appendChild(statusPill(statusForModel(model)));
+          var idxCell = createEl('td', { className: 'num-cell', text: String(idx + 1) });
+          tr.appendChild(idxCell);
 
-          var label = createEl('span', { className: 'label', text: model });
-          item.appendChild(label);
-
+          var modelCell = createEl('td', { className: 'model-cell' });
           if (idx === 0) {
-            var star = createEl('span', { className: 'primary-star', text: '★', title: 'Primary' });
-            item.appendChild(star);
+            var star = createEl('span', { className: 'primary-mark', text: '★ ' });
+            modelCell.appendChild(star);
           }
+          modelCell.appendChild(document.createTextNode(model));
+          tr.appendChild(modelCell);
 
+          var statusCell = createEl('td');
+          statusCell.appendChild(statusPill(statusForModel(model)));
+          tr.appendChild(statusCell);
+
+          var b = stats.byModel[model];
+          var callsCell = createEl('td', { className: 'num-cell', text: b ? String(b.calls) : '0' });
+          tr.appendChild(callsCell);
+
+          var shareCell = createEl('td', { className: 'num-cell', text: b ? fmtPct(b.share) : '—' });
+          tr.appendChild(shareCell);
+
+          var latCell = createEl('td', { className: 'num-cell', text: b ? fmtLatency(b.avg_latency_ms) : '—' });
+          tr.appendChild(latCell);
+
+          var successCell = createEl('td', { className: 'num-cell', text: b ? fmtPct(b.success_rate) : '—' });
+          tr.appendChild(successCell);
+
+          var actionsCell = createEl('td');
           var moves = createEl('span', { className: 'move-buttons' });
           var up = createEl('button', { className: 'icon-btn', text: '↑', title: 'Move up' });
           up.disabled = (idx === 0);
@@ -638,7 +867,7 @@
             var tmp = arr[idx - 1];
             arr[idx - 1] = arr[idx];
             arr[idx] = tmp;
-            renderChainList(listEl, role);
+            renderChainTableRows(tbody, role, stats);
           };
           var down = createEl('button', { className: 'icon-btn', text: '↓', title: 'Move down' });
           down.disabled = (idx === chain.length - 1);
@@ -648,14 +877,23 @@
             var tmp = arr[idx + 1];
             arr[idx + 1] = arr[idx];
             arr[idx] = tmp;
-            renderChainList(listEl, role);
+            renderChainTableRows(tbody, role, stats);
           };
           moves.appendChild(up);
           moves.appendChild(down);
-          item.appendChild(moves);
+          actionsCell.appendChild(moves);
+          tr.appendChild(actionsCell);
 
-          listEl.appendChild(item);
+          tbody.appendChild(tr);
         });
+      }
+
+      function healthRowFor(modelName) {
+        var rows = healthRows();
+        for (var i = 0; i < rows.length; i++) {
+          if (rows[i].model === modelName) return rows[i];
+        }
+        return null;
       }
 
       function setLastUpdated() {
@@ -685,8 +923,19 @@
         });
       }
 
+      function fetchUsage() {
+        // Backward-compatible: usage endpoint may return empty stats when the
+        // JSONL log doesn't exist yet. Treat any failure as "no usage data"
+        // so the UI still renders the chain editor cleanly.
+        return apiGet('/api/admin/usage').then(function (data) {
+          STATE.usage = (data && typeof data === 'object') ? data : null;
+        }).catch(function () {
+          STATE.usage = null;
+        });
+      }
+
       function refreshAll() {
-        return Promise.all([fetchHealth(), fetchChains()]).then(function () {
+        return Promise.all([fetchHealth(), fetchChains(), fetchUsage()]).then(function () {
           renderCounters();
           renderHealthTable();
           renderChains();

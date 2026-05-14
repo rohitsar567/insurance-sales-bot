@@ -30,12 +30,53 @@ Everything else (brain, judge, eval grader) runs through this module.
 from __future__ import annotations
 
 import asyncio
+import json
+import time
+from pathlib import Path
 from typing import Optional
 
 import httpx
 
 from backend.config import settings
 from backend.providers.base import ChatMessage, LLMProvider, LLMResult
+from backend.providers.openrouter_llm import OpenRouterLLM
+from backend.providers.groq_llm import GroqLLM
+
+
+# Usage log — append-only JSONL with cheap 1 MB rotation. Consumed by
+# GET /api/admin/usage for the admin control panel. Path is two parents up
+# from this file (backend/providers/nvidia_nim_llm.py → repo root / data).
+_USAGE_LOG_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "llm_usage.jsonl"
+_USAGE_LOG_MAX_BYTES = 1_000_000  # 1 MB cap — rotate to .bak when exceeded
+_usage_lock = asyncio.Lock()
+
+
+def _now_iso_z() -> str:
+    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+
+
+async def _append_usage(record: dict) -> None:
+    """Append one JSONL record to data/llm_usage.jsonl with 1 MB rotation.
+
+    Best-effort: never raises. Usage logging must NEVER break a chat call.
+    Rotation: if file is >1 MB, rename to ``llm_usage.jsonl.bak`` (overwriting
+    any existing ``.bak``) and start fresh.
+    """
+    try:
+        async with _usage_lock:
+            _USAGE_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+            try:
+                if _USAGE_LOG_PATH.exists() and _USAGE_LOG_PATH.stat().st_size > _USAGE_LOG_MAX_BYTES:
+                    bak = _USAGE_LOG_PATH.with_suffix(_USAGE_LOG_PATH.suffix + ".bak")
+                    _USAGE_LOG_PATH.replace(bak)
+            except Exception:
+                pass  # rotation failure is non-fatal
+            line = json.dumps(record, ensure_ascii=False) + "\n"
+            with _USAGE_LOG_PATH.open("a", encoding="utf-8") as f:
+                f.write(line)
+    except Exception:
+        # Logging is best-effort — silently swallow.
+        pass
 
 
 NVIDIA_NIM_BASE_URL = "https://integrate.api.nvidia.com/v1"
@@ -164,17 +205,29 @@ BRAIN_CHAIN = [
     "meta/llama-3.3-70b-instruct",
     # 6th fallback: DeepSeek-V4-Pro (back when NIM's pool recovers)
     "deepseek-ai/deepseek-v4-pro",
+    # CROSS-PROVIDER FALLBACKS — only reached when the entire NIM block above
+    # has failed (regional outage / DNS / ingress brownout). These hit a
+    # completely different provider so the brain survives a full NIM down.
+    # 7th fallback: OpenRouter GPT-OSS 120B (different provider, MIT weights)
+    "openrouter:openai/gpt-oss-120b",
+    # 8th fallback: Groq Llama-3.3 70B (different provider, LPU inference)
+    "groq:llama-3.3-70b-versatile",
 ]
 
 # Same chain for fast brain — Qwen 80B is already fast (~2s); no need for a
 # separate "small + faster" model since the candidate chain already has
-# Nemotron Nano further down.
+# Nemotron Nano further down. Last entry is Groq because its LPU inference
+# is the lowest-TTFT free-tier option, so a fast-brain fall-through to it is
+# still acceptable from a latency-budget standpoint.
 FAST_BRAIN_CHAIN = [
     "qwen/qwen3-next-80b-a3b-instruct",
     "nvidia/nemotron-3-nano-30b-a3b",     # 1.6s response per Reddit benchmark
     "openai/gpt-oss-120b",
     "qwen/qwen3.5-122b-a10b",
     "deepseek-ai/deepseek-v4-flash",
+    # CROSS-PROVIDER FALLBACK — Groq Llama-3.3 70B (LPU, lowest TTFT of all
+    # free-tier options; OK for a fast-brain call when NIM is down).
+    "groq:llama-3.3-70b-versatile",
 ]
 
 # Judge chain — non-Qwen, non-DeepSeek (different family from brain primary)
@@ -189,6 +242,13 @@ JUDGE_CHAIN = [
     "minimaxai/minimax-m2.5",
     # 4th fallback: Meta Llama-4 Maverick (was the original judge — back if NIM Llama pool recovers)
     "meta/llama-4-maverick-17b-128e-instruct",
+    # CROSS-PROVIDER FALLBACKS — reached only when every NIM judge candidate
+    # above has failed. Critical for keeping faithfulness Gate 4 + Hinglish
+    # drift judge alive through a full NIM outage.
+    # 5th fallback: OpenRouter GPT-OSS 120B (different provider, MIT weights)
+    "openrouter:openai/gpt-oss-120b",
+    # 6th fallback: Groq Llama-3.3 70B (different provider, LPU inference)
+    "groq:llama-3.3-70b-versatile",
 ]
 
 
@@ -203,15 +263,53 @@ class NimChainLLM(LLMProvider):
     which model in the chain produced the output.
     """
     def __init__(self, chain: list[str], api_key: Optional[str] = None,
-                 timeout: float = 30.0, per_model_attempts: int = 1):
+                 timeout: float = 30.0, per_model_attempts: int = 1,
+                 role: str = "unknown"):
         if not chain:
             raise ValueError("chain must have at least one model")
         self.chain = chain
         self.api_key = api_key or getattr(settings, "NVIDIA_NIM_API_KEY", "")
         self.timeout = timeout
         self.per_model_attempts = per_model_attempts
+        self.role = role  # 'brain' | 'fast_brain' | 'judge' | 'unknown' — flows into usage log
         self.model = chain[0]
-        self.name = f"nim-chain::{chain[0].split('/')[-1]}"
+        self.name = f"nim-chain::{self._short_id(chain[0])}"
+
+    @staticmethod
+    def _short_id(model_id: str) -> str:
+        """Build the audit-log suffix used in `self.name`.
+
+        Preserves the provider prefix (`openrouter:` / `groq:`) so logs make
+        it obvious which provider answered after a cross-provider fall-
+        through. Examples:
+          - 'qwen/qwen3-next-80b-a3b-instruct'      -> 'qwen3-next-80b-a3b-instruct'
+          - 'openrouter:openai/gpt-oss-120b'        -> 'openrouter:gpt-oss-120b'
+          - 'groq:llama-3.3-70b-versatile'          -> 'groq:llama-3.3-70b-versatile'
+        """
+        if ":" in model_id:
+            prefix, rest = model_id.split(":", 1)
+            return f"{prefix}:{rest.split('/')[-1]}"
+        return model_id.split("/")[-1]
+
+    def _get_worker_for(self, model_id: str, timeout: float) -> LLMProvider:
+        """Dispatch a chain entry to the right provider client.
+
+        Recognised prefixes:
+          - 'openrouter:<model>' -> OpenRouterLLM
+          - 'groq:<model>'       -> GroqLLM
+          - <anything else>      -> NvidiaNimLLM (existing default)
+        """
+        if model_id.startswith("openrouter:"):
+            return OpenRouterLLM(
+                model=model_id[len("openrouter:"):],
+                timeout=timeout,
+            )
+        if model_id.startswith("groq:"):
+            return GroqLLM(
+                model=model_id[len("groq:"):],
+                timeout=timeout,
+            )
+        return NvidiaNimLLM(model=model_id, api_key=self.api_key, timeout=timeout)
 
     async def chat(
         self,
@@ -229,15 +327,29 @@ class NimChainLLM(LLMProvider):
         except Exception:
             chain_to_try = self.chain  # health monitor failure must never block calls
 
+        chain_primary = self.chain[0] if self.chain else None
+        call_t0 = time.time()
+
         last_err: Optional[Exception] = None
         for model in chain_to_try:
             try:
-                worker = NvidiaNimLLM(model=model, api_key=self.api_key, timeout=self.timeout)
+                worker = self._get_worker_for(model, self.timeout)
                 result = await worker.chat(messages=messages, temperature=temperature,
                                            max_tokens=max_tokens, response_format=response_format)
-                # Successful response — record which model answered + return
+                # Successful response — record which model answered + return.
+                # `self.name` preserves any provider prefix so audit logs make
+                # cross-provider fall-throughs (groq:/openrouter:) obvious.
                 self.model = model
-                self.name = f"nim-chain::{model.split('/')[-1]}"
+                self.name = f"nim-chain::{self._short_id(model)}"
+                latency_ms = int((time.time() - call_t0) * 1000)
+                await _append_usage({
+                    "ts": _now_iso_z(),
+                    "role": self.role,
+                    "chain_primary": chain_primary,
+                    "served_model": model,
+                    "latency_ms": latency_ms,
+                    "success": True,
+                })
                 return result
             except (httpx.TimeoutException, httpx.HTTPStatusError,
                     httpx.ConnectError, httpx.NetworkError, asyncio.TimeoutError) as e:
@@ -258,11 +370,20 @@ class NimChainLLM(LLMProvider):
                 if model in chain_to_try:
                     continue  # already tried this turn
                 try:
-                    worker = NvidiaNimLLM(model=model, api_key=self.api_key, timeout=self.timeout)
+                    worker = self._get_worker_for(model, self.timeout)
                     result = await worker.chat(messages=messages, temperature=temperature,
                                                max_tokens=max_tokens, response_format=response_format)
                     self.model = model
-                    self.name = f"nim-chain::{model.split('/')[-1]}"
+                    self.name = f"nim-chain::{self._short_id(model)}"
+                    latency_ms = int((time.time() - call_t0) * 1000)
+                    await _append_usage({
+                        "ts": _now_iso_z(),
+                        "role": self.role,
+                        "chain_primary": chain_primary,
+                        "served_model": model,
+                        "latency_ms": latency_ms,
+                        "success": True,
+                    })
                     return result
                 except Exception as e:
                     last_err = e
@@ -270,6 +391,17 @@ class NimChainLLM(LLMProvider):
         except Exception:
             pass
 
+        # Total exhaustion — log a single failure record so the admin panel
+        # surfaces "judge has 12% failure rate over last 24h" type signal.
+        latency_ms = int((time.time() - call_t0) * 1000)
+        await _append_usage({
+            "ts": _now_iso_z(),
+            "role": self.role,
+            "chain_primary": chain_primary,
+            "served_model": None,
+            "latency_ms": latency_ms,
+            "success": False,
+        })
         raise RuntimeError(
             f"NimChainLLM exhausted all {len(self.chain)} candidates. Last error: "
             f"{type(last_err).__name__}: {str(last_err)[:120]}"
@@ -279,13 +411,13 @@ class NimChainLLM(LLMProvider):
 def get_brain_llm() -> NimChainLLM:
     """Heavy brain — multi-model NIM chain with automatic fallback.
     Primary: Qwen 3-Next 80B. See BRAIN_CHAIN for fallback order."""
-    return NimChainLLM(chain=BRAIN_CHAIN, timeout=30.0)
+    return NimChainLLM(chain=BRAIN_CHAIN, timeout=30.0, role="brain")
 
 
 def get_fast_brain_llm() -> NimChainLLM:
     """Fast brain — multi-model NIM chain optimized for low TTFT.
     Primary: Qwen 3-Next 80B. See FAST_BRAIN_CHAIN for fallback order."""
-    return NimChainLLM(chain=FAST_BRAIN_CHAIN, timeout=20.0)
+    return NimChainLLM(chain=FAST_BRAIN_CHAIN, timeout=20.0, role="fast_brain")
 
 
 def get_judge_llm(language: str = "en") -> NimChainLLM:
@@ -296,4 +428,4 @@ def get_judge_llm(language: str = "en") -> NimChainLLM:
     fallbacks (GPT-OSS, Kimi, MiniMax, Llama-4 Maverick) when the primary
     pool is congested. `language` arg kept for call-site compatibility.
     """
-    return NimChainLLM(chain=JUDGE_CHAIN, timeout=30.0)
+    return NimChainLLM(chain=JUDGE_CHAIN, timeout=30.0, role="judge")

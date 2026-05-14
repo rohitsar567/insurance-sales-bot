@@ -27,6 +27,17 @@ class Settings:
     # 2026-05-14 in favor of single-provider consolidation — see D-019).
     NVIDIA_NIM_API_KEY: str = os.environ.get("NVIDIA_NIM_API_KEY", "")
 
+    # CROSS-PROVIDER FALLBACKS — last-resort entries appended to BRAIN_CHAIN +
+    # FAST_BRAIN_CHAIN + JUDGE_CHAIN so the brain + judge survive a full NIM
+    # outage (regional ingress brownout, full-pool 5xx, etc.). NIM remains
+    # the PRIMARY provider — these only get hit after every NIM candidate in
+    # the chain has failed. Both keys are optional: if unset the fallback is
+    # simply skipped by NimChainLLM and the chain continues.
+    #   OPENROUTER_API_KEY — https://openrouter.ai/keys  (free-tier OSS models)
+    #   GROQ_API_KEY       — https://console.groq.com/keys (LPU inference, lowest TTFT)
+    OPENROUTER_API_KEY: str = os.environ.get("OPENROUTER_API_KEY", "")
+    GROQ_API_KEY: str = os.environ.get("GROQ_API_KEY", "")
+
     # Sarvam endpoints (voice STT/TTS + Indic translation only — not brain anymore)
     SARVAM_BASE_URL: str = "https://api.sarvam.ai"
     SARVAM_STT_PATH: str = "/speech-to-text"
