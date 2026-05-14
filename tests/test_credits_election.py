@@ -173,28 +173,67 @@ class TestElectionCreditGate(unittest.TestCase):
         self.assertEqual(primary, nim_model,
                          "Quota-exhausted Groq should be skipped despite faster latency.")
 
-    def test_groq_above_water_picked_in_election(self) -> None:
-        """Groq has plenty of credits → elector picks it (fastest healthy)."""
+    def test_nim_preferred_over_faster_groq_when_eligible(self) -> None:
+        """KI-087 NIM-first preference: even when both candidates are healthy
+        and Groq has plenty of credits AND is 3x faster on latency, NIM must
+        still be elected as PRIMARY. Groq + OpenRouter are emergency-fallback
+        only, not picked-on-latency. Replaces the pre-KI-087
+        `test_groq_above_water_picked_in_election` which asserted the
+        opposite (Groq wins on latency)."""
         groq_model = "groq:llama-3.3-70b-versatile"
         nim_model = "qwen/qwen3-next-80b-a3b-instruct"
         gh = _healthy_now(groq_model)
-        gh.latency_ms = 100
-        gh.credits_remaining = 10000.0  # >> 5000 low_water
+        gh.latency_ms = 100  # faster
+        gh.credits_remaining = 10000.0  # well above water
         gh.credits_unit = "tokens_day"
         gh.credits_low_water = GROQ_TOKENS_LOW_WATER
         gh.credits_observed_at = time.monotonic()
         llm_health._STATE[groq_model] = gh
 
         nh = _healthy_now(nim_model)
-        nh.latency_ms = 300
+        nh.latency_ms = 300  # slower but NIM
         llm_health._STATE[nim_model] = nh
 
         with mock.patch.object(
             llm_health, "_chain_for", return_value=[groq_model, nim_model]
         ):
             primary = llm_health.get_primary("brain")
-        self.assertEqual(primary, groq_model,
-                         "Healthy + credit-rich Groq should win election.")
+        self.assertEqual(
+            primary, nim_model,
+            "KI-087: NIM must beat Groq as PRIMARY even when Groq is faster + "
+            "has credits. NIM is the strategic free provider; Groq + OpenRouter "
+            "are emergency fallback only.",
+        )
+
+    def test_groq_picked_when_nim_pool_empty(self) -> None:
+        """KI-087 fallthrough: when NO eligible NIM candidate exists (all NIM
+        models down / out of credits / not in chain), election falls through
+        to the best non-NIM candidate as PRIMARY. Locks in the safety net so
+        a full NIM regional outage still produces a working brain call."""
+        groq_model = "groq:llama-3.3-70b-versatile"
+        or_model = "openrouter:openai/gpt-oss-120b"
+        gh = _healthy_now(groq_model)
+        gh.latency_ms = 100
+        gh.credits_remaining = 10000.0
+        gh.credits_unit = "tokens_day"
+        gh.credits_low_water = GROQ_TOKENS_LOW_WATER
+        gh.credits_observed_at = time.monotonic()
+        llm_health._STATE[groq_model] = gh
+
+        oh = _healthy_now(or_model)
+        oh.latency_ms = 800  # slower
+        llm_health._STATE[or_model] = oh
+
+        # Note the chain has NO NIM candidates.
+        with mock.patch.object(
+            llm_health, "_chain_for", return_value=[or_model, groq_model]
+        ):
+            primary = llm_health.get_primary("brain")
+        self.assertEqual(
+            primary, groq_model,
+            "KI-087 fallthrough: no NIM eligible → election picks the highest-"
+            "scored non-NIM candidate (Groq's 100ms beats OpenRouter's 800ms).",
+        )
 
     def test_none_credits_is_permissive(self) -> None:
         """Cold-start: a candidate with credits_remaining=None must be electable."""
