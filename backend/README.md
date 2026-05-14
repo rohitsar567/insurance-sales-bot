@@ -29,7 +29,7 @@ FastAPI + Pydantic service that fronts every chat turn. The HTTP entry point is 
 | `persona.py` | The consultative-advisor system prompt + view-aware prompt overlays. | [ADR-008](../70-docs/60-decisions/ADR-008-consultative-advisor-persona.md), [ADR-021](../70-docs/60-decisions/ADR-021-view-aware-system-prompt.md) |
 | `voice_format.py` | Strips markdown / lists / bullet glyphs so TTS sounds natural. | — |
 | `premium_calculator.py` | Looks up `40-data/premiums/illustrative_premiums.json` + applies the documented scaling factors. Never claims a real quote. | [ADR-007](../70-docs/60-decisions/ADR-007-illustrative-pricing.md) |
-| `security.py` | Request rate-limiting, input sanitisation, admin-IP allowlist. | [ADR-023](../70-docs/60-decisions/ADR-023-admin-panel-ip-gated.md) |
+| `security.py` | Request rate-limiting, input sanitisation. | — |
 | `admin.py` | Admin-only routes (live LLM-health, usage rollups, hallucination tail). | ADR-023 |
 | `llm_health.py` | Lightweight probe that pings each provider and writes `40-data/llm_health.json` for the admin tab. | — |
 

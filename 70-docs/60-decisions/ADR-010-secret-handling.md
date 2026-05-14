@@ -5,7 +5,7 @@
 
 ## Context
 
-The bot needs 8 API keys / secrets (Sarvam, Voyage, NIM, HuggingFace, Groq, OpenRouter, admin password, admin IP allowlist). Leaking any of them creates real cost or security exposure.
+The bot needs 7 API keys / secrets (Sarvam, Voyage, NIM, HuggingFace, Groq, OpenRouter, admin password). [Was 8 — admin IP allowlist removed in KI-097.] Leaking any of them creates real cost or security exposure.
 
 ## Decision
 

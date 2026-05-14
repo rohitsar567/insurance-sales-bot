@@ -173,9 +173,11 @@ app.add_middleware(
 
 
 # ---------- Admin panel + LLM health background loop ----------
-# Mount the IP+password-gated admin endpoints. Unauthorized callers get 404
-# (not 401), so the existence of /api/admin/* is hidden from non-allowlisted
-# IPs and unauthenticated requests.
+# Mount the password-gated admin endpoints (KI-097). Unauthorized callers
+# get 401 Unauthorized. The earlier IP allowlist gate (ADMIN_IP_ALLOWLIST +
+# 404-to-hide-existence) was removed in KI-097 — operationally it locked
+# the operator out when switching networks without adding real security
+# beyond a strong password.
 from backend import admin as _admin_router_module
 app.include_router(_admin_router_module.router)
 
@@ -222,6 +224,49 @@ async def health():
         providers_ok=providers_ok,
         missing_keys=missing,
     )
+
+
+# KI-096 — public deploy-verification endpoint. No auth (deliberate) so any
+# caller can confirm which commit the HF Space is actually serving without
+# needing the admin password. Cached at module import so we don't spawn
+# `git` per request.
+def _compute_build_sha() -> str:
+    import os
+    import subprocess
+    env_sha = os.environ.get("BUILD_SHA") or os.environ.get("HF_SPACE_GIT_REV")
+    if env_sha:
+        return env_sha[:12]
+    try:
+        out = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"],
+            cwd=Path(__file__).resolve().parent.parent,
+            stderr=subprocess.DEVNULL,
+            timeout=2,
+        ).decode().strip()
+        return out[:12] if out else "unknown"
+    except Exception:
+        return "unknown"
+
+
+_BUILD_SHA = _compute_build_sha()
+_BUILD_STARTED_AT = time.time()
+
+
+@app.get("/api/version")
+async def version():
+    """Public deploy-verification endpoint — no auth required.
+
+    Returns the git SHA the running app was built from + the process start
+    timestamp. Used by deploy probes (and humans) to confirm which commit
+    HF Space is actually serving. The admin /api/admin/* endpoints are
+    password-gated (KI-097) and return 401; this endpoint is the auth-free
+    escape hatch for deploy verification.
+    """
+    return {
+        "sha": _BUILD_SHA,
+        "started_at": _BUILD_STARTED_AT,
+        "uptime_s": round(time.time() - _BUILD_STARTED_AT, 1),
+    }
 
 
 @app.post("/api/transcribe", response_model=TranscribeResponse)

@@ -70,9 +70,9 @@ export default function Page() {
   const [showPremium, setShowPremium] = useState(false);
   const [showMarketplace, setShowMarketplace] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
-  // Admin panel: iframe-embedded LLM control surface. Backend admin API is
-  // IP-gated (ADMIN_IP_ALLOWLIST), so the panel itself silently renders the
-  // dashboard's "not authorized" view for non-allowlisted IPs.
+  // Admin panel: iframe-embedded LLM control surface. Backend admin API
+  // is password-gated (KI-097); the embedded dashboard prompts for the
+  // X-Admin-Password header and shows its login view when missing.
   const [showAdmin, setShowAdmin] = useState(false);
   const [marketplace, setMarketplace] = useState<MarketplaceResponse | null>(null);
   const [openPolicy, setOpenPolicy] = useState<MarketplacePolicy | null>(null);
@@ -652,14 +652,14 @@ export default function Page() {
               </div>
             </button>
             {/* Admin access — opens the LLM control panel in an embedded view.
-                Backend admin API is IP-gated, so the panel works only from the
-                allowlisted home IP; from other networks it shows "not authorized". */}
+                Backend admin API is password-gated (KI-097); enter the admin
+                password in the embedded dashboard to unlock the live data. */}
             <button
               onClick={() => { setShowAdmin(!showAdmin); setShowMarketplace(false); setShowPremium(false); setShowProfile(false); setShowCoverage(false); }}
               className={`group relative overflow-hidden rounded-xl transition-all shadow-sm hover:shadow-md ${
                 showAdmin ? "ring-2 ring-[var(--primary)]" : ""
               }`}
-              title="LLM control panel — health, chain order, usage (admin-only, IP-gated)"
+              title="LLM control panel — health, chain order, usage (admin-only, password-gated)"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-slate-700 via-slate-600 to-zinc-700" />
               <div className="relative flex items-stretch text-white">

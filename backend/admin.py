@@ -1,4 +1,4 @@
-"""Admin endpoints — IP+password gated. NEVER exposed to ordinary users.
+"""Admin endpoints — password gated. NEVER exposed to ordinary users.
 
 The four endpoints:
   GET  /api/admin/health        — full LLM health snapshot (every model)
@@ -6,18 +6,17 @@ The four endpoints:
   GET  /api/admin/chain         — current brain/fast/judge chain order
   POST /api/admin/chain         — reorder a chain (promote a model to primary)
 
-Access gates (BOTH must pass):
-  1. Client IP must match ADMIN_IP_ALLOWLIST env (comma-separated)
-  2. Request must include `X-Admin-Password` header matching ADMIN_PASSWORD env
-
-If either gate fails, returns 404 (not 401) — the endpoints DO NOT exist
-for unauthorized callers. Even the existence of /api/admin/* is hidden.
+Access gate (KI-097 — single check):
+  Request must include `X-Admin-Password` header matching ADMIN_PASSWORD env.
 
 Setup:
   Add to Space secrets (Settings → Variables and secrets):
-    ADMIN_PASSWORD     = your-strong-password-here
-    ADMIN_IP_ALLOWLIST = your.public.ip.v4,your.other.ip
-  Find your IP at https://api.ipify.org/
+    ADMIN_PASSWORD = your-strong-password-here
+
+Returns 401 Unauthorized on bad/missing password. The earlier IP allowlist
+gate (ADMIN_IP_ALLOWLIST + 404-to-hide-existence) was removed in KI-097
+because it added operational complexity (changing networks → locked out)
+without meaningful additional security beyond a strong password.
 """
 from __future__ import annotations
 
@@ -43,14 +42,6 @@ router = APIRouter()
 USAGE_TAIL_LINES = 1000
 
 
-def _ip_allowed(client_ip: str) -> bool:
-    """Allowlist check. Empty/unset allowlist => deny everyone."""
-    allowed = os.environ.get("ADMIN_IP_ALLOWLIST", "").strip()
-    if not allowed:
-        return False
-    return client_ip in {ip.strip() for ip in allowed.split(",") if ip.strip()}
-
-
 def _password_ok(supplied: Optional[str]) -> bool:
     expected = os.environ.get("ADMIN_PASSWORD", "").strip()
     if not expected:
@@ -59,13 +50,14 @@ def _password_ok(supplied: Optional[str]) -> bool:
 
 
 def _check_admin(request: Request, password: Optional[str]) -> None:
-    """Both gates must pass. Returns 404 (not 401) on failure to hide existence."""
-    # Honor X-Forwarded-For for HF Space proxy headers (HF Spaces sets this)
-    client_ip = request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
-    if not client_ip:
-        client_ip = request.client.host if request.client else ""
-    if not _ip_allowed(client_ip) or not _password_ok(password):
-        raise HTTPException(status_code=404, detail="Not Found")
+    """KI-097 — password-only gate. Raises 401 on bad/missing password.
+
+    `request` is kept in the signature so callsites don't churn, but the
+    function no longer inspects the client IP. Earlier dual-gate behavior
+    (IP allowlist + 404-to-hide-existence) was removed in KI-097.
+    """
+    if not _password_ok(password):
+        raise HTTPException(status_code=401, detail="Unauthorized")
 
 
 # --- Endpoints --------------------------------------------------------------

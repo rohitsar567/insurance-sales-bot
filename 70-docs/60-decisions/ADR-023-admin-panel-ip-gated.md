@@ -1,5 +1,7 @@
 # ADR-023: Admin panel IP-gated; surfaced as in-app tab
 
+> **SUPERSEDED 2026-05-15 (KI-097).** The IP allowlist gate described below was removed because changing networks locked the operator out without meaningful added security beyond a strong password. The admin endpoints are now password-only (`X-Admin-Password` header → `ADMIN_PASSWORD` env). Backend returns 401 Unauthorized (no longer 404-to-hide). Frontend admin panel is always visible; password unlocks the data.
+
 **Status:** Locked
 **Date:** 2026-05-14
 
