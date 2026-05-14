@@ -29,6 +29,7 @@ import {
   UserProfile,
 } from "@/lib/api";
 import { translate, UILang, StringKey, GLOSSARY } from "@/lib/i18n";
+import { useLiveConversation } from "@/lib/useLiveConversation";
 
 type DisplayMessage = ChatMessage & {
   id: string;
@@ -126,6 +127,17 @@ export default function Page() {
   const silenceStartRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Live-conversation mode (full-duplex VAD barge-in). Defined further down
+  // in the component body so it can reference `sessionId`, `messages`, etc.
+  // via closure when the onUtterance handler fires. See useLiveConversation.ts.
+  const liveOnUtteranceRef = useRef<((blob: Blob, abort: AbortController) => Promise<void>) | null>(null);
+  const live = useLiveConversation({
+    onUtterance: async (blob, abort) => {
+      const fn = liveOnUtteranceRef.current;
+      if (fn) await fn(blob, abort);
+    },
+  });
 
   useEffect(() => {
     getHealth()
@@ -247,6 +259,58 @@ export default function Page() {
       setBusy(false);
     }
   }
+
+  // Live-conversation onUtterance binding. Rebinds when relevant state changes
+  // so the latest sessionId / history / view are captured in the closure.
+  useEffect(() => {
+    liveOnUtteranceRef.current = async (blob, abort) => {
+      try {
+        const transcribed = await postTranscribe(blob, ttsLang, abort.signal);
+        const text = (transcribed.text || "").trim();
+        if (text.length < 2) return;
+
+        pushUser(text);
+        const history: ChatMessage[] = messages.map((m) => ({ role: m.role, content: m.content }));
+        const active_view: "chat" | "marketplace" | "profile" | "premium" | "policy_detail" =
+          openPolicy ? "policy_detail" :
+          showMarketplace ? "marketplace" :
+          showProfile ? "profile" :
+          showPremium ? "premium" :
+          "chat";
+
+        const res = await postChat({
+          user_text: text,
+          session_id: sessionId,
+          chat_history: history,
+          return_audio: true,
+          tts_language_code: ttsLang,
+          view_context: { active_view, active_policy_id: openPolicy?.policy_id },
+          signal: abort.signal,
+        });
+        setSessionId(res.session_id);
+        getProfileCompleteness(res.session_id)
+          .then(setProfileCompleteness)
+          .catch(() => {});
+        const audioUrl = res.audio_base64 ? audioBlobURLFromBase64(res.audio_base64) : undefined;
+        pushAssistant(res.reply_text, {
+          citations: res.citations,
+          audioUrl,
+          brain: res.brain_used,
+          latencyMs: res.latency_ms,
+          blocked: res.blocked,
+        });
+        if (audioUrl) {
+          const audio = new Audio(audioUrl);
+          audio.play().catch(() => {});
+        }
+      } catch (e: unknown) {
+        const name = (e as { name?: string })?.name;
+        if (name === "AbortError") return; // user barged in; intentional
+        // eslint-disable-next-line no-console
+        console.error("[live mode] turn failed:", e);
+      }
+    };
+  }, [messages, sessionId, ttsLang, openPolicy, showMarketplace, showProfile, showPremium]);
 
   async function startRecording() {
     try {
@@ -561,6 +625,25 @@ export default function Page() {
               <label className="flex items-center gap-1.5 cursor-pointer" title="Hands-free voice — auto-submits when you stop speaking">
                 <input type="checkbox" checked={handsFree} onChange={(e) => setHandsFree(e.target.checked)} className="w-3.5 h-3.5 accent-[var(--primary)]" /> Hands-free
               </label>
+              {/* Live conversation — full-duplex with VAD barge-in. Speak any
+                  time, even while the bot is still talking, and it stops mid-
+                  sentence and listens to you. No button press needed. */}
+              <button
+                type="button"
+                onClick={() => live.setLive(!live.live)}
+                className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs font-medium transition ${
+                  live.live
+                    ? "bg-red-500/15 border-red-400 text-red-600"
+                    : "border-[var(--border)] hover:border-[var(--primary)] hover:text-[var(--primary)]"
+                }`}
+                title="Live conversation: continuous mic, interrupt the bot by speaking"
+              >
+                <span className={`inline-block w-2 h-2 rounded-full ${live.live ? (live.recording ? "bg-red-500 animate-pulse" : "bg-green-500 animate-pulse") : "bg-gray-400"}`} />
+                {live.live ? (live.recording ? "Listening…" : "Live ✓") : "Go Live"}
+              </button>
+              {live.micPermissionDenied && (
+                <span className="text-red-500" title="Browser blocked microphone access — check site permissions">mic blocked</span>
+              )}
               <label className="flex items-center gap-1.5">
                 Lang:
                 <select value={ttsLang} onChange={(e) => setTtsLang(e.target.value as "en-IN" | "hi-IN")} className="bg-transparent border border-[var(--border)] rounded px-1.5 py-0.5">

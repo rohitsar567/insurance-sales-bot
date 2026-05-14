@@ -56,6 +56,7 @@ export async function postChat(args: {
   return_audio?: boolean;
   tts_language_code?: string;
   view_context?: ViewContext;
+  signal?: AbortSignal;
 }): Promise<ChatResponse> {
   const resp = await fetch(`${BACKEND_URL}/api/chat`, {
     method: "POST",
@@ -70,6 +71,7 @@ export async function postChat(args: {
       tts_language_code: args.tts_language_code ?? "en-IN",
       view_context: args.view_context,
     }),
+    signal: args.signal,
   });
   if (!resp.ok) {
     const t = await resp.text();
@@ -81,6 +83,7 @@ export async function postChat(args: {
 export async function postTranscribe(
   blob: Blob,
   language_code?: string,
+  signal?: AbortSignal,
 ): Promise<{ text: string; language_code?: string; latency_ms: number }> {
   const fd = new FormData();
   // Use blob's mime to derive extension; default to wav
@@ -98,6 +101,7 @@ export async function postTranscribe(
   const resp = await fetch(`${BACKEND_URL}/api/transcribe`, {
     method: "POST",
     body: fd,
+    signal,
   });
   if (!resp.ok) {
     const t = await resp.text();
