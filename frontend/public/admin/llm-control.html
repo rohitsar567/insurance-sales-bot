@@ -389,7 +389,8 @@
         password: '',
         health: null,    // { models: [ { model, status, latency_ms, last_error, last_success } ], counters: { healthy, degraded, down } }
         chains: null,    // { brain: [...], fast_brain: [...], judge: [...] }
-        usage: null      // { brain: {...}, fast_brain: {...}, judge: {...} } from /api/admin/usage
+        usage: null,     // { brain: {...}, fast_brain: {...}, judge: {...} } from /api/admin/usage
+        lastUpdatedAt: null  // ms-since-epoch of the most recent successful snapshot fetch
       };
       var ROLES = ['brain', 'fast_brain', 'judge'];
       var ROLE_COLORS = {
@@ -896,12 +897,55 @@
         return null;
       }
 
+      // Backend's background probe runs on this cadence (see
+      // backend/llm_health.py::background_probe_loop — currently 5 min).
+      var PROBE_INTERVAL_MS = 5 * 60 * 1000;
+
       function setLastUpdated() {
+        STATE.lastUpdatedAt = Date.now();
+        renderUpdatedLabel();
+      }
+
+      function formatMinSec(ms) {
+        if (ms < 0) ms = 0;
+        var s = Math.floor(ms / 1000);
+        if (s < 60) return s + 's';
+        var m = Math.floor(s / 60);
+        var rem = s % 60;
+        if (m < 60) return rem > 0 ? (m + 'm ' + rem + 's') : (m + 'm');
+        var h = Math.floor(m / 60);
+        return h + 'h ' + (m % 60) + 'm';
+      }
+
+      // Source-of-truth for "when the probe data was last current" is the
+      // backend's updated_at (ISO string from /api/admin/health). Falls back
+      // to local fetch time if the field is missing.
+      function probeTimestampMs() {
+        if (STATE.health && STATE.health.updated_at) {
+          var t = Date.parse(STATE.health.updated_at);
+          if (!isNaN(t)) return t;
+        }
+        return STATE.lastUpdatedAt;
+      }
+
+      function renderUpdatedLabel() {
         var el = $('last-updated');
         if (!el) return;
-        var now = new Date();
-        el.textContent = 'Updated ' + now.toLocaleTimeString();
+        var probeAt = probeTimestampMs();
+        if (!probeAt) return;
+        var now = Date.now();
+        var since = formatMinSec(now - probeAt);
+        // Next auto-probe = last probe + cadence. If that's already in the
+        // past (probe loop running slow or paused), clamp to "due now".
+        var nextAt = probeAt + PROBE_INTERVAL_MS;
+        var untilNext = nextAt > now ? formatMinSec(nextAt - now) : 'due now';
+        var wallClock = new Date(probeAt).toLocaleTimeString();
+        el.textContent = 'Updated ' + wallClock + ' · ' + since + ' ago · next auto-probe in ' + untilNext;
       }
+
+      // Tick the relative portion every second so the user sees how stale
+      // the snapshot is in real time without having to click Refresh.
+      setInterval(renderUpdatedLabel, 1000);
 
       // ----- Fetchers -----
       function fetchHealth() {
