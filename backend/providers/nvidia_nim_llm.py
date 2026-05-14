@@ -79,6 +79,31 @@ async def _append_usage(record: dict) -> None:
         pass
 
 
+# KI-088 (2026-05-15) — Global outbound NIM concurrency cap.
+#
+# Live probe at commit 6a47549 measured 20% brain-turn success despite
+# KI-080 election + KI-085 credit gating + KI-087 NIM-first + KI-079
+# escalation all live. The architecture is correct; the binding constraint
+# is NIM's free-tier per-key concurrency (~3-5 slots).
+#
+# We have 5 sources of NIM traffic that all stack on the same key with no
+# global throttle: probe loop (6-slot parallel burst every 300s), admin
+# tab polling (every 30s), per-user chat turn (1-2 calls), concurrent
+# users (N × 1-2), and the inner 4-attempt retry loop (holds a slot up
+# to 15s on 429/5xx backoff).
+#
+# 6+ in-flight → queue → 15-25s response times → bot's 12s outer cap
+# fires → user sees fallback.
+#
+# This module-level semaphore is shared across ALL NvidiaNimLLM instances
+# in the process. It wraps ONLY the actual httpx.post — not election,
+# response parsing, or usage logging — so it serialises the NIM round-
+# trip without serialising the whole reasoning pipeline. With cap=2,
+# our own in-flight count never exceeds NIM's idle concurrency budget,
+# so probes + admin + users + retries cannot starve each other.
+_NIM_OUTBOUND_SEMAPHORE = asyncio.Semaphore(2)
+
+
 NVIDIA_NIM_BASE_URL = "https://integrate.api.nvidia.com/v1"
 # 2026-05-14 brain swap (D-022): NIM's DeepSeek-V4 + Meta Llama inference pools
 # are repeatedly timing out (15-120s on chat completions, no response). Qwen
@@ -155,21 +180,32 @@ class NvidiaNimLLM(LLMProvider):
             write=2.0,
             pool=2.0,
         )
+        # KI-088 (2026-05-15) — drop the inner 4-attempt exponential
+        # backoff retry. The previous loop held a NIM concurrency slot
+        # for up to ~15s on 429/5xx while sleeping between attempts,
+        # which directly contributed to the queueing that the outer
+        # semaphore is now sized to prevent.
+        #
+        # Retry was a pre-KI-080 vestige that predated the chain
+        # election architecture. With KI-080 in place, NimChainLLM
+        # already handles 429/5xx failover by:
+        #   (1) catching the exception in _try(),
+        #   (2) calling report_failure() so the elector demotes the
+        #       slot-blocked candidate for ~30s, and
+        #   (3) falling through to the elected backup (cross-provider
+        #       by preference) within the same turn.
+        # KI-079 then provides one more bite via BRAIN_CHAIN if both
+        # elected models fail. Per-call retries inside this method
+        # would only re-queue against the same slot-starved pool,
+        # multiplying the queueing problem the semaphore fixes.
+        #
+        # The semaphore wraps ONLY the HTTP round-trip — not response
+        # parsing or usage logging — so we cap concurrent network
+        # traffic without serialising the rest of the pipeline.
         async with httpx.AsyncClient(timeout=client_timeout) as client:
-            attempts = 4
-            delay = 1.0
-            for attempt in range(attempts):
+            async with _NIM_OUTBOUND_SEMAPHORE:
                 resp = await client.post(url, headers=headers, json=body)
-                if resp.status_code == 429 or (500 <= resp.status_code < 600):
-                    if attempt == attempts - 1:
-                        resp.raise_for_status()
-                    ra = resp.headers.get("Retry-After")
-                    wait = float(ra) if ra and ra.replace(".", "").isdigit() else delay
-                    await asyncio.sleep(wait)
-                    delay *= 2
-                    continue
-                resp.raise_for_status()
-                break
+            resp.raise_for_status()
             payload = resp.json()
 
         choice = payload["choices"][0]

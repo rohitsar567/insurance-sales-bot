@@ -984,12 +984,32 @@ async def probe_all() -> dict[str, ModelHealth]:
     # candidates must keep getting probed even when NVIDIA_NIM_API_KEY
     # is missing.
 
+    # KI-088 (2026-05-15) — Probe candidates serially, not in parallel.
+    #
+    # Pre-KI-088: `asyncio.gather(*probe_one(m) for m in models)` fired
+    # all candidates simultaneously. Even though they hit different NIM
+    # *model pools*, they all share the same per-API-key concurrency
+    # quota (~3-5 slots free-tier). A 6-candidate parallel burst every
+    # 300s would queue inside NIM and steal slots from in-flight user
+    # turns — exactly the saturation pattern the global outbound
+    # semaphore in nvidia_nim_llm.py is sized to prevent.
+    #
+    # With KI-088's semaphore in place, parallel gather would still
+    # be hard-capped at 2 in-flight but introduce no benefit over a
+    # serial loop. Serial is simpler, easier to reason about, and
+    # naturally yields control to user-traffic between candidates.
+    #
+    # Cost: 6 NIM candidates × ~2s healthy probe = ~12s, well under
+    # the 300s probe cadence. No sleep between candidates — the
+    # outbound semaphore handles pacing.
     async with httpx.AsyncClient() as client:
-        # Probe all in parallel — they hit different NIM pools so concurrency is fine
-        results = await asyncio.gather(
-            *[probe_one(client, m, "") for m in models],
-            return_exceptions=True,
-        )
+        results = []
+        for m in models:
+            try:
+                result = await probe_one(client, m, "")
+            except Exception as exc:
+                result = exc
+            results.append(result)
 
     for model, result in zip(models, results):
         if isinstance(result, Exception):

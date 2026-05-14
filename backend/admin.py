@@ -787,11 +787,18 @@ async def admin_llm_health(
     """
     _check_admin(request, x_admin_password)
 
+    # KI-088: admin endpoint must never trigger probes — read cached state only.
+    # Live probing from the admin tab (polled every 30s by the frontend) would
+    # stack 6+ NIM candidates onto the same per-key concurrency budget and
+    # starve user chat traffic. All data below comes from llm_health.load()
+    # (in-memory snapshot persisted by the background_probe_loop) and the
+    # llm_usage.jsonl append-only log — both are read-only and trigger zero
+    # outbound LLM calls.
     import time as _time
     now_mono = _time.monotonic()
 
     chains = _chain_names_map()
-    state = llm_health.load()  # {model -> ModelHealth}
+    state = llm_health.load()  # {model -> ModelHealth}  (cached snapshot only)
 
     # Section A: per-chain election + credit banner.
     chains_block = [
