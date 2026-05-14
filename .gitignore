@@ -77,3 +77,8 @@ Thumbs.db
 
 # Local backup of HF dataset (not for git — too large)
 rag/_hf_dataset_backup/
+
+# README.pdf is the build artifact from tools/build_readme_pdf.py;
+# HF Space rejects binaries in the repo (use Xet/Releases instead).
+# Regenerate locally any time via 'python tools/build_readme_pdf.py'.
+README.pdf
