@@ -175,13 +175,17 @@ export default function Page() {
   // care of re-opening the mic after each assistant TTS finishes.
   useEffect(() => {
     handsFreeRef.current = handsFree;
+    // KI-026 — when Live mode is active it owns the mic; Hands-free must NOT
+    // also try to open it. If user enables Hands-free while Live is on, just
+    // ignore the request.
+    if (live.live) return;
     if (handsFree && !recording && !busy) {
       startRecording();
     } else if (!handsFree && recording) {
       stopRecording();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [handsFree]);
+  }, [handsFree, live.live]);
 
   function pushUser(text: string) {
     setMessages((m) => [...m, { id: `u_${Date.now()}`, role: "user", content: text }]);
@@ -405,6 +409,15 @@ export default function Page() {
   }, [messages, sessionId, ttsLang, openPolicy, showMarketplace, showProfile, showPremium]);
 
   async function startRecording() {
+    // KI-026 (2026-05-14) — voice mode mutual exclusion. If Live mode is
+    // active it owns the mic + the chat dispatch; the legacy push-to-talk
+    // and Hands-free paths must NOT run in parallel or we get duplicate
+    // user transcripts + duplicate /api/chat dispatches + duplicate TTS
+    // playback (the bug visible in the 2026-05-14 user screenshot).
+    if (live.live) {
+      console.warn("[voice] startRecording blocked — Live mode is active");
+      return;
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mime = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "";
@@ -717,11 +730,11 @@ export default function Page() {
             <button
               type="button"
               onClick={recording ? stopRecording : startRecording}
-              disabled={busy && !recording}
+              disabled={(busy && !recording) || live.live}
               className={`shrink-0 w-11 h-11 rounded-xl flex items-center justify-center transition-all ${
                 recording ? "bg-[var(--error)] text-white animate-record-pulse" : "bg-[var(--muted)] hover:bg-[var(--border)]"
               } disabled:opacity-40`}
-              title={recording ? "Stop recording" : "Voice input"}
+              title={live.live ? "Live mode is active — voice is handled automatically" : recording ? "Stop recording" : "Voice input"}
             >
               {recording ? <StopIcon /> : <MicIcon />}
             </button>
@@ -739,8 +752,17 @@ export default function Page() {
               <label className="flex items-center gap-1.5 cursor-pointer">
                 <input type="checkbox" checked={returnAudio} onChange={(e) => setReturnAudio(e.target.checked)} className="w-3.5 h-3.5 accent-[var(--primary)]" /> Voice reply
               </label>
-              <label className="flex items-center gap-1.5 cursor-pointer" title="Hands-free voice — auto-submits when you stop speaking">
-                <input type="checkbox" checked={handsFree} onChange={(e) => setHandsFree(e.target.checked)} className="w-3.5 h-3.5 accent-[var(--primary)]" /> Hands-free
+              <label
+                className={`flex items-center gap-1.5 ${live.live ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
+                title={live.live ? "Disabled — Live mode is on. Turn off Live to use Hands-free." : "Hands-free voice — auto-submits when you stop speaking"}
+              >
+                <input
+                  type="checkbox"
+                  checked={handsFree && !live.live}
+                  disabled={live.live}
+                  onChange={(e) => setHandsFree(e.target.checked)}
+                  className="w-3.5 h-3.5 accent-[var(--primary)]"
+                /> Hands-free
               </label>
               {/* Live conversation — full-duplex with VAD barge-in. Speak any
                   time, even while the bot is still talking, and it stops mid-
