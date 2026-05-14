@@ -352,3 +352,49 @@ filter or boost by facet when intent is clear. Live count:
 
 Verified locally; pushed to HF Dataset; live HF Space picks up
 on next rebuild.
+
+### KI-018 — `rag/policies.duckdb` stub is dead code (132 bytes, never populated)
+
+**Severity:** P3
+**Source:** `rag/policies.duckdb` is in the repo but empty (132-byte sqlite header only)
+**Discovered:** Data architecture audit 2026-05-14
+
+ADR-004 designed a hybrid structured (DuckDB) + vector (Chroma) split. The
+DuckDB half was never populated; the marketplace UI ended up reading
+`data/policy_facts/*.json` directly (one file per policy) at request time
+via the `/api/policies/all` endpoint. The 132-byte file in the repo is
+visually misleading — looks like a real store, isn't.
+
+**Fix plan (two options):**
+- (A) Populate it from `data/policy_facts/*.json` so the marketplace can
+  do SQL filters (sum-insured ≥ X AND room-rent-cap = no AND restoration
+  = unlimited). Worth ~30 min.
+- (B) Remove the file + the `import duckdb` + the `policies.duckdb` ADR
+  reference + add a note in ADR-025 explaining why structured filtering
+  reads JSON directly. Cleaner architecturally.
+
+**Recommendation:** (A) — once activated, the marketplace tab gets
+proper SQL filtering that's faster than the current N-JSON-load pattern.
+
+### KI-019 — `kb/policies/*.md` not embedded (224 human-readable summaries left out of retrieval)
+
+**Severity:** P3
+**Source:** `kb/policies/<policy_id>.md` files exist (224 markdown summaries) but the ingest pipeline only reads from `rag/extracted/*.json`. The natural-language summary text is never embedded.
+**Discovered:** Data architecture audit 2026-05-14
+
+Each policy has a hand-written or auto-generated `kb/policies/<id>.md`
+that summarizes the policy in 1-2 pages of natural English (e.g.
+"Care Supreme covers in-patient hospitalization across India with a
+36-month PED waiting…"). These would be EXCELLENT retrieval targets
+for "what does X cover?" style questions because they're already
+phrased for human reading. Currently retrieval matches against raw
+PDF-extracted prose which is denser + less semantic.
+
+**Fix plan:** Add a kb-markdown ingestion path in `rag/ingest.py` that
+walks `kb/policies/*.md`, splits at H2 boundaries (each H2 ≈ one
+schema-field discussion), embeds each section, and writes with
+`doc_type="summary"` so retrieval can prefer summary chunks when the
+intent is high-level Q&A.
+
+Expected impact: better grounding for natural-language "tell me about X"
+questions; cleaner citations (one summary chunk vs. 3-4 raw chunks).
