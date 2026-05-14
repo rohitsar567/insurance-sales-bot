@@ -12,6 +12,7 @@ For each user turn:
 
 from __future__ import annotations
 
+import re
 import time
 from dataclasses import dataclass, field
 from typing import Optional
@@ -52,14 +53,29 @@ INDIC_KEYWORDS = (
 )
 
 
+def _phrase_present(phrase: str, q: str) -> bool:
+    """Word-boundary phrase match. KI-023 (2026-05-14) — replaces naive
+    substring matching that incorrectly tripped triggers like "hi" on words
+    like "which", "this", "high", "thigh". That caused comparison/qa
+    questions starting with "Which..." to be misrouted to fact_find.
+    Phrases that contain spaces or apostrophes already act as word-bounded
+    via the surrounding spaces, but single-word triggers ("hi", "hey", etc.)
+    need an explicit \\b boundary."""
+    # Escape regex metas in the trigger; allow any whitespace inside the phrase
+    # to match one-or-more spaces in the input.
+    escaped = re.escape(phrase).replace(r"\ ", r"\s+")
+    pattern = rf"\b{escaped}\b"
+    return re.search(pattern, q) is not None
+
+
 def classify_intent(query: str) -> str:
     q = query.lower().strip()
     # Greeting / advice-seeking openers → fact-find flow
-    if any(kw in q for kw in FACT_FIND_TRIGGERS) and len(q.split()) < 25:
+    if any(_phrase_present(kw, q) for kw in FACT_FIND_TRIGGERS) and len(q.split()) < 25:
         return "fact_find"
-    if any(kw in q for kw in COMPARISON_KEYWORDS):
+    if any(_phrase_present(kw, q) for kw in COMPARISON_KEYWORDS):
         return "comparison"
-    if any(kw in q for kw in RECOMMEND_KEYWORDS):
+    if any(_phrase_present(kw, q) for kw in RECOMMEND_KEYWORDS):
         return "recommendation"
     return "qa"
 
@@ -79,6 +95,37 @@ def detect_language(query: str) -> str:
 class BrainPick:
     provider: LLMProvider
     reason: str
+
+
+# Intents that depend on knowing who the user is. Recommending a senior-citizen
+# plan to a 25-year-old (and vice-versa) is unacceptable, so we force fact-find
+# until at least one profile field is set. QA intent does NOT belong here — a
+# question like "What's the waiting period for PED in Activ Assure?" is a
+# policy-fact lookup that doesn't need user context. See KI-018.
+CONTEXT_DEPENDENT_INTENTS = frozenset({"recommendation", "comparison"})
+
+
+def should_route_to_fact_find(
+    intent: str,
+    *,
+    profile_is_empty: bool,
+    in_fact_find_continuation: bool,
+    free_form_session: bool,
+) -> bool:
+    """Pure decision function for the fact-find routing branch.
+
+    Extracted so tests/test_routing_regression.py can lock in the KI-018
+    invariant: empty-profile sessions must NOT trap QA intents in fact-find.
+    """
+    if free_form_session:
+        return False
+    if intent == "fact_find":
+        return True
+    if in_fact_find_continuation:
+        return True
+    if profile_is_empty and intent in CONTEXT_DEPENDENT_INTENTS:
+        return True
+    return False
 
 
 def pick_brain(intent: str, language: str) -> BrainPick:
@@ -184,15 +231,11 @@ async def handle_turn(
         and session.profile.dependents is None
         and session.profile.income_band is None
     )
-    CONTEXT_DEPENDENT_INTENTS = {"recommendation", "comparison"}
-    treat_as_fact_find = (
-        (intent == "fact_find" and not session.free_form_session)
-        or in_fact_find_continuation
-        or (
-            profile_is_empty
-            and not session.free_form_session
-            and intent in CONTEXT_DEPENDENT_INTENTS
-        )
+    treat_as_fact_find = should_route_to_fact_find(
+        intent,
+        profile_is_empty=profile_is_empty,
+        in_fact_find_continuation=in_fact_find_continuation,
+        free_form_session=session.free_form_session,
     )
 
     if treat_as_fact_find:
