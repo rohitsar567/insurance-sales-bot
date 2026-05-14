@@ -316,7 +316,31 @@ async def handle_turn(
             else:
                 opener_en = "Happy to help. " if not user_text.lower().strip().startswith(("hi", "hello")) else "Hi! "
                 opener_hi = "मदद के लिए तैयार हूँ। "
-            reply = (opener_hi + q.prompt_hi) if language == "indic" else (opener_en + q.prompt_en)
+
+            # KI-032 — Per-turn LLM paraphrase + verifier so the bot stops
+            # asking the same 9 hardcoded questions with the same wording in
+            # every session. English only for now; the indic branch keeps
+            # the canonical Hindi text. Re-ask flows ALSO skip paraphrase —
+            # we want the literal "let me ask again" to read the canonical
+            # so the user has a stable anchor.
+            question_text_en = q.prompt_en
+            if language != "indic" and not ambiguous_or_failed:
+                try:
+                    from backend.question_paraphraser import paraphrase_question
+                    paraphrased = await paraphrase_question(
+                        canonical=q.prompt_en,
+                        slot_id=q.id,
+                        session_id=session_id,
+                        recent_user_text=user_text,
+                    )
+                    if paraphrased:
+                        question_text_en = paraphrased
+                except Exception:
+                    # Paraphraser must never block fact-find; on any failure
+                    # we silently keep the canonical wording.
+                    pass
+
+            reply = (opener_hi + q.prompt_hi) if language == "indic" else (opener_en + question_text_en)
             if ambiguous_or_failed:
                 brain_tag = "needs_finder::reask_clarify"
             else:
