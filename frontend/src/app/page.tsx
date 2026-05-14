@@ -77,6 +77,37 @@ export default function Page() {
         .catch(() => setProfileCompleteness(null));
     }
   }, [sessionId]);
+
+  // Session persistence: rehydrate chat history + sessionId on mount so the
+  // user's conversation survives view changes, page reloads, and tab switches.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const savedMessages = localStorage.getItem("insurance_chat_messages");
+    if (savedMessages) {
+      try {
+        const parsed = JSON.parse(savedMessages) as DisplayMessage[];
+        if (Array.isArray(parsed) && parsed.length > 0) setMessages(parsed);
+      } catch {
+        // corrupt cache — wipe so we don't retry
+        localStorage.removeItem("insurance_chat_messages");
+      }
+    }
+    const savedSession = localStorage.getItem("insurance_session_id");
+    if (savedSession) setSessionId(savedSession);
+  }, []);
+
+  // Persist chat history on every change. Strip transient blob audio URLs —
+  // they expire across reloads anyway, and the base64 source is gone.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (messages.length === 0) return; // don't overwrite with an empty array on first render before rehydrate
+    const trimmed = messages.map(({ audioUrl: _audioUrl, ...rest }) => rest);
+    try {
+      localStorage.setItem("insurance_chat_messages", JSON.stringify(trimmed));
+    } catch {
+      // localStorage full or unavailable — silently drop persistence rather than break the chat
+    }
+  }, [messages]);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const [handsFree, setHandsFree] = useState(false);  // VAD auto-cutoff mode
   // Live ref of handsFree so async TTS-ended callbacks read the latest value
@@ -149,14 +180,35 @@ export default function Page() {
     pushUser(text);
     try {
       const history: ChatMessage[] = messages.map((m) => ({ role: m.role, content: m.content }));
+      // Real-time copilot context — tells the backend what the user is
+      // currently looking at, so answers can be grounded in that view rather
+      // than asking the user to re-state their context.
+      const active_view: "chat" | "marketplace" | "profile" | "premium" | "policy_detail" =
+        openPolicy ? "policy_detail" :
+        showMarketplace ? "marketplace" :
+        showProfile ? "profile" :
+        showPremium ? "premium" :
+        "chat";
       const res = await postChat({
         user_text: text,
         session_id: sessionId,
         chat_history: history,
         return_audio: returnAudio,
         tts_language_code: ttsLang,
+        view_context: {
+          active_view,
+          active_policy_id: openPolicy?.policy_id,
+        },
       });
       setSessionId(res.session_id);
+      // Refresh profileCompleteness after every chat turn so that any profile
+      // fields the backend extracted from the user's message (age, conditions,
+      // budget, etc.) immediately flip `is_personalized` and re-rank the
+      // marketplace. Without this, profile updates only land when sessionId
+      // changes — which is once, after the first message.
+      getProfileCompleteness(res.session_id)
+        .then(setProfileCompleteness)
+        .catch(() => { /* keep prior on transient error */ });
       const audioUrl = res.audio_base64 ? audioBlobURLFromBase64(res.audio_base64) : undefined;
       pushAssistant(res.reply_text, {
         citations: res.citations,
@@ -401,30 +453,19 @@ export default function Page() {
             </button>
           </div>
         </div>
-        {showMarketplace && marketplace && (
-          <MarketplacePanel
-            data={marketplace}
-            onOpenPolicy={(p) => setOpenPolicy(p)}
-            onClose={() => setShowMarketplace(false)}
-            t={t}
-            isPersonalized={profileCompleteness?.is_personalized === true}
-          />
-        )}
-        {showPremium && <PremiumCalculatorPanel onClose={() => setShowPremium(false)} />}
-        {showProfile && (
-          <ProfileBuilderPanel
-            sessionId={sessionId}
-            setSessionId={setSessionId}
-            initialProfile={profileCompleteness?.profile || {}}
-            onSaved={(resp) => { setProfileCompleteness(resp); }}
-            onClose={() => setShowProfile(false)}
-            uiLang={uiLang}
-          />
-        )}
       </header>
       {openPolicy && <PolicyDetailModal policy={openPolicy} onClose={() => setOpenPolicy(null)} />}
 
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-4 sm:py-6 flex flex-col">
+      {/* Two-column layout on desktop (chat | panel), stacked on mobile.
+          When no panel is open, chat takes the full width. The chat column
+          never unmounts, so messages, voice, and view-context stay live no
+          matter which view the user is focused on. */}
+      <div className="flex-1 flex flex-col lg:flex-row min-h-0 w-full">
+        <main className={`flex flex-col min-h-0 px-4 sm:px-6 py-4 sm:py-6 ${
+          (showMarketplace || showPremium || showProfile)
+            ? "lg:w-2/5 lg:border-r lg:border-[var(--border)] w-full"
+            : "max-w-6xl w-full mx-auto"
+        }`}>
         {messages.length === 0 ? (
           <EmptyState onSuggest={(q) => send(q)} coverage={coverage} t={t} />
         ) : (
@@ -507,6 +548,35 @@ export default function Page() {
           </div>
         </div>
       </main>
+
+        {/* Panel column — sits beside the chat on desktop, takes over on
+            mobile. Stays mounted as long as a panel is open; chat in the
+            other column remains fully interactive (real-time copilot). */}
+        {(showMarketplace || showPremium || showProfile) && (
+          <aside className="lg:w-3/5 w-full overflow-y-auto bg-[var(--background)]">
+            {showMarketplace && marketplace && (
+              <MarketplacePanel
+                data={marketplace}
+                onOpenPolicy={(p) => setOpenPolicy(p)}
+                onClose={() => setShowMarketplace(false)}
+                t={t}
+                isPersonalized={profileCompleteness?.is_personalized === true}
+              />
+            )}
+            {showPremium && <PremiumCalculatorPanel onClose={() => setShowPremium(false)} />}
+            {showProfile && (
+              <ProfileBuilderPanel
+                sessionId={sessionId}
+                setSessionId={setSessionId}
+                initialProfile={profileCompleteness?.profile || {}}
+                onSaved={(resp) => { setProfileCompleteness(resp); }}
+                onClose={() => setShowProfile(false)}
+                uiLang={uiLang}
+              />
+            )}
+          </aside>
+        )}
+      </div>
 
       <footer className="border-t border-[var(--border)] py-3 px-6 text-center text-xs text-[var(--muted-foreground)]">
         Advisory only. Information based on policy documents; verify with the insurer before purchase. All policy ratings are illustrative and based on publicly disclosed data.

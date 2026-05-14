@@ -36,6 +36,17 @@ export type ChatMessage = {
   content: string;
 };
 
+export type ViewContext = {
+  // Which top-level panel the user is currently focused on. The chat treats
+  // this as the "screen" the copilot can see — answers can reference what the
+  // user is looking at without them having to re-state it.
+  active_view: "chat" | "marketplace" | "profile" | "premium" | "policy_detail";
+  // Policy ID currently open in a detail modal, if any.
+  active_policy_id?: string;
+  // Optional marketplace filters (forwarded for personalization signals).
+  filters?: Record<string, unknown>;
+};
+
 export async function postChat(args: {
   user_text: string;
   session_id?: string;
@@ -44,6 +55,7 @@ export async function postChat(args: {
   policy_filter_ids?: string[];
   return_audio?: boolean;
   tts_language_code?: string;
+  view_context?: ViewContext;
 }): Promise<ChatResponse> {
   const resp = await fetch(`${BACKEND_URL}/api/chat`, {
     method: "POST",
@@ -56,6 +68,7 @@ export async function postChat(args: {
       policy_filter_ids: args.policy_filter_ids,
       return_audio: args.return_audio ?? false,
       tts_language_code: args.tts_language_code ?? "en-IN",
+      view_context: args.view_context,
     }),
   });
   if (!resp.ok) {

@@ -126,6 +126,7 @@ async def handle_turn(
     policy_filter_ids: Optional[list[str]] = None,
     top_k: int = 5,
     session_id: Optional[str] = None,
+    view_context: Optional[dict] = None,
 ) -> TurnResult:
     t0 = time.time()
 
@@ -224,6 +225,7 @@ async def handle_turn(
         retrieved_context=context_str,
         chat_history=chat_history,
         user_profile=user_profile,
+        view_context=view_context,
     )
     messages = [ChatMessage(role=m["role"], content=m["content"]) for m in messages_dict]
 

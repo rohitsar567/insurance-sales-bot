@@ -57,6 +57,7 @@ def build_messages(
     retrieved_context: str,
     chat_history: list[dict] | None = None,
     user_profile: dict | None = None,
+    view_context: dict | None = None,
 ) -> list[dict]:
     """Assemble the message list for the LLM call."""
     system = ADVISOR_SYSTEM_PROMPT_V1
@@ -65,6 +66,27 @@ def build_messages(
             f"- {k}: {v}" for k, v in user_profile.items() if v not in (None, "", [])
         )
         system = system + profile_summary
+
+    if view_context:
+        bits: list[str] = []
+        av = view_context.get("active_view")
+        apid = view_context.get("active_policy_id")
+        fil = view_context.get("filters")
+        if av:
+            bits.append(f"active view: {av}")
+        if apid:
+            bits.append(f"policy open in detail: {apid}")
+        if fil:
+            bits.append(f"marketplace filters: {fil}")
+        if bits:
+            system = (
+                system
+                + "\n\nUSER IS CURRENTLY LOOKING AT:\n"
+                + "\n".join(f"- {b}" for b in bits)
+                + "\nWhen the user's question refers to 'this policy', 'this insurer', 'these filters',"
+                + " or otherwise relies on what's on screen, ground your answer in the active view above"
+                + " — do not ask the user to re-state it."
+            )
 
     messages: list[dict] = [{"role": "system", "content": system}]
 

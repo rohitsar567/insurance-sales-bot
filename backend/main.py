@@ -89,6 +89,14 @@ class ChatRequest(BaseModel):
     policy_filter_ids: Optional[list[str]] = Field(None, description="Restrict retrieval to these policies")
     return_audio: bool = Field(False, description="If true, also return TTS audio (base64 WAV)")
     tts_language_code: str = Field("en-IN", description="Language for TTS playback")
+    view_context: Optional[dict] = Field(
+        None,
+        description=(
+            "Frontend-supplied snapshot of what the user is looking at right now: "
+            "{active_view, active_policy_id, filters}. Injected into the system prompt "
+            "so the bot can ground 'this policy' / 'these filters' references."
+        ),
+    )
 
 
 class ChatResponse(BaseModel):
@@ -244,6 +252,7 @@ async def chat(req: ChatRequest):
             user_profile=req.profile,
             policy_filter_ids=req.policy_filter_ids,
             session_id=session_id,
+            view_context=req.view_context,
         )
     except Exception as e:
         log_turn({
