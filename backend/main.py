@@ -111,6 +111,14 @@ class ChatResponse(BaseModel):
     faithfulness_passed: bool = True
     faithfulness_reasons: list[str] = Field(default_factory=list)
     blocked: bool = False
+    profile_updates: dict = Field(
+        default_factory=dict,
+        description=(
+            "Any profile fields auto-extracted from the user's free-form message "
+            "this turn (age, dependents, health_conditions, etc.). Frontend can "
+            "flash an acknowledgment + refresh the completeness panel."
+        ),
+    )
 
 
 class TTSRequest(BaseModel):
@@ -307,6 +315,7 @@ async def chat(req: ChatRequest):
         faithfulness_passed=turn.faithfulness_passed,
         faithfulness_reasons=turn.faithfulness_reasons,
         blocked=turn.blocked,
+        profile_updates=turn.profile_updates,
     )
 
 

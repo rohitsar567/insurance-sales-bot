@@ -117,6 +117,7 @@ class TurnResult:
     faithfulness_passed: bool = True
     faithfulness_reasons: list[str] = field(default_factory=list)
     blocked: bool = False
+    profile_updates: dict = field(default_factory=dict)
 
 
 async def handle_turn(
@@ -203,6 +204,52 @@ async def handle_turn(
     if session.awaiting_question_id:
         session.set_awaiting(None)
         session.free_form_session = True
+
+    # 1c. CONVERSATIONAL PROFILE UPDATES (free-form mode)
+    # In free-form chat the user often shares new profile facts ("I just turned 40",
+    # "we had a baby", "I was diagnosed with diabetes"). Run a lightweight LLM
+    # extractor, apply high-confidence updates to session.profile, and re-upsert
+    # the profile chunk so THIS turn's retrieval reflects the new state.
+    profile_updates_applied: dict = {}
+    try:
+        from backend.profile_extractor import extract_profile_updates
+        extracted = await extract_profile_updates(user_text, session.profile)
+        if extracted:
+            for field_name, new_value in extracted.items():
+                if field_name == "health_conditions":
+                    existing = list(session.profile.health_conditions or [])
+                    existing_lower = {c.lower() for c in existing if c}
+                    merged = list(existing)
+                    for cond in new_value:
+                        if cond.lower() not in existing_lower:
+                            merged.append(cond)
+                            existing_lower.add(cond.lower())
+                    session.update_profile_field("health_conditions", merged)
+                    profile_updates_applied["health_conditions"] = merged
+                else:
+                    session.update_profile_field(field_name, new_value)
+                    profile_updates_applied[field_name] = new_value
+            # Re-upsert profile chunk so retrieval sees fresh profile THIS turn
+            try:
+                from backend.profile_rag import upsert_profile_chunk
+                profile_dict_for_chunk = {
+                    "age": session.profile.age,
+                    "dependents": session.profile.dependents,
+                    "income_band": session.profile.income_band,
+                    "existing_cover_inr": session.profile.existing_cover_inr,
+                    "primary_goal": session.profile.primary_goal,
+                    "location_tier": session.profile.location_tier,
+                    "parents_to_insure": session.profile.parents_to_insure,
+                    "parents_age_max": session.profile.parents_age_max,
+                    "parents_has_ped": session.profile.parents_has_ped,
+                    "budget_band": session.profile.budget_band,
+                    "health_conditions": session.profile.health_conditions,
+                }
+                await upsert_profile_chunk(session_id or "anonymous", profile_dict_for_chunk)
+            except Exception:
+                pass  # chunk upsert failure must not block the chat
+    except Exception:
+        pass  # extraction failure must never block the chat
 
     # 2. Retrieve — pass session_id so the user's profile chunk (stored in
     # Chroma at POST /api/profile time) gets boosted to the top of the
@@ -353,4 +400,5 @@ async def handle_turn(
         faithfulness_passed=verdict.passed,
         faithfulness_reasons=verdict.reasons,
         blocked=blocked,
+        profile_updates=profile_updates_applied,
     )
