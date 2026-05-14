@@ -74,3 +74,6 @@ logs/
 
 # OS
 Thumbs.db
+
+# Local backup of HF dataset (not for git — too large)
+rag/_hf_dataset_backup/
