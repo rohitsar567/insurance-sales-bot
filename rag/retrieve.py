@@ -193,11 +193,26 @@ async def retrieve(
     embedder = embedder or VoyageEmbeddings()
     [query_vec] = await embedder.embed([query], input_type="query")
 
-    where: dict = {}
+    # KI-102 (2026-05-15) — privacy P0. The main retrieval pass MUST NEVER
+    # return chunks of doc_type='profile' because those chunks are scoped to a
+    # specific user's session_id. Profile chunks are exclusively surfaced via
+    # the explicit per-session collection.get(ids=[f"profile_{session_id}"])
+    # lookup below; allowing them through the cosine pass leaks another user's
+    # profile into the current session (live smoke test of 15 personas caught
+    # B4 retrieving profile chunks from smokeA_1, ki100_ve, smokeB_B2).
+    #
+    # We translate this to Chroma's `where` DSL using $ne (not-equals) on
+    # doc_type. Combined with optional policy_id / insurer_slug filters via
+    # $and so the existing comparison + per-policy Q&A flows still work.
+    _filter_clauses: list[dict] = [{"doc_type": {"$ne": "profile"}}]
     if policy_ids:
-        where["policy_id"] = {"$in": policy_ids}
+        _filter_clauses.append({"policy_id": {"$in": policy_ids}})
     if insurer_slugs:
-        where["insurer_slug"] = {"$in": insurer_slugs}
+        _filter_clauses.append({"insurer_slug": {"$in": insurer_slugs}})
+    if len(_filter_clauses) == 1:
+        where: dict = _filter_clauses[0]
+    else:
+        where = {"$and": _filter_clauses}
 
     collection = get_collection()
 
@@ -205,7 +220,7 @@ async def retrieve(
     res = collection.query(
         query_embeddings=[query_vec],
         n_results=effective_top_k,
-        where=where if where else None,
+        where=where,
     )
 
     out: list[RetrievedChunk] = []
@@ -224,14 +239,21 @@ async def retrieve(
     if session_id:
         try:
             profile_chunk_id = f"profile_{session_id}"
+            # KI-102 — defence-in-depth. Filter by BOTH id AND session_id
+            # metadata so any future ID collision (or migration-era chunk
+            # written under a shared id) still can't leak another user's
+            # profile into this session's context.
             prof_res = collection.get(
                 ids=[profile_chunk_id],
+                where={"session_id": session_id},
                 include=["documents", "metadatas"],
             )
             if prof_res.get("ids"):
                 p_doc = prof_res["documents"][0] if prof_res.get("documents") else ""
                 p_meta = prof_res["metadatas"][0] if prof_res.get("metadatas") else {}
-                if p_doc:
+                # Triple-check: even if Chroma returns a row, refuse it unless
+                # metadata.session_id matches. Belt + suspenders + parachute.
+                if p_doc and p_meta.get("session_id") == session_id:
                     # Profile gets max score (1.0) so it always tops the context
                     profile_chunk = _build_chunk(profile_chunk_id, p_doc, p_meta, 1.0)
                     # Prepend; trim to top_k so we keep budget

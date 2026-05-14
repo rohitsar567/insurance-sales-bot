@@ -152,6 +152,14 @@ async def upsert_profile_chunk(session_id: str, profile_dict: dict) -> None:
             "insurer_slug": "profile",
             "policy_name": f"User profile (session {session_id[:8]})",
             "doc_type": "profile",
+            # KI-102 (2026-05-15) — privacy P0. Stamp the owning session_id so
+            # the retrieve path can hard-exclude any OTHER session's profile
+            # chunk via where={"session_id": current}. Pre-fix, profile chunks
+            # had no session_id metadata and the main retrieval pass had no
+            # doc_type filter, so chunks from sessions smokeA_1, ki100_ve, etc.
+            # surfaced as cosine matches in session smokeB_B4's context —
+            # leaking one user's profile facts into another user's reply.
+            "session_id": session_id,
             "source_url": "",
             "page_start": 0,
             "page_end": 0,
