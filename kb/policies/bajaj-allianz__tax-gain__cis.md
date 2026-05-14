@@ -1,174 +1,254 @@
+---
+policy_id: bajaj-allianz__tax-gain__cis
+insurer_slug: bajaj-allianz
+insurer_name: Bajaj Allianz General Insurance
+policy_name: "Tax Gain"
+uin_code: BAJHLIP21184V022021
+---
+
 # Tax Gain
 
-_Policy KB sheet — auto-generated from `rag/extracted/bajaj-allianz__tax-gain__cis.json` + `backend/scorecard.py`. Do not hand-edit; regenerate via `python -m rag.build_kb`._
+**Insurer:** Bajaj Allianz General Insurance (`bajaj-allianz`)  
+**Policy ID:** `bajaj-allianz__tax-gain__cis`  
+**UIN:** `BAJHLIP21184V022021`
 
 ## Identity
 
-| Field | Value | Source |
-| --- | --- | --- |
-| Insurer | [Bajaj Allianz General Insurance Co. Ltd.](https://www.bajajallianz.com/) | curated · verified `eval/verified_urls.json` |
-| Insurer slug | `bajaj-allianz` | derived from `data/corpus_urls.md` |
-| Policy | **Tax Gain** | extracted from policy wordings |
-| Policy id | `bajaj-allianz__tax-gain__cis` | minted by us (`<insurer-slug>__<doc-slug>`) |
-| Source PDF | […]() | downloaded + verified at ingest time |
-| Extraction confidence | None% (self-rated by extractor) | computed |
+### UIN code
 
-## Scorecard — single A-F view
+**Value:** BAJHLIP21184V022021
 
-### **Grade: C** (68/100)
-> Decent baseline; check the trade-offs before signing.
+**Source quote:**
 
-**Data completeness:** 25.0% of the 24 scored fields have data.
+> extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim
 
-| Sub-score | Bar | Score & Signals |
-| --- | --- | --- |
-| **Coverage Breadth** | `███████████·········` | **56/100** · Standard coverage |
-|  | _signals:_<br/>&nbsp;&nbsp;&nbsp;ambulance covered<br/>&nbsp;&nbsp;&nbsp;free health checkups |  |
-| **Cost Predictability** | `███████████████·····` | **75/100** · Predictable costs |
-| **Waiting-Period Friction** | `██████████████······` | **70/100** · Standard waits |
-|  | _signals:_<br/>&nbsp;&nbsp;&nbsp;− 36mo PED waiting |  |
-| **Claim Experience** | `███████████████·····` | **79/100** · Smooth claims |
-|  | _signals:_<br/>&nbsp;&nbsp;&nbsp;cashless supported<br/>&nbsp;&nbsp;&nbsp;2h cashless TAT |  |
-| **Renewal Protection** | `████████████········` | **60/100** · Adequate |
-| **Bonus & Loyalty** | `███████████·········` | **58/100** · Standard sweeteners |
-|  | _signals:_<br/>&nbsp;&nbsp;&nbsp;free preventive checkup |  |
+**Source:** `rag/corpus/bajaj-allianz/tax-gain__cis.pdf`
 
-_Methodology: [`docs/scorecard-methodology.md`](../../docs/scorecard-methodology.md) · 24 of 48 schema fields drive this grade._
+## Eligibility
 
-## All extracted data points — by group
+### Minimum entry age
 
-**Derivation legend:**
-- **[E]** Extracted directly from policy PDF by LLM
-- **[E?]** Field was in schema but extraction returned null (data missing or unclear in source)
-- **[C]** Computed from extracted fields (e.g. scorecard sub-score)
-- **[I]** Implied / canonicalised by us
-- **[V]** Verified externally (HEAD-check, URL probe)
+**Value:** _not specified_
 
-### Identity  _5/6 fields populated_
+**Source quote:**
 
-| Field | Value | Type |
-| --- | --- | --- |
-| `policy_id` | `bajaj-allianz__tax-gain__cis` | [I] |
-| `insurer_slug` | `bajaj-allianz` | [I] |
-| `insurer_name` | `Bajaj Allianz General Insurance Co. Ltd.` | [I] |
-| `policy_name` | `Tax Gain` | [I] |
-| `policy_type` | _null (not in document)_ | [E?] |
-| `uin_code` | `BAJHLIP21184V022021` | [E] |
+> not extracted from this PDF (field absent or LLM unable to infer)
 
-### Eligibility  _0/1 fields populated_
+**Source:** `rag/corpus/bajaj-allianz/tax-gain__cis.pdf`
 
-| Field | Value | Type |
-| --- | --- | --- |
-| `residency_requirement` | _null (not in document)_ | [E?] |
+### Maximum entry age
 
-### Sum insured & premium  _0/2 fields populated_
+**Value:** _not specified_
 
-| Field | Value | Type |
-| --- | --- | --- |
-| `premium_payment_modes` | _null (not in document)_ | [E?] |
-| `grace_period_days` | _null (not in document)_ | [E?] |
+**Source quote:**
 
-### Waiting periods  _4/5 fields populated_
+> not extracted from this PDF (field absent or LLM unable to infer)
 
-| Field | Value | Type |
-| --- | --- | --- |
-| `initial_waiting_period_days` | `30` | [E] |
-| `pre_existing_disease_waiting_months` | `36` | [E] |
-| `specific_disease_waiting_months` | `24` | [E] |
-| `maternity_waiting_months` | _null (not in document)_ | [E?] |
-| `specific_diseases_listed` | `gastric or duodenal ulcers`, `benign prostatic hypertrophy`, `all types of sinuses`, `hemorrhoids`, `dysfunctional uterine bleeding`, `endometriosis`, `stones in the urinary and biliary systems`, `surgery on ears/tonsils/adenoids/paranasal sinuses` | [E] |
+**Source:** `rag/corpus/bajaj-allianz/tax-gain__cis.pdf`
 
-### Coverage scope  _2/12 fields populated_
+### Maximum renewal age
 
-| Field | Value | Type |
-| --- | --- | --- |
-| `pre_hospitalization_days` | _null (not in document)_ | [E?] |
-| `post_hospitalization_days` | _null (not in document)_ | [E?] |
-| `domiciliary_treatment` | _null (not in document)_ | [E?] |
-| `ayush_coverage` | _null (not in document)_ | [E?] |
-| `maternity_coverage` | _null (not in document)_ | [E?] |
-| `newborn_coverage` | _null (not in document)_ | [E?] |
-| `organ_donor_expenses` | _null (not in document)_ | [E?] |
-| `ambulance_cover` | Yes, limit ₹1,000, "Max up to Rs 1000 per valid hospitalization claim." | [E] |
-| `critical_illness_cover` | _null (not in document)_ | [E?] |
-| `restoration_benefit` | _null (not in document)_ | [E?] |
-| `no_claim_bonus_pct` | _null (not in document)_ | [E?] |
-| `preventive_health_checkup` | Yes, "Preventive Health check up at the end of every 4 continuous policy years as per limits specified in policy wordings." | [E] |
+**Value:** _not specified_
 
-### Sub-limits & caps  _0/4 fields populated_
+**Source quote:**
 
-| Field | Value | Type |
-| --- | --- | --- |
-| `room_rent_capping` | _null (not in document)_ | [E?] |
-| `icu_capping` | _null (not in document)_ | [E?] |
-| `copayment_pct` | _null (not in document)_ | [E?] |
-| `disease_wise_sub_limits` | _null (not in document)_ | [E?] |
+> not extracted from this PDF (field absent or LLM unable to infer)
 
-### Geography & network  _1/3 fields populated_
+**Source:** `rag/corpus/bajaj-allianz/tax-gain__cis.pdf`
 
-| Field | Value | Type |
-| --- | --- | --- |
-| `worldwide_emergency_cover` | _null (not in document)_ | [E?] |
-| `network_hospital_count` | _null (not in document)_ | [E?] |
-| `cashless_treatment_supported` | Yes | [E] |
+### Sum insured options
 
-### Exclusions  _1/3 fields populated_
+**Value:** 300000
 
-| Field | Value | Type |
-| --- | --- | --- |
-| `permanent_exclusions` | `Any hospital admission primarily for investigation diagnostic purpose`, `Expenses related to any admission primarily for enforced bed rest and not for receiving treatment`, `Obesity/Weight Control`, `Change-of-gender treatments`, `Expenses for cosmetic or plastic surgery or any treatment to change appearance unless for reconstruction following an Accident, Burn(s) etc.`, `Expenses for treatment arising from Insured committing or attempting to commit a breach of law with criminal intent`, `Treatment for Alcoholism, drug or substance abuse`, `Treatments received in health hydros, nature cure clinics, etc. where admission is arranged wholly or partly for domestic reasons` | [E] |
-| `temporary_exclusions` | _null (not in document)_ | [E?] |
-| `notable_exclusions_summary` | _null (not in document)_ | [E?] |
+**Source quote:**
 
-### Claim & service  _2/2 fields populated_
+> extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim
 
-| Field | Value | Type |
-| --- | --- | --- |
-| `claim_process_summary` | `Cashless treatment is only available at Network Hospitals. You or Your representative must intimate Us 48 hours before the planned Hospitalization and within 24 hours of emergency hospitalization and request pre-authorization by way of the written form. We will review each claim for Medical Expenses, coverage and accordingly issue an authorisation letter either to You or the Network Hospital. For reimbursement claims where treatment is taken at a Non network hospital or if cashless claim is denied, you must intimate Us 48 hours before the planned Hospitalization and within 48 hours of emergency hospitalization. You must submit all necessary documents within 30 days of discharge from a Hospital. The Company shall settle or reject the claim within 45 days from the date of receipt of last necessary document.` | [E] |
-| `tat_cashless_authorization_hours` | `2.0` | [E] |
+**Source:** `rag/corpus/bajaj-allianz/tax-gain__cis.pdf`
 
-### Riders / optional  _0/2 fields populated_
+## Waiting periods
 
-| Field | Value | Type |
-| --- | --- | --- |
-| `available_riders` | _null (not in document)_ | [E?] |
-| `top_rider_examples` | _null (not in document)_ | [E?] |
+### Initial waiting period (days)
 
-### Source metadata  _0/4 fields populated_
+**Value:** 30
 
-| Field | Value | Type |
-| --- | --- | --- |
-| `source_pdf_path` | _null (not in document)_ | [V] |
-| `source_pdf_url` | _null (not in document)_ | [V] |
-| `last_updated_date` | _null (not in document)_ | [V] |
-| `extraction_confidence_pct` | _null (not in document)_ | [E?] |
+**Source quote:**
 
-## Lineage — end-to-end audit trail for this policy
+> extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim
 
-Every data point above traces through this exact pipeline:
+**Source:** `rag/corpus/bajaj-allianz/tax-gain__cis.pdf`
 
-```
-1. SOURCE        — …
-                   (curated by corpus-discovery agent, verified at download)
-2. DOWNLOAD      — rag/download_corpus.py + rag/download_retry.py
-                   PDF magic-byte check + size > 50 KB enforced
-3. PARSE         — pdfplumber → per-page text (rag/ingest.py:read_pdf_pages)
-4. CHUNK         — 800 tok / 120 overlap, sentence-aware (rag/ingest.py:chunk_pages)
-5. EMBED         — BGE-small-en-v1.5 → 384-dim vector (backend/providers/local_embeddings.py)
-6. INDEX         — Chroma persistent client (rag/vectors/) with metadata
-7. EXTRACT       — Sarvam-M (DeepSeek-V3 fallback) prompt with HealthPolicy schema
-                   → rag/extracted/bajaj-allianz__tax-gain__cis.json (this file's source data)
-8. STORE         — DuckDB upsert into rag/policies.duckdb
-9. SCORE         — backend/scorecard.py rules-based, no LLM-in-the-loop
-10. KB SHEET     — rag/build_kb.py renders this markdown
-```
+### Pre-existing disease waiting (months)
 
-**Re-running the audit trail:** delete `rag/extracted/{pid}.json` → run `python -m rag.extract --policy {pid}` → run `python -m rag.build_kb` → diff this file.
+**Value:** 36
 
-## What the bot will and won't say about this policy
+**Source quote:**
 
-Per the 4-gate faithfulness verifier (`backend/faithfulness.py`):
-- Bot answers questions about this policy **only when retrieval scores for its chunks are ≥ 0.30 cosine** (BGE-small).
-- Every factual claim cites this PDF with page numbers.
-- If asked something whose answer is _null_ in the schema above (marked **[E?]**), the bot refuses — the data is not in the source PDF.
-- Blocked replies on this policy are logged to `logs/hallucinations.jsonl` with `policy_id=bajaj-allianz__tax-gain__cis`.
+> extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim
+
+**Source:** `rag/corpus/bajaj-allianz/tax-gain__cis.pdf`
+
+### Specific disease waiting (months)
+
+**Value:** 24
+
+**Source quote:**
+
+> extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim
+
+**Source:** `rag/corpus/bajaj-allianz/tax-gain__cis.pdf`
+
+### Maternity waiting (months)
+
+**Value:** _not specified_
+
+**Source quote:**
+
+> not extracted from this PDF (field absent or LLM unable to infer)
+
+**Source:** `rag/corpus/bajaj-allianz/tax-gain__cis.pdf`
+
+## Coverage scope
+
+### Pre-hospitalization (days)
+
+**Value:** _not specified_
+
+**Source quote:**
+
+> not extracted from this PDF (field absent or LLM unable to infer)
+
+**Source:** `rag/corpus/bajaj-allianz/tax-gain__cis.pdf`
+
+### Post-hospitalization (days)
+
+**Value:** _not specified_
+
+**Source quote:**
+
+> not extracted from this PDF (field absent or LLM unable to infer)
+
+**Source:** `rag/corpus/bajaj-allianz/tax-gain__cis.pdf`
+
+### Day-care treatments covered
+
+**Value:** _not specified_
+
+**Source quote:**
+
+> not extracted from this PDF (field absent or LLM unable to infer)
+
+**Source:** `rag/corpus/bajaj-allianz/tax-gain__cis.pdf`
+
+## Claims & service
+
+### Network hospital count
+
+**Value:** _not specified_
+
+**Source quote:**
+
+> not extracted from this PDF (field absent or LLM unable to infer)
+
+**Source:** `rag/corpus/bajaj-allianz/tax-gain__cis.pdf`
+
+## Other fields
+
+### Claim Settlement Ratio Pct
+
+**Value:** _not specified_
+
+**Source quote:**
+
+> not extracted from this PDF (field absent or LLM unable to infer)
+
+**Source:** `rag/corpus/bajaj-allianz/tax-gain__cis.pdf`
+
+### Co Payment Pct
+
+**Value:** _not specified_
+
+**Source quote:**
+
+> not extracted from this PDF (field absent or LLM unable to infer)
+
+**Source:** `rag/corpus/bajaj-allianz/tax-gain__cis.pdf`
+
+### Complaint Per 10K Claims
+
+**Value:** _not specified_
+
+**Source quote:**
+
+> not extracted from this PDF (field absent or LLM unable to infer)
+
+**Source:** `rag/corpus/bajaj-allianz/tax-gain__cis.pdf`
+
+### Free Look Period
+
+**Value:** 30 days
+
+**Source quote:**
+
+> extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim
+
+**Source:** `rag/corpus/bajaj-allianz/tax-gain__cis.pdf`
+
+### Grace Period
+
+**Value:** _not specified_
+
+**Source quote:**
+
+> not extracted from this PDF (field absent or LLM unable to infer)
+
+**Source:** `rag/corpus/bajaj-allianz/tax-gain__cis.pdf`
+
+### Incurred Claim Ratio Pct
+
+**Value:** _not specified_
+
+**Source quote:**
+
+> not extracted from this PDF (field absent or LLM unable to infer)
+
+**Source:** `rag/corpus/bajaj-allianz/tax-gain__cis.pdf`
+
+### Min Child Entry Age
+
+**Value:** _not specified_
+
+**Source quote:**
+
+> not extracted from this PDF (field absent or LLM unable to infer)
+
+**Source:** `rag/corpus/bajaj-allianz/tax-gain__cis.pdf`
+
+### Policy Term Options Years
+
+**Value:** _not specified_
+
+**Source quote:**
+
+> not extracted from this PDF (field absent or LLM unable to infer)
+
+**Source:** `rag/corpus/bajaj-allianz/tax-gain__cis.pdf`
+
+### Room Rent Capped At Pct Of Si
+
+**Value:** _not specified_
+
+**Source quote:**
+
+> not extracted from this PDF (field absent or LLM unable to infer)
+
+**Source:** `rag/corpus/bajaj-allianz/tax-gain__cis.pdf`
+
+### Source Pdf Path
+
+_no data_
+
+
+---
+
+_Mirrored from `data/policy_facts/bajaj-allianz__tax-gain__cis.json`. Provenance — every field's verbatim quote and source PDF path is preserved exactly as curated. Do not hand-edit; regenerate via `tools/build_kb_mirror.py`._

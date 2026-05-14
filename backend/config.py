@@ -43,13 +43,13 @@ class Settings:
     VOYAGE_MODEL: str = "voyage-3"
 
     # NVIDIA NIM (single source of truth for brain + judge — tiered routing)
-    # Heavy brain (quality > latency): DeepSeek-V4-Pro (1.6T/49B MoE)
-    # Fast brain (latency > quality): DeepSeek-V4-Flash (284B/13B MoE)
-    # Judge: Meta Llama-4 Maverick (400B/17B MoE) — different family = cross-grading independence
+    # 2026-05-14 brain swap (D-022): DeepSeek-V4 + Meta Llama NIM pools time out
+    # repeatedly. Qwen 3-Next 80B + Mistral Large 3 are the working production
+    # models on NIM free tier as of 2026-05-14.
     NVIDIA_NIM_BASE_URL: str = "https://integrate.api.nvidia.com/v1"
-    NVIDIA_NIM_BRAIN_MODEL: str = "deepseek-ai/deepseek-v4-pro"
-    NVIDIA_NIM_FAST_BRAIN_MODEL: str = "deepseek-ai/deepseek-v4-flash"
-    NVIDIA_NIM_JUDGE_MODEL: str = "meta/llama-4-maverick-17b-128e-instruct"
+    NVIDIA_NIM_BRAIN_MODEL: str = "qwen/qwen3-next-80b-a3b-instruct"
+    NVIDIA_NIM_FAST_BRAIN_MODEL: str = "qwen/qwen3-next-80b-a3b-instruct"
+    NVIDIA_NIM_JUDGE_MODEL: str = "mistralai/mistral-large-3-675b-instruct-2512"
 
     # Storage paths
     CORPUS_DIR: Path = ROOT / "rag" / "corpus"

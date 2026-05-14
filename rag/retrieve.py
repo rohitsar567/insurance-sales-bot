@@ -153,6 +153,40 @@ async def retrieve(
         except Exception:
             pass
 
+    # Quarantine boost pass — when the orchestrator passes a session_id, also
+    # query the SEPARATE quarantine collection (user-uploaded PDFs) scoped to
+    # this session. Results get a ×1.1 score boost so the user's own uploaded
+    # doc ranks above generic policies when relevant. Quarantine lives in a
+    # different on-disk Chroma collection ("user_uploads_quarantine") so it
+    # is physically isolated from the main `policies` collection — no exclude
+    # clause is needed in the main pass.
+    if session_id:
+        try:
+            from rag.ingest import get_quarantine_collection
+            q_coll = get_quarantine_collection()
+            q_res = q_coll.query(
+                query_embeddings=[query_vec],
+                n_results=3,
+                where={"session_id": session_id},
+            )
+            if q_res["ids"] and q_res["ids"][0]:
+                seen = {c.chunk_id for c in out}
+                quarantine_chunks: list[RetrievedChunk] = []
+                for cid, doc, meta, dist in zip(
+                    q_res["ids"][0], q_res["documents"][0],
+                    q_res["metadatas"][0], q_res["distances"][0],
+                ):
+                    if cid in seen:
+                        continue
+                    boosted = (1.0 - dist) * 1.1
+                    quarantine_chunks.append(_build_chunk(cid, doc, meta, boosted))
+                # Prepend so user's own upload appears first, then trim to top_k
+                out = quarantine_chunks + out
+                out = out[:top_k]
+        except Exception:
+            # Quarantine boost is additive; failure must never break main retrieval
+            pass
+
     # Regulatory boost pass — only when the query is about IRDAI / regulations,
     # and only when not already filtered to specific policies (otherwise the
     # caller is asking about a specific policy, not regulations).

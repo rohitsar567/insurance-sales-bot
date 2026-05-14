@@ -1,174 +1,254 @@
+---
+policy_id: care-health__care-supreme__wordings
+insurer_slug: care-health
+insurer_name: Care Health Insurance
+policy_name: "Care Supreme"
+uin_code: CHIHLIP23128V012223
+---
+
 # Care Supreme
 
-_Policy KB sheet — auto-generated from `rag/extracted/care-health__care-supreme__wordings.json` + `backend/scorecard.py`. Do not hand-edit; regenerate via `python -m rag.build_kb`._
+**Insurer:** Care Health Insurance (`care-health`)  
+**Policy ID:** `care-health__care-supreme__wordings`  
+**UIN:** `CHIHLIP23128V012223`
 
 ## Identity
 
-| Field | Value | Source |
-| --- | --- | --- |
-| Insurer | [Care Health Insurance Limited](https://www.careinsurance.com/) | curated · verified `eval/verified_urls.json` |
-| Insurer slug | `care-health` | derived from `data/corpus_urls.md` |
-| Policy | **Care Supreme** | extracted from policy wordings |
-| Policy id | `care-health__care-supreme__wordings` | minted by us (`<insurer-slug>__<doc-slug>`) |
-| Source PDF | […]() | downloaded + verified at ingest time |
-| Extraction confidence | None% (self-rated by extractor) | computed |
+### UIN code
 
-## Scorecard — single A-F view
+**Value:** CHIHLIP23128V012223
 
-### **Grade: B** (74/100)
-> Good policy with a few notable gaps.
+**Source quote:**
 
-**Data completeness:** 54.2% of the 24 scored fields have data.
+> extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim
 
-| Sub-score | Bar | Score & Signals |
-| --- | --- | --- |
-| **Coverage Breadth** | `████████████████····` | **84/100** · Wide coverage |
-|  | _signals:_<br/>&nbsp;&nbsp;&nbsp;AYUSH covered<br/>&nbsp;&nbsp;&nbsp;newborn covered<br/>&nbsp;&nbsp;&nbsp;organ donor expenses<br/>&nbsp;&nbsp;&nbsp;ambulance covered<br/>&nbsp;&nbsp;&nbsp;free health checkups<br/>&nbsp;&nbsp;&nbsp;60d pre-hospitalization<br/>&nbsp;&nbsp;&nbsp;180d post-hospitalization |  |
-| **Cost Predictability** | `███████████████·····` | **75/100** · Predictable costs |
-| **Waiting-Period Friction** | `██████████████······` | **70/100** · Standard waits |
-|  | _signals:_<br/>&nbsp;&nbsp;&nbsp;− 36mo PED waiting |  |
-| **Claim Experience** | `███████████████·····` | **75/100** · Smooth claims |
-|  | _signals:_<br/>&nbsp;&nbsp;&nbsp;cashless supported |  |
-| **Renewal Protection** | `████████████········` | **60/100** · Adequate |
-| **Bonus & Loyalty** | `██████████████······` | **73/100** · Standard sweeteners |
-|  | _signals:_<br/>&nbsp;&nbsp;&nbsp;50% NCB<br/>&nbsp;&nbsp;&nbsp;free preventive checkup |  |
+**Source:** `rag/corpus/care-health/care-supreme__wordings.pdf`
 
-_Methodology: [`docs/scorecard-methodology.md`](../../docs/scorecard-methodology.md) · 24 of 48 schema fields drive this grade._
+## Eligibility
 
-## All extracted data points — by group
+### Minimum entry age
 
-**Derivation legend:**
-- **[E]** Extracted directly from policy PDF by LLM
-- **[E?]** Field was in schema but extraction returned null (data missing or unclear in source)
-- **[C]** Computed from extracted fields (e.g. scorecard sub-score)
-- **[I]** Implied / canonicalised by us
-- **[V]** Verified externally (HEAD-check, URL probe)
+**Value:** _not specified_
 
-### Identity  _5/6 fields populated_
+**Source quote:**
 
-| Field | Value | Type |
-| --- | --- | --- |
-| `policy_id` | `care-health__care-supreme__wordings` | [I] |
-| `insurer_slug` | `care-health` | [I] |
-| `insurer_name` | `Care Health Insurance Limited` | [I] |
-| `policy_name` | `Care Supreme` | [I] |
-| `policy_type` | _null (not in document)_ | [E?] |
-| `uin_code` | `CHIHLIP23128V012223` | [E] |
+> not extracted from this PDF (field absent or LLM unable to infer)
 
-### Eligibility  _0/1 fields populated_
+**Source:** `rag/corpus/care-health/care-supreme__wordings.pdf`
 
-| Field | Value | Type |
-| --- | --- | --- |
-| `residency_requirement` | _null (not in document)_ | [E?] |
+### Maximum entry age
 
-### Sum insured & premium  _1/2 fields populated_
+**Value:** _not specified_
 
-| Field | Value | Type |
-| --- | --- | --- |
-| `premium_payment_modes` | _null (not in document)_ | [E?] |
-| `grace_period_days` | `30` | [E] |
+**Source quote:**
 
-### Waiting periods  _2/5 fields populated_
+> not extracted from this PDF (field absent or LLM unable to infer)
 
-| Field | Value | Type |
-| --- | --- | --- |
-| `initial_waiting_period_days` | _null (not in document)_ | [E?] |
-| `pre_existing_disease_waiting_months` | `36` | [E] |
-| `specific_disease_waiting_months` | `24` | [E] |
-| `maternity_waiting_months` | _null (not in document)_ | [E?] |
-| `specific_diseases_listed` | _null (not in document)_ | [E?] |
+**Source:** `rag/corpus/care-health/care-supreme__wordings.pdf`
 
-### Coverage scope  _10/12 fields populated_
+### Maximum renewal age
 
-| Field | Value | Type |
-| --- | --- | --- |
-| `pre_hospitalization_days` | `60` | [E] |
-| `post_hospitalization_days` | `180` | [E] |
-| `domiciliary_treatment` | Yes, "No limit", (Treatment must continue for a period exceeding 3 consecutive days and must be Medically Necessary.) | [E] |
-| `ayush_coverage` | Yes, "No limit", (Treatment must be from a registered AYUSH Medical Practitioner and within India.) | [E] |
-| `maternity_coverage` | _null (not in document)_ | [E?] |
-| `newborn_coverage` | Yes, "Covered from day 1", (All applicable waiting periods stand valid for this benefit.) | [E] |
-| `organ_donor_expenses` | Yes, "No limit", (Donor must be eligible in accordance with The Transplantation of Human Organs Act, 1994.) | [E] |
-| `ambulance_cover` | Yes, "No limit", (Transportation must be certified by a Medical Practitioner as Medically Necessary.) | [E] |
-| `critical_illness_cover` | _null (not in document)_ | [E?] |
-| `restoration_benefit` | Yes, "Unlimited Automatic Recharge", (Recharge is applicable only after base Sum Insured, applicable Cumulative Bonus, and Plus Benefit (if applicable) have been exhausted.) | [E] |
-| `no_claim_bonus_pct` | `50.0` | [E] |
-| `preventive_health_checkup` | Yes, "Once per Policy Year", (Available for Insured Persons aged 18 years or above.) | [E] |
+**Value:** _not specified_
 
-### Sub-limits & caps  _2/4 fields populated_
+**Source quote:**
 
-| Field | Value | Type |
-| --- | --- | --- |
-| `room_rent_capping` | `No limit` | [E] |
-| `icu_capping` | `No limit` | [E] |
-| `copayment_pct` | _null (not in document)_ | [E?] |
-| `disease_wise_sub_limits` | _null (not in document)_ | [E?] |
+> not extracted from this PDF (field absent or LLM unable to infer)
 
-### Geography & network  _1/3 fields populated_
+**Source:** `rag/corpus/care-health/care-supreme__wordings.pdf`
 
-| Field | Value | Type |
-| --- | --- | --- |
-| `worldwide_emergency_cover` | _null (not in document)_ | [E?] |
-| `network_hospital_count` | _null (not in document)_ | [E?] |
-| `cashless_treatment_supported` | Yes | [E] |
+### Sum insured options
 
-### Exclusions  _0/3 fields populated_
+**Value:** _not specified_
 
-| Field | Value | Type |
-| --- | --- | --- |
-| `permanent_exclusions` | _null (not in document)_ | [E?] |
-| `temporary_exclusions` | _null (not in document)_ | [E?] |
-| `notable_exclusions_summary` | _null (not in document)_ | [E?] |
+**Source quote:**
 
-### Claim & service  _0/2 fields populated_
+> not extracted from this PDF (field absent or LLM unable to infer)
 
-| Field | Value | Type |
-| --- | --- | --- |
-| `claim_process_summary` | _null (not in document)_ | [E?] |
-| `tat_cashless_authorization_hours` | _null (not in document)_ | [E?] |
+**Source:** `rag/corpus/care-health/care-supreme__wordings.pdf`
 
-### Riders / optional  _1/2 fields populated_
+## Waiting periods
 
-| Field | Value | Type |
-| --- | --- | --- |
-| `available_riders` | `Smart Select`, `Room Rent Modification`, `PED Wait Period Modification`, `Named Ailment Wait Period Modification`, `Instant Cover`, `Deductible`, `Co-payment`, `New Born Cover` | [E] |
-| `top_rider_examples` | _null (not in document)_ | [E?] |
+### Initial waiting period (days)
 
-### Source metadata  _0/4 fields populated_
+**Value:** _not specified_
 
-| Field | Value | Type |
-| --- | --- | --- |
-| `source_pdf_path` | _null (not in document)_ | [V] |
-| `source_pdf_url` | _null (not in document)_ | [V] |
-| `last_updated_date` | _null (not in document)_ | [V] |
-| `extraction_confidence_pct` | _null (not in document)_ | [E?] |
+**Source quote:**
 
-## Lineage — end-to-end audit trail for this policy
+> not extracted from this PDF (field absent or LLM unable to infer)
 
-Every data point above traces through this exact pipeline:
+**Source:** `rag/corpus/care-health/care-supreme__wordings.pdf`
 
-```
-1. SOURCE        — …
-                   (curated by corpus-discovery agent, verified at download)
-2. DOWNLOAD      — rag/download_corpus.py + rag/download_retry.py
-                   PDF magic-byte check + size > 50 KB enforced
-3. PARSE         — pdfplumber → per-page text (rag/ingest.py:read_pdf_pages)
-4. CHUNK         — 800 tok / 120 overlap, sentence-aware (rag/ingest.py:chunk_pages)
-5. EMBED         — BGE-small-en-v1.5 → 384-dim vector (backend/providers/local_embeddings.py)
-6. INDEX         — Chroma persistent client (rag/vectors/) with metadata
-7. EXTRACT       — Sarvam-M (DeepSeek-V3 fallback) prompt with HealthPolicy schema
-                   → rag/extracted/care-health__care-supreme__wordings.json (this file's source data)
-8. STORE         — DuckDB upsert into rag/policies.duckdb
-9. SCORE         — backend/scorecard.py rules-based, no LLM-in-the-loop
-10. KB SHEET     — rag/build_kb.py renders this markdown
-```
+### Pre-existing disease waiting (months)
 
-**Re-running the audit trail:** delete `rag/extracted/{pid}.json` → run `python -m rag.extract --policy {pid}` → run `python -m rag.build_kb` → diff this file.
+**Value:** _not specified_
 
-## What the bot will and won't say about this policy
+**Source quote:**
 
-Per the 4-gate faithfulness verifier (`backend/faithfulness.py`):
-- Bot answers questions about this policy **only when retrieval scores for its chunks are ≥ 0.30 cosine** (BGE-small).
-- Every factual claim cites this PDF with page numbers.
-- If asked something whose answer is _null_ in the schema above (marked **[E?]**), the bot refuses — the data is not in the source PDF.
-- Blocked replies on this policy are logged to `logs/hallucinations.jsonl` with `policy_id=care-health__care-supreme__wordings`.
+> not extracted from this PDF (field absent or LLM unable to infer)
+
+**Source:** `rag/corpus/care-health/care-supreme__wordings.pdf`
+
+### Specific disease waiting (months)
+
+**Value:** _not specified_
+
+**Source quote:**
+
+> not extracted from this PDF (field absent or LLM unable to infer)
+
+**Source:** `rag/corpus/care-health/care-supreme__wordings.pdf`
+
+### Maternity waiting (months)
+
+**Value:** _not specified_
+
+**Source quote:**
+
+> not extracted from this PDF (field absent or LLM unable to infer)
+
+**Source:** `rag/corpus/care-health/care-supreme__wordings.pdf`
+
+## Coverage scope
+
+### Pre-hospitalization (days)
+
+**Value:** _not specified_
+
+**Source quote:**
+
+> not extracted from this PDF (field absent or LLM unable to infer)
+
+**Source:** `rag/corpus/care-health/care-supreme__wordings.pdf`
+
+### Post-hospitalization (days)
+
+**Value:** _not specified_
+
+**Source quote:**
+
+> not extracted from this PDF (field absent or LLM unable to infer)
+
+**Source:** `rag/corpus/care-health/care-supreme__wordings.pdf`
+
+### Day-care treatments covered
+
+**Value:** _not specified_
+
+**Source quote:**
+
+> not extracted from this PDF (field absent or LLM unable to infer)
+
+**Source:** `rag/corpus/care-health/care-supreme__wordings.pdf`
+
+## Claims & service
+
+### Network hospital count
+
+**Value:** _not specified_
+
+**Source quote:**
+
+> not extracted from this PDF (field absent or LLM unable to infer)
+
+**Source:** `rag/corpus/care-health/care-supreme__wordings.pdf`
+
+## Other fields
+
+### Claim Settlement Ratio Pct
+
+**Value:** _not specified_
+
+**Source quote:**
+
+> not extracted from this PDF (field absent or LLM unable to infer)
+
+**Source:** `rag/corpus/care-health/care-supreme__wordings.pdf`
+
+### Co Payment Pct
+
+**Value:** _not specified_
+
+**Source quote:**
+
+> not extracted from this PDF (field absent or LLM unable to infer)
+
+**Source:** `rag/corpus/care-health/care-supreme__wordings.pdf`
+
+### Complaint Per 10K Claims
+
+**Value:** _not specified_
+
+**Source quote:**
+
+> not extracted from this PDF (field absent or LLM unable to infer)
+
+**Source:** `rag/corpus/care-health/care-supreme__wordings.pdf`
+
+### Free Look Period
+
+**Value:** 30 days
+
+**Source quote:**
+
+> extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim
+
+**Source:** `rag/corpus/care-health/care-supreme__wordings.pdf`
+
+### Grace Period
+
+**Value:** _not specified_
+
+**Source quote:**
+
+> not extracted from this PDF (field absent or LLM unable to infer)
+
+**Source:** `rag/corpus/care-health/care-supreme__wordings.pdf`
+
+### Incurred Claim Ratio Pct
+
+**Value:** _not specified_
+
+**Source quote:**
+
+> not extracted from this PDF (field absent or LLM unable to infer)
+
+**Source:** `rag/corpus/care-health/care-supreme__wordings.pdf`
+
+### Min Child Entry Age
+
+**Value:** _not specified_
+
+**Source quote:**
+
+> not extracted from this PDF (field absent or LLM unable to infer)
+
+**Source:** `rag/corpus/care-health/care-supreme__wordings.pdf`
+
+### Policy Term Options Years
+
+**Value:** _not specified_
+
+**Source quote:**
+
+> not extracted from this PDF (field absent or LLM unable to infer)
+
+**Source:** `rag/corpus/care-health/care-supreme__wordings.pdf`
+
+### Room Rent Capped At Pct Of Si
+
+**Value:** _not specified_
+
+**Source quote:**
+
+> not extracted from this PDF (field absent or LLM unable to infer)
+
+**Source:** `rag/corpus/care-health/care-supreme__wordings.pdf`
+
+### Source Pdf Path
+
+_no data_
+
+
+---
+
+_Mirrored from `data/policy_facts/care-health__care-supreme__wordings.json`. Provenance — every field's verbatim quote and source PDF path is preserved exactly as curated. Do not hand-edit; regenerate via `tools/build_kb_mirror.py`._

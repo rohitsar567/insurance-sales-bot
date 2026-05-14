@@ -13,7 +13,7 @@
 
 ## 1. The 30-second hook
 
-A **voice-first health-insurance advisor** for Indian buyers, grounded in a curated corpus of **104 real PDFs** — 86 product documents from 10 leading insurers (Star, HDFC ERGO, Niva Bupa, Care, ICICI Lombard, Bajaj Allianz, New India, Aditya Birla, Tata AIG, ManipalCigna) plus **18 IRDAI / regulatory documents** — extracted into a 48-field structured schema with a rules-based A–F scorecard and a 4-gate hallucination defense on every reply.
+A **voice-first health-insurance advisor** for Indian buyers, grounded in a curated corpus of **208 documents** — 190 product documents from 19 leading insurers (Star, HDFC ERGO, Niva Bupa, Care, ICICI Lombard, Bajaj Allianz, New India, Aditya Birla, Tata AIG, ManipalCigna, SBI General, Acko, IFFCO Tokio, Cholamandalam MS, Go Digit, Reliance General, Royal Sundaram, Oriental Insurance, National Insurance) plus **18 IRDAI / regulatory documents** — extracted into a 48-field structured schema with a rules-based A–F scorecard and a 4-gate hallucination defense on every reply.
 
 **The bot is consumer-facing in experience, B2B in commercial application.** The realistic deployment is an insurer or aggregator white-labelling this advisor on top of Sarvam's ASR/TTS/LLM stack. The build deliberately optimises for the artifacts a BFSI buyer would audit: provenance, refusal behaviour, eval rigor.
 
@@ -69,12 +69,12 @@ Now ask: *"What does IRDAI's 2024 Master Circular say about cataract waiting-per
 │ self-critique → confidence_pct per field      │                 │
 └────────────────┬──────────────────────────────┘                 │
                  │                                                │
-   ┌─────────────┴─────────────┐                                  │
-   │ 104 source PDFs           │                                  │
-   │  · 86 product (10 insurer)│                                  │
-   │  · 18 regulatory (IRDAI)  │  ◀ Playwright same-origin fetch ─┘
-   │                           │     past Akamai (§6)
-   └───────────────────────────┘
+   ┌──────────────────────────────┐                               │
+   │ 208 source PDFs              │                               │
+   │  · 190 product (19 insurers) │                               │
+   │  · 18 regulatory (IRDAI)     │  ◀ Playwright same-origin ────┘
+   │                              │     fetch past Akamai (§6)
+   └──────────────────────────────┘
 ```
 
 **Major components in four lines each.**
@@ -143,7 +143,7 @@ Same NIM endpoint, different model family from the DeepSeek brain. **Non-circula
 
 ### 3.6 BGE-small-en-v1.5 — embeddings (the honest tradeoff)
 
-D-011 originally locked Voyage AI `voyage-3`. Mid-build, Voyage's 3 RPM free-tier limit blocked the 104-PDF ingest. Switched to local BGE-small-en-v1.5 ([`backend/providers/local_embeddings.py`](backend/providers/local_embeddings.py)). Accepted ~3pp retrieval-quality hit (per BEIR-style spot checks); kept Voyage path behind the same interface so v2 swaps with no other code change. Documented in [`docs/ROADMAP.md`](docs/ROADMAP.md) §5.
+D-011 originally locked Voyage AI `voyage-3`. Mid-build, Voyage's 3 RPM free-tier limit blocked the 208-PDF ingest. Switched to local BGE-small-en-v1.5 ([`backend/providers/local_embeddings.py`](backend/providers/local_embeddings.py)). Accepted ~3pp retrieval-quality hit (per BEIR-style spot checks); kept Voyage path behind the same interface so v2 swaps with no other code change. Documented in [`docs/ROADMAP.md`](docs/ROADMAP.md) §5.
 
 ---
 
@@ -211,9 +211,9 @@ The grader is now NIM Llama-4 Maverick (D-019 consolidation, 2026-05-14); this i
 | 2 | [`kb/calculations/scorecard_results.md`](kb/calculations/scorecard_results.md) | A–F grade + 6 sub-scores per policy, plus aggregate stats (5 B's, 6 C's, no A/D/F at extraction completeness < 65%) | Buyer-facing summary. Rules-based, no LLM — anyone can reproduce. |
 | 3 | [`kb/calculations/eval_results.md`](kb/calculations/eval_results.md) | Snapshot of the latest eval run (mirror of `eval/results.md`) | KB-side copy for the audit trail. |
 | 4 | [`kb/calculations/extraction_quality_audit.md`](kb/calculations/extraction_quality_audit.md) | Per-field completeness across policies | Honest exposure of where extraction is sparse. |
-| 5 | [`kb/research/corpus_acquisition.md`](kb/research/corpus_acquisition.md) | How we got the 104 PDFs — agent crawl, retry script, Playwright rescue | Provenance. |
+| 5 | [`kb/research/corpus_acquisition.md`](kb/research/corpus_acquisition.md) | How we got the 208 PDFs — agent crawl, retry script, Playwright rescue | Provenance. |
 | 6 | [`kb/research/url_verification.md`](kb/research/url_verification.md) | HEAD-check status of every source URL we cite | Anti-hallucination — verified sources only. |
-| 7 | [`kb/reviews/`](kb/reviews/) | 10 per-insurer reputation sheets — IRDAI complaints/10K, claim settlement ratio, qualitative sentiment from Reddit / r/IndianFinance | Feeds the Claim Experience sub-score in the scorecard. **Sentiment is regex-grounded summarisation of curated review snippets — see §6.** |
+| 7 | [`kb/reviews/`](kb/reviews/) | 19 per-insurer reputation sheets — IRDAI complaints/10K, claim settlement ratio, qualitative sentiment from Reddit / r/IndianFinance | Feeds the Claim Experience sub-score in the scorecard. **Sentiment is regex-grounded summarisation of curated review snippets — see §6.** |
 | 8 | [`kb/premiums/INDEX.md`](kb/premiums/INDEX.md) | 26 illustrative premium tables anchored to public PolicyBazaar / insurer rate cards | **Illustrative bands only (D-007). The bot says so in every premium reply.** |
 
 Bonus sections: [`kb/methodology/`](kb/methodology/), [`kb/security/`](kb/security/), [`kb/AUDIT_TRAIL.md`](kb/AUDIT_TRAIL.md) (end-to-end data lineage in 10 stages).

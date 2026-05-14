@@ -146,16 +146,67 @@ def get_chroma_collection():
     )
 
 
+def get_quarantine_collection():
+    """SEPARATE Chroma collection for user-uploaded PDFs.
+
+    Physical isolation, not metadata-tag isolation: user uploads can NEVER
+    accidentally surface in another user's policy retrieval because they're
+    in a different on-disk index. Retrieval queries this collection only
+    when the request supplies a session_id matching the upload's session.
+    """
+    client = chromadb.PersistentClient(
+        path=str(settings.VECTORS_DIR),
+        settings=ChromaSettings(anonymized_telemetry=False),
+    )
+    return client.get_or_create_collection(
+        name="user_uploads_quarantine",
+        metadata={"hnsw:space": "cosine"},
+    )
+
+
+# Top-level corpus directories that the main `policies` collection ingests.
+# Anything outside this allowlist must be rejected loudly — prevents a stray
+# regulatory PDF landing in an insurer folder, or vice-versa.
+ALLOWED_TOP_LEVEL_DIRS = {
+    "regulatory",       # IRDAI / Govt mandates → doc_type='regulatory'
+    "acko", "aditya-birla", "bajaj-allianz", "care-health", "cholamandalam",
+    "go-digit", "hdfc-ergo", "icici-lombard", "iffco-tokio", "manipalcigna",
+    "national-insurance", "new-india", "niva-bupa", "oriental-insurance",
+    "reliance-general", "royal-sundaram", "sbi-general", "star-health",
+    "tata-aig", "united-india",
+    # `user-upload/` is intentionally NOT in this set — user uploads go to
+    # the quarantine collection, never the main `policies` collection.
+}
+
+
 # ---------- pipeline ----------
 
 def discover_pdfs() -> list[Path]:
-    """All PDFs under rag/corpus/*/*.pdf, in deterministic order."""
+    """All PDFs under rag/corpus/*/*.pdf, in deterministic order.
+
+    Hardened: any PDF whose parent dir name isn't in ALLOWED_TOP_LEVEL_DIRS
+    is REJECTED with a loud RuntimeError. Prevents accidental cross-
+    contamination — a regulatory PDF in an insurer folder won't get tagged
+    as a policy, a user upload won't sneak into the main corpus.
+    """
     pdfs: list[Path] = []
+    rejected: list[str] = []
     for insurer_dir in sorted(settings.CORPUS_DIR.iterdir()):
         if not insurer_dir.is_dir():
             continue
+        if insurer_dir.name == "user-upload":
+            continue  # quarantine path — handled by /api/upload-policy
+        if insurer_dir.name not in ALLOWED_TOP_LEVEL_DIRS:
+            rejected.append(insurer_dir.name)
+            continue
         for pdf in sorted(insurer_dir.glob("*.pdf")):
             pdfs.append(pdf)
+    if rejected:
+        raise RuntimeError(
+            "Unknown top-level corpus dirs found (not in ALLOWED_TOP_LEVEL_DIRS): "
+            f"{rejected}. Either add them to the allowlist or move them out of "
+            f"{settings.CORPUS_DIR}."
+        )
     return pdfs
 
 

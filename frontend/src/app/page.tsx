@@ -71,7 +71,7 @@ export default function Page() {
   // turn) — drives the score-gate on marketplace cards + detail modal.
   useEffect(() => {
     if (typeof window !== "undefined" && sessionId) {
-      sessionStorage.setItem("insurance_session_id", sessionId);
+      localStorage.setItem("insurance_session_id", sessionId);
       getProfileCompleteness(sessionId)
         .then(setProfileCompleteness)
         .catch(() => setProfileCompleteness(null));
@@ -555,7 +555,7 @@ function ProfileBuilderPanel({
     if (!sid) {
       sid = `s_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
       setSessionId(sid);
-      if (typeof window !== "undefined") sessionStorage.setItem("insurance_session_id", sid);
+      if (typeof window !== "undefined") localStorage.setItem("insurance_session_id", sid);
     }
     try {
       const resp = await postProfileUpdate({
@@ -2119,7 +2119,7 @@ function PolicyDetailModal({ policy, onClose }: { policy: MarketplacePolicy; onC
     // Profile completeness gates whether we render the per-user grade.
     // Below threshold: show universal grade only (insurer-quality-led) with a
     // CTA to complete the profile.
-    const sid = typeof window !== "undefined" ? sessionStorage.getItem("insurance_session_id") || undefined : undefined;
+    const sid = typeof window !== "undefined" ? localStorage.getItem("insurance_session_id") || undefined : undefined;
     getProfileCompleteness(sid).then(setCompleteness).catch(() => setCompleteness(null));
   }, [policy.policy_id, policy.insurer_slug]);
   const isPersonalized = completeness?.is_personalized === true;

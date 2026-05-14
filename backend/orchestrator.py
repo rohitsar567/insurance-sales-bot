@@ -203,11 +203,15 @@ async def handle_turn(
         session.set_awaiting(None)
         session.free_form_session = True
 
-    # 2. Retrieve
+    # 2. Retrieve — pass session_id so the user's profile chunk (stored in
+    # Chroma at POST /api/profile time) gets boosted to the top of the
+    # context. Without session_id this path is dormant and the brain never
+    # sees the user's profile inline with policy text.
     chunks: list[RetrievedChunk] = await retrieve(
         query=user_text,
         top_k=top_k,
         policy_ids=policy_filter_ids,
+        session_id=session_id,
     )
     context_str = format_for_llm_context(chunks)
 

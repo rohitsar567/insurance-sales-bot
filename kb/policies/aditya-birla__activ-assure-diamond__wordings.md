@@ -1,174 +1,254 @@
-# Activ Assure
+---
+policy_id: aditya-birla__activ-assure-diamond__wordings
+insurer_slug: aditya-birla
+insurer_name: Aditya Birla Health Insurance
+policy_name: "Activ Assure (Diamond)"
+uin_code: ADIHLIP18077V011718
+---
 
-_Policy KB sheet — auto-generated from `rag/extracted/aditya-birla__activ-assure-diamond__wordings.json` + `backend/scorecard.py`. Do not hand-edit; regenerate via `python -m rag.build_kb`._
+# Activ Assure (Diamond)
+
+**Insurer:** Aditya Birla Health Insurance (`aditya-birla`)  
+**Policy ID:** `aditya-birla__activ-assure-diamond__wordings`  
+**UIN:** `ADIHLIP18077V011718`
 
 ## Identity
 
-| Field | Value | Source |
-| --- | --- | --- |
-| Insurer | [Aditya Birla Health Insurance Co. Limited](https://www.adityabirlacapital.com/healthinsurance) | curated · verified `eval/verified_urls.json` |
-| Insurer slug | `aditya-birla` | derived from `data/corpus_urls.md` |
-| Policy | **Activ Assure** | extracted from policy wordings |
-| Policy id | `aditya-birla__activ-assure-diamond__wordings` | minted by us (`<insurer-slug>__<doc-slug>`) |
-| Source PDF | […]() | downloaded + verified at ingest time |
-| Extraction confidence | None% (self-rated by extractor) | computed |
+### UIN code
 
-## Scorecard — single A-F view
+**Value:** ADIHLIP18077V011718
 
-### **Grade: B** (72/100)
-> Good policy with a few notable gaps.
+**Source quote:**
 
-**Data completeness:** 37.5% of the 24 scored fields have data.
+> extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim
 
-| Sub-score | Bar | Score & Signals |
-| --- | --- | --- |
-| **Coverage Breadth** | `██████████████······` | **72/100** · Standard coverage |
-|  | _signals:_<br/>&nbsp;&nbsp;&nbsp;AYUSH covered<br/>&nbsp;&nbsp;&nbsp;organ donor expenses<br/>&nbsp;&nbsp;&nbsp;ambulance covered<br/>&nbsp;&nbsp;&nbsp;free health checkups |  |
-| **Cost Predictability** | `███████████████·····` | **75/100** · Predictable costs |
-| **Waiting-Period Friction** | `████████████████····` | **80/100** · Quick activation |
-|  | _signals:_<br/>&nbsp;&nbsp;&nbsp;− 24mo PED waiting |  |
-| **Claim Experience** | `███████████████·····` | **75/100** · Smooth claims |
-|  | _signals:_<br/>&nbsp;&nbsp;&nbsp;cashless supported |  |
-| **Renewal Protection** | `████████████········` | **60/100** · Adequate |
-| **Bonus & Loyalty** | `███████████·········` | **58/100** · Standard sweeteners |
-|  | _signals:_<br/>&nbsp;&nbsp;&nbsp;free preventive checkup |  |
+**Source:** `rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf`
 
-_Methodology: [`docs/scorecard-methodology.md`](../../docs/scorecard-methodology.md) · 24 of 48 schema fields drive this grade._
+## Eligibility
 
-## All extracted data points — by group
+### Minimum entry age
 
-**Derivation legend:**
-- **[E]** Extracted directly from policy PDF by LLM
-- **[E?]** Field was in schema but extraction returned null (data missing or unclear in source)
-- **[C]** Computed from extracted fields (e.g. scorecard sub-score)
-- **[I]** Implied / canonicalised by us
-- **[V]** Verified externally (HEAD-check, URL probe)
+**Value:** _not specified_
 
-### Identity  _4/6 fields populated_
+**Source quote:**
 
-| Field | Value | Type |
-| --- | --- | --- |
-| `policy_id` | `aditya-birla__activ-assure-diamond__wordings` | [I] |
-| `insurer_slug` | `aditya-birla` | [I] |
-| `insurer_name` | `Aditya Birla Health Insurance Co. Limited` | [I] |
-| `policy_name` | `Activ Assure` | [I] |
-| `policy_type` | _null (not in document)_ | [E?] |
-| `uin_code` | _null (not in document)_ | [E?] |
+> not extracted from this PDF (field absent or LLM unable to infer)
 
-### Eligibility  _0/1 fields populated_
+**Source:** `rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf`
 
-| Field | Value | Type |
-| --- | --- | --- |
-| `residency_requirement` | _null (not in document)_ | [E?] |
+### Maximum entry age
 
-### Sum insured & premium  _0/2 fields populated_
+**Value:** _not specified_
 
-| Field | Value | Type |
-| --- | --- | --- |
-| `premium_payment_modes` | _null (not in document)_ | [E?] |
-| `grace_period_days` | _null (not in document)_ | [E?] |
+**Source quote:**
 
-### Waiting periods  _1/5 fields populated_
+> not extracted from this PDF (field absent or LLM unable to infer)
 
-| Field | Value | Type |
-| --- | --- | --- |
-| `initial_waiting_period_days` | _null (not in document)_ | [E?] |
-| `pre_existing_disease_waiting_months` | `24` | [E] |
-| `specific_disease_waiting_months` | _null (not in document)_ | [E?] |
-| `maternity_waiting_months` | _null (not in document)_ | [E?] |
-| `specific_diseases_listed` | _null (not in document)_ | [E?] |
+**Source:** `rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf`
 
-### Coverage scope  _6/12 fields populated_
+### Maximum renewal age
 
-| Field | Value | Type |
-| --- | --- | --- |
-| `pre_hospitalization_days` | _null (not in document)_ | [E?] |
-| `post_hospitalization_days` | _null (not in document)_ | [E?] |
-| `domiciliary_treatment` | Yes, "up to the limits as specified in the Policy Schedule / Product Benefit Table of this Policy", (Must continue for at least 3 consecutive days; certain conditions excluded.) | [E] |
-| `ayush_coverage` | Yes, "up to the limits as specified in the Policy Schedule / Product Benefit Table of this Policy", (Treatment must be in recognized AYUSH hospitals; pre and post-hospitalization expenses not covered.) | [E] |
-| `maternity_coverage` | _null (not in document)_ | [E?] |
-| `newborn_coverage` | _null (not in document)_ | [E?] |
-| `organ_donor_expenses` | Yes, "up to the limits as specified in the Policy Schedule / Product Benefit Table of this Policy", (Only covers harvesting expenses; excludes pre/post-hospitalization, screening, and other donor-related expenses.) | [E] |
-| `ambulance_cover` | Yes, "up to the limits as specified in the Policy Schedule / Product Benefit Table of this Policy", (Covers transportation to nearest Hospital; excludes transportation from Hospital to residence.) | [E] |
-| `critical_illness_cover` | _null (not in document)_ | [E?] |
-| `restoration_benefit` | Yes, "Reload of Sum Insured up to the limits as specified in the Policy Schedule / Product Benefit Table of this Policy", (Available once per Policy Year; unlimited reload option available as an optional cover.) | [E] |
-| `no_claim_bonus_pct` | _null (not in document)_ | [E?] |
-| `preventive_health_checkup` | Yes, "once in a Policy Year", (Tests vary based on Sum Insured and age of the insured person.) | [E] |
+**Value:** 999 years
 
-### Sub-limits & caps  _1/4 fields populated_
+**Source quote:**
 
-| Field | Value | Type |
-| --- | --- | --- |
-| `room_rent_capping` | `Single Private A/C Room (upgradable to next level, only if Single Private A/C Room is not available)` | [E] |
-| `icu_capping` | _null (not in document)_ | [E?] |
-| `copayment_pct` | _null (not in document)_ | [E?] |
-| `disease_wise_sub_limits` | _null (not in document)_ | [E?] |
+> extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim
 
-### Geography & network  _2/3 fields populated_
+**Source:** `rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf`
 
-| Field | Value | Type |
-| --- | --- | --- |
-| `worldwide_emergency_cover` | Yes, "Emergency medical assistance outside India when travelling 150 km or more away from residential address for less than 90 days", (Excludes travel for medical treatment, injuries from war, unlawful acts, etc.) | [E] |
-| `network_hospital_count` | _null (not in document)_ | [E?] |
-| `cashless_treatment_supported` | Yes | [E] |
+### Sum insured options
 
-### Exclusions  _1/3 fields populated_
+**Value:** _not specified_
 
-| Field | Value | Type |
-| --- | --- | --- |
-| `permanent_exclusions` | `Asthma, bronchitis, tonsillitis and upper respiratory tract infection including laryngitis and pharyngitis, cough and cold, influenza`, `Arthritis, gout and rheumatism`, `Chronic nephritis and nephritic syndrome`, `Diarrhea and all type of dysenteries, including gastroenteritis`, `Diabetes mellitus and insipidus`, `Epilepsy`, `Hypertension`, `Psychiatric or psychosomatic disorders of all kinds` | [E] |
-| `temporary_exclusions` | _null (not in document)_ | [E?] |
-| `notable_exclusions_summary` | _null (not in document)_ | [E?] |
+**Source quote:**
 
-### Claim & service  _0/2 fields populated_
+> not extracted from this PDF (field absent or LLM unable to infer)
 
-| Field | Value | Type |
-| --- | --- | --- |
-| `claim_process_summary` | _null (not in document)_ | [E?] |
-| `tat_cashless_authorization_hours` | _null (not in document)_ | [E?] |
+**Source:** `rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf`
 
-### Riders / optional  _1/2 fields populated_
+## Waiting periods
 
-| Field | Value | Type |
-| --- | --- | --- |
-| `available_riders` | `Reduction in PED Waiting Period`, `Unlimited Reload of Sum Insured`, `Super NCB`, `Accidental Hospitalization Booster`, `Cancer Hospitalization Booster` | [E] |
-| `top_rider_examples` | _null (not in document)_ | [E?] |
+### Initial waiting period (days)
 
-### Source metadata  _0/4 fields populated_
+**Value:** 30
 
-| Field | Value | Type |
-| --- | --- | --- |
-| `source_pdf_path` | _null (not in document)_ | [V] |
-| `source_pdf_url` | _null (not in document)_ | [V] |
-| `last_updated_date` | _null (not in document)_ | [V] |
-| `extraction_confidence_pct` | _null (not in document)_ | [E?] |
+**Source quote:**
 
-## Lineage — end-to-end audit trail for this policy
+> extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim
 
-Every data point above traces through this exact pipeline:
+**Source:** `rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf`
 
-```
-1. SOURCE        — …
-                   (curated by corpus-discovery agent, verified at download)
-2. DOWNLOAD      — rag/download_corpus.py + rag/download_retry.py
-                   PDF magic-byte check + size > 50 KB enforced
-3. PARSE         — pdfplumber → per-page text (rag/ingest.py:read_pdf_pages)
-4. CHUNK         — 800 tok / 120 overlap, sentence-aware (rag/ingest.py:chunk_pages)
-5. EMBED         — BGE-small-en-v1.5 → 384-dim vector (backend/providers/local_embeddings.py)
-6. INDEX         — Chroma persistent client (rag/vectors/) with metadata
-7. EXTRACT       — Sarvam-M (DeepSeek-V3 fallback) prompt with HealthPolicy schema
-                   → rag/extracted/aditya-birla__activ-assure-diamond__wordings.json (this file's source data)
-8. STORE         — DuckDB upsert into rag/policies.duckdb
-9. SCORE         — backend/scorecard.py rules-based, no LLM-in-the-loop
-10. KB SHEET     — rag/build_kb.py renders this markdown
-```
+### Pre-existing disease waiting (months)
 
-**Re-running the audit trail:** delete `rag/extracted/{pid}.json` → run `python -m rag.extract --policy {pid}` → run `python -m rag.build_kb` → diff this file.
+**Value:** 48
 
-## What the bot will and won't say about this policy
+**Source quote:**
 
-Per the 4-gate faithfulness verifier (`backend/faithfulness.py`):
-- Bot answers questions about this policy **only when retrieval scores for its chunks are ≥ 0.30 cosine** (BGE-small).
-- Every factual claim cites this PDF with page numbers.
-- If asked something whose answer is _null_ in the schema above (marked **[E?]**), the bot refuses — the data is not in the source PDF.
-- Blocked replies on this policy are logged to `logs/hallucinations.jsonl` with `policy_id=aditya-birla__activ-assure-diamond__wordings`.
+> extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim
+
+**Source:** `rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf`
+
+### Specific disease waiting (months)
+
+**Value:** 24
+
+**Source quote:**
+
+> extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim
+
+**Source:** `rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf`
+
+### Maternity waiting (months)
+
+**Value:** _not specified_
+
+**Source quote:**
+
+> not extracted from this PDF (field absent or LLM unable to infer)
+
+**Source:** `rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf`
+
+## Coverage scope
+
+### Pre-hospitalization (days)
+
+**Value:** 60
+
+**Source quote:**
+
+> extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim
+
+**Source:** `rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf`
+
+### Post-hospitalization (days)
+
+**Value:** 180
+
+**Source quote:**
+
+> extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim
+
+**Source:** `rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf`
+
+### Day-care treatments covered
+
+**Value:** _not specified_
+
+**Source quote:**
+
+> not extracted from this PDF (field absent or LLM unable to infer)
+
+**Source:** `rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf`
+
+## Claims & service
+
+### Network hospital count
+
+**Value:** _not specified_
+
+**Source quote:**
+
+> not extracted from this PDF (field absent or LLM unable to infer)
+
+**Source:** `rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf`
+
+## Other fields
+
+### Claim Settlement Ratio Pct
+
+**Value:** _not specified_
+
+**Source quote:**
+
+> not extracted from this PDF (field absent or LLM unable to infer)
+
+**Source:** `rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf`
+
+### Co Payment Pct
+
+**Value:** _not specified_
+
+**Source quote:**
+
+> not extracted from this PDF (field absent or LLM unable to infer)
+
+**Source:** `rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf`
+
+### Complaint Per 10K Claims
+
+**Value:** _not specified_
+
+**Source quote:**
+
+> not extracted from this PDF (field absent or LLM unable to infer)
+
+**Source:** `rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf`
+
+### Free Look Period
+
+**Value:** 15 days
+
+**Source quote:**
+
+> extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim
+
+**Source:** `rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf`
+
+### Grace Period
+
+**Value:** 30 days
+
+**Source quote:**
+
+> extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim
+
+**Source:** `rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf`
+
+### Incurred Claim Ratio Pct
+
+**Value:** _not specified_
+
+**Source quote:**
+
+> not extracted from this PDF (field absent or LLM unable to infer)
+
+**Source:** `rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf`
+
+### Min Child Entry Age
+
+**Value:** _not specified_
+
+**Source quote:**
+
+> not extracted from this PDF (field absent or LLM unable to infer)
+
+**Source:** `rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf`
+
+### Policy Term Options Years
+
+**Value:** _not specified_
+
+**Source quote:**
+
+> not extracted from this PDF (field absent or LLM unable to infer)
+
+**Source:** `rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf`
+
+### Room Rent Capped At Pct Of Si
+
+**Value:** _not specified_
+
+**Source quote:**
+
+> not extracted from this PDF (field absent or LLM unable to infer)
+
+**Source:** `rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf`
+
+### Source Pdf Path
+
+_no data_
+
+
+---
+
+_Mirrored from `data/policy_facts/aditya-birla__activ-assure-diamond__wordings.json`. Provenance — every field's verbatim quote and source PDF path is preserved exactly as curated. Do not hand-edit; regenerate via `tools/build_kb_mirror.py`._

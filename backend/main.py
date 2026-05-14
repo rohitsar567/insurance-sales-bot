@@ -156,6 +156,41 @@ app.add_middleware(
 )
 
 
+# ---------- Admin panel + LLM health background loop ----------
+# Mount the IP+password-gated admin endpoints. Unauthorized callers get 404
+# (not 401), so the existence of /api/admin/* is hidden from non-allowlisted
+# IPs and unauthenticated requests.
+from backend import admin as _admin_router_module
+app.include_router(_admin_router_module.router)
+
+
+@app.on_event("startup")
+async def _startup_load_admin_overrides():
+    """Re-apply any persisted chain reorderings from the previous process."""
+    import asyncio
+    from pathlib import Path
+    override_path = Path(__file__).resolve().parent.parent / "data" / "admin_overrides.json"
+    if override_path.exists():
+        try:
+            overrides = json.loads(override_path.read_text())
+            from backend.providers import nvidia_nim_llm as nim
+            name_map = {"brain": "BRAIN_CHAIN", "fast_brain": "FAST_BRAIN_CHAIN", "judge": "JUDGE_CHAIN"}
+            for role, attr in name_map.items():
+                if role in overrides and isinstance(overrides[role], list):
+                    setattr(nim, attr, list(overrides[role]))
+        except Exception:
+            pass  # bad override file shouldn't crash boot — fall back to defaults
+
+
+@app.on_event("startup")
+async def _startup_llm_health_probe():
+    """Launch the background probe loop — pings every NIM model every 5 min,
+    auto-marks 'down' models, NimChainLLM uses filter_chain() to skip them."""
+    import asyncio
+    from backend import llm_health
+    asyncio.create_task(llm_health.background_probe_loop())
+
+
 @app.get("/api/health", response_model=HealthResponse)
 async def health():
     missing = settings.validate()
@@ -346,11 +381,14 @@ async def coverage():
 async def upload_policy(
     request: Request,
     file: UploadFile = File(...),
+    session_id: Optional[str] = Form(None),
 ):
-    """Accept a user-uploaded PDF policy doc, chunk + embed it, add to Chroma.
+    """Accept a user-uploaded PDF policy doc, chunk + embed it, add to the
+    quarantine collection (NOT the shared `policies` corpus).
 
-    Note: in v1 demo this appends to the shared corpus (single-tenant).
-    Production would isolate by session/user.
+    Each upload is tagged with the caller's session_id so retrieval can scope
+    quarantine queries to the uploader only. If no session_id is supplied,
+    falls back to "anonymous" for backwards compatibility.
     """
     import re
     import tempfile
@@ -364,11 +402,13 @@ async def upload_policy(
     if len(contents) > 25 * 1024 * 1024:
         raise HTTPException(413, "PDF too large (>25 MB). Use a smaller file.")
 
+    sid = session_id or "anonymous"
+
     # Slugify filename for policy_id
     raw = file.filename or "user_upload.pdf"
     stem = _PathLib(raw).stem
     slug = re.sub(r"[^a-zA-Z0-9]+", "-", stem.lower()).strip("-")[:80] or "user-upload"
-    policy_id = f"user-upload__{slug}"
+    policy_id = f"user-upload__{sid[:12]}__{slug}"
     policy_name = stem.replace("_", " ").replace("-", " ").title()
 
     # Save to disk so ingest can read with pdfplumber
@@ -379,19 +419,20 @@ async def upload_policy(
 
     # Ingest just this one file
     try:
-        from rag.ingest import chunk_pages, get_chroma_collection, read_pdf_pages
+        from rag.ingest import chunk_pages, get_quarantine_collection, read_pdf_pages
         from backend.providers.local_embeddings import LocalEmbeddings as _Emb
         from backend.security import check_upload, rate_limiter
 
         pages = read_pdf_pages(out_path)
-        # Run 5-gate security check (mechanics + content + injection + per-session + per-IP rate limit)
+        # Run 8-gate security check (dedupe + mechanics + encrypted + content +
+        # page ceiling + injection + per-session + per-IP rate limit + LLM judge)
         full_text = "\n".join(t for _, t in pages)
         client_ip = (request.client.host if request and request.client else "") or request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
-        verdict = check_upload(
+        verdict = await check_upload(
             content=contents,
             extracted_text=full_text,
             page_count=len(pages),
-            session_id="anonymous",
+            session_id=sid,
             ip=client_ip,
         )
         if not verdict.accepted:
@@ -400,8 +441,19 @@ async def upload_policy(
                 400,
                 f"Upload rejected by security gates: {', '.join(verdict.reasons[:3])}",
             )
+        # If the dedupe gate found this exact (hash, session) already indexed,
+        # skip chunking + embedding entirely and return the cached chunk count.
+        if verdict.cached_chunks is not None:
+            return UploadResponse(
+                policy_id=policy_id,
+                policy_name=policy_name,
+                chunks_added=verdict.cached_chunks,
+                pages_indexed=len(pages),
+                elapsed_ms=int((_time.time() - t0) * 1000),
+            )
         # Successful pass — record IP-level upload for rate-limit ledger
-        from backend.security import record_ip_upload
+        from backend.security import record_ip_upload, record_accept
+        import hashlib as _hashlib
         record_ip_upload(client_ip)
 
         chunks = list(chunk_pages(pages))
@@ -424,10 +476,11 @@ async def upload_policy(
                 "page_end": c["page_end"],
                 "chunk_idx": c["chunk_idx"],
                 "local_path": str(out_path),
+                "session_id": sid,
             }
             for c in chunks
         ]
-        collection = get_chroma_collection()
+        collection = get_quarantine_collection()
         # Remove any existing chunks under this policy_id (re-upload case)
         try:
             collection.delete(where={"policy_id": policy_id})
@@ -435,7 +488,14 @@ async def upload_policy(
             pass
         collection.add(ids=ids, documents=texts, embeddings=vectors, metadatas=metadatas)
         # Update rate-limit ledger after successful index
-        rate_limiter.record_upload("anonymous", len(chunks))
+        rate_limiter.record_upload(sid, len(chunks))
+        # Cache this content hash → chunk count so an identical re-upload in
+        # the same session short-circuits via gate_hash_dedupe.
+        try:
+            sha = _hashlib.sha256(contents).hexdigest()
+            record_accept(sha, sid, len(chunks))
+        except Exception:
+            pass
     except HTTPException:
         raise
     except Exception as e:

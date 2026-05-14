@@ -12,7 +12,7 @@ short_description: Voice AI advisor for Indian health insurance
 
 # Insurance Sales Portfolio Expert
 
-A voice-first AI advisor for Indian health insurance buyers, over a curated corpus of policies from 10 leading insurers. Built as a take-home assignment for Sarvam AI.
+A voice-first AI advisor for Indian health insurance buyers, over a curated corpus of 190 policy PDFs (plus 18 regulatory documents) from 19 leading insurers. Built as a take-home assignment for Sarvam AI.
 
 **Live demo:** *(deployed URL — added at submission)*
 
@@ -51,7 +51,7 @@ User voice → Sarvam Saaras (STT) → Orchestrator → Sarvam-M (LLM)
 
 ## What's in scope for v1 (the vertical slice)
 
-- 10 insurers × all their health policies (target: 40–80 policies)
+- 19 insurers × all their health policies (190 insurer PDFs + 18 regulatory)
 - 40–50 structured fields per policy (premium, sum insured, waiting periods, PED, sub-limits, network, claim ratio, geography, etc.)
 - Voice advisor with Hindi/English code-switch
 - Adaptive needs analysis

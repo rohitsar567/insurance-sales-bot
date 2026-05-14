@@ -15,7 +15,7 @@ v1 is a **vertical slice**: 10 insurers × Health × ~80 policies × voice-first
 **Working product:**
 - Voice-first chat advisor over a curated corpus of Indian health insurance policies (~76 PDFs from 10 insurers, ingested into Chroma + DuckDB)
 - Multi-language: English + Hindi/Hinglish via Sarvam Saarika STT + Sarvam Bulbul TTS
-- Brain router: Sarvam-M primary, Groq Llama-3.3-70B / OpenRouter DeepSeek-V3 fallback
+- Brain router (D-019): NIM DeepSeek-V4-Pro (heavy intents) + V4-Flash (voice + fact-find), Llama-4 Maverick judge. Sarvam-M scoped to Indic translation + voice only.
 - 4-gate hallucination defense + auditable refusal log
 - 48-field structured extraction per policy
 - Clean Next.js + Tailwind frontend
@@ -23,7 +23,7 @@ v1 is a **vertical slice**: 10 insurers × Health × ~80 policies × voice-first
 - 8 design / decision documents totaling ~30 pages
 
 **Eval signal:**
-- Gold Q&A harness (~300 pairs targeted) + automated grader (Groq Llama)
+- Gold Q&A harness (~300 pairs targeted) + automated grader (NIM Llama-4 Maverick — different family from DeepSeek brain)
 - `eval/results.md` versioned table per run
 - Live audit log `logs/hallucinations.jsonl` for every blocked claim
 

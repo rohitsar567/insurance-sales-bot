@@ -19,7 +19,7 @@ In a regulated BFSI domain, the worst failure isn't "the bot looks slow" — it'
 
 **Description:** Bot claims a policy covers something it doesn't, or quotes a wrong waiting period / sub-limit.
 **Detection:**
-- Run-time: Faithfulness Gate 4 (LLM-judge Groq Llama, different model family).
+- Run-time: Faithfulness Gate 4 (LLM-judge NIM Llama-4 Maverick — different family from the DeepSeek-V4 brain; see D-019).
 - Run-time: Faithfulness Gate 3 (regex grounding — every ₹, %, day/month/year in the reply must appear in retrieved chunks).
 - Post-hoc: Gold Q&A eval (factual_accuracy metric).
 **Mitigation:** Block reply → return safe refusal → log to `logs/hallucinations.jsonl`. Audit log enables manual review and corpus improvement.
@@ -46,16 +46,13 @@ In a regulated BFSI domain, the worst failure isn't "the bot looks slow" — it'
 - Add policy-name awareness — if query mentions a specific policy, filter retrieval to that policy.
 **Status:** Hybrid retrieval is a v2 enhancement.
 
-### F-04 — Sarvam-M reasoning chain truncates mid-thought
+### F-04 — Sarvam-M reasoning chain truncates mid-thought (HISTORICAL, fixed by D-019)
 
-**Description:** Sarvam-M emits `<think>...</think>` reasoning. If `max_tokens` is exhausted before `</think>` is reached, the reply is unusable.
+**Description:** Sarvam-M emits `<think>...</think>` reasoning. If `max_tokens` is exhausted before `</think>` is reached, the reply is unusable. This was a recurring issue when Sarvam-M was the primary brain.
 **Detection:** `strip_think_tags()` checks for `<think>` without matching `</think>`.
-**Mitigation:**
-- Increased `max_tokens` to 1500 (from 512).
-- Orchestrator detects truncated reasoning → automatically retries with Groq Llama (non-reasoning model).
-- User sees a clean reply.
-**Owner:** `backend/orchestrator.py` + `backend/persona.py::strip_think_tags`
-**Status:** Live with auto-fallback.
+**Resolution (2026-05-14, D-019):** Sarvam-M moved out of the brain role entirely. NIM DeepSeek-V4-Pro / V4-Flash now handle all reasoning; they emit direct responses without `<think>` preambles. Sarvam-M remains only for Indic translation (Hinglish ↔ English), where its `<think>` doesn't interfere because translation outputs are short. F-04 cannot fire on the current stack.
+**Owner:** `backend/orchestrator.py`
+**Status:** Resolved by architecture change.
 
 ### F-05 — STT mis-transcribes a number ("₹50 lakh" → "₹50 lakhs" → "₹50 lakhs of crores")
 
@@ -98,7 +95,7 @@ In a regulated BFSI domain, the worst failure isn't "the bot looks slow" — it'
 **Description:** End-to-end (user speech end → bot speech start) p95 > 7s (Doc 01 C1).
 **Detection:** Per-turn latency logged in `logs/turns.jsonl`. Aggregate via eval harness.
 **Mitigation v1:**
-- Sarvam-M reasoning takes 5-15s for complex queries — router falls back to Groq Llama-3.3-70B (~500 tok/sec) for non-Indic complex queries.
+- Tiered brain routing (D-019): voice turns and fact-find go to NIM V4-Flash (~3-4s TTFT); only `comparison` and `recommendation` intents hit V4-Pro (slower but higher quality). Sarvam-M no longer in the brain hot path.
 - TTS happens server-side and is streamed via base64 in same response. Future: WebSocket for streaming TTS.
 **Status:** Mostly within budget for Llama brain (3-4s); Sarvam-M brain occasionally hits 15-25s due to reasoning.
 
@@ -193,5 +190,5 @@ Run-time. Auditable. Tested.
 | M-07 | Nightly synthetic eval cron | Infra | v2 |
 | M-08 | Live-traffic spot grading | Eval | v2 |
 | M-09 | 3-judge consensus for grader | Eval | v2 |
-| M-10 | Sarvam-M reasoning truncation auto-retry to Groq | Orchestrator | Live ✅ |
+| M-10 | Sarvam-M no longer brain — V4-Flash/V4-Pro on NIM | Orchestrator (D-019) | Live ✅ |
 | M-11 | Faithfulness 4-gate verifier | Orchestrator | Live ✅ |

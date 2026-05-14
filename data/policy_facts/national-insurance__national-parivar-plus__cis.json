@@ -1,0 +1,154 @@
+{
+  "policy_id": "national-insurance__national-parivar-plus__cis",
+  "policy_name": "National Parivar Mediclaim Plus Policy",
+  "insurer_slug": "national-insurance",
+  "source_pdf_path": "rag/corpus/national-insurance/national-parivar-plus__cis.pdf",
+  "uin_code": {
+    "value": "NICHLIP25039V032425",
+    "unit": null,
+    "source_pdf_path": "rag/corpus/national-insurance/national-parivar-plus__cis.pdf",
+    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+  },
+  "min_entry_age": {
+    "value": 18,
+    "unit": "years",
+    "source_pdf_path": "rag/corpus/national-insurance/national-parivar-plus__cis.pdf",
+    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+  },
+  "max_entry_age": {
+    "value": 65,
+    "unit": "years",
+    "source_pdf_path": "rag/corpus/national-insurance/national-parivar-plus__cis.pdf",
+    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+  },
+  "max_renewal_age": {
+    "value": 999,
+    "unit": "years",
+    "source_pdf_path": "rag/corpus/national-insurance/national-parivar-plus__cis.pdf",
+    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+  },
+  "min_child_entry_age": {
+    "value": 90,
+    "unit": "days",
+    "source_pdf_path": "rag/corpus/national-insurance/national-parivar-plus__cis.pdf",
+    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+  },
+  "sum_insured_options": {
+    "value": [
+      200000,
+      300000,
+      400000,
+      500000,
+      600000,
+      700000,
+      800000,
+      900000,
+      1000000,
+      1500000,
+      2000000,
+      2500000,
+      3000000,
+      4000000,
+      5000000
+    ],
+    "unit": "INR",
+    "source_pdf_path": "rag/corpus/national-insurance/national-parivar-plus__cis.pdf",
+    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+  },
+  "grace_period": {
+    "value": 30,
+    "unit": "days",
+    "source_pdf_path": "rag/corpus/national-insurance/national-parivar-plus__cis.pdf",
+    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+  },
+  "free_look_period": {
+    "value": 30,
+    "unit": "days",
+    "source_pdf_path": "rag/corpus/national-insurance/national-parivar-plus__cis.pdf",
+    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+  },
+  "initial_waiting_period_days": {
+    "value": 30,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/national-insurance/national-parivar-plus__cis.pdf",
+    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+  },
+  "pre_existing_disease_waiting_months": {
+    "value": 36,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/national-insurance/national-parivar-plus__cis.pdf",
+    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+  },
+  "specific_disease_waiting_months": {
+    "value": 24,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/national-insurance/national-parivar-plus__cis.pdf",
+    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+  },
+  "maternity_waiting_months": {
+    "value": 24,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/national-insurance/national-parivar-plus__cis.pdf",
+    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+  },
+  "pre_hospitalization_days": {
+    "value": 30,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/national-insurance/national-parivar-plus__cis.pdf",
+    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+  },
+  "post_hospitalization_days": {
+    "value": 60,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/national-insurance/national-parivar-plus__cis.pdf",
+    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+  },
+  "day_care_treatments_count": {
+    "value": null,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/national-insurance/national-parivar-plus__cis.pdf",
+    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+  },
+  "network_hospital_count": {
+    "value": null,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/national-insurance/national-parivar-plus__cis.pdf",
+    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+  },
+  "co_payment_pct": {
+    "value": null,
+    "unit": "percent",
+    "source_pdf_path": "rag/corpus/national-insurance/national-parivar-plus__cis.pdf",
+    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+  },
+  "room_rent_capped_at_pct_of_si": {
+    "value": null,
+    "unit": "percent",
+    "source_pdf_path": "rag/corpus/national-insurance/national-parivar-plus__cis.pdf",
+    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+  },
+  "policy_term_options_years": {
+    "value": null,
+    "unit": "years",
+    "source_pdf_path": "rag/corpus/national-insurance/national-parivar-plus__cis.pdf",
+    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+  },
+  "claim_settlement_ratio_pct": {
+    "value": null,
+    "unit": "percent",
+    "source_pdf_path": "rag/corpus/national-insurance/national-parivar-plus__cis.pdf",
+    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+  },
+  "incurred_claim_ratio_pct": {
+    "value": null,
+    "unit": "percent",
+    "source_pdf_path": "rag/corpus/national-insurance/national-parivar-plus__cis.pdf",
+    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+  },
+  "complaint_per_10k_claims": {
+    "value": null,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/national-insurance/national-parivar-plus__cis.pdf",
+    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+  }
+}

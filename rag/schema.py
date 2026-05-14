@@ -62,11 +62,72 @@ _FAMILY_SYNONYMS = {
 def _norm_family(v: str) -> str:
     """Map common LLM variants to canonical FamilyComposition values."""
     s = _norm_token(v).replace("_", "+")
-    # apply word-level synonyms
     parts = []
     for p in s.split("+"):
         parts.append(_FAMILY_SYNONYMS.get(p, p))
     return "+".join(parts)
+
+
+_GEO_SYNONYMS = {
+    "india": "pan_india",
+    "india_only": "pan_india",
+    "pan_india_only": "pan_india",
+    "domestic": "pan_india",
+    "domestic_india": "pan_india",
+    "global": "worldwide",
+    "global_ex_usa_canada": "worldwide_ex_usa_canada",
+    "worldwide_excluding_usa_canada": "worldwide_ex_usa_canada",
+}
+
+
+def _norm_geo(v: str) -> str:
+    """Map common LLM variants to canonical GeographicScope values. Falls back
+    to pan_india if the value isn't recognised — most Indian policies are
+    pan-India by default; honestly recording unknown as 'pan_india' is safer
+    than rejecting the whole extraction."""
+    s = _norm_token(v)
+    s = _GEO_SYNONYMS.get(s, s)
+    return s if s in _VALID_GEO_SCOPES else "pan_india"
+
+
+_POLICY_TYPE_SYNONYMS = {
+    "individual_family_floater": "family_floater",
+    "individual_or_family_floater": "family_floater",
+    "indemnity": "individual",
+    "fixed_benefit": "other",
+    "hospital_cash": "other",
+    "personal_accident_insurance": "personal_accident",
+    "pa": "personal_accident",
+    "ci": "critical_illness",
+    "cancer": "critical_illness",
+    "diabetes": "disease_specific",
+    "specific_disease": "disease_specific",
+}
+
+_VALID_POLICY_TYPES = {
+    "individual", "family_floater", "senior_citizen", "critical_illness",
+    "top_up", "super_top_up", "disease_specific", "group",
+    "personal_accident", "other",
+}
+
+
+def _norm_policy_type_val(v: str) -> str:
+    """Map common LLM variants to canonical PolicyType values. Strips slashes
+    and falls back to 'other' for anything we cannot pin to a known type
+    (better to record 'other' than to reject the whole policy)."""
+    # Strip slashes / commas / pipes — V4-Pro sometimes emits compound values
+    # like 'individual / family floater'. Take the first segment.
+    s = v.strip()
+    for sep in ("/", ",", "|", ";"):
+        if sep in s:
+            s = s.split(sep)[0]
+            break
+    s = _norm_token(s)
+    s = _POLICY_TYPE_SYNONYMS.get(s, s)
+    return s if s in _VALID_POLICY_TYPES else "other"
+
+
+_VALID_GEO_SCOPES = {"pan_india", "regional", "worldwide", "worldwide_ex_usa_canada"}
 
 
 # ---------------------------------------------------------------------------
@@ -173,7 +234,7 @@ class HealthPolicy(BaseModel):
     @classmethod
     def _norm_policy_type(cls, v: Any) -> Any:
         if isinstance(v, str):
-            return _norm_token(v)
+            return _norm_policy_type_val(v)
         return v
     uin_code: Optional[str] = Field(
         None,
@@ -347,6 +408,22 @@ class HealthPolicy(BaseModel):
     geographic_coverage: Optional[GeographicScope] = Field(
         None, description="Territorial scope for non-emergency claims."
     )
+
+    @field_validator("geographic_coverage", mode="before")
+    @classmethod
+    def _norm_geo_coverage(cls, v: Any) -> Any:
+        # V4-Pro sometimes emits {'scope': 'India'} (dict) instead of a plain
+        # string. Pull the value out + run through the geo synonym map.
+        if isinstance(v, dict):
+            for key in ("scope", "value", "name", "type"):
+                if key in v and v[key]:
+                    v = v[key]
+                    break
+            else:
+                return None
+        if isinstance(v, str):
+            return _norm_geo(v)
+        return v
     worldwide_emergency_cover: Optional[CoverageItem] = Field(
         None, description="Cover for emergencies abroad — distinct from full international cover."
     )

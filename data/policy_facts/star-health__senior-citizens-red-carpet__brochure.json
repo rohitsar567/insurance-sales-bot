@@ -1,0 +1,149 @@
+{
+  "policy_id": "star-health__senior-citizens-red-carpet__brochure",
+  "policy_name": "Senior Citizens Red Carpet Health Insurance Policy",
+  "insurer_slug": "star-health",
+  "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+  "uin_code": {
+    "value": "SHAHLIP26041V082526",
+    "unit": null,
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+  },
+  "min_entry_age": {
+    "value": 60,
+    "unit": "years",
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+  },
+  "max_entry_age": {
+    "value": 75,
+    "unit": "years",
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+  },
+  "max_renewal_age": {
+    "value": 999,
+    "unit": "years",
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+  },
+  "min_child_entry_age": {
+    "value": null,
+    "unit": "days",
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+  },
+  "sum_insured_options": {
+    "value": [
+      100000,
+      200000,
+      300000,
+      400000,
+      500000,
+      750000,
+      1000000,
+      1500000,
+      2000000,
+      2500000
+    ],
+    "unit": "INR",
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+  },
+  "grace_period": {
+    "value": 30,
+    "unit": "days",
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+  },
+  "free_look_period": {
+    "value": 30,
+    "unit": "days",
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+  },
+  "initial_waiting_period_days": {
+    "value": 30,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+  },
+  "pre_existing_disease_waiting_months": {
+    "value": 12,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+  },
+  "specific_disease_waiting_months": {
+    "value": 24,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+  },
+  "maternity_waiting_months": {
+    "value": null,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+  },
+  "pre_hospitalization_days": {
+    "value": 30,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+  },
+  "post_hospitalization_days": {
+    "value": null,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+  },
+  "day_care_treatments_count": {
+    "value": null,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+  },
+  "network_hospital_count": {
+    "value": 14000,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+  },
+  "co_payment_pct": {
+    "value": null,
+    "unit": "percent",
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+  },
+  "room_rent_capped_at_pct_of_si": {
+    "value": null,
+    "unit": "percent",
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+  },
+  "policy_term_options_years": {
+    "value": null,
+    "unit": "years",
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+  },
+  "claim_settlement_ratio_pct": {
+    "value": null,
+    "unit": "percent",
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+  },
+  "incurred_claim_ratio_pct": {
+    "value": null,
+    "unit": "percent",
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+  },
+  "complaint_per_10k_claims": {
+    "value": null,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+  }
+}

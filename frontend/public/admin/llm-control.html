@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <!-- Cache-busting: force fresh load on every visit -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LLM Control Panel</title>
+  <style>
+    :root {
+      --bg: #0b0d12;
+      --card: #13171f;
+      --border: #222933;
+      --text: #e6edf3;
+      --muted: #8b95a4;
+      --green: #3fb950;
+      --yellow: #d29922;
+      --red: #f85149;
+      --blue: #58a6ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, monospace;
+    }
+    h1 {
+      margin: 0 0 24px 0;
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+    h2 {
+      margin: 0 0 16px 0;
+      font-size: 16px;
+      font-weight: 600;
+    }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .gate-card {
+      max-width: 420px;
+      margin: 80px auto 0;
+    }
+    .row { display: flex; align-items: center; gap: 12px; }
+    .row-between { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    input[type="password"], input[type="text"] {
+      width: 100%;
+      padding: 10px 12px;
+      background: #0b0d12;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    input[type="password"]:focus, input[type="text"]:focus {
+      outline: none;
+      border-color: var(--blue);
+    }
+    button {
+      padding: 8px 14px;
+      background: #1c2230;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-family: inherit;
+      transition: background 0.12s ease, border-color 0.12s ease;
+    }
+    button:hover { background: #242b3a; border-color: #2e3645; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    button.primary {
+      background: var(--blue);
+      color: #0b0d12;
+      border-color: var(--blue);
+      font-weight: 600;
+    }
+    button.primary:hover { background: #79b8ff; }
+    button.danger { color: var(--red); border-color: var(--red); }
+    .icon-btn { padding: 4px 10px; font-size: 14px; line-height: 1; }
+    .muted { color: var(--muted); }
+    .small { font-size: 12px; }
+
+    /* Counter pills */
+    .counters { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+    .counter {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: #0b0d12;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-weight: 500;
+    }
+    .counter .dot {
+      width: 10px; height: 10px; border-radius: 50%;
+    }
+    .counter.healthy .dot { background: var(--green); }
+    .counter.degraded .dot { background: var(--yellow); }
+    .counter.down .dot { background: var(--red); }
+    .counter .num { font-weight: 600; font-size: 16px; }
+
+    /* Status pill */
+    .status {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border: 1px solid transparent;
+    }
+    .status.healthy { background: rgba(63, 185, 80, 0.15); color: var(--green); border-color: rgba(63, 185, 80, 0.35); }
+    .status.degraded { background: rgba(210, 153, 34, 0.15); color: var(--yellow); border-color: rgba(210, 153, 34, 0.35); }
+    .status.down { background: rgba(248, 81, 73, 0.15); color: var(--red); border-color: rgba(248, 81, 73, 0.35); }
+    .status.unknown { background: rgba(139, 149, 164, 0.15); color: var(--muted); border-color: rgba(139, 149, 164, 0.35); }
+
+    /* Health table */
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th {
+      text-align: left;
+      padding: 10px 12px;
+      background: #0b0d12;
+      border-bottom: 1px solid var(--border);
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    tbody td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    tbody tr:last-child td { border-bottom: none; }
+
+    /* Chains */
+    .chains-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 20px;
+    }
+    .chain-card h2 .role-tag {
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, monospace;
+      font-size: 12px;
+      color: var(--blue);
+      margin-left: 6px;
+    }
+    .chain-list { display: flex; flex-direction: column; gap: 8px; margin: 12px 0 16px; }
+    .chain-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: #0b0d12;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    .chain-item .label {
+      flex: 1;
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, monospace;
+      font-size: 13px;
+      word-break: break-all;
+    }
+    .chain-item .primary-star {
+      color: var(--yellow);
+      font-size: 14px;
+    }
+    .chain-item .move-buttons { display: flex; gap: 4px; }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 13px;
+      max-width: 360px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      pointer-events: none;
+      z-index: 1000;
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+    #toast.success { border-color: var(--green); }
+    #toast.error { border-color: var(--red); }
+    #toast.info { border-color: var(--blue); }
+
+    .hidden { display: none !important; }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .gate-error {
+      margin-top: 12px;
+      color: var(--red);
+      font-size: 13px;
+    }
+    .last-updated {
+      font-size: 12px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <!-- Gate (password) -->
+  <div id="gate" class="card gate-card">
+    <h1>LLM Control Panel</h1>
+    <p class="muted small">Enter the admin password to unlock.</p>
+    <div style="margin-top: 16px;">
+      <input id="gate-password" type="password" placeholder="Admin password" autocomplete="current-password">
+    </div>
+    <div style="margin-top: 12px;" class="row">
+      <button id="gate-unlock" class="primary">Unlock</button>
+      <label class="row small muted" style="gap:6px;">
+        <input id="gate-remember" type="checkbox" checked>
+        Remember on this device
+      </label>
+    </div>
+    <div id="gate-error" class="gate-error hidden"></div>
+  </div>
+
+  <!-- Main app -->
+  <div id="app" class="container hidden">
+    <div class="row-between" style="margin-bottom: 16px;">
+      <h1 style="margin: 0;">LLM Control Panel</h1>
+      <div class="row">
+        <span id="last-updated" class="last-updated"></span>
+        <button id="lock-btn">Lock</button>
+      </div>
+    </div>
+
+    <!-- Health -->
+    <div class="card">
+      <div class="row-between" style="margin-bottom: 12px;">
+        <h2>Health snapshot</h2>
+        <div class="actions">
+          <button id="btn-refresh">Refresh (cached)</button>
+          <button id="btn-probe" class="primary">Force fresh probe (slow)</button>
+        </div>
+      </div>
+      <div id="counters" class="counters"></div>
+      <table>
+        <thead>
+          <tr>
+            <th>Model</th>
+            <th>Status</th>
+            <th>Latency</th>
+            <th>Last error</th>
+            <th>Last success</th>
+          </tr>
+        </thead>
+        <tbody id="health-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- Chains -->
+    <div class="chains-grid" id="chains-grid"></div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // ----- State -----
+      var STATE = {
+        password: '',
+        health: null,    // { models: [ { model, status, latency_ms, last_error, last_success } ], counters: { healthy, degraded, down } }
+        chains: null     // { brain: [...], fast_brain: [...], judge: [...] }
+      };
+      var ROLES = ['brain', 'fast_brain', 'judge'];
+      var STORAGE_KEY = 'admin_password';
+
+      // ----- Utilities -----
+      function $(id) { return document.getElementById(id); }
+
+      function clearChildren(el) {
+        while (el.firstChild) el.removeChild(el.firstChild);
+      }
+
+      function createEl(tag, opts) {
+        var el = document.createElement(tag);
+        if (!opts) return el;
+        if (opts.className) el.className = opts.className;
+        if (opts.text != null) el.textContent = String(opts.text);
+        if (opts.title) el.title = String(opts.title);
+        if (opts.attrs) {
+          for (var k in opts.attrs) {
+            if (Object.prototype.hasOwnProperty.call(opts.attrs, k)) {
+              el.setAttribute(k, opts.attrs[k]);
+            }
+          }
+        }
+        return el;
+      }
+
+      function fmtLatency(ms) {
+        if (ms == null || isNaN(ms)) return '—';
+        var n = Number(ms);
+        if (n < 1000) return Math.round(n) + ' ms';
+        return (n / 1000).toFixed(2) + ' s';
+      }
+
+      function fmtTime(t) {
+        if (!t) return '—';
+        try {
+          var d = new Date(t);
+          if (isNaN(d.getTime())) return String(t);
+          return d.toLocaleString();
+        } catch (e) {
+          return String(t);
+        }
+      }
+
+      function normalizeStatus(s) {
+        if (!s) return 'unknown';
+        var v = String(s).toLowerCase();
+        if (v === 'healthy' || v === 'ok' || v === 'up') return 'healthy';
+        if (v === 'degraded' || v === 'warn' || v === 'warning') return 'degraded';
+        if (v === 'down' || v === 'error' || v === 'failed' || v === 'unhealthy') return 'down';
+        return 'unknown';
+      }
+
+      // ----- Toast -----
+      var toastTimer = null;
+      function toast(msg, kind) {
+        var el = $('toast');
+        el.className = ''; // clear
+        el.textContent = String(msg);
+        el.classList.add(kind || 'info');
+        // force reflow then animate
+        void el.offsetWidth;
+        el.classList.add('show');
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(function () {
+          el.classList.remove('show');
+        }, 3500);
+      }
+
+      // ----- API -----
+      function apiHeaders() {
+        return {
+          'X-Admin-Password': STATE.password,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        };
+      }
+
+      function apiGet(path) {
+        return fetch(path, { method: 'GET', headers: apiHeaders(), cache: 'no-store' })
+          .then(function (res) {
+            if (res.status === 404) {
+              var err = new Error('Not authorized');
+              err.code = 404;
+              throw err;
+            }
+            if (!res.ok) {
+              var e = new Error('Request failed (' + res.status + ')');
+              e.code = res.status;
+              throw e;
+            }
+            return res.json();
+          });
+      }
+
+      function apiPost(path, body) {
+        return fetch(path, {
+          method: 'POST',
+          headers: apiHeaders(),
+          cache: 'no-store',
+          body: body ? JSON.stringify(body) : null
+        }).then(function (res) {
+          if (res.status === 404) {
+            var err = new Error('Not authorized');
+            err.code = 404;
+            throw err;
+          }
+          if (!res.ok) {
+            var e = new Error('Request failed (' + res.status + ')');
+            e.code = res.status;
+            throw e;
+          }
+          // Tolerate empty bodies
+          return res.text().then(function (t) {
+            if (!t) return {};
+            try { return JSON.parse(t); } catch (_) { return {}; }
+          });
+        });
+      }
+
+      // ----- Renderers -----
+      function renderCounters() {
+        var wrap = $('counters');
+        clearChildren(wrap);
+        var counts = computeCounters();
+        var entries = [
+          { key: 'healthy', label: 'Healthy' },
+          { key: 'degraded', label: 'Degraded' },
+          { key: 'down', label: 'Down' }
+        ];
+        for (var i = 0; i < entries.length; i++) {
+          var e = entries[i];
+          var div = createEl('div', { className: 'counter ' + e.key });
+          var dot = createEl('span', { className: 'dot' });
+          var num = createEl('span', { className: 'num', text: counts[e.key] });
+          var lbl = createEl('span', { text: e.label });
+          div.appendChild(dot);
+          div.appendChild(num);
+          div.appendChild(lbl);
+          wrap.appendChild(div);
+        }
+      }
+
+      function computeCounters() {
+        var c = { healthy: 0, degraded: 0, down: 0 };
+        if (STATE.health && STATE.health.counters && typeof STATE.health.counters === 'object') {
+          c.healthy = Number(STATE.health.counters.healthy) || 0;
+          c.degraded = Number(STATE.health.counters.degraded) || 0;
+          c.down = Number(STATE.health.counters.down) || 0;
+          return c;
+        }
+        var rows = healthRows();
+        for (var i = 0; i < rows.length; i++) {
+          var s = normalizeStatus(rows[i].status);
+          if (s === 'healthy') c.healthy++;
+          else if (s === 'degraded') c.degraded++;
+          else if (s === 'down') c.down++;
+        }
+        return c;
+      }
+
+      function healthRows() {
+        if (!STATE.health) return [];
+        if (Array.isArray(STATE.health.models)) return STATE.health.models;
+        if (Array.isArray(STATE.health)) return STATE.health;
+        // Map form: { "model-a": { status, latency_ms, ... } }
+        var out = [];
+        for (var k in STATE.health) {
+          if (Object.prototype.hasOwnProperty.call(STATE.health, k)) {
+            var v = STATE.health[k];
+            if (v && typeof v === 'object' && !Array.isArray(v) && k !== 'counters') {
+              var row = Object.assign({}, v);
+              if (!row.model) row.model = k;
+              out.push(row);
+            }
+          }
+        }
+        return out;
+      }
+
+      function statusPill(status) {
+        var s = normalizeStatus(status);
+        var span = createEl('span', { className: 'status ' + s, text: s });
+        return span;
+      }
+
+      function renderHealthTable() {
+        var tbody = $('health-tbody');
+        clearChildren(tbody);
+        var rows = healthRows();
+        if (!rows.length) {
+          var tr = createEl('tr');
+          var td = createEl('td', { text: 'No data.', attrs: { colspan: '5' } });
+          td.classList.add('muted');
+          tr.appendChild(td);
+          tbody.appendChild(tr);
+          return;
+        }
+        // Sort: down > degraded > healthy > unknown, then by model name
+        var rank = { down: 0, degraded: 1, healthy: 2, unknown: 3 };
+        rows.slice().sort(function (a, b) {
+          var ra = rank[normalizeStatus(a.status)];
+          var rb = rank[normalizeStatus(b.status)];
+          if (ra !== rb) return ra - rb;
+          return String(a.model || '').localeCompare(String(b.model || ''));
+        }).forEach(function (r) {
+          var tr = createEl('tr');
+
+          var tdModel = createEl('td');
+          var modelSpan = createEl('span', { className: 'mono', text: r.model || '—' });
+          tdModel.appendChild(modelSpan);
+          tr.appendChild(tdModel);
+
+          var tdStatus = createEl('td');
+          tdStatus.appendChild(statusPill(r.status));
+          tr.appendChild(tdStatus);
+
+          var tdLat = createEl('td', { text: fmtLatency(r.latency_ms != null ? r.latency_ms : r.latency) });
+          tr.appendChild(tdLat);
+
+          var tdErr = createEl('td');
+          var errText = r.last_error ? String(r.last_error) : '—';
+          var errSpan = createEl('span', { text: errText, title: errText });
+          if (!r.last_error) errSpan.classList.add('muted');
+          else errSpan.classList.add('mono', 'small');
+          // truncate visually via CSS if long
+          errSpan.style.display = 'inline-block';
+          errSpan.style.maxWidth = '320px';
+          errSpan.style.overflow = 'hidden';
+          errSpan.style.textOverflow = 'ellipsis';
+          errSpan.style.whiteSpace = 'nowrap';
+          errSpan.style.verticalAlign = 'middle';
+          tdErr.appendChild(errSpan);
+          tr.appendChild(tdErr);
+
+          var tdSuccess = createEl('td', { text: fmtTime(r.last_success) });
+          if (!r.last_success) tdSuccess.classList.add('muted');
+          tr.appendChild(tdSuccess);
+
+          tbody.appendChild(tr);
+        });
+      }
+
+      function statusForModel(modelName) {
+        var rows = healthRows();
+        for (var i = 0; i < rows.length; i++) {
+          if (rows[i].model === modelName) return rows[i].status;
+        }
+        return 'unknown';
+      }
+
+      function renderChains() {
+        var grid = $('chains-grid');
+        clearChildren(grid);
+
+        if (!STATE.chains) return;
+
+        ROLES.forEach(function (role) {
+          var chain = STATE.chains[role];
+          if (!Array.isArray(chain)) chain = [];
+
+          var card = createEl('div', { className: 'card chain-card' });
+
+          var header = createEl('div', { className: 'row-between' });
+          var h2 = createEl('h2');
+          h2.appendChild(document.createTextNode('Chain'));
+          var roleTag = createEl('span', { className: 'role-tag', text: role });
+          h2.appendChild(roleTag);
+          header.appendChild(h2);
+          card.appendChild(header);
+
+          var hint = createEl('div', { className: 'muted small', text: 'Primary at top. Use ↑ / ↓ to reorder, then Save.' });
+          card.appendChild(hint);
+
+          var list = createEl('div', { className: 'chain-list' });
+          card.appendChild(list);
+
+          function rerender() { renderChainList(list, role); }
+          rerender();
+
+          var actions = createEl('div', { className: 'actions' });
+          var saveBtn = createEl('button', { className: 'primary', text: 'Save' });
+          saveBtn.onclick = function () {
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving…';
+            var order = (STATE.chains[role] || []).slice();
+            apiPost('/api/admin/chain', { role: role, order: order })
+              .then(function () {
+                toast('Saved chain for ' + role, 'success');
+              })
+              .catch(function (err) {
+                toast('Save failed for ' + role + ': ' + (err && err.message ? err.message : 'unknown'), 'error');
+              })
+              .then(function () {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save';
+              });
+          };
+
+          var revertBtn = createEl('button', { text: 'Reload' });
+          revertBtn.onclick = function () { fetchChains().then(renderChains).catch(handleFetchErr); };
+
+          actions.appendChild(saveBtn);
+          actions.appendChild(revertBtn);
+          card.appendChild(actions);
+
+          grid.appendChild(card);
+        });
+      }
+
+      function renderChainList(listEl, role) {
+        clearChildren(listEl);
+        var chain = STATE.chains[role] || [];
+        if (!chain.length) {
+          var empty = createEl('div', { className: 'muted small', text: 'Empty chain.' });
+          listEl.appendChild(empty);
+          return;
+        }
+        chain.forEach(function (model, idx) {
+          var item = createEl('div', { className: 'chain-item' });
+
+          item.appendChild(statusPill(statusForModel(model)));
+
+          var label = createEl('span', { className: 'label', text: model });
+          item.appendChild(label);
+
+          if (idx === 0) {
+            var star = createEl('span', { className: 'primary-star', text: '★', title: 'Primary' });
+            item.appendChild(star);
+          }
+
+          var moves = createEl('span', { className: 'move-buttons' });
+          var up = createEl('button', { className: 'icon-btn', text: '↑', title: 'Move up' });
+          up.disabled = (idx === 0);
+          up.onclick = function () {
+            if (idx === 0) return;
+            var arr = STATE.chains[role];
+            var tmp = arr[idx - 1];
+            arr[idx - 1] = arr[idx];
+            arr[idx] = tmp;
+            renderChainList(listEl, role);
+          };
+          var down = createEl('button', { className: 'icon-btn', text: '↓', title: 'Move down' });
+          down.disabled = (idx === chain.length - 1);
+          down.onclick = function () {
+            var arr = STATE.chains[role];
+            if (idx === arr.length - 1) return;
+            var tmp = arr[idx + 1];
+            arr[idx + 1] = arr[idx];
+            arr[idx] = tmp;
+            renderChainList(listEl, role);
+          };
+          moves.appendChild(up);
+          moves.appendChild(down);
+          item.appendChild(moves);
+
+          listEl.appendChild(item);
+        });
+      }
+
+      function setLastUpdated() {
+        var el = $('last-updated');
+        if (!el) return;
+        var now = new Date();
+        el.textContent = 'Updated ' + now.toLocaleTimeString();
+      }
+
+      // ----- Fetchers -----
+      function fetchHealth() {
+        return apiGet('/api/admin/health').then(function (data) {
+          STATE.health = data;
+        });
+      }
+
+      function fetchChains() {
+        return apiGet('/api/admin/chain').then(function (data) {
+          // Accept either { brain, fast_brain, judge } or { chains: { ... } }
+          var chains = data && data.chains ? data.chains : data;
+          var clean = {};
+          ROLES.forEach(function (r) {
+            var c = chains && chains[r];
+            clean[r] = Array.isArray(c) ? c.slice() : [];
+          });
+          STATE.chains = clean;
+        });
+      }
+
+      function refreshAll() {
+        return Promise.all([fetchHealth(), fetchChains()]).then(function () {
+          renderCounters();
+          renderHealthTable();
+          renderChains();
+          setLastUpdated();
+        });
+      }
+
+      function handleFetchErr(err) {
+        if (err && err.code === 404) {
+          // Token may have rotated; lock and clear
+          try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
+          STATE.password = '';
+          showGate('Not authorized (404 = wrong password OR your IP not on allowlist)');
+          toast('Session lost. Re-enter password.', 'error');
+        } else {
+          toast('Error: ' + (err && err.message ? err.message : 'unknown'), 'error');
+        }
+      }
+
+      // ----- Gate -----
+      function showGate(errMsg) {
+        $('gate').classList.remove('hidden');
+        $('app').classList.add('hidden');
+        var e = $('gate-error');
+        if (errMsg) {
+          e.textContent = errMsg;
+          e.classList.remove('hidden');
+        } else {
+          e.textContent = '';
+          e.classList.add('hidden');
+        }
+        var pw = $('gate-password');
+        if (pw) { pw.value = ''; pw.focus(); }
+      }
+
+      function showApp() {
+        $('gate').classList.add('hidden');
+        $('app').classList.remove('hidden');
+      }
+
+      function attemptUnlock(password, opts) {
+        opts = opts || {};
+        STATE.password = password;
+        return refreshAll().then(function () {
+          showApp();
+          if (opts.remember) {
+            try { localStorage.setItem(STORAGE_KEY, password); } catch (_) {}
+          }
+          toast('Unlocked', 'success');
+        }).catch(function (err) {
+          STATE.password = '';
+          if (err && err.code === 404) {
+            try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
+            showGate('Not authorized (404 = wrong password OR your IP not on allowlist)');
+          } else {
+            showGate('Error: ' + (err && err.message ? err.message : 'unknown'));
+          }
+        });
+      }
+
+      // ----- Wiring -----
+      function wire() {
+        $('gate-unlock').onclick = function () {
+          var pw = $('gate-password').value || '';
+          if (!pw) {
+            showGate('Enter a password.');
+            return;
+          }
+          var remember = $('gate-remember').checked;
+          attemptUnlock(pw, { remember: remember });
+        };
+        $('gate-password').addEventListener('keydown', function (e) {
+          if (e.key === 'Enter') $('gate-unlock').click();
+        });
+
+        $('lock-btn').onclick = function () {
+          STATE.password = '';
+          STATE.health = null;
+          STATE.chains = null;
+          try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
+          showGate();
+          toast('Locked', 'info');
+        };
+
+        $('btn-refresh').onclick = function () {
+          var btn = this;
+          btn.disabled = true;
+          btn.textContent = 'Refreshing…';
+          refreshAll()
+            .then(function () { toast('Refreshed from cache', 'success'); })
+            .catch(handleFetchErr)
+            .then(function () { btn.disabled = false; btn.textContent = 'Refresh (cached)'; });
+        };
+
+        $('btn-probe').onclick = function () {
+          var btn = this;
+          btn.disabled = true;
+          btn.textContent = 'Probing…';
+          apiPost('/api/admin/probe', null)
+            .then(function () { return refreshAll(); })
+            .then(function () { toast('Fresh probe complete', 'success'); })
+            .catch(handleFetchErr)
+            .then(function () { btn.disabled = false; btn.textContent = 'Force fresh probe (slow)'; });
+        };
+      }
+
+      // ----- Boot -----
+      function boot() {
+        wire();
+        var saved = '';
+        try { saved = localStorage.getItem(STORAGE_KEY) || ''; } catch (_) {}
+        if (saved) {
+          attemptUnlock(saved, { remember: true });
+        } else {
+          showGate();
+        }
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', boot);
+      } else {
+        boot();
+      }
+    })();
+  </script>
+</body>
+</html>
