@@ -24,7 +24,9 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import re
 from collections import deque
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -267,4 +269,243 @@ async def admin_usage(
     return {
         role: _stat_block_for_role(rows, role, chains[role], health_state)
         for role in ("brain", "fast_brain", "judge")
+    }
+
+
+# ---------------------------------------------------------------------------
+# /api/admin/profiles — list every named profile + summary
+# ---------------------------------------------------------------------------
+
+@router.get("/api/admin/profiles")
+async def admin_profiles(
+    request: Request,
+    x_admin_password: Optional[str] = Header(default=None, alias="X-Admin-Password"),
+):
+    """List every named profile in the JSON store + lightweight summary.
+
+    Returned shape:
+      {
+        "profiles": [ {name_display, name_slug, first_seen, last_seen,
+                       session_count, profile_complete_fields}, ... ],
+        "total": N,
+        "snapshot_ts": "2026-05-14T..."
+      }
+    """
+    _check_admin(request, x_admin_password)
+
+    from backend import profile_store
+    profiles = profile_store.list_profiles()
+    return {
+        "profiles": profiles,
+        "total": len(profiles),
+        "snapshot_ts": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }
+
+
+# ---------------------------------------------------------------------------
+# /api/admin/performance — aggregated performance/quality metrics
+# ---------------------------------------------------------------------------
+
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+
+
+def _read_eval_summary() -> Optional[dict]:
+    """Return the `summary` block from eval/results.json — or None if missing."""
+    p = _REPO_ROOT / "eval" / "results.json"
+    if not p.exists():
+        return None
+    try:
+        raw = json.loads(p.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    summary = raw.get("summary") if isinstance(raw, dict) else None
+    if not isinstance(summary, dict):
+        return None
+    # Surface exactly the fields the admin panel cares about. Use .get so any
+    # missing field becomes None rather than raising.
+    return {
+        "ran_at":             summary.get("ran_at"),
+        "elapsed_seconds":    summary.get("elapsed_seconds"),
+        "n_questions":        summary.get("n_questions"),
+        "factual_accuracy":   summary.get("factual_accuracy"),
+        "citation_accuracy":  summary.get("citation_accuracy"),
+        "refusal_precision":  summary.get("refusal_precision"),
+        "by_brain":           summary.get("by_brain") or {},
+        "by_type":            summary.get("by_type") or {},
+    }
+
+
+def _latest_audit_dir() -> Optional[Path]:
+    """Return the most recently modified `80-audit/full_*` directory containing
+    a summary.json. Returns None if no such directory exists."""
+    audit_root = _REPO_ROOT / "80-audit"
+    if not audit_root.exists():
+        return None
+    candidates = [d for d in audit_root.glob("full_*") if (d / "summary.json").exists()]
+    if not candidates:
+        return None
+    candidates.sort(key=lambda d: d.stat().st_mtime, reverse=True)
+    return candidates[0]
+
+
+# Regex helpers for parsing report.md (analyze.py output). Anchored to the
+# specific table rows so they're robust against table reordering.
+_RE_REPORT_PERSONAS = re.compile(r"Personas completed \| \*\*(\d+)\*\* of (\d+)")
+_RE_REPORT_TURNS    = re.compile(r"Total turns executed \| \*\*(\d+)\*\*")
+_RE_REPORT_ERRORS   = re.compile(r"Errors \(HTTP / timeout / network\) \| (\d+)")
+_RE_REPORT_REFUSALS = re.compile(r"Refusals \(blocked=true\) \| (\d+)")
+_RE_REPORT_P50      = re.compile(r"Latency p50 \| (\d+)\s*ms")
+_RE_REPORT_P95      = re.compile(r"Latency p95 \| (\d+)\s*ms")
+_RE_REPORT_P99      = re.compile(r"Latency p99 \| (\d+)\s*ms")
+_RE_BRAIN_ROW       = re.compile(r"^\|\s*`([^`]+)`\s*\|\s*(\d+)\s*\|\s*$")
+
+
+def _parse_brain_routing(report_text: str) -> dict[str, int]:
+    """Extract the `## 2. Brain routing` table → {brain: turn_count}."""
+    out: dict[str, int] = {}
+    section_start = report_text.find("## 2. Brain routing")
+    if section_start < 0:
+        return out
+    section_end = report_text.find("## 3.", section_start)
+    if section_end < 0:
+        section_end = len(report_text)
+    for line in report_text[section_start:section_end].splitlines():
+        m = _RE_BRAIN_ROW.match(line)
+        if m:
+            try:
+                out[m.group(1)] = int(m.group(2))
+            except ValueError:
+                continue
+    return out
+
+
+def _read_audit_summary() -> Optional[dict]:
+    """Return aggregate metrics for the latest persona-audit run.
+
+    The on-disk summary.json is intentionally sparse (it's just the launcher's
+    config). The real metrics live in `report.md` (produced by
+    tools/audit/analyze.py). We parse it via regex — much cheaper than
+    re-walking 100+ transcript JSONs on every admin request.
+
+    Returns None if there is no audit run yet OR if the report.md hasn't been
+    generated (the launcher writes summary.json before analyze.py runs).
+    """
+    run_dir = _latest_audit_dir()
+    if run_dir is None:
+        return None
+
+    summary_path = run_dir / "summary.json"
+    report_path  = run_dir / "report.md"
+    try:
+        launcher_summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    except Exception:
+        launcher_summary = {}
+
+    out: dict = {
+        "run_id":            launcher_summary.get("run_id") or run_dir.name,
+        "personas_requested": launcher_summary.get("personas_requested"),
+        "personas_completed": launcher_summary.get("personas_completed"),
+        "elapsed_seconds":   launcher_summary.get("elapsed_seconds"),
+        "turns_total":       None,
+        "errors":            None,
+        "refusals":          None,
+        "p50_ms":            None,
+        "p95_ms":            None,
+        "p99_ms":            None,
+        "brain_routing":     {},
+    }
+
+    if not report_path.exists():
+        return out  # launcher ran but analyze.py hasn't; surface what we have
+
+    try:
+        report_text = report_path.read_text(encoding="utf-8")
+    except Exception:
+        return out
+
+    def _int_match(rx: re.Pattern[str]) -> Optional[int]:
+        m = rx.search(report_text)
+        if not m:
+            return None
+        try:
+            return int(m.group(1))
+        except (ValueError, IndexError):
+            return None
+
+    # Pull values from report.md — overrides None defaults set above. Personas
+    # completed lives in BOTH summary.json and report.md; report.md wins because
+    # it reflects the actually-analyzed transcripts (in case the launcher
+    # claimed N but only M wrote transcripts).
+    p_match = _RE_REPORT_PERSONAS.search(report_text)
+    if p_match:
+        try:
+            out["personas_completed"] = int(p_match.group(1))
+        except ValueError:
+            pass
+
+    out["turns_total"] = _int_match(_RE_REPORT_TURNS)
+    out["errors"]      = _int_match(_RE_REPORT_ERRORS)
+    out["refusals"]    = _int_match(_RE_REPORT_REFUSALS)
+    out["p50_ms"]      = _int_match(_RE_REPORT_P50)
+    out["p95_ms"]      = _int_match(_RE_REPORT_P95)
+    out["p99_ms"]      = _int_match(_RE_REPORT_P99)
+    out["brain_routing"] = _parse_brain_routing(report_text)
+    return out
+
+
+def _read_usage_24h() -> Optional[dict]:
+    """Compute {role: {count, success_rate, avg_latency_ms}} from the last
+    USAGE_TAIL_LINES entries of data/llm_usage.jsonl. Returns None if the
+    file is missing OR empty so the frontend can render an empty-state.
+
+    Note: "24h" in the field name is conventional — the actual window is the
+    last USAGE_TAIL_LINES rows (typically covers ≈24h of activity at current
+    traffic). Keeping the name aligns with the admin UI label.
+    """
+    usage_path = _REPO_ROOT / "data" / "llm_usage.jsonl"
+    rows = _tail_jsonl(usage_path, USAGE_TAIL_LINES)
+    if not rows:
+        return None
+
+    agg: dict[str, dict] = {}
+    for r in rows:
+        role = r.get("role")
+        if not role:
+            continue
+        bucket = agg.setdefault(role, {"count": 0, "success_count": 0, "latency_sum": 0,
+                                       "latency_n": 0})
+        bucket["count"] += 1
+        if r.get("success") is True:
+            bucket["success_count"] += 1
+        lat = r.get("latency_ms")
+        if isinstance(lat, (int, float)):
+            bucket["latency_sum"] += int(lat)
+            bucket["latency_n"] += 1
+
+    out: dict[str, dict] = {}
+    for role, b in agg.items():
+        out[role] = {
+            "count": b["count"],
+            "success_rate": round(b["success_count"] / b["count"], 4) if b["count"] else 0.0,
+            "avg_latency_ms": int(b["latency_sum"] / b["latency_n"]) if b["latency_n"] else 0,
+        }
+    return out
+
+
+@router.get("/api/admin/performance")
+async def admin_performance(
+    request: Request,
+    x_admin_password: Optional[str] = Header(default=None, alias="X-Admin-Password"),
+):
+    """Aggregated performance/quality metrics for the admin Performance section.
+
+    All four sub-blocks are independently nullable — a missing eval/results.json
+    or absent audit run shouldn't 500 the endpoint.
+    """
+    _check_admin(request, x_admin_password)
+    return {
+        "eval":       _read_eval_summary(),
+        "audit":      _read_audit_summary(),
+        "usage_24h":  _read_usage_24h(),
+        "snapshot_ts": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
