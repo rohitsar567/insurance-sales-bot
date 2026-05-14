@@ -102,6 +102,49 @@ def _build_chunk(cid: str, doc: str, meta: dict, score: float) -> RetrievedChunk
     )
 
 
+# KI-034 (2026-05-14) — in-process retrieval cache. Keyed by
+# (query_text, top_k, sorted policy_ids, sorted insurer_slugs). Caps at 256
+# entries with FIFO eviction so memory stays bounded across long sessions.
+# Within a single chat session, users frequently rephrase or follow up on the
+# same topic ("what's the waiting period?" → "and the pre-existing diseases
+# waiting period?" → "and the diabetes-specific one?"). When the cache key
+# matches, we skip the Voyage embed call AND the Chroma collection.query() —
+# saving the round-trip + the Voyage 3 RPM tax. Cache invalidates implicitly
+# at process restart (HF Space deploy / reload).
+from collections import OrderedDict as _OrderedDict
+_RETRIEVAL_CACHE: "_OrderedDict[tuple, list]" = _OrderedDict()
+_RETRIEVAL_CACHE_MAX = 256
+
+
+def _cache_key(
+    query: str,
+    top_k: int,
+    policy_ids: Optional[list[str]],
+    insurer_slugs: Optional[list[str]],
+) -> tuple:
+    return (
+        (query or "").strip().lower(),
+        int(top_k),
+        tuple(sorted(policy_ids)) if policy_ids else None,
+        tuple(sorted(insurer_slugs)) if insurer_slugs else None,
+    )
+
+
+def _cache_get(key: tuple) -> Optional[list]:
+    if key not in _RETRIEVAL_CACHE:
+        return None
+    # LRU bump
+    val = _RETRIEVAL_CACHE.pop(key)
+    _RETRIEVAL_CACHE[key] = val
+    return val
+
+
+def _cache_set(key: tuple, value: list) -> None:
+    _RETRIEVAL_CACHE[key] = value
+    while len(_RETRIEVAL_CACHE) > _RETRIEVAL_CACHE_MAX:
+        _RETRIEVAL_CACHE.popitem(last=False)  # evict oldest
+
+
 async def retrieve(
     query: str,
     top_k: int = settings.RAG_TOP_K,
@@ -121,6 +164,12 @@ async def retrieve(
     This ensures the brain sees regulatory ceilings even when policy
     chunks dominate raw cosine.
     """
+    # KI-034 — short-circuit identical-query re-asks via the LRU cache.
+    cache_key = _cache_key(query, top_k, policy_ids, insurer_slugs)
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return cached
+
     embedder = embedder or VoyageEmbeddings()
     [query_vec] = await embedder.embed([query], input_type="query")
 
@@ -269,6 +318,9 @@ async def retrieve(
             # Review boost is additive; failure shouldn't kill the main result
             pass
 
+    # KI-034 — populate cache with the FINAL merged result so subsequent
+    # identical queries skip Voyage embed + Chroma query + boost passes.
+    _cache_set(cache_key, out)
     return out
 
 

@@ -220,8 +220,14 @@ BRAIN_CHAIN = [
 # is the lowest-TTFT free-tier option, so a fast-brain fall-through to it is
 # still acceptable from a latency-budget standpoint.
 FAST_BRAIN_CHAIN = [
-    "qwen/qwen3-next-80b-a3b-instruct",
-    "nvidia/nemotron-3-nano-30b-a3b",     # 1.6s response per Reddit benchmark
+    # KI-035 (2026-05-14) — reordered for latency. Fast brain serves
+    # fact-find + QA + paraphrase + normalize + extract: every single one
+    # of these is a sub-second job by content size, so the bottleneck IS
+    # TTFT, not capability. Nemotron Nano 30B hits ~1.6s; Qwen 80B is
+    # ~2-3s. Moved Nemotron to primary; Qwen 80B stays as next fallback so
+    # if Nemotron's NIM pool degrades we still get quality.
+    "nvidia/nemotron-3-nano-30b-a3b",     # ~1.6s TTFT (Reddit bench), NIM
+    "qwen/qwen3-next-80b-a3b-instruct",   # ~2-3s, NIM
     "openai/gpt-oss-120b",
     "qwen/qwen3.5-122b-a10b",
     "deepseek-ai/deepseek-v4-flash",
