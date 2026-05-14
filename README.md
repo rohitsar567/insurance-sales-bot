@@ -126,107 +126,191 @@ A **voice-first conversational advisor** that:
 
 ## 3. Two parallel flows
 
-The bot is two flows running together — the customer's experience and the technology underneath. They are intentionally separated below so a reviewer can scan either.
+The bot is two flows running together — the customer's experience and the technology underneath. They run in lockstep; the table below pairs each step of the user journey with the technology underneath. On narrow screens both columns are scrollable; on a desktop GitHub view they sit side-by-side.
 
-### 3A. Customer / Process Flow
+<table>
+<tr>
+<th width="50%">3A · Customer / Process Flow</th>
+<th width="50%">3B · Technology Flow (same turn, underneath)</th>
+</tr>
+<tr><td>
 
-What a buyer experiences, end to end.
+**Step 1 — Land on the bot**
+- Sees: chat panel + Marketplace · Premium · Profile · Admin tabs
+- Suggested questions in the chat box
+- "Voice on — just speak" pill (Live mode, default ON) with green dot
+- "🎤 Push-to-talk" button as labeled fallback
+- "Voice reply" toggle controls whether the bot speaks back
 
-```
-┌──────────────────────────────────────────────────────────────────────────┐
-│  STEP 1.  Land on the bot                                                │
-│  -------                                                                  │
-│  · Sees: chat panel + Marketplace · Premium · Profile · Admin tabs       │
-│  · Suggested questions in the chat box                                   │
-│  · "Voice on — just speak" pill (Live mode, default ON) with green dot   │
-│  · "🎤 Push-to-talk" button as labeled fallback                          │
-│  · "Voice reply" toggle controls whether the bot speaks back             │
-└──────────────────────────────────────────────────────────────────────────┘
-                                  │
-                                  ▼
-┌──────────────────────────────────────────────────────────────────────────┐
-│  STEP 2.  Ask the first question (voice or text)                          │
-│  -------                                                                  │
-│  · User just talks — VAD detects speech start/end automatically          │
-│  · "Suggest a health insurance plan for me"                              │
-│  · Bot recognizes fact-find intent. The orchestrator picks the next      │
-│    slot from a 9-question graph; an LLM paraphraser rewrites the         │
-│    canonical question in a warmer voice each session (verified to        │
-│    still target the same slot before sending).                           │
-│  · Slots covered in order: age → dependents → income → existing cover    │
-│    → primary goal → location → parents (conditional) → health → budget   │
-└──────────────────────────────────────────────────────────────────────────┘
-                                  │
-                                  ▼
-┌──────────────────────────────────────────────────────────────────────────┐
-│  STEP 3.  Profile-driven personalization unlocks                         │
-│  -------                                                                  │
-│  · Completeness bar reaches ≥60% → "personalized scores unlocked"        │
-│  · Marketplace tab now shows per-policy A-F grades RE-COMPUTED for       │
-│    this user's specific situation                                        │
-│  · Chat references your profile inline ("at 32 with 1 dependent…")       │
-└──────────────────────────────────────────────────────────────────────────┘
-                                  │
-                                  ▼
-┌──────────────────────────────────────────────────────────────────────────┐
-│  STEP 4.  Free-form questions with citations                              │
-│  -------                                                                  │
-│  · "What's the room rent cap on Care Supreme?"                            │
-│  · "Compare cataract waiting in HDFC Optima vs ICICI Elevate"             │
-│  · Every factual claim gets [Source: <policy>, p.<page>] citation        │
-│  · Click a citation → opens the policy detail modal                       │
-└──────────────────────────────────────────────────────────────────────────┘
-                                  │
-                                  ▼
-┌──────────────────────────────────────────────────────────────────────────┐
-│  STEP 5.  Conversational profile updates (mid-chat)                       │
-│  -------                                                                  │
-│  · User says: "I was just diagnosed with diabetes"                        │
-│  · Bot silently extracts → updates session.profile → re-upserts profile  │
-│    chunk → completeness bar ticks up → scores refresh                    │
-│  · No form-filling required mid-conversation                              │
-└──────────────────────────────────────────────────────────────────────────┘
-                                  │
-                                  ▼
-┌──────────────────────────────────────────────────────────────────────────┐
-│  STEP 6.  View-aware grounding (the copilot effect)                       │
-│  -------                                                                  │
-│  · User opens a policy detail modal                                       │
-│  · Asks "What's the waiting period on this?"                              │
-│  · Bot resolves "this" → answers without re-stating policy name          │
-└──────────────────────────────────────────────────────────────────────────┘
-                                  │
-                                  ▼
-┌──────────────────────────────────────────────────────────────────────────┐
-│  STEP 7.  Refusal as a feature                                            │
-│  -------                                                                  │
-│  · User: "Does this policy cover space-tourism injuries?"                 │
-│  · Bot: "I'd rather not answer that without stronger evidence in the     │
-│    policy documents I have."                                              │
-│  · The SAFE failure mode in BFSI is refuse > mis-cite                    │
-└──────────────────────────────────────────────────────────────────────────┘
-                                  │
-                                  ▼
-┌──────────────────────────────────────────────────────────────────────────┐
-│  STEP 8.  Hindi / Hinglish flow                                           │
-│  -------                                                                  │
-│  · User switches UI language toggle, or just speaks Hinglish              │
-│  · "Care Supreme mein PED ka waiting period kya hai?"                     │
-│  · Bot responds in Hinglish with citations preserved                      │
-└──────────────────────────────────────────────────────────────────────────┘
-                                  │
-                                  ▼
-┌──────────────────────────────────────────────────────────────────────────┐
-│  STEP 9.  Persistent chat across sessions                                 │
-│  -------                                                                  │
-│  · Close tab, come back tomorrow: chat history + profile restored        │
-│  · Sessions persisted to disk on backend; local storage on frontend      │
-└──────────────────────────────────────────────────────────────────────────┘
-```
+</td><td>
 
-### 3B. Technology Flow (parallel)
+**Tech 1 — Page load**
+- Next.js 14 SSR ships HTML in ~200 ms
+- React hydrates; useEffect fetches `/api/health`, `/api/coverage`, `/api/profile/completeness`
+- `localStorage` rehydrates `messages[]` + `sessionId` if returning user
+- `useLiveConversation` opens the persistent mic stream
 
-What's happening under the hood for the same journey.
+</td></tr>
+
+<tr><td>
+
+**Step 2 — Ask the first question (voice or text)**
+- User just talks — VAD detects speech start/end automatically
+- *"Suggest a health insurance plan for me"*
+- Bot recognises fact-find intent. The orchestrator picks the next slot from a 9-question graph; an LLM paraphraser rewrites the canonical question in a warmer voice each session (verified to still target the same slot before sending)
+- Slots in order: age → dependents → income → existing cover → primary goal → location → parents (conditional) → health → budget
+
+</td><td>
+
+**Tech 2 — User submits**
+- Voice path: `MediaRecorder` blob → `POST /api/transcribe` → Sarvam Saarika v2.5 STT → text
+- Text path: direct `POST /api/chat`
+- Payload: `user_text`, `session_id`, `chat_history[]`, `return_audio`, `tts_language_code`, `view_context { active_view, active_policy_id, filters }`
+
+**Tech 3 — Orchestrator entry, `handle_turn()`**
+- `classify_intent(user_text)` → `fact_find / qa / comparison / recommendation`
+- `detect_language(user_text)` → `english / indic`
+- Indic cascade: if indic, Sarvam-M translates → English for reasoning, response translated back
+
+**Tech 4 — Fact-find branch**
+- If profile empty AND intent ∈ {fact_find, recommendation, comparison}: pick next slot, paraphrase via `question_paraphraser` + verifier, emit question, return early
+- Else: continue to retrieval
+
+</td></tr>
+
+<tr><td>
+
+**Step 3 — Profile-driven personalisation unlocks**
+- Completeness bar reaches ≥ 60% → "personalised scores unlocked"
+- Marketplace tab shows per-policy A-F grades **re-computed for this user's specific situation**
+- Chat references your profile inline ("at 32 with 1 dependent…")
+
+</td><td>
+
+**Tech 5 — Profile update extraction (free-form turns)**
+- `extract_profile_updates(user_text, session.profile)` via the fast-brain chain (Nemotron 30B primary)
+- Validation: enum / type / bounds checks; drop on failure
+- Apply via `session.update_profile_field()`
+- `upsert_profile_chunk()` re-embeds profile → Chroma so this turn's retrieval sees the fresh state
+
+</td></tr>
+
+<tr><td>
+
+**Step 4 — Free-form questions with citations**
+- *"What's the room rent cap on Care Supreme?"*
+- *"Compare cataract waiting in HDFC Optima vs ICICI Elevate"*
+- Every factual claim gets `[Source: <policy>, p.<page>]` citation
+- Click a citation → opens the policy detail modal
+
+</td><td>
+
+**Tech 6 — Retrieval, `retrieve(query, session_id)`**
+- LRU cache (key = normalised query + filters) — cache hit skips Voyage + Chroma
+- BGE-small embeds user text → 384-d vector
+- Chroma cosine search, `top_k=5`
+- Profile chunk (`doc_type='profile'`) boosted to top
+- Second pass on regulatory chunks if query mentions IRDAI / Section
+- Returns `list[RetrievedChunk(policy_id, page_start, page_end, text, source_url, score)]`
+
+</td></tr>
+
+<tr><td>
+
+**Step 5 — Conversational profile updates (mid-chat)**
+- User says: *"I was just diagnosed with diabetes"*
+- Bot silently extracts → updates `session.profile` → re-upserts profile chunk → completeness bar ticks up → scores refresh
+- No form-filling required mid-conversation
+
+</td><td>
+
+**Tech 7 — Brain selection, `pick_brain(intent, language)`**
+- `intent ∈ {comparison, recommendation}` → BRAIN_CHAIN (Qwen 80B primary, 50/50 with Groq Llama-3.3)
+- `intent ∈ {qa, fact_find}` → FAST_BRAIN_CHAIN (Nemotron Nano 30B primary)
+- Per-call rotation across two providers' independent rate caps
+
+**Tech 8 — System prompt construction, `build_messages()`**
+- `[System: ADVISOR_PROMPT + USER PROFILE block + USER IS LOOKING AT (view_context) block]`
+- `[Assistant/User: last 5 turns of chat_history]`
+- `[User: USER QUESTION + RETRIEVED POLICY CLAUSES + reply instructions]`
+
+**Tech 9 — Brain LLM call → reply text**
+- `NimChainLLM.chat(...)` with cumulative chain budget (brain 35 s, fast-brain 22 s)
+- `strip_think_tags()` removes `<think>…</think>` reasoning
+- Capture `brain_model_actual` for non-circular judge selection
+
+</td></tr>
+
+<tr><td>
+
+**Step 6 — View-aware grounding (the copilot effect)**
+- User opens a policy detail modal
+- Asks *"What's the waiting period on this?"*
+- Bot resolves *"this"* → answers without re-stating the policy name
+
+</td><td>
+
+**Tech 10 — Faithfulness gates (`backend/faithfulness.py`)**
+- Gate 1 — retrieval floor: top score ≥ 0.30
+- Gate 2 — citation integrity: every cited policy was retrieved
+- Gate 3 — numeric grounding: every ₹/%/days/months/years in the reply appears in retrieved chunks
+- Gate 4 — JUDGE_CHAIN (Mistral Large 3 675B primary, different family from brain)
+- All 4 pass → reply ships
+- Any fail (non-Gate-1) → cross-check retry with the judge model as rescue brain → tagged `crosscheck-rescued-by-judge`
+- Still fails → safe refusal + log to `logs/hallucinations.jsonl`
+
+</td></tr>
+
+<tr><td>
+
+**Step 7 — Refusal as a feature**
+- User: *"Does this policy cover space-tourism injuries?"*
+- Bot: *"I'd rather not answer that without stronger evidence in the policy documents I have."*
+- The SAFE failure mode in BFSI is refuse > mis-cite
+
+</td><td>
+
+**Tech 11 — Indic cascade (only if user spoke Hinglish)**
+- Sarvam-M translates English reply → Hinglish
+- Gate A — regex: digits / citations / currency preserved
+- Gate B — Mistral Large 3 675B LLM-judge for semantic preservation
+- Gate C — back-translation cosine ≥ 0.80
+- Any gate fails → fall back to the English reply
+
+</td></tr>
+
+<tr><td>
+
+**Step 8 — Hindi / Hinglish flow**
+- User switches the UI language toggle, or just speaks Hinglish
+- *"Care Supreme mein PED ka waiting period kya hai?"*
+- Bot responds in Hinglish with citations preserved
+
+</td><td>
+
+**Tech 12 — TTS synthesis (if `return_audio=true`)**
+- `tts_preprocess()` expands acronyms (PED → pre-existing disease) + strips markdown
+- Sarvam Bulbul v2 synthesises → base64 WAV
+- Bundled into the `ChatResponse` alongside `reply_text`
+
+</td></tr>
+
+<tr><td>
+
+**Step 9 — Persistent chat across sessions**
+- Close the tab, come back tomorrow: chat history + profile restored
+- Sessions persisted to disk on the backend; `localStorage` on the frontend
+
+</td><td>
+
+**Tech 13 — Response delivered**
+- `ChatResponse { reply_text, citations[], audio_base64, brain_used, profile_updates, faithfulness_passed, blocked }`
+- Frontend renders text → plays the in-DOM `<audio controls>` (autoplay-on-mount; barge-in pauses it) → updates `profileCompleteness`
+- `localStorage` persists chat history; `session_state._flush()` writes the on-disk session JSON
+- `log_turn()` writes to `logs/turns.jsonl`
+
+</td></tr>
+</table>
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐

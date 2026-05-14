@@ -231,6 +231,68 @@ async def handle_turn(
         and session.profile.dependents is None
         and session.profile.income_band is None
     )
+
+    # KI-037 (2026-05-14) — greeting + intent-restart detection. The previous
+    # behavior was: any user message arriving while session.awaiting_question_id
+    # was set got parsed as an attempted answer. A user opening the bot with
+    # "Hi, I am looking to buy an insurance policy." would get this parsed as
+    # a (failed) answer to the dependents slot (because earlier turns had
+    # advanced the slot pointer) → "Sorry, I didn't catch that. Let me ask
+    # again — Who else needs cover..." which feels broken because the user
+    # intended a fresh start.
+    #
+    # Fix: if the user's message is a pure greeting or contains explicit
+    # restart intent, CLEAR any stale awaiting slot + reset re-ask counts
+    # so the fact-find re-enters cleanly.
+    _RESTART_INTENT_PHRASES = (
+        "i am looking", "i'm looking", "i want to buy", "want to buy",
+        "looking to buy", "i am here to", "i'm here to",
+        "i need health insurance", "i need insurance",
+        "help me find", "first time", "buy health insurance",
+    )
+    _PURE_GREETING_WORDS = {
+        "hi", "hello", "hey", "namaste", "yo", "hola",
+    }
+    _user_text_lc = user_text.lower().strip()
+    _stripped_user = "".join(c for c in _user_text_lc if c.isalnum() or c.isspace()).strip()
+    _is_pure_greeting = bool(_stripped_user) and all(
+        w in _PURE_GREETING_WORDS for w in _stripped_user.split()
+    )
+    _is_intent_restart = any(p in _user_text_lc for p in _RESTART_INTENT_PHRASES)
+    if (_is_pure_greeting or _is_intent_restart) and session.awaiting_question_id:
+        session.set_awaiting(None)
+        if hasattr(session, "_reask_counts"):
+            session._reask_counts.clear()
+        # Recompute the continuation flag now that we've cleared the slot.
+        in_fact_find_continuation = False
+
+    # KI-037 — pure greeting on empty profile gets a warm welcome, NOT an
+    # immediate age grilling. The bot can answer "Hi" with "Hi!" + offer
+    # before asking for a profile. User feedback: bot grilling for age on
+    # the very first "Hello" feels mechanical and unwelcoming.
+    if _is_pure_greeting and profile_is_empty and not session.free_form_session:
+        reply = (
+            "Hi! I'm an AI advisor for health insurance in India — I've read 208 policy "
+            "documents from 19 insurers plus the IRDAI master circulars, and I can "
+            "answer questions about coverage, waiting periods, exclusions, or "
+            "compare policies side-by-side.\n\n"
+            "Want me to build a 2-minute profile so I can grade each policy *for you* "
+            "specifically, or do you have a question in mind?"
+        )
+        return TurnResult(
+            reply_text=reply,
+            citations=[],
+            retrieved_chunk_ids=[],
+            brain_used="greeting::welcome",
+            intent="fact_find",
+            language=language,
+            latency_ms=int((time.time() - t0) * 1000),
+            raw_reply=reply,
+            faithfulness_passed=True,
+            blocked=False,
+            profile_updates={},
+        )
+
     treat_as_fact_find = should_route_to_fact_find(
         intent,
         profile_is_empty=profile_is_empty,

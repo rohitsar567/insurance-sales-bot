@@ -52,6 +52,12 @@ export default function Page() {
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
+  // KI-038 (2026-05-14) — voicePhase exposes the otherwise-invisible
+  // "between recording and showing the user bubble" Sarvam-STT gap (~1-2s)
+  // and the "between user bubble and bot reply" /api/chat gap (~5-15s).
+  // null = idle / typed flow, "transcribing" = STT in flight, "thinking" =
+  // brain in flight, "speaking" = TTS playing (informational).
+  const [voicePhase, setVoicePhase] = useState<null | "transcribing" | "thinking" | "speaking">(null);
   const [recording, setRecording] = useState(false);
   const [returnAudio, setReturnAudio] = useState(true);
   const [ttsLang, setTtsLang] = useState<"en-IN" | "hi-IN">("en-IN");
@@ -258,6 +264,7 @@ export default function Page() {
   async function send(text: string) {
     if (!text.trim() || busy) return;
     setBusy(true);
+    setVoicePhase("thinking"); // KI-038 — show "..." while waiting on brain
     setInput("");
 
     // Bug C — if the user is asking us to retry, resubmit the previous user
@@ -352,6 +359,7 @@ export default function Page() {
     } finally {
       setUploadStatus(null);
       setBusy(false);
+      setVoicePhase(null);
     }
   }
 
@@ -360,11 +368,13 @@ export default function Page() {
   useEffect(() => {
     liveOnUtteranceRef.current = async (blob, abort) => {
       try {
+        setVoicePhase("transcribing"); // KI-038 — show indicator while STT runs
         const transcribed = await postTranscribe(blob, ttsLang, abort.signal);
         const text = (transcribed.text || "").trim();
-        if (text.length < 2) return;
+        if (text.length < 2) { setVoicePhase(null); return; }
 
         pushUser(text);
+        setVoicePhase("thinking"); // KI-038 — STT done; brain in flight now
         const history: ChatMessage[] = messages.map((m) => ({ role: m.role, content: m.content }));
         const active_view: "chat" | "marketplace" | "profile" | "premium" | "policy_detail" =
           openPolicy ? "policy_detail" :
@@ -399,9 +409,11 @@ export default function Page() {
         // can pause it. See comment in the typed-send branch.
       } catch (e: unknown) {
         const name = (e as { name?: string })?.name;
-        if (name === "AbortError") return; // user barged in; intentional
+        if (name === "AbortError") { setVoicePhase(null); return; } // barge-in
         // eslint-disable-next-line no-console
         console.error("[live mode] turn failed:", e);
+      } finally {
+        setVoicePhase(null); // KI-038 — clear indicator once turn lands
       }
     };
   }, [messages, sessionId, ttsLang, openPolicy, showMarketplace, showProfile, showPremium]);
@@ -437,14 +449,20 @@ export default function Page() {
         const maybeResumeLive = () => { if (userPrefersLive) live.setLive(true); };
         if (blob.size < 1000) { maybeResumeLive(); return; }
         setBusy(true);
+        setVoicePhase("transcribing"); // KI-038 — STT in flight on PTT
         try {
           const { text } = await postTranscribe(blob, ttsLang);
-          if (text && text.trim()) await send(text);
-          else pushAssistant("Sorry, I couldn't hear that clearly. Please try again.");
+          if (text && text.trim()) {
+            // send() flips voicePhase to "thinking" itself; no need to set here
+            await send(text);
+          } else {
+            pushAssistant("Sorry, I couldn't hear that clearly. Please try again.");
+          }
         } catch (e: unknown) {
           pushAssistant(`Sorry — transcribe error: ${e instanceof Error ? e.message : String(e)}`);
         } finally {
           setBusy(false);
+          setVoicePhase(null);
           maybeResumeLive();
         }
       };
@@ -698,7 +716,7 @@ export default function Page() {
             </div>
             <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-thin space-y-4 mb-4 pr-1">
               {messages.map((m) => <Message key={m.id} m={m} />)}
-              {busy && <ThinkingDots />}
+              {(busy || voicePhase) && <ThinkingDots phase={voicePhase} />}
             </div>
           </>
         )}
@@ -1632,15 +1650,24 @@ function ScorecardCard({ sc }: { sc: ScorecardResponse }) {
   );
 }
 
-function ThinkingDots() {
+function ThinkingDots({ phase }: { phase?: null | "transcribing" | "thinking" | "speaking" } = {}) {
+  // KI-038 — phase-labeled status, not just an opaque blob of dots. Users
+  // need to know whether the bot is hearing them ("transcribing"), thinking
+  // about the answer ("thinking"), or about to speak ("speaking").
+  const label = phase === "transcribing"
+    ? "Hearing you…"
+    : phase === "speaking"
+      ? "Speaking…"
+      : "Thinking…";
   return (
     <div className="flex justify-start">
-      <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl px-4 py-3">
+      <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl px-4 py-3 flex items-center gap-2.5">
         <div className="flex gap-1.5">
           {[0, 1, 2].map((i) => (
-            <span key={i} className="w-2 h-2 rounded-full bg-[var(--muted-foreground)] opacity-50" style={{ animation: "fade-up 1.2s ease-in-out infinite", animationDelay: `${i * 0.2}s` }} />
+            <span key={i} className="w-2 h-2 rounded-full bg-[var(--primary)] opacity-70" style={{ animation: "fade-up 1.2s ease-in-out infinite", animationDelay: `${i * 0.2}s` }} />
           ))}
         </div>
+        <span className="text-xs text-[var(--muted-foreground)] font-medium">{label}</span>
       </div>
     </div>
   );

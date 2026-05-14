@@ -170,8 +170,17 @@ async def paraphrase_question(
                      slot_id, claimed_slot)
         _PARAPHRASE_CACHE[cache_key] = None
         return None
-    if "?" not in paraphrase:
-        logging.info("paraphraser missing '?' slot=%s — falling back", slot_id)
+    # KI-036 (2026-05-14) — strict end-position "?" check + reject malformed
+    # punctuation patterns. Previous lenient `"?" in paraphrase` let outputs
+    # like "...have their own insurance options.?" through, producing
+    # awkward double-punctuation in production.
+    para_stripped = paraphrase.rstrip()
+    if not para_stripped.endswith("?"):
+        logging.info("paraphraser doesn't end with '?' slot=%s — falling back", slot_id)
+        _PARAPHRASE_CACHE[cache_key] = None
+        return None
+    if any(bad in para_stripped for bad in (".?", "?.", "??", "!?", "?!", ",?")):
+        logging.info("paraphraser malformed punctuation slot=%s — falling back", slot_id)
         _PARAPHRASE_CACHE[cache_key] = None
         return None
     if not (30 <= len(paraphrase) <= 500):
