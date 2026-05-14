@@ -95,13 +95,14 @@ const DEFAULTS = {
   // don't open a segment. KI-044's preroll buffer still captures the
   // first phoneme since we look back 300 ms.
   speechStartFrames: 3,
-  // KI-060 (2026-05-15) — bumped 40 → 90 (~1.5 s of silence) so a
-  // natural mid-sentence pause doesn't auto-close the segment.
-  // After KI-057 made noise correctly NOT keep the segment alive,
-  // the underlying silence-end timer was exposed as too aggressive —
-  // users reported that pausing for ~1 s between phrases caused the
-  // bot to submit prematurely.
-  silenceEndFrames: 90,
+  // KI-060/064 (2026-05-15) — silence-end window tuning.
+  //   v1 (KI-057): 40 (~640 ms) — too tight; users said pause→submit.
+  //   v2 (KI-060): 90 (~1.5 s) — still cut "Hi, I'm looking to buy a
+  //     new insurance ..." before "policy".
+  //   v3 (KI-064): 120 (~2 s) — covers a normal thinking pause between
+  //     phrases. Trade: ~0.5 s extra tail latency before the bot
+  //     responds, accepted by the user.
+  silenceEndFrames: 120,
   minUtteranceMs: 400,
   // KI-044 — How much pre-trigger PCM we keep in the rolling buffer.
   // 300 ms is generous; covers the ~80 ms VAD latency + ~100 ms of
