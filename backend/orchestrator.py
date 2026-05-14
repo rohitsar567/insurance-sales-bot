@@ -165,7 +165,22 @@ async def handle_turn(
     session = get_session(session_id or "anonymous")
 
     in_fact_find_continuation = bool(session.awaiting_question_id) and not session.free_form_session
-    treat_as_fact_find = (intent == "fact_find" and not session.free_form_session) or in_fact_find_continuation
+    # KI-013 — if the user has NO profile fields yet, FORCE fact-find regardless
+    # of intent classifier. Real user testing surfaced: a vague opener
+    # ("I want health insurance") got classified as "recommendation" and the
+    # bot retrieved "Care Senior" (a senior-citizen-only policy) and pitched it.
+    # Bot should never recommend without knowing the user's age / dependents /
+    # conditions / budget. Force fact-find until ≥1 profile field is set.
+    profile_is_empty = (
+        session.profile.age is None
+        and session.profile.dependents is None
+        and session.profile.income_band is None
+    )
+    treat_as_fact_find = (
+        (intent == "fact_find" and not session.free_form_session)
+        or in_fact_find_continuation
+        or (profile_is_empty and not session.free_form_session)
+    )
 
     if treat_as_fact_find:
         # If we were awaiting an answer, normalize + record it before picking next Q.

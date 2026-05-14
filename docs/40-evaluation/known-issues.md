@@ -254,3 +254,55 @@ hits this.
 `session.free_form_session = True` and flush to disk. Subsequent turns
 skip the fact-find branch entirely and go through retrieval + brain
 as intended.
+
+### KI-013 — Bot recommends policies on vague openers without fact-find — **FIXED in next commit**
+
+**Severity:** P0
+**Source:** `backend/orchestrator.py` intent → fact_find gating
+**Discovered:** Real user testing 2026-05-14
+
+User gave a vague opening ("I want a health policy") and bot
+immediately retrieved + pitched "Care Senior" — a senior-citizen-only
+policy. User is not a senior. The intent classifier routed the message
+to "recommendation" / "qa", not to fact_find. The orchestrator then
+went straight to retrieval + brain → bot recommended whatever scored
+highest, regardless of user demographics.
+
+**Fix:** Force fact-find whenever profile is empty (no age, no
+dependents, no income_band). Regardless of what the intent classifier
+says. Bot will now always start with "First, your age?" before any
+recommendation.
+
+### KI-014 — Vague dependents term "family" auto-mapped to self+spouse+kids — **FIXED in next commit**
+
+**Severity:** P1
+**Source:** `backend/fact_find_normalizer.py` keyword fast-path
+**Discovered:** Real user testing 2026-05-14
+
+User said "family" as their dependents answer. Bot assumed
+"self+spouse+kids". User had intended their joint family (parents +
+siblings). All subsequent recommendations were wrong.
+
+**Fix:** Add VAGUE_TERMS list (`family`, `everyone`, `joint family`,
+etc.) that explicitly returns None from the keyword fast-path,
+forcing either the LLM normalizer (which is more nuanced) or a re-ask
+clarifier. Phrases like "family — me and my wife" still parse
+correctly because the disambiguating words come through.
+
+### KI-015 — Age in readback summary doesn't match user's stated age
+
+**Severity:** P1
+**Source:** Possibly `backend/needs_finder.py::record_answer` for age,
+or LLM readback hallucination
+**Discovered:** Real user testing 2026-05-14
+
+User said "31" but bot's readback summary said "30". Possible causes:
+(a) User's earlier answer contained "30" that the int parser caught
+first; (b) The bot is using the LLM to generate the readback and the
+LLM is hallucinating numeric values.
+
+**Fix plan:** Add a CONFIRMATION step before the bot transitions to
+free-form recommendations. After fact-find readback, the bot should
+ask "Does this all look right? Reply 'yes' or correct anything that's
+off." Then proceed only if user confirms. Also: log the raw fact-find
+inputs vs the captured profile so we can debug mismatches.

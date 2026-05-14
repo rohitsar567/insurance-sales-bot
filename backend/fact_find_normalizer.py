@@ -144,6 +144,16 @@ def _keyword_normalize(question_id: str, raw_text: str) -> Any:
     s = raw_text.lower()
 
     if question_id == "dependents":
+        # KI-014 — vague terms like "family" / "everyone" must NOT auto-map.
+        # User testing surfaced: user said "family" → bot assumed self+spouse+kids
+        # → wrong (user may have meant parents, siblings, joint-family etc.).
+        # Returning None here forces the LLM normalizer (or re-ask) to clarify.
+        VAGUE_TERMS = ["family", "everyone", "all of us", "everybody", "whole family", "joint family"]
+        if any(v in s for v in VAGUE_TERMS) and not any(
+            k in s for k in ["spouse", "wife", "husband", "kid", "child", "parent"]
+        ):
+            return None  # force clarification
+
         if any(k in s for k in ["spouse", "wife", "husband"]) and "kid" in s and "parent" in s:
             return "self+spouse+kids+parents"
         if any(k in s for k in ["spouse", "wife", "husband"]) and "kid" in s:
