@@ -252,18 +252,57 @@ _GREETING_LEAD = re.compile(
 )
 
 
+# KI-069 (2026-05-15) — words that follow "this is" / "I'm" / "I am" but
+# are NOT names. Without this guard KI-059 mis-fired on natural feedback
+# like "this is correct" / "I'm good" / "I am sure" and routed users back
+# to the name slot. Lowercase comparison.
+_NON_NAME_TOKENS: frozenset[str] = frozenset({
+    # Confirmatory adjectives
+    "correct", "right", "fine", "good", "okay", "ok", "alright", "great",
+    "true", "perfect", "accurate", "exactly", "yes", "yeah", "yep", "sure",
+    # Negations / wrong-flag
+    "wrong", "incorrect", "no", "false", "off", "bad", "mistaken",
+    # Common adjectives / nouns mistaken for names
+    "first", "second", "third", "last", "next", "another", "the", "a", "an",
+    "my", "your", "his", "her", "their", "our", "this", "that", "these",
+    "happy", "sad", "tired", "busy", "ready", "done", "new", "old",
+    # Common stop-words that sneak through capitalisation rules
+    "looking", "buying", "shopping", "interested", "trying", "thinking",
+    "here", "there",
+})
+
+
 def _contains_self_introduction(text: str) -> bool:
     """True if the message volunteers a name via "I'm X" / "this is X" /
     "my name is X" / "call me X" — with or without a greeting prefix.
 
-    Used by KI-059 to detect when a user has supplied their name in the
-    very first turn so we don't ask "what should I call you?" right after
-    they told us.
+    KI-059 (2026-05-15) — original detector.
+    KI-069 (2026-05-15) — tightened to avoid false positives:
+      1. The captured token must NOT be in the non-name blocklist
+         (catches "this is correct" / "I'm good" / "first, show me ...").
+      2. The captured name must start with an UPPERCASE letter in the
+         ORIGINAL text. Real names get capitalized in chat input even
+         after voice transcription; adjectives don't.
     """
     if not text:
         return False
-    stripped = _GREETING_LEAD.sub("", text.strip())
-    return bool(_SELF_INTRO_RE.search(stripped))
+    stripped_original = _GREETING_LEAD.sub("", text.strip())
+    m = _SELF_INTRO_RE.search(stripped_original)
+    if not m:
+        return False
+    captured = m.group(1).strip()
+    if not captured:
+        return False
+    # First word of the captured span is the strongest "is this a name?" signal.
+    first_word = captured.split()[0]
+    if first_word.lower() in _NON_NAME_TOKENS:
+        return False
+    # Names are typically capitalised in user input (chat AND voice STT).
+    # If the first character isn't uppercase, the captured span is almost
+    # certainly an adjective/adverb, not a name.
+    if not first_word[0].isupper():
+        return False
+    return True
 
 
 # KI-061 (2026-05-15) — human-readable summaries for the welcome-back
@@ -884,10 +923,13 @@ async def handle_turn(
                 readback_opener = "Here's what I've understood:"
             else:
                 readback_opener = f"{readback_opener} Here's what I've understood:"
+            # KI-068 (2026-05-15) — dropped the `**bold**` wrapper which was
+            # leaking as literal asterisks in the chat panel + getting read by
+            # TTS as "asterisk asterisk".
             reply = (
                 f"{readback_opener} {summary}. "
-                f"**If anything's wrong, just tell me** (e.g., \"actually I'm 31\", or "
-                f"\"I want to cover my parents too\"). "
+                f"If anything's wrong, just tell me — e.g., \"actually I'm 31\", or "
+                f"\"I want to cover my parents too\". "
                 f"Otherwise — want me to suggest 2-3 policies that fit your profile, "
                 f"or do you have a specific policy in mind to dig into?"
             )
@@ -1126,6 +1168,10 @@ async def handle_turn(
     # comparison) AND only when faithfulness passed (we don't log cites that
     # the safety gates rejected). Anonymous users (no profile.name) get no
     # log — there's no key to persist against.
+    #
+    # KI-068 (2026-05-15) — fire-and-forget via asyncio.create_task so disk
+    # writes don't block the reply path. The user shouldn't wait for N JSON
+    # file writes (one per cited policy) before seeing the bot's recommend.
     try:
         if (
             intent in ("recommendation", "comparison")
@@ -1134,28 +1180,43 @@ async def handle_turn(
             and session.profile.name
             and citations
         ):
+            import asyncio as _asyncio
             from backend.profile_store import record_policy_event
-            seen_slugs: set[str] = set()
-            for cite in citations:
-                slug = cite.get("policy_id") or cite.get("policy_slug")
-                insurer = cite.get("insurer_slug") or cite.get("insurer")
-                if not slug or not insurer or slug in seen_slugs:
-                    continue
-                seen_slugs.add(slug)
-                record_policy_event(
-                    persona_id_or_name=session.profile.name,
-                    profile=session.profile,
-                    event_type="shown",
-                    policy_slug=slug,
-                    insurer=insurer,
-                    session_id=session_id,
-                    reason="shown_in_recommendation",
-                )
+
+            def _log_shown_policies() -> None:
+                """Run all record_policy_event writes off the reply path."""
+                try:
+                    seen_slugs: set[str] = set()
+                    for cite in citations:
+                        slug = cite.get("policy_id") or cite.get("policy_slug")
+                        insurer = cite.get("insurer_slug") or cite.get("insurer")
+                        if not slug or not insurer or slug in seen_slugs:
+                            continue
+                        seen_slugs.add(slug)
+                        record_policy_event(
+                            persona_id_or_name=session.profile.name,
+                            profile=session.profile,
+                            event_type="shown",
+                            policy_slug=slug,
+                            insurer=insurer,
+                            session_id=session_id,
+                            reason="shown_in_recommendation",
+                        )
+                except Exception as inner:
+                    import logging
+                    logging.warning(
+                        "KI-063 shown_policies log failed (session=%s): %s: %s",
+                        session_id, type(inner).__name__, str(inner)[:200],
+                    )
+
+            # asyncio.to_thread offloads the file writes to the default
+            # threadpool; we don't await so the handler returns immediately.
+            _asyncio.create_task(_asyncio.to_thread(_log_shown_policies))
     except Exception as e:
         # Never let logging failures break the chat reply.
         import logging
         logging.warning(
-            "KI-063 shown_policies log failed (session=%s): %s: %s",
+            "KI-063 shown_policies scheduling failed (session=%s): %s: %s",
             session_id, type(e).__name__, str(e)[:200],
         )
 

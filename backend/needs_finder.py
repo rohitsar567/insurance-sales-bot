@@ -266,15 +266,59 @@ def infer_dependents_from_text(text: str) -> Optional[str]:
     return None
 
 
+# KI-068 (2026-05-15) — enum → human-readable labels for the readback
+# summary. Previously the bot read back "primary goal: first_buy; metro;
+# budget 30k_60k" verbatim, which sounds and reads like a schema dump.
+_PRIMARY_GOAL_LABELS = {
+    "first_buy": "first health policy",
+    "upgrade": "upgrading existing cover",
+    "compare_specific": "comparing specific policies",
+    "tax_planning": "tax planning",
+}
+_LOCATION_TIER_LABELS = {
+    "metro": "metro city",
+    "tier1": "tier-1 city",
+    "tier2": "tier-2 city",
+    "tier3": "tier-3 city",
+}
+_BUDGET_BAND_LABELS = {
+    "under_15k": "under ₹15,000/year",
+    "15k_30k": "₹15,000–30,000/year",
+    "30k_60k": "₹30,000–60,000/year",
+    "60k+": "₹60,000+/year",
+}
+_INCOME_BAND_LABELS = {
+    "under_5L": "under ₹5L",
+    "5_10L": "₹5–10L",
+    "10_25L": "₹10–25L",
+    "25L+": "₹25L+",
+}
+_DEPENDENTS_LABELS = {
+    "self": "just yourself",
+    "self+spouse": "you and your spouse",
+    "self+spouse+kids": "you, your spouse, and kids",
+    "self+kids": "you and your kids",
+    "self+parents": "you and your parents",
+    "self+spouse+parents": "you, your spouse, and parents",
+    "self+spouse+kids+parents": "you, your spouse, kids, and parents",
+}
+
+
 def readback_summary(profile: Profile) -> str:
-    """One-paragraph human-readable summary of the gathered profile."""
+    """One-paragraph human-readable summary of the gathered profile.
+
+    KI-068 (2026-05-15) — converts schema-level enum values
+    ("first_buy", "30k_60k", "metro") into spoken labels
+    ("first health policy", "₹30,000–60,000/year", "metro city") so the
+    readback reads like a sentence, not a JSON dump.
+    """
     bits = []
     if profile.age:
         bits.append(f"{profile.age} years old")
     if profile.dependents:
-        bits.append(f"covering {profile.dependents}")
+        bits.append(f"covering {_DEPENDENTS_LABELS.get(profile.dependents, profile.dependents)}")
     if profile.income_band:
-        bits.append(f"income {profile.income_band}")
+        bits.append(f"income {_INCOME_BAND_LABELS.get(profile.income_band, profile.income_band)}")
     ec = profile.existing_cover_inr
     if isinstance(ec, str):
         try:
@@ -288,9 +332,9 @@ def readback_summary(profile: Profile) -> str:
             else "no existing cover"
         )
     if profile.primary_goal:
-        bits.append(f"primary goal: {profile.primary_goal}")
+        bits.append(f"goal: {_PRIMARY_GOAL_LABELS.get(profile.primary_goal, profile.primary_goal)}")
     if profile.location_tier:
-        bits.append(profile.location_tier)
+        bits.append(_LOCATION_TIER_LABELS.get(profile.location_tier, profile.location_tier))
     if profile.parents_age_max:
         bits.append(f"parents up to age {profile.parents_age_max}")
     if profile.health_conditions:
@@ -304,5 +348,5 @@ def readback_summary(profile: Profile) -> str:
         if hc:
             bits.append(f"conditions: {', '.join(str(c) for c in hc)}")
     if profile.budget_band:
-        bits.append(f"budget {profile.budget_band}")
+        bits.append(f"budget {_BUDGET_BAND_LABELS.get(profile.budget_band, profile.budget_band)}")
     return "; ".join(bits) if bits else "(no profile yet)"
