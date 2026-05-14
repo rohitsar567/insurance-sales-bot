@@ -7,7 +7,7 @@ sdk: docker
 app_port: 7860
 pinned: false
 license: mit
-short_description: Voice AI advisor for Indian health insurance — grounded, cited, BFSI-compliance-grade
+short_description: Voice-first AI advisor for Indian health insurance
 ---
 
 # Insurance Sales Portfolio Expert
