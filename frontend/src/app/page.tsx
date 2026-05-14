@@ -740,18 +740,32 @@ export default function Page() {
             >
               <UploadIcon />
             </button>
+            {/* KI-029 (2026-05-14) — push-to-talk button is now LABELED and
+                visually highlighted when Voice is OFF, so the user can find
+                it. Was just a 40px icon indistinguishable from the upload
+                icon; user reported "no push to talk button" despite it
+                technically existing. */}
             <button
               type="button"
               onClick={recording ? stopRecording : startRecording}
               disabled={busy && !recording}
-              className={`shrink-0 w-11 h-11 rounded-xl flex items-center justify-center transition-all ${
-                recording ? "bg-[var(--error)] text-white animate-record-pulse" : "bg-[var(--muted)] hover:bg-[var(--border)]"
+              className={`shrink-0 h-11 px-3 rounded-xl flex items-center gap-1.5 transition-all text-sm font-medium ${
+                recording
+                  ? "bg-[var(--error)] text-white animate-record-pulse"
+                  : userPrefersLive
+                    ? "bg-[var(--muted)] hover:bg-[var(--border)] text-[var(--foreground)]"
+                    : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-md ring-2 ring-emerald-300 dark:ring-emerald-700"
               } disabled:opacity-40`}
               title={recording
-                ? "Push-to-talk: recording… click to stop or stay silent for 2s"
-                : "Push-to-talk (pauses always-on listening for one turn)"}
+                ? "Recording… click to stop, or stay silent for 2s"
+                : userPrefersLive
+                  ? "Push-to-talk (one turn — Live resumes after)"
+                  : "Push-to-talk — click and speak; Voice will stay off until you click the red dot"}
             >
               {recording ? <StopIcon /> : <MicIcon />}
+              <span className="hidden sm:inline">
+                {recording ? "Stop" : "Push-to-talk"}
+              </span>
             </button>
             <button
               type="button"
