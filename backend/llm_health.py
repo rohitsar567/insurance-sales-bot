@@ -421,29 +421,62 @@ def _ranked_candidates(chain_name: str) -> list[ModelHealth]:
 
 def get_primary(chain_name: str) -> Optional[str]:
     """Top-scoring election-eligible candidate, or None when no probe data
-    is fresh enough. Callers cold-start by falling back to chain[0]."""
+    is fresh enough.
+
+    KI-087 (2026-05-15) — **NIM-first preference.** NIM is the strategic
+    free provider (ADR-019, single-key, $0 cost, 110+ models, no daily
+    cap). Groq has a hard 100K tokens/day free-tier cap and OpenRouter
+    charges a real USD balance. Both should serve as EMERGENCY fallback
+    only, not as primary just because their probe latency is lower.
+    Election therefore prefers ANY eligible NIM candidate over ALL
+    non-NIM candidates. Only when the NIM pool is empty (every NIM
+    model is down, throttled, or out of credits) does election fall
+    through to Groq/OpenRouter as primary. Within the NIM pool, the
+    standard latency × success_rate score still picks the fastest
+    healthy NIM model.
+    """
     ranked = _ranked_candidates(chain_name)
-    return ranked[0].model if ranked else None
+    if not ranked:
+        return None
+    # KI-087: NIM-first within the eligible set.
+    nim_pool = [h for h in ranked if provider_of(h.model) == "nim"]
+    if nim_pool:
+        return nim_pool[0].model
+    # No eligible NIM candidate — fall through to cross-provider primary.
+    return ranked[0].model
 
 
 def get_backup(chain_name: str) -> Optional[str]:
     """Second-best election candidate. Prefers a DIFFERENT provider from
-    primary (NIM vs Groq vs OpenRouter) so a single provider's regional
-    outage can't take out both. Falls back to the next-best same-provider
-    candidate when no cross-provider option qualifies — better an in-
-    family backup than none."""
+    primary so a single provider's regional outage can't take out both.
+
+    KI-087 (2026-05-15) — when PRIMARY is NIM (the typical case under
+    NIM-first preference), BACKUP is the best NON-NIM candidate
+    (Groq / OpenRouter) — kept as the cross-provider safety net. When
+    NIM is wholly unavailable and PRIMARY is non-NIM, BACKUP is the
+    next-best non-NIM candidate or, failing that, the next-best
+    same-provider candidate.
+    """
     ranked = _ranked_candidates(chain_name)
     if len(ranked) < 2:
         # No usable backup. Either zero candidates or only one (in which
         # case the cold-start path in NimChainLLM falls back to chain[1]).
         return None
-    primary_provider = provider_of(ranked[0].model)
-    # Prefer cross-provider
-    for h in ranked[1:]:
+    primary = get_primary(chain_name)
+    if primary is None:
+        return None
+    primary_provider = provider_of(primary)
+    # Prefer cross-provider against the PRIMARY's provider.
+    for h in ranked:
+        if h.model == primary:
+            continue
         if provider_of(h.model) != primary_provider:
             return h.model
     # No cross-provider candidate — accept same-provider next-best.
-    return ranked[1].model
+    for h in ranked:
+        if h.model != primary:
+            return h.model
+    return None
 
 
 def _is_rate_limit_error(error_class: str) -> bool:

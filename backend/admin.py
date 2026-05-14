@@ -584,3 +584,250 @@ async def admin_performance(
         "usage_24h":  _read_usage_24h(),
         "snapshot_ts": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
+
+
+# ---------------------------------------------------------------------------
+# /api/admin/llm-health — KI-086 LLM Health & Credits snapshot
+#
+# Surfaces KI-080..KI-085 telemetry on the existing admin "LLM Chain" tab so
+# the operator can see at a glance:
+#   - per-chain elected PRIMARY + BACKUP (KI-080)
+#   - each candidate's latest probe latency + success rate (KI-080)
+#   - credits remaining + unit + reset deadline (KI-085)
+#   - degraded-until window when a candidate was demoted on 429 (KI-084)
+#   - per-turn served-model distribution from the last N llm_usage.jsonl rows
+#
+# Response shape — three top-level keys (chains / candidates / recent_turns) +
+# a snapshot_ts. All durations on the wire are seconds-from-now (relative,
+# never absolute monotonic) so the frontend doesn't need to know the server's
+# monotonic clock origin.
+# ---------------------------------------------------------------------------
+
+
+# Map of the on-wire chain role name → human-friendly label. The roles
+# themselves match llm_health.get_primary() input strings exactly.
+_LLM_HEALTH_CHAIN_ROLES = ("brain", "fast_brain", "judge")
+
+
+def _chain_names_map() -> dict[str, list[str]]:
+    """Live (post-admin-override) chain config — read off the module so admin
+    reorders applied earlier in the same process are reflected immediately."""
+    from backend.providers import nvidia_nim_llm as nim
+    return {
+        "brain":      list(getattr(nim, "BRAIN_CHAIN", [])),
+        "fast_brain": list(getattr(nim, "FAST_BRAIN_CHAIN", [])),
+        "judge":      list(getattr(nim, "JUDGE_CHAIN", [])),
+    }
+
+
+def _seconds_until_monotonic(deadline: Optional[float]) -> Optional[float]:
+    """Convert a monotonic-time deadline (as stamped in ModelHealth) into a
+    seconds-from-now value the frontend can render as an ETA. Returns None
+    when the deadline is missing OR already in the past; the caller decides
+    how to render `None` vs `0`."""
+    if deadline is None:
+        return None
+    import time as _time
+    rem = deadline - _time.monotonic()
+    if rem <= 0:
+        return 0.0
+    return round(rem, 1)
+
+
+def _probe_age_seconds(iso_ts: Optional[str]) -> Optional[float]:
+    """Wall-clock seconds since a probe iso8601 timestamp. Cheap wrapper
+    around llm_health._iso_age_seconds for the wire payload."""
+    age = llm_health._iso_age_seconds(iso_ts)
+    if age is None:
+        return None
+    return max(0.0, round(age, 1))
+
+
+def _success_rate_for(h) -> Optional[float]:
+    """Last-N probes success rate as a float fraction. Returns None when no
+    probe history yet."""
+    hist = getattr(h, "probe_history", None) or []
+    if not hist:
+        return None
+    hits = sum(1 for r in hist if r.get("ok"))
+    return round(hits / len(hist), 4)
+
+
+def _candidate_snapshot(model: str, health, chain_membership: list[str],
+                        now_mono: float) -> dict:
+    """Per-candidate row for Section B. Always returns a dict — even when
+    the model has never been probed yet (status='unknown', everything else
+    None) — so the frontend table doesn't have to handle missing rows."""
+    if health is None:
+        return {
+            "model":              model,
+            "provider":           llm_health.provider_of(model),
+            "chain_membership":   chain_membership,
+            "status":             "unknown",
+            "latency_ms":         None,
+            "success_rate":       None,
+            "probe_age_seconds":  None,
+            "last_error":         None,
+            "credits_remaining":  None,
+            "credits_unit":       None,
+            "credits_low_water":  None,
+            "credits_reset_in_seconds": None,
+            "degraded_for_seconds":    None,
+        }
+    deg_until = getattr(health, "degraded_until_monotonic", 0.0) or 0.0
+    deg_for = None
+    if deg_until and deg_until > now_mono:
+        deg_for = round(deg_until - now_mono, 1)
+    return {
+        "model":             model,
+        "provider":          llm_health.provider_of(model),
+        "chain_membership":  chain_membership,
+        "status":            health.status,
+        "latency_ms":        health.latency_ms,
+        "success_rate":      _success_rate_for(health),
+        "probe_age_seconds": _probe_age_seconds(health.tested_at),
+        "last_error":        health.last_error,
+        "credits_remaining": health.credits_remaining,
+        "credits_unit":      health.credits_unit,
+        "credits_low_water": health.credits_low_water,
+        "credits_reset_in_seconds": _seconds_until_monotonic(health.credits_reset_at),
+        "degraded_for_seconds":     deg_for,
+    }
+
+
+def _chain_summary(role: str, chains: dict[str, list[str]],
+                   state: dict, now_mono: float) -> dict:
+    """Per-chain block for Section A. Includes elected primary/backup +
+    `all_credit_exhausted` so the frontend can render a banner when every
+    candidate in the chain is gated out by credits/quota."""
+    chain = chains.get(role) or []
+    primary = llm_health.get_primary(role)
+    backup = llm_health.get_backup(role)
+
+    # all_credit_exhausted: every chain member with a non-None credit signal
+    # is at-or-below its low-water mark. Chains with no signal at all are
+    # NOT flagged exhausted (cold-start should be permissive — election will
+    # try them and surface a real failure if any).
+    any_signal = False
+    all_exhausted = True
+    for m in chain:
+        h = state.get(m)
+        if h is None or h.credits_remaining is None:
+            continue
+        any_signal = True
+        if h.credits_remaining > (h.credits_low_water or 0.0):
+            all_exhausted = False
+            break
+    chain_credit_exhausted = bool(any_signal and all_exhausted)
+
+    return {
+        "role":            role,
+        "chain":           chain,
+        "elected_primary": primary,
+        "elected_backup":  backup,
+        "primary_snapshot": _candidate_snapshot(
+            primary, state.get(primary), [role], now_mono,
+        ) if primary else None,
+        "backup_snapshot": _candidate_snapshot(
+            backup, state.get(backup), [role], now_mono,
+        ) if backup else None,
+        "chain_credit_exhausted": chain_credit_exhausted,
+    }
+
+
+def _recent_turns(n: int = 20) -> list[dict]:
+    """Section C — last N completed turns from 40-data/llm_usage.jsonl,
+    most-recent-first. We keep the row shape close to the raw log entries
+    so the frontend can render new fields if the producer adds them.
+
+    Fields surfaced (all optional — older rows pre-KI-080 won't carry
+    elected_primary/backup):
+      ts / role / chain_primary / elected_primary / elected_backup /
+      served_model / latency_ms / success / fallback_reason
+    """
+    usage_path = _REPO_ROOT / "40-data" / "llm_usage.jsonl"
+    # Re-use the existing tail-reader; cap at N so we don't pay for the
+    # full 1000-row tail when the panel only renders 20.
+    rows = _tail_jsonl(usage_path, max(n, 20))
+    if not rows:
+        return []
+    out: list[dict] = []
+    # tail_jsonl returns oldest-first; reverse to newest-first.
+    for r in reversed(rows[-n:]):
+        out.append({
+            "ts":              r.get("ts"),
+            "role":            r.get("role"),
+            "chain_primary":   r.get("chain_primary"),
+            "elected_primary": r.get("elected_primary"),
+            "elected_backup":  r.get("elected_backup"),
+            "served_model":    r.get("served_model"),
+            "latency_ms":      r.get("latency_ms"),
+            "success":         r.get("success"),
+            "fallback_reason": r.get("fallback_reason"),
+        })
+    return out
+
+
+@router.get("/api/admin/llm-health")
+async def admin_llm_health(
+    request: Request,
+    x_admin_password: Optional[str] = Header(default=None, alias="X-Admin-Password"),
+):
+    """KI-086 — composite LLM health + credits snapshot for the LLM Chain tab.
+
+    Returns three keys:
+      chains       — Section A: one entry per chain (brain/fast_brain/judge)
+                     with elected primary + backup + their snapshots +
+                     chain_credit_exhausted banner flag.
+      candidates   — Section B: one row per known candidate across all chains,
+                     with chain_membership listing every chain it appears in,
+                     latency / success / credits / degraded-window state.
+      recent_turns — Section C: last 20 served turns from llm_usage.jsonl.
+    Plus snapshot_ts so the UI can show "updated <wallclock>".
+    """
+    _check_admin(request, x_admin_password)
+
+    import time as _time
+    now_mono = _time.monotonic()
+
+    chains = _chain_names_map()
+    state = llm_health.load()  # {model -> ModelHealth}
+
+    # Section A: per-chain election + credit banner.
+    chains_block = [
+        _chain_summary(role, chains, state, now_mono)
+        for role in _LLM_HEALTH_CHAIN_ROLES
+    ]
+
+    # Section B: every known candidate × chain membership (deduped).
+    # Membership is the list of chain roles a model belongs to.
+    membership: dict[str, list[str]] = {}
+    for role, models in chains.items():
+        for m in models:
+            membership.setdefault(m, []).append(role)
+    # Also include any candidate present in state but not currently in any
+    # chain (admin reorder may have just removed it) so the operator can
+    # still see its last probe + credits.
+    for m in state.keys():
+        membership.setdefault(m, [])
+
+    candidates_block = [
+        _candidate_snapshot(m, state.get(m), membership[m], now_mono)
+        for m in membership.keys()
+    ]
+    # Sort: degraded first (red), then non-healthy (amber), healthy last,
+    # then by model name. Helps the operator see problems at the top.
+    _status_rank = {"down": 0, "degraded": 1, "unknown": 2, "healthy": 3}
+    candidates_block.sort(
+        key=lambda c: (_status_rank.get(c["status"], 9), c["model"])
+    )
+
+    # Section C: last 20 turns.
+    recent = _recent_turns(20)
+
+    return {
+        "chains":       chains_block,
+        "candidates":   candidates_block,
+        "recent_turns": recent,
+        "snapshot_ts":  datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }

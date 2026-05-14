@@ -347,6 +347,114 @@
     .chain-table .icon-btn { padding: 2px 7px; font-size: 12px; line-height: 1.2; }
     .chain-table tbody tr.is-primary td { background: rgba(63, 185, 80, 0.05); }
 
+    /* KI-086: LLM Health & Credits section */
+    .llm-health-chains {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 12px;
+    }
+    .llm-health-chain {
+      padding: 12px;
+      background: #0b0d12;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    .llm-health-chain .chain-head {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 10px;
+    }
+    .llm-health-chain .chain-head .role-badge { margin-right: 4px; }
+    .llm-health-chain .role-block {
+      margin-bottom: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px dashed var(--border);
+    }
+    .llm-health-chain .role-block:last-of-type { border-bottom: none; }
+    .llm-health-chain .role-block .role-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .llm-health-chain .role-block .model-name {
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, monospace;
+      font-size: 12px;
+      word-break: break-all;
+    }
+    .llm-health-chain .role-block .stats-line {
+      margin-top: 4px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .llm-health-chain .role-block .stats-line .sep {
+      margin: 0 6px;
+      color: #3a4250;
+    }
+    .llm-health-chain .credit-banner {
+      margin-top: 8px;
+      padding: 8px 10px;
+      background: rgba(248, 81, 73, 0.12);
+      border: 1px solid rgba(248, 81, 73, 0.45);
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--red);
+    }
+    .llm-health-chain .none-elected {
+      color: var(--yellow);
+      font-style: italic;
+      font-size: 12px;
+    }
+
+    /* Status badges — three colors: ✓ green / ⚠ amber / ✗ red */
+    .health-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      vertical-align: middle;
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, monospace;
+    }
+    .health-badge.ok       { background: rgba(63, 185, 80, 0.15);  color: var(--green);  border: 1px solid rgba(63, 185, 80, 0.4); }
+    .health-badge.warn     { background: rgba(210, 153, 34, 0.15); color: var(--yellow); border: 1px solid rgba(210, 153, 34, 0.4); }
+    .health-badge.bad      { background: rgba(248, 81, 73, 0.15);  color: var(--red);    border: 1px solid rgba(248, 81, 73, 0.4); }
+    .health-badge.unknown  { background: rgba(139, 149, 164, 0.15);color: var(--muted);  border: 1px solid rgba(139, 149, 164, 0.4); }
+
+    /* Candidate health grid */
+    .llm-health-candidates {
+      overflow-x: auto;
+    }
+    .llm-health-candidates table { font-size: 12px; }
+    .llm-health-candidates td.mono,
+    .llm-health-candidates td.model-cell {
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, monospace;
+      word-break: break-all;
+      max-width: 280px;
+    }
+    .llm-health-candidates td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .llm-health-candidates td.chain-mem {
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .llm-health-candidates td.credits {
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, monospace;
+      font-size: 11px;
+    }
+
+    /* Recent turns table */
+    .llm-health-recent table { font-size: 12px; }
+    .llm-health-recent td { vertical-align: middle; }
+    .llm-health-recent td.mono {
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, monospace;
+      font-size: 11px;
+      word-break: break-all;
+      max-width: 240px;
+    }
+    .llm-health-recent td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .llm-health-recent .served-diff { color: var(--yellow); }
+
     .unverified-flag {
       display: inline-block;
       margin-left: 6px;
@@ -554,6 +662,24 @@
 
     <!-- Tab 3: LLM Chain (existing functionality, preserved) -->
     <section id="tab-chain" class="tabpane" role="tabpanel">
+      <!-- KI-086: LLM Health & Credits snapshot (KI-080..KI-085 telemetry) -->
+      <div class="card" id="llm-health-card">
+        <div class="row-between" style="margin-bottom: 12px;">
+          <h2>LLM health &amp; credits <span class="small muted" id="llm-health-snapshot-ts"></span></h2>
+          <div class="actions">
+            <button id="btn-refresh-llm-health">Refresh</button>
+          </div>
+        </div>
+        <!-- Section A: per-chain election cards -->
+        <div id="llm-health-chains" class="llm-health-chains"></div>
+        <!-- Section B: candidate health grid -->
+        <h3 style="margin-top: 18px;">Candidate health grid</h3>
+        <div id="llm-health-candidates" class="llm-health-candidates"></div>
+        <!-- Section C: recent turns -->
+        <h3 style="margin-top: 18px;">Recent turns (last 20)</h3>
+        <div id="llm-health-recent" class="llm-health-recent"></div>
+      </div>
+
       <!-- Health -->
       <div class="card">
         <div class="row-between" style="margin-bottom: 12px;">
@@ -597,6 +723,10 @@
         health: null,    // { models: [...], counters: {...} }
         chains: null,    // { brain: [...], fast_brain: [...], judge: [...] }
         usage: null,     // { brain: {...}, fast_brain: {...}, judge: {...} }
+        // KI-086 — LLM Health & Credits snapshot
+        // Shape: { chains: [...], candidates: [...], recent_turns: [...], snapshot_ts }
+        llmHealth: null,
+        llmHealthPollTimer: null,
         lastUpdatedAt: null,
         chainLoaded: false,
         // Profiles tab
@@ -1222,13 +1352,321 @@
       }
 
       function refreshChain() {
-        return Promise.all([fetchHealth(), fetchChains(), fetchUsage()]).then(function () {
+        return Promise.all([fetchHealth(), fetchChains(), fetchUsage(), fetchLlmHealth()]).then(function () {
           renderCounters();
           renderHealthTable();
           renderChains();
+          renderLlmHealth();
           setLastUpdated();
           STATE.chainLoaded = true;
         });
+      }
+
+      // ----- KI-086: LLM Health & Credits -----
+      // Fetcher — tolerant of 404 (endpoint not deployed yet); leaves
+      // STATE.llmHealth null so renderer falls back to pending-message.
+      function fetchLlmHealth() {
+        return apiGetTolerant('/api/admin/llm-health').then(function (data) {
+          STATE.llmHealth = data;
+        }).catch(function (err) {
+          if (err && err.notDeployed) {
+            STATE.llmHealth = { __notDeployed: true };
+          } else {
+            STATE.llmHealth = null;
+          }
+        });
+      }
+
+      function fmtCredits(remaining, unit, lowWater) {
+        if (remaining == null || unit == null) return '—';
+        var n = Number(remaining);
+        if (isNaN(n)) return '—';
+        var rounded;
+        if (n >= 1000) rounded = (n / 1000).toFixed(1) + 'K';
+        else if (n >= 1) rounded = n.toFixed(0);
+        else rounded = n.toFixed(3);
+        var unitLabel;
+        switch (unit) {
+          case 'tokens_day':   unitLabel = 'tokens/day'; break;
+          case 'tokens_min':   unitLabel = 'tokens/min'; break;
+          case 'usd_balance':  unitLabel = 'USD'; break;
+          case 'requests_min': unitLabel = 'req/min'; break;
+          default:             unitLabel = String(unit);
+        }
+        var s = rounded + ' ' + unitLabel;
+        if (lowWater != null && Number(lowWater) > 0) {
+          s += ' (water ' + Number(lowWater).toFixed(unit === 'usd_balance' ? 2 : 0) + ')';
+        }
+        return s;
+      }
+
+      function fmtDurationShort(s) {
+        if (s == null) return '—';
+        var n = Number(s);
+        if (!isFinite(n) || n <= 0) return '0s';
+        if (n < 60)   return Math.round(n) + 's';
+        if (n < 3600) return Math.floor(n / 60) + 'm ' + Math.round(n % 60) + 's';
+        var h = Math.floor(n / 3600);
+        var rem = n - h * 3600;
+        var m = Math.floor(rem / 60);
+        return h + 'h ' + m + 'm';
+      }
+
+      // Pick badge severity for the candidate state.
+      // ✓ ok       — healthy + no degraded window
+      // ⚠ warn     — degraded OR rate-limited (credits at/below water) OR credits exhausting OR degraded_for_seconds>0
+      // ✗ bad      — down OR no probe within 600s (status='unknown' AND probe age >0)
+      function candidateBadge(row) {
+        var st = (row.status || 'unknown').toLowerCase();
+        var degFor = row.degraded_for_seconds;
+        var credsRem = row.credits_remaining;
+        var credsLow = row.credits_low_water;
+        if (st === 'down') return { cls: 'bad', symbol: '✗', label: 'DOWN' };
+        if (degFor != null && degFor > 0) {
+          return { cls: 'warn', symbol: '⚠', label: 'DEGRADED ' + fmtDurationShort(degFor) };
+        }
+        if (credsRem != null && credsLow != null && Number(credsRem) <= Number(credsLow)) {
+          return { cls: 'warn', symbol: '⚠', label: 'RATE-LIMITED' };
+        }
+        if (st === 'degraded') return { cls: 'warn', symbol: '⚠', label: 'DEGRADED' };
+        if (st === 'healthy') return { cls: 'ok', symbol: '✓', label: 'HEALTHY' };
+        return { cls: 'unknown', symbol: '?', label: 'UNKNOWN' };
+      }
+
+      function renderLlmHealthChain(chainBlock) {
+        var card = createEl('div', { className: 'llm-health-chain' });
+        var head = createEl('div', { className: 'chain-head' });
+        var badge = createEl('span', { className: 'role-badge', text: (ROLE_LABELS[chainBlock.role] || chainBlock.role).toUpperCase() });
+        badge.style.background = ROLE_COLORS[chainBlock.role] || '#444';
+        head.appendChild(badge);
+        var title = createEl('span', { text: 'Election' });
+        title.style.fontWeight = '600';
+        title.style.fontSize = '13px';
+        head.appendChild(title);
+        card.appendChild(head);
+
+        // Render PRIMARY + BACKUP rows.
+        ['primary', 'backup'].forEach(function (role) {
+          var snap = chainBlock[role + '_snapshot'];
+          var name = chainBlock['elected_' + role];
+          var block = createEl('div', { className: 'role-block' });
+          var label = createEl('div', { className: 'role-label', text: role.toUpperCase() });
+          block.appendChild(label);
+          if (!name || !snap) {
+            var none = createEl('div', { className: 'none-elected', text: 'none elected (no eligible candidate)' });
+            block.appendChild(none);
+            card.appendChild(block);
+            return;
+          }
+          var nameLine = createEl('div', { className: 'model-name' });
+          var b = candidateBadge(snap);
+          var statusBadge = createEl('span', { className: 'health-badge ' + b.cls, text: b.symbol + ' ' + b.label });
+          statusBadge.style.marginRight = '6px';
+          nameLine.appendChild(statusBadge);
+          nameLine.appendChild(document.createTextNode(name));
+          block.appendChild(nameLine);
+
+          var stats = createEl('div', { className: 'stats-line' });
+          var pushed = false;
+          function pushPart(text) {
+            if (pushed) stats.appendChild(createEl('span', { className: 'sep', text: '·' }));
+            stats.appendChild(document.createTextNode(text));
+            pushed = true;
+          }
+          if (snap.latency_ms != null) pushPart('latency ' + fmtLatency(snap.latency_ms));
+          if (snap.success_rate != null) pushPart('success ' + (Number(snap.success_rate) * 100).toFixed(0) + '%');
+          if (snap.credits_remaining != null) pushPart('credits ' + fmtCredits(snap.credits_remaining, snap.credits_unit, null));
+          if (snap.credits_reset_in_seconds != null && snap.credits_reset_in_seconds > 0) {
+            pushPart('reset in ' + fmtDurationShort(snap.credits_reset_in_seconds));
+          }
+          if (snap.degraded_for_seconds != null && snap.degraded_for_seconds > 0) {
+            pushPart('sin-bin ' + fmtDurationShort(snap.degraded_for_seconds));
+          }
+          if (!pushed) stats.textContent = 'No telemetry yet.';
+          block.appendChild(stats);
+          card.appendChild(block);
+        });
+
+        if (chainBlock.chain_credit_exhausted) {
+          var banner = createEl('div', { className: 'credit-banner' });
+          banner.textContent = 'All candidates for ' + (ROLE_LABELS[chainBlock.role] || chainBlock.role).toUpperCase() +
+            '_CHAIN are credit-exhausted; canonical fallback will fire until quotas reset.';
+          card.appendChild(banner);
+        }
+        return card;
+      }
+
+      function renderLlmHealthCandidates(rows) {
+        var wrap = $('llm-health-candidates');
+        clearChildren(wrap);
+        if (!rows || !rows.length) {
+          wrap.appendChild(createEl('div', { className: 'empty-state', text: 'No candidates known yet (probe loop hasn’t run).' }));
+          return;
+        }
+        var table = createEl('table');
+        var thead = createEl('thead');
+        var tr = createEl('tr');
+        ['Status', 'Provider', 'Model', 'Chain(s)', 'Probe age', 'Latency', 'Success', 'Credits', 'Reset / sin-bin'].forEach(function (h, i) {
+          var th = createEl('th', { text: h });
+          if (i >= 4) th.style.textAlign = i === 8 ? 'left' : 'right';
+          tr.appendChild(th);
+        });
+        thead.appendChild(tr);
+        table.appendChild(thead);
+
+        var tbody = createEl('tbody');
+        rows.forEach(function (r) {
+          var row = createEl('tr');
+          var b = candidateBadge(r);
+          var stCell = createEl('td');
+          var badge = createEl('span', { className: 'health-badge ' + b.cls, text: b.symbol + ' ' + b.label });
+          stCell.appendChild(badge);
+          row.appendChild(stCell);
+
+          row.appendChild(createEl('td', { className: 'mono', text: (r.provider || '—').toUpperCase() }));
+          row.appendChild(createEl('td', { className: 'model-cell', text: r.model }));
+
+          var chainsLbl = (r.chain_membership || []).map(function (rr) { return (ROLE_LABELS[rr] || rr).toUpperCase(); }).join(', ');
+          row.appendChild(createEl('td', { className: 'chain-mem', text: chainsLbl || '—' }));
+
+          row.appendChild(createEl('td', { className: 'num', text: r.probe_age_seconds != null ? fmtDurationShort(r.probe_age_seconds) + ' ago' : '—' }));
+          row.appendChild(createEl('td', { className: 'num', text: r.latency_ms != null ? fmtLatency(r.latency_ms) : '—' }));
+          row.appendChild(createEl('td', { className: 'num', text: r.success_rate != null ? (Number(r.success_rate) * 100).toFixed(0) + '%' : '—' }));
+          row.appendChild(createEl('td', { className: 'credits', text: fmtCredits(r.credits_remaining, r.credits_unit, r.credits_low_water) }));
+
+          var resetParts = [];
+          if (r.credits_reset_in_seconds != null && r.credits_reset_in_seconds > 0) {
+            resetParts.push('quota in ' + fmtDurationShort(r.credits_reset_in_seconds));
+          }
+          if (r.degraded_for_seconds != null && r.degraded_for_seconds > 0) {
+            resetParts.push('sin-bin ' + fmtDurationShort(r.degraded_for_seconds));
+          }
+          row.appendChild(createEl('td', { text: resetParts.length ? resetParts.join(' · ') : '—' }));
+
+          tbody.appendChild(row);
+        });
+        table.appendChild(tbody);
+        wrap.appendChild(table);
+      }
+
+      function renderLlmHealthRecent(turns) {
+        var wrap = $('llm-health-recent');
+        clearChildren(wrap);
+        if (!turns || !turns.length) {
+          wrap.appendChild(createEl('div', { className: 'empty-state', text: 'No turns logged yet.' }));
+          return;
+        }
+        var table = createEl('table');
+        var thead = createEl('thead');
+        var tr = createEl('tr');
+        ['Time', 'Chain', 'Elected primary', 'Served model', 'Latency', 'Result'].forEach(function (h, i) {
+          var th = createEl('th', { text: h });
+          if (i === 4) th.style.textAlign = 'right';
+          tr.appendChild(th);
+        });
+        thead.appendChild(tr);
+        table.appendChild(thead);
+
+        var tbody = createEl('tbody');
+        turns.forEach(function (t) {
+          var row = createEl('tr');
+          row.appendChild(createEl('td', { text: fmtIST(t.ts) }));
+          var chainCell = createEl('td');
+          if (t.role) {
+            var badge = createEl('span', { className: 'role-badge', text: (ROLE_LABELS[t.role] || t.role).toUpperCase() });
+            badge.style.background = ROLE_COLORS[t.role] || '#444';
+            chainCell.appendChild(badge);
+          } else {
+            chainCell.textContent = '—';
+          }
+          row.appendChild(chainCell);
+
+          var electedPrimary = t.elected_primary || t.chain_primary || '—';
+          row.appendChild(createEl('td', { className: 'mono', text: electedPrimary }));
+
+          var servedCell = createEl('td', { className: 'mono' });
+          var served = t.served_model || '—';
+          servedCell.textContent = served;
+          if (electedPrimary !== '—' && served !== '—' && served !== electedPrimary) {
+            // Served by backup/fallback — flag visually.
+            servedCell.classList.add('served-diff');
+            servedCell.title = 'Served by backup/fallback — elected primary was unavailable.';
+          }
+          row.appendChild(servedCell);
+
+          row.appendChild(createEl('td', { className: 'num', text: t.latency_ms != null ? fmtLatency(t.latency_ms) : '—' }));
+
+          var resultCell = createEl('td');
+          var ok = t.success === true;
+          var resBadge = createEl('span', { className: 'health-badge ' + (ok ? 'ok' : 'bad'), text: (ok ? '✓ OK' : '✗ FAIL') });
+          resultCell.appendChild(resBadge);
+          if (t.fallback_reason) {
+            var fr = createEl('span', { className: 'small muted', text: ' ' + t.fallback_reason });
+            resultCell.appendChild(fr);
+          }
+          row.appendChild(resultCell);
+
+          tbody.appendChild(row);
+        });
+        table.appendChild(tbody);
+        wrap.appendChild(table);
+      }
+
+      function renderLlmHealth() {
+        var chainsHost = $('llm-health-chains');
+        var snapEl = $('llm-health-snapshot-ts');
+        if (!chainsHost) return;
+
+        if (!STATE.llmHealth) {
+          clearChildren(chainsHost);
+          chainsHost.appendChild(createEl('div', { className: 'empty-state', text: 'Loading…' }));
+          clearChildren($('llm-health-candidates'));
+          clearChildren($('llm-health-recent'));
+          if (snapEl) snapEl.textContent = '';
+          return;
+        }
+        if (STATE.llmHealth.__notDeployed) {
+          clearChildren(chainsHost);
+          chainsHost.appendChild(buildPendingMessage('/api/admin/llm-health'));
+          clearChildren($('llm-health-candidates'));
+          clearChildren($('llm-health-recent'));
+          if (snapEl) snapEl.textContent = '';
+          return;
+        }
+
+        clearChildren(chainsHost);
+        (STATE.llmHealth.chains || []).forEach(function (c) {
+          chainsHost.appendChild(renderLlmHealthChain(c));
+        });
+
+        renderLlmHealthCandidates(STATE.llmHealth.candidates || []);
+        renderLlmHealthRecent(STATE.llmHealth.recent_turns || []);
+
+        if (snapEl) {
+          snapEl.textContent = STATE.llmHealth.snapshot_ts
+            ? '· updated ' + fmtIST(STATE.llmHealth.snapshot_ts)
+            : '';
+        }
+      }
+
+      // Auto-poll every 30s while the LLM Chain tab is the active tab.
+      // The backend's probe loop only refreshes every 5min anyway — we poll
+      // faster than that because credit + degraded-window state changes
+      // sub-tick (chat hot path stamps both) and the operator needs to see
+      // those without manually clicking Refresh.
+      var LLM_HEALTH_POLL_INTERVAL_MS = 30000;
+      function startLlmHealthPolling() {
+        stopLlmHealthPolling();
+        STATE.llmHealthPollTimer = setInterval(function () {
+          if (STATE.activeTab !== 'chain') return;
+          fetchLlmHealth().then(renderLlmHealth).catch(function () { /* swallow */ });
+        }, LLM_HEALTH_POLL_INTERVAL_MS);
+      }
+      function stopLlmHealthPolling() {
+        if (STATE.llmHealthPollTimer) {
+          clearInterval(STATE.llmHealthPollTimer);
+          STATE.llmHealthPollTimer = null;
+        }
       }
 
       function handleFetchErr(err) {
@@ -1753,12 +2191,19 @@
         // Lazy-load this tab's data
         if (tab === 'profiles') {
           loadProfiles(false);
+          stopLlmHealthPolling();
         } else if (tab === 'performance') {
           loadPerformance(false);
+          stopLlmHealthPolling();
         } else if (tab === 'chain') {
           if (!STATE.chainLoaded) {
             refreshChain().catch(handleFetchErr);
+          } else {
+            // Tab already loaded — refresh just the KI-086 panel on re-entry
+            // so the operator immediately sees fresh credits / sin-bin state.
+            fetchLlmHealth().then(renderLlmHealth).catch(function () { /* swallow */ });
           }
+          startLlmHealthPolling();
         }
       }
 
@@ -1828,11 +2273,13 @@
           STATE.health = null;
           STATE.chains = null;
           STATE.usage = null;
+          STATE.llmHealth = null;
           STATE.profiles = null;
           STATE.profilesLoaded = false;
           STATE.performance = null;
           STATE.performanceLoaded = false;
           STATE.chainLoaded = false;
+          stopLlmHealthPolling();
           try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
           showGate();
           toast('Locked', 'info');
@@ -1885,6 +2332,20 @@
             .catch(handleFetchErr)
             .then(function () { btn.disabled = false; btn.textContent = 'Force fresh probe (slow)'; });
         };
+
+        // KI-086 — manual refresh for the LLM Health & Credits card.
+        var llmHealthBtn = $('btn-refresh-llm-health');
+        if (llmHealthBtn) {
+          llmHealthBtn.onclick = function () {
+            var btn = this;
+            btn.disabled = true;
+            btn.textContent = 'Refreshing…';
+            fetchLlmHealth()
+              .then(function () { renderLlmHealth(); toast('LLM health refreshed', 'success'); })
+              .catch(handleFetchErr)
+              .then(function () { btn.disabled = false; btn.textContent = 'Refresh'; });
+          };
+        }
       }
 
       // ----- Boot -----
