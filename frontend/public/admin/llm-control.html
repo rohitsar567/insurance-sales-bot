@@ -1524,11 +1524,15 @@
         // KI-186 (2026-05-15) — added "Tier" column so Gemini + OR rows can
         // be shown alongside NIM rows. Tier 0 = Google AI Studio, Tier 1 =
         // NIM (probed), Tier 2 = OpenRouter free pool.
-        var availCols = ['Model', 'Tier', 'Status'].concat(SIMPLE_USE_ORDER.map(function (r) { return SIMPLE_USE_LABELS[r]; }));
+        // KI-187 (2026-05-15) — added explicit "Provider" column ("Google
+        // AI Studio" / "NVIDIA NIM" / "OpenRouter") so users don't have to
+        // infer provider from the model-id suffix (e.g., qwen3-next-80b
+        // appears in BOTH NIM and OR; only `:free` suffix disambiguated).
+        var availCols = ['Model', 'Provider', 'Tier', 'Status'].concat(SIMPLE_USE_ORDER.map(function (r) { return SIMPLE_USE_LABELS[r]; }));
         availCols.forEach(function (h, i) {
           var th = createEl('th', { text: h });
-          if (i >= 3) th.style.textAlign = 'center';
-          if (i === 1 || i === 2) th.style.textAlign = 'center';
+          if (i >= 4) th.style.textAlign = 'center';
+          if (i === 1 || i === 2 || i === 3) th.style.textAlign = 'center';
           availHr.appendChild(th);
         });
         availThead.appendChild(availHr);
@@ -1543,16 +1547,31 @@
         // garbage invariant).
         var STATIC_TIER_ROWS = [
           // Tier 0 — Google AI Studio (Gemini, free 1500/day)
-          { model: 'google/gemini-2.5-flash',          tier: 'T0', healthy: true,  brainFast: '—',       brainMain: 'primary', judge: '—' },
-          { model: 'google/gemini-2.5-flash-lite',     tier: 'T0', healthy: true,  brainFast: 'primary', brainMain: '—',       judge: '—' },
+          { model: 'google/gemini-2.5-flash',          provider: 'Google AI Studio', tier: 'T0', healthy: true,  brainFast: '—',       brainMain: 'primary', judge: '—' },
+          { model: 'google/gemini-2.5-flash-lite',     provider: 'Google AI Studio', tier: 'T0', healthy: true,  brainFast: 'primary', brainMain: '—',       judge: '—' },
           // Tier 2 — OpenRouter free pool (server-side fallback inside OR)
-          { model: 'nvidia/nemotron-3-super-120b-a12b:free', tier: 'T2', healthy: true, brainFast: '✓', brainMain: '✓', judge: '—' },
-          { model: 'qwen/qwen3-next-80b-a3b-instruct:free',  tier: 'T2', healthy: true, brainFast: '✓', brainMain: '—', judge: '✓' },
-          { model: 'google/gemma-4-31b-it:free',              tier: 'T2', healthy: true, brainFast: '✓', brainMain: '—', judge: '—' },
+          { model: 'nvidia/nemotron-3-super-120b-a12b:free', provider: 'OpenRouter', tier: 'T2', healthy: true, brainFast: '✓', brainMain: '✓', judge: '—' },
+          { model: 'qwen/qwen3-next-80b-a3b-instruct:free',  provider: 'OpenRouter', tier: 'T2', healthy: true, brainFast: '✓', brainMain: '—', judge: '✓' },
+          { model: 'google/gemma-4-31b-it:free',              provider: 'OpenRouter', tier: 'T2', healthy: true, brainFast: '✓', brainMain: '—', judge: '—' },
         ];
+        // KI-187 — provider colors: blue for Google (matches their brand),
+        // green for NVIDIA NIM (matches NVIDIA), orange for OpenRouter
+        // (distinct from the others).
+        var PROVIDER_COLORS = {
+          'Google AI Studio': '#4285f4',   // Google blue
+          'NVIDIA NIM':       '#76b900',   // NVIDIA green
+          'OpenRouter':       '#ffa657',   // OR orange
+        };
         STATIC_TIER_ROWS.forEach(function (row) {
           var tr = createEl('tr');
           tr.appendChild(createEl('td', { className: 'model-name', text: row.model }));
+          // Provider badge — KI-187
+          var provCell = createEl('td', { className: 'provider-cell' });
+          provCell.style.textAlign = 'center';
+          provCell.style.fontWeight = '600';
+          provCell.style.color = PROVIDER_COLORS[row.provider] || 'var(--muted)';
+          provCell.textContent = row.provider;
+          tr.appendChild(provCell);
           // Tier badge
           var tierCell = createEl('td', { className: 'tier-cell' });
           tierCell.style.textAlign = 'center';
@@ -1594,6 +1613,14 @@
             var info = modelMap[model];
             var tr = createEl('tr');
             tr.appendChild(createEl('td', { className: 'model-name', text: model }));
+
+            // KI-187 — Provider badge (NIM-derived rows all come from NVIDIA NIM)
+            var provCell = createEl('td', { className: 'provider-cell' });
+            provCell.style.textAlign = 'center';
+            provCell.style.fontWeight = '600';
+            provCell.style.color = PROVIDER_COLORS['NVIDIA NIM'];
+            provCell.textContent = 'NVIDIA NIM';
+            tr.appendChild(provCell);
 
             // KI-186 — Tier badge (NIM models are Tier 1)
             var tierCell = createEl('td', { className: 'tier-cell' });
