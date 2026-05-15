@@ -459,7 +459,12 @@ async def drive_fact_find(
     llm_fast = get_fast_brain_llm()
     try:
         result = await asyncio.wait_for(
-            llm_fast.chat(messages=messages, temperature=0.6, max_tokens=420),
+            # KI-150 (2026-05-15) — bumped 420 → 700. Diagnosis showed the
+            # contract requires prose (~250 tok) + <FF>...</FF> trailer
+            # (~80 tok); 420 truncated verbose multi-slot replies before
+            # the trailer, parser failed, canonical fallback fired, user
+            # saw scripted prompt_en (the "robotic language" complaint).
+            llm_fast.chat(messages=messages, temperature=0.6, max_tokens=700),
             timeout=_TIMEOUT_S,
         )
     except asyncio.TimeoutError:
@@ -475,7 +480,8 @@ async def drive_fact_find(
         llm_heavy = get_brain_llm()
         try:
             result = await asyncio.wait_for(
-                llm_heavy.chat(messages=messages, temperature=0.6, max_tokens=420),
+                # KI-150 — same bump on escalation path for consistency.
+                llm_heavy.chat(messages=messages, temperature=0.6, max_tokens=700),
                 timeout=_TIMEOUT_S_ESCALATION,
             )
         except asyncio.TimeoutError:

@@ -77,6 +77,11 @@ ACRONYMS = {
 # letter-by-letter. The user said "₹25L+" was being spoken as "two five L
 # plus". Order in `_normalize_money` matters: handle RANGES first, then
 # PLUS-SUFFIXES, then bare unit-suffixes, then standalone "+".
+#
+# KI-148 (2026-05-15) — extended to cover `k` (thousand), word-forms
+# (`1 lakh`, `1 crore`), `+` suffix → "above", and bare numerics like
+# `30000` → "30 thousand", `1,00,000` → "1 lakh". `k` is currency-gated to
+# avoid breaking "10K marathon".
 _MONEY_RANGE_L = re.compile(
     r"₹?\s*(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)\s*L\b",
     re.IGNORECASE,
@@ -91,7 +96,111 @@ _MONEY_L = re.compile(r"₹?\s*(\d+(?:\.\d+)?)\s*L\b", re.IGNORECASE)
 _MONEY_CR = re.compile(r"₹?\s*(\d+(?:\.\d+)?)\s*Cr\b", re.IGNORECASE)
 _MONEY_RS_PREFIX = re.compile(r"\bRs\.?\s*", re.IGNORECASE)
 _MONEY_RUPEE_SYMBOL = re.compile(r"₹\s*(\d)")
+
+# --- KI-148: word-form lakh/crore (e.g. "1 lakh", "5 crores") ---
+# Normalize to a canonical "<n> lakh rupees" / "<n> crore rupees" so the
+# downstream `L`/`Cr` regexes don't re-process them. Optional ₹ prefix.
+_MONEY_WORD_LAKH = re.compile(
+    r"₹?\s*(\d+(?:\.\d+)?)\s*lakhs?\b",
+    re.IGNORECASE,
+)
+_MONEY_WORD_CRORE = re.compile(
+    r"₹?\s*(\d+(?:\.\d+)?)\s*crores?\b",
+    re.IGNORECASE,
+)
+
+# --- KI-148: `k` (thousand) shorthand, currency-gated ---
+# Match `₹15k`, `₹15-30k`, `₹15k-30k`, `60k+`. Three contexts qualify as
+# currency: (a) ₹ prefix, (b) adjacent to another currency token (handled
+# by ordering — list-context like "₹15k, 30k, 60k+" gets ₹ on the first
+# token then the rest cascade), (c) followed by rupee/premium/budget/
+# income/sum-insured. We pre-scan and tag list-context k's by injecting
+# ₹ before bare k-numbers that sit in a comma/dash list with a ₹-prefixed
+# sibling. Simplest approach: run ₹-prefixed patterns first, then a
+# context-aware second pass.
+_MONEY_RANGE_K_BOTH = re.compile(
+    r"₹\s*(\d+(?:\.\d+)?)\s*k\s*-\s*(\d+(?:\.\d+)?)\s*k\b",
+    re.IGNORECASE,
+)
+_MONEY_RANGE_K = re.compile(
+    r"₹\s*(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)\s*k\b",
+    re.IGNORECASE,
+)
+_MONEY_PLUS_K = re.compile(r"₹?\s*(\d+(?:\.\d+)?)\s*k\s*\+", re.IGNORECASE)
+_MONEY_K_PREFIXED = re.compile(r"₹\s*(\d+(?:\.\d+)?)\s*k\b", re.IGNORECASE)
+# Bare `Nk` (no ₹) — only expand if followed by a currency-context word.
+_MONEY_K_CONTEXT = re.compile(
+    r"\b(\d+(?:\.\d+)?)\s*k\b(?=[\s,]*(?:rupee|premium|budget|income|sum insured))",
+    re.IGNORECASE,
+)
+# Comma/`or`-list cascade: once a list contains "<digits> thousand rupees",
+# subsequent bare "Nk" tokens in the same list segment inherit currency.
+# We approximate by running this AFTER the first pass: any bare `Nk` that
+# sits within 60 chars after a "thousand rupees" or "lakh rupees" token is
+# treated as currency.
+_MONEY_K_LIST_CASCADE = re.compile(
+    r"((?:thousand|lakh|crore) rupees[^.?!]{0,60}?)\b(\d+(?:\.\d+)?)\s*k\b",
+    re.IGNORECASE,
+)
+
+# --- KI-148: bare-number expansion (Indian + standard formatting) ---
+# Indian comma format: `1,00,000` → "1 lakh", `15,00,000` → "15 lakh".
+# Standard format: `2,500,000` → "25 lakh". Plain 4-5 digit: `30000` →
+# "30 thousand". Context-gated to currency to avoid butchering "30000 km".
+_MONEY_INDIAN_LAKH_COMMA = re.compile(
+    r"₹?\s*(\d{1,2}(?:,\d{2})+,\d{3})\b"
+)
+_MONEY_STD_COMMA = re.compile(
+    r"₹?\s*(\d{1,3}(?:,\d{3})+)\b"
+)
+_MONEY_BARE_THOUSANDS = re.compile(
+    r"₹\s*(\d{4,7})\b"
+)
+
 # Bare year ranges like "29-32" or "24/7" — leave alone; TTS handles dashes.
+
+
+def _expand_indian_comma_number(s: str) -> str:
+    """Convert `1,00,000` → "1 lakh", `15,00,000` → "15 lakh",
+    `1,00,00,000` → "1 crore". Indian system: rightmost 3 digits, then
+    pairs."""
+    digits = s.replace(",", "")
+    try:
+        n = int(digits)
+    except ValueError:
+        return s
+    return _humanize_int(n)
+
+
+def _expand_standard_comma_number(s: str) -> str:
+    """Convert `2,500,000` → "25 lakh", `30,000` → "30 thousand"."""
+    digits = s.replace(",", "")
+    try:
+        n = int(digits)
+    except ValueError:
+        return s
+    return _humanize_int(n)
+
+
+def _humanize_int(n: int) -> str:
+    """Render an integer rupee amount as a spoken Indian-English phrase."""
+    if n >= 10_000_000 and n % 100_000 == 0:
+        cr = n // 10_000_000
+        rem_lakh = (n % 10_000_000) // 100_000
+        if rem_lakh == 0:
+            return f"{cr} crore rupees"
+        return f"{cr} crore {rem_lakh} lakh rupees"
+    if n >= 100_000 and n % 1_000 == 0:
+        lakh = n // 100_000
+        return f"{lakh} lakh rupees"
+    if n >= 1_000 and n % 1_000 == 0:
+        return f"{n // 1_000} thousand rupees"
+    if n >= 100_000:
+        # Not a clean lakh — fall back to "X point Y lakh"
+        return f"{n / 100_000:.1f} lakh rupees".replace(".0 ", " ")
+    if n >= 1_000:
+        return f"{n / 1_000:.1f} thousand rupees".replace(".0 ", " ")
+    return f"{n} rupees"
 
 
 def _normalize_money(text: str) -> str:
@@ -104,12 +213,73 @@ def _normalize_money(text: str) -> str:
       "₹2Cr"     → "2 crores"
       "Rs. 5000" → "rupees 5000"
     """
-    text = _MONEY_RANGE_L.sub(lambda m: f"{m.group(1)} to {m.group(2)} lakhs", text)
-    text = _MONEY_RANGE_CR.sub(lambda m: f"{m.group(1)} to {m.group(2)} crores", text)
-    text = _MONEY_PLUS_L.sub(lambda m: f"{m.group(1)} lakhs or more", text)
-    text = _MONEY_PLUS_CR.sub(lambda m: f"{m.group(1)} crores or more", text)
-    text = _MONEY_L.sub(lambda m: f"{m.group(1)} lakhs", text)
-    text = _MONEY_CR.sub(lambda m: f"{m.group(1)} crores", text)
+    # KI-148: word-form lakh/crore FIRST so "₹15 lakh" / "1 crore" become
+    # canonical "<n> lakh rupees" / "<n> crore rupees" and downstream regexes
+    # don't double-process them.
+    text = _MONEY_WORD_CRORE.sub(lambda m: f"{m.group(1)} crore rupees", text)
+    text = _MONEY_WORD_LAKH.sub(lambda m: f"{m.group(1)} lakh rupees", text)
+
+    # KI-148: `k` handling — ranges first, plus second, then prefixed bare.
+    text = _MONEY_RANGE_K_BOTH.sub(
+        lambda m: f"{m.group(1)} to {m.group(2)} thousand rupees", text
+    )
+    text = _MONEY_RANGE_K.sub(
+        lambda m: f"{m.group(1)} to {m.group(2)} thousand rupees", text
+    )
+    # PLUS_K must be currency-gated: ₹ prefix OR cascade context. We do a
+    # split-pass: prefixed ₹...k+ first, then unprefixed Nk+ that appears
+    # after a "thousand rupees"/"lakh rupees" anchor (list-cascade).
+    text = re.sub(
+        r"₹\s*(\d+(?:\.\d+)?)\s*k\s*\+",
+        lambda m: f"above {m.group(1)} thousand rupees",
+        text,
+        flags=re.IGNORECASE,
+    )
+    text = _MONEY_K_PREFIXED.sub(
+        lambda m: f"{m.group(1)} thousand rupees", text
+    )
+    # List-cascade pass: bare "Nk" tokens that sit in a list after an
+    # already-expanded currency token. Run twice to catch chained items.
+    for _ in range(3):
+        new = _MONEY_K_LIST_CASCADE.sub(
+            lambda m: f"{m.group(1)}{m.group(2)} thousand rupees", text
+        )
+        if new == text:
+            break
+        text = new
+    # Also handle "+suffix" bare tokens that gained currency via cascade.
+    text = re.sub(
+        r"((?:thousand|lakh|crore) rupees[^.?!]{0,60}?)\b(\d+(?:\.\d+)?)\s*k\s*\+",
+        lambda m: f"{m.group(1)}above {m.group(2)} thousand rupees",
+        text,
+        flags=re.IGNORECASE,
+    )
+    # Explicit currency-context bare `Nk` (followed by rupee/premium/etc).
+    text = _MONEY_K_CONTEXT.sub(
+        lambda m: f"{m.group(1)} thousand rupees", text
+    )
+
+    # Existing L / Cr handling (lakh / crore short-suffix).
+    text = _MONEY_RANGE_L.sub(lambda m: f"{m.group(1)} to {m.group(2)} lakh rupees", text)
+    text = _MONEY_RANGE_CR.sub(lambda m: f"{m.group(1)} to {m.group(2)} crore rupees", text)
+    text = _MONEY_PLUS_L.sub(lambda m: f"above {m.group(1)} lakh rupees", text)
+    text = _MONEY_PLUS_CR.sub(lambda m: f"above {m.group(1)} crore rupees", text)
+    text = _MONEY_L.sub(lambda m: f"{m.group(1)} lakh rupees", text)
+    text = _MONEY_CR.sub(lambda m: f"{m.group(1)} crore rupees", text)
+
+    # KI-148: bare-number expansion (only ₹-prefixed or comma-formatted).
+    # Indian format `1,00,000` first (longest match), then standard
+    # `2,500,000`, then bare ₹30000.
+    text = _MONEY_INDIAN_LAKH_COMMA.sub(
+        lambda m: _expand_indian_comma_number(m.group(1)), text
+    )
+    text = _MONEY_STD_COMMA.sub(
+        lambda m: _expand_standard_comma_number(m.group(1)), text
+    )
+    text = _MONEY_BARE_THOUSANDS.sub(
+        lambda m: _humanize_int(int(m.group(1))), text
+    )
+
     text = _MONEY_RS_PREFIX.sub("rupees ", text)
     text = _MONEY_RUPEE_SYMBOL.sub(r"rupees \1", text)
     return text

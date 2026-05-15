@@ -76,6 +76,127 @@ def _always(p: Profile) -> bool:
     return True
 
 
+# ----------------------------------------------------------------------------
+# KI-149 (2026-05-15) — free-text INR amount parser for budget + income.
+# User said "I maximum 30000 I can pay" → bot re-asked budget because no
+# parser was attached to the budget Question and the LLM brain failed to
+# capture it. Bare digits ("30000"), "30 thousand", "30 grand", "₹30,000",
+# "1 lakh", "1.5L" must all map cleanly to a rupee amount.
+# ----------------------------------------------------------------------------
+
+def _parse_inr_amount(text: str) -> Optional[int]:
+    """Extract an INR amount in rupees from free text.
+
+    Handles:
+      - "30000", "30,000", "₹30,000", "Rs 30000", "rs. 30000"
+      - "30k", "30 k", "30K"
+      - "30 thousand", "30 grand"
+      - "1 lakh", "1.5 lakh", "1L", "1.5L", "1 lac"
+      - "1 crore", "1cr"
+      - strips fluff: "maximum 30000", "I can pay 30000", "around 25000"
+      - tolerates per-year qualifiers: "/year", "per year", "p.a."
+
+    Returns the integer rupee amount, or None if no number is recognisable.
+    """
+    if not text:
+        return None
+    s = str(text).lower().strip()
+    # Strip currency symbols + thousands separators so "₹30,000" parses.
+    s = s.replace("₹", " ").replace("rs.", " ").replace("rs", " ")
+    s = s.replace(",", "")
+    # Crore (highest unit first so longer alternation wins).
+    m = re.search(r"(\d+(?:\.\d+)?)\s*(?:cr|crore|crores)\b", s)
+    if m:
+        try:
+            return int(float(m.group(1)) * 10_000_000)
+        except ValueError:
+            return None
+    # Lakh / lac.
+    m = re.search(r"(\d+(?:\.\d+)?)\s*(?:l(?:akh|ac)?s?)\b", s)
+    if m:
+        try:
+            return int(float(m.group(1)) * 100_000)
+        except ValueError:
+            return None
+    # Thousand / grand / k.
+    m = re.search(r"(\d+(?:\.\d+)?)\s*(?:thousand|grand|k)\b", s)
+    if m:
+        try:
+            return int(float(m.group(1)) * 1_000)
+        except ValueError:
+            return None
+    # Bare digit run — pick the largest number-like token (handles
+    # "maximum 30000", "around 25000", "I can pay 30000").
+    nums = re.findall(r"\d+(?:\.\d+)?", s)
+    if nums:
+        try:
+            return int(float(max(nums, key=lambda x: float(x))))
+        except ValueError:
+            return None
+    return None
+
+
+def _parse_budget_band(text: str) -> Optional[str]:
+    """Map free-text budget text → one of under_15k / 15k_30k / 30k_60k / 60k+.
+
+    KI-149 (2026-05-15). Falls back to range hints ("15-30k", "30 to 60k")
+    before delegating to `_parse_inr_amount` for a single number.
+    """
+    if not text:
+        return None
+    s = str(text).lower()
+    # Explicit bucket hints first — order matters (more specific wins).
+    if re.search(r"60\s*k\s*\+|>\s*60|more\s+than\s+60|above\s+60|over\s+60", s):
+        return "60k+"
+    if re.search(r"30\s*[-to]+\s*60\s*k?|30k\s*[-_]\s*60k|30\s*to\s*60", s):
+        return "30k_60k"
+    if re.search(r"15\s*[-to]+\s*30\s*k?|15k\s*[-_]\s*30k|15\s*to\s*30", s):
+        return "15k_30k"
+    if re.search(r"under\s*15|less\s+than\s+15|below\s+15|<\s*15", s):
+        return "under_15k"
+    # Single amount → bucket.
+    amt = _parse_inr_amount(s)
+    if amt is None:
+        return None
+    if amt < 15_000:
+        return "under_15k"
+    if amt < 30_000:
+        return "15k_30k"
+    if amt < 60_000:
+        return "30k_60k"
+    return "60k+"
+
+
+def _parse_income_band(text: str) -> Optional[str]:
+    """Map free-text income text → one of under_5L / 5L-10L / 10L-25L / 25L+.
+
+    KI-149 (2026-05-15). Same approach as `_parse_budget_band`: explicit
+    bucket hints first, then a single rupee amount → bucket.
+    """
+    if not text:
+        return None
+    s = str(text).lower()
+    if re.search(r"25\s*l\s*\+|>\s*25|more\s+than\s+25|above\s+25|over\s+25", s):
+        return "25L+"
+    if re.search(r"10\s*[-to]+\s*25\s*l?|10l\s*[-_]\s*25l|10\s*to\s*25", s):
+        return "10L-25L"
+    if re.search(r"5\s*[-to]+\s*10\s*l?|5l\s*[-_]\s*10l|5\s*to\s*10", s):
+        return "5L-10L"
+    if re.search(r"under\s*5|less\s+than\s+5|below\s+5|<\s*5", s):
+        return "under_5L"
+    amt = _parse_inr_amount(s)
+    if amt is None:
+        return None
+    # Income is parsed in rupees; 5 lakh = 500_000.
+    if amt < 500_000:
+        return "under_5L"
+    if amt < 1_000_000:
+        return "5L-10L"
+    if amt < 2_500_000:
+        return "10L-25L"
+    return "25L+"
+
+
 GRAPH: list[Question] = [
     Question(
         id="name",
@@ -106,6 +227,7 @@ GRAPH: list[Question] = [
         prompt_hi="सालाना आय — ₹5L से कम, ₹5-10L, ₹10-25L, या ₹25L+? (हम सिर्फ sum insured size suggest करने के लिए पूछते हैं।)",
         field="income_band",
         is_core=True,
+        parser=_parse_income_band,
     ),
     Question(
         id="existing_cover",
@@ -157,6 +279,7 @@ GRAPH: list[Question] = [
         prompt_hi="Premium के लिए सालाना — ₹15k से कम, ₹15-30k, ₹30-60k, या ₹60k+? (अगर थोड़ा ज़्यादा budget बेहतर protection देगा, बताऊंगा।)",
         field="budget_band",
         is_core=True,
+        parser=_parse_budget_band,
     ),
 ]
 

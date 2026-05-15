@@ -168,19 +168,12 @@ def _keyword_normalize(question_id: str, raw_text: str) -> Any:
             return "self"
 
     elif question_id == "income_band":
-        import re as _re
-        if _re.search(r"(more than|above|over|>=?|>)\s*25", s) or "25l+" in s or "25 lakh+" in s:
-            return "25L+"
-        m = _re.search(r"(\d+(?:\.\d+)?)\s*(?:l|lakh|lac)", s)
-        if m:
-            val = float(m.group(1))
-            if val >= 25: return "25L+"
-            if val >= 10: return "10L-25L"
-            if val >= 5:  return "5L-10L"
-            return "under_5L"
-        if "10-25" in s or "10l-25l" in s: return "10L-25L"
-        if "5-10"  in s or "5l-10l"  in s: return "5L-10L"
-        if "under 5" in s or "<5" in s or "below 5" in s: return "under_5L"
+        # KI-149 (2026-05-15) — delegate to needs_finder._parse_income_band so
+        # bare digits ("500000"), "thousand"/"grand"/"k" suffixes, and "₹"
+        # prefixes all parse identically here AND in the GRAPH parser used by
+        # `record_answer`. Single source of truth.
+        from backend.needs_finder import _parse_income_band
+        return _parse_income_band(raw_text)
 
     elif question_id == "primary_goal":
         if any(k in s for k in ["first policy", "first one", "first time", "first buy", "new policy", "buying my first"]):
@@ -208,22 +201,13 @@ def _keyword_normalize(question_id: str, raw_text: str) -> Any:
         if "tier 3" in s or "tier3" in s or "village" in s or "small town" in s: return "tier3"
 
     elif question_id == "budget":
-        import re as _re
-        if "60k+" in s or ">60k" in s or "more than 60" in s or "above 60" in s:
-            return "60k+"
-        if "30-60" in s or "30k_60k" in s or "30k-60k" in s:
-            return "30k_60k"
-        if "15-30" in s or "15k_30k" in s or "15k-30k" in s:
-            return "15k_30k"
-        if "under 15" in s or "<15" in s or "below 15" in s or "under_15" in s:
-            return "under_15k"
-        m = _re.search(r"(\d+)\s*k", s)
-        if m:
-            v = int(m.group(1))
-            if v >= 60: return "60k+"
-            if v >= 30: return "30k_60k"
-            if v >= 15: return "15k_30k"
-            return "under_15k"
+        # KI-149 (2026-05-15) — delegate to needs_finder._parse_budget_band so
+        # "I maximum 30000 I can pay" / "30 thousand" / "₹30,000" / "30 grand"
+        # / bare "30000" all parse the same way the GRAPH parser does. The
+        # keyword path used to require a "k" suffix and lost bare-digit
+        # answers (user reported re-ask bug on live HF Space).
+        from backend.needs_finder import _parse_budget_band
+        return _parse_budget_band(raw_text)
 
     elif question_id == "health_conditions":
         if any(p in s for p in ["none", "no condition", "nothing", "no pre-exist", "no health", "no chronic"]):

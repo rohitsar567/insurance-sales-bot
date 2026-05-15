@@ -633,6 +633,11 @@ async def coverage():
 
     direct_parent_cov: dict[str, str] = {}
     curated_canonical_ids_cov: list[str] = []
+    # KI-145 — curated entries that failed the material-diffs gate (same UIN
+    # or source-PDF as a pass-1 card but >= 2 decision-critical fields
+    # disagree). These must emit as standalone pass-2 cards so the coverage
+    # policy_count stays in lockstep with /api/policies/all.
+    ki145_variant_curated_ids_cov: set[str] = set()
 
     # Phase B — walk curated entries deterministically (sorted by policy_id).
     for curated_pid, cdata in sorted(curated_facts.items()):
@@ -657,24 +662,31 @@ async def coverage():
             # VARIANT and stays as its own card. Pure RENAME (< 2 diffs)
             # falls through to the alias-merge as before.
             candidate = uin_to_parent_cov[curated_uin]
-            ext_data = extracted_data_cov.get(candidate, {})
-            if _ki145_material_diffs(cdata, ext_data) < 2:
+            # Candidate may be extracted OR curated — fall back to curated
+            # facts when no extracted JSON exists, so the diff has real data.
+            cand_data = extracted_data_cov.get(candidate) or curated_facts.get(candidate, {})
+            if _ki145_material_diffs(cdata, cand_data) < 2:
                 parent_id = candidate
+            else:
+                ki145_variant_curated_ids_cov.add(curated_pid)
         elif curated_uin:
+            # New UIN — claim it. KI-145 spec: UIN unmatched against any
+            # extracted parent = standalone. Flag so pass-2 emits even if
+            # policy_id is a prefix of a seen extracted id.
             uin_to_parent_cov[curated_uin] = curated_pid
+            ki145_variant_curated_ids_cov.add(curated_pid)
 
-        if parent_id is None:
-            # KI-142 — fall back to source_pdf gate when UIN doesn't match
-            # any prior claimant (curated UIN may be more accurate than
-            # extracted; multi-variant PDFs naturally share one filing).
+        if parent_id is None and not curated_uin:
+            # KI-142 (preserved): source-PDF fallback only when curated entry
+            # has NO UIN. When UIN is present but unmatched, KI-145 spec
+            # mandates standalone — PDF coincidence cannot override.
             fb_parent = _source_pdf_to_policy_id(cdata.get("_primary_source_pdf"))
             if fb_parent and fb_parent in extracted_stems_cov and fb_parent != curated_pid:
-                # KI-145 — same material-diff gate on the source-PDF path so
-                # multi-variant PDFs don't drag genuinely different products
-                # onto the first claimant via source-PDF coincidence.
                 ext_data = extracted_data_cov.get(fb_parent, {})
                 if _ki145_material_diffs(cdata, ext_data) < 2:
                     parent_id = fb_parent
+                else:
+                    ki145_variant_curated_ids_cov.add(curated_pid)
 
         if parent_id:
             direct_parent_cov[curated_pid] = parent_id
@@ -752,7 +764,11 @@ async def coverage():
             continue  # permutation alias
         if curated_pid in seen_policy_ids:
             continue
-        if any(eid.startswith(curated_pid + "__") for eid in seen_policy_ids):
+        # KI-145 — bypass the startswith dedup for genuine variants (same
+        # UIN/source-PDF as a pass-1 card but materially different fields).
+        # Otherwise variant cards would be silently dropped here.
+        if curated_pid not in ki145_variant_curated_ids_cov \
+                and any(eid.startswith(curated_pid + "__") for eid in seen_policy_ids):
             continue
         # KI-141 — skip curated entries that have already been collapsed into
         # a pass-1 parent's alias list.
@@ -765,14 +781,24 @@ async def coverage():
         # Curated entries don't have a __doctype suffix, so use the full
         # policy_id as the product_key.
         pkey = curated_pid
-        if pkey in seen_product_keys:
+        # KI-145 — variants share product_key with their pass-1 sibling
+        # (different doctype-stripped stems are identical). Allow them past
+        # this dedup so coverage policy_count = marketplace card count.
+        if pkey in seen_product_keys and curated_pid not in ki145_variant_curated_ids_cov:
             continue
         seen_product_keys.add(pkey)
         name = data.get("policy_name", "") or curated_pid
         url = data.get("source_pdf_url", "")
         if slug not in by_insurer:
             by_insurer[slug] = {"products": set(), "names": [], "chunks": 0, "aliases": 0}
-        by_insurer[slug]["products"].add(pkey)
+        # KI-145 — variants share pkey with a pass-1 sibling, so adding the
+        # bare pkey to the set would be a no-op (set semantics). Tag variant
+        # pkeys with a suffix in the counting set so the per-insurer count
+        # increments by 1, matching the marketplace card count.
+        if curated_pid in ki145_variant_curated_ids_cov:
+            by_insurer[slug]["products"].add(f"{pkey}__ki145variant")
+        else:
+            by_insurer[slug]["products"].add(pkey)
         # KI-142 — accumulate alias count for curated parents (curated entries
         # that themselves became the claimant of a new UIN, with later curated
         # siblings aliasing onto them).
@@ -1628,6 +1654,13 @@ async def policies_all(session_id: Optional[str] = None):
     # ultimate extracted parent.
     direct_parent: dict[str, str] = {}
     curated_canonical_ids: list[str] = []
+    # KI-145 — curated entries whose UIN matched a candidate parent but
+    # failed the material-diffs gate (>= 2 decision-critical fields disagree
+    # with the parent's extracted JSON). These are genuine variants that
+    # must emit as standalone cards in pass 2 even when their policy_id is
+    # a prefix of a seen extracted policy_id (the old startswith-skip would
+    # otherwise drop them silently).
+    ki145_variant_curated_ids: set[str] = set()
 
     # Phase B — walk curated entries deterministically (sorted by policy_id).
     for curated_policy_id, cdata in sorted(curated_facts.items()):
@@ -1662,28 +1695,35 @@ async def policies_all(session_id: Optional[str] = None):
             # 2+ disagree on non-null values, treat as a VARIANT and keep
             # this curated entry as its own card. < 2 = pure rename → merge.
             candidate = uin_to_parent[curated_uin]
-            ext_data = extracted_data.get(candidate, {})
-            if _ki145_material_diffs(cdata, ext_data) < 2:
+            # Candidate may be an extracted stem OR a previously-claimed
+            # curated entry. Look up extracted JSON first; fall back to the
+            # candidate's curated facts so the diff has real data to compare.
+            cand_data = extracted_data.get(candidate) or curated_facts.get(candidate, {})
+            if _ki145_material_diffs(cdata, cand_data) < 2:
                 parent_id = candidate
+            else:
+                ki145_variant_curated_ids.add(curated_policy_id)
         elif curated_uin:
             # New UIN — this curated entry becomes the claimant so any
-            # later curated sibling with the same UIN aliases onto it.
+            # later curated sibling with the same UIN aliases onto it. Per
+            # KI-145 spec ("if UIN doesn't match any extracted parent →
+            # treat as standalone"), also flag this entry so pass-2 emits
+            # it even when its policy_id is a prefix of a seen extracted id.
             uin_to_parent[curated_uin] = curated_policy_id
+            ki145_variant_curated_ids.add(curated_policy_id)
 
         if parent_id is None and not curated_uin:
-            # KI-142 (user rule, 2026-05-15): source-PDF fallback only fires
-            # when the curated entry has NO UIN at all. If UIN exists but
-            # doesn't match any extracted parent, they're different
-            # regulator-filed products and must stay as separate cards —
-            # source-PDF coincidence (multi-variant wordings) does NOT merge.
+            # KI-142 (preserved): source-PDF fallback only fires for curated
+            # entries with NO UIN. When UIN is present but unmatched, the
+            # KI-145 spec mandates standalone — source-PDF coincidence MUST
+            # NOT override the UIN-mismatch signal.
             fb_parent = _source_pdf_to_policy_id(cdata.get("_primary_source_pdf"))
             if fb_parent and fb_parent in extracted_stems and fb_parent != curated_policy_id:
-                # KI-145 — apply the same material-diffs gate so multi-variant
-                # PDFs without UIN coverage don't drag genuinely different
-                # products into the parent card.
                 ext_data = extracted_data.get(fb_parent, {})
                 if _ki145_material_diffs(cdata, ext_data) < 2:
                     parent_id = fb_parent
+                else:
+                    ki145_variant_curated_ids.add(curated_policy_id)
 
         if parent_id:
             direct_parent[curated_policy_id] = parent_id
@@ -1824,8 +1864,13 @@ async def policies_all(session_id: Optional[str] = None):
             continue
         if curated_policy_id in seen_policy_ids:
             continue
-        # Also skip if any extracted ID matches with a suffix
-        if any(eid.startswith(curated_policy_id + "__") for eid in seen_policy_ids):
+        # Also skip if any extracted ID matches with a suffix — UNLESS this
+        # curated entry was classified as a KI-145 variant (same UIN/source-PDF
+        # as a pass-1 card but materially different decision-critical fields).
+        # Variants MUST surface as their own marketplace card; the legacy
+        # startswith dedup would otherwise drop them silently.
+        if curated_policy_id not in ki145_variant_curated_ids \
+                and any(eid.startswith(curated_policy_id + "__") for eid in seen_policy_ids):
             continue
         # KI-141 — skip curated entries that have already been collapsed onto
         # a pass-1 parent card via the aliases mechanism (e.g. Activ One →
