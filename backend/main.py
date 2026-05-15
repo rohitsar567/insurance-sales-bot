@@ -1026,6 +1026,38 @@ class SessionResetResponse(BaseModel):
     cleared_state: bool
 
 
+class SessionClearRequest(BaseModel):
+    session_id: str
+
+
+class SessionClearResponse(BaseModel):
+    cleared: bool
+    new_session_id: str
+
+
+@app.post("/api/session/clear", response_model=SessionClearResponse)
+async def session_clear(req: SessionClearRequest):
+    """KI-196 (ADR-041) — Clean Clear-chat semantic. Wipes the in-memory
+    session state for the supplied session_id and ALWAYS returns a freshly
+    minted UUID the frontend must adopt as its new session_id going forward.
+
+    The on-disk profile JSON under `40-data/profiles/` is intentionally NOT
+    touched — it remains durable user data keyed by persona_id / name slug.
+    The next time the user volunteers their name in conversation, the
+    confirmation-gated recall flow (see orchestrator's `pending_profile_recall`)
+    will ask before merging the prior captures.
+
+    Body : {session_id: str}
+    Reply: {cleared: bool, new_session_id: str}
+    """
+    from backend.session_state import clear_session
+    cleared = clear_session(req.session_id) if req.session_id else False
+    return SessionClearResponse(
+        cleared=cleared,
+        new_session_id=uuid.uuid4().hex[:12],
+    )
+
+
 @app.post("/api/session/reset", response_model=SessionResetResponse)
 async def session_reset(req: SessionResetRequest):
     """KI-020 — User-facing chat clear / fresh-start toggle.
@@ -1080,6 +1112,12 @@ async def profile_update(req: ProfileUpdateRequest):
             # KI-095 — never clobber a filled field with empty input from the client
             continue
         setattr(sess.profile, field_name, v)
+        # KI-196 (ADR-041) — mark the slot as explicitly answered so the
+        # completeness scorer recognises it. Without this, builder-form
+        # captures land on the profile but the badge still reads 0% because
+        # profile_completeness_view now gates on `Profile.asked`.
+        if field_name not in sess.profile.asked:
+            sess.profile.asked.append(field_name)
 
     # KI-077 — if name is set, also persist to the named-profile store so a
     # returning visitor's profile is recoverable across sessions.
@@ -1099,9 +1137,14 @@ async def profile_update(req: ProfileUpdateRequest):
         "parents_age_max": p.parents_age_max, "parents_has_ped": p.parents_has_ped,
         "health_conditions": p.health_conditions, "budget_band": p.budget_band,
     }
-    c = _completeness(profile_dict)
-    collected = [k for k, v in profile_dict.items() if v not in (None, "", [], False)]
-    missing = [k for k, v in profile_dict.items() if v in (None, "", [])]
+    # KI-196 (ADR-041) — same answered-only gate as profile_completeness_view.
+    answered = set(getattr(p, "asked", []) or [])
+    completeness_input = {
+        k: (v if k in answered else None) for k, v in profile_dict.items()
+    }
+    c = _completeness(completeness_input)
+    collected = [k for k, v in profile_dict.items() if k in answered and v not in (None, "", [], False)]
+    missing = [k for k, v in profile_dict.items() if k not in answered or v in (None, "", [])]
 
     # Ingest the profile into the RAG store so the brain sees user context
     # at retrieval time alongside policy + regulatory chunks. Fire-and-forget
@@ -1155,9 +1198,19 @@ async def profile_completeness_view(session_id: Optional[str] = None):
         "parents_age_max": p.parents_age_max, "parents_has_ped": p.parents_has_ped,
         "health_conditions": p.health_conditions, "budget_band": p.budget_band,
     }
-    c = _completeness(profile_dict)
-    collected = [k for k, v in profile_dict.items() if v not in (None, "", [], False)]
-    missing = [k for k, v in profile_dict.items() if v in (None, "", [])]
+    # KI-196 (ADR-041) — Profile completeness must reflect fields the user
+    # EXPLICITLY answered, not defaults that were never touched. Default
+    # `dependents="self"` pre-populated in the builder UI used to count as
+    # "done" and produced the misleading "25% DONE" badge on a zero-input
+    # session. Gate every field on Profile.asked containing the field name
+    # before exposing it to the completeness scorer.
+    answered = set(getattr(p, "asked", []) or [])
+    completeness_input = {
+        k: (v if k in answered else None) for k, v in profile_dict.items()
+    }
+    c = _completeness(completeness_input)
+    collected = [k for k, v in profile_dict.items() if k in answered and v not in (None, "", [], False)]
+    missing = [k for k, v in profile_dict.items() if k not in answered or v in (None, "", [])]
     hint = None
     try:
         # KI-167 WS3 (2026-05-15) — next_question now returns the field name

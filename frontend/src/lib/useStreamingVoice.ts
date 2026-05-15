@@ -62,6 +62,21 @@ const BARGE_IN_BASE_THRESHOLD = 0.005;
 // making barge-in trivial. 0.6 is loud enough to hear clearly on
 // headphones and laptop speakers without overpowering user speech.
 const VOICE_MODE_TTS_VOLUME = 0.6;
+// KI-195 (2026-05-15) — adaptive TTS volume calibration relative to user's
+// own measured speech level. Architecture: while user speaks (recorder
+// active, NOT TTS) we sample mic RMS and track a rolling peak in
+// userSpeechRmsRef. While TTS plays, every 300ms we sample bot_rms_at_mic
+// via the KI-190 botAnalysers and reduce el.volume by 20% if bot_rms is
+// closer to user_rms than the target ratio. Floor at 0.15 so the bot
+// stays audible. This makes "bot bleed < user speech" a mathematical
+// guarantee after one calibration turn → barge-in always works, echo
+// never crosses the recognition threshold.
+const USER_SPEECH_RMS_INITIAL = 0.05;          // typical quiet speech, used until calibrated
+const USER_SPEECH_DETECTION_THRESHOLD = 0.02;  // mic RMS above this counts as "user speaking"
+const VOLUME_CALIB_TARGET_RATIO = 0.35;        // bot_rms_at_mic should be ≤ user_rms × this
+const VOLUME_CALIB_TICK_MS = 300;              // calibration sample period during TTS
+const VOLUME_CALIB_DUCK_FACTOR = 0.8;          // multiply el.volume by this per tick if too loud
+const VOLUME_CALIB_FLOOR = 0.15;               // never drop bot below this — must stay audible
 
 // Minimal types for the Web Speech API since lib.dom.d.ts ships them under
 // `webkitSpeechRecognition` only and the standard `SpeechRecognition` symbol
@@ -623,6 +638,108 @@ export function useStreamingVoice(
     }>();
     // Track which <audio> elements we've dimmed so we can restore on cleanup.
     const duckedAudios = new Set<HTMLAudioElement>();
+    // KI-195 — user-speech RMS tracker + per-element calibrated volume.
+    // userSpeechRms is the rolling peak of mic RMS observed while the user
+    // is actively speaking (recorder active, not TTS). It seeds the bot
+    // volume target. Calibrated volumes per element survive across turns
+    // so we don't have to re-learn after every reply.
+    let userSpeechRms = USER_SPEECH_RMS_INITIAL;
+    const calibratedVolumes = new Map<HTMLAudioElement, number>();
+    let userRmsRafId: number | null = null;
+    let volumeCalibIntervalId: ReturnType<typeof setInterval> | null = null;
+
+    const sampleUserRms = (): number => {
+      if (!analyser || !rmsBuf) return 0;
+      try {
+        analyser.getFloatTimeDomainData(rmsBuf);
+      } catch { return 0; }
+      let sumSq = 0;
+      for (let i = 0; i < rmsBuf.length; i++) {
+        const v = rmsBuf[i];
+        sumSq += v * v;
+      }
+      return Math.sqrt(sumSq / rmsBuf.length);
+    };
+
+    const userRmsTick = () => {
+      // Only learn while user is potentially speaking — recorder active,
+      // no TTS, voice mode on.
+      if (
+        !wantRunningRef.current
+        || isTtsPlayingRef.current
+        || !recorderActiveRef.current
+      ) {
+        userRmsRafId = null;
+        return;
+      }
+      if (!analyser || !rmsBuf) {
+        userRmsRafId = null;
+        return;
+      }
+      const rms = sampleUserRms();
+      // Only count as "user speaking" when above detection threshold.
+      // Then update userSpeechRms via slow EMA on peak so a single shout
+      // doesn't permanently raise the baseline.
+      if (rms > USER_SPEECH_DETECTION_THRESHOLD) {
+        userSpeechRms = Math.max(userSpeechRms * 0.95, rms);
+      }
+      userRmsRafId = requestAnimationFrame(userRmsTick);
+    };
+
+    const startUserRmsLoop = () => {
+      if (userRmsRafId !== null) return;
+      // Reuse the VAD analyser. startBargeInLoop sets it up; if it doesn't
+      // exist yet, the loop will exit on first tick (analyser null) and
+      // restart on the next state transition.
+      userRmsRafId = requestAnimationFrame(userRmsTick);
+    };
+
+    const stopUserRmsLoop = () => {
+      if (userRmsRafId !== null) {
+        cancelAnimationFrame(userRmsRafId);
+        userRmsRafId = null;
+      }
+    };
+
+    // KI-195 — volume calibration tick. Runs during TTS. Samples bot RMS
+    // at the mic via botAnalysers. If bot is louder than target relative
+    // to userSpeechRms, duck el.volume by 20% per tick down to the floor.
+    const calibrateBotVolume = () => {
+      if (!isTtsPlayingRef.current) {
+        if (volumeCalibIntervalId !== null) {
+          clearInterval(volumeCalibIntervalId);
+          volumeCalibIntervalId = null;
+        }
+        return;
+      }
+      const target = userSpeechRms * VOLUME_CALIB_TARGET_RATIO;
+      const botRms = computeBotRms();
+      if (botRms > target) {
+        ttsAudioElementsRef.current.forEach((el) => {
+          if (el.paused || el.ended) return;
+          const cur = el.volume;
+          const next = Math.max(VOLUME_CALIB_FLOOR, cur * VOLUME_CALIB_DUCK_FACTOR);
+          if (next < cur - 0.001) {
+            try {
+              el.volume = next;
+              calibratedVolumes.set(el, next);
+            } catch { /* ignore */ }
+          }
+        });
+      }
+    };
+
+    const startVolumeCalibration = () => {
+      if (volumeCalibIntervalId !== null) return;
+      volumeCalibIntervalId = setInterval(calibrateBotVolume, VOLUME_CALIB_TICK_MS);
+    };
+
+    const stopVolumeCalibration = () => {
+      if (volumeCalibIntervalId !== null) {
+        clearInterval(volumeCalibIntervalId);
+        volumeCalibIntervalId = null;
+      }
+    };
 
     const stopBargeInLoop = () => {
       if (rafId !== null) {
@@ -831,6 +948,10 @@ export function useStreamingVoice(
         if (rec) {
           try { rec.abort(); } catch { /* ignore */ }
         }
+        // KI-195 — user cannot be speaking during TTS playback; stop the
+        // RMS-learning loop until TTS ends so we don't capture bot audio
+        // bleed-through as "user speech level".
+        stopUserRmsLoop();
         // KI-191 — re-duck every playing audio in case React or the audio
         // element default reset volume after watchAudio set it.
         ttsAudioElementsRef.current.forEach((el) => {
@@ -838,6 +959,9 @@ export function useStreamingVoice(
             try { el.volume = VOICE_MODE_TTS_VOLUME; } catch { /* ignore */ }
           }
         });
+        // KI-195 — once the volume floor is set, begin adaptive calibration
+        // so the bot's volume tracks the learned user speech level.
+        startVolumeCalibration();
         // KI-192 (2026-05-15) — MediaRecorder might be torn down between
         // user utterances (KI-168 teardownAudio). Without an active
         // recorder, startBargeInLoop bails on the recorderActiveRef check
@@ -859,6 +983,10 @@ export function useStreamingVoice(
         // Trigger immediately too so the user doesn't wait ~4s.
         console.debug("[useStreamingVoice] KI-188 TTS ended — resuming recognition");
         stopBargeInLoop();
+        // KI-195 — freeze the per-element calibrated volume and resume
+        // learning the user's speech RMS for the next turn.
+        stopVolumeCalibration();
+        startUserRmsLoop();
         if (wantRunningRef.current && !isTextRequestPendingRef.current) {
           safeStart();
         }
@@ -870,8 +998,12 @@ export function useStreamingVoice(
       ttsAudioElementsRef.current.add(el);
       // KI-191 — duck bot TTS to 60% while voice mode is on, so AEC residual
       // is even quieter and barge-in is trivial.
+      // KI-195 — if we already calibrated a volume for this exact element on
+      // a previous turn (rare — elements are usually recreated), reuse it so
+      // we don't reset the adaptive level on every play() event.
       try {
-        el.volume = VOICE_MODE_TTS_VOLUME;
+        const prior = calibratedVolumes.get(el);
+        el.volume = prior !== undefined ? prior : VOICE_MODE_TTS_VOLUME;
         duckedAudios.add(el);
       } catch { /* readonly volume on some platforms — ignore */ }
       // KI-190 — attach bot-level analyser for adaptive threshold.
@@ -916,7 +1048,18 @@ export function useStreamingVoice(
     });
     observer.observe(document.body, { childList: true, subtree: true });
 
+    // KI-195 — kick off the user-RMS learning loop on mount so by the time
+    // the first TTS plays we already have a baseline. The loop self-exits
+    // when conditions aren't met (no analyser / no stream / in TTS), so
+    // firing it unconditionally here is safe.
+    startUserRmsLoop();
+
     return () => {
+      // KI-195 — tear down adaptive volume calibration before clearing
+      // ducked-audio state so the calibration tick can't race a clear().
+      stopUserRmsLoop();
+      stopVolumeCalibration();
+      calibratedVolumes.clear();
       observer.disconnect();
       // KI-191 — restore bot TTS volume to default before unmount so a
       // subsequent voice-OFF session doesn't end up with silent audio.

@@ -431,6 +431,27 @@ export async function postSessionReset(
 }
 
 
+// KI-196 (ADR-041) — Clean Clear-chat semantic. Wipes in-memory session
+// state for the supplied session_id and ALWAYS returns a fresh UUID the
+// caller must adopt going forward. The on-disk profile JSON is preserved.
+export interface SessionClearResponse {
+  cleared: boolean;
+  new_session_id: string;
+}
+
+export async function postSessionClear(
+  args: { session_id: string }
+): Promise<SessionClearResponse> {
+  const resp = await fetch(`${BACKEND_URL}/api/session/clear`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ session_id: args.session_id }),
+  });
+  if (!resp.ok) throw new Error(`session clear failed: ${resp.status}`);
+  return resp.json();
+}
+
+
 export async function uploadPolicy(file: File): Promise<UploadResponse> {
   const fd = new FormData();
   fd.append("file", file);

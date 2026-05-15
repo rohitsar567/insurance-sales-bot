@@ -21,7 +21,7 @@ import {
   postChat,
   postPremiumEstimate,
   postProfileUpdate,
-  postSessionReset,
+  postSessionClear,
   postTranscribe,
   PremiumEstimateResponse,
   ProfileCompletenessResponse,
@@ -287,42 +287,42 @@ export default function Page() {
     ].includes(s);
   }
 
-  // KI-020 — user-facing chat clear / fresh-start
-  async function handleClearChat(dropProfile: boolean) {
+  // KI-196 (ADR-041) — Clean Clear-chat semantic.
+  //   1. POST /api/session/clear with the current session_id.
+  //   2. Adopt the returned new_session_id going forward (sessionStorage).
+  //   3. Wipe message array, profile chip, and chat-history localStorage.
+  // The legacy `dropProfile` parameter is retained for backwards compatibility
+  // with any other callsite — both true and false now route through the new
+  // endpoint since the server-side semantic is identical (in-memory wipe +
+  // fresh UUID; on-disk profile JSON untouched).
+  async function handleClearChat(_dropProfile: boolean = false) {
     // Always wipe the visible chat + local storage.
     setMessages([]);
     setInput("");
     // KI-073 (2026-05-15) — clear the profile-completeness chip immediately
     // so the header doesn't show stale "55% DONE" for a brand-new visitor
-    // while the new session_id fetch is in flight. The useEffect on sessionId
-    // will repopulate this from the fresh backend session as soon as the new
-    // id lands.
+    // while the new session_id fetch is in flight.
     setProfileCompleteness(null);
     if (typeof window !== "undefined") {
       localStorage.removeItem("insurance_chat_messages");
     }
-    if (dropProfile && sessionId) {
-      try {
-        const res = await postSessionReset({ session_id: sessionId, drop_profile: true });
-        // Adopt the new server-issued session id (or clear it if backend didn't return one)
-        if (res.session_id) {
-          setSessionId(res.session_id);
-          if (typeof window !== "undefined") {
-            sessionStorage.setItem("insurance_session_id", res.session_id);
-          }
-        } else {
-          setSessionId(undefined);
-          if (typeof window !== "undefined") {
-            sessionStorage.removeItem("insurance_session_id");
-          }
-        }
-      } catch (e) {
-        console.warn("session reset failed", e);
-        // Even if backend failed, drop client-side session so next message starts fresh
-        setSessionId(undefined);
-        if (typeof window !== "undefined") {
-          sessionStorage.removeItem("insurance_session_id");
-        }
+    // Ask the backend to rotate the session and wipe in-memory state. We
+    // always do this, even without a sessionId, so the user gets a guaranteed
+    // fresh UUID for their next turn.
+    try {
+      const res = await postSessionClear({ session_id: sessionId ?? "" });
+      setSessionId(res.new_session_id);
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("insurance_session_id", res.new_session_id);
+      }
+    } catch (e) {
+      console.warn("session clear failed", e);
+      // Even if backend failed, drop client-side session so the next message
+      // starts a fresh server-side session (handle_turn mints one when none
+      // is supplied).
+      setSessionId(undefined);
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem("insurance_session_id");
       }
     }
   }

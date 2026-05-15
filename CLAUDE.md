@@ -68,6 +68,13 @@ Every LLM role is a `NimChainLLM` candidate pool, NOT a hardcoded single model. 
 - **Natural-conversation escape (KI-045):** intent_change phrases / off-topic questions still exit fact-find by routing through `should_route_to_fact_find` upstream of the brain.
 - **Indic queries** route through Sarvam-M for translation on input + output; the sales brain runs in English on the translated text.
 
+## Session & profile lifecycle (ADR-041) — KI-196
+
+- **Three identity layers stay distinct.** `session_id` (UUID, in-memory only via `backend/session_state.py`) ≠ `persona_id` (12-char SHA1, keys `40-data/profiles/<persona_id>.json`) ≠ `name_slug` (canonical first-name, Chroma chunk key). New tab = new `session_id`; same-tab refresh = same `session_id` (`sessionStorage`); on-disk profile JSONs are durable user data and are NEVER deleted by frontend actions.
+- **`POST /api/session/clear`** is the canonical "Clear chat" endpoint. Body `{session_id}`; reply `{cleared, new_session_id}`. Wipes the in-memory entry via `clear_session()` and always mints a fresh UUID. The legacy `POST /api/session/reset` (KI-020) is left in place for backwards compatibility but the frontend Clear-chat button calls `/api/session/clear`.
+- **Confirmation-gated profile recall.** When a fresh session captures a `name` that matches an on-disk profile, the orchestrator stages the match into `session.pending_profile_recall` (NEW field on `SessionState`) and overrides the brain's `reply_text` for that turn with a deterministic welcome-back ask ("Welcome back, Rohit — I have a profile under your name from before: age 29, metro, first buy. Continue from there or start fresh?"). The user's NEXT message hits a gate at the top of `handle_turn`: affirm → `rehydrate_by_name`; negate → drop; ambiguous → leave staged so the brain re-asks via the WELCOME-BACK GATE block in `_build_system_prompt`. The legacy KI-118 silent auto-merge is gone.
+- **Profile completeness gates on `Profile.asked`.** Default `dependents="self"` pre-fill in the builder form no longer registers as "done"; `profile_completeness_view` + `POST /api/profile` mask any field not in the `asked` list before scoring. The "Your profile X% done" badge now starts at 0% for a brand-new session and only ticks up on explicit captures.
+
 ## Refusal precision (KI-046)
 
 - Persona prompt now explicitly instructs the bot to refuse on **fanciful / out-of-scope scenarios** (space tourism, diamond-tipped surgery, fictional procedures) with a specific refusal sentence.

@@ -35,6 +35,8 @@ from dataclasses import dataclass, field
 from threading import Lock
 from typing import Optional
 
+from typing import Any, Dict
+
 from backend.needs_finder import Profile, record_answer
 
 _log = logging.getLogger(__name__)
@@ -47,6 +49,18 @@ class SessionState:
     awaiting_question_id: Optional[str] = None  # if set, next user message answers this
     free_form_session: bool = False              # user explicitly opted out of fact-find
     last_touched: float = field(default_factory=time.time)
+    # KI-196 (ADR-041) — confirmation-gated profile recall. When a fresh
+    # session captures a name that matches an on-disk profile, the recall
+    # is staged here (NOT auto-merged) and surfaced to the sales_brain as a
+    # one-shot "welcome back" prompt. Affirm → merge stored fields into
+    # `profile`. Negate → discard. Shape:
+    #   {
+    #     "name": "Rohit Sarma",
+    #     "summary": {age, dependents, location_tier, primary_goal, ...},
+    #     "captured_this_turn": {<field>: <value>, ...},  # don't re-extract
+    #     "staged_at": <epoch-seconds>,
+    #   }
+    pending_profile_recall: Optional[Dict[str, Any]] = None
 
     def _flush(self) -> None:
         """No-op since KI-118 (2026-05-15). Disk persistence was removed; the
@@ -153,6 +167,26 @@ def reset_session(session_id: str) -> bool:
     KI-020 (2026-05-14) — backs the user-facing "Clear chat / start fresh" toggle.
     KI-118 (2026-05-15) — no disk file to remove anymore; in-memory eviction
     is the only side effect. Returns True iff the session id was live.
+    """
+    with _lock:
+        if session_id in _sessions:
+            del _sessions[session_id]
+            return True
+    return False
+
+
+def clear_session(session_id: str) -> bool:
+    """KI-196 (ADR-041) — Wipe in-memory state for one session_id WITHOUT
+    touching any on-disk profile JSON under `40-data/profiles/`.
+
+    Semantically identical to `reset_session` today (both just evict the
+    in-memory entry; the disk profile has always been independent and lives
+    by persona_id / name slug, not session_id). Kept as a distinct symbol so
+    the call-site intent at `POST /api/session/clear` is self-documenting and
+    so future divergence (e.g. partial-state wipes) doesn't require touching
+    the legacy KI-020 caller.
+
+    Returns True iff a live in-memory session was evicted.
     """
     with _lock:
         if session_id in _sessions:

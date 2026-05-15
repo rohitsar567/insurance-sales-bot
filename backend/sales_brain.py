@@ -56,7 +56,10 @@ from typing import Any, Optional
 
 from backend.needs_finder import Profile
 from backend.providers.base import ChatMessage
-from backend.providers.google_gemini_llm import get_gemini_llm
+from backend.providers.google_gemini_llm import (
+    get_gemini_llm,
+    invalidate_cache as _gemini_invalidate_cache,
+)
 from backend.providers.nvidia_nim_llm import get_fast_brain_llm
 from backend.providers.openrouter_llm import get_openrouter_llm
 from backend.sales_brain_normalizer import normalize_captures
@@ -99,7 +102,7 @@ class SalesBrainResult:
 # + leaves room for one chain fallback. The fast-brain chain already has its
 # own per-link + total-chain budget; this wait_for is a belt-and-braces stop.
 _TIMEOUT_S: float = 45.0         # KI-170 — qwen3-next-80b + JSON mode regularly lands 15-25s; 25s breached periodically
-_MAX_TOKENS: int = 700           # prose + structured JSON object with safety margin
+_MAX_TOKENS: int = 500           # KI-197 — was 700; 500 still covers 1-3 sentence sales_brain replies + JSON wrapper. Saves ~200-400ms per turn.
 _TEMPERATURE: float = 0.6        # mirrors fact_find_brain — conversational warmth
 
 # KI-169 — strip <think>...</think> blocks the LLM may emit inside the JSON
@@ -291,8 +294,29 @@ def _format_slot_list(slots: list[str]) -> str:
     return "\n".join(f"  - {f}: {_SLOT_DESCRIPTIONS.get(f, '')}" for f in slots)
 
 
-def _build_system_prompt(profile: Profile) -> str:
-    """Assemble the full system prompt: base rules + KNOWN block + missing slots."""
+# KI-199 — Cached preamble = the strictly-invariant chunk that's identical on
+# every turn for every session: the base tone/output rules + the SLOT SCHEMA
+# section. This is what Gemini cachedContents wraps. Everything else (KNOWN,
+# REQUIRED REMAINING, NICE-TO-HAVE, recall) varies per turn / per session and
+# is sent inline as a system message in `contents[]`.
+_CACHED_PREAMBLE: str = (
+    _BASE_SYSTEM_PROMPT
+    + "\n\n--- SLOT SCHEMA (the fields you may capture) ---\n"
+    + _format_slot_list(list(_SLOT_DESCRIPTIONS.keys()))
+)
+
+
+def _dynamic_profile_block(
+    profile: Profile,
+    pending_profile_recall: Optional[dict] = None,
+) -> str:
+    """Build the per-turn dynamic system message: KNOWN, REQUIRED, NICE-TO-HAVE,
+    and the optional KI-196 welcome-back recall directive.
+
+    Kept disjoint from _CACHED_PREAMBLE — concatenating the two reproduces the
+    exact prompt the previous monolithic `_build_system_prompt` emitted, so
+    cached + uncached paths are byte-identical when assembled.
+    """
     known = _profile_known(profile)
     required_remaining = _required_remaining(known)
     nice_to_have_remaining = _nice_to_have_remaining(known, profile)
@@ -301,11 +325,25 @@ def _build_system_prompt(profile: Profile) -> str:
         json.dumps(known, ensure_ascii=False) if known else "{}"
     )
 
+    recall_block = ""
+    if pending_profile_recall:
+        recall_summary = pending_profile_recall.get("summary") or {}
+        recall_name = pending_profile_recall.get("name") or profile.name or "there"
+        recall_block = (
+            "\n\n--- WELCOME-BACK GATE (HIGHEST PRIORITY THIS TURN) ---\n"
+            f"The user just provided the name '{recall_name}' and a stored profile exists under that name with these prior captures:\n"
+            f"  {json.dumps(recall_summary, ensure_ascii=False)}\n"
+            "Your ONLY job this turn is to ask warmly whether to continue from that stored profile OR start fresh.\n"
+            "Mention 2-3 of the most-distinctive prior captures in your reply so the user can recognise their own profile (e.g. age + city + dependents).\n"
+            "Do NOT capture any of those stored fields yourself — emit `\"captures\": {}` and `\"ready_for_recommendations\": false`.\n"
+            "Do NOT volunteer the next fact-find question on this turn. Wait for the user's yes / no.\n"
+            "Example reply: 'Welcome back, "
+            f"{recall_name} — I have a profile under your name from before: "
+            "age 29, in metro, looking for first policy. Continue from there or start fresh?'\n"
+        )
+
     return (
-        _BASE_SYSTEM_PROMPT
-        + "\n\n--- SLOT SCHEMA (the fields you may capture) ---\n"
-        + _format_slot_list(list(_SLOT_DESCRIPTIONS.keys()))
-        + f"\n\nKNOWN: {known_block}"
+        f"KNOWN: {known_block}"
         + "\n(These fields are ALREADY captured. Do NOT re-ask for them. Use the user's name when known.)"
         + "\n\nREQUIRED SLOTS STILL MISSING (you need these before setting ready_for_recommendations=true):\n"
         + _format_slot_list(required_remaining)
@@ -317,6 +355,28 @@ def _build_system_prompt(profile: Profile) -> str:
             if not required_remaining else
             "\n\nKeep gathering naturally — you don't yet have the minimum required set."
         )
+        + recall_block
+    )
+
+
+def _build_system_prompt(
+    profile: Profile,
+    pending_profile_recall: Optional[dict] = None,
+) -> str:
+    """Backwards-compatible monolithic prompt builder.
+
+    Retained so any non-Gemini tier (NIM, OR) that doesn't understand
+    cachedContents still receives the FULL prompt as a single system
+    message — preserving the pre-KI-199 wire shape for those tiers. By
+    construction this is byte-identical to (_CACHED_PREAMBLE +
+    "\\n\\n" + _dynamic_profile_block(...)).
+
+    KI-196 (ADR-041) — when `pending_profile_recall` is supplied, the brain
+    receives an extra directive to ASK the user whether to load the prior
+    profile.
+    """
+    return _CACHED_PREAMBLE + "\n\n" + _dynamic_profile_block(
+        profile, pending_profile_recall=pending_profile_recall
     )
 
 
@@ -371,6 +431,7 @@ async def drive_sales_brain(
     profile: Profile,
     chat_history: list[dict],
     session_id: Optional[str] = None,
+    pending_profile_recall: Optional[dict] = None,
 ) -> SalesBrainResult:
     """Single LLM call per turn — replaces the scripted slot-walker.
 
@@ -378,21 +439,52 @@ async def drive_sales_brain(
     `brain_used` is `sales_brain::error:<reason>` and `reply_text` is
     empty. Caller (orchestrator) is responsible for any fallback behavior
     — NO scripted reply lives here.
+
+    KI-196 (ADR-041) — `pending_profile_recall` is the staged welcome-back
+    snapshot (see `backend.session_state.SessionState.pending_profile_recall`).
+    When non-None, the system prompt adds a high-priority directive to ask
+    the user whether to load the stored profile or start fresh, and forbids
+    the brain from capturing any of the stored fields itself.
     """
     t0 = time.time()
 
-    # Build the system prompt with current profile state
-    system_prompt = _build_system_prompt(profile)
+    # KI-199 — split the system prompt into the fixed-preamble (cacheable on
+    # Gemini) and the per-turn dynamic block. The Gemini tier sends the
+    # dynamic block as a system message inline + references the cache; the
+    # NIM and OR tiers receive the full monolithic prompt assembled below
+    # since they don't speak cachedContents.
+    dynamic_block = _dynamic_profile_block(
+        profile, pending_profile_recall=pending_profile_recall
+    )
+    system_prompt = _CACHED_PREAMBLE + "\n\n" + dynamic_block
 
     # Build messages: system + last ~10 chat history turns + user_text
     messages: list[ChatMessage] = [ChatMessage(role="system", content=system_prompt)]
     if chat_history:
-        for turn in chat_history[-10:]:
+        # KI-197 — was [-10:]; trimmed to last 6 turns to reduce prompt size
+        # by ~40% per call. 6 is still enough context for conversational
+        # follow-ups; older turns rarely influence the next slot to ask.
+        for turn in chat_history[-6:]:
             role = turn.get("role")
             content = turn.get("content")
             if role in ("user", "assistant") and content:
                 messages.append(ChatMessage(role=role, content=str(content)))
     messages.append(ChatMessage(role="user", content=user_text or ""))
+
+    # Gemini-specific message shape (KI-199): keep ONLY the dynamic block
+    # inline as a system message; the fixed preamble lives in cachedContents.
+    # When the cache isn't available we fall through and reuse the full
+    # `messages` list below.
+    gemini_messages: list[ChatMessage] = [
+        ChatMessage(role="system", content=dynamic_block)
+    ]
+    if chat_history:
+        for turn in chat_history[-6:]:  # KI-197 — match the messages[] trim
+            role = turn.get("role")
+            content = turn.get("content")
+            if role in ("user", "assistant") and content:
+                gemini_messages.append(ChatMessage(role=role, content=str(content)))
+    gemini_messages.append(ChatMessage(role="user", content=user_text or ""))
 
     # KI-179 (2026-05-15) — 3-tier LLM stack with Google Gemini 2.0 Flash
     # PRIMARY (Tier 0), NIM fast-brain chain Tier 1, OpenRouter free-tier
@@ -426,13 +518,41 @@ async def drive_sales_brain(
         )
 
     if gemini_llm is not None:
+        # KI-199 — lazily provision a cachedContents resource for the fixed
+        # preamble. The cache is shared across sessions (same key for everyone
+        # who hits sales_brain Gemini tier with this preamble + model). On
+        # ANY provisioning failure (cache too small, network blip, 4xx, etc.)
+        # `create_cache` returns None and we proceed uncached. The chat() path
+        # also self-heals on a stale-cache 4xx by retrying without the
+        # reference, so a cache-server outage can never break the main path.
+        cache_name: Optional[str] = None
+        try:
+            cache_name = await gemini_llm.create_cache(
+                _CACHED_PREAMBLE, ttl_seconds=300
+            )
+        except Exception as e:  # noqa: BLE001 — fail-safe: never blocking
+            logging.info(
+                "sales_brain: gemini.create_cache raised %s — proceeding uncached (session=%s): %s",
+                type(e).__name__, session_id, str(e)[:200],
+            )
+            cache_name = None
+
+        # Use cache-aware message shape only when the cache is in play;
+        # otherwise fall back to the full monolithic prompt so the LLM never
+        # sees a partial preamble.
+        if cache_name:
+            chat_messages = gemini_messages
+        else:
+            chat_messages = messages
+
         try:
             result = await asyncio.wait_for(
                 gemini_llm.chat(
-                    messages=messages,
+                    messages=chat_messages,
                     temperature=_TEMPERATURE,
                     max_tokens=_MAX_TOKENS,
                     response_format={"type": "json_object"},
+                    cached_content_name=cache_name,
                 ),
                 timeout=_TIMEOUT_S,
             )
@@ -446,6 +566,19 @@ async def drive_sales_brain(
             )
         except Exception as e:  # noqa: BLE001
             gemini_exc = e
+            # On any non-timeout error from the Gemini call, drop our cache
+            # ref proactively so the next turn re-provisions cleanly instead
+            # of repeatedly slamming a stale handle. (The provider itself
+            # already invalidates on a 4xx whose body names the cache, but
+            # 5xx / network errors land here and we want to be conservative.)
+            if cache_name:
+                try:
+                    _gemini_invalidate_cache(
+                        getattr(gemini_llm, "model", "gemini-2.5-flash-lite"),
+                        _CACHED_PREAMBLE,
+                    )
+                except Exception:  # noqa: BLE001
+                    pass
             logging.info(
                 "sales_brain: Gemini raised %s, falling back to NIM (session=%s): %s",
                 type(e).__name__, session_id, str(e)[:200],
@@ -591,7 +724,17 @@ async def drive_sales_brain(
             "sales_brain empty reply after think-strip — retrying once (session=%s, model=%s)",
             session_id, served_model,
         )
-        retry_messages = list(messages) + [
+        # KI-199 — when the original call used Gemini with a cachedContents
+        # ref, the retry must keep the dynamic-only message list AND keep
+        # passing the cache (the preamble lives server-side; sending it again
+        # inline would be redundant and could trip the cached-vs-inline
+        # mutex). For NIM/OR we keep the full monolithic prompt.
+        retry_base = (
+            gemini_messages
+            if served_tier == "gemini" and "cache_name" in locals() and cache_name
+            else messages
+        )
+        retry_messages = list(retry_base) + [
             ChatMessage(
                 role="system",
                 content=(
@@ -602,14 +745,17 @@ async def drive_sales_brain(
                 ),
             ),
         ]
+        retry_kwargs: dict = {
+            "messages": retry_messages,
+            "temperature": _TEMPERATURE,
+            "max_tokens": _MAX_TOKENS,
+            "response_format": {"type": "json_object"},
+        }
+        if served_tier == "gemini" and "cache_name" in locals() and cache_name:
+            retry_kwargs["cached_content_name"] = cache_name
         try:
             retry_result = await asyncio.wait_for(
-                llm.chat(
-                    messages=retry_messages,
-                    temperature=_TEMPERATURE,
-                    max_tokens=_MAX_TOKENS,
-                    response_format={"type": "json_object"},
-                ),
+                llm.chat(**retry_kwargs),
                 timeout=_TIMEOUT_S,
             )
             retry_parsed = _parse_brain_json((retry_result.text or "").strip())

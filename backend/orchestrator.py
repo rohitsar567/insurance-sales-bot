@@ -575,6 +575,57 @@ async def handle_turn(
         query=user_text,
     )
 
+    # KI-196 (ADR-041) — confirmation-gated profile recall. If the prior
+    # turn staged a pending recall (matched name → on-disk profile), the
+    # bot's last reply already asked the user whether to continue or start
+    # fresh. THIS turn's user_text decides:
+    #   - Affirm  → merge stored profile (via rehydrate_by_name) and continue.
+    #   - Negate  → drop pending_profile_recall, treat as new user.
+    #   - Other   → leave pending_profile_recall in place; the brain will
+    #               re-ask one more time. (One re-ask cap is enforced by the
+    #               brain's prompt — see sales_brain._build_system_prompt.)
+    if session.pending_profile_recall is not None:
+        _utxt = (user_text or "").strip().lower()
+        _AFFIRM = (
+            "yes", "yeah", "yep", "yup", "yes please", "continue", "continue from there",
+            "use that", "load it", "load that", "welcome back", "from there",
+            "carry on", "ok", "okay", "sure", "go ahead", "proceed", "haan", "ha",
+            "use my profile", "use the profile", "resume",
+        )
+        _NEGATE = (
+            "no", "nope", "nah", "start fresh", "fresh", "new", "new profile",
+            "start over", "from scratch", "different", "not me", "that's not me",
+            "thats not me", "discard", "begin again", "nahi", "nai",
+        )
+        _is_affirm = (
+            _utxt in _AFFIRM
+            or any(_utxt.startswith(a + " ") or _utxt.endswith(" " + a) for a in _AFFIRM)
+            or " continue " in f" {_utxt} "
+            or "from there" in _utxt
+            or "use that profile" in _utxt
+        )
+        _is_negate = (
+            _utxt in _NEGATE
+            or any(_utxt.startswith(n + " ") or _utxt.endswith(" " + n) for n in _NEGATE)
+            or "start fresh" in _utxt
+            or "start over" in _utxt
+            or "from scratch" in _utxt
+        )
+        if _is_affirm and not _is_negate:
+            try:
+                from backend.session_state import rehydrate_by_name as _rehydrate
+                _rehydrate(session, session.pending_profile_recall.get("name") or session.profile.name or "")
+            except Exception as _e:
+                logging.warning(
+                    "pending_profile_recall merge failed (session=%s): %s",
+                    session_id, _e,
+                )
+            session.pending_profile_recall = None
+        elif _is_negate and not _is_affirm:
+            session.pending_profile_recall = None
+        # If neither was detected, leave it staged — sales_brain will re-ask
+        # via its system-prompt hook (see _build_system_prompt).
+
     if treat_as_fact_find:
         # KI-167 (2026-05-15) — WS2: replaces drive_fact_find with
         # drive_sales_brain. The new brain owns conversation flow end-to-end
@@ -591,6 +642,7 @@ async def handle_turn(
                     profile=session.profile,
                     chat_history=chat_history[-10:],
                     session_id=session_id,
+                    pending_profile_recall=session.pending_profile_recall,
                 ),
                 timeout=45.0,  # KI-170 — bumped from 25s; qwen3-next-80b + JSON mode regularly lands 15-25s
             )
@@ -642,40 +694,121 @@ async def handle_turn(
                 p = session.profile
                 slug = _normalise_name(p.name or "")
                 if slug:
-                    await upsert_profile_chunk(slug, {
-                        "age": p.age,
-                        "dependents": p.dependents,
-                        "income_band": p.income_band,
-                        "existing_cover_inr": p.existing_cover_inr,
-                        "primary_goal": p.primary_goal,
-                        "location_tier": p.location_tier,
-                        "parents_to_insure": p.parents_to_insure,
-                        "parents_age_max": p.parents_age_max,
-                        "parents_has_ped": p.parents_has_ped,
-                        "budget_band": p.budget_band,
-                        "health_conditions": p.health_conditions,
-                    })
+                    # KI-197 (2026-05-15) — fire-and-forget. The profile-chunk
+                    # upsert involves embedding generation + Chroma write
+                    # (~200-500ms). Awaiting it serially adds that to the
+                    # user-perceived turn latency for ZERO reason — the next
+                    # turn's retrieval doesn't depend on this chunk being
+                    # persisted yet. Schedule on the event loop, log errors
+                    # via the task's add_done_callback if you ever need to
+                    # debug — but don't block the response.
+                    async def _bg_upsert(slug_=slug, p_=p, sid_=session_id):
+                        try:
+                            await upsert_profile_chunk(slug_, {
+                                "age": p_.age,
+                                "dependents": p_.dependents,
+                                "income_band": p_.income_band,
+                                "existing_cover_inr": p_.existing_cover_inr,
+                                "primary_goal": p_.primary_goal,
+                                "location_tier": p_.location_tier,
+                                "parents_to_insure": p_.parents_to_insure,
+                                "parents_age_max": p_.parents_age_max,
+                                "parents_has_ped": p_.parents_has_ped,
+                                "budget_band": p_.budget_band,
+                                "health_conditions": p_.health_conditions,
+                            })
+                        except Exception as e:
+                            logging.warning(
+                                "sales_brain profile-chunk upsert failed bg (session=%s): %s: %s",
+                                sid_, type(e).__name__, str(e)[:200],
+                            )
+                    asyncio.create_task(_bg_upsert())
             except Exception as e:
                 logging.warning(
-                    "sales_brain profile-chunk upsert failed (session=%s): %s: %s",
+                    "sales_brain profile-chunk upsert scheduling failed (session=%s): %s: %s",
                     session_id, type(e).__name__, str(e)[:200],
                 )
 
         # KI-040 / KI-062 — named-profile persistence preserved. If the brain
         # captured (or already has) a name on the profile, write the merged
         # profile to disk so the next visit can welcome the user back.
-        # KI-118 — also trigger one-shot rehydrate when name was newly captured
-        # this turn so any stored profile from a prior visit gets merged in.
+        #
+        # KI-196 (ADR-041) — confirmation-gated recall. The silent auto-merge
+        # from KI-118 confused users into thinking the bot "remembered" them
+        # from a prior session. Replaced with a stage-then-ask flow:
+        #   1. Name newly captured this turn AND a stored profile exists
+        #      under that name AND there's not already a pending recall AND
+        #      the current session has NOT already accumulated a meaningful
+        #      profile (>1 explicitly-answered slot — they're genuinely a
+        #      fresh session, not a returning user mid-correction).
+        #   2. Stage the stored snapshot to `session.pending_profile_recall`.
+        #   3. The user's NEXT message hits the confirmation gate at the top
+        #      of handle_turn (BEFORE drive_sales_brain) and either merges
+        #      or discards based on affirm/negate intent.
+        # The disk save still runs every turn so partial captures aren't lost.
         if session.profile.name:
             try:
-                from backend.profile_store import save_profile
-                # If name was newly captured this turn AND there's a stored
-                # profile under that name, merge in the stored fields BEFORE
-                # writing back (so we don't immediately overwrite the stored
-                # snapshot with a partial new one).
-                if "name" in fact_find_profile_updates:
-                    from backend.session_state import rehydrate_by_name
-                    rehydrate_by_name(session, session.profile.name)
+                from backend.profile_store import save_profile, load_profile
+                if (
+                    "name" in fact_find_profile_updates
+                    and session.pending_profile_recall is None
+                ):
+                    # Count explicitly-answered slots OTHER than name on the
+                    # live session. If >1, treat as continuation, not a fresh
+                    # returning visit, and skip the gate (their current
+                    # captures win — same intent as the old merge semantics).
+                    answered_non_name = [
+                        s for s in (session.profile.asked or [])
+                        if s != "name"
+                    ]
+                    stored = load_profile(session.profile.name)
+                    if stored is not None and len(answered_non_name) <= 1:
+                        summary = {
+                            "age": stored.age,
+                            "dependents": stored.dependents,
+                            "location_tier": stored.location_tier,
+                            "income_band": stored.income_band,
+                            "primary_goal": stored.primary_goal,
+                            "health_conditions": stored.health_conditions,
+                            "budget_band": stored.budget_band,
+                            "existing_cover_inr": stored.existing_cover_inr,
+                        }
+                        # Drop None / empty values so the brain's recall
+                        # prompt summary is tight.
+                        summary = {
+                            k: v for k, v in summary.items()
+                            if v not in (None, "", [])
+                        }
+                        session.pending_profile_recall = {
+                            "name": session.profile.name,
+                            "summary": summary,
+                            "captured_this_turn": dict(fact_find_profile_updates),
+                            "staged_at": time.time(),
+                        }
+                        # Override the brain's reply for THIS turn with a
+                        # deterministic welcome-back ask. The brain didn't
+                        # know about the stored profile when it composed its
+                        # reply (the load_profile lookup happens in this
+                        # post-processing block), so its prose would have
+                        # been the next-slot fact-find question — not what
+                        # the user should see right now. Subsequent turns
+                        # WILL go through the brain with the recall directive
+                        # in the system prompt (see _build_system_prompt).
+                        _bits = []
+                        if summary.get("age") is not None:
+                            _bits.append(f"age {summary['age']}")
+                        if summary.get("location_tier"):
+                            _bits.append(str(summary["location_tier"]))
+                        if summary.get("dependents"):
+                            _bits.append(str(summary["dependents"]))
+                        if summary.get("primary_goal"):
+                            _bits.append(str(summary["primary_goal"]).replace("_", " "))
+                        _summary_phrase = ", ".join(_bits) if _bits else "your earlier captures"
+                        sb_result.reply_text = (
+                            f"Welcome back, {session.profile.name} — I have a profile under your name "
+                            f"from before: {_summary_phrase}. Continue from there or start fresh?"
+                        )
+                        sb_result.brain_used = "sales_brain::welcome_back_ask"
                 save_profile(session.profile.name, session.profile, session_id=session_id)
             except Exception:
                 pass

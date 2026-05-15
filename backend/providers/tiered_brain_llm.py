@@ -90,8 +90,15 @@ class TieredBrainLLM(LLMProvider):
         temperature: float = 0.2,
         max_tokens: int = 1024,
         response_format: Optional[dict] = None,
+        cached_content_name: Optional[str] = None,
         **kwargs,  # absorb provider-specific kwargs (e.g. OR's `models=[...]`)
     ) -> LLMResult:
+        """KI-199 — `cached_content_name`, when supplied by the caller, is
+        forwarded to the Gemini tier ONLY. NIM and OpenRouter don't speak
+        Gemini's cachedContents protocol so we silently drop the reference on
+        those tiers — they receive the full messages list as before, which
+        keeps the wire shape correct on fall-through.
+        """
         gemini_exc: Optional[BaseException] = None
         nim_exc: Optional[BaseException] = None
         or_exc: Optional[BaseException] = None
@@ -105,6 +112,7 @@ class TieredBrainLLM(LLMProvider):
                     temperature=temperature,
                     max_tokens=max_tokens,
                     response_format=response_format,
+                    cached_content_name=cached_content_name,
                 ),
                 timeout=self.per_tier_timeout,
             )
