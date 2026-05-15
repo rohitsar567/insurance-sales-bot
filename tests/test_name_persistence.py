@@ -182,19 +182,25 @@ class TestCaseA_ExtractorNullCannotWipeName(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# CASE B — fact-find branch does not invoke extract_profile_updates.
+# CASE B — sales-brain branch does not invoke extract_profile_updates.
 # ---------------------------------------------------------------------------
+# KI-167 (2026-05-15) — rewired to mock `backend.sales_brain.drive_sales_brain`
+# returning a `SalesBrainResult` instead of the retired
+# `backend.fact_find_brain.drive_fact_find` / `FactFindOutcome`. Same
+# architectural invariant: a sales-brain (fact-find) turn must NOT trigger
+# the heavy extractor LLM, because the sales brain captures slots natively
+# from its structured JSON output.
 
-class TestCaseB_FactFindBranchDoesNotInvokeExtractor(unittest.TestCase):
-    """KI-091 regression. On a fact-find turn the orchestrator MUST NOT call
-    extract_profile_updates — the fact_find brain extracts slots natively
-    from its <FF> JSON tail, and the heavy extractor LLM both (a) duplicates
-    work and (b) periodically returns nulls that wipe filled slots.
+class TestCaseB_SalesBrainBranchDoesNotInvokeExtractor(unittest.TestCase):
+    """KI-091 regression (rewired under KI-167). On a sales-brain turn the
+    orchestrator MUST NOT call extract_profile_updates — the sales brain
+    captures slots natively in its JSON reply (`captures` field), and the
+    heavy extractor LLM both (a) duplicates work and (b) periodically returns
+    nulls that wipe filled slots.
 
-    We pin this by patching `extract_profile_updates` to raise. If the
-    orchestrator wrongly calls it on a fact-find turn, the call raises and
-    the test fails. If KI-091's gate is in place, the call never happens
-    and the turn completes cleanly.
+    We pin this by patching `extract_profile_updates` with a spy. If the
+    orchestrator wrongly calls it on a sales-brain turn, call_count > 0 and
+    the test fails. If the gate is in place, the call never happens.
     """
 
     def setUp(self) -> None:
@@ -205,58 +211,61 @@ class TestCaseB_FactFindBranchDoesNotInvokeExtractor(unittest.TestCase):
     def tearDown(self) -> None:
         _cleanup_session_file(self.session_id)
 
-    def test_fact_find_turn_does_not_call_extractor(self) -> None:
+    def test_sales_brain_turn_does_not_call_extractor(self) -> None:
         from backend.session_state import get_session
         from backend import orchestrator as orch
-        from backend.fact_find_brain import FactFindOutcome
+        from backend.sales_brain import SalesBrainResult
 
-        # Seed a session that's in fact-find continuation (awaiting an answer).
+        # Seed a session that's in sales-brain continuation (awaiting an answer).
         session = get_session(self.session_id)
         session.profile.name = "Rohit"
         session.profile.age = 30
         session.profile.asked = ["name", "age"]
         session.free_form_session = False
-        session.awaiting_question_id = "dependents"  # mid-fact-find
+        session.awaiting_question_id = "dependents"  # mid-sales-brain
         session._flush()
 
         # Mock extractor: if called, fail loudly.
         async def _explode(user_text, current_profile):
             raise AssertionError(
-                "extract_profile_updates was called on a fact-find turn — "
-                "KI-091 gate is broken. The fact_find brain already extracts "
-                "slots from its <FF> trailer; the heavy extractor LLM here "
-                "is both wasteful AND the source of the name-wipe bug."
+                "extract_profile_updates was called on a sales-brain turn — "
+                "the gate is broken. The sales brain already captures slots "
+                "natively from its structured JSON reply; the heavy extractor "
+                "LLM here is both wasteful AND the source of the name-wipe bug."
             )
 
-        # Mock the fact_find brain to return a benign outcome.
-        async def _stub_drive(user_text, session, chat_history, session_id):
-            return FactFindOutcome(
-                reply_text="And who else do you want covered?",
-                captured_updates={},
-                slot_driving="dependents",
-                fact_find_complete=False,
-                ambiguous=False,
-            )
+        # Mock the sales brain to return a benign SalesBrainResult.
+        mock_result = SalesBrainResult(
+            reply_text="And who else do you want covered?",
+            captured_updates={},
+            ready_for_recommendations=False,
+            brain_used="sales_brain::nim:test-model",
+            raw_json={
+                "reply": "And who else do you want covered?",
+                "captures": {},
+                "ready_for_recommendations": False,
+            },
+        )
 
         # The orchestrator wraps the extractor call in try/except, swallows
-        # AssertionError, and just logs a warning — meaning a broken KI-091
-        # gate would silently regress without our raise propagating. To pin
+        # AssertionError, and just logs a warning — meaning a broken gate
+        # would silently regress without our raise propagating. To pin
         # this properly, we monitor the patched extractor with a Mock and
         # assert call_count == 0 instead of relying on the raise reaching us.
         extractor_spy = mock.AsyncMock(side_effect=_explode)
 
         with mock.patch("backend.profile_extractor.extract_profile_updates",
                         new=extractor_spy), \
-             mock.patch("backend.fact_find_brain.drive_fact_find",
-                        new=_stub_drive), \
+             mock.patch("backend.sales_brain.drive_sales_brain",
+                        new=mock.AsyncMock(return_value=mock_result)), \
              mock.patch("backend.profile_rag.upsert_profile_chunk",
                         new=_stub_upsert), \
              mock.patch("backend.profile_store.save_profile", new=mock.Mock()):
 
-            # Drive a turn — the user's message is a fact-find answer.
+            # Drive a turn — the user's message is a sales-brain answer.
             # in_fact_find_continuation is True (awaiting_question_id set,
             # not free-form), so the orchestrator should route to the
-            # fact-find brain and return BEFORE reaching the extractor.
+            # sales brain and return BEFORE reaching the extractor.
             result = asyncio.run(orch.handle_turn(
                 user_text="self + spouse",
                 chat_history=[],
@@ -267,18 +276,17 @@ class TestCaseB_FactFindBranchDoesNotInvokeExtractor(unittest.TestCase):
         # The headline assertion: extractor was never invoked.
         self.assertEqual(
             extractor_spy.call_count, 0,
-            "REGRESSION (KI-091): extract_profile_updates was called on a "
-            "fact-find turn (call_count=%d). The intent='fact_find' / "
-            "in_fact_find_continuation gate in backend/orchestrator.py is "
-            "broken — fact-find turns must skip the heavy extractor LLM."
+            "REGRESSION (KI-091/KI-167): extract_profile_updates was called "
+            "on a sales-brain turn (call_count=%d). The gate in "
+            "backend/orchestrator.py is broken — sales-brain turns must skip "
+            "the heavy extractor LLM."
             % extractor_spy.call_count,
         )
 
-        # Sanity: the fact-find branch did run (we got its reply back).
-        self.assertEqual(result.intent, "fact_find")
+        # Sanity: the sales-brain branch did run (we got its reply back).
         self.assertEqual(
             result.reply_text, "And who else do you want covered?",
-            "Fact-find branch did not run — test setup is wrong.",
+            "Sales-brain branch did not run — test setup is wrong.",
         )
 
         # And the captured name is still there.

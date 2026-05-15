@@ -31,6 +31,10 @@ python tests/live_verify.py
 TARGET_URL=http://localhost:8000 python tests/live_verify.py
 ```
 
+## Retired tests (KI-167, 2026-05-15)
+
+- `test_fact_find_loop_break.py` — retired because the loop-break + `_canonical_fallback` architecture was replaced by the LLM-driven `backend/sales_brain.py`. The test pinned internals (`_canonical_fallback`, `_MAX_FAILED_ATTEMPTS`, `FIELD_TO_QUESTION_ID`) that no longer exist after the `fact_find_brain.py` rip-out. The equivalent behavioural invariant (bot doesn't re-ask answered slots) is now covered end-to-end by the gold-QA accuracy eval and the multi-persona stress audit.
+
 ## Related
 
 - Root `CLAUDE.md` § Routing invariants — the four lines this folder protects

@@ -1,24 +1,22 @@
-"""Adaptive fact-find question graph.
+"""User profile state + slot-order hint for the fact-find.
 
-Inspired by what a good Independent Financial Advisor does in the first 10
-minutes of a consultation: ask a stable core of questions, then deep-dive
-conditionally based on signal. The depth is adaptive — stop when we have
-enough to recommend.
+KI-167 WS3 (2026-05-15) — the legacy rules-engine question GRAPH and the
+matching `Question` dataclass have been removed. Fact-find phrasing now
+lives in `backend/sales_brain.py` (the single-LLM-call brain); this module
+keeps only:
 
-The graph is explicit (not LLM-improvised) so:
-  - A reviewer can see and audit it
-  - Behavior is testable
-  - Failure modes are tractable
-  - It works without an LLM (fallback when the brain is degraded)
+  - `Profile`              — accumulated user state (still imported widely)
+  - `record_answer`        — slot-write helper used by session_state
+  - INR / budget / income parsers — used by `sales_brain_normalizer.py`
+  - `is_field_set`         — local helper for record_answer + next_question
+  - `next_question`        — returns the field NAME (str) of the next
+                             missing slot in canonical order. Used by
+                             `/api/profile/completeness`'s `next_question_hint`.
 
 Public API:
-  - Profile dataclass — accumulated user state
-  - next_question(profile) -> str | None   (None = ready to recommend)
-  - record_answer(profile, question_id, answer) -> Profile
-  - readback_summary(profile) -> str
-
-The orchestrator can choose to drive the fact-find OR let the user
-free-form questions — the graph supports both.
+  - Profile dataclass
+  - next_question(profile) -> str | None   (field name, None = complete)
+  - record_answer(profile, field_name, raw_value) -> Profile
 """
 
 from __future__ import annotations
@@ -43,7 +41,7 @@ class Profile:
     parents_has_ped: Optional[bool] = None  # if parents_to_insure
     budget_band: Optional[str] = None  # "under_15k", "15k_30k", "30k_60k", "60k+"
     health_conditions: Optional[list[str]] = field(default_factory=list)  # ["diabetes", "hypertension", ...]
-    asked: list[str] = field(default_factory=list)  # question IDs already asked
+    asked: list[str] = field(default_factory=list)  # question IDs / field names already asked
     free_form_session: bool = False  # True = user asks free questions, not driven by us
     # KI-063 (2026-05-15) — per-user policy interaction log so the bot
     # remembers which policies were shown / selected / rejected across
@@ -54,26 +52,6 @@ class Profile:
     shown_policies: list[dict] = field(default_factory=list)     # KI-063
     selected_policies: list[dict] = field(default_factory=list)  # KI-063
     rejected_policies: list[dict] = field(default_factory=list)  # KI-063
-
-
-# ----------------------------------------------------------------------------
-# Question graph — each node has an id, a prompt, and a condition for being
-# asked. Conditions are pure functions of the current Profile.
-# ----------------------------------------------------------------------------
-
-@dataclass
-class Question:
-    id: str
-    prompt_en: str
-    prompt_hi: str  # optional Hindi rendering (used when language='indic')
-    field: str
-    is_core: bool = False
-    condition: Any = None  # callable(profile) -> bool, default: always ask
-    parser: Any = None  # callable(text) -> value, default: text as-is
-
-
-def _always(p: Profile) -> bool:
-    return True
 
 
 # ----------------------------------------------------------------------------
@@ -219,96 +197,26 @@ def _parse_income_band(text: str) -> Optional[str]:
     return "25L+"
 
 
-GRAPH: list[Question] = [
-    Question(
-        id="name",
-        prompt_en="First — what should I call you? I'll save your profile so the next time you visit, you won't have to answer all this again.",
-        prompt_hi="सबसे पहले — आपको क्या कहूँ? आपकी profile save हो जाएगी, तो अगली बार दोबारा सवाल नहीं पूछूँगा।",
-        field="name",
-        is_core=True,
-        # Free-text — no parser; the orchestrator validates 1-50 chars
-    ),
-    Question(
-        id="age",
-        prompt_en="First, your age? (Premium + eligibility + how long you can renew all hinge on this.)",
-        prompt_hi="पहला — आपकी उम्र? (Premium और renewal age इसी पर निर्भर हैं।)",
-        field="age",
-        is_core=True,
-        parser=lambda s: int("".join(c for c in str(s) if c.isdigit())[:3] or 0) or None,
-    ),
-    Question(
-        id="dependents",
-        prompt_en="Who else needs cover — just you, spouse, kids, parents, or a mix? (Covering parents shifts which policies fit; parent-specific plans often win.)",
-        prompt_hi="किसको cover करना है — सिर्फ आप, पति/पत्नी, बच्चे, माता-पिता, या मिलाकर? (माता-पिता के साथ recommendations काफी बदलते हैं।)",
-        field="dependents",
-        is_core=True,
-    ),
-    Question(
-        id="income_band",
-        prompt_en="Annual income band — under ₹5L, ₹5-10L, ₹10-25L, or ₹25L+? (Helps us suggest the right sum-insured size. Not shared with anyone.)",
-        prompt_hi="सालाना आय — ₹5L से कम, ₹5-10L, ₹10-25L, या ₹25L+? (हम सिर्फ sum insured size suggest करने के लिए पूछते हैं।)",
-        field="income_band",
-        is_core=True,
-        parser=_parse_income_band,
-    ),
-    Question(
-        id="existing_cover",
-        prompt_en="Already have any health insurance — employer-provided or your own? If yes, roughly what sum insured? (If you have ₹5L from work, a top-up plan may fit better than a full base plan.)",
-        prompt_hi="पहले से कोई health insurance है — employer का या personal? Sum insured कितना? (Top-up plan ज़्यादा सही हो सकता है।)",
-        field="existing_cover_inr",
-        is_core=True,
-        parser=lambda s: (
-            0 if any(k in str(s).lower() for k in ("no", "none", "nothing", "zero", "not"))
-            else (
-                (int("".join(c for c in str(s) if c.isdigit())[:6] or 0) *
-                 (100000 if any(k in str(s).lower() for k in ("l", "lakh", "lac")) else 1))
-                or None
-            )
-        ),
-    ),
-    Question(
-        id="primary_goal",
-        prompt_en="What's brought you here — first health policy, upgrading existing cover, comparing specific policies, or tax planning? (Tells us whether to grade you on price, breadth of cover, claim experience, or tax savings.)",
-        prompt_hi="आप यहाँ क्यों हैं — पहली policy, upgrade, specific compare, या tax planning? (इससे हम तय करते हैं कि आपको price, coverage, claim experience या tax savings पर grade करें।)",
-        field="primary_goal",
-        is_core=True,
-    ),
-    Question(
-        id="location",
-        prompt_en="Which city? (Cashless hospital network density varies wildly — a '16,000-hospital network' claim means nothing if none are near you.)",
-        prompt_hi="कौन सा शहर? (Cashless network आपके शहर में कितना deep है यह बहुत matter करता है।)",
-        field="location_tier",
-        is_core=True,
-    ),
-    # Conditional deep-dives
-    Question(
-        id="parents_age",
-        prompt_en="Your parents' ages, and any pre-existing conditions — diabetes, BP, heart, anything chronic? Be honest here: hiding a parent's condition is the #1 reason senior-cover claims get denied later.",
-        prompt_hi="माता-पिता की उम्र, और कोई pre-existing condition — diabetes, BP, heart? सच बताइए: hide करना senior-claims denied होने की #1 वजह है।",
-        field="parents_age_max",
-        condition=lambda p: bool(p.dependents and "parent" in p.dependents.lower()),
-    ),
-    Question(
-        id="health_conditions",
-        prompt_en="Any pre-existing conditions on your side — diabetes, BP, thyroid, asthma, anything chronic? Be straight with me here — hiding it lowers your premium ₹500 today and turns into a ₹8 lakh denied claim later when the insurer matches your disclosure against hospital records. Your honest answer protects YOUR claim, not the insurer's profit.",
-        prompt_hi="आपकी side से कोई pre-existing condition — diabetes, BP, thyroid? सच बताइए — hide करने से premium तो कम होगा, but claim time पर ₹8 lakh denied हो सकते हैं। आपकी ईमानदारी आपकी claim बचाती है।",
-        field="health_conditions",
-        condition=_always,
-    ),
-    Question(
-        id="budget",
-        prompt_en="Annual premium budget — under ₹15k, ₹15-30k, ₹30-60k, or ₹60k+? (If a slightly higher budget materially improves your protection, I'll flag it.)",
-        prompt_hi="Premium के लिए सालाना — ₹15k से कम, ₹15-30k, ₹30-60k, या ₹60k+? (अगर थोड़ा ज़्यादा budget बेहतर protection देगा, बताऊंगा।)",
-        field="budget_band",
-        is_core=True,
-        parser=_parse_budget_band,
-    ),
-]
-
-
 # ----------------------------------------------------------------------------
 # Engine
 # ----------------------------------------------------------------------------
+
+# KI-167 WS3 (2026-05-15) — canonical slot order for the fact-find hint API.
+# The actual question phrasing lives in `sales_brain.py`; this list only
+# encodes which Profile attribute we want to fill next when nothing else
+# is driving the conversation.
+_SLOT_ORDER: list[str] = [
+    "name",
+    "age",
+    "dependents",
+    "location_tier",
+    "income_band",
+    "primary_goal",
+    "existing_cover_inr",
+    "budget_band",
+    "health_conditions",
+]
+
 
 def is_field_set(profile: Profile, field_name: str) -> bool:
     v = getattr(profile, field_name, None)
@@ -319,189 +227,96 @@ def is_field_set(profile: Profile, field_name: str) -> bool:
     return True
 
 
-def next_question(profile: Profile, language: str = "en") -> Optional[Question]:
-    """Return the next question to ask, or None if we have enough to recommend.
+def next_question(profile: Profile) -> Optional[str]:
+    """Return the field NAME of the next missing slot, or None if complete.
 
-    KI-070 (2026-05-15) — the orchestrator no longer drives fact-find via this
-    function; the new `backend/fact_find_brain.py` single-LLM-call brain
-    handles question phrasing natively. This is now used as a fallback
-    (canonical reply when the brain times out / emits malformed JSON), as a
-    slot-not-progressing safeguard, and by `/api/profile/completeness` to
-    surface "next question hint" to the frontend.
+    KI-167 WS3 (2026-05-15) — refactored from `Optional[Question]` to
+    `Optional[str]` after the rules-engine GRAPH was deleted. The caller in
+    `backend/main.py:/api/profile/completeness` uses this only to hint to the
+    frontend which slot to ask next; the actual question phrasing is now
+    produced by `sales_brain.py`.
+
+    A free-form session (user driving free questions) returns None so the
+    hint endpoint reports "nothing to ask".
     """
     if profile.free_form_session:
         return None
 
-    for q in GRAPH:
-        if q.id in profile.asked:
-            continue
-        if is_field_set(profile, q.field):
-            continue
-        cond = q.condition or _always
-        if cond(profile):
-            return q
-
-    # All applicable questions asked
+    for slot in _SLOT_ORDER:
+        if not is_field_set(profile, slot):
+            return slot
     return None
 
 
-def record_answer(profile: Profile, question_id: str, raw_answer: str) -> Profile:
-    """Mutate profile in place with a parsed answer."""
-    q = next((x for x in GRAPH if x.id == question_id), None)
-    if q is None:
+# Legacy GRAPH question-id → Profile field-name aliases. Some callers
+# (notably `session_state.record_answer` driven by `awaiting_question_id`)
+# still pass the old question IDs from the deleted GRAPH. Mapping them here
+# keeps that call path working without resurrecting the GRAPH.
+_QID_TO_FIELD: dict[str, str] = {
+    "existing_cover": "existing_cover_inr",
+    "location": "location_tier",
+    "parents_age": "parents_age_max",
+    "budget": "budget_band",
+}
+
+
+def record_answer(profile: Profile, question_id: str, raw_answer: Any) -> Profile:
+    """Mutate profile in place with a raw answer for a named slot.
+
+    KI-167 WS3 (2026-05-15) — parser dispatch used to live on `Question`
+    objects in the deleted GRAPH; with the GRAPH gone we apply the same
+    parser map inline. `question_id` may be either a Profile attribute name
+    (preferred) or one of the legacy GRAPH question IDs from `_QID_TO_FIELD`.
+    """
+    field_name = _QID_TO_FIELD.get(question_id, question_id)
+    if not hasattr(profile, field_name):
         return profile
     value: Any = raw_answer
-    if q.parser:
+    parser = _PARSERS.get(field_name)
+    if parser is not None:
         try:
-            value = q.parser(raw_answer)
+            value = parser(raw_answer)
         except Exception:
             value = None
     if value is not None and value != "":
-        setattr(profile, q.field, value)
+        setattr(profile, field_name, value)
         # KI-095 — only mark slot asked once setattr succeeds, so a parse
         # failure doesn't leave the slot in an asked-but-empty desync state.
-        profile.asked.append(question_id)
+        if question_id not in profile.asked:
+            profile.asked.append(question_id)
     return profile
 
 
-# ----------------------------------------------------------------------------
-# Opportunistic family/dependents extractor — KI-056 (2026-05-15)
-# ----------------------------------------------------------------------------
-# Real-user testing surfaced: when the user mentions a spouse / kids / parents
-# while answering an UNRELATED slot ("my wife also doesn't have anything" in
-# response to existing_cover), the bot just acknowledges and moves on without
-# capturing the family signal. By the time we reach the dependents slot the
-# information has been thrown away. This helper detects family mentions in any
-# free-text turn so the orchestrator can pre-fill `profile.dependents`.
-#
-# Returns one of the canonical `dependents` enum values, or None if no clear
-# family signal is present. Conservative on purpose — only the explicit
-# combinations are recognised.
-
-_FAMILY_TERM_RE = re.compile(
-    r"\b(wife|husband|spouse|partner|kids?|children|child|parents?)\b",
-    re.IGNORECASE,
-)
-_SPOUSE_RE = re.compile(r"\b(wife|husband|spouse|partner)\b", re.IGNORECASE)
-_KIDS_RE = re.compile(r"\b(kids?|children|child)\b", re.IGNORECASE)
-_PARENTS_RE = re.compile(r"\bparents?\b", re.IGNORECASE)
-
-
-def infer_dependents_from_text(text: str) -> Optional[str]:
-    """Detect spouse/kids/parents mentions in a free-text user message and
-    return the matching canonical `dependents` enum value, or None.
-
-    KI-056 (2026-05-15). Used by the orchestrator to pre-fill the dependents
-    slot opportunistically when the user volunteers family information while
-    answering a different slot.
-
-    Decision tree (in order of specificity):
-      - spouse + kids                  → "self+spouse+kids"
-      - spouse + parents               → "self+spouse+parents"
-      - spouse only                    → "self+spouse"
-      - kids only                      → "self+kids"
-      - parents only                   → "self+parents"
-      - nothing recognised             → None
-    """
-    if not text or not _FAMILY_TERM_RE.search(text):
+def _parse_age(s: Any) -> Optional[int]:
+    digits = "".join(c for c in str(s) if c.isdigit())[:3]
+    if not digits:
         return None
-    has_spouse = bool(_SPOUSE_RE.search(text))
-    has_kids = bool(_KIDS_RE.search(text))
-    has_parents = bool(_PARENTS_RE.search(text))
-    if has_spouse and has_kids:
-        return "self+spouse+kids"
-    if has_spouse and has_parents:
-        return "self+spouse+parents"
-    if has_spouse:
-        return "self+spouse"
-    if has_kids:
-        return "self+kids"
-    if has_parents:
-        return "self+parents"
-    return None
+    try:
+        return int(digits) or None
+    except ValueError:
+        return None
 
 
-# KI-068 (2026-05-15) — enum → human-readable labels for the readback
-# summary. Previously the bot read back "primary goal: first_buy; metro;
-# budget 30k_60k" verbatim, which sounds and reads like a schema dump.
-_PRIMARY_GOAL_LABELS = {
-    "first_buy": "first health policy",
-    "upgrade": "upgrading existing cover",
-    "compare_specific": "comparing specific policies",
-    "tax_planning": "tax planning",
-}
-_LOCATION_TIER_LABELS = {
-    "metro": "metro city",
-    "tier1": "tier-1 city",
-    "tier2": "tier-2 city",
-    "tier3": "tier-3 city",
-}
-_BUDGET_BAND_LABELS = {
-    "under_15k": "under ₹15,000/year",
-    "15k_30k": "₹15,000–30,000/year",
-    "30k_60k": "₹30,000–60,000/year",
-    "60k+": "₹60,000+/year",
-}
-_INCOME_BAND_LABELS = {
-    "under_5L": "under ₹5L",
-    "5_10L": "₹5–10L",
-    "10_25L": "₹10–25L",
-    "25L+": "₹25L+",
-}
-_DEPENDENTS_LABELS = {
-    "self": "just yourself",
-    "self+spouse": "you and your spouse",
-    "self+spouse+kids": "you, your spouse, and kids",
-    "self+kids": "you and your kids",
-    "self+parents": "you and your parents",
-    "self+spouse+parents": "you, your spouse, and parents",
-    "self+spouse+kids+parents": "you, your spouse, kids, and parents",
-}
+def _parse_existing_cover(s: Any) -> Optional[int]:
+    text = str(s).lower()
+    if any(k in text for k in ("no", "none", "nothing", "zero", "not")):
+        return 0
+    digits = "".join(c for c in text if c.isdigit())[:6]
+    if not digits:
+        return None
+    try:
+        amt = int(digits)
+    except ValueError:
+        return None
+    if any(k in text for k in ("l", "lakh", "lac")):
+        amt *= 100_000
+    return amt or None
 
 
-def readback_summary(profile: Profile) -> str:
-    """One-paragraph human-readable summary of the gathered profile.
-
-    KI-068 (2026-05-15) — converts schema-level enum values
-    ("first_buy", "30k_60k", "metro") into spoken labels
-    ("first health policy", "₹30,000–60,000/year", "metro city") so the
-    readback reads like a sentence, not a JSON dump.
-    """
-    bits = []
-    if profile.age:
-        bits.append(f"{profile.age} years old")
-    if profile.dependents:
-        bits.append(f"covering {_DEPENDENTS_LABELS.get(profile.dependents, profile.dependents)}")
-    if profile.income_band:
-        bits.append(f"income {_INCOME_BAND_LABELS.get(profile.income_band, profile.income_band)}")
-    ec = profile.existing_cover_inr
-    if isinstance(ec, str):
-        try:
-            ec = int("".join(c for c in ec if c.isdigit())[:8] or 0)
-        except Exception:
-            ec = None
-    if isinstance(ec, (int, float)):
-        bits.append(
-            f"existing cover ₹{int(ec):,}"
-            if ec > 0
-            else "no existing cover"
-        )
-    if profile.primary_goal:
-        bits.append(f"goal: {_PRIMARY_GOAL_LABELS.get(profile.primary_goal, profile.primary_goal)}")
-    if profile.location_tier:
-        bits.append(_LOCATION_TIER_LABELS.get(profile.location_tier, profile.location_tier))
-    if profile.parents_age_max:
-        bits.append(f"parents up to age {profile.parents_age_max}")
-    if profile.health_conditions:
-        hc = profile.health_conditions
-        # Defensive: if a string accidentally landed here, wrap it so we don't
-        # split it character-by-character in the join. Production hit this on
-        # 2026-05-14 — a verbatim STT transcript was stored as a string, then
-        # ', '.join(str) emitted "d, i, f, f, e, r, e, n, c, e, ...".
-        if isinstance(hc, str):
-            hc = [hc] if hc.strip() else []
-        if hc:
-            bits.append(f"conditions: {', '.join(str(c) for c in hc)}")
-    if profile.budget_band:
-        bits.append(f"budget {_BUDGET_BAND_LABELS.get(profile.budget_band, profile.budget_band)}")
-    return "; ".join(bits) if bits else "(no profile yet)"
+# Parser dispatch by Profile field name. Slots not listed accept the raw value.
+_PARSERS: dict[str, Any] = {
+    "age": _parse_age,
+    "income_band": _parse_income_band,
+    "existing_cover_inr": _parse_existing_cover,
+    "budget_band": _parse_budget_band,
+}

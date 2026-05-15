@@ -1,0 +1,470 @@
+"""KI-167 WS1 — LLM-driven sales brain (replaces the scripted slot-walker).
+
+Architecture shift from `backend/fact_find_brain.py`:
+
+  PRE-KI-167 (fact_find_brain.py):
+    System prompt asks the LLM for prose + a `<FF>{...}</FF>` JSON trailer.
+    Backend strips the trailer, parses it, validates each capture. Works
+    but: (a) some models drop the trailer despite the strict instruction
+    (KI-090 surfaced this; KI-150 raised max_tokens to 700 to mitigate),
+    (b) the canonical-fallback ladder is heavy machinery that competes
+    with the brain for the same conversation.
+
+  POST-KI-167 (this module):
+    Single LLM call with `response_format={"type":"json_object"}` so the
+    NIM model is GUARANTEED to emit a parseable JSON object — no trailer
+    tag, no `<FF>` regex, no fallback ladder. JSON contains the natural
+    reply, captured slots, and a `ready_for_recommendations` boolean.
+    The deterministic post-processor in `sales_brain_normalizer.py`
+    cleans the captures dict.
+
+Public API (the CONTRACT — WS2 will call this exactly):
+
+    @dataclass
+    class SalesBrainResult:
+        reply_text: str
+        captured_updates: dict
+        ready_for_recommendations: bool
+        brain_used: str
+        raw_json: Optional[dict] = None
+        error_reason: Optional[str] = None
+
+    async def drive_sales_brain(
+        user_text: str,
+        profile: Profile,
+        chat_history: list[dict],
+        session_id: Optional[str] = None,
+    ) -> SalesBrainResult: ...
+
+Failure mode:
+  On JSON parse failure (should be near-zero with `response_format`) OR
+  LLM call failure / timeout, this returns a SalesBrainResult with
+  `brain_used="sales_brain::error:<reason>"`, empty reply_text, empty
+  captured_updates, and `ready_for_recommendations=False`. The caller
+  (WS2 orchestrator) decides what to do — NO scripted fallback lives
+  here.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+import time
+from dataclasses import dataclass, field
+from typing import Any, Optional
+
+from backend.needs_finder import Profile
+from backend.providers.base import ChatMessage
+from backend.providers.nvidia_nim_llm import get_fast_brain_llm
+from backend.sales_brain_normalizer import normalize_captures
+
+
+# ----------------------------------------------------------------------------
+# Public result dataclass — the contract WS2 will consume.
+# ----------------------------------------------------------------------------
+
+@dataclass
+class SalesBrainResult:
+    reply_text: str
+    captured_updates: dict = field(default_factory=dict)
+    ready_for_recommendations: bool = False
+    brain_used: str = ""
+    raw_json: Optional[dict] = None
+    error_reason: Optional[str] = None
+
+
+# ----------------------------------------------------------------------------
+# Timeouts
+# ----------------------------------------------------------------------------
+# 25s mirrors fact_find_brain's KI-075 setting — gives NIM cold-start headroom
+# + leaves room for one chain fallback. The fast-brain chain already has its
+# own per-link + total-chain budget; this wait_for is a belt-and-braces stop.
+_TIMEOUT_S: float = 25.0
+_MAX_TOKENS: int = 700           # prose + structured JSON object with safety margin
+_TEMPERATURE: float = 0.6        # mirrors fact_find_brain — conversational warmth
+
+
+# ----------------------------------------------------------------------------
+# Slot metadata — descriptions surfaced to the LLM so it knows what to ask for
+# ----------------------------------------------------------------------------
+
+_SLOT_DESCRIPTIONS: dict[str, str] = {
+    "name": "User's preferred name (1-50 chars, no leading 'currently'/'not'/'no'/'looking', single or two-word first/last name).",
+    "age": "User's age as an integer 16-99.",
+    "dependents": "Who needs cover. Enum: 'self', 'self+spouse', 'self+spouse+kids', 'self+parents', 'self+spouse+parents', 'self+spouse+kids+parents', 'self+kids'.",
+    "income_band": "Annual income band. Enum: 'under_5L', '5L-10L', '10L-25L', '25L+'.",
+    "existing_cover_inr": "Current health-insurance sum-insured in rupees. 0 = no existing cover. Integer.",
+    "primary_goal": "Why they're shopping. Enum: 'first_buy', 'upgrade', 'compare_specific', 'tax_planning'.",
+    "location_tier": "City tier. Enum: 'metro', 'tier2', 'tier3', 'rural'.",
+    "parents_to_insure": "Whether to include parents on the policy. Boolean.",
+    "parents_age_max": "Older parent's age (40-99). Only relevant if parents_to_insure is true.",
+    "parents_has_ped": "Whether either parent has a pre-existing condition. Boolean. Only relevant if parents_to_insure is true.",
+    "budget_band": "Annual budget band. Enum: 'under_15k', '15k_30k', '30k_60k', '60k+'.",
+    "health_conditions": "User's pre-existing conditions, lowercase list. Common values: diabetes, hypertension, thyroid, asthma, heart, cancer. Empty list = no conditions.",
+}
+
+# Order of slots — used to determine "required remaining" so the LLM has a
+# stable sense of what to ask next. The first six are the recommendation-
+# readiness minimum; the rest are deepening signals.
+_REQUIRED_FOR_READY: tuple = (
+    "name", "age", "dependents", "location_tier", "income_band", "primary_goal",
+)
+
+_NICE_TO_HAVE: tuple = (
+    "existing_cover_inr", "budget_band", "health_conditions",
+    "parents_to_insure", "parents_age_max", "parents_has_ped",
+)
+
+
+# ----------------------------------------------------------------------------
+# System prompt
+# ----------------------------------------------------------------------------
+
+_BASE_SYSTEM_PROMPT = """You are a friendly Indian health-insurance broker having a natural, warm conversation with a prospective customer. Your tone is consultative — never pushy, never robotic, never a form. Speak like a trusted family friend who happens to know insurance, not a call-centre script.
+
+YOUR JOB:
+1. Get to know the user warmly across a short conversation.
+2. Capture the slots listed below at your own pace, in any order that feels natural.
+3. When you have enough to recommend (the minimum set is named below), set ready_for_recommendations: true.
+
+CONVERSATION RULES:
+- Use the user's first name when you know it. Sound human.
+- Ask AT MOST ONE thing per turn — but weave it naturally into the conversation, don't fire it like a survey question.
+- Don't say canned acknowledgements like "Got that —", "Noted.", "Perfect!", or "Great!". Acknowledge naturally by reflecting back what they said.
+- Don't restart the conversation. Continue from wherever it is — pick up from the user's last message.
+- If the user volunteers multiple facts in one message ("Hi I'm Rohit, 29, in Mumbai, looking for my first policy"), CAPTURE ALL OF THEM in this turn — don't re-ask for what they just told you.
+- If the user goes off-topic (asks about waiting periods, claims, hospital networks, anything else), give a brief honest answer first, then steer naturally back to what you still need to know.
+- BFSI compliance: do NOT promise specific premium quotes. Do NOT pressure-close. Stay advisory.
+- Indian English is fine — "₹", "lakh", "metro/tier-2 city", "BP", "diabetes" all natural.
+- On health conditions, be straight: hiding a condition lowers premium today but turns into a denied claim later. Encourage honesty without lecturing.
+- Never use markdown bold/italics — your reply may be read aloud by TTS.
+
+OUTPUT FORMAT — STRICT:
+Return a SINGLE JSON object with exactly these three keys:
+
+  {
+    "reply": "<your natural reply to the user — prose, no markdown, no JSON tags, no preamble like 'Got that —'>",
+    "captures": { <field>: <value>, ... },
+    "ready_for_recommendations": <true | false>
+  }
+
+Rules for the JSON:
+- "reply" — natural conversational prose. NO scripted prefixes ("Got that —", "Noted —", "Sure —", "Perfect —"). Acknowledge what they said by reflecting it back, then continue.
+- "captures" — only fields the user CHANGED or NEWLY revealed in their LAST message. If they didn't reveal anything new this turn, emit `"captures": {}` (empty object). Do NOT re-emit slots that haven't changed. Do NOT include null / empty-string values.
+- "ready_for_recommendations" — set to true ONLY when you have AT LEAST name, age, dependents, location, income_band, primary_goal. Otherwise false.
+- All enum values must match the slot schema EXACTLY (case-sensitive). All ints as JSON numbers, not strings. Lists as JSON arrays.
+
+EXAMPLES OF GOOD REPLIES (illustrative — the JSON shape is what matters):
+
+User: "Hi, I'm Rohit, 29, looking to buy my first health policy."
+{
+  "reply": "Hi Rohit — nice to meet you. First health policy is a smart move at your age. To shape the right options, who else would you want covered apart from yourself — spouse, kids, parents, or just you for now?",
+  "captures": {"name": "Rohit", "age": 29, "primary_goal": "first_buy"},
+  "ready_for_recommendations": false
+}
+
+User: "Just me and my wife. We're both in Bangalore."
+{
+  "reply": "You and your spouse in Bangalore — good, metro cashless networks are deep there. Roughly what's your annual income band: under ₹5L, ₹5-10L, ₹10-25L, or ₹25L+? Helps me size the right sum-insured.",
+  "captures": {"dependents": "self+spouse", "location_tier": "metro"},
+  "ready_for_recommendations": false
+}
+
+User: "around 18 lakh."
+{
+  "reply": "That puts you in the ₹10-25L band — gives us comfortable room on sum-insured. Last thing before I shortlist some options for you — any pre-existing conditions on either side, like BP, diabetes, thyroid, anything chronic? Being straight here protects your future claim.",
+  "captures": {"income_band": "10L-25L"},
+  "ready_for_recommendations": false
+}
+
+User: "No, both healthy."
+{
+  "reply": "Good to hear. So Rohit, here's what I'm working with: 29, you and your wife in Bangalore, ₹10-25L income, first-time buyer, no pre-existing conditions. I have enough to put together a tailored shortlist now — want me to suggest 2-3 policies that fit?",
+  "captures": {"health_conditions": []},
+  "ready_for_recommendations": true
+}
+
+User: "What's the waiting period for PED usually?"
+{
+  "reply": "Most policies in India have a 24-36 month waiting period for pre-existing diseases — IRDAI caps the maximum, and a few insurers offer shorter waits as a premium upgrade. Happy to dig into a specific one if you have it in mind. Meanwhile — what budget range are you comfortable with annually: under ₹15k, ₹15-30k, ₹30-60k, or ₹60k+?",
+  "captures": {},
+  "ready_for_recommendations": false
+}
+
+User: "Hi"
+{
+  "reply": "Hi there — happy to help you find a health policy that actually fits. What should I call you?",
+  "captures": {},
+  "ready_for_recommendations": false
+}
+"""
+
+
+# ----------------------------------------------------------------------------
+# Profile snapshot helpers
+# ----------------------------------------------------------------------------
+
+_TRACKED_FIELDS: tuple = (
+    "name", "age", "dependents", "income_band", "existing_cover_inr",
+    "primary_goal", "location_tier", "parents_to_insure", "parents_age_max",
+    "parents_has_ped", "health_conditions", "budget_band",
+)
+
+
+def _profile_known(profile: Profile) -> dict[str, Any]:
+    """Return a JSON-friendly dict of currently-captured profile fields.
+
+    OMITS None / empty-string / empty-list fields — so the prompt only
+    shows the LLM what's actually known. This avoids polluting the
+    context with `"age": null, "income_band": null, ...` etc.
+    """
+    snap: dict[str, Any] = {}
+    for f in _TRACKED_FIELDS:
+        v = getattr(profile, f, None)
+        if v is None:
+            continue
+        if isinstance(v, str) and not v.strip():
+            continue
+        if isinstance(v, list) and not v:
+            # Explicit empty health_conditions list IS meaningful ("user said
+            # they have nothing"); include it so the LLM won't re-ask.
+            if f == "health_conditions":
+                snap[f] = []
+            continue
+        snap[f] = v
+    return snap
+
+
+def _required_remaining(known: dict[str, Any]) -> list[str]:
+    """List required slots still missing, in canonical asking order."""
+    return [f for f in _REQUIRED_FOR_READY if f not in known]
+
+
+def _nice_to_have_remaining(known: dict[str, Any], profile: Profile) -> list[str]:
+    """List nice-to-have slots still missing. parents_age_max / parents_has_ped
+    only count as missing when parents_to_insure is True (or dependents says
+    parents)."""
+    out: list[str] = []
+    parents_in_scope = bool(
+        known.get("parents_to_insure") is True
+        or (isinstance(known.get("dependents"), str) and "parent" in known["dependents"])
+    )
+    for f in _NICE_TO_HAVE:
+        if f in known:
+            continue
+        if f in ("parents_age_max", "parents_has_ped") and not parents_in_scope:
+            continue
+        out.append(f)
+    return out
+
+
+def _format_slot_list(slots: list[str]) -> str:
+    """Render a slot list as a bulleted summary the LLM can read."""
+    if not slots:
+        return "(none)"
+    return "\n".join(f"  - {f}: {_SLOT_DESCRIPTIONS.get(f, '')}" for f in slots)
+
+
+def _build_system_prompt(profile: Profile) -> str:
+    """Assemble the full system prompt: base rules + KNOWN block + missing slots."""
+    known = _profile_known(profile)
+    required_remaining = _required_remaining(known)
+    nice_to_have_remaining = _nice_to_have_remaining(known, profile)
+
+    known_block = (
+        json.dumps(known, ensure_ascii=False) if known else "{}"
+    )
+
+    return (
+        _BASE_SYSTEM_PROMPT
+        + "\n\n--- SLOT SCHEMA (the fields you may capture) ---\n"
+        + _format_slot_list(list(_SLOT_DESCRIPTIONS.keys()))
+        + f"\n\nKNOWN: {known_block}"
+        + "\n(These fields are ALREADY captured. Do NOT re-ask for them. Use the user's name when known.)"
+        + "\n\nREQUIRED SLOTS STILL MISSING (you need these before setting ready_for_recommendations=true):\n"
+        + _format_slot_list(required_remaining)
+        + "\n\nNICE-TO-HAVE SLOTS STILL MISSING (capture if the user volunteers; don't force):\n"
+        + _format_slot_list(nice_to_have_remaining)
+        + (
+            "\n\nYou have enough to recommend now. If the user signals they want options "
+            "(\"show me policies\", \"what do you suggest\"), set ready_for_recommendations=true."
+            if not required_remaining else
+            "\n\nKeep gathering naturally — you don't yet have the minimum required set."
+        )
+    )
+
+
+# ----------------------------------------------------------------------------
+# JSON parsing — response_format=json_object should make this near-zero-fail
+# ----------------------------------------------------------------------------
+
+def _parse_brain_json(raw_text: str) -> Optional[dict]:
+    """Parse the LLM's JSON-object response.
+
+    With NIM `response_format={"type":"json_object"}` the response is
+    guaranteed to be a JSON object. Still defensively handle the rare
+    cases where a model emits stray whitespace, code fences, or a
+    leading `<think>` block.
+    """
+    if not raw_text:
+        return None
+    text = raw_text.strip()
+    # Strip `<think>` blocks some models emit despite instructions.
+    if "<think>" in text and "</think>" in text:
+        text = text.split("</think>", 1)[1].strip()
+    # Strip code fences.
+    if text.startswith("```"):
+        lines = text.split("\n")
+        text = "\n".join(l for l in lines if not l.startswith("```")).strip()
+    # Direct parse
+    try:
+        obj = json.loads(text)
+        if isinstance(obj, dict):
+            return obj
+    except json.JSONDecodeError:
+        pass
+    # Try to find the first JSON object substring.
+    start = text.find("{")
+    end = text.rfind("}")
+    if start != -1 and end > start:
+        try:
+            obj = json.loads(text[start : end + 1])
+            if isinstance(obj, dict):
+                return obj
+        except json.JSONDecodeError:
+            pass
+    return None
+
+
+# ----------------------------------------------------------------------------
+# Public entry point
+# ----------------------------------------------------------------------------
+
+async def drive_sales_brain(
+    user_text: str,
+    profile: Profile,
+    chat_history: list[dict],
+    session_id: Optional[str] = None,
+) -> SalesBrainResult:
+    """Single LLM call per turn — replaces the scripted slot-walker.
+
+    Returns a SalesBrainResult. On LLM error or JSON parse failure,
+    `brain_used` is `sales_brain::error:<reason>` and `reply_text` is
+    empty. Caller (orchestrator) is responsible for any fallback behavior
+    — NO scripted reply lives here.
+    """
+    t0 = time.time()
+
+    # Build the system prompt with current profile state
+    system_prompt = _build_system_prompt(profile)
+
+    # Build messages: system + last ~10 chat history turns + user_text
+    messages: list[ChatMessage] = [ChatMessage(role="system", content=system_prompt)]
+    if chat_history:
+        for turn in chat_history[-10:]:
+            role = turn.get("role")
+            content = turn.get("content")
+            if role in ("user", "assistant") and content:
+                messages.append(ChatMessage(role=role, content=str(content)))
+    messages.append(ChatMessage(role="user", content=user_text or ""))
+
+    # Call the fast-brain NIM chain with response_format=json_object
+    # (singleton-via-factory — see KI-080; the factory builds a fresh
+    # NimChainLLM each call but the underlying election state is shared
+    # via backend.llm_health module-level dicts).
+    llm = get_fast_brain_llm()
+    try:
+        result = await asyncio.wait_for(
+            llm.chat(
+                messages=messages,
+                temperature=_TEMPERATURE,
+                max_tokens=_MAX_TOKENS,
+                response_format={"type": "json_object"},
+            ),
+            timeout=_TIMEOUT_S,
+        )
+    except asyncio.TimeoutError:
+        elapsed = time.time() - t0
+        logging.warning(
+            "sales_brain timeout (session=%s, %.1fs)", session_id, elapsed,
+        )
+        return SalesBrainResult(
+            reply_text="",
+            captured_updates={},
+            ready_for_recommendations=False,
+            brain_used="sales_brain::error:timeout",
+            error_reason=f"timeout_after_{elapsed:.1f}s",
+        )
+    except Exception as e:  # noqa: BLE001 — broad catch is intentional here
+        logging.warning(
+            "sales_brain LLM call failed (session=%s): %s: %s",
+            session_id, type(e).__name__, str(e)[:200],
+        )
+        return SalesBrainResult(
+            reply_text="",
+            captured_updates={},
+            ready_for_recommendations=False,
+            brain_used=f"sales_brain::error:llm_error_{type(e).__name__}",
+            error_reason=f"{type(e).__name__}: {str(e)[:200]}",
+        )
+
+    # Parse the JSON object from the LLM response.
+    raw_text = (result.text or "").strip()
+    parsed = _parse_brain_json(raw_text)
+    served_model = getattr(result, "model", "unknown") or "unknown"
+
+    if parsed is None:
+        logging.warning(
+            "sales_brain JSON parse failed (session=%s, model=%s, raw=%r)",
+            session_id, served_model, raw_text[:300],
+        )
+        return SalesBrainResult(
+            reply_text="",
+            captured_updates={},
+            ready_for_recommendations=False,
+            brain_used=f"sales_brain::error:parse_fail",
+            error_reason=f"could_not_parse_json from model={served_model}; raw_head={raw_text[:120]!r}",
+        )
+
+    # Extract the three contract keys, tolerating mild key drift.
+    reply_text = parsed.get("reply") or parsed.get("response") or parsed.get("message") or ""
+    if not isinstance(reply_text, str):
+        reply_text = str(reply_text)
+    reply_text = reply_text.strip()
+
+    captures_raw = parsed.get("captures") or parsed.get("captured") or {}
+    if not isinstance(captures_raw, dict):
+        captures_raw = {}
+
+    ready_raw = parsed.get("ready_for_recommendations")
+    if ready_raw is None:
+        ready_raw = parsed.get("ready")
+    ready_for_recommendations = bool(ready_raw) if ready_raw is not None else False
+
+    # Normalize + validate captures via the deterministic post-processor.
+    captured_updates = normalize_captures(captures_raw, profile)
+
+    # Empty reply text is a soft-fail — the brain produced JSON but no prose.
+    # Surface this to the caller so it can decide what to do.
+    if not reply_text:
+        return SalesBrainResult(
+            reply_text="",
+            captured_updates=captured_updates,
+            ready_for_recommendations=ready_for_recommendations,
+            brain_used="sales_brain::error:empty_reply",
+            raw_json=parsed,
+            error_reason=f"reply_field_empty from model={served_model}",
+        )
+
+    return SalesBrainResult(
+        reply_text=reply_text,
+        captured_updates=captured_updates,
+        ready_for_recommendations=ready_for_recommendations,
+        brain_used=f"sales_brain::nim:{served_model}",
+        raw_json=parsed,
+        error_reason=None,
+    )
+
+
+__all__ = ["SalesBrainResult", "drive_sales_brain"]

@@ -553,72 +553,57 @@ async def handle_turn(
     )
 
     if treat_as_fact_find:
-        # KI-070 (2026-05-15) — single-LLM-call fact-find brain replaces the
-        # 3-layer stitching of (hardcoded canonical prompts + per-turn
-        # paraphraser + acknowledger rotation). One model call now produces
-        # the natural reply AND a machine-readable trailer describing what
-        # was captured, which slot it's driving toward, and whether
-        # fact-find is complete.
-        from backend.fact_find_brain import (
-            FIELD_TO_QUESTION_ID,
-            drive_fact_find,
-        )
+        # KI-167 (2026-05-15) — WS2: replaces drive_fact_find with
+        # drive_sales_brain. The new brain owns conversation flow end-to-end
+        # (no slot_driving / awaiting_question machinery, no canonical
+        # fallback): one LLM call emits natural prose + canonical
+        # captured_updates + a completeness signal. Failures fail loud (no
+        # scripted fallback).
+        from backend.sales_brain import drive_sales_brain, SalesBrainResult
 
-        # KI-100 — bound drive_fact_find at the orchestrator. KI-079's
-        # internal FAST(25s) + BRAIN(15s) escalation can compound to ~40s on
-        # a doubly-saturated chain, which breaches the user's <30s per-turn
-        # target. Cap at 25s; on outer timeout, fall through to the
-        # canonical fallback that drive_fact_find itself uses on internal
-        # timeout (build the outcome from current session state).
         try:
-            outcome = await asyncio.wait_for(
-                drive_fact_find(
+            sb_result: SalesBrainResult = await asyncio.wait_for(
+                drive_sales_brain(
                     user_text=user_text,
-                    session=session,
-                    chat_history=chat_history,
+                    profile=session.profile,
+                    chat_history=chat_history[-10:],
                     session_id=session_id,
                 ),
                 timeout=25.0,
             )
         except asyncio.TimeoutError:
-            logging.warning(
-                "fact_find_brain outer wait_for(25s) tripped — falling back to canonical (session=%s)",
-                session_id,
-            )
-            from backend.fact_find_brain import _canonical_fallback
-            outcome = _canonical_fallback(
-                session=session,
-                user_text=user_text,
-                reason="outer_timeout_25s",
+            # No scripted fallback. Fail loud — let the operator see it.
+            sb_result = SalesBrainResult(
+                reply_text="Sorry, the system is taking too long. Try again in a moment.",
+                captured_updates={},
+                ready_for_recommendations=False,
+                brain_used="sales_brain::error:timeout_25s",
+                error_reason="outer_timeout_25s",
             )
 
-        # Apply captured updates to profile + mark matching slot ids as asked
-        # so the orchestrator's downstream `next_question` (used in the
-        # canonical fallback + completeness API) doesn't double-ask.
+        # Apply captured updates to profile. captured_updates is already
+        # post-processed and canonical (WS1 contract): pass values straight to
+        # session.update_profile_field. For the new path, the question id IS
+        # the field name — no FIELD_TO_QUESTION_ID translation.
         fact_find_profile_updates: dict = {}
-        for field_name, value in outcome.captured_updates.items():
+        for field_name, value in sb_result.captured_updates.items():
             if value in (None, "", []):
                 continue
             session.update_profile_field(field_name, value)
             fact_find_profile_updates[field_name] = value
-            matching_slot = FIELD_TO_QUESTION_ID.get(field_name)
-            if matching_slot and matching_slot not in session.profile.asked:
-                session.profile.asked.append(matching_slot)
+            if field_name not in session.profile.asked:
+                session.profile.asked.append(field_name)
 
-        # Track slot_driving so subsequent turns know where we are. The new
-        # brain produces FIELD names (e.g., "income_band"); translate to the
-        # canonical question id (e.g., "income_band") via FIELD_TO_QUESTION_ID
-        # so the rest of the orchestrator (which keys on question ids) stays
-        # consistent.
-        if outcome.slot_driving:
-            slot_qid = FIELD_TO_QUESTION_ID.get(outcome.slot_driving, outcome.slot_driving)
-            session.set_awaiting(slot_qid)
-        else:
-            session.set_awaiting(None)
-
-        # If the brain decided fact-find is complete, flip free-form so
-        # subsequent turns route to retrieval+brain (not back here).
-        if outcome.fact_find_complete:
+        # Completion gate. The LLM owns conversation flow; we only flip
+        # free_form_session when its own readiness signal is True AND every
+        # required slot is filled. Otherwise leave free_form_session=False so
+        # the next turn routes back here and the LLM continues gathering.
+        _REQUIRED_SLOTS = ("name", "age", "dependents", "location_tier",
+                           "income_band", "primary_goal")
+        if sb_result.ready_for_recommendations and all(
+            getattr(session.profile, slot, None) not in (None, "", [])
+            for slot in _REQUIRED_SLOTS
+        ):
             session.free_form_session = True
             session._flush()
 
@@ -626,7 +611,8 @@ async def handle_turn(
         # name. Anonymous sessions never write to Chroma; the corruption
         # surface (profile_anonymous dangling row) is eliminated. Named
         # users get their chunk keyed by canonical name slug, not session_id.
-        if fact_find_profile_updates and session.profile.name:
+        # KI-167 — trigger when any slot was captured this turn.
+        if bool(sb_result.captured_updates) and session.profile.name:
             try:
                 from backend.profile_rag import upsert_profile_chunk
                 from backend.profile_store import _normalise_name
@@ -648,7 +634,7 @@ async def handle_turn(
                     })
             except Exception as e:
                 logging.warning(
-                    "fact_find_brain profile-chunk upsert failed (session=%s): %s: %s",
+                    "sales_brain profile-chunk upsert failed (session=%s): %s: %s",
                     session_id, type(e).__name__, str(e)[:200],
                 )
 
@@ -671,39 +657,20 @@ async def handle_turn(
             except Exception:
                 pass
 
-        if outcome.ambiguous:
-            # KI-078 (2026-05-15) — append fallback reason so admin telemetry
-            # can measure the fallback-cause mix (timeout vs llm_error vs
-            # no_trailer vs empty_reply). Essential for measuring KI-075 +
-            # KI-078 impact in production.
-            reason = getattr(outcome, "_fallback_reason", None) or "unknown"
-            brain_tag = f"fact_find_brain::fallback:{reason}"
-        elif outcome.fact_find_complete:
-            brain_tag = "fact_find_brain::complete"
-        else:
-            brain_tag = "fact_find_brain::continue"
-
         # KI-108 (2026-05-15) — strip CoT preamble / instruction-echo leakage
-        # from the fact-find brain reply BEFORE returning to ChatResponse.
-        # Live re-smoke caught Scenario S4 T3+T4 leaking raw model reasoning
-        # ("We need to respond naturally...", "We need to process user
-        # message...") into reply_text because the fact_find brain path was
-        # the only producer of user-facing text NOT routed through
-        # strip_think_tags (which internally calls strip_cot_preamble via
-        # voice_format). KI-104 had wired the strip into tts_preprocess
-        # (audio) + persona.strip_think_tags (qa/recommendation paths) but
-        # missed this branch. Apply uniformly here so every reply_text the
-        # API returns is leak-free regardless of brain used.
-        ff_reply_clean = strip_think_tags(outcome.reply_text)
+        # from the brain reply BEFORE returning to ChatResponse. The LLM may
+        # still emit <think> tags despite JSON mode; strip_think_tags is the
+        # uniform guard applied across every brain path.
+        reply_text = strip_think_tags(sb_result.reply_text)
         return TurnResult(
-            reply_text=ff_reply_clean,
+            reply_text=reply_text,
             citations=[],
             retrieved_chunk_ids=[],
-            brain_used=brain_tag,
+            brain_used=sb_result.brain_used,
             intent="fact_find",
             language=language,
             latency_ms=int((time.time() - t0) * 1000),
-            raw_reply=outcome.reply_text,
+            raw_reply=sb_result.reply_text,
             faithfulness_passed=True,
             blocked=False,
             profile_updates=fact_find_profile_updates,
