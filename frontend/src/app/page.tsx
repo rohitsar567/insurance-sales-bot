@@ -197,12 +197,13 @@ export default function Page() {
   // actual mic state, PTT temporarily flips it to false during a recording
   // even while userPrefersLive stays true (so Live resumes after PTT).
   const [userPrefersLive, setUserPrefersLive] = useState(false);
-  // Load persisted preference on mount. Only "on" persists; default and
-  // explicit "off" both render grey.
+  // KI-131 (2026-05-15) — voice is OFF by default. Previously persisted
+  // "on" preferences are wiped on next load so users with a stale green
+  // pill from before this change also see grey and have to re-opt in.
+  // This amends ADR-028 "Default ON" — see ADR-033 for rationale.
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const pref = localStorage.getItem("insurance_live_pref");
-    if (pref === "on") setUserPrefersLive(true);
+    localStorage.removeItem("insurance_live_pref");
   }, []);
   // Persist + sync to the live hook whenever the user toggles preference.
   useEffect(() => {

@@ -536,8 +536,17 @@ export function useLiveConversation(opts: LiveConversationOptions): LiveConversa
           node.connect(silentSink);
           silentSink.connect(ctx.destination);
         } catch (e) {
+          // KI-131 (2026-05-15) — previously, a worklet-setup failure left
+          // setMicPermissionDenied=false and live.live=true so the UI pill
+          // stayed green ("Voice on — just speak") while no PCM frames were
+          // ever delivered — silent functional break. Now flip both states
+          // so the pill correctly switches to "🔇 Mic blocked" and the user
+          // gets a visible signal that voice is broken on their device.
           // eslint-disable-next-line no-console
-          console.error("[live-mode] AudioWorklet setup failed; fallback to silence", e);
+          console.error("[live-mode] AudioWorklet setup failed", e);
+          setMicPermissionDenied(true);
+          setLive(false);
+          return;
         }
 
         setMicPermissionDenied(false);
