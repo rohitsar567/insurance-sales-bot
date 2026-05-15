@@ -475,7 +475,16 @@ export default function Page() {
       await new Promise((r) => setTimeout(r, 400));
     }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // KI-185 (2026-05-15) — match the useStreamingVoice AEC constraints
+      // on the PTT path too, so echo cancellation applies whether the user
+      // is in live-voice mode OR push-to-talk.
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
       const mime = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "";
       const recorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
       mediaRecorderRef.current = recorder;

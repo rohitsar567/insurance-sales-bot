@@ -1521,26 +1521,67 @@
         var availTable = createEl('table');
         var availThead = createEl('thead');
         var availHr = createEl('tr');
-        // KI-164: per-role columns. Each model row shows where it can be used
-        // (— / ✓ / primary) plus a single Status column.
-        var availCols = ['Model', 'Status'].concat(SIMPLE_USE_ORDER.map(function (r) { return SIMPLE_USE_LABELS[r]; }));
+        // KI-186 (2026-05-15) — added "Tier" column so Gemini + OR rows can
+        // be shown alongside NIM rows. Tier 0 = Google AI Studio, Tier 1 =
+        // NIM (probed), Tier 2 = OpenRouter free pool.
+        var availCols = ['Model', 'Tier', 'Status'].concat(SIMPLE_USE_ORDER.map(function (r) { return SIMPLE_USE_LABELS[r]; }));
         availCols.forEach(function (h, i) {
           var th = createEl('th', { text: h });
-          if (i >= 2) th.style.textAlign = 'center';
+          if (i >= 3) th.style.textAlign = 'center';
+          if (i === 1 || i === 2) th.style.textAlign = 'center';
           availHr.appendChild(th);
         });
         availThead.appendChild(availHr);
         availTable.appendChild(availThead);
         var availTbody = createEl('tbody');
 
+        // KI-186 — Tier 0 (Google) + Tier 2 (OR) are STATIC rows; they're
+        // not in llm_health's probe registry but they're real members of
+        // the production chain per sales_brain.py + tiered_brain_llm.py.
+        // Status defaults to 'Healthy' (we don't have probe data for these
+        // tiers; they fail-loud at call time per the fail-loud > silent-
+        // garbage invariant).
+        var STATIC_TIER_ROWS = [
+          // Tier 0 — Google AI Studio (Gemini, free 1500/day)
+          { model: 'google/gemini-2.5-flash',          tier: 'T0', healthy: true,  brainFast: '—',       brainMain: 'primary', judge: '—' },
+          { model: 'google/gemini-2.5-flash-lite',     tier: 'T0', healthy: true,  brainFast: 'primary', brainMain: '—',       judge: '—' },
+          // Tier 2 — OpenRouter free pool (server-side fallback inside OR)
+          { model: 'nvidia/nemotron-3-super-120b-a12b:free', tier: 'T2', healthy: true, brainFast: '✓', brainMain: '✓', judge: '—' },
+          { model: 'qwen/qwen3-next-80b-a3b-instruct:free',  tier: 'T2', healthy: true, brainFast: '✓', brainMain: '—', judge: '✓' },
+          { model: 'google/gemma-4-31b-it:free',              tier: 'T2', healthy: true, brainFast: '✓', brainMain: '—', judge: '—' },
+        ];
+        STATIC_TIER_ROWS.forEach(function (row) {
+          var tr = createEl('tr');
+          tr.appendChild(createEl('td', { className: 'model-name', text: row.model }));
+          // Tier badge
+          var tierCell = createEl('td', { className: 'tier-cell' });
+          tierCell.style.textAlign = 'center';
+          tierCell.style.fontWeight = '600';
+          tierCell.style.color = row.tier === 'T0' ? 'var(--green)' : 'var(--muted)';
+          tierCell.textContent = row.tier;
+          tr.appendChild(tierCell);
+          // Status cell
+          var statusCell = createEl('td', { className: 'status-cell' });
+          var hd = createEl('span', { className: 'health-dot ' + (row.healthy ? 'ok' : 'bad') });
+          statusCell.appendChild(hd);
+          statusCell.appendChild(document.createTextNode(row.healthy ? ' Healthy' : ' Down'));
+          tr.appendChild(statusCell);
+          // Per-role cells
+          [row.brainFast, row.brainMain, row.judge].forEach(function (val) {
+            var td = createEl('td', { className: 'role-cell' });
+            td.style.textAlign = 'center';
+            td.textContent = val;
+            if (val === '—') { td.style.color = 'var(--muted)'; }
+            else if (val === 'primary') { td.style.color = 'var(--green)'; td.style.fontWeight = '600'; }
+            tr.appendChild(td);
+          });
+          availTbody.appendChild(tr);
+        });
+
         var modelNames = Object.keys(modelMap);
         if (!modelNames.length) {
-          var emptyTr = createEl('tr');
-          var emptyTd = createEl('td', { attrs: { colspan: String(availCols.length) }, text: 'No models in any chain.' });
-          emptyTd.style.color = 'var(--muted)';
-          emptyTd.style.textAlign = 'center';
-          emptyTr.appendChild(emptyTd);
-          availTbody.appendChild(emptyTr);
+          // After KI-186 we always have static Tier 0 + Tier 2 rows, so a
+          // "no models" message would be misleading even if NIM has none.
         } else {
           // Sort: anyone's-primary first, then alphabetical by model name.
           modelNames.sort(function (a, b) {
@@ -1553,6 +1594,14 @@
             var info = modelMap[model];
             var tr = createEl('tr');
             tr.appendChild(createEl('td', { className: 'model-name', text: model }));
+
+            // KI-186 — Tier badge (NIM models are Tier 1)
+            var tierCell = createEl('td', { className: 'tier-cell' });
+            tierCell.style.textAlign = 'center';
+            tierCell.style.fontWeight = '600';
+            tierCell.style.color = 'var(--muted)';
+            tierCell.textContent = 'T1';
+            tr.appendChild(tierCell);
 
             // Status cell: dot + word.
             var statusCell = createEl('td', { className: 'status-cell' });

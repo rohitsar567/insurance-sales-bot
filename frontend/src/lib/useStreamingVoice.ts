@@ -237,7 +237,20 @@ export function useStreamingVoice(
     if (typeof navigator === "undefined" || !navigator.mediaDevices) return false;
     if (typeof MediaRecorder === "undefined") return false;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // KI-185 (2026-05-15) — explicit AEC + noise suppression + auto-gain.
+      // Default `{audio: true}` does NOT force AEC across all browsers, so the
+      // mic was transcribing the bot's own TTS audio bleeding from speakers
+      // back into the mic. Same constraints Zoom / Meet / ChatGPT-voice use.
+      // For headphone users this gives near-perfect echo cancellation;
+      // for speaker users it's 70-90% reduction (some bleed unavoidable
+      // without server-side reference cancellation).
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
       const mime = pickRecorderMime();
       recorderMimeRef.current = mime || "audio/webm";
       const recorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
