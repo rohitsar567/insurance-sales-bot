@@ -40,6 +40,29 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { postTranscribe } from "./api";
 
+// KI-189 (2026-05-15) — live-speak barge-in tuning constants.
+// The MediaRecorder mic stream IS echo-cancelled by the browser (KI-185
+// `getUserMedia` AEC constraints), so the bot's TTS bleed lands at a
+// very low RMS (~0.001-0.005) while actual user speech sits at ~0.05-0.2.
+// We pick a threshold in between, and require ~300ms sustained energy
+// to avoid firing on coughs / room thumps / single-frame spikes.
+const BARGE_IN_RMS_THRESHOLD = 0.025;
+const BARGE_IN_SUSTAINED_FRAMES = 18; // ~300ms @ 60fps rAF
+// KI-190 (2026-05-15) — adaptive threshold. The MediaRecorder mic stream
+// has AEC, but for very loud bot TTS the residual bleed can still cross
+// the static 0.025 threshold. We instead compute the threshold dynamically
+// from the bot's CURRENT audio level: bot_rms * MULTIPLIER + BASE. Bot
+// loud → threshold rises so user must speak loudly to overcome residual;
+// bot quiet → threshold drops near floor so soft speech still wins.
+const BARGE_IN_BOT_RMS_MULTIPLIER = 2.0;
+const BARGE_IN_BASE_THRESHOLD = 0.005;
+// KI-191 (2026-05-15) — duck bot TTS volume while voice mode is on.
+// Reducing playback amplitude further widens the gap between the bot's
+// residual mic bleed (after AEC) and the user's normal-volume speech,
+// making barge-in trivial. 0.6 is loud enough to hear clearly on
+// headphones and laptop speakers without overpowering user speech.
+const VOICE_MODE_TTS_VOLUME = 0.6;
+
 // Minimal types for the Web Speech API since lib.dom.d.ts ships them under
 // `webkitSpeechRecognition` only and the standard `SpeechRecognition` symbol
 // is still vendor-prefixed in most browsers as of 2026-05.
@@ -577,6 +600,222 @@ export function useStreamingVoice(
     if (!enabled || !isSupported) return;
     if (typeof document === "undefined") return;
 
+    // KI-189 (2026-05-15) — barge-in VAD state. The AnalyserNode + AudioContext
+    // are lazily created on first TTS-playback and reused for subsequent
+    // playbacks to avoid repeated AudioContext spin-up cost (Chrome warns
+    // when >6 contexts coexist).
+    let audioCtx: AudioContext | null = null;
+    let analyser: AnalyserNode | null = null;
+    let sourceNode: MediaStreamAudioSourceNode | null = null;
+    let attachedStream: MediaStream | null = null;
+    let rmsBuf: Float32Array<ArrayBuffer> | null = null;
+    let sustainedFrames = 0;
+    let rafId: number | null = null;
+
+    // KI-190 — per-<audio> bot-RMS analysers for adaptive threshold.
+    // Each watched audio element gets its own MediaElementAudioSourceNode +
+    // AnalyserNode so we can read the bot's instantaneous playback level
+    // during a barge-in tick. Map keyed by the audio element.
+    const botAnalysers = new Map<HTMLAudioElement, {
+      source: MediaElementAudioSourceNode;
+      analyser: AnalyserNode;
+      buf: Float32Array<ArrayBuffer>;
+    }>();
+    // Track which <audio> elements we've dimmed so we can restore on cleanup.
+    const duckedAudios = new Set<HTMLAudioElement>();
+
+    const stopBargeInLoop = () => {
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+      sustainedFrames = 0;
+    };
+
+    const teardownAnalyser = () => {
+      stopBargeInLoop();
+      try { sourceNode?.disconnect(); } catch { /* ignore */ }
+      try { analyser?.disconnect(); } catch { /* ignore */ }
+      sourceNode = null;
+      analyser = null;
+      attachedStream = null;
+      rmsBuf = null;
+      // KI-190 — tear down bot analysers + audio context.
+      botAnalysers.forEach((entry) => {
+        try { entry.source.disconnect(); } catch { /* ignore */ }
+        try { entry.analyser.disconnect(); } catch { /* ignore */ }
+      });
+      botAnalysers.clear();
+      if (audioCtx) {
+        const ctx = audioCtx;
+        audioCtx = null;
+        try { void ctx.close(); } catch { /* ignore */ }
+      }
+    };
+
+    // KI-190 — ensure an AudioContext exists for bot analyser attachment.
+    // Reuses the same instance the VAD path uses.
+    const ensureAudioCtx = (): AudioContext | null => {
+      if (audioCtx && audioCtx.state !== "closed") return audioCtx;
+      try {
+        const Ctor = (window.AudioContext
+          || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext);
+        if (!Ctor) return null;
+        audioCtx = new Ctor();
+        return audioCtx;
+      } catch {
+        return null;
+      }
+    };
+
+    // KI-190 — attach an AnalyserNode to a bot <audio> element. Routes the
+    // element's audio through the AudioContext (source → analyser →
+    // destination so it stays audible). createMediaElementSource throws if
+    // called twice on the same element, so we swallow and skip.
+    const attachBotAnalyser = (el: HTMLAudioElement) => {
+      if (botAnalysers.has(el)) return;
+      const ctx = ensureAudioCtx();
+      if (!ctx) return;
+      try {
+        const source = ctx.createMediaElementSource(el);
+        const an = ctx.createAnalyser();
+        an.fftSize = 1024;
+        an.smoothingTimeConstant = 0.4;
+        source.connect(an);
+        an.connect(ctx.destination);
+        const buf = new Float32Array(new ArrayBuffer(an.fftSize * 4));
+        botAnalysers.set(el, { source, analyser: an, buf });
+      } catch {
+        // already routed through Web Audio elsewhere, or autoplay policy
+        // blocked the context — bargeInTick will simply use the base
+        // threshold for this turn.
+      }
+    };
+
+    // KI-190 — current peak bot RMS across all playing <audio> elements.
+    // We take the max (not sum) because only one TTS plays at a time in
+    // practice and max behaves more sensibly if a stale paused element is
+    // still in the map.
+    const computeBotRms = (): number => {
+      let peak = 0;
+      botAnalysers.forEach(({ analyser: an, buf }, el) => {
+        if (el.paused || el.ended) return; // ignore idle elements
+        an.getFloatTimeDomainData(buf);
+        let sumSq = 0;
+        for (let i = 0; i < buf.length; i++) {
+          const v = buf[i];
+          sumSq += v * v;
+        }
+        // The MediaElementSource is post-volume, so this already reflects
+        // the ducked KI-191 0.6 volume — we get the actual audible level.
+        const rms = Math.sqrt(sumSq / buf.length);
+        if (rms > peak) peak = rms;
+      });
+      return peak;
+    };
+
+    const triggerBargeIn = (rms: number) => {
+      console.debug("[useStreamingVoice] KI-189 barge-in detected", {
+        rms: rms.toFixed(4),
+        frames: sustainedFrames,
+        threshold: BARGE_IN_RMS_THRESHOLD,
+      });
+      // Pause + reset every TTS <audio>; the MutationObserver's pause
+      // listener will set isTtsPlayingRef = false and call safeStart().
+      ttsAudioElementsRef.current.forEach((el) => {
+        try {
+          el.pause();
+          el.currentTime = 0;
+        } catch {
+          // ignore
+        }
+      });
+      stopBargeInLoop();
+    };
+
+    const bargeInTick = () => {
+      // Re-check gating each frame — if state changed mid-loop, exit cleanly.
+      if (
+        !isTtsPlayingRef.current
+        || !wantRunningRef.current
+        || isTextRequestPendingRef.current
+      ) {
+        stopBargeInLoop();
+        return;
+      }
+      if (!analyser || !rmsBuf) {
+        stopBargeInLoop();
+        return;
+      }
+      analyser.getFloatTimeDomainData(rmsBuf);
+      let sumSq = 0;
+      for (let i = 0; i < rmsBuf.length; i++) {
+        const v = rmsBuf[i];
+        sumSq += v * v;
+      }
+      const rms = Math.sqrt(sumSq / rmsBuf.length);
+      // KI-190 — adaptive threshold: bot_rms * 2 + 0.005, floored at the
+      // base BARGE_IN_RMS_THRESHOLD so we never set it absurdly low.
+      const botRms = computeBotRms();
+      const adaptiveThreshold = Math.max(
+        BARGE_IN_RMS_THRESHOLD,
+        botRms * BARGE_IN_BOT_RMS_MULTIPLIER + BARGE_IN_BASE_THRESHOLD,
+      );
+      if (rms >= adaptiveThreshold) {
+        sustainedFrames += 1;
+        if (sustainedFrames >= BARGE_IN_SUSTAINED_FRAMES) {
+          triggerBargeIn(rms);
+          return;
+        }
+      } else {
+        sustainedFrames = 0;
+      }
+      rafId = requestAnimationFrame(bargeInTick);
+    };
+
+    const startBargeInLoop = () => {
+      // Gating: voice mode active, no racing text turn, MediaRecorder live.
+      if (!wantRunningRef.current) return;
+      if (isTextRequestPendingRef.current) return;
+      if (!recorderActiveRef.current) return;
+      const stream = mediaStreamRef.current;
+      if (!stream || stream.getAudioTracks().length === 0) return;
+
+      try {
+        // Reuse the AudioContext + AnalyserNode if the same stream is still
+        // attached; otherwise rebuild (the stream may have been swapped out
+        // by teardownAudio() between TTS plays).
+        if (!audioCtx || audioCtx.state === "closed") {
+          const Ctor = (window.AudioContext
+            || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext);
+          if (!Ctor) return;
+          audioCtx = new Ctor();
+        }
+        if (audioCtx.state === "suspended") {
+          // Best-effort resume; ignore failures (autoplay policy may block
+          // until next user gesture — VAD simply won't fire).
+          void audioCtx.resume().catch(() => { /* ignore */ });
+        }
+        if (!analyser || attachedStream !== stream) {
+          try { sourceNode?.disconnect(); } catch { /* ignore */ }
+          try { analyser?.disconnect(); } catch { /* ignore */ }
+          analyser = audioCtx.createAnalyser();
+          analyser.fftSize = 2048;
+          analyser.smoothingTimeConstant = 0.5;
+          sourceNode = audioCtx.createMediaStreamSource(stream);
+          sourceNode.connect(analyser);
+          attachedStream = stream;
+          rmsBuf = new Float32Array(new ArrayBuffer(analyser.fftSize * 4));
+        }
+        sustainedFrames = 0;
+        if (rafId !== null) cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(bargeInTick);
+      } catch (err) {
+        console.debug("[useStreamingVoice] KI-189 VAD init failed", err);
+        teardownAnalyser();
+      }
+    };
+
     const updateTtsState = () => {
       let anyPlaying = false;
       ttsAudioElementsRef.current.forEach((el) => {
@@ -592,10 +831,15 @@ export function useStreamingVoice(
         if (rec) {
           try { rec.abort(); } catch { /* ignore */ }
         }
+        // KI-189 — start the AEC'd-mic VAD so the user can barge in by
+        // simply speaking over the bot. MediaRecorder's stream IS echo-
+        // cancelled at the browser level, unlike SpeechRecognition.
+        startBargeInLoop();
       } else if (!anyPlaying && wasPlaying) {
         // TTS just ended — let the heartbeat/visibility listeners revive.
         // Trigger immediately too so the user doesn't wait ~4s.
         console.debug("[useStreamingVoice] KI-188 TTS ended — resuming recognition");
+        stopBargeInLoop();
         if (wantRunningRef.current && !isTextRequestPendingRef.current) {
           safeStart();
         }
@@ -605,6 +849,14 @@ export function useStreamingVoice(
     const watchAudio = (el: HTMLAudioElement) => {
       if (ttsAudioElementsRef.current.has(el)) return;
       ttsAudioElementsRef.current.add(el);
+      // KI-191 — duck bot TTS to 60% while voice mode is on, so AEC residual
+      // is even quieter and barge-in is trivial.
+      try {
+        el.volume = VOICE_MODE_TTS_VOLUME;
+        duckedAudios.add(el);
+      } catch { /* readonly volume on some platforms — ignore */ }
+      // KI-190 — attach bot-level analyser for adaptive threshold.
+      attachBotAnalyser(el);
       el.addEventListener("play", updateTtsState);
       el.addEventListener("playing", updateTtsState);
       el.addEventListener("pause", updateTtsState);
@@ -647,6 +899,12 @@ export function useStreamingVoice(
 
     return () => {
       observer.disconnect();
+      // KI-191 — restore bot TTS volume to default before unmount so a
+      // subsequent voice-OFF session doesn't end up with silent audio.
+      duckedAudios.forEach((el) => {
+        try { el.volume = 1.0; } catch { /* ignore */ }
+      });
+      duckedAudios.clear();
       ttsAudioElementsRef.current.forEach((el) => {
         el.removeEventListener("play", updateTtsState);
         el.removeEventListener("playing", updateTtsState);
@@ -655,6 +913,8 @@ export function useStreamingVoice(
       });
       ttsAudioElementsRef.current.clear();
       isTtsPlayingRef.current = false;
+      // KI-189 — release AnalyserNode + AudioContext on unmount / disable.
+      teardownAnalyser();
     };
   }, [enabled, isSupported, isTextRequestPendingRef, safeStart]);
 
