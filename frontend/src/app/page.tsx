@@ -2145,10 +2145,14 @@ function PremiumCalculatorPanel({
   };
 
   const [age, setAge] = useState<number>(initialProfile?.age ?? 35);
+  // KI-258 (B5, 2026-05-15) — Prefer `desired_sum_insured_inr` (the user's
+  // stated target SI from chat/extractor) over `existing_cover_inr` (what
+  // they already hold). Fall back to legacy 10L default when both are
+  // missing.
   const [sumInsured, setSumInsured] = useState<number>(
-    initialProfile?.existing_cover_inr && initialProfile.existing_cover_inr > 0
-      ? initialProfile.existing_cover_inr
-      : 1000000,
+    initialProfile?.desired_sum_insured_inr ??
+      initialProfile?.existing_cover_inr ??
+      1_000_000,
   );
   const [cityTier, setCityTier] = useState<"metro" | "tier1" | "tier2">(
     deriveCityTier(initialProfile?.location_tier),

@@ -424,6 +424,14 @@ export type UserProfile = {
   parents_has_ped?: boolean | null;
   health_conditions?: string[] | null;
   budget_band?: string | null;
+  // KI-258 (B5, 2026-05-15) — Desired sum insured slot. Backend's pricing
+  // endpoint + retrieve_policies query both read this; frontend pre-fills
+  // the PremiumCalculatorPanel SI slider from it when present.
+  desired_sum_insured_inr?: number;
+  // KI-269 (D2, 2026-05-15) — Co-pay % the user is willing to accept.
+  copay_pct?: number;
+  // KI-269 (D2, 2026-05-15) — Family medical history (free-text tags).
+  family_medical_history?: string[];
 };
 
 export type ProfileCompletenessResponse = {
