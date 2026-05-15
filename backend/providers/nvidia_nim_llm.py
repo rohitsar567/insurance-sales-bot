@@ -250,19 +250,21 @@ BRAIN_CHAIN = [
     # that have been "down" for 48+ consecutive probes (qwen3.5-122b,
     # gpt-oss-120b, deepseek-v4-pro) so the election pool only contains
     # demonstrably-healthy NIM models.
+    # KI-175 (2026-05-15) — Nemotron demoted to LAST RESORT per operator
+    # preference: nemotron is the weakest practical NIM model and should
+    # only serve when every higher-quality model is simultaneously down.
     # Primary: Qwen 3-Next 80B — 5/5 recent probes ok, clean JSON, multilingual
     "qwen/qwen3-next-80b-a3b-instruct",
-    # 1st fallback: NVIDIA Nemotron-Super 49B — recent 3/3 probes ok, ~354ms
-    # latency, different family (nvidia) from Qwen primary → preserves
-    # cross-family-grading invariant if elevated to judge.
-    "nvidia/llama-3.3-nemotron-super-49b-v1.5",
-    # 2nd fallback: Mistral Large 3 675B — recent 3/3 probes ok, different
-    # family (mistral). Also the judge primary; only reached when both Qwen +
-    # Nemotron are unavailable.
+    # 1st fallback: Mistral Large 3 675B — recent 3/3 probes ok, different
+    # family (mistral). Strongest fallback.
     "mistralai/mistral-large-3-675b-instruct-2512",
-    # 3rd fallback: Meta Llama-4 Maverick 17B — 5/5 probes ok, different
-    # family (meta), keeps the chain alive through a single-family outage.
+    # 2nd fallback: Meta Llama-4 Maverick 17B — 5/5 probes ok, different
+    # family (meta), keeps the chain alive through Qwen+Mistral outage.
     "meta/llama-4-maverick-17b-128e-instruct",
+    # 3rd / LAST RESORT: NVIDIA Nemotron-Super 49B — barely usable for
+    # worst-case scenarios. Only reached when Qwen + Mistral + Maverick
+    # are ALL down simultaneously. Kept in the pool for fail-loud > down.
+    "nvidia/llama-3.3-nemotron-super-49b-v1.5",
 ]
 
 # Same chain for fast brain — Qwen 80B is already fast (~2s); no need for a
@@ -281,15 +283,18 @@ FAST_BRAIN_CHAIN = [
     # demonstrably-healthy NIM models. With election (KI-080) picking the
     # actually-fastest healthy candidate per turn, chain order matters
     # only for cold-start; the elector handles steady-state.
+    # KI-175 (2026-05-15) — Nemotron demoted to LAST RESORT per operator
+    # preference: nemotron is the weakest practical NIM model.
     # Primary: Qwen 3-Next 80B — 5/5 recent probes ok, ~2s, multilingual,
     # verified `<FF>` adherence in production traffic.
     "qwen/qwen3-next-80b-a3b-instruct",
-    # 1st fallback: NVIDIA Nemotron-Super 49B — 3/3 recent ok, ~354ms
-    # (fastest healthy NIM model), different family for diversity.
-    "nvidia/llama-3.3-nemotron-super-49b-v1.5",
-    # 2nd fallback: Mistral Large 3 675B — 3/3 recent ok, different family,
-    # keeps fact-find alive through a Qwen+Nemotron simultaneous outage.
+    # 1st fallback: Mistral Large 3 675B — 3/3 recent ok, different family.
     "mistralai/mistral-large-3-675b-instruct-2512",
+    # 2nd fallback: Meta Llama-4 Maverick 17B — 5/5 probes ok, different family.
+    "meta/llama-4-maverick-17b-128e-instruct",
+    # 3rd / LAST RESORT: NVIDIA Nemotron-Super 49B — barely usable.
+    # Only reached when Qwen + Mistral + Maverick are ALL down.
+    "nvidia/llama-3.3-nemotron-super-49b-v1.5",
 ]
 
 # Judge chain — non-Qwen (different family from brain primary so the judge
