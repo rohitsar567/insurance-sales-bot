@@ -687,49 +687,131 @@ def _candidate_snapshot(model: str, health, chain_membership: list[str],
     }
 
 
+def _candidate_available_for_calls(h, now_mono: float) -> bool:
+    """KI-122 — Is this candidate AVAILABLE RIGHT NOW for real chat traffic?
+
+    This is the operator-facing definition of "live and usable":
+      - probe says healthy or degraded (NOT 'down' / 'unknown')
+      - has not been sin-binned by report_failure() in the last
+        DEGRADED_WINDOW_SEC / DEGRADE_DURATION_LONG_S window
+      - credits gate (`_has_credits`) passes — either no signal, OR
+        credits_reset_at has elapsed (stale snapshot), OR credits_remaining
+        is above the candidate's low_water.
+
+    Returns False for None / unknown candidates."""
+    if h is None:
+        return False
+    if h.status in ("down", "unknown"):
+        return False
+    if h.degraded_until_monotonic and h.degraded_until_monotonic > now_mono:
+        return False
+    if not llm_health._has_credits(h, now_mono):
+        return False
+    return True
+
+
+def _candidate_credit_exhausted_strict(h, now_mono: float) -> bool:
+    """KI-122 — STRICT credit-exhausted rule for a single candidate.
+
+    True ONLY when ALL three hold:
+      (1) credits_remaining is NOT None (we have a real signal)
+      (2) credits_remaining <= credits_low_water
+      (3) credits_reset_at is set AND in the FUTURE (we're inside an
+          active gating window — stale or absent reset means the
+          snapshot is no longer authoritative).
+
+    This is intentionally stricter than `not _has_credits()` because the
+    banner is louder than the elector. The elector falls through cheaply
+    on a single bad candidate; the banner falsely scaring the operator
+    when one quota-exhausted backup co-exists with a perfectly healthy
+    primary is the bug we're fixing here."""
+    if h is None:
+        return False
+    if h.credits_remaining is None:
+        return False
+    if h.credits_remaining > (h.credits_low_water or 0.0):
+        return False
+    if h.credits_reset_at is None:
+        # No scheduled reset (e.g. OpenRouter usd_balance — prepaid wallet).
+        # Could still be a real "wallet empty" signal, BUT we won't flag the
+        # chain banner on it alone because OpenRouter free-tier accounts
+        # report $0 even when calls succeed. The probe / chat success
+        # signal is the authoritative truth — fall through to the probe
+        # status check in `_candidate_available_for_calls` instead.
+        return False
+    if now_mono >= h.credits_reset_at:
+        # Reset window has elapsed — snapshot is stale, treat as permissive.
+        return False
+    return True
+
+
 def _chain_summary(role: str, chains: dict[str, list[str]],
                    state: dict, now_mono: float) -> dict:
     """Per-chain block for Section A. Includes elected primary/backup +
-    `all_credit_exhausted` so the frontend can render a banner when every
-    candidate in the chain is gated out by credits/quota."""
+    `chain_credit_exhausted` so the frontend can render a banner when every
+    candidate in the chain is genuinely unusable."""
     chain = chains.get(role) or []
     primary = llm_health.get_primary(role)
     backup = llm_health.get_backup(role)
 
-    # all_credit_exhausted: every chain member with a non-None credit signal
-    # is at-or-below its low-water mark. Chains with no signal at all are
-    # NOT flagged exhausted (cold-start should be permissive — election will
-    # try them and surface a real failure if any).
+    # KI-122 (2026-05-15) — STRICT chain_credit_exhausted rule.
     #
-    # KI-116 (2026-05-15) — mirror the `is_credit_eligible` reset-window logic.
-    # When credits_reset_at has elapsed, the LAST observed credits_remaining
-    # is stale (e.g., NIM 40-RPM cap from a spike 10 minutes ago says
-    # `remaining=0` but the 60s window has long since cycled). The elector
-    # treats elapsed-reset as permissive; the banner must match or the UI
-    # contradicts itself ("HEALTHY 100% success" + "credit-exhausted" at the
-    # same time, which user reported on the live admin panel).
-    any_signal = False
-    all_exhausted = True
+    # Earlier rules (KI-085, KI-116) tried to skip cold-start candidates
+    # and elapsed-reset snapshots but still left a hole: when one chain
+    # member had a None reset_at + low credits (typical for OpenRouter's
+    # usd_balance) while sibling NIM candidates had `credits_remaining=None`
+    # (no signal yet), the loop registered `any_signal=True` on the bad
+    # OpenRouter row but never broke out via a fresh NIM peer — so the
+    # banner fired despite the elected NIM primary being HEALTHY · 100%.
+    #
+    # New rule: banner fires ONLY when EVERY chain member is BOTH
+    #   (a) not available_for_calls (down / sin-binned / credit-gated), AND
+    #   (b) at least one of those failures is a credit-exhaustion signal
+    #       (otherwise it's a "chain entirely down" situation, which
+    #        deserves a different banner — handled by the elected_primary
+    #        == None path in the frontend).
+    members_info: list[dict] = []
+    any_available = False
+    any_credit_exhausted = False
+    last_probe_at_iso: Optional[str] = None
     for m in chain:
         h = state.get(m)
-        if h is None or h.credits_remaining is None:
-            continue
-        # If the credit signal's reset window has elapsed, skip — the snapshot
-        # is stale and the elector will try this candidate next call.
-        if h.credits_reset_at is not None and now_mono >= h.credits_reset_at:
-            all_exhausted = False
-            break
-        any_signal = True
-        if h.credits_remaining > (h.credits_low_water or 0.0):
-            all_exhausted = False
-            break
-    chain_credit_exhausted = bool(any_signal and all_exhausted)
+        available = _candidate_available_for_calls(h, now_mono)
+        credit_exhausted = _candidate_credit_exhausted_strict(h, now_mono)
+        if available:
+            any_available = True
+        if credit_exhausted:
+            any_credit_exhausted = True
+        # Track the most-recent probe timestamp across the chain.
+        ts = getattr(h, "tested_at", None) if h is not None else None
+        if ts and (last_probe_at_iso is None or ts > last_probe_at_iso):
+            last_probe_at_iso = ts
+        members_info.append({
+            "model":               m,
+            "available_for_calls": available,
+            "credit_exhausted":    credit_exhausted,
+            "is_current_primary":  bool(primary and m == primary),
+            "is_current_backup":   bool(backup and m == backup),
+        })
+    # Banner fires only when: zero available members AND at least one
+    # member is strictly credit-exhausted. If everyone is just 'down'
+    # (probe failures) the banner is the wrong message — the operator
+    # needs the "no eligible candidate" state, which the frontend already
+    # renders via `elected_primary == None`.
+    chain_credit_exhausted = bool((not any_available) and any_credit_exhausted)
 
     return {
         "role":            role,
         "chain":           chain,
+        "chain_members":   members_info,
         "elected_primary": primary,
         "elected_backup":  backup,
+        # KI-122 — explicit "currently in use" name + a boolean the
+        # frontend uses to render the "● IN USE" pill without re-deriving.
+        "current_primary": primary,
+        "current_primary_available": _candidate_available_for_calls(
+            state.get(primary) if primary else None, now_mono,
+        ),
         "primary_snapshot": _candidate_snapshot(
             primary, state.get(primary), [role], now_mono,
         ) if primary else None,
@@ -737,6 +819,10 @@ def _chain_summary(role: str, chains: dict[str, list[str]],
             backup, state.get(backup), [role], now_mono,
         ) if backup else None,
         "chain_credit_exhausted": chain_credit_exhausted,
+        # KI-122 — operator-facing staleness signal. ISO string + a
+        # convenience seconds-ago value so the UI can render "Probed Ns ago".
+        "last_probe_at":         last_probe_at_iso,
+        "last_probe_age_seconds": _probe_age_seconds(last_probe_at_iso),
     }
 
 

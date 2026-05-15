@@ -406,6 +406,63 @@
       font-size: 12px;
     }
 
+    /* KI-122 — "Currently in use" header + per-member availability pills */
+    .llm-health-chain .in-use-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 8px 10px;
+      margin-bottom: 12px;
+      background: rgba(63, 185, 80, 0.06);
+      border: 1px solid rgba(63, 185, 80, 0.25);
+      border-radius: 6px;
+    }
+    .llm-health-chain .in-use-line .role-label {
+      margin-bottom: 0;
+      color: var(--text);
+    }
+    .llm-health-chain .in-use-line .model-name {
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, monospace;
+      font-size: 12px;
+      word-break: break-all;
+    }
+    .llm-health-chain .chain-members-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin: 6px 0 12px;
+      padding: 8px 10px;
+      background: #050709;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+    .llm-health-chain .chain-member-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+    }
+    .llm-health-chain .chain-member-row .model-name {
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, monospace;
+      word-break: break-all;
+    }
+    .avail-pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+    .avail-pill.pill-inuse     { background: rgba(63, 185, 80, 0.20);  color: var(--green);  border-color: rgba(63, 185, 80, 0.55); }
+    .avail-pill.pill-available { background: rgba(63, 185, 80, 0.10);  color: var(--green);  border-color: rgba(63, 185, 80, 0.35); }
+    .avail-pill.pill-gated     { background: rgba(139, 149, 164, 0.15);color: var(--muted);  border-color: rgba(139, 149, 164, 0.40); }
+    .avail-pill.pill-degraded  { background: rgba(210, 153, 34, 0.15); color: var(--yellow); border-color: rgba(210, 153, 34, 0.45); }
+    .avail-pill.pill-down      { background: rgba(248, 81, 73, 0.15);  color: var(--red);    border-color: rgba(248, 81, 73, 0.45); }
+
     /* Status badges — three colors: ✓ green / ⚠ amber / ✗ red */
     .health-badge {
       display: inline-block;
@@ -1439,13 +1496,70 @@
         var badge = createEl('span', { className: 'role-badge', text: (ROLE_LABELS[chainBlock.role] || chainBlock.role).toUpperCase() });
         badge.style.background = ROLE_COLORS[chainBlock.role] || '#444';
         head.appendChild(badge);
-        var title = createEl('span', { text: 'Election' });
+        var title = createEl('span', { text: 'Chain status' });
         title.style.fontWeight = '600';
         title.style.fontSize = '13px';
         head.appendChild(title);
+        // KI-122 — staleness signal at the chain head so the operator can
+        // see whether they're looking at fresh probe data or stale state.
+        if (chainBlock.last_probe_age_seconds != null) {
+          var stale = createEl('span', {
+            className: 'small muted',
+            text: '· probed ' + fmtDurationShort(chainBlock.last_probe_age_seconds) + ' ago',
+          });
+          stale.style.marginLeft = 'auto';
+          head.appendChild(stale);
+        }
         card.appendChild(head);
 
-        // Render PRIMARY + BACKUP rows.
+        // KI-122 — top-of-card "Currently in use" line so the operator
+        // doesn't have to infer the live model from the PRIMARY row.
+        var inUse = createEl('div', { className: 'in-use-line' });
+        var inUseLabel = createEl('span', { className: 'role-label', text: 'Currently in use:' });
+        inUse.appendChild(inUseLabel);
+        if (chainBlock.current_primary) {
+          var pillCls = chainBlock.current_primary_available ? 'pill-inuse' : 'pill-degraded';
+          var pillText = chainBlock.current_primary_available ? '● IN USE' : '● ELECTED BUT GATED';
+          var pill = createEl('span', { className: 'avail-pill ' + pillCls, text: pillText });
+          inUse.appendChild(pill);
+          var nm = createEl('span', { className: 'model-name', text: chainBlock.current_primary });
+          inUse.appendChild(nm);
+        } else {
+          var none = createEl('span', { className: 'avail-pill pill-down', text: '● NONE ELECTED' });
+          inUse.appendChild(none);
+        }
+        card.appendChild(inUse);
+
+        // KI-122 — full chain member list with per-model availability pills,
+        // so the operator can see at a glance every model that's wired up
+        // and which ones are actually callable RIGHT NOW.
+        var members = chainBlock.chain_members || [];
+        if (members.length) {
+          var listLabel = createEl('div', { className: 'role-label', text: 'Chain members (' + members.length + ')' });
+          listLabel.style.marginTop = '10px';
+          card.appendChild(listLabel);
+          var list = createEl('div', { className: 'chain-members-list' });
+          members.forEach(function (mi) {
+            var row = createEl('div', { className: 'chain-member-row' });
+            var p;
+            if (mi.is_current_primary) {
+              p = createEl('span', { className: 'avail-pill pill-inuse', text: '● IN USE' });
+            } else if (mi.available_for_calls) {
+              p = createEl('span', { className: 'avail-pill pill-available', text: '● AVAILABLE' });
+            } else if (mi.credit_exhausted) {
+              p = createEl('span', { className: 'avail-pill pill-gated', text: '● GATED' });
+            } else {
+              p = createEl('span', { className: 'avail-pill pill-down', text: '● UNAVAILABLE' });
+            }
+            row.appendChild(p);
+            row.appendChild(createEl('span', { className: 'model-name', text: mi.model }));
+            list.appendChild(row);
+          });
+          card.appendChild(list);
+        }
+
+        // Render PRIMARY + BACKUP detail rows (kept for the per-model
+        // latency/success/credit telemetry the operator drills into).
         ['primary', 'backup'].forEach(function (role) {
           var snap = chainBlock[role + '_snapshot'];
           var name = chainBlock['elected_' + role];
@@ -1453,8 +1567,8 @@
           var label = createEl('div', { className: 'role-label', text: role.toUpperCase() });
           block.appendChild(label);
           if (!name || !snap) {
-            var none = createEl('div', { className: 'none-elected', text: 'none elected (no eligible candidate)' });
-            block.appendChild(none);
+            var noneEl = createEl('div', { className: 'none-elected', text: 'none elected (no eligible candidate)' });
+            block.appendChild(noneEl);
             card.appendChild(block);
             return;
           }
@@ -1487,6 +1601,11 @@
           card.appendChild(block);
         });
 
+        // KI-122 — banner is now backend-gated by the STRICT exhausted rule
+        // (`chain_credit_exhausted` true only when zero members are
+        // available_for_calls AND at least one is strictly credit-exhausted).
+        // This prevents the historic "HEALTHY 100% + credit-exhausted banner"
+        // contradiction the operator reported.
         if (chainBlock.chain_credit_exhausted) {
           var banner = createEl('div', { className: 'credit-banner' });
           banner.textContent = 'All candidates for ' + (ROLE_LABELS[chainBlock.role] || chainBlock.role).toUpperCase() +

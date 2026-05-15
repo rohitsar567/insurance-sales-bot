@@ -245,5 +245,138 @@ class TestElectionCreditGate(unittest.TestCase):
                         "Cold-start (None credits) must NOT gate out a healthy candidate.")
 
 
+class TestStrictChainCreditExhausted(unittest.TestCase):
+    """KI-122 (2026-05-15) — strict banner rule.
+
+    Banner fires ONLY when zero chain members are available_for_calls AND at
+    least one has a credit-exhaustion signal that's strictly in-window
+    (credits_remaining<=low_water AND credits_reset_at is in the future).
+
+    Pre-KI-122 holes the new rule must close:
+      H1) one healthy NIM primary (credits=None) + one credit-low Groq backup
+          → banner USED to fire because `any_signal=True` on Groq + skip on
+            NIM's None signal. Must NOT fire.
+      H2) every chain member has reset_at=None (e.g. OpenRouter wallet) and
+          credits below water → banner USED to fire. Must NOT fire by itself
+          (probe success is the authoritative truth; wallet-zero with
+          successful probes means free-tier models).
+      H3) every member is genuinely gated (low + future reset) AND not
+          available → banner SHOULD fire.
+    """
+
+    def setUp(self) -> None:
+        _fresh_state()
+        # Import locally so test discovery doesn't load admin until needed.
+        from backend.admin import _chain_summary
+        self._chain_summary = _chain_summary
+
+    def _build(self, chain_models, model_states):
+        """Inject states + run _chain_summary against a mocked chain."""
+        for m, h in model_states.items():
+            llm_health._STATE[m] = h
+        now_mono = time.monotonic()
+        with mock.patch.object(
+            llm_health, "_chain_for", return_value=list(chain_models),
+        ):
+            return self._chain_summary(
+                "brain", {"brain": list(chain_models)}, llm_health._STATE, now_mono,
+            )
+
+    def test_healthy_nim_plus_exhausted_groq_does_not_fire_banner(self) -> None:
+        """H1 — NIM primary HEALTHY/None-credits + Groq backup credit-low.
+        Banner must STAY DOWN because NIM is available_for_calls."""
+        nim = "qwen/qwen3-next-80b-a3b-instruct"
+        groq = "groq:llama-3.3-70b-versatile"
+        nh = _healthy_now(nim)
+        nh.latency_ms = 300
+        # NIM has NO credit signal (None) — cold start permissive.
+        gh = _healthy_now(groq)
+        gh.latency_ms = 100
+        gh.credits_remaining = 100.0
+        gh.credits_unit = "tokens_day"
+        gh.credits_low_water = GROQ_TOKENS_LOW_WATER
+        gh.credits_reset_at = time.monotonic() + 3600.0  # future reset
+        gh.credits_observed_at = time.monotonic()
+        block = self._build([nim, groq], {nim: nh, groq: gh})
+        self.assertFalse(
+            block["chain_credit_exhausted"],
+            "Banner must NOT fire when a healthy cold-start NIM primary "
+            "shares a chain with one credit-exhausted Groq backup.",
+        )
+        # Sanity: NIM should be in_use, Groq should be gated.
+        names = {mi["model"]: mi for mi in block["chain_members"]}
+        self.assertTrue(names[nim]["available_for_calls"])
+        self.assertTrue(names[nim]["is_current_primary"])
+        self.assertFalse(names[groq]["available_for_calls"])
+        self.assertTrue(names[groq]["credit_exhausted"])
+
+    def test_credits_reset_at_none_does_not_fire_banner(self) -> None:
+        """H2 — every member has reset_at=None + credits below water (typical
+        OpenRouter usd_balance free-tier shape). Banner must NOT fire on the
+        reset_at=None signal alone; the strict rule requires an in-window reset."""
+        m1 = "openrouter:openai/gpt-oss-120b"
+        m2 = "openrouter:meta-llama/llama-3.3-70b-instruct:free"
+        h1 = _healthy_now(m1)
+        h1.latency_ms = 800
+        h1.credits_remaining = 0.0
+        h1.credits_unit = "usd_balance"
+        h1.credits_low_water = 0.05
+        h1.credits_reset_at = None  # OpenRouter wallet: no scheduled reset
+        h1.credits_observed_at = time.monotonic()
+        h2 = _healthy_now(m2)
+        h2.latency_ms = 900
+        h2.credits_remaining = 0.0
+        h2.credits_unit = "usd_balance"
+        h2.credits_low_water = 0.05
+        h2.credits_reset_at = None
+        h2.credits_observed_at = time.monotonic()
+        block = self._build([m1, m2], {m1: h1, m2: h2})
+        self.assertFalse(
+            block["chain_credit_exhausted"],
+            "Banner must NOT fire when credits_reset_at is None on every "
+            "member — usd_balance=$0 with healthy probes is a free-tier "
+            "signal, not a real outage.",
+        )
+
+    def test_all_in_window_exhausted_fires_banner(self) -> None:
+        """H3 — every chain member has credits<=low_water AND a future reset
+        AND is consequently NOT available_for_calls. Banner SHOULD fire."""
+        m1 = "groq:llama-3.3-70b-versatile"
+        m2 = "groq:meta-llama/llama-4-scout-17b-16e-instruct"
+        future = time.monotonic() + 3600.0
+        h1 = _healthy_now(m1)
+        h1.latency_ms = 100
+        h1.credits_remaining = 100.0
+        h1.credits_unit = "tokens_day"
+        h1.credits_low_water = GROQ_TOKENS_LOW_WATER
+        h1.credits_reset_at = future
+        h1.credits_observed_at = time.monotonic()
+        h2 = _healthy_now(m2)
+        h2.latency_ms = 110
+        h2.credits_remaining = 50.0
+        h2.credits_unit = "tokens_day"
+        h2.credits_low_water = GROQ_TOKENS_LOW_WATER
+        h2.credits_reset_at = future
+        h2.credits_observed_at = time.monotonic()
+        block = self._build([m1, m2], {m1: h1, m2: h2})
+        self.assertTrue(
+            block["chain_credit_exhausted"],
+            "Banner SHOULD fire when every chain member is strictly "
+            "credit-exhausted with an in-window future reset.",
+        )
+
+    def test_chain_block_carries_current_primary_and_last_probe(self) -> None:
+        """KI-122 — verify the new wire fields are populated."""
+        nim = "qwen/qwen3-next-80b-a3b-instruct"
+        nh = _healthy_now(nim)
+        nh.latency_ms = 250
+        block = self._build([nim], {nim: nh})
+        self.assertEqual(block["current_primary"], nim)
+        self.assertTrue(block["current_primary_available"])
+        self.assertIsNotNone(block["last_probe_at"])
+        self.assertIsNotNone(block["last_probe_age_seconds"])
+        self.assertGreaterEqual(block["last_probe_age_seconds"], 0.0)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
