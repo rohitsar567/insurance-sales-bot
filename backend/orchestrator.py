@@ -466,7 +466,26 @@ async def handle_turn(
     from backend.session_state import get_session
     session = get_session(session_id or "anonymous")
 
-    in_fact_find_continuation = bool(session.awaiting_question_id) and not session.free_form_session
+    # KI-194 (2026-05-15) — CRITICAL FIX: KI-167 removed the `set_awaiting`
+    # machinery when ripping out fact_find_brain, so `awaiting_question_id`
+    # is now always None. The old expression here became permanently False,
+    # which meant mid-fact-find answers like "29" (bare number, no fact_find
+    # trigger word) routed to QA → faithfulness rejected with "I'd rather
+    # not answer that..." — totally broken.
+    #
+    # We're "still in fact-find continuation" when free_form_session=False
+    # AND any of the 6 required slots is missing. That state is now derived
+    # from session.profile directly, not from awaiting_question_id.
+    _FACT_FIND_REQUIRED_SLOTS = (
+        "name", "age", "dependents", "location_tier", "income_band", "primary_goal",
+    )
+    _required_profile_incomplete = any(
+        not getattr(session.profile, slot, None)
+        for slot in _FACT_FIND_REQUIRED_SLOTS
+    )
+    in_fact_find_continuation = (
+        _required_profile_incomplete and not session.free_form_session
+    )
     # KI-013 — if the user has NO profile fields yet, FORCE fact-find for
     # intents that depend on user context (recommendation, comparison).
     # Real user testing surfaced: a vague opener ("I want health insurance")

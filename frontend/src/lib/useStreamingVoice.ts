@@ -831,10 +831,29 @@ export function useStreamingVoice(
         if (rec) {
           try { rec.abort(); } catch { /* ignore */ }
         }
-        // KI-189 — start the AEC'd-mic VAD so the user can barge in by
-        // simply speaking over the bot. MediaRecorder's stream IS echo-
-        // cancelled at the browser level, unlike SpeechRecognition.
-        startBargeInLoop();
+        // KI-191 — re-duck every playing audio in case React or the audio
+        // element default reset volume after watchAudio set it.
+        ttsAudioElementsRef.current.forEach((el) => {
+          if (!el.paused && el.volume !== VOICE_MODE_TTS_VOLUME) {
+            try { el.volume = VOICE_MODE_TTS_VOLUME; } catch { /* ignore */ }
+          }
+        });
+        // KI-192 (2026-05-15) — MediaRecorder might be torn down between
+        // user utterances (KI-168 teardownAudio). Without an active
+        // recorder, startBargeInLoop bails on the recorderActiveRef check
+        // and barge-in never fires. Fire-and-forget ensureAudioCapture
+        // first; if it succeeds, the VAD loop has a live stream.
+        if (wantRunningRef.current && !isTextRequestPendingRef.current) {
+          void ensureAudioCapture().then(() => {
+            // Re-check we're still in TTS-playing state — TTS may have
+            // ended during the async ensureAudioCapture round-trip.
+            if (isTtsPlayingRef.current) {
+              startBargeInLoop();
+            }
+          });
+        } else {
+          startBargeInLoop();  // best-effort if gates won't allow capture rebuild
+        }
       } else if (!anyPlaying && wasPlaying) {
         // TTS just ended — let the heartbeat/visibility listeners revive.
         // Trigger immediately too so the user doesn't wait ~4s.
