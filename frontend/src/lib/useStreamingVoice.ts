@@ -39,6 +39,15 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { postTranscribe } from "./api";
+// KI-223..228 (2026-05-15) — additive resilience layer (V1.1/V1.3/V5.4/V6.8).
+// Lives in a sibling module so the hook body stays under control and the
+// retry / noise-floor / sample-rate helpers can be unit-tested in isolation.
+import {
+  retryPostTranscribe,
+  scaleSpeechZcrBand,
+  AdaptiveNoiseFloor,
+  type VoiceError,
+} from "./voice_resilience";
 
 // KI-189 (2026-05-15) — live-speak barge-in tuning constants.
 // The MediaRecorder mic stream IS echo-cancelled by the browser (KI-185
@@ -85,6 +94,15 @@ const VOICE_MODE_TTS_VOLUME = 0.3;
 // never crosses the recognition threshold.
 const USER_SPEECH_RMS_INITIAL = 0.05;          // typical quiet speech, used until calibrated
 const USER_SPEECH_DETECTION_THRESHOLD = 0.02;  // mic RMS above this counts as "user speaking"
+// FIX 5 (HIGH) — hard ceiling on the rolling-peak userSpeechRms. Without
+// this, a single shout pins userSpeechRms at 0.4+ for the entire session
+// → adaptive barge-in threshold rises → normal-volume speech can't break
+// through → user has to shout to barge in again. The userRmsTick is also
+// gated on !isTtsPlaying, so during TTS playback there's NO decay path —
+// the wall-clock decay interval below provides decay regardless of gating.
+const USER_SPEECH_RMS_CEILING = 0.15;
+const USER_SPEECH_RMS_WALL_CLOCK_DECAY_MS = 1000;
+const USER_SPEECH_RMS_WALL_CLOCK_DECAY_FACTOR = 0.9;
 const VOLUME_CALIB_TARGET_RATIO = 0.35;        // bot_rms_at_mic should be ≤ user_rms × this
 const VOLUME_CALIB_TICK_MS = 300;              // calibration sample period during TTS
 const VOLUME_CALIB_DUCK_FACTOR = 0.8;          // multiply el.volume by this per tick if too loud
@@ -149,12 +167,34 @@ export interface UseStreamingVoiceOptions {
   onListening: (listening: boolean) => void;
   isTextRequestPendingRef: React.MutableRefObject<boolean>;
   language?: string;
+  // KI-223 (2026-05-15) — V1.1 / V1.2 / V5.4. Optional structured error
+  // callback so page.tsx can react specifically to recoverable failures
+  // (e.g. show "tap to enable audio" when audio_context_suspended fires).
+  // Optional: existing consumers that don't pass this still work.
+  onVoiceError?: (err: VoiceError) => void;
 }
 
 export interface UseStreamingVoiceReturn {
   start: () => void;
   stop: () => void;
   isSupported: boolean;
+  /**
+   * FIX 3 (HIGH) — Barge-in signal. The hook flips an internal flag when
+   * `triggerBargeIn` fires (user spoke over bot TTS). The caller (page.tsx)
+   * should poll this method before/after every fetch tick during a /api/chat
+   * stream — if it returns true, abort the in-flight request and any pending
+   * audio assembly so the bot doesn't keep talking after the user
+   * interrupted. Reading clears the flag (one-shot semantics).
+   *
+   * Wire-up (caller side, OUT OF THIS HOOK'S SCOPE):
+   *   - Before fetch, store an AbortController locally.
+   *   - In the stream-reading loop, periodically check
+   *     `streamingVoice.consumeBargeInSignal()` and call `controller.abort()`
+   *     when it returns true.
+   *   - Alternatively register a side-effect that polls every 100ms while a
+   *     send() is in flight.
+   */
+  consumeBargeInSignal: () => boolean;
 }
 
 function resolveCtor(): SpeechRecognitionCtor | null {
@@ -177,6 +217,7 @@ export function useStreamingVoice(
     onListening,
     isTextRequestPendingRef,
     language = "en-IN",
+    onVoiceError,
   } = opts;
 
   // Keep latest callback refs so the recognition handlers always call the
@@ -186,10 +227,16 @@ export function useStreamingVoice(
   const onFinalRef = useRef(onFinalTranscript);
   const onErrorRef = useRef(onError);
   const onListeningRef = useRef(onListening);
+  // KI-223 — optional structured-error callback ref. Defaults to no-op so
+  // the rest of the hook can call it unconditionally without null checks.
+  const onVoiceErrorRef = useRef<(err: VoiceError) => void>(
+    onVoiceError ?? (() => { /* no-op */ }),
+  );
   useEffect(() => { onInterimRef.current = onInterimTranscript; }, [onInterimTranscript]);
   useEffect(() => { onFinalRef.current = onFinalTranscript; }, [onFinalTranscript]);
   useEffect(() => { onErrorRef.current = onError; }, [onError]);
   useEffect(() => { onListeningRef.current = onListening; }, [onListening]);
+  useEffect(() => { onVoiceErrorRef.current = onVoiceError ?? (() => { /* no-op */ }); }, [onVoiceError]);
 
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   const finalsRef = useRef<string[]>([]);
@@ -231,6 +278,20 @@ export function useStreamingVoice(
   const pendingUtteranceRef = useRef<string>("");
   const pendingChunksRef = useRef<Blob[]>([]);
   const pendingSubmitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // FIX 3 (HIGH) — one-shot barge-in signal. Flipped true by triggerBargeIn
+  // when the VAD detects sustained user speech over bot TTS. Read+cleared
+  // via consumeBargeInSignal() so the caller (page.tsx) can abort any
+  // in-flight /api/chat request that's still assembling more TTS audio.
+  const bargeInRequestedRef = useRef<boolean>(false);
+  // KI-228 (2026-05-15) — V6.8 adaptive noise floor. Persistent across the
+  // entire hook lifetime so a user's noise environment learned across the
+  // first 5 seconds carries through later TTS plays even if the audio
+  // effect tears down + rebuilds the analyser between turns.
+  const noiseFloorRef = useRef<AdaptiveNoiseFloor>(new AdaptiveNoiseFloor());
+  // KI-225 (2026-05-15) — V1.3 sample-rate-aware ZCR band, cached from the
+  // AudioContext at analyser-build time. Falls back to the 48 kHz reference
+  // band when the context isn't up yet.
+  const zcrBandRef = useRef<{ min: number; max: number }>({ min: 20, max: 250 });
 
   // ----------------------------------------------------------------------
   // KI-168 PHASE 2 — Sarvam authoritative-transcript layer.
@@ -452,6 +513,11 @@ export function useStreamingVoice(
       if (code === "no-speech" || code === "aborted") return;
       if (code === "not-allowed" || code === "service-not-allowed") {
         wantRunningRef.current = false;
+        // FIX 2 (HIGH) — Terminal-error mic leak. Without teardownAudio()
+        // here the MediaRecorder + MediaStream stay open even though
+        // recognition has shut down, so the browser's red-dot mic
+        // indicator stays lit and the OS thinks we're still recording.
+        teardownAudio();
         onErrorRef.current(
           "Mic permission denied. Click the lock icon in your browser's URL bar to enable the microphone.",
         );
@@ -459,6 +525,8 @@ export function useStreamingVoice(
       }
       if (code === "audio-capture") {
         wantRunningRef.current = false;
+        // FIX 2 (HIGH) — see above.
+        teardownAudio();
         onErrorRef.current("No microphone detected. Check your audio device and try again.");
         return;
       }
@@ -485,6 +553,39 @@ export function useStreamingVoice(
       // drop both transcripts on the floor (text wins). Don't start a
       // Sarvam fetch we'd be throwing away.
       const textRacing = isTextRequestPendingRef.current;
+
+      // FIX 7 (HIGH) — Silent onend early-return. Chrome's "no-speech"
+      // restart loop fires onend every ~5s with no content. Without this
+      // guard, every silent onend re-arms the 1500ms grace timer and the
+      // grace window extends forever — even when there's nothing pending
+      // to submit. Skip the grace-timer reset when:
+      //   - no new Web Speech text in this cycle, AND
+      //   - no audio chunks captured this cycle (chunksRef holds the
+      //     undrained chunks that will become drainedThisEnd below), AND
+      //   - no previously pending utterance text.
+      // We still call scheduleRestart() so the mic comes back online.
+      const hasNewChunksThisEnd = recorderActiveRef.current && chunksRef.current.length > 0;
+      if (!webSpeechText && !hasNewChunksThisEnd && pendingUtteranceRef.current === "") {
+        console.debug("[useStreamingVoice] KI-222 silent onend — skipping grace reset");
+        // Inline the restart-only path here so we don't need to refactor
+        // the scheduleRestart closure below it.
+        if (wantRunningRef.current && !isTextRequestPendingRef.current) {
+          const backoff = errorBackoffRef.current;
+          errorBackoffRef.current = 0;
+          clearRestartTimer();
+          restartTimerRef.current = setTimeout(() => {
+            restartTimerRef.current = null;
+            if (wantRunningRef.current) safeStart();
+          }, Math.max(50, backoff));
+        } else if (wantRunningRef.current && isTextRequestPendingRef.current) {
+          clearRestartTimer();
+          restartTimerRef.current = setTimeout(() => {
+            restartTimerRef.current = null;
+            if (wantRunningRef.current && !isTextRequestPendingRef.current) safeStart();
+          }, 250);
+        }
+        return;
+      }
 
       const scheduleRestart = () => {
         if (wantRunningRef.current && !isTextRequestPendingRef.current) {
@@ -657,11 +758,30 @@ export function useStreamingVoice(
           let authoritativeText = accumulatedText;
           if (allChunks.length > 0 && totalSize >= MIN_BLOB_BYTES) {
             const blob = new Blob(allChunks, { type: recorderMimeRef.current || "audio/webm" });
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 8000);
-            try {
-              console.debug("[useStreamingVoice] POST /api/transcribe", { bytes: blob.size, mime: blob.type, lang: language });
-              const sarvam = await postTranscribe(blob, language, controller.signal);
+            // KI-226 (2026-05-15) — V5.4. Wrap the Sarvam POST in an
+            // exponential-backoff retry (1s/2s/4s, max 3 attempts). The
+            // accumulatedText (Web Speech fallback) and accumulated chunks
+            // are already captured locally, so retries don't lose the
+            // partial transcript. Each attempt enforces its own 8s timeout
+            // via the controller signal passed in by retryPostTranscribe.
+            console.debug("[useStreamingVoice] POST /api/transcribe", { bytes: blob.size, mime: blob.type, lang: language });
+            const sarvam = await retryPostTranscribe(async (signal) => {
+              // Race per-attempt 8s timeout against the retry signal so a
+              // hung connection still surfaces as an attempt failure (and
+              // triggers the next backoff step) rather than blocking
+              // forever. signal aborts when the OUTER retry loop is killed.
+              const timeoutCtl = new AbortController();
+              const timer = setTimeout(() => timeoutCtl.abort(), 8000);
+              const onOuterAbort = () => timeoutCtl.abort();
+              signal.addEventListener("abort", onOuterAbort);
+              try {
+                return await postTranscribe(blob, language, timeoutCtl.signal);
+              } finally {
+                clearTimeout(timer);
+                signal.removeEventListener("abort", onOuterAbort);
+              }
+            });
+            if (sarvam) {
               const sarvamText = (sarvam.text || "").trim();
               if (sarvamText) {
                 authoritativeText = sarvamText;
@@ -673,10 +793,9 @@ export function useStreamingVoice(
               } else {
                 console.debug("[useStreamingVoice] Sarvam returned empty; using Web Speech fallback");
               }
-            } catch (err) {
-              console.debug("[useStreamingVoice] Sarvam failed; using Web Speech fallback", err);
-            } finally {
-              clearTimeout(timeoutId);
+            } else {
+              console.debug("[useStreamingVoice] Sarvam failed after retries; using Web Speech fallback");
+              try { onVoiceErrorRef.current("transcribe_failed"); } catch { /* ignore */ }
             }
           }
 
@@ -734,10 +853,38 @@ export function useStreamingVoice(
       } catch {
         // ignore
       }
+      // FIX 1 (HIGH) — Unbind handlers and null the ref so any late
+      // onresult/onend events delivered by Chrome AFTER abort() can't
+      // mutate finalsRef / pendingUtteranceRef / pendingChunksRef. Without
+      // this, a stale recognition instance fires onend ~50-300ms after
+      // abort() and re-arms the grace timer on a torn-down session.
+      try {
+        rec.onresult = null;
+        rec.onerror = null;
+        rec.onend = null;
+        rec.onstart = null;
+      } catch {
+        // ignore — some browsers reject null assignment on EventTarget props
+      }
     }
+    recognitionRef.current = null;
     teardownAudio();
     finalsRef.current = [];
     finalsConsumedRef.current = 0;
+    // FIX 6 (HIGH) — Mid-utterance toggle-off flush. If the user finishes
+    // a complete sentence and toggles voice off within the 1.5s grace
+    // window, submit the pending utterance instead of silently dropping
+    // it. Only flush when no text request is racing; otherwise dropping
+    // is safer than colliding with an in-flight turn.
+    const finalPending = pendingUtteranceRef.current.trim();
+    if (finalPending && !isTextRequestPendingRef.current) {
+      console.debug("[useStreamingVoice] KI-222 flushing pending on stop", { len: finalPending.length });
+      try {
+        onFinalRef.current(finalPending);
+      } catch {
+        // never let a callback throw break stop()
+      }
+    }
     // KI-202 — drop any pending utterance so toggling voice off mid-grace
     // doesn't auto-submit a stale half-sentence next time voice comes on.
     if (pendingSubmitTimerRef.current !== null) {
@@ -747,7 +894,7 @@ export function useStreamingVoice(
     pendingUtteranceRef.current = "";
     pendingChunksRef.current = [];
     onListeningRef.current(false);
-  }, [clearRestartTimer, teardownAudio]);
+  }, [clearRestartTimer, teardownAudio, isTextRequestPendingRef]);
 
   // Drive start/stop from the `enabled` prop so the hook is fire-and-forget
   // for the caller (mirrors useLiveConversation's `live` state semantics).
@@ -835,6 +982,14 @@ export function useStreamingVoice(
     const calibratedVolumes = new Map<HTMLAudioElement, number>();
     let userRmsRafId: number | null = null;
     let volumeCalibIntervalId: ReturnType<typeof setInterval> | null = null;
+    // FIX 5 (HIGH) — wall-clock decay interval. The rAF-driven userRmsTick
+    // is gated on `!isTtsPlaying`, so during bot TTS playback there is NO
+    // decay of userSpeechRms — a shout right before the bot starts speaking
+    // would pin userSpeechRms at 0.4 for the entire bot turn. This setInterval
+    // runs unconditionally while `enabled` is true, so the rolling peak
+    // decays toward USER_SPEECH_RMS_INITIAL on a wall-clock schedule that's
+    // independent of the rAF gate.
+    let userRmsWallClockIntervalId: ReturnType<typeof setInterval> | null = null;
 
     const sampleUserRms = (): number => {
       if (!analyser || !rmsBuf) return 0;
@@ -870,6 +1025,9 @@ export function useStreamingVoice(
       // doesn't permanently raise the baseline.
       if (rms > USER_SPEECH_DETECTION_THRESHOLD) {
         userSpeechRms = Math.max(userSpeechRms * 0.95, rms);
+        // FIX 5 (HIGH) — clamp to ceiling so a single shout cannot pin
+        // userSpeechRms permanently high and break subsequent barge-in.
+        userSpeechRms = Math.min(userSpeechRms, USER_SPEECH_RMS_CEILING);
       }
       userRmsRafId = requestAnimationFrame(userRmsTick);
     };
@@ -886,6 +1044,27 @@ export function useStreamingVoice(
       if (userRmsRafId !== null) {
         cancelAnimationFrame(userRmsRafId);
         userRmsRafId = null;
+      }
+    };
+
+    // FIX 5 (HIGH) — wall-clock decay. Runs every USER_SPEECH_RMS_WALL_CLOCK_DECAY_MS
+    // regardless of TTS state so the rolling peak can't get permanently
+    // pinned high during long TTS turns. Floors at USER_SPEECH_RMS_INITIAL
+    // so we don't decay below the calibrated baseline.
+    const startUserRmsWallClockDecay = () => {
+      if (userRmsWallClockIntervalId !== null) return;
+      userRmsWallClockIntervalId = setInterval(() => {
+        userSpeechRms = Math.max(
+          USER_SPEECH_RMS_INITIAL,
+          userSpeechRms * USER_SPEECH_RMS_WALL_CLOCK_DECAY_FACTOR,
+        );
+      }, USER_SPEECH_RMS_WALL_CLOCK_DECAY_MS);
+    };
+
+    const stopUserRmsWallClockDecay = () => {
+      if (userRmsWallClockIntervalId !== null) {
+        clearInterval(userRmsWallClockIntervalId);
+        userRmsWallClockIntervalId = null;
       }
     };
 
@@ -1025,6 +1204,41 @@ export function useStreamingVoice(
         frames: sustainedFrames,
         threshold: BARGE_IN_RMS_THRESHOLD,
       });
+      // KI-227 (2026-05-15) — V6.7. Flush any pending utterance that
+      // accumulated during the bot's TTS window BEFORE the barge-in fires.
+      // The grace-window timer (UTTERANCE_GRACE_MS) holds the user's
+      // utterance for up to 1.5s waiting for more bursts — if the user
+      // barges in over the bot before that timer fires, the pending text
+      // would otherwise sit silently until the timer expires. Deliver it
+      // now so page.tsx submits the user's actual question instead of
+      // letting it die on the floor while a fresh recognition starts.
+      try {
+        const flushText = pendingUtteranceRef.current.trim();
+        if (flushText && !isTextRequestPendingRef.current) {
+          console.debug("[useStreamingVoice] V6.7 flushing pending utterance on barge-in", {
+            len: flushText.length,
+          });
+          pendingUtteranceRef.current = "";
+          pendingChunksRef.current = [];
+          finalsRef.current = [];
+          finalsConsumedRef.current = 0;
+          if (pendingSubmitTimerRef.current !== null) {
+            clearTimeout(pendingSubmitTimerRef.current);
+            pendingSubmitTimerRef.current = null;
+          }
+          onFinalRef.current(flushText);
+        }
+      } catch (err) {
+        // Never let the flush throw break the barge-in pipeline.
+        console.debug("[useStreamingVoice] V6.7 pending flush threw", err);
+      }
+      // FIX 3 (HIGH) — flip the barge-in signal so the caller (page.tsx)
+      // can abort the in-flight /api/chat request that's still assembling
+      // more TTS audio. Without this, pausing the currently-mounted
+      // <audio> elements only stops THIS chunk; the next TTS chunk that
+      // arrives mounts a new <audio>, fires play, and the bot resumes
+      // talking after the user has already interrupted.
+      bargeInRequestedRef.current = true;
       // Pause + reset every TTS <audio>; the MutationObserver's pause
       // listener will set isTtsPlayingRef = false and call safeStart().
       ttsAudioElementsRef.current.forEach((el) => {
@@ -1054,19 +1268,46 @@ export function useStreamingVoice(
       }
       analyser.getFloatTimeDomainData(rmsBuf);
       let sumSq = 0;
+      // FIX 4 (HIGH) — compute zero-crossing rate alongside RMS. Speech
+      // ZCR sits in a specific band; keyboard typing has very high ZCR
+      // (transients), HVAC / room rumble has very low ZCR (DC-like).
+      // Rejecting frames outside the speech band cuts false-positive
+      // barge-ins from typing and ambient noise.
+      let zeroCrossings = 0;
+      let prevSign = rmsBuf[0] >= 0 ? 1 : -1;
       for (let i = 0; i < rmsBuf.length; i++) {
         const v = rmsBuf[i];
         sumSq += v * v;
+        if (i > 0) {
+          const sign = v >= 0 ? 1 : -1;
+          if (sign !== prevSign) zeroCrossings += 1;
+          prevSign = sign;
+        }
       }
       const rms = Math.sqrt(sumSq / rmsBuf.length);
+      // KI-228 (2026-05-15) — V6.8. Feed every frame into the adaptive
+      // noise-floor estimator. It only updates the EMA when the frame is
+      // below the CURRENT threshold (i.e. the frame looks like silence),
+      // so speech bursts can't pollute the room baseline.
+      noiseFloorRef.current.feed(rms);
+      const noiseAdaptiveThreshold = noiseFloorRef.current.currentThreshold();
       // KI-190 — adaptive threshold: bot_rms * 2 + 0.005, floored at the
       // base BARGE_IN_RMS_THRESHOLD so we never set it absurdly low.
+      // KI-228 (2026-05-15) — V6.8. ALSO floor at the noise-floor adaptive
+      // threshold so a noisy room (HVAC, café) doesn't cause false-positive
+      // barge-ins on the original static 0.008 threshold.
       const botRms = computeBotRms();
       const adaptiveThreshold = Math.max(
         BARGE_IN_RMS_THRESHOLD,
+        noiseAdaptiveThreshold,
         botRms * BARGE_IN_BOT_RMS_MULTIPLIER + BARGE_IN_BASE_THRESHOLD,
       );
-      if (rms >= adaptiveThreshold) {
+      // FIX 4 / KI-225 (V1.3) — speech ZCR band scaled to the actual
+      // AudioContext sampleRate. At 48 kHz that's the original 20..250;
+      // at 16 kHz it's ~7..83.
+      const band = zcrBandRef.current;
+      const isSpeechBand = zeroCrossings >= band.min && zeroCrossings <= band.max;
+      if (rms >= adaptiveThreshold && isSpeechBand) {
         sustainedFrames += 1;
         if (sustainedFrames >= BARGE_IN_SUSTAINED_FRAMES) {
           triggerBargeIn(rms);
@@ -1097,9 +1338,15 @@ export function useStreamingVoice(
           audioCtx = new Ctor();
         }
         if (audioCtx.state === "suspended") {
-          // Best-effort resume; ignore failures (autoplay policy may block
-          // until next user gesture — VAD simply won't fire).
-          void audioCtx.resume().catch(() => { /* ignore */ });
+          // KI-223 (2026-05-15) — V1.1. Best-effort resume; if it rejects
+          // (Chrome's autoplay policy requires a user gesture), surface a
+          // structured error so the UI can prompt the user to tap. Without
+          // this, the VAD silently never fires and barge-in appears broken
+          // for the entire session.
+          void audioCtx.resume().catch((err) => {
+            console.debug("[useStreamingVoice] V1.1 AudioContext.resume failed", err);
+            try { onVoiceErrorRef.current("audio_context_suspended"); } catch { /* ignore */ }
+          });
         }
         if (!analyser || attachedStream !== stream) {
           try { sourceNode?.disconnect(); } catch { /* ignore */ }
@@ -1111,6 +1358,26 @@ export function useStreamingVoice(
           sourceNode.connect(analyser);
           attachedStream = stream;
           rmsBuf = new Float32Array(new ArrayBuffer(analyser.fftSize * 4));
+          // KI-225 (2026-05-15) — V1.3. Compare the AudioContext's actual
+          // sampleRate against the track's reported rate. If they disagree,
+          // log a warning AND rescale the speech ZCR band so the VAD math
+          // keeps meaning at 16 kHz / 24 kHz consumer mics (the static
+          // 20..250 band from KI-189 was calibrated for 48 kHz).
+          try {
+            const trackRate = stream.getAudioTracks()[0]?.getSettings?.().sampleRate;
+            const ctxRate = audioCtx.sampleRate;
+            if (trackRate && Math.abs(trackRate - ctxRate) > 100) {
+              console.debug(
+                "[useStreamingVoice] V1.3 sample-rate mismatch",
+                { trackRate, ctxRate },
+              );
+            }
+            zcrBandRef.current = scaleSpeechZcrBand(ctxRate);
+          } catch {
+            // Older browsers without MediaTrackSettings.sampleRate — keep
+            // the reference band.
+            zcrBandRef.current = scaleSpeechZcrBand(audioCtx.sampleRate);
+          }
         }
         sustainedFrames = 0;
         if (rafId !== null) cancelAnimationFrame(rafId);
@@ -1264,11 +1531,17 @@ export function useStreamingVoice(
     // when conditions aren't met (no analyser / no stream / in TTS), so
     // firing it unconditionally here is safe.
     startUserRmsLoop();
+    // FIX 5 (HIGH) — start the wall-clock decay so userSpeechRms never
+    // gets permanently pinned high (even during TTS playback when the
+    // rAF loop is gated off).
+    startUserRmsWallClockDecay();
 
     return () => {
       // KI-195 — tear down adaptive volume calibration before clearing
       // ducked-audio state so the calibration tick can't race a clear().
       stopUserRmsLoop();
+      // FIX 5 (HIGH) — clean up the wall-clock decay interval.
+      stopUserRmsWallClockDecay();
       stopVolumeCalibration();
       calibratedVolumes.clear();
       observer.disconnect();
@@ -1360,5 +1633,16 @@ export function useStreamingVoice(
     };
   }, [clearRestartTimer, teardownAudio]);
 
-  return { start, stop, isSupported };
+  // FIX 3 (HIGH) — one-shot read-and-clear of the barge-in flag. Returns
+  // true exactly once after triggerBargeIn fires; subsequent calls return
+  // false until the next barge-in event.
+  const consumeBargeInSignal = useCallback((): boolean => {
+    if (bargeInRequestedRef.current) {
+      bargeInRequestedRef.current = false;
+      return true;
+    }
+    return false;
+  }, []);
+
+  return { start, stop, isSupported, consumeBargeInSignal };
 }

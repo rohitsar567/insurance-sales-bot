@@ -206,6 +206,13 @@ export default function Page() {
   // re-rendering / re-subscribing.
   const isTextRequestPendingRef = useRef(false);
 
+  // KI-222 FIX 2 (2026-05-15) — AbortController for the in-flight /api/chat
+  // call inside send(). triggerBargeIn() (or any code path that wants to
+  // cancel a pending bot turn) can fire a `barge-in-abort` window event and
+  // the useEffect below will call .abort() on this controller. The signal
+  // is not yet plumbed through postChat()/api.ts — see TODO below in send().
+  const currentSendAbortRef = useRef<AbortController | null>(null);
+
   // Compatibility surface: the rest of the component (PTT path, UI pill, mic
   // blocked indicator) still references live.live / live.setLive /
   // live.recording / live.micPermissionDenied — preserve that shape so the
@@ -213,6 +220,31 @@ export default function Page() {
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [voiceListening, setVoiceListening] = useState(false);
   const [voicePermDenied, setVoicePermDenied] = useState(false);
+
+  // V4 FIX 1 — Live PTT interim transcript. Mirrors the running browser-SR
+  // transcript so the user can see what's being captured BELOW the mic
+  // button in gray italic (rather than only inside the chat input).
+  // Throttled to ~200ms via pttInterimTimerRef so we don't thrash React on
+  // every SR partial. Cleared atomically by V4 FIX 3 when the final
+  // transcript arrives.
+  const [pttInterim, setPttInterim] = useState<string>("");
+  const pttInterimTimerRef = useRef<number | null>(null);
+  const pttInterimLatestRef = useRef<string>("");
+  // V4 FIX 2 — dedup window for final transcripts. Some browsers fire the
+  // final SpeechRecognition result twice (Safari quirk). Suppress
+  // identical strings arriving within 500ms.
+  const lastFinalTextRef = useRef<{ text: string; at: number }>({ text: "", at: 0 });
+  // V4 FIX 4 — when the input contains a freshly-committed transcript
+  // fragment (set programmatically by the voice path, not typed by the
+  // user), Backspace should erase the last WORD instead of one character.
+  // Tracks whether the current input contents originated from voice;
+  // cleared as soon as the user types or sends.
+  const inputFromTranscriptRef = useRef<boolean>(false);
+  const setInputFromTranscript = (text: string) => {
+    inputFromTranscriptRef.current = !!text;
+    setInput(text);
+  };
+
   // Submit handler — bound to the latest send() via a ref so the hook
   // doesn't need to re-subscribe on every closure change.
   const voiceSubmitRef = useRef<((text: string) => void) | null>(null);
@@ -222,7 +254,9 @@ export default function Page() {
     isTextRequestPendingRef,
     onInterimTranscript: (text) => {
       // Show the running transcript in the chat input area as the user speaks.
-      setInput(text);
+      // V4 FIX 4 — mark the input as transcript-sourced so Backspace
+      // erases the last word, not one character.
+      setInputFromTranscript(text);
     },
     onFinalTranscript: (text) => {
       // Browser detected end-of-speech — auto-submit through the regular
@@ -303,13 +337,105 @@ export default function Page() {
     localStorage.removeItem("insurance_live_pref");
   }, []);
   // Persist + sync to the live hook whenever the user toggles preference.
+  // V3 FIX 3 — if the user clicks the toggle while the bot is mid-sentence,
+  // run the interrupt cleanup so the audio stops, the blob is revoked, and
+  // the half-painted message gets the "⏸ paused" suffix. Only fires on
+  // OFF — toggling ON shouldn't pause anything (there's nothing to pause).
   useEffect(() => {
     if (typeof window !== "undefined") {
       localStorage.setItem("insurance_live_pref", userPrefersLive ? "on" : "off");
     }
+    if (!userPrefersLive) {
+      try { interruptBotAudio("user-toggle"); } catch { /* ignore */ }
+    }
     live.setLive(userPrefersLive);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userPrefersLive]);
+
+  // V3 FIX 2 + FIX 3 — Hardened TTS interrupt cleanup. When the bot is
+  // mid-sentence and the user starts speaking / toggles voice off / clicks
+  // PTT, we need to:
+  //   (a) pause the currently-mounted <audio> elements,
+  //   (b) clear their `src` so the element releases the underlying decoder
+  //       and stops buffering further data (just .pause() leaves the blob
+  //       attached and Safari can resume autonomously after a tab refocus),
+  //   (c) URL.revokeObjectURL() the blob URL so the in-memory blob is GC'd
+  //       — without this, every interrupted reply leaks a multi-second WAV.
+  //   (d) tag the last assistant message with a gray italic "⏸ paused"
+  //       suffix so the user can see WHICH reply they cut off (V3 #3).
+  // Safe to call even when nothing is playing — every step is wrapped.
+  function interruptBotAudio(reason: "barge-in" | "user-toggle" | "ptt-start") {
+    let didPause = false;
+    if (typeof document !== "undefined") {
+      document.querySelectorAll("audio").forEach((el) => {
+        const audioEl = el as HTMLAudioElement;
+        const wasPlaying = !audioEl.paused && !audioEl.ended;
+        try {
+          audioEl.pause();
+        } catch { /* ignore */ }
+        const src = audioEl.src;
+        try {
+          if (src && src.startsWith("blob:")) URL.revokeObjectURL(src);
+        } catch { /* ignore */ }
+        try {
+          audioEl.removeAttribute("src");
+          // setting empty string makes some browsers attempt a refetch;
+          // load() after removing the attribute fully resets the element.
+          audioEl.load();
+        } catch { /* ignore */ }
+        if (wasPlaying) didPause = true;
+      });
+    }
+    // V3 FIX 3 — append "⏸ paused" suffix to the most recent assistant
+    // message ONLY if we actually paused mid-playback. We don't want to
+    // mark every reply as paused just because the user clicked the toggle
+    // before any audio existed. Guard with `didPause` and the existence of
+    // a trailing assistant bubble that still has its blob URL.
+    if (!didPause) return;
+    setMessages((prev) => {
+      if (prev.length === 0) return prev;
+      const lastIdx = prev.length - 1;
+      const last = prev[lastIdx];
+      if (last.role !== "assistant") return prev;
+      // Idempotent — don't double-append the suffix if the user fires
+      // multiple barge-ins back to back.
+      if (last.content.endsWith("⏸ paused")) return prev;
+      const updated = [...prev];
+      updated[lastIdx] = {
+        ...last,
+        content: `${last.content} ⏸ paused`,
+        // Drop the audioUrl so the inline player no longer offers replay
+        // of a blob URL we just revoked.
+        audioUrl: undefined,
+      };
+      void reason; // reserved for future telemetry
+      return updated;
+    });
+  }
+
+  // KI-222 FIX 2 (2026-05-15) — listen for the custom "barge-in-abort" DOM
+  // event so useStreamingVoice's triggerBargeIn (or any other code path)
+  // can cancel an in-flight send() turn. Hook dispatches via
+  //   window.dispatchEvent(new CustomEvent("barge-in-abort"))
+  // Idempotent: if no request is in-flight, the call is a no-op.
+  // V3 FIX 2 — also runs the audio cleanup helper so any in-flight TTS
+  // blob is released, not just paused.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onAbort = () => {
+      try {
+        currentSendAbortRef.current?.abort();
+      } catch { /* ignore — controller may already be released */ }
+      try {
+        interruptBotAudio("barge-in");
+      } catch { /* ignore */ }
+    };
+    window.addEventListener("barge-in-abort", onAbort);
+    return () => window.removeEventListener("barge-in-abort", onAbort);
+    // interruptBotAudio is referentially stable enough — closures over
+    // setMessages (stable) and DOM globals; safe to omit from deps.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function pushUser(text: string) {
     setMessages((m) => [...m, { id: `u_${Date.now()}`, role: "user", content: text }]);
@@ -373,22 +499,32 @@ export default function Page() {
   }
 
   async function send(text: string) {
+    // V4 FIX 6 — empty-message guard. The trim()-check below already
+    // covers Enter-on-empty + the disabled Send button; keeping the
+    // explicit early-return here so the guard survives any future change
+    // that bypasses the input-clear path.
     if (!text.trim() || busy) return;
     // KI-204 (2026-05-15) — silence any prior bot TTS BEFORE submitting.
     // User starting a new turn always takes precedence over the bot's
     // current reply audio. Covers typed sends, voice barge-in, manual Send
     // button, programmatic submits — every path through send() gets this.
-    if (typeof document !== "undefined") {
-      document.querySelectorAll("audio").forEach((el) => {
-        try {
-          (el as HTMLAudioElement).pause();
-          (el as HTMLAudioElement).currentTime = 0;
-        } catch {
-          // ignore — element may be in a state that disallows pause
-        }
-      });
-    }
+    // V3 FIX 2 — route through interruptBotAudio so the previous reply's
+    // blob URL is revoked (not just paused) and the half-painted message
+    // gets the "⏸ paused" suffix.
+    try { interruptBotAudio("barge-in"); } catch { /* ignore */ }
     setBusy(true);
+    // KI-222 FIX 2 (2026-05-15) — create an AbortController for this turn so
+    // a subsequent barge-in (or any external cancel) can interrupt the
+    // in-flight /api/chat call. The controller is exposed on
+    // currentSendAbortRef; a window-level "barge-in-abort" event listener
+    // (see useEffect below) calls .abort() on it.
+    // TODO: thread `signal: controller.signal` through postChat() →
+    // frontend/src/lib/api.ts so the abort actually reaches fetch. Until
+    // then, the controller is wired up but the abort() call has no effect
+    // on the in-flight request — the infrastructure is in place for the
+    // follow-up fix.
+    const controller = new AbortController();
+    currentSendAbortRef.current = controller;
     // KI-165 (2026-05-15) — flip the text-in-flight flag so the voice hook
     // (useLiveConversation) discards any captures that close during this
     // request. Prevents background notification dings from opening the mic,
@@ -424,12 +560,26 @@ export default function Page() {
         showProfile ? "profile" :
         showPremium ? "premium" :
         "chat";
+      // V3 FIX 4 — Safari has no webm/opus playback. Detect MediaSource
+      // codec support up front and ask the backend for audio/mp4 when the
+      // default opus would fail. Falls back to audio/wav (the historical
+      // default) when MediaSource isn't available at all (very old
+      // browsers / test environments).
+      const preferredCodec = (() => {
+        if (typeof window === "undefined") return undefined;
+        const MS = (window as unknown as { MediaSource?: { isTypeSupported: (t: string) => boolean } }).MediaSource;
+        if (!MS || typeof MS.isTypeSupported !== "function") return "audio/wav";
+        if (MS.isTypeSupported("audio/webm; codecs=opus")) return "audio/webm; codecs=opus";
+        if (MS.isTypeSupported("audio/mp4")) return "audio/mp4";
+        return "audio/wav";
+      })();
       const res = await postChat({
         user_text: actualText,
         session_id: sessionId,
         chat_history: history,
         return_audio: returnAudio,
         tts_language_code: ttsLang,
+        preferred_codec: preferredCodec,
         view_context: {
           active_view,
           active_policy_id: openPolicy?.policy_id,
@@ -455,7 +605,12 @@ export default function Page() {
       getProfileCompleteness(res.session_id)
         .then(setProfileCompleteness)
         .catch(() => { /* keep prior on transient error */ });
-      const audioUrl = res.audio_base64 ? audioBlobURLFromBase64(res.audio_base64) : undefined;
+      // V3 FIX 4 — honour the actual mime the backend produced when present
+      // (Safari refuses to play mp4 bytes wrapped in a wav-typed Blob).
+      // Falls back to wav for legacy backends that don't echo audio_mime.
+      const audioUrl = res.audio_base64
+        ? audioBlobURLFromBase64(res.audio_base64, res.audio_mime || "audio/wav")
+        : undefined;
       pushAssistant(res.reply_text, {
         citations: res.citations,
         audioUrl,
@@ -494,6 +649,12 @@ export default function Page() {
       // KI-165 (2026-05-15) — clear the text-in-flight flag so subsequent
       // genuine voice captures can be submitted again.
       isTextRequestPendingRef.current = false;
+      // KI-222 FIX 2 — release the abort controller now that the request
+      // has resolved (or thrown). If a later barge-in event fires after
+      // this point there's no in-flight turn to cancel.
+      if (currentSendAbortRef.current === controller) {
+        currentSendAbortRef.current = null;
+      }
     }
   }
 
@@ -506,10 +667,16 @@ export default function Page() {
     voiceSubmitRef.current = (text: string) => {
       const t = text.trim();
       if (t.length < 2) return;
+      // V4 FIX 2 — dedup repeated finals within 500ms.
+      const { text: prevText, at: prevAt } = lastFinalTextRef.current;
+      const now = Date.now();
+      if (t === prevText && now - prevAt < 500) return;
+      lastFinalTextRef.current = { text: t, at: now };
       // Mirror the typed-input flow: drop transcript into the input
       // (so the user sees their final words land in the box for a frame
       // before send() clears it) then submit.
-      setInput(t);
+      // V4 FIX 4 — flag the input as transcript-sourced.
+      setInputFromTranscript(t);
       void send(t);
     };
     // send() reads `messages` / `sessionId` / `ttsLang` / view flags via
@@ -518,6 +685,15 @@ export default function Page() {
   }, [messages, sessionId, ttsLang, openPolicy, showMarketplace, showProfile, showPremium]);
 
   async function startRecording() {
+    // KI-222 FIX 1 — silence any prior bot TTS BEFORE PTT recording starts.
+    // Mirrors the same pause-all-audio block from send() (KI-204). Without
+    // this, the previous reply's <audio> element keeps playing after the
+    // user clicks Push-to-talk, and Sarvam transcribes the bot's own voice
+    // as user input.
+    // V3 FIX 2 — use the unified interrupt helper so the blob URL is
+    // revoked and the half-painted message picks up the "⏸ paused" suffix
+    // when PTT cuts the bot off mid-sentence.
+    try { interruptBotAudio("ptt-start"); } catch { /* ignore */ }
     // KI-027 — Push-to-talk briefly SUSPENDS Live mode (which is otherwise
     // always on). This avoids the duplicate-mic / duplicate-/api/chat bug
     // from the 2026-05-14 screenshot: only one path captures + dispatches
@@ -556,6 +732,15 @@ export default function Page() {
       // the user speaks). Best-effort: if SR is unsupported or start() throws
       // we silently continue with the existing Sarvam-only flow.
       pttFinalTranscriptRef.current = "";
+      // V4 FIX 1 / FIX 3 — reset both the visible interim strip AND the
+      // throttle ref each new PTT cycle so a stale gray-italic transcript
+      // from the previous turn doesn't leak through.
+      pttInterimLatestRef.current = "";
+      setPttInterim("");
+      if (pttInterimTimerRef.current !== null) {
+        clearTimeout(pttInterimTimerRef.current);
+        pttInterimTimerRef.current = null;
+      }
       try {
         const w = window as unknown as {
           SpeechRecognition?: PTTSpeechRecognitionCtor;
@@ -582,9 +767,30 @@ export default function Page() {
               if (r.isFinal) final += alt.transcript;
               else interim += alt.transcript;
             }
-            if (final) pttFinalTranscriptRef.current = final;
+            // V4 FIX 2 — dedup repeated finals within 500ms.
+            if (final) {
+              const trimmedFinal = final.trim();
+              const { text: prevText, at: prevAt } = lastFinalTextRef.current;
+              const now = Date.now();
+              if (trimmedFinal && (trimmedFinal !== prevText || now - prevAt > 500)) {
+                pttFinalTranscriptRef.current = final;
+                lastFinalTextRef.current = { text: trimmedFinal, at: now };
+              }
+            }
             const display = (final + interim).trim();
-            if (display) setInput(display);
+            // V4 FIX 4 — interim transcript flows into the input as a
+            // transcript-sourced fragment so Backspace can word-erase.
+            if (display) setInputFromTranscript(display);
+            // V4 FIX 1 — feed the below-mic ghost-italic display. Throttle
+            // to 200ms so very chatty SR engines (Chrome fires ~20 partials/s
+            // on fast speakers) don't thrash React.
+            pttInterimLatestRef.current = display;
+            if (pttInterimTimerRef.current === null) {
+              pttInterimTimerRef.current = window.setTimeout(() => {
+                setPttInterim(pttInterimLatestRef.current);
+                pttInterimTimerRef.current = null;
+              }, 200);
+            }
           };
           rec.onerror = () => { /* best-effort — Sarvam is the source of truth */ };
           rec.onend = () => { /* nothing — recorder.onstop drives the submit */ };
@@ -608,6 +814,16 @@ export default function Page() {
         if (sr) {
           try { sr.abort(); } catch { /* already stopped */ }
         }
+        // V4 FIX 3 — atomically clear the interim ghost text (both the
+        // pending throttled update AND any visible state). Without this,
+        // the gray-italic strip below the mic can keep showing the last
+        // partial transcript after the final has already been committed.
+        if (pttInterimTimerRef.current !== null) {
+          clearTimeout(pttInterimTimerRef.current);
+          pttInterimTimerRef.current = null;
+        }
+        pttInterimLatestRef.current = "";
+        setPttInterim("");
         const srFallback = pttFinalTranscriptRef.current.trim();
         const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType || "audio/webm" });
         setRecording(false);
@@ -638,14 +854,15 @@ export default function Page() {
             // KI-213 — replace the interim SR transcript with Sarvam's
             // authoritative version, then submit. send() clears the input
             // itself so the brief flash here is intentional UX feedback.
-            setInput(text);
+            // V4 FIX 4 — transcript-sourced.
+            setInputFromTranscript(text);
             // send() flips voicePhase to "thinking" itself; no need to set here
             await send(text);
           } else if (srFallback) {
             // KI-213 — Sarvam returned empty but the browser caught
             // something. Better than telling the user "couldn't hear that
             // clearly" when we actually have a usable transcript.
-            setInput(srFallback);
+            setInputFromTranscript(srFallback);
             await send(srFallback);
           } else {
             setInput("");
@@ -655,7 +872,7 @@ export default function Page() {
           // KI-213 — Sarvam failed (network / 5xx / rate limit). Fall back to
           // the SR transcript if we have one rather than dropping the turn.
           if (srFallback) {
-            setInput(srFallback);
+            setInputFromTranscript(srFallback);
             try { await send(srFallback); } catch { /* send handles its own errors */ }
           } else {
             setInput("");
@@ -758,8 +975,13 @@ export default function Page() {
     }
   }
 
+  // V4 FIX 5 — `min-h-[100dvh]` uses the dynamic viewport unit so the
+  // layout shrinks correctly when the iOS soft keyboard opens (vs the
+  // legacy `100vh` which stays fixed and pushes the composer behind the
+  // keyboard). `min-h-screen` is kept as a fallback for browsers that
+  // don't understand `dvh`.
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--background)] text-[var(--foreground)]">
+    <div className="min-h-screen min-h-[100dvh] flex flex-col bg-[var(--background)] text-[var(--foreground)]">
       <header className="border-b border-[var(--border)] bg-[var(--card)]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -930,12 +1152,62 @@ export default function Page() {
           </div>
         )}
 
-        <div className="border border-[var(--border)] rounded-2xl bg-[var(--card)] p-3 shadow-sm">
+        {/* V4 FIX 5 — pb-[env(safe-area-inset-bottom)] keeps the composer
+            above the iOS home-indicator strip even when the soft keyboard
+            is open. Combined with viewport-fit=cover on the meta + the
+            min-h-0 wrapper above, the chat scroll container hands the
+            keyboard its space instead of getting hidden behind it. */}
+        <div
+          className="border border-[var(--border)] rounded-2xl bg-[var(--card)] p-3 shadow-sm"
+          style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+        >
           <div className="flex items-end gap-2">
             <textarea
               value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); } }}
+              onChange={(e) => {
+                // V4 FIX 4 — once the user starts typing, the input is no
+                // longer "transcript-sourced", so the next Backspace should
+                // behave normally (single-character erase).
+                inputFromTranscriptRef.current = false;
+                setInput(e.target.value);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  // V4 FIX 6 — guard against empty Enter.
+                  if (!input.trim()) return;
+                  send(input);
+                  return;
+                }
+                // V4 FIX 4 — if the current input is a freshly-committed
+                // transcript fragment AND the caret is at the end of the
+                // text, Backspace erases the last word. Once the user has
+                // typed anything (or moved the caret mid-string), the
+                // transcript flag was cleared by onChange — so this branch
+                // no longer fires and Backspace behaves normally.
+                if (
+                  e.key === "Backspace"
+                  && inputFromTranscriptRef.current
+                  && !e.metaKey
+                  && !e.ctrlKey
+                  && !e.altKey
+                ) {
+                  const ta = e.currentTarget;
+                  const atEnd = ta.selectionStart === input.length && ta.selectionEnd === input.length;
+                  if (atEnd && input.length > 0) {
+                    e.preventDefault();
+                    // Strip trailing whitespace, then drop the last word.
+                    const stripped = input.replace(/\s+$/, "");
+                    const lastSpace = stripped.lastIndexOf(" ");
+                    const erased = lastSpace >= 0 ? stripped.slice(0, lastSpace) : "";
+                    setInput(erased);
+                    // Keep the transcript-sourced flag set so subsequent
+                    // Backspaces continue to erase by word until the box is
+                    // empty.
+                    inputFromTranscriptRef.current = erased.length > 0;
+                  }
+                }
+              }}
               placeholder="Ask about coverage, waiting periods, exclusions, or compare policies…"
               rows={1}
               className="flex-1 resize-none bg-transparent outline-none text-sm sm:text-base px-2 py-2 min-h-[40px] max-h-32"
@@ -993,6 +1265,20 @@ export default function Page() {
               Send
             </button>
           </div>
+          {/* V4 FIX 1 — live PTT interim transcript directly under the mic
+              row, shown in gray italic. Updates ~5/sec via the throttled
+              pttInterim state. Hidden when not recording or when there's
+              no partial yet, so we don't render an empty 1-line strip. */}
+          {recording && pttInterim && (
+            <div
+              className="mt-1 px-2 text-xs italic text-[var(--muted-foreground)] leading-snug truncate"
+              aria-live="polite"
+              aria-atomic="true"
+              title={pttInterim}
+            >
+              {pttInterim}
+            </div>
+          )}
           <div className="flex items-center justify-between gap-3 mt-2 pt-2 px-2 text-xs text-[var(--muted-foreground)]">
             <div className="flex items-center gap-3">
               {/* KI-028 — Clickable Live toggle. Green = always-on listening,
@@ -1634,7 +1920,16 @@ function stripInlineCitations(text: string): string {
 
 function Message({ m }: { m: DisplayMessage }) {
   const isUser = m.role === "user";
-  const displayContent = isUser ? m.content : stripInlineCitations(m.content);
+  // V3 FIX 3 — split off the trailing "⏸ paused" marker (appended by
+  // interruptBotAudio) so we can render it as gray italic instead of plain
+  // body text. Only matches an exact-suffix; embedded "paused" in normal
+  // prose is untouched.
+  const rawContent = isUser ? m.content : stripInlineCitations(m.content);
+  const PAUSED_SUFFIX = " ⏸ paused";
+  const isPaused = !isUser && rawContent.endsWith(PAUSED_SUFFIX);
+  const displayContent = isPaused
+    ? rawContent.slice(0, -PAUSED_SUFFIX.length)
+    : rawContent;
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // KI-030 — Auto-play the bot's TTS reply when the message first mounts.
@@ -1648,12 +1943,27 @@ function Message({ m }: { m: DisplayMessage }) {
   // Played only on mount (one-shot) so chat-history rehydration doesn't
   // replay every old reply. (audioUrl is also stripped from localStorage on
   // persist, so old messages don't have URLs to replay anyway.)
+  //
+  // V3 FIX 1 — autoplay/observer race. An IntersectionObserver (or any
+  // mount-time effect) may try to play() the element before its metadata is
+  // ready, resulting in a NotSupportedError or a silent no-op. Wait for
+  // `loadedmetadata` before calling play(); if the metadata has already
+  // arrived by the time the effect runs, play() immediately. readyState ≥ 1
+  // means HAVE_METADATA per the HTMLMediaElement spec.
   useEffect(() => {
-    if (m.audioUrl && audioRef.current) {
-      audioRef.current.play().catch(() => {
+    const el = audioRef.current;
+    if (!m.audioUrl || !el) return;
+    const tryPlay = () => {
+      el.play().catch(() => {
         /* autoplay blocked — user can click the inline control to listen */
       });
+    };
+    if (el.readyState >= 1 /* HAVE_METADATA */) {
+      tryPlay();
+      return;
     }
+    el.addEventListener("loadedmetadata", tryPlay, { once: true });
+    return () => el.removeEventListener("loadedmetadata", tryPlay);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1662,7 +1972,14 @@ function Message({ m }: { m: DisplayMessage }) {
       <div className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-3 ${
         isUser ? "bg-[var(--primary)] text-[var(--primary-foreground)]" : "bg-[var(--card)] border border-[var(--border)]"
       }`}>
-        <div className="text-sm sm:text-base whitespace-pre-wrap leading-relaxed">{displayContent}</div>
+        <div className="text-sm sm:text-base whitespace-pre-wrap leading-relaxed">
+          {displayContent}
+          {isPaused && (
+            <span className="ml-1 italic text-[var(--muted-foreground)] opacity-80">
+              ⏸ paused
+            </span>
+          )}
+        </div>
         {m.audioUrl && (
           <audio
             ref={audioRef}

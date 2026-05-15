@@ -42,6 +42,22 @@ router = APIRouter()
 USAGE_TAIL_LINES = 1000
 
 
+# A5 — Audit fix #7: emit a console warning at import time when the admin
+# password is unset. We don't break access (the password check below already
+# returns False which 401s every request), but ops needs a loud signal that
+# the gate is effectively unconfigured so deployments don't silently sit
+# behind an unreachable admin surface.
+if not os.environ.get("ADMIN_PASSWORD", "").strip():
+    import sys as _sys
+    print(
+        "[admin] WARNING: ADMIN_UNGATED — ADMIN_PASSWORD env var is empty. "
+        "All /api/admin/* requests will return 401. Set ADMIN_PASSWORD in "
+        "the deployment env to enable access.",
+        file=_sys.stderr,
+        flush=True,
+    )
+
+
 def _password_ok(supplied: Optional[str]) -> bool:
     expected = os.environ.get("ADMIN_PASSWORD", "").strip()
     if not expected:
@@ -928,4 +944,170 @@ async def admin_llm_health(
         "candidates":   candidates_block,
         "recent_turns": recent,
         "snapshot_ts":  datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }
+
+
+# ---------------------------------------------------------------------------
+# A5 — Audit fix #4: /api/admin/persona-drift — slot-capture completeness
+# for the last 20 personas. Six canonical slots: name, age, income_band,
+# location_tier, primary_goal, health_conditions. <50% capture is flagged
+# red on the frontend.
+# ---------------------------------------------------------------------------
+
+# Six canonical fact-find slots. Match the orchestrator's profile_extractor
+# targets — adding/removing a slot here must mirror the next_question
+# routing logic. Health is captured as a list (empty list counts as
+# "asked but no conditions" → still a valid captured signal once the
+# `asked` array contains the field name).
+_PERSONA_DRIFT_SLOTS = ("name", "age", "income_band", "location_tier",
+                        "primary_goal", "health_conditions")
+
+
+def _slot_captured(profile: dict, slot: str, asked: list[str]) -> bool:
+    """A slot is 'captured' when the field has a non-empty value OR (for
+    health_conditions) when the user was asked and confirmed no conditions
+    (asked-list contains the slot but the list is empty → still a positive
+    answer the bot heard, not a missing signal)."""
+    v = profile.get(slot)
+    if slot == "health_conditions":
+        if isinstance(v, list) and len(v) > 0:
+            return True
+        if "health_conditions" in (asked or []):
+            return True
+        return False
+    return v not in (None, "", [], 0)
+
+
+@router.get("/api/admin/persona-drift")
+async def admin_persona_drift(
+    request: Request,
+    x_admin_password: Optional[str] = Header(default=None, alias="X-Admin-Password"),
+):
+    """Return slot-capture completeness for the last 20 personas, newest first.
+
+    Each row: { persona_id, name_display, last_seen, captured_slots,
+                completeness_pct, missing_slots }
+    The frontend highlights any row with completeness_pct < 50.
+    """
+    _check_admin(request, x_admin_password)
+    if not _PROFILES_DIR_FOR_DRIFT.exists():
+        return {"personas": [], "total": 0,
+                "snapshot_ts": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}
+
+    rows: list[dict] = []
+    for p in _PROFILES_DIR_FOR_DRIFT.glob("*.json"):
+        try:
+            raw = json.loads(p.read_text())
+        except Exception:
+            continue
+        profile = raw.get("profile") or {}
+        asked = profile.get("asked") or []
+        captured = [s for s in _PERSONA_DRIFT_SLOTS if _slot_captured(profile, s, asked)]
+        missing = [s for s in _PERSONA_DRIFT_SLOTS if s not in captured]
+        rows.append({
+            "persona_id":       raw.get("persona_id") or raw.get("name_slug") or p.stem,
+            "name_display":     raw.get("name_display") or "—",
+            "last_seen":        raw.get("last_seen"),
+            "captured_slots":   captured,
+            "missing_slots":    missing,
+            "completeness_pct": round(100.0 * len(captured) / len(_PERSONA_DRIFT_SLOTS), 1),
+            "session_count":    len(raw.get("sessions") or []),
+        })
+    # Newest first by last_seen (None sorts last)
+    rows.sort(key=lambda r: (r["last_seen"] or ""), reverse=True)
+    rows = rows[:20]
+    return {
+        "personas":    rows,
+        "total":       len(rows),
+        "slots":       list(_PERSONA_DRIFT_SLOTS),
+        "snapshot_ts": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }
+
+
+# Cached path resolver — re-uses profile_store's _PROFILES_DIR but we import
+# lazily to avoid a circular import at module top.
+def _resolve_profiles_dir() -> Path:
+    from backend import profile_store
+    return profile_store._PROFILES_DIR
+
+
+# Lazy-evaluated singleton — instantiate on first call. We can't reference
+# profile_store at module top because admin.py imports llm_health which
+# may not yet have its config wired during tests.
+class _LazyProfilesDir:
+    def __init__(self) -> None:
+        self._p: Optional[Path] = None
+    def __getattr__(self, name: str):
+        if self._p is None:
+            self._p = _resolve_profiles_dir()
+        return getattr(self._p, name)
+    def exists(self) -> bool:
+        if self._p is None:
+            self._p = _resolve_profiles_dir()
+        return self._p.exists()
+    def glob(self, pat: str):
+        if self._p is None:
+            self._p = _resolve_profiles_dir()
+        return self._p.glob(pat)
+
+
+_PROFILES_DIR_FOR_DRIFT = _LazyProfilesDir()
+
+
+# ---------------------------------------------------------------------------
+# A5 — Audit fix #5: /api/admin/recommendation-history — last 10 policy
+# recommendation events across all profiles, newest first.
+# ---------------------------------------------------------------------------
+
+@router.get("/api/admin/recommendation-history")
+async def admin_recommendation_history(
+    request: Request,
+    x_admin_password: Optional[str] = Header(default=None, alias="X-Admin-Password"),
+):
+    """Return the last 10 policy-event entries across every profile,
+    newest first.
+
+    Each row: { persona_id, name_display, event_type, policy_slug, insurer,
+                event_at, session_id, outcome }
+    outcome: 'selected' / 'rejected' / 'shown' (passthrough from event_type;
+             callers may map 'shown' → 'abandoned' if no follow-up exists,
+             but we leave the raw label so the operator can decide).
+    """
+    _check_admin(request, x_admin_password)
+    events: list[dict] = []
+    if not _PROFILES_DIR_FOR_DRIFT.exists():
+        return {"events": [], "total": 0,
+                "snapshot_ts": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}
+
+    for p in _PROFILES_DIR_FOR_DRIFT.glob("*.json"):
+        try:
+            raw = json.loads(p.read_text())
+        except Exception:
+            continue
+        profile = raw.get("profile") or {}
+        persona_id = raw.get("persona_id") or raw.get("name_slug") or p.stem
+        name_display = raw.get("name_display") or "—"
+        for evt_type, field_name in (("shown", "shown_policies"),
+                                     ("selected", "selected_policies"),
+                                     ("rejected", "rejected_policies")):
+            for entry in (profile.get(field_name) or []):
+                events.append({
+                    "persona_id":   persona_id,
+                    "name_display": name_display,
+                    "event_type":   evt_type,
+                    "policy_slug":  entry.get("policy_slug"),
+                    "insurer":      entry.get("insurer"),
+                    "event_at":     entry.get("event_at"),
+                    "session_id":   entry.get("session_id"),
+                    "reason":       entry.get("reason"),
+                    # Outcome label is the raw event_type — operator decides
+                    # what 'shown without follow-up' means in their context.
+                    "outcome":      evt_type,
+                })
+    events.sort(key=lambda e: (e["event_at"] or ""), reverse=True)
+    events = events[:10]
+    return {
+        "events":      events,
+        "total":       len(events),
+        "snapshot_ts": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }

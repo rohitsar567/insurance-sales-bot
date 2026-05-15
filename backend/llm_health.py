@@ -93,6 +93,13 @@ HEALTH_FILE.parent.mkdir(parents=True, exist_ok=True)
 # of a pool degradation (more than fast enough at our chat volume) and
 # drops probe-driven Groq spend to ~3K/day baseline (well inside quota).
 PROBE_INTERVAL_SEC = 300
+# A4 (2026-05-15) — cadence audit: 300s for steady-state probes is comfortably
+# above the audit's 90s minimum for non-failing providers. The post-failure
+# tighter cadence is implemented OUT-OF-BAND in `report_failure()`, which
+# schedules a `_reprobe_one()` immediately after every chat failure (effective
+# 0s after-failure cadence on the loop, not 30s). The 300s cadence then
+# resumes for the long-run probe stream so the steady state stays cheap.
+PROBE_INTERVAL_SEC_FAILING = 30   # A4 — documented post-failure cadence ceiling
 # KI-084 — completion size on probes cut from 5 → 1. The probe only
 # needs a non-empty 200 response to mark a candidate healthy; we never
 # parse the body content. max_tokens=1 keeps the same response shape +
@@ -104,6 +111,11 @@ PROBE_HISTORY_LEN = 5             # rolling window for success_rate signal
 HEALTHY_PROBE_AGE_SEC = 600       # KI-084 — election candidates need a probe
                                   # within the last 600s (tracks 300s cadence
                                   # plus headroom for one missed tick).
+# A4 (2026-05-15) — explicit STALE window. If a candidate hasn't been probed
+# in >STALE_AGE_SEC, its on-record status is rewritten to "stale" so the
+# router treats it as untested rather than trusting the last-known
+# "healthy"/"unhealthy" verdict from minutes/hours ago.
+STALE_AGE_SEC = HEALTHY_PROBE_AGE_SEC  # alias for clarity; same threshold.
 DEGRADED_WINDOW_SEC = 30          # report_failure sidelines a model this long
                                   # for transient failures (timeout / 5xx).
 # KI-084 — rate-limit failures (HTTP 429 + provider 'RateLimit' bodies) are
@@ -200,7 +212,12 @@ def provider_of(model_id: str) -> str:
 @dataclass
 class ModelHealth:
     model: str
-    status: str = "unknown"               # 'healthy' | 'degraded' | 'down' | 'unknown'
+    # A4 (2026-05-15) — 'stale' added. Set by `effective_status()` when a
+    # row hasn't been pinged in > STALE_AGE_SEC; the router then treats it
+    # as untested instead of trusting a last-known healthy/unhealthy verdict
+    # from minutes/hours ago. Persisted records may still carry the older
+    # status — the elector calls effective_status() at decision time.
+    status: str = "unknown"               # 'healthy' | 'degraded' | 'down' | 'stale' | 'unknown'
     last_success_at: Optional[str] = None
     last_failure_at: Optional[str] = None
     last_error: Optional[str] = None
@@ -358,6 +375,25 @@ def _score(h: ModelHealth) -> float:
     return (1.0 / max(50, h.latency_ms)) * _success_rate(h)
 
 
+def effective_status(h: ModelHealth) -> str:
+    """A4 (2026-05-15) — Return the routing-relevant status, applying the
+    STALE_AGE_SEC override at read time.
+
+    A stored `status` of "healthy" can mean "the last probe N hours ago
+    said this was healthy" — which the router must NOT trust. When
+    `tested_at` is older than `STALE_AGE_SEC` (or missing entirely), we
+    return "stale" so the elector treats the candidate as untested.
+
+    The stored status is not mutated here — that's the probe's job. Only
+    the live decision surface (election eligibility, status_summary) calls
+    this so historical inspection (logs, on-disk JSON) is preserved.
+    """
+    age = _iso_age_seconds(h.tested_at)
+    if age is None or age > STALE_AGE_SEC:
+        return "stale"
+    return h.status
+
+
 def _is_election_eligible(h: ModelHealth, now_mono: float) -> bool:
     """A candidate is electable when:
       - status is healthy (or degraded with a recent success)
@@ -365,6 +401,9 @@ def _is_election_eligible(h: ModelHealth, now_mono: float) -> bool:
       - it is NOT currently in the degraded-window sin-bin
       - KI-085 (2026-05-15): it has credits remaining above its low-water
         mark, OR no credit signal yet (cold-start = permissive).
+      - A4 (2026-05-15): effective_status != "stale" (catches the case
+        where status field is 'healthy' but the probe is older than
+        STALE_AGE_SEC).
     """
     if h.degraded_until_monotonic > now_mono:
         return False
@@ -374,6 +413,8 @@ def _is_election_eligible(h: ModelHealth, now_mono: float) -> bool:
     if age is None or age > HEALTHY_PROBE_AGE_SEC:
         return False
     if h.latency_ms is None:
+        return False
+    if effective_status(h) == "stale":
         return False
     if not _has_credits(h, now_mono):
         logger.info(
@@ -422,6 +463,57 @@ def _ranked_candidates(chain_name: str) -> list[ModelHealth]:
     return [h for _, h in eligible]
 
 
+# A4 (2026-05-15) — Election event log. Tracks the last elected primary/
+# backup per chain so we can emit a structured promotion/demotion log line
+# when the elected model changes. Stored in-memory only (cheap; resets on
+# process restart, which is fine — first post-restart election re-emits).
+_LAST_ELECTION_LOCK = threading.Lock()
+_LAST_ELECTION: dict[str, dict[str, Optional[str]]] = {}
+
+
+def _emit_election_event(chain_name: str, role: str, from_m: Optional[str],
+                          to_m: Optional[str], reason: str) -> None:
+    """A4 (2026-05-15) — Structured log line for every primary/backup
+    promotion or demotion. Format matches the audit brief:
+        {event, chain, role, from, to, reason, ts}
+    The router / admin UI / log-shipper can grep on `event=election` to
+    rebuild the timeline of who served what when.
+    """
+    event = {
+        "event": "election",
+        "chain": chain_name,
+        "role": role,
+        "from": from_m,
+        "to": to_m,
+        "reason": reason,
+        "ts": _now_iso(),
+    }
+    try:
+        logger.info("llm_health.election %s", json.dumps(event, ensure_ascii=False))
+    except Exception:
+        # Logging must never block the election path.
+        pass
+
+
+def _record_election(chain_name: str, role: str, new_model: Optional[str],
+                      reason: str = "elect") -> None:
+    """Compare against last-recorded election for this (chain, role) and
+    emit a structured log line on change. No-op if the value is unchanged.
+    """
+    with _LAST_ELECTION_LOCK:
+        per_chain = _LAST_ELECTION.setdefault(chain_name, {})
+        prev = per_chain.get(role, "__UNSET__")  # sentinel — None is a real value
+        if prev == new_model:
+            return
+        per_chain[role] = new_model
+    # Logging outside the lock — never block other elections on logger I/O.
+    _emit_election_event(
+        chain_name, role,
+        None if prev == "__UNSET__" else prev,
+        new_model, reason,
+    )
+
+
 def get_primary(chain_name: str) -> Optional[str]:
     """KI-201 (2026-05-15) — elect by CHAIN ORDER, not latency score.
 
@@ -440,9 +532,15 @@ def get_primary(chain_name: str) -> Optional[str]:
     Latency is no longer used for primary/backup selection — eligibility
     filtering still uses the rolling probe state, but ordering is
     purely chain-positional.
+
+    A4 (2026-05-15) — emits a structured `event=election` log line via
+    `_record_election` whenever the elected primary changes for this
+    chain, so the operator/admin/log-shipper can rebuild the promotion/
+    demotion timeline. No log emit when the value is unchanged.
     """
     chain = _chain_for(chain_name)
     if not chain:
+        _record_election(chain_name, "primary", None, reason="empty_chain")
         return None
     # _ranked_candidates returns the eligibility-filtered set (probe-fresh,
     # not in sin-bin, credit-not-exhausted, healthy). Reduce to a set for
@@ -450,7 +548,9 @@ def get_primary(chain_name: str) -> Optional[str]:
     eligible_models = {h.model for h in _ranked_candidates(chain_name)}
     for model in chain:
         if model in eligible_models:
+            _record_election(chain_name, "primary", model, reason="chain_walk")
             return model
+    _record_election(chain_name, "primary", None, reason="no_eligible")
     return None  # nothing eligible
 
 
@@ -465,9 +565,13 @@ def get_backup(chain_name: str) -> Optional[str]:
     Meta → NVIDIA), so walking past the primary in chain order naturally
     preserves the cross-family backup invariant KI-087 used to enforce
     via provider_of().
+
+    A4 (2026-05-15) — emits a structured `event=election` log line via
+    `_record_election` whenever the elected backup changes.
     """
     chain = _chain_for(chain_name)
     if not chain:
+        _record_election(chain_name, "backup", None, reason="empty_chain")
         return None
     eligible_models = {h.model for h in _ranked_candidates(chain_name)}
     primary = get_primary(chain_name)
@@ -475,7 +579,9 @@ def get_backup(chain_name: str) -> Optional[str]:
         if model == primary:
             continue
         if model in eligible_models:
+            _record_election(chain_name, "backup", model, reason="chain_walk")
             return model
+    _record_election(chain_name, "backup", None, reason="no_eligible")
     return None
 
 
@@ -1039,12 +1145,17 @@ def filter_chain(chain: list[str]) -> list[str]:
 def status_summary() -> dict:
     """Compact summary for /api/health/llms endpoint."""
     state = load()
-    summary = {"updated_at": None, "by_status": {"healthy": 0, "degraded": 0, "down": 0, "unknown": 0}, "models": []}
+    summary = {"updated_at": None, "by_status": {"healthy": 0, "degraded": 0, "down": 0, "stale": 0, "unknown": 0}, "models": []}
     for m, h in state.items():
-        summary["by_status"][h.status] = summary["by_status"].get(h.status, 0) + 1
+        # A4 (2026-05-15) — `effective_status` applies the STALE_AGE_SEC
+        # override at read time so the admin UI / router see "stale" for
+        # rows whose stored 'healthy' verdict is older than STALE_AGE_SEC.
+        eff = effective_status(h)
+        summary["by_status"][eff] = summary["by_status"].get(eff, 0) + 1
         summary["models"].append({
             "model": m,
-            "status": h.status,
+            "status": eff,
+            "stored_status": h.status,  # preserved for debug / drift detection
             "latency_ms": h.latency_ms,
             "last_success_at": h.last_success_at,
             "last_failure_at": h.last_failure_at,

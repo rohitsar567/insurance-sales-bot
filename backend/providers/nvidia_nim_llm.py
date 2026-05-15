@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import threading
 import time
 from pathlib import Path
 from typing import Optional
@@ -104,6 +105,48 @@ async def _append_usage(record: dict) -> None:
 _NIM_OUTBOUND_SEMAPHORE = asyncio.Semaphore(2)
 
 
+# A4 (2026-05-15) — Module-level httpx.AsyncClient singleton.
+#
+# Pre-A4: every NvidiaNimLLM.chat() call did `async with httpx.AsyncClient(...)
+# as client: ...`, which constructed a fresh connection pool per request and
+# tore it down on exit. Under brain/judge concurrency this churned TCP
+# connections, dropped TLS sessions, and (per audit) leaked pool slots when
+# an outer wait_for cancellation interrupted the async-with __aexit__ before
+# the underlying transport finalised.
+#
+# Switch to a single shared client with explicit Limits so:
+#   - max_connections=10        caps total outbound (NIM + probes share)
+#   - max_keepalive_connections=5  keeps a warm pool for the hot path
+# The client is constructed lazily (first .chat() call) so cold imports
+# don't pay TLS/handshake cost on processes that never call NIM (e.g.
+# CLI tools, eval harness).
+_NIM_HTTPX_CLIENT_LOCK = threading.Lock()
+_NIM_HTTPX_CLIENT: Optional[httpx.AsyncClient] = None
+
+
+def _get_shared_nim_client() -> httpx.AsyncClient:
+    """Return the module-level shared httpx.AsyncClient, constructing it
+    lazily on first call. The client is process-wide; do NOT close it from
+    individual chat() calls — the OS reclaims sockets at process exit.
+
+    Per-request timeout is applied at .post() call time, not at construction,
+    so the same shared pool serves chat() (long timeouts) and probes
+    (short timeouts) without contention.
+    """
+    global _NIM_HTTPX_CLIENT
+    if _NIM_HTTPX_CLIENT is not None:
+        return _NIM_HTTPX_CLIENT
+    with _NIM_HTTPX_CLIENT_LOCK:
+        if _NIM_HTTPX_CLIENT is None:
+            _NIM_HTTPX_CLIENT = httpx.AsyncClient(
+                limits=httpx.Limits(
+                    max_connections=10,
+                    max_keepalive_connections=5,
+                ),
+            )
+    return _NIM_HTTPX_CLIENT
+
+
 NVIDIA_NIM_BASE_URL = "https://integrate.api.nvidia.com/v1"
 # 2026-05-14 brain swap (D-022): NIM's DeepSeek-V4 + Meta Llama inference pools
 # are repeatedly timing out (15-120s on chat completions, no response). Qwen
@@ -159,7 +202,17 @@ class NvidiaNimLLM(LLMProvider):
             "max_tokens": max_tokens,
         }
         if response_format:
+            # A4 (2026-05-15) — NIM forwards OpenAI-shape response_format to
+            # the upstream model. For models that support `nvext.guided_json`
+            # (NIM's stricter constrained-decoding surface), surface that
+            # too when the caller passes a JSON schema (response_format
+            # with `json_schema`). The plain `{"type": "json_object"}` flag
+            # works on most NIM models as-is; we just keep it forwarded.
             body["response_format"] = response_format
+            if response_format.get("type") == "json_schema":
+                schema = response_format.get("json_schema", {}).get("schema")
+                if schema:
+                    body.setdefault("nvext", {})["guided_json"] = schema
 
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -202,11 +255,18 @@ class NvidiaNimLLM(LLMProvider):
         # The semaphore wraps ONLY the HTTP round-trip — not response
         # parsing or usage logging — so we cap concurrent network
         # traffic without serialising the rest of the pipeline.
-        async with httpx.AsyncClient(timeout=client_timeout) as client:
-            async with _NIM_OUTBOUND_SEMAPHORE:
-                resp = await client.post(url, headers=headers, json=body)
-            resp.raise_for_status()
-            payload = resp.json()
+        # A4 (2026-05-15) — Use the module-level shared httpx.AsyncClient
+        # (singleton with bounded connection pool) instead of constructing
+        # a fresh client per request. Per-request timeout is applied at
+        # .post() call time so the shared pool serves both long-timeout
+        # chat() and short-timeout probe() calls without contention.
+        client = _get_shared_nim_client()
+        async with _NIM_OUTBOUND_SEMAPHORE:
+            resp = await client.post(
+                url, headers=headers, json=body, timeout=client_timeout
+            )
+        resp.raise_for_status()
+        payload = resp.json()
 
         choice = payload["choices"][0]
         msg = choice.get("message", {}) or {}
@@ -440,21 +500,48 @@ class NimChainLLM(LLMProvider):
         Two models in the SAME family must never be paired as brain ↔ judge
         because they share weights / training corpus / decision surface, so
         the judge would effectively grade its own siblings' output.
-        Families: 'qwen', 'mistral', 'meta', 'openai', 'deepseek', 'moonshot',
-        'minimax', 'nvidia', 'unknown'.
+        Families: 'qwen', 'mistral', 'meta', 'openai', 'openai_oss',
+        'deepseek', 'moonshot', 'minimax', 'nvidia', 'nemotron', 'llama3',
+        'google', 'unknown'.
+
+        A4 (2026-05-15) — EVERY model in BRAIN_CHAIN / FAST_BRAIN_CHAIN /
+        JUDGE_CHAIN must map to a known family. The `assert_family_coverage()`
+        helper below walks the chains at module-import time (or on demand
+        from tests / admin / probe loop) and raises if any candidate falls
+        through to "unknown".
         """
-        m = model_id.lower()
+        m = (model_id or "").lower()
+        # KI-220 — recognise Google's Gemini family BEFORE prefix-stripping so
+        # ids like "google/gemini-2.5-flash" and bare "gemini-..." both land in
+        # the "google" bucket. Without this branch the family lookup fell
+        # through to "unknown", which meant the judge-vs-brain cross-family
+        # invariant couldn't exclude Gemini brains from a Gemini judge.
+        if "gemini" in m or m.startswith("google/"):
+            return "google"
         # Strip provider prefix first so 'groq:llama-3.3-70b' → 'meta' (it IS Meta Llama)
         if ":" in m:
             m = m.split(":", 1)[1]
+        # A4 — nemotron is its own decision surface (NVIDIA fine-tuned on
+        # top of llama but with materially different post-training); keep
+        # it distinct from generic "nvidia/" so cross-family checks don't
+        # treat a Llama-4 vs Nemotron pairing as same-family.
+        if "nemotron" in m: return "nemotron"
         if "qwen" in m: return "qwen"
         if "mistral" in m: return "mistral"
+        # A4 — llama version-aware buckets. llama-3.x is materially distinct
+        # from llama-4 (different architecture + post-training). The wider
+        # "meta" bucket stays as a fallback for unknown-version llama ids.
+        if "llama-3" in m or "llama3" in m: return "llama3"
         if "llama" in m or m.startswith("meta/"): return "meta"
-        if "gpt-oss" in m or m.startswith("openai/"): return "openai"
+        # A4 — gpt-oss (OpenAI's open-weights line) is distinct from
+        # closed-source GPT models. Keep them on separate buckets so a
+        # GPT-OSS judge over a GPT-OSS brain isn't accidentally allowed.
+        if "gpt-oss" in m: return "openai_oss"
+        if m.startswith("openai/") or "gpt-4" in m or "gpt-5" in m: return "openai"
         if "deepseek" in m: return "deepseek"
         if "kimi" in m or m.startswith("moonshot"): return "moonshot"
         if "minimax" in m: return "minimax"
-        if "nemotron" in m or m.startswith("nvidia/"): return "nvidia"
+        if m.startswith("nvidia/"): return "nvidia"
         return "unknown"
 
     # KI-080 — per-call timeout used in the sticky-primary path. Each elected
@@ -798,6 +885,47 @@ def _balanced_brain_chain(base: list[str], *, groq_first_probability: float = 0.
     rotated = list(base)
     groq_model = rotated.pop(groq_idx)
     return [groq_model, *rotated]
+
+
+def assert_family_coverage() -> dict[str, str]:
+    """A4 (2026-05-15) — Verify every model in every chain maps to a known
+    family (i.e. NOT 'unknown'). Returns a {model: family} dict on success;
+    raises RuntimeError listing any 'unknown'-mapped models on failure.
+
+    KI-175 — also verifies nemotron is the TAIL (last entry) of each brain
+    chain so the last-resort ordering invariant survives any chain edit.
+
+    Call from admin diagnostics or tests; not invoked on import to keep
+    cold-start cheap. Safe to run from a probe loop tick.
+    """
+    coverage: dict[str, str] = {}
+    unknown: list[str] = []
+    for chain in (BRAIN_CHAIN, FAST_BRAIN_CHAIN, JUDGE_CHAIN):
+        for m in chain:
+            fam = NimChainLLM._family_of(m)
+            coverage[m] = fam
+            if fam == "unknown":
+                unknown.append(m)
+    if unknown:
+        raise RuntimeError(
+            f"_family_of returned 'unknown' for: {unknown}. "
+            "Extend NimChainLLM._family_of so cross-family grading checks "
+            "have a stable bucket for every candidate."
+        )
+    # KI-175 tail-position invariant — nemotron MUST be the last entry of
+    # both brain chains (it's the last-resort fallback). Judge chain is
+    # exempt because Nemotron is a legitimate cross-family judge there.
+    for label, chain in (("BRAIN_CHAIN", BRAIN_CHAIN),
+                          ("FAST_BRAIN_CHAIN", FAST_BRAIN_CHAIN)):
+        nemo_idx = next(
+            (i for i, m in enumerate(chain) if "nemotron" in m.lower()), None
+        )
+        if nemo_idx is not None and nemo_idx != len(chain) - 1:
+            raise RuntimeError(
+                f"KI-175 violation: nemotron must be the LAST entry of {label} "
+                f"(found at index {nemo_idx}, chain length {len(chain)})."
+            )
+    return coverage
 
 
 def get_brain_llm() -> NimChainLLM:

@@ -74,26 +74,121 @@ DEFAULT_MODEL = "gemini-2.5-flash-lite"  # KI-183 — gemini-2.0-flash retired f
 # this is cheap insurance and keeps the contract honest if the module is ever
 # pulled into a thread pool.
 # ----------------------------------------------------------------------------
-_CACHE_REGISTRY: dict[tuple[str, str], dict] = {}
+_CACHE_REGISTRY: dict[tuple[str, str, str], dict] = {}
 _CACHE_REGISTRY_LOCK = threading.Lock()
 
+# A4 (2026-05-15) — Gemini cachedContents server-side TTL ceiling. Google's
+# `cachedContents` resources live up to ~60min on free tier; we refresh
+# before that ceiling so an in-flight call never lands on an expired cache.
+# `CACHE_REFRESH_AGE_SEC` is the wall-clock age at which we proactively
+# re-create even if local `expires_at` has not yet elapsed — keeps us safely
+# below the server-side TTL drift window observed in production.
+CACHE_REFRESH_AGE_SEC = 50 * 60  # 50min — refresh BEFORE 60min server ceiling
 
-def _cache_key(model: str, system_text: str) -> tuple[str, str]:
-    """Build the registry key for a (model, system_text) pair.
 
-    Hashing the system text rather than storing the raw string keeps the
-    registry footprint tiny even when the preamble is multi-KB.
+def _cache_key(model: str, system_text: str, dynamic_prefix: str = "") -> tuple[str, str, str]:
+    """Build the registry key for a (model, system_text, dynamic_prefix) tuple.
+
+    A4 (2026-05-15) — Cache key collision fix: SHA256 of preamble alone is
+    insufficient when `_dynamic_profile_block` varies per persona. The key
+    now partitions on a separate `dynamic_prefix` hash so per-persona
+    caches don't collide on the same static preamble hash. `dynamic_prefix`
+    defaults to "" so existing callers retain prior behaviour.
+
+    Hashing inputs rather than storing the raw string keeps the registry
+    footprint tiny even when the preamble is multi-KB.
     """
-    return (model, hashlib.sha256(system_text.encode("utf-8")).hexdigest())
+    static_h = hashlib.sha256(system_text.encode("utf-8")).hexdigest()
+    dyn_h = hashlib.sha256(dynamic_prefix.encode("utf-8")).hexdigest() if dynamic_prefix else ""
+    return (model, static_h, dyn_h)
 
 
-def invalidate_cache(model: str, system_text: str) -> None:
+# ---------------------------------------------------------------------------
+# A4 (2026-05-15) — Normalized provider error class.
+#
+# Gemini's REST surface returns different error shapes for different failure
+# modes (429 rate-limit, 400 BlockedReason / SafetyRating, 404 cache not
+# found, 500/503 server errors). The tier wrapper needs a stable contract:
+# `BrainProviderError(retryable=bool)` where `retryable=True` signals the
+# tier should fall through to the next provider, and `retryable=False`
+# signals a hard error (auth / content blocked) that should surface to the
+# caller without burning fallback budget.
+# ---------------------------------------------------------------------------
+class BrainProviderError(RuntimeError):
+    """Stable provider-error envelope consumed by TieredBrainLLM.
+
+    Attributes:
+      provider:   short name ("gemini" / "nim" / ...)
+      retryable:  True if the tier wrapper should try the next provider.
+                  False for auth / content-block / non-recoverable errors.
+      status:     HTTP-like status code if applicable, else None.
+      raw:        the original exception (kept as __cause__ via `raise from`).
+    """
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        provider: str = "gemini",
+        retryable: bool = True,
+        status: Optional[int] = None,
+    ):
+        super().__init__(message)
+        self.provider = provider
+        self.retryable = retryable
+        self.status = status
+
+
+def _classify_gemini_error(status_code: int, detail: str) -> BrainProviderError:
+    """Map a Gemini REST response into BrainProviderError(retryable=bool).
+
+    Routing rules (matches TieredBrainLLM expectations):
+      - 429 (rate-limit / quota)              → retryable (next tier)
+      - 5xx (server errors)                   → retryable (next tier)
+      - 408 / 504 (timeout)                   → retryable
+      - 401 / 403 (auth, key revoked)         → NOT retryable (surface)
+      - 400 with BlockedReason / SafetyRating → NOT retryable (content block)
+      - 400 other (malformed request)         → NOT retryable (caller bug)
+      - 404 cachedContent                     → retryable (cache lapsed,
+                                                  uncached retry already wired
+                                                  in chat() but tier-level
+                                                  fallback is still safe).
+    """
+    detail_l = (detail or "").lower()
+    retryable = False
+    if status_code == 429:
+        retryable = True
+    elif 500 <= status_code < 600:
+        retryable = True
+    elif status_code in (408, 504):
+        retryable = True
+    elif status_code == 404 and ("cache" in detail_l or "cachedcontent" in detail_l):
+        retryable = True
+    elif status_code == 400 and (
+        "blocked" in detail_l or "safety" in detail_l or "blockreason" in detail_l
+    ):
+        retryable = False
+    elif status_code in (401, 403):
+        retryable = False
+    return BrainProviderError(
+        f"Gemini API {status_code}: {detail[:300]}",
+        provider="gemini",
+        retryable=retryable,
+        status=status_code,
+    )
+
+
+def invalidate_cache(model: str, system_text: str, dynamic_prefix: str = "") -> None:
     """Drop a cache registry entry — called by upstream after a 4xx response
     that names a stale `cachedContent`. The server-side cache may still be
     alive (it will lapse on TTL), but our reference is gone so the next
     chat() call provisions a fresh one.
+
+    A4 (2026-05-15) — `dynamic_prefix` is an optional partition arg; defaults
+    to "" so existing callers retain prior behaviour. When supplied, only the
+    matching (model, system_text, dynamic_prefix) entry is dropped.
     """
-    key = _cache_key(model, system_text)
+    key = _cache_key(model, system_text, dynamic_prefix)
     with _CACHE_REGISTRY_LOCK:
         _CACHE_REGISTRY.pop(key, None)
 
@@ -162,6 +257,7 @@ class GoogleGeminiLLM(LLMProvider):
         self,
         system_text: str,
         ttl_seconds: int = 300,
+        dynamic_prefix: str = "",
     ) -> Optional[str]:
         """Create (or reuse) a Gemini `cachedContents` resource for `system_text`.
 
@@ -180,14 +276,26 @@ class GoogleGeminiLLM(LLMProvider):
         if not self.api_key or not system_text:
             return None
 
-        key = _cache_key(self.model, system_text)
+        key = _cache_key(self.model, system_text, dynamic_prefix)
         now = time.time()
         with _CACHE_REGISTRY_LOCK:
             entry = _CACHE_REGISTRY.get(key)
-            # Refresh ~10s before expiry so an in-flight request never lands
-            # on a server-side cache that just rolled past its TTL.
-            if entry and entry.get("expires_at", 0) > now + 10:
-                return entry.get("name")
+            # A4 (2026-05-15) — TWO-stage refresh:
+            #   (a) self-evict ~10s before LOCAL expires_at (was already here).
+            #   (b) PROACTIVELY refresh if the entry is older than
+            #       CACHE_REFRESH_AGE_SEC (50min) regardless of expires_at —
+            #       guards against server-side TTL drift on long-lived
+            #       caches and keeps every entry well below the ~60min
+            #       cachedContents ceiling.
+            if entry:
+                created_at = entry.get("created_at", 0)
+                age = now - created_at if created_at else 0
+                if (
+                    entry.get("expires_at", 0) > now + 10
+                    and age < CACHE_REFRESH_AGE_SEC
+                ):
+                    return entry.get("name")
+                # else: fall through and recreate
 
         # `model` must be the fully-qualified Gemini path "models/<id>".
         body: dict = {
@@ -234,12 +342,17 @@ class GoogleGeminiLLM(LLMProvider):
             return None
 
         with _CACHE_REGISTRY_LOCK:
+            now_create = time.time()
             _CACHE_REGISTRY[key] = {
                 "name": cache_name,
                 # Store local expiry; the registered TTL is server-side
                 # truth, but we shadow it locally so we self-evict before
                 # the inevitable 4xx on an expired reference.
-                "expires_at": time.time() + ttl_seconds,
+                "expires_at": now_create + ttl_seconds,
+                # A4 (2026-05-15) — created_at lets us proactively refresh
+                # entries that have lived past CACHE_REFRESH_AGE_SEC even
+                # when caller set a longer TTL than Google honours.
+                "created_at": now_create,
             }
         logging.info(
             "gemini.create_cache OK (model=%s, name=%s, ttl=%ss)",
@@ -296,15 +409,40 @@ class GoogleGeminiLLM(LLMProvider):
         # Per-phase timeouts mirroring the NIM/OpenRouter pattern: a stuck
         # connection releases its slot on its own deadline rather than holding
         # past the outer wait_for cancellation.
+        #
+        # A4 (2026-05-15) — Timeout binding: bind the SDK/httpx read timeout
+        # to `self.timeout - 2.0` so the underlying connection times out
+        # ~2s BEFORE the tier-wrapper's outer wait_for cancellation. This
+        # surfaces a clean BrainProviderError(retryable=True) instead of
+        # asyncio.CancelledError leaking up through the cancellation chain
+        # (which the tier wrapper has historically misclassified).
+        read_timeout = max(2.0, self.timeout - 2.0)
         client_timeout = httpx.Timeout(
             connect=2.0,
-            read=self.timeout,
+            read=read_timeout,
             write=2.0,
             pool=2.0,
         )
 
         async with httpx.AsyncClient(timeout=client_timeout) as client:
-            resp = await client.post(url, headers=headers, json=body)
+            try:
+                resp = await client.post(url, headers=headers, json=body)
+            except (asyncio.CancelledError, KeyboardInterrupt, SystemExit):
+                raise
+            except httpx.TimeoutException as e:
+                # A4 (2026-05-15) — TimeoutException → retryable
+                # BrainProviderError so the tier wrapper falls through
+                # cleanly instead of seeing asyncio.CancelledError.
+                raise BrainProviderError(
+                    f"Gemini timeout after {read_timeout:.1f}s (model={self.model})",
+                    provider="gemini", retryable=True, status=None,
+                ) from e
+            except httpx.HTTPError as e:
+                # Network / DNS / connection-refused etc. — retryable.
+                raise BrainProviderError(
+                    f"Gemini transport error ({type(e).__name__}): {str(e)[:200]}",
+                    provider="gemini", retryable=True, status=None,
+                ) from e
             # KI-199 — graceful fallback when a cache reference is stale.
             # Symptoms: 400/404 with body mentioning "cachedContent" /
             # "cache" / "not found". Strip the reference, re-add the inline
@@ -331,21 +469,39 @@ class GoogleGeminiLLM(LLMProvider):
                     body["systemInstruction"] = {
                         "parts": [{"text": system_instruction}]
                     }
-                resp = await client.post(url, headers=headers, json=body)
+                try:
+                    resp = await client.post(url, headers=headers, json=body)
+                except (asyncio.CancelledError, KeyboardInterrupt, SystemExit):
+                    raise
+                except httpx.TimeoutException as e:
+                    raise BrainProviderError(
+                        f"Gemini retry timeout after {read_timeout:.1f}s (model={self.model})",
+                        provider="gemini", retryable=True, status=None,
+                    ) from e
+                except httpx.HTTPError as e:
+                    raise BrainProviderError(
+                        f"Gemini retry transport error ({type(e).__name__}): {str(e)[:200]}",
+                        provider="gemini", retryable=True, status=None,
+                    ) from e
             if resp.status_code >= 400:
-                # Surface the Google error body so the caller's log makes the
-                # root cause visible (typical failure: 429 quota exceeded or
-                # 400 prompt-block).
+                # A4 (2026-05-15) — Normalize the error into BrainProviderError
+                # so the tier wrapper sees a stable contract:
+                #   retryable=True  → fall through to next tier
+                #   retryable=False → surface to caller (auth/content-block)
+                # The original httpx.HTTPStatusError is preserved as __cause__
+                # so logs still carry the full upstream trail.
                 detail = ""
                 try:
                     detail = resp.text[:500]
                 except Exception:
                     pass
-                raise httpx.HTTPStatusError(
+                upstream_err = httpx.HTTPStatusError(
                     f"Gemini API {resp.status_code}: {detail}",
                     request=resp.request,
                     response=resp,
                 )
+                normalized = _classify_gemini_error(resp.status_code, detail)
+                raise normalized from upstream_err
             payload = resp.json()
 
         # Response shape:
@@ -402,4 +558,6 @@ __all__ = [
     "get_gemini_llm",
     "DEFAULT_MODEL",
     "invalidate_cache",
+    "BrainProviderError",
+    "CACHE_REFRESH_AGE_SEC",
 ]

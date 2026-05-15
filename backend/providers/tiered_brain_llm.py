@@ -72,7 +72,7 @@ class TieredBrainLLM(LLMProvider):
         self,
         role: str = "brain",
         gemini_model: str = "gemini-2.5-flash",
-        per_tier_timeout: float = 30.0,
+        per_tier_timeout: float = 15.0,
     ):
         if role not in ("brain", "fast_brain"):
             raise ValueError(f"role must be 'brain' or 'fast_brain', got {role!r}")

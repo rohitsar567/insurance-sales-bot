@@ -40,6 +40,57 @@ OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 DEFAULT_MODEL = "openai/gpt-oss-120b"
 
 
+# A4 (2026-05-15) — OpenRouter free-pool helpers.
+#
+# `:free` suffix is OpenRouter's documented marker for zero-cost models.
+# We use this both to:
+#   (a) order the free pool deterministically (smallest-id-first as a
+#       stable, cheapest-first proxy — small models are cheaper to serve
+#       and complete faster); and
+#   (b) reject any non-`:free` model that accidentally lands in the free
+#       pool, so a paid model can't get silently invoked under a "free"
+#       call path and burn the user's prepaid balance.
+_FREE_SUFFIX = ":free"
+
+
+def is_free_model(model_id: str) -> bool:
+    """True if `model_id` is in OpenRouter's free pool (`:free` suffix).
+    Used by `enforce_free_pool` + the chat-time cost guard.
+    """
+    return bool(model_id) and model_id.endswith(_FREE_SUFFIX)
+
+
+def order_free_pool(models: list[str]) -> list[str]:
+    """A4 (2026-05-15) — Return `models` in a STABLE, deterministic order
+    suitable for OpenRouter's `models=[...]` server-side fallback list.
+
+    Sort key: (length-of-id ascending, id ascending). Shorter ids tend to
+    correlate with smaller / cheaper models on OpenRouter's catalogue
+    (e.g. `gemma-4-26b-a4b-it:free` < `gemma-4-31b-it:free` < ...).
+    Stable alphabetical secondary key removes the randomness that an
+    unsorted dict iteration could introduce across Python runs.
+
+    Inputs that contain non-free entries are NOT silently re-ordered —
+    use `enforce_free_pool` first if you need the cost guard.
+    """
+    return sorted(models, key=lambda m: (len(m), m))
+
+
+def enforce_free_pool(models: list[str]) -> list[str]:
+    """A4 (2026-05-15) — Cost guard: reject paid models in a free-pool call.
+
+    Raises ValueError listing any non-`:free` entries. Returns the
+    deterministically-ordered free pool on success.
+    """
+    paid = [m for m in models if not is_free_model(m)]
+    if paid:
+        raise ValueError(
+            f"OpenRouter free-pool call rejected: non-free models {paid}. "
+            "All entries must end in ':free'. See get_openrouter_llm() docs."
+        )
+    return order_free_pool(models)
+
+
 class OpenRouterLLM(LLMProvider):
     name = "openrouter"
 
@@ -69,6 +120,7 @@ class OpenRouterLLM(LLMProvider):
         max_tokens: int = 1024,
         response_format: Optional[dict] = None,
         models: Optional[list[str]] = None,
+        free_only: bool = False,
     ) -> LLMResult:
         """Send a chat completion to OpenRouter.
 
@@ -78,7 +130,26 @@ class OpenRouterLLM(LLMProvider):
         set as the primary `model` field (OpenRouter requires both for
         routing; if `models` is omitted the lone `model` field is used).
         Reference: https://openrouter.ai/docs/features/model-routing
+
+        A4 (2026-05-15) — `free_only=True` activates the cost guard:
+          - rejects any non-`:free` model in `models` (raises ValueError)
+          - reorders the survivors via `order_free_pool` for stable, smaller-
+            first preference. The single-model `self.model` is checked too
+            when `models` is omitted, so a paid default can't sneak in via
+            the lone-model path.
         """
+        # A4 cost guard — enforce BEFORE constructing the request body so
+        # a paid model never reaches the wire.
+        if free_only:
+            if models:
+                models = enforce_free_pool(list(models))
+            elif not is_free_model(self.model):
+                raise ValueError(
+                    f"OpenRouter free-pool call rejected: default model "
+                    f"{self.model!r} is not in the :free pool. Pass "
+                    f"`models=[...]` with :free suffix or unset free_only."
+                )
+
         primary_model = models[0] if models else self.model
         body: dict = {
             "model": primary_model,

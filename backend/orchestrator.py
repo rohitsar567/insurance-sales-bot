@@ -249,6 +249,32 @@ class BrainPick:
 CONTEXT_DEPENDENT_INTENTS = frozenset({"recommendation", "comparison"})
 
 
+# KI-225 — knowledge-question carve-out. KI-154 force-routed empty-profile QA
+# without a named insurer to fact_find, which over-corrected: pure knowledge
+# lookups like "what is co-pay?", "how does NCB work?", "explain pre-existing
+# diseases" were being interrupted with "First, your age?". These are
+# definition-style queries — no user context required.
+_KNOWLEDGE_QUESTION_PATTERNS = (
+    "what is", "what are", "what's a", "what's the", "whats a", "whats the",
+    "how does", "how do", "how is", "how are",
+    "tell me about", "explain", "define", "definition of",
+    "difference between", "differ between",
+    "meaning of", "what does", "what means",
+)
+
+
+def _is_knowledge_question(query: str) -> bool:
+    """KI-225 — return True when the query opens with a definition-style
+    pattern (what is, how does, explain, etc.). Such queries are policy-fact
+    lookups that don't depend on user profile and should pass straight to
+    the QA brain even when the live session has an empty profile.
+    """
+    q = (query or "").lower().strip()
+    if not q:
+        return False
+    return any(q.startswith(p) for p in _KNOWLEDGE_QUESTION_PATTERNS)
+
+
 def should_route_to_fact_find(
     intent: str,
     *,
@@ -288,6 +314,13 @@ def should_route_to_fact_find(
         # Single named policy/insurer is also fine for qa
         ql = query.lower()
         if any(tok in ql for tok in _NAMED_INSURER_TOKENS):
+            return False
+        # KI-225 — knowledge-question carve-out. Definition-style queries
+        # ("what is co-pay?", "how does NCB work?", "explain pre-existing
+        # diseases") are policy-fact lookups that don't need user context.
+        # KI-154 over-corrected by force-routing these into fact_find — the
+        # user got "First, your age?" instead of a definition.
+        if _is_knowledge_question(query):
             return False
         # Otherwise — empty-profile generic intent — route to fact_find so the
         # bot collects basic context before quoting policy specifics.
@@ -527,6 +560,10 @@ class TurnResult:
     faithfulness_reasons: list[str] = field(default_factory=list)
     blocked: bool = False
     profile_updates: dict = field(default_factory=dict)
+    # KI-228 — set when this turn was detected as a follow-up about a specific
+    # policy from the previous recommendation shortlist (e.g. "tell me more
+    # about #2"). The frontend uses this to highlight the matching card.
+    followup_policy_id: Optional[str] = None
 
 
 async def handle_turn(
@@ -672,14 +709,6 @@ async def handle_turn(
             profile_updates={},
         )
 
-    treat_as_fact_find = should_route_to_fact_find(
-        intent,
-        profile_is_empty=profile_is_empty,
-        in_fact_find_continuation=in_fact_find_continuation,
-        free_form_session=session.free_form_session,
-        query=user_text,
-    )
-
     # KI-196 (ADR-041) — confirmation-gated profile recall. If the prior
     # turn staged a pending recall (matched name → on-disk profile), the
     # bot's last reply already asked the user whether to continue or start
@@ -689,6 +718,14 @@ async def handle_turn(
     #   - Other   → leave pending_profile_recall in place; the brain will
     #               re-ask one more time. (One re-ask cap is enforced by the
     #               brain's prompt — see sales_brain._build_system_prompt.)
+    #
+    # KI-227 — MUST run BEFORE `should_route_to_fact_find` is computed. The
+    # prior ordering computed treat_as_fact_find against the EMPTY pre-merge
+    # profile, then merged the stored profile, then proceeded — so the user's
+    # "Continue" turn routed to fact_find with stale (empty) profile state.
+    # After the gate resolves, we recompute profile_is_empty /
+    # _required_profile_incomplete / in_fact_find_continuation so the routing
+    # decision below sees the merged profile.
     if session.pending_profile_recall is not None:
         _utxt = (user_text or "").strip().lower()
         _AFFIRM = (
@@ -730,6 +767,60 @@ async def handle_turn(
             session.pending_profile_recall = None
         # If neither was detected, leave it staged — sales_brain will re-ask
         # via its system-prompt hook (see _build_system_prompt).
+
+        # KI-227 — recompute routing-decision inputs against the (possibly
+        # merged) profile so should_route_to_fact_find below sees the right
+        # state. Without this the "Continue" turn ran against pre-merge
+        # empty-profile values and force-routed back into fact_find.
+        _required_profile_incomplete = any(
+            not getattr(session.profile, slot, None)
+            for slot in _FACT_FIND_REQUIRED_SLOTS
+        )
+        in_fact_find_continuation = (
+            _required_profile_incomplete and not session.free_form_session
+        )
+        profile_is_empty = (
+            session.profile.age is None
+            and session.profile.dependents is None
+            and session.profile.income_band is None
+        )
+
+    treat_as_fact_find = should_route_to_fact_find(
+        intent,
+        profile_is_empty=profile_is_empty,
+        in_fact_find_continuation=in_fact_find_continuation,
+        free_form_session=session.free_form_session,
+        query=user_text,
+    )
+
+    # KI-228 — confirmation-answer routing. When all required slots are filled
+    # but the session hasn't flipped to free_form_session yet (KI-215 only
+    # flips on an explicit recommendation request), the user's natural
+    # confirmation reply ("yes, that's correct" / "yep, sounds good" / "no,
+    # change income") was routing to QA → faithfulness gate → "I'd rather
+    # not answer that without stronger evidence...". Treat short affirmations,
+    # negations, and brief acknowledgements as fact-find continuation so
+    # sales_brain handles the confirmation turn rather than the QA gate.
+    _AFFIRM_OR_SHORT = re.compile(
+        r"^\s*(yes|yeah|yep|yup|correct|right|sounds good|looks good|that.s right|confirmed|ok|okay|sure|alright)\b",
+        re.IGNORECASE,
+    )
+    _NEGATE_SHORT = re.compile(
+        r"^\s*(no|nope|nah|not.really|incorrect|wrong)\b",
+        re.IGNORECASE,
+    )
+    _slots_complete_routing = all(
+        getattr(session.profile, slot, None) not in (None, "", [])
+        for slot in _FACT_FIND_REQUIRED_SLOTS
+    )
+    if _slots_complete_routing and not session.free_form_session:
+        _utxt_routing = user_text or ""
+        if (
+            _AFFIRM_OR_SHORT.match(_utxt_routing)
+            or _NEGATE_SHORT.match(_utxt_routing)
+            or len(_utxt_routing.strip()) < 25
+        ):
+            treat_as_fact_find = True
 
     if treat_as_fact_find:
         # KI-167 (2026-05-15) — WS2: replaces drive_fact_find with
@@ -1087,6 +1178,106 @@ async def handle_turn(
             session_id, type(e).__name__, str(e)[:200],
         )
 
+    # KI-228 — post-recommendation follow-up routing. When the previous turn
+    # served a shortlist and persisted `session.last_recommendation_ids`, this
+    # turn might be a follow-up like "tell me more about #2" / "the second one"
+    # / "what about Policy X". Detect the reference, map to a specific
+    # policy_id, and bias retrieval to surface ONLY that policy's chunks.
+    #
+    # Ordinal map: "#1"/"first"/"first one" → index 0, etc. Run BEFORE retrieval
+    # so we can rewrite `policy_filter_ids` for this turn.
+    followup_policy_id: Optional[str] = None
+    if (
+        getattr(session, "last_recommendation_ids", None)
+        and not policy_filter_ids  # don't override an explicit caller-supplied filter
+    ):
+        _shortlist = list(session.last_recommendation_ids)
+        _utxt_followup = (user_text or "").lower().strip()
+        # Ordinal: "#1" / "# 1" / "1st" / "first one" / "first" (word-boundary
+        # to avoid eating "first buy" / "first time buyer").
+        _ORDINAL_PATTERNS: list[tuple[re.Pattern, int]] = [
+            (re.compile(r"(?:^|\s)#\s*1(?:\b|$)"), 0),
+            (re.compile(r"(?:^|\s)#\s*2(?:\b|$)"), 1),
+            (re.compile(r"(?:^|\s)#\s*3(?:\b|$)"), 2),
+            (re.compile(r"\b1st\b"), 0),
+            (re.compile(r"\b2nd\b"), 1),
+            (re.compile(r"\b3rd\b"), 2),
+            (re.compile(r"\b(?:the\s+)?first\s+(?:one|policy|option|recommendation)\b"), 0),
+            (re.compile(r"\b(?:the\s+)?second\s+(?:one|policy|option|recommendation)?\b"), 1),
+            (re.compile(r"\b(?:the\s+)?third\s+(?:one|policy|option|recommendation)?\b"), 2),
+            # Detail-request prefix + bare ordinal ("explain the first",
+            # "tell me about the first / second / third"). Disambiguates from
+            # "first buy" / "first time" which are goal keywords, not ordinals.
+            (re.compile(r"\b(?:tell\s+me\s+about|explain|details?\s+on|what\s+about|more\s+on)\s+the\s+first\b"), 0),
+            (re.compile(r"\b(?:tell\s+me\s+about|explain|details?\s+on|what\s+about|more\s+on)\s+the\s+second\b"), 1),
+            (re.compile(r"\b(?:tell\s+me\s+about|explain|details?\s+on|what\s+about|more\s+on)\s+the\s+third\b"), 2),
+            (re.compile(r"\boption\s+1\b"), 0),
+            (re.compile(r"\boption\s+2\b"), 1),
+            (re.compile(r"\boption\s+3\b"), 2),
+            (re.compile(r"\bpolicy\s+1\b"), 0),
+            (re.compile(r"\bpolicy\s+2\b"), 1),
+            (re.compile(r"\bpolicy\s+3\b"), 2),
+        ]
+        for _pat, _idx in _ORDINAL_PATTERNS:
+            if _pat.search(_utxt_followup) and _idx < len(_shortlist):
+                followup_policy_id = _shortlist[_idx]
+                break
+        # Policy-name match: look for any of the shortlist policy names in
+        # user_text by scanning the most recent assistant message in
+        # chat_history for ID-adjacent name strings. We don't have a direct
+        # id→name map on the session, so fall back to a soft signal: if the
+        # user says "tell me more about <X>" or "what about <X>", inject the
+        # phrase into the retrieval query so the embedding bias toward <X>
+        # naturally pulls its chunks (no filter — the brain still sees the
+        # full shortlist context).
+        if followup_policy_id is None and chat_history:
+            _last_assistant = ""
+            for _msg in reversed(chat_history):
+                if isinstance(_msg, dict) and _msg.get("role") == "assistant":
+                    _last_assistant = str(_msg.get("content") or "")
+                    break
+            # If user_text references "this" / "that" / "it" + an explicit
+            # request-for-detail verb, AND we have a single-policy shortlist,
+            # default to that one policy.
+            _detail_request = bool(
+                re.search(
+                    r"\b(?:tell\s+me\s+more|more\s+about|more\s+details?|"
+                    r"explain|details?\s+on|what\s+about|how\s+about)\b",
+                    _utxt_followup,
+                )
+            )
+            if _detail_request and len(_shortlist) == 1:
+                followup_policy_id = _shortlist[0]
+            # Otherwise, scan the prior assistant turn for capitalized policy
+            # names also present in the user's text. We don't try to be
+            # exhaustive here — the retrieval embedding already handles loose
+            # name matches; this is just for the explicit-filter case.
+            elif _detail_request and _last_assistant:
+                # Extract candidate names from the assistant turn (2-6 word
+                # Title-Case sequences). Cross-check against user_text.
+                _name_re = re.compile(r"\b(?:[A-Z][A-Za-z0-9&\-']+\s+){1,5}[A-Z][A-Za-z0-9&\-']+\b")
+                _candidate_names = set(_name_re.findall(_last_assistant))
+                _utxt_caseful = (user_text or "")
+                for _cand in _candidate_names:
+                    if _cand.lower() in _utxt_caseful.lower() and len(_cand) >= 6:
+                        # Found a likely policy-name reference. Inject into
+                        # user_text for retrieval bias (matches the fallback
+                        # path described in the spec). Don't set filter — we
+                        # don't have a confident id mapping.
+                        if not user_text.lower().startswith(_cand.lower()):
+                            user_text = f"about {_cand}: {user_text}"
+                        break
+        if followup_policy_id is not None:
+            # Override the retrieval filter so this turn surfaces ONLY the
+            # matched policy's chunks. Preserve any caller-supplied filter
+            # (we already guarded against it above, but belt-and-braces).
+            if not policy_filter_ids:
+                policy_filter_ids = [followup_policy_id]
+            logging.info(
+                "KI-228 follow-up routing matched policy_id=%s (session=%s)",
+                followup_policy_id, session_id,
+            )
+
     # 2. Retrieve — pass session_id so the user's profile chunk (stored in
     # Chroma at POST /api/profile time) gets boosted to the top of the
     # context. Without session_id this path is dormant and the brain never
@@ -1142,6 +1333,13 @@ async def handle_turn(
             "show me a few", "show me some", "side by side", "side-by-side",
             "three options", "few options", "some options", "compare options",
             "shortlist", "give me options", "give me three",
+            # KI-226 — broadened detection. Live captures showed users saying
+            # "good for me", "which one fits", "help me pick" etc., which
+            # routed through the QA + faithfulness path instead of the
+            # recommendation lane.
+            "good for me", "which one", "which fits", "fits",
+            "list of polic", "give me a list", "help me pick",
+            "help me choose", "narrow", "any suggestion", "any recommend",
         )
     )
 
@@ -1152,6 +1350,33 @@ async def handle_turn(
     # does IRDAI say about waiting periods") still see regulatory evidence.
     if _is_recommendation or intent == "comparison":
         chunks = [c for c in chunks if (c.insurer_slug or "").lower() != "regulatory"]
+
+    # KI-229 — empty-retrieval recommendation guard. When the user explicitly
+    # asks for a recommendation/comparison AND retrieval came back with zero
+    # usable chunks (e.g. niche profile that doesn't match any indexed policy),
+    # the brain has nothing to ground on and the faithfulness gate is skipped
+    # for recommendations (KI-171). The result was hallucinated policy names
+    # with no citations. Short-circuit BEFORE the brain call with a polite ask
+    # to broaden the criteria.
+    if (_is_recommendation or intent == "comparison") and len(chunks) == 0:
+        reply = (
+            "I don't have policy data that matches your specific profile right now — "
+            "could you broaden the criteria (e.g., a different age band, dependents, "
+            "or budget) so I can pull relevant options?"
+        )
+        return TurnResult(
+            reply_text=reply,
+            citations=[],
+            retrieved_chunk_ids=[],
+            brain_used="orchestrator::empty_retrieval_short_circuit",
+            intent=intent,
+            language=language,
+            latency_ms=int((time.time() - t0) * 1000),
+            raw_reply=reply,
+            faithfulness_passed=True,
+            blocked=False,
+            profile_updates=profile_updates_applied,
+        )
 
     context_str = format_for_llm_context(chunks)
 
@@ -1348,6 +1573,34 @@ async def handle_turn(
         if (c.insurer_slug or "").lower() not in ("profile", "regulatory")
     ]
 
+    # KI-224 — persist last_recommendation_ids on the session so a follow-up
+    # ("tell me more about #2") can route against the same shortlist without
+    # re-retrieving from scratch. Only populate on clean recommendation /
+    # comparison replies (faithfulness must have passed or been legitimately
+    # skipped, and the reply must not have been blocked). Empty citations → []
+    # leaves the previous value intact only when faithfulness blocked the turn,
+    # which is the right behavior (the user never saw a new shortlist).
+    if (
+        intent in ("recommendation", "comparison")
+        and verdict.passed
+        and not blocked
+        and citations
+    ):
+        try:
+            seen: set[str] = set()
+            ids: list[str] = []
+            for cite in citations:
+                pid = cite.get("policy_id")
+                if pid and pid not in seen:
+                    seen.add(pid)
+                    ids.append(pid)
+            session.last_recommendation_ids = ids
+        except Exception as _e:
+            logging.warning(
+                "KI-224 last_recommendation_ids persist failed (session=%s): %s",
+                session_id, _e,
+            )
+
     # 7. INDIC CASCADE — translate the English reply back into Hinglish/Hindi,
     # then run THREE drift checks. If any catches drift, revert to the English
     # reply (user sees correct facts even if not in their preferred language).
@@ -1469,4 +1722,5 @@ async def handle_turn(
         faithfulness_reasons=verdict.reasons,
         blocked=blocked,
         profile_updates=profile_updates_applied,
+        followup_policy_id=followup_policy_id,
     )

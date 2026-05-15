@@ -26,6 +26,11 @@ export type ChatResponse = {
   latency_ms: number;
   session_id: string;
   audio_base64?: string | null;
+  // V3 #4 — backend MAY echo the actual mime it produced (e.g. "audio/mp4")
+  // when the client requested a codec other than the wav default. The
+  // frontend uses this when constructing the playback Blob URL so Safari
+  // doesn't refuse to play an mp4 payload labelled as wav.
+  audio_mime?: string | null;
   faithfulness_passed?: boolean;
   faithfulness_reasons?: string[];
   blocked?: boolean;
@@ -94,14 +99,21 @@ export async function postChat(args: {
   return_audio?: boolean;
   tts_language_code?: string;
   view_context?: ViewContext;
+  // V3 #4 — Safari has no webm/opus support. Caller passes its preferred
+  // codec ("audio/webm; codecs=opus" or "audio/mp4") and the backend SHOULD
+  // honour it on the TTS payload. Sent as a header (`X-Preferred-Codec`)
+  // AND included in the body for backends that ignore custom headers.
+  preferred_codec?: string;
   signal?: AbortSignal;
   onRetry?: (attempt: number) => void;
 }): Promise<ChatResponse> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (args.preferred_codec) headers["X-Preferred-Codec"] = args.preferred_codec;
   const resp = await _fetchWithRetry(
     `${BACKEND_URL}/api/chat`,
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({
         user_text: args.user_text,
         session_id: args.session_id,
@@ -111,6 +123,7 @@ export async function postChat(args: {
         return_audio: args.return_audio ?? false,
         tts_language_code: args.tts_language_code ?? "en-IN",
         view_context: args.view_context,
+        preferred_codec: args.preferred_codec,
       }),
     },
     args.signal,

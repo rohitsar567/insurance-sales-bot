@@ -575,6 +575,98 @@
     .profile-table td.num-cell { text-align: right; font-variant-numeric: tabular-nums; }
     .profile-table td.time-cell { white-space: nowrap; font-size: 12px; }
 
+    /* A5 — stale-data indicator + table footer */
+    .table-footer {
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      justify-content: flex-end;
+      gap: 6px;
+      font-variant-numeric: tabular-nums;
+    }
+    .stale-badge {
+      display: inline-block;
+      padding: 1px 7px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      vertical-align: middle;
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, monospace;
+      background: rgba(210, 153, 34, 0.18);
+      color: var(--yellow);
+      border: 1px solid rgba(210, 153, 34, 0.40);
+      margin-left: 6px;
+    }
+    .stale-badge.fresh {
+      background: rgba(63, 185, 80, 0.12);
+      color: var(--green);
+      border-color: rgba(63, 185, 80, 0.35);
+    }
+    .stale-badge.down {
+      background: rgba(248, 81, 73, 0.18);
+      color: var(--red);
+      border-color: rgba(248, 81, 73, 0.40);
+    }
+
+    /* A5 — Persona drift panel + recommendation history panel */
+    .collapsible {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-top: 16px;
+      background: var(--card);
+    }
+    .collapsible > summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 12px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      user-select: none;
+    }
+    .collapsible > summary::-webkit-details-marker { display: none; }
+    .collapsible > summary::before {
+      content: '▸';
+      color: var(--muted);
+      transition: transform 0.12s ease;
+      font-size: 12px;
+      margin-right: 8px;
+    }
+    .collapsible[open] > summary::before { transform: rotate(90deg); }
+    .collapsible .panel-body {
+      padding: 0 16px 16px;
+    }
+    .drift-row-bad td { background: rgba(248, 81, 73, 0.08); }
+    .drift-pct {
+      display: inline-block;
+      min-width: 48px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+    }
+    .drift-pct.bad { color: var(--red); }
+    .drift-pct.warn { color: var(--yellow); }
+    .drift-pct.ok { color: var(--green); }
+    .outcome-pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, monospace;
+    }
+    .outcome-pill.selected { background: rgba(63, 185, 80, 0.15); color: var(--green); border: 1px solid rgba(63, 185, 80, 0.35); }
+    .outcome-pill.rejected { background: rgba(248, 81, 73, 0.15); color: var(--red); border: 1px solid rgba(248, 81, 73, 0.35); }
+    .outcome-pill.shown    { background: rgba(88, 166, 255, 0.15); color: var(--blue); border: 1px solid rgba(88, 166, 255, 0.35); }
+    .outcome-pill.abandoned{ background: rgba(139, 149, 164, 0.15); color: var(--muted); border: 1px solid rgba(139, 149, 164, 0.35); }
+    .outcome-pill.error    { background: rgba(210, 153, 34, 0.15); color: var(--yellow); border: 1px solid rgba(210, 153, 34, 0.35); }
+
     /* Field completeness bar */
     .field-bar {
       display: inline-flex;
@@ -648,7 +740,36 @@
         <div id="profiles-body">
           <div class="empty-state">Loading…</div>
         </div>
+        <div id="profiles-footer" class="table-footer"></div>
       </div>
+
+      <!-- A5 fix #4: Persona Drift panel (collapsible) -->
+      <details class="collapsible" id="drift-panel">
+        <summary>
+          <span>Persona Drift <span class="muted small" id="drift-summary" style="margin-left:8px;"></span></span>
+          <button id="btn-refresh-drift" type="button">Refresh</button>
+        </summary>
+        <div class="panel-body">
+          <div id="drift-body">
+            <div class="empty-state">Loading…</div>
+          </div>
+          <div id="drift-footer" class="table-footer"></div>
+        </div>
+      </details>
+
+      <!-- A5 fix #5: Recommendation History panel (collapsible) -->
+      <details class="collapsible" id="rec-panel">
+        <summary>
+          <span>Recommendation History <span class="muted small" id="rec-summary" style="margin-left:8px;"></span></span>
+          <button id="btn-refresh-rec" type="button">Refresh</button>
+        </summary>
+        <div class="panel-body">
+          <div id="rec-body">
+            <div class="empty-state">Loading…</div>
+          </div>
+          <div id="rec-footer" class="table-footer"></div>
+        </div>
+      </details>
     </section>
 
     <!-- Tab 2: Performance -->
@@ -663,6 +784,7 @@
         <div id="performance-body">
           <div class="empty-state">Loading…</div>
         </div>
+        <div id="performance-footer" class="table-footer"></div>
       </div>
     </section>
 
@@ -673,9 +795,10 @@
            may live inside this section: the h2 header (with snapshot timestamp
            span), the refresh button, and the chains container that holds the
            two generated tables (Currently In Use + All Eligible Models). -->
-      <h2>LLM health <span class="small muted" id="llm-health-snapshot-ts"></span></h2>
+      <h2>LLM health <span class="small muted" id="llm-health-snapshot-ts"></span> <span id="llm-health-stale-badge"></span></h2>
       <button id="btn-refresh-llm-health">Refresh</button>
       <div id="llm-health-chains" class="llm-simple-tables"></div>
+      <div id="llm-health-footer" class="table-footer"></div>
     </section>
   </div>
 
@@ -697,15 +820,26 @@
         // Shape: { chains: [...], candidates: [...], recent_turns: [...], snapshot_ts }
         llmHealth: null,
         llmHealthPollTimer: null,
+        llmHealthLoadedAt: null,
         lastUpdatedAt: null,
         chainLoaded: false,
         // Profiles tab
         profiles: null,
         profilesLoaded: false,
+        profilesLoadedAt: null,
         profilesSort: { key: 'last_seen', dir: 'desc' },
+        // A5 — Persona Drift panel
+        drift: null,
+        driftLoaded: false,
+        driftLoadedAt: null,
+        // A5 — Recommendation History panel
+        recHistory: null,
+        recHistoryLoaded: false,
+        recHistoryLoadedAt: null,
         // Performance tab
         performance: null,
         performanceLoaded: false,
+        performanceLoadedAt: null,
         // Active tab
         activeTab: 'profiles'
       };
@@ -1340,6 +1474,7 @@
       function fetchLlmHealth() {
         return apiGetTolerant('/api/admin/llm-health').then(function (data) {
           STATE.llmHealth = data;
+          STATE.llmHealthLoadedAt = Date.now();
         }).catch(function (err) {
           if (err && err.notDeployed) {
             STATE.llmHealth = { __notDeployed: true };
@@ -1904,6 +2039,7 @@
       function fetchProfiles() {
         return apiGetTolerant('/api/admin/profiles').then(function (data) {
           STATE.profiles = data;
+          STATE.profilesLoadedAt = Date.now();
         });
       }
 
@@ -2076,6 +2212,7 @@
       function fetchPerformance() {
         return apiGetTolerant('/api/admin/performance').then(function (data) {
           STATE.performance = data;
+          STATE.performanceLoadedAt = Date.now();
         });
       }
 
@@ -2382,6 +2519,262 @@
         return wrap;
       }
 
+      // ----- A5 — Persona Drift panel -----
+      function fetchDrift() {
+        return apiGetTolerant('/api/admin/persona-drift').then(function (data) {
+          STATE.drift = data;
+          STATE.driftLoadedAt = Date.now();
+        });
+      }
+
+      function renderDrift() {
+        var body = $('drift-body');
+        var summary = $('drift-summary');
+        clearChildren(body);
+        if (summary) summary.textContent = '';
+        if (!STATE.drift) {
+          body.appendChild(createEl('div', { className: 'empty-state', text: 'Loading…' }));
+          return;
+        }
+        if (STATE.drift.__notDeployed) {
+          body.appendChild(buildPendingMessage('/api/admin/persona-drift'));
+          return;
+        }
+        var personas = STATE.drift.personas || [];
+        if (summary) {
+          summary.textContent = personas.length + ' persona' + (personas.length === 1 ? '' : 's')
+            + ' · ' + ((STATE.drift.slots || []).length || 6) + ' slots';
+        }
+        if (!personas.length) {
+          body.appendChild(createEl('div', { className: 'empty-state',
+            text: 'No personas captured yet.' }));
+          return;
+        }
+        var table = createEl('table');
+        var thead = createEl('thead');
+        var hr = createEl('tr');
+        ['Persona', 'Last seen', 'Captured', 'Missing', 'Completeness'].forEach(function (h, i) {
+          var th = createEl('th', { text: h });
+          if (i >= 4) th.style.textAlign = 'right';
+          hr.appendChild(th);
+        });
+        thead.appendChild(hr);
+        table.appendChild(thead);
+        var tbody = createEl('tbody');
+        personas.forEach(function (r) {
+          var tr = createEl('tr');
+          if (r.completeness_pct < 50) tr.classList.add('drift-row-bad');
+          var nameCell = createEl('td');
+          var nameSpan = createEl('span', { text: r.name_display || '—' });
+          nameCell.appendChild(nameSpan);
+          var idSpan = createEl('span', { className: 'small muted',
+            text: '  ' + (r.persona_id || '') });
+          idSpan.style.fontFamily = 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, monospace';
+          idSpan.style.marginLeft = '8px';
+          nameCell.appendChild(idSpan);
+          tr.appendChild(nameCell);
+          tr.appendChild(createEl('td', { className: 'time-cell', text: fmtIST(r.last_seen) }));
+          tr.appendChild(createEl('td', { className: 'mono small',
+            text: (r.captured_slots || []).join(', ') || '—' }));
+          var missCell = createEl('td', { className: 'mono small',
+            text: (r.missing_slots || []).join(', ') || '—' });
+          if ((r.missing_slots || []).length) missCell.style.color = 'var(--yellow)';
+          tr.appendChild(missCell);
+          var pctCell = createEl('td');
+          pctCell.style.textAlign = 'right';
+          var pctSpan = createEl('span', { className: 'drift-pct' });
+          pctSpan.textContent = (r.completeness_pct != null ? r.completeness_pct.toFixed(0) : '—') + '%';
+          if (r.completeness_pct < 50) pctSpan.classList.add('bad');
+          else if (r.completeness_pct < 80) pctSpan.classList.add('warn');
+          else pctSpan.classList.add('ok');
+          pctCell.appendChild(pctSpan);
+          tr.appendChild(pctCell);
+          tbody.appendChild(tr);
+        });
+        table.appendChild(tbody);
+        body.appendChild(table);
+      }
+
+      function loadDrift(force) {
+        if (STATE.driftLoaded && !force) {
+          renderDrift();
+          return Promise.resolve();
+        }
+        return fetchDrift().then(function () {
+          STATE.driftLoaded = true;
+          renderDrift();
+        }).catch(function (err) {
+          if (err && err.notDeployed) {
+            STATE.drift = { __notDeployed: true };
+            renderDrift();
+          } else {
+            handleFetchErr(err);
+          }
+        });
+      }
+
+      // ----- A5 — Recommendation History panel -----
+      function fetchRecHistory() {
+        return apiGetTolerant('/api/admin/recommendation-history').then(function (data) {
+          STATE.recHistory = data;
+          STATE.recHistoryLoadedAt = Date.now();
+        });
+      }
+
+      function renderRecHistory() {
+        var body = $('rec-body');
+        var summary = $('rec-summary');
+        clearChildren(body);
+        if (summary) summary.textContent = '';
+        if (!STATE.recHistory) {
+          body.appendChild(createEl('div', { className: 'empty-state', text: 'Loading…' }));
+          return;
+        }
+        if (STATE.recHistory.__notDeployed) {
+          body.appendChild(buildPendingMessage('/api/admin/recommendation-history'));
+          return;
+        }
+        var events = STATE.recHistory.events || [];
+        if (summary) {
+          summary.textContent = events.length + ' event' + (events.length === 1 ? '' : 's');
+        }
+        if (!events.length) {
+          body.appendChild(createEl('div', { className: 'empty-state',
+            text: 'No policy events logged yet.' }));
+          return;
+        }
+        var table = createEl('table');
+        var thead = createEl('thead');
+        var hr = createEl('tr');
+        ['When', 'Persona', 'Policy', 'Insurer', 'Outcome', 'Session', 'Turn'].forEach(function (h, i) {
+          var th = createEl('th', { text: h });
+          if (i === 4 || i === 6) th.style.textAlign = 'center';
+          hr.appendChild(th);
+        });
+        thead.appendChild(hr);
+        table.appendChild(thead);
+        var tbody = createEl('tbody');
+        events.forEach(function (e) {
+          var tr = createEl('tr');
+          tr.appendChild(createEl('td', { className: 'time-cell', text: fmtIST(e.event_at) }));
+          var pCell = createEl('td');
+          pCell.appendChild(createEl('span', { text: e.name_display || '—' }));
+          var idSpan = createEl('span', { className: 'small muted',
+            text: '  ' + (e.persona_id || '') });
+          idSpan.style.fontFamily = 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, monospace';
+          idSpan.style.marginLeft = '8px';
+          pCell.appendChild(idSpan);
+          tr.appendChild(pCell);
+          tr.appendChild(createEl('td', { className: 'mono small', text: e.policy_slug || '—' }));
+          tr.appendChild(createEl('td', { text: e.insurer || '—' }));
+          var oCell = createEl('td');
+          oCell.style.textAlign = 'center';
+          var outcome = (e.outcome || e.event_type || 'shown').toLowerCase();
+          var pill = createEl('span', { className: 'outcome-pill ' + outcome, text: outcome.toUpperCase() });
+          oCell.appendChild(pill);
+          tr.appendChild(oCell);
+          var sCell = createEl('td', { className: 'mono small',
+            text: e.session_id ? String(e.session_id).slice(0, 10) + '…' : '—' });
+          if (e.session_id) sCell.title = e.session_id;
+          tr.appendChild(sCell);
+          // Conversation turn — not stamped on the event today; show '—'
+          // until the orchestrator records turn_idx into the policy event.
+          var tCell = createEl('td', { text: e.conversation_turn != null ? String(e.conversation_turn) : '—' });
+          tCell.style.textAlign = 'center';
+          tCell.classList.add('muted');
+          tr.appendChild(tCell);
+          tbody.appendChild(tr);
+        });
+        table.appendChild(tbody);
+        body.appendChild(table);
+      }
+
+      function loadRecHistory(force) {
+        if (STATE.recHistoryLoaded && !force) {
+          renderRecHistory();
+          return Promise.resolve();
+        }
+        return fetchRecHistory().then(function () {
+          STATE.recHistoryLoaded = true;
+          renderRecHistory();
+        }).catch(function (err) {
+          if (err && err.notDeployed) {
+            STATE.recHistory = { __notDeployed: true };
+            renderRecHistory();
+          } else {
+            handleFetchErr(err);
+          }
+        });
+      }
+
+      // ----- A5 — Stale-data footer (every table) -----
+      // 90s threshold: probe age > 90s ⇒ "stale" (yellow). Threshold matches
+      // the audit's "freshness" definition. Updated live via setInterval.
+      var STALE_THRESHOLD_MS = 90 * 1000;
+
+      function fmtAgo(ms) {
+        if (ms == null || isNaN(ms) || ms < 0) return '—';
+        var s = Math.floor(ms / 1000);
+        if (s < 60) return s + 's ago';
+        var m = Math.floor(s / 60);
+        if (m < 60) return m + 'm ' + (s % 60) + 's ago';
+        var h = Math.floor(m / 60);
+        return h + 'h ' + (m % 60) + 'm ago';
+      }
+
+      function setFooter(elId, fetchedAtMs, opts) {
+        var el = $(elId);
+        if (!el) return;
+        clearChildren(el);
+        if (!fetchedAtMs) return;
+        var ageMs = Date.now() - fetchedAtMs;
+        var label = createEl('span', { text: 'Last updated: ' + fmtAgo(ageMs) });
+        el.appendChild(label);
+        var badge = createEl('span');
+        var stale = ageMs > STALE_THRESHOLD_MS;
+        badge.className = 'stale-badge ' + (stale ? '' : 'fresh');
+        badge.textContent = stale ? 'STALE' : 'FRESH';
+        el.appendChild(badge);
+        if (opts && opts.extraText) {
+          var ex = createEl('span', { text: ' · ' + opts.extraText });
+          ex.classList.add('muted');
+          el.appendChild(ex);
+        }
+      }
+
+      // Per-tab footers ticked every second. Cheap — just DOM text updates.
+      function tickFooters() {
+        setFooter('profiles-footer', STATE.profilesLoadedAt);
+        setFooter('drift-footer', STATE.driftLoadedAt);
+        setFooter('rec-footer', STATE.recHistoryLoadedAt);
+        setFooter('performance-footer', STATE.performanceLoadedAt);
+        // LLM health uses probe timestamp from the snapshot — falls back to
+        // the local fetch time when the payload doesn't carry snapshot_ts.
+        var probeAt = null;
+        if (STATE.llmHealth && STATE.llmHealth.snapshot_ts) {
+          var t = Date.parse(STATE.llmHealth.snapshot_ts);
+          if (!isNaN(t)) probeAt = t;
+        }
+        if (!probeAt) probeAt = STATE.llmHealthLoadedAt;
+        setFooter('llm-health-footer', probeAt);
+        // LLM-health stale badge sits next to the section header — render
+        // separately so it's visible even when the body is empty.
+        var badgeHost = $('llm-health-stale-badge');
+        if (badgeHost) {
+          clearChildren(badgeHost);
+          if (probeAt) {
+            var ageMs = Date.now() - probeAt;
+            var stale = ageMs > STALE_THRESHOLD_MS;
+            var badge = createEl('span', {
+              className: 'stale-badge ' + (stale ? '' : 'fresh'),
+              text: stale ? 'STALE' : 'FRESH'
+            });
+            badgeHost.appendChild(badge);
+          }
+        }
+      }
+      setInterval(tickFooters, 1000);
+
       // ----- Tab switching -----
       function switchTab(tab) {
         STATE.activeTab = tab;
@@ -2402,6 +2795,10 @@
         // Lazy-load this tab's data
         if (tab === 'profiles') {
           loadProfiles(false);
+          // A5 — load drift + rec history alongside the visitors table.
+          // Cheap; both endpoints walk the same profiles dir.
+          loadDrift(false);
+          loadRecHistory(false);
           stopLlmHealthPolling();
         } else if (tab === 'performance') {
           loadPerformance(false);
@@ -2485,10 +2882,20 @@
           STATE.chains = null;
           STATE.usage = null;
           STATE.llmHealth = null;
+          STATE.llmHealthLoadedAt = null;
           STATE.profiles = null;
           STATE.profilesLoaded = false;
+          STATE.profilesLoadedAt = null;
           STATE.performance = null;
           STATE.performanceLoaded = false;
+          STATE.performanceLoadedAt = null;
+          // A5 — clear drift + rec history state on lock
+          STATE.drift = null;
+          STATE.driftLoaded = false;
+          STATE.driftLoadedAt = null;
+          STATE.recHistory = null;
+          STATE.recHistoryLoaded = false;
+          STATE.recHistoryLoadedAt = null;
           STATE.chainLoaded = false;
           stopLlmHealthPolling();
           try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
@@ -2511,6 +2918,37 @@
             .catch(handleFetchErr)
             .then(function () { btn.disabled = false; btn.textContent = 'Refresh'; });
         };
+
+        // A5 — Persona Drift refresh (stop bubbling so <summary> doesn't
+        // collapse the panel when the button is clicked).
+        var driftBtn = $('btn-refresh-drift');
+        if (driftBtn) {
+          driftBtn.onclick = function (e) {
+            e.stopPropagation();
+            e.preventDefault();
+            var btn = this;
+            btn.disabled = true;
+            btn.textContent = 'Refreshing…';
+            loadDrift(true).then(function () { toast('Persona drift refreshed', 'success'); })
+              .catch(handleFetchErr)
+              .then(function () { btn.disabled = false; btn.textContent = 'Refresh'; });
+          };
+        }
+
+        // A5 — Recommendation history refresh
+        var recBtn = $('btn-refresh-rec');
+        if (recBtn) {
+          recBtn.onclick = function (e) {
+            e.stopPropagation();
+            e.preventDefault();
+            var btn = this;
+            btn.disabled = true;
+            btn.textContent = 'Refreshing…';
+            loadRecHistory(true).then(function () { toast('Recommendation history refreshed', 'success'); })
+              .catch(handleFetchErr)
+              .then(function () { btn.disabled = false; btn.textContent = 'Refresh'; });
+          };
+        }
 
         // Performance refresh
         $('btn-refresh-performance').onclick = function () {

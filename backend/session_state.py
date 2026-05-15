@@ -61,6 +61,12 @@ class SessionState:
     #     "staged_at": <epoch-seconds>,
     #   }
     pending_profile_recall: Optional[Dict[str, Any]] = None
+    # KI-224 — most-recent recommendation policy_ids the brain cited on the
+    # last user-visible recommendation/comparison turn. Populated by the
+    # orchestrator after a clean closer reply. Lets the NEXT turn route
+    # follow-ups like "tell me more about #2" without re-retrieving from
+    # scratch. Empty list = no active shortlist on this session.
+    last_recommendation_ids: list = field(default_factory=list)
 
     def _flush(self) -> None:
         """No-op since KI-118 (2026-05-15). Disk persistence was removed; the

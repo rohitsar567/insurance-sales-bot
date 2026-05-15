@@ -28,6 +28,16 @@ from backend.orchestrator import handle_turn
 from backend.providers.sarvam_stt import SarvamSTT
 from backend.providers.sarvam_tts import SarvamTTS
 
+# Path B — opt-in single-LLM brain. Off by default; flip via env var.
+# When on we replace orchestrator.handle_turn with single_brain.handle_turn
+# for the /api/chat hot path and fall back to the legacy orchestrator on
+# any SingleBrainError (so users always get a reply).
+import os as _os  # local alias to avoid stomping any later `import os`
+
+USE_SINGLE_BRAIN = _os.environ.get("USE_SINGLE_BRAIN", "false").lower() in (
+    "1", "true", "yes", "on",
+)
+
 # Singleton provider instances (initialized on first call)
 _stt: Optional[SarvamSTT] = None
 _tts: Optional[SarvamTTS] = None
@@ -416,17 +426,52 @@ async def chat(req: ChatRequest):
     # not a connection-reset to the user. 45s is generous but tighter than
     # HF Space's gateway timeout, so the user always gets a response.
     try:
-        turn = await asyncio.wait_for(
-            handle_turn(
-                user_text=req.user_text,
-                chat_history=req.chat_history,
-                user_profile=req.profile,
-                policy_filter_ids=req.policy_filter_ids,
-                session_id=session_id,
-                view_context=req.view_context,
-            ),
-            timeout=45.0,
-        )
+        if USE_SINGLE_BRAIN:
+            # Path B — one Gemini call per turn with native function-calling.
+            # Falls back to the legacy orchestrator on SingleBrainError so a
+            # missing GOOGLE_API_KEY / model outage never breaks the chat.
+            from backend import single_brain
+            from backend.session_state import get_session
+
+            _sb_session = get_session(session_id)
+            try:
+                turn = await asyncio.wait_for(
+                    single_brain.handle_turn(
+                        session=_sb_session,
+                        user_text=req.user_text,
+                        chat_history=req.chat_history,
+                    ),
+                    timeout=45.0,
+                )
+            except single_brain.SingleBrainError as _sb_err:
+                logging.warning(
+                    "single_brain failed, falling back to orchestrator "
+                    "(session=%s): %s",
+                    session_id, _sb_err,
+                )
+                turn = await asyncio.wait_for(
+                    handle_turn(
+                        user_text=req.user_text,
+                        chat_history=req.chat_history,
+                        user_profile=req.profile,
+                        policy_filter_ids=req.policy_filter_ids,
+                        session_id=session_id,
+                        view_context=req.view_context,
+                    ),
+                    timeout=45.0,
+                )
+        else:
+            turn = await asyncio.wait_for(
+                handle_turn(
+                    user_text=req.user_text,
+                    chat_history=req.chat_history,
+                    user_profile=req.profile,
+                    policy_filter_ids=req.policy_filter_ids,
+                    session_id=session_id,
+                    view_context=req.view_context,
+                ),
+                timeout=45.0,
+            )
     except asyncio.TimeoutError:
         logging.warning(
             "handle_turn outer TimeoutError; returning graceful reply (session=%s)",

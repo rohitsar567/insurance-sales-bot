@@ -264,6 +264,12 @@ _NAME_BAD_FIRST_WORDS = {
     "don", "dont", "don't",
     "i", "we", "my", "this", "that", "the",
     "first", "still", "yet",
+    # KI-221 — additional status / metadata words the LLM occasionally emits
+    # as a "name". These were observed live (e.g. "last", "surname", "hi")
+    # routing through as candidate names.
+    "last", "first", "sur", "lastname", "firstname", "surname", "name",
+    "hi", "hey", "ok", "hello", "okay", "yo", "hola",
+    "user", "person", "someone", "me", "myself",
 }
 
 
@@ -296,11 +302,20 @@ def _normalize_name(value: Any) -> Optional[str]:
             break
     if not s:
         return None
+    # KI-221 — minimum length floor. Single-char "names" (e.g. "a", "x")
+    # are never real names and were leaking through the alpha-density check.
+    if len(s) < 2:
+        return None
     first = s.split()[0].lower().strip(".,!?")
     if first in _NAME_BAD_FIRST_WORDS:
         return None
     alpha = sum(1 for c in s if c.isalpha())
     if alpha < 2 or alpha / max(1, len(s)) < 0.5:
+        return None
+    # KI-221 — every real name has at least one vowel. Rejects scraps like
+    # "Mr", "Dr", "St" (which slipped past the polite-prefix stripper when
+    # not followed by a space, e.g. the LLM emitting just "Dr").
+    if not any(c in "aeiouy" for c in s.lower()):
         return None
     # Capitalize if all-lower (LLM convention — names should be Title Case).
     if not any(c.isupper() for c in s):
@@ -387,7 +402,25 @@ def _normalize_dependents(value: Any, schema: dict) -> Optional[str]:
         return "self+kids"
     if has_parents:
         return "self+parents"
-    if s in ("self", "me", "just me", "only me", "myself", "only self"):
+    # KI-222 — expand the "self" alias set. Live captures showed users
+    # answering "single", "unmarried", "no dependents", "just myself" etc.,
+    # which previously fell through to None and got silently dropped — the
+    # bot then re-asked the same slot on the next turn.
+    _SELF_ALIASES = (
+        "self", "me", "just me", "only me", "myself", "only self",
+        "single", "unmarried", "alone", "bachelor", "no dependents",
+        "just myself", "nobody else", "no one else", "nobody",
+        "myself only", "by myself", "solo",
+    )
+    if s in _SELF_ALIASES:
+        return "self"
+    # Substring fall-through for the same intents when wrapped in extra prose
+    # (e.g. "i'm single right now", "just myself for now").
+    if any(alias in s for alias in (
+        "single", "unmarried", "no dependents", "just myself",
+        "by myself", "nobody else", "no one else", "myself only",
+        "bachelor", "solo",
+    )):
         return "self"
     return None
 
@@ -399,14 +432,54 @@ def _normalize_income_band(value: Any, schema: dict) -> Optional[str]:
         s = value.strip()
         if s in schema["values"]:
             return s
+        # KI-225 — natural phrasing pre-pass (covers patterns the centralised
+        # `_parse_income_band` doesn't handle: "under 5 lakh", "between 5 and
+        # 10", "25 lakh plus", etc.). Lowercase + strip light punctuation, then
+        # match phrase patterns BEFORE delegating to the legacy parser.
+        s_norm = re.sub(r"[,\?\.]+$", "", s.lower()).strip()
+        s_norm = re.sub(r"\s+", " ", s_norm)
+        # under_5L family
+        if re.search(
+            r"\b(?:under|less\s+than|below|<)\s*(?:rs\.?\s*)?5\s*(?:l|lakh|lakhs|lac)\b",
+            s_norm,
+        ):
+            return "under_5L"
+        # 25L+ family — check BEFORE 10-25 so "above 25" doesn't match the
+        # 10-25 patterns by accident.
+        if re.search(
+            r"\b(?:25\s*l?\s*\+|25\s*(?:l|lakh|lakhs|lac)\s*plus|"
+            r"(?:above|over|more\s+than|>)\s*(?:rs\.?\s*)?25\s*(?:l|lakh|lakhs|lac)?|"
+            r"25\s*\+\s*(?:l|lakh|lakhs|lac))\b",
+            s_norm,
+        ):
+            return "25L+"
+        # 10L-25L family
+        if re.search(
+            r"\b(?:10\s*[-–to]+\s*25\s*(?:l|lakh|lakhs|lac)?|"
+            r"between\s+10\s+and\s+25(?:\s*(?:l|lakh|lakhs|lac))?)\b",
+            s_norm,
+        ):
+            return "10L-25L"
+        # 5L-10L family
+        if re.search(
+            r"\b(?:5\s*[-–to]+\s*10\s*(?:l|lakh|lakhs|lac)?|"
+            r"between\s+5\s+and\s+10(?:\s*(?:l|lakh|lakhs|lac))?)\b",
+            s_norm,
+        ):
+            return "5L-10L"
         # KI-149 — let the centralised parser handle free text.
         parsed = _parse_income_band(s)
         if parsed in schema["values"]:
             return parsed
         return None
     if isinstance(value, (int, float)):
-        # Bare number → rupees → bucket
+        # Bare number → rupees → bucket. KI-223 — require ≥1 lakh floor; bare
+        # numbers below that are almost always age / dependents-count noise
+        # (e.g. "I'm 29 years old" → LLM extracted 29 as "income"). Reject
+        # rather than mis-bucket as under_5L.
         amt = int(value)
+        if amt < 100_000:
+            return None
         if amt < 500_000:
             return "under_5L"
         if amt < 1_000_000:
@@ -432,6 +505,20 @@ def _normalize_existing_cover(value: Any, schema: dict) -> Optional[int]:
         s = value.strip().lower()
         if not s:
             return None
+        # KI-225 — explicit no-cover phrasings (covers "no insurance",
+        # "no policy", "no existing", "first time so nothing", etc.). These
+        # mostly route through the original \b(no|none|...)\b pattern below
+        # but the more-specific multi-word phrasings need a dedicated pass so
+        # "no insurance currently" doesn't accidentally fall through to the
+        # digit fallback (which would extract '0' from no digits → None).
+        _no_cover_phrases = (
+            "no insurance", "no policy", "no policies", "no existing",
+            "no existing cover", "no existing policy", "no cover",
+            "first time so nothing", "nothing currently", "nothing right now",
+            "no pre-existing", "don't have any", "dont have any",
+        )
+        if any(p in s for p in _no_cover_phrases):
+            return 0
         # Negative answers → 0
         if re.search(
             r"\b(no|none|nothing|zero|nope|nah|haven'?t|don'?t|never|"
@@ -439,7 +526,22 @@ def _normalize_existing_cover(value: Any, schema: dict) -> Optional[int]:
             s,
         ):
             return 0
-        amt = _parse_inr_amount(s)
+        # KI-225 — employer / corporate cover phrasings. The amount IS in the
+        # string; let `_parse_inr_amount` extract it (₹5L / 5 lakh / etc.).
+        # Phrases like "5L from work" / "5 lakh employer" don't trip the
+        # negative-answer regex above (they don't contain a no/none token).
+        # Spelled-out small numbers ("five lakh", "ten lakh") aren't covered
+        # by the centralised parser — do a light word-to-digit pre-pass here.
+        _SPELLED_DIGITS = {
+            "one": "1", "two": "2", "three": "3", "four": "4", "five": "5",
+            "six": "6", "seven": "7", "eight": "8", "nine": "9", "ten": "10",
+            "fifteen": "15", "twenty": "20", "twenty-five": "25", "fifty": "50",
+        }
+        _s_for_parse = s
+        for _word, _digit in _SPELLED_DIGITS.items():
+            # word-boundary substitution so "tense" doesn't become "10se"
+            _s_for_parse = re.sub(rf"\b{re.escape(_word)}\b", _digit, _s_for_parse)
+        amt = _parse_inr_amount(_s_for_parse)
         if amt is None:
             # Bare digit fallback (very small values OK here — user might
             # have ₹500 unused; still coerce within bounds).
@@ -479,15 +581,38 @@ def _normalize_primary_goal(value: Any, schema: dict) -> Optional[str]:
     # Direct hit on alias or canonical
     if s in _GOAL_ALIASES:
         return _GOAL_ALIASES[s]
-    # Keyword fall-through
-    if any(k in s for k in ("first policy", "first one", "first time", "first buy", "new policy", "buying my first")):
-        return "first_buy"
-    if any(k in s for k in ("upgrade", "upgrading", "better cover", "more cover", "increase cover")):
-        return "upgrade"
-    if any(k in s for k in ("compare", "comparison", " vs ", " vs.", "versus")):
-        return "compare_specific"
-    if any(k in s for k in (" tax ", "80d", "deduction", "tax planning", "tax saving")):
+    # KI-225 — natural phrasing keyword fall-through. Order matters: check the
+    # more-specific phrases (tax / compare) BEFORE the broader first_buy / upgrade
+    # buckets so e.g. "compare specific policies for tax savings" lands in
+    # tax_planning, not compare_specific, when both keyword sets match.
+    # tax_planning — most specific (section refs + explicit tax keywords)
+    if any(k in s for k in (
+        "tax planning", "for tax", "section 80d", "80d", "tax savings",
+        "tax saving", "tax benefit", "tax deduction", " tax ", "deduction",
+    )):
         return "tax_planning"
+    # compare_specific — explicit comparison phrasing
+    if any(k in s for k in (
+        "compare specific", "comparing", "compare", "comparison",
+        "looking at specific policies", "looking at specific polic",
+        " vs ", " vs.", "versus", "between policy", "between policies",
+    )):
+        return "compare_specific"
+    # upgrade — has existing cover, wants better
+    if any(k in s for k in (
+        "upgrade", "upgrading", "want to upgrade", "improve my existing",
+        "better than what i have", "replace my current", "replace my existing",
+        "better cover", "more cover", "increase cover",
+    )):
+        return "upgrade"
+    # first_buy — broadest bucket, check last
+    if any(k in s for k in (
+        "first time", "first policy", "first time buyer", "first one",
+        "first buy", "new policy", "buying my first", "buy my first",
+        "looking for my first", "looking for first",
+        "starting out", "new to insurance",
+    )):
+        return "first_buy"
     return None
 
 
@@ -554,6 +679,11 @@ def _normalize_budget_band(value: Any, schema: dict) -> Optional[str]:
         return None
     if isinstance(value, (int, float)):
         amt = int(value)
+        # KI-223 — require ≥₹5,000 floor; bare numbers below that are almost
+        # always age / dependents-count noise (e.g. age 29 leaking into the
+        # budget slot). Reject rather than mis-bucket as under_15k.
+        if amt < 5_000:
+            return None
         if amt < 15_000:
             return "under_15k"
         if amt < 30_000:
@@ -577,12 +707,35 @@ _NO_PED_PATTERNS = (
 )
 
 _COND_KEYWORDS: dict[str, tuple] = {
-    "diabetes":     ("diabetes", "diabetic", "sugar"),
-    "hypertension": ("hypertension", "blood pressure", "high bp"),
-    "thyroid":      ("thyroid", "hypothyroid", "hyperthyroid"),
-    "asthma":       ("asthma",),
-    "heart":        ("heart problem", "heart disease", "cardiac"),
-    "cancer":       ("cancer", "tumor", "tumour"),
+    # KI-225 — alias coverage expanded per spec. Lay-terms ("sugar", "BP",
+    # "type 2 diabetes", "blood sugar", "respiratory") + clinical-adjacent
+    # phrasings ("cardiac", "heart problem", "tumor") all map onto the same
+    # 6 canonical buckets the downstream sales brain understands.
+    "diabetes":     (
+        "diabetes", "diabetic", "sugar", "blood sugar",
+        "diabetes type 1", "diabetes type 2", "type 1 diabetes",
+        "type 2 diabetes", "type-1 diabetes", "type-2 diabetes",
+    ),
+    "hypertension": (
+        "hypertension", "blood pressure", "high blood pressure",
+        "high bp", "bp issue", "bp problem",
+    ),
+    "thyroid":      (
+        "thyroid", "hypothyroid", "hyperthyroid",
+        "thyroid problem", "thyroid issue", "thyroid disorder",
+    ),
+    "asthma":       (
+        "asthma", "asthmatic", "respiratory", "respiratory issue",
+        "respiratory problem",
+    ),
+    "heart":        (
+        "heart problem", "heart disease", "heart issue", "heart condition",
+        "cardiac", "cardiac issue", "cardiac problem",
+    ),
+    "cancer":       (
+        "cancer", "tumor", "tumour", "cancer history", "had cancer",
+        "cancer survivor",
+    ),
 }
 # "bp" as a free-standing token (case-insensitive word-boundary). Kept
 # separate from `_COND_KEYWORDS` so it doesn't collide with substrings
@@ -609,12 +762,27 @@ def _normalize_health_conditions(value: Any) -> Optional[list]:
             if s in seen:
                 continue
             seen.add(s)
+            # Skip explicit "no" markers if they leaked into a list shape.
+            if s in ("no", "none", "nothing", "nil", "negative"):
+                continue
             # Map keyword hits to canonical names
             mapped = None
             for canon, kws in _COND_KEYWORDS.items():
                 if s == canon or any(k.strip() == s for k in kws):
                     mapped = canon
                     break
+            # KI-225 — also run the word-boundary BP regex so list items like
+            # ["BP"] / ["high BP"] map to "hypertension" (the kw tuple uses
+            # multi-word strings, none of which exact-match the bare token).
+            if mapped is None and _BP_REGEX.search(s):
+                mapped = "hypertension"
+            # Substring fallback for "type 2 diabetes" style values where the
+            # full string doesn't exact-match a kw but contains one.
+            if mapped is None:
+                for canon, kws in _COND_KEYWORDS.items():
+                    if any(k in s for k in kws):
+                        mapped = canon
+                        break
             cleaned.append(mapped if mapped else s)
         # Dedup again after canonicalisation
         return list(dict.fromkeys(cleaned))
