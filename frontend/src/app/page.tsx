@@ -1576,6 +1576,7 @@ export default function Page() {
                   m={m}
                   marketplace={marketplace}
                   profile={profileCompleteness?.profile}
+                  premiumBand={premiumBand}
                   onOpenMarketplace={() => {
                     setShowMarketplace(true);
                     setShowPremium(false);
@@ -2484,11 +2485,9 @@ function EmptyState({
             <em className="not-italic text-[var(--primary)]">{t("welcome.heading_b")}</em>
             {t("welcome.heading_c")}
           </h1>
-          <p className="text-[15px] sm:text-base text-[var(--muted-foreground)] max-w-xl mx-auto leading-relaxed">
-            {t("welcome.subtitle")}{" "}
-            <strong className="text-[var(--foreground)]">{t("welcome.no_commissions")}</strong>{" "}
-            {t("welcome.source_link")}
-          </p>
+          {/* KI-276 — removed the welcome.subtitle / no_commissions / source_link
+              triplet. Section 1 below already explains what the bot does in a
+              cleaner, numbered-step format. */}
         </section>
 
         {/* Section 1 — How this works. Three numbered step cards. The
@@ -2773,11 +2772,13 @@ function Message({
   m,
   marketplace,
   profile,
+  premiumBand,
   onOpenMarketplace,
 }: {
   m: DisplayMessage;
   marketplace?: MarketplaceResponse | null;
   profile?: UserProfile;
+  premiumBand?: PredictedPremiumBandResponse | null;
   onOpenMarketplace?: () => void;
 }) {
   const isUser = m.role === "user";
@@ -2855,6 +2856,7 @@ function Message({
             citations={m.citations}
             marketplace={marketplace}
             profile={profile}
+            premiumBand={premiumBand}
             onOpenMarketplace={onOpenMarketplace}
           />
         )}
@@ -2883,11 +2885,16 @@ function CitedPolicyCards({
   citations,
   marketplace,
   profile,
+  premiumBand,
   onOpenMarketplace,
 }: {
   citations: Citation[];
   marketplace?: MarketplaceResponse | null;
   profile?: UserProfile;
+  // Profile-level predicted premium band (same number rendered in the chat
+  // header chip). Threaded into PolicyCompareModal so non-curated policies
+  // can surface it as their indicative reference.
+  premiumBand?: PredictedPremiumBandResponse | null;
   onOpenMarketplace?: () => void;
 }) {
   const [cards, setCards] = useState<Record<string, ScorecardResponse | null>>({});
@@ -3054,11 +3061,13 @@ function CitedPolicyCards({
           onClose={() => setCompareOpen(false)}
           profile={profile}
           policyDataFor={(id) => policyById[id]}
+          aggregateBand={premiumBand}
           renderPremiumFor={(policyId, policyName) => (
             <PolicyPremiumWidget
               policyId={policyId}
               policyName={policyName}
               profile={premiumProfile}
+              aggregateBand={premiumBand}
             />
           )}
           renderScorecardFor={(policyId, policyName) => (
