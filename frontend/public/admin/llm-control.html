@@ -675,6 +675,19 @@
             <button id="btn-refresh-llm-health">Refresh</button>
           </div>
         </div>
+        <!-- KI-184 (2026-05-15) — Tier banner so the table below isn't
+             confused with the actual primary serving traffic. Real-world
+             call order: Tier 0 Google Gemini → Tier 1 NIM (shown below) →
+             Tier 2 OpenRouter free pool → NIM nemotron-49b last resort. -->
+        <div style="margin-bottom: 14px; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; background: #0b0d12; font-size: 12px; line-height: 1.5;">
+          <strong style="color: var(--text);">3-tier brain chain (KI-179 + ADR-040):</strong>
+          <span class="muted">
+            Tier 0 — <strong>Google Gemini 2.5 Flash / Flash Lite</strong> (PRIMARY, free 1500/day)
+            &nbsp;·&nbsp; Tier 1 — NIM (shown below)
+            &nbsp;·&nbsp; Tier 2 — OpenRouter free pool
+            &nbsp;·&nbsp; Last resort — NIM Nemotron-49B
+          </span>
+        </div>
         <div id="llm-health-chains" class="llm-simple-tables"></div>
       </div>
     </section>
@@ -2404,14 +2417,21 @@
         // handlers are gone.
 
         // KI-086 — manual refresh for the LLM Health & Credits card.
+        // KI-184 (2026-05-15) — Refresh now forces a fresh probe BEFORE
+        // fetching state. Previously this only re-fetched the cached probe
+        // state from /api/admin/llm-health, which is refreshed by a 5-min
+        // background loop. User clicked Refresh expecting current state but
+        // got cached state. Now: POST /api/admin/probe → then re-fetch.
         var llmHealthBtn = $('btn-refresh-llm-health');
         if (llmHealthBtn) {
           llmHealthBtn.onclick = function () {
             var btn = this;
             btn.disabled = true;
-            btn.textContent = 'Refreshing…';
-            fetchLlmHealth()
-              .then(function () { renderLlmHealth(); toast('LLM health refreshed', 'success'); })
+            btn.textContent = 'Probing…';
+            apiPost('/api/admin/probe', null)
+              .catch(function () { /* tolerate probe failure; still re-fetch cached state */ })
+              .then(function () { return fetchLlmHealth(); })
+              .then(function () { renderLlmHealth(); toast('LLM health refreshed (fresh probe)', 'success'); })
               .catch(handleFetchErr)
               .then(function () { btn.disabled = false; btn.textContent = 'Refresh'; });
           };
