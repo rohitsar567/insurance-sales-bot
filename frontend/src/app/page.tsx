@@ -50,13 +50,6 @@ type DisplayMessage = ChatMessage & {
   blocked?: boolean;
 };
 
-const SUGGESTED_QUESTIONS = [
-  "I'm looking for a new health insurance policy.",
-  "What is the waiting period for pre-existing diseases?",
-  "Does HDFC ERGO Optima Secure cover AYUSH?",
-  "What's the room rent cap on Care Supreme?",
-];
-
 export default function Page() {
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [input, setInput] = useState("");
@@ -1039,15 +1032,31 @@ export default function Page() {
         // placeholder while Sarvam runs. send() will clear it when (and only
         // when) we actually submit, so the user sees their words throughout.
         try {
-          const { text } = await postTranscribe(blob, ttsLang);
-          if (text && text.trim()) {
+          const tr = await postTranscribe(blob, ttsLang);
+          // KI-242 — Backend now returns HTTP 200 + error_code on Sarvam
+          // failures (rate_limit / service_unavailable / network / auth /
+          // unknown). Prefer the SR fallback transcript when present so the
+          // turn still goes through; otherwise surface the friendly
+          // user_message and DO NOT call send() with empty text.
+          if (tr.error_code) {
+            if (srFallback) {
+              setInputFromTranscript(srFallback);
+              try { await send(srFallback); } catch { /* send handles its own errors */ }
+            } else {
+              setInput("");
+              pushAssistant(
+                tr.user_message ||
+                  "Couldn't transcribe that — please try again or type your question.",
+              );
+            }
+          } else if (tr.text && tr.text.trim()) {
             // KI-213 — replace the interim SR transcript with Sarvam's
             // authoritative version, then submit. send() clears the input
             // itself so the brief flash here is intentional UX feedback.
             // V4 FIX 4 — transcript-sourced.
-            setInputFromTranscript(text);
+            setInputFromTranscript(tr.text);
             // send() flips voicePhase to "thinking" itself; no need to set here
-            await send(text);
+            await send(tr.text);
           } else if (srFallback) {
             // KI-213 — Sarvam returned empty but the browser caught
             // something. Better than telling the user "couldn't hear that
@@ -1059,14 +1068,20 @@ export default function Page() {
             pushAssistant("Sorry, I couldn't hear that clearly. Please try again.");
           }
         } catch (e: unknown) {
-          // KI-213 — Sarvam failed (network / 5xx / rate limit). Fall back to
-          // the SR transcript if we have one rather than dropping the turn.
+          // KI-242 — postTranscribe only throws on transport-level failures
+          // now (5xx from a different middlebox, abort, etc.). Sarvam errors
+          // arrive as HTTP 200 + error_code above and never reach this
+          // branch. Fall back to SR if we have one; else show a friendly
+          // generic message — NEVER leak raw httpx text to the user.
+          void e;
           if (srFallback) {
             setInputFromTranscript(srFallback);
             try { await send(srFallback); } catch { /* send handles its own errors */ }
           } else {
             setInput("");
-            pushAssistant(`Sorry — transcribe error: ${e instanceof Error ? e.message : String(e)}`);
+            pushAssistant(
+              "Voice service is temporarily unavailable — please type your question or try voice again shortly.",
+            );
           }
         } finally {
           setBusy(false);
@@ -1482,7 +1497,7 @@ export default function Page() {
         }`}>
         {messages.length === 0 ? (
           <>
-            <EmptyState onSuggest={(q) => send(q)} coverage={coverage} t={t} />
+            <EmptyState coverage={coverage} t={t} uiLang={uiLang} />
             {/* KI-038 — dots visible even on the very first turn (no messages
                 yet but the bot is hearing you / thinking) */}
             {(busy || voicePhase) && (
@@ -2418,46 +2433,323 @@ function HealthBadge({ health }: { health: { status: string; missing: string[] }
   );
 }
 
-function EmptyState({ onSuggest, coverage, t }: { onSuggest: (q: string) => void; coverage: CoverageResponse | null; t: (k: StringKey, v?: Record<string, string | number>) => string }) {
-  const suggested: StringKey[] = ["suggested.q1", "suggested.q2", "suggested.q3", "suggested.q4"];
+// EmptyState — landing page shown before the user's first message.
+// Redesigned 2026-05-15: removed the four hard-coded example chips
+// (unused conversational starters) and the standalone yellow "tell me the
+// truth" callout. Replaced with three structured cards: (1) how the bot
+// works, (2) the four input modes, (3) two "before we begin" callouts
+// (honesty + voice tips). Localized headings switch to Hindi when the UI
+// language toggle is on; long body copy reuses the existing welcome.*
+// translation keys (already bilingual) and supplements them with English
+// step / mode copy that mirrors the chat composer the user is about to use.
+function EmptyState({
+  coverage,
+  t,
+  uiLang,
+}: {
+  coverage: CoverageResponse | null;
+  t: (k: StringKey, v?: Record<string, string | number>) => string;
+  uiLang: UILang;
+}) {
+  const isHi = uiLang === "hi";
+  const sectionHeading = (en: string, hi: string) => (isHi ? hi : en);
+
   return (
-    <div className="flex-1 flex flex-col items-center justify-center text-center px-4 py-6">
-      <div className="w-16 h-16 rounded-2xl bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center text-2xl font-bold mb-5">IA</div>
-      <h2 className="text-xl sm:text-2xl font-semibold mb-2">{t("welcome.heading_a")}<em className="not-italic text-[var(--primary)]">{t("welcome.heading_b")}</em>{t("welcome.heading_c")}</h2>
-      <p className="text-sm text-[var(--muted-foreground)] max-w-xl mb-4">
-        {t("welcome.subtitle")} <strong className="text-[var(--foreground)]">{t("welcome.no_commissions")}</strong> {t("welcome.source_link")}
-      </p>
-      {coverage && (
-        <p className="text-xs text-[var(--muted-foreground)] mb-5">
-          {t("welcome.coverage_template", { policies: coverage.total_policies, insurers: coverage.total_insurers })}
-        </p>
-      )}
-      <div className="bg-[var(--accent)] border border-[var(--primary)] rounded-xl px-4 py-3 max-w-xl mb-4 text-left">
-        <div className="text-xs font-semibold text-[var(--primary)] mb-1">{t("welcome.trust_title")}</div>
-        <p className="text-xs text-[var(--muted-foreground)] leading-snug">{t("welcome.trust_body")}</p>
-      </div>
-      {/* KI-042 — voice is OFF by default; user opts in via the pill. */}
-      <div className="flex items-center gap-2 max-w-xl mb-6 text-sm text-[var(--muted-foreground)]">
-        <span className="inline-block w-2.5 h-2.5 rounded-full bg-gray-400" />
-        <span>
-          You can <strong className="text-[var(--foreground)]">type</strong> below, click <strong className="text-[var(--foreground)]">🎤 Push-to-talk</strong> for one voice turn, or turn on <strong className="text-[var(--foreground)]">Voice</strong> (the grey pill at the bottom) for always-on listening with barge-in.
-        </span>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-2xl">
-        {suggested.map((key, i) => {
-          const q = t(key);
-          return (
-            <button
-              key={i}
-              onClick={() => onSuggest(q)}
-              className="text-left text-sm px-4 py-3 rounded-xl border border-[var(--border)] bg-[var(--card)] hover:border-[var(--primary)] transition"
-            >
-              <span className="opacity-50 text-xs">→</span> {q}
-            </button>
-          );
-        })}
+    <div className="flex-1 flex flex-col items-center px-4 py-6 sm:py-8">
+      <div className="w-full max-w-3xl flex flex-col gap-8 sm:gap-10">
+        {/* Hero band — subtle teal-to-white gradient, IA logo, headline. */}
+        <section
+          className="relative overflow-hidden rounded-2xl border border-[var(--border)] px-5 sm:px-7 py-6 sm:py-8 text-center"
+          style={{
+            background:
+              "linear-gradient(180deg, color-mix(in srgb, var(--primary) 8%, var(--card)) 0%, var(--card) 100%)",
+          }}
+        >
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center text-xl sm:text-2xl font-bold mb-4 mx-auto shadow-sm">
+            IA
+          </div>
+          <h1 className="text-2xl sm:text-[2.5rem] sm:leading-tight font-semibold tracking-tight mb-3">
+            {t("welcome.heading_a")}
+            <em className="not-italic text-[var(--primary)]">{t("welcome.heading_b")}</em>
+            {t("welcome.heading_c")}
+          </h1>
+          <p className="text-[15px] sm:text-base text-[var(--muted-foreground)] max-w-xl mx-auto leading-relaxed">
+            {t("welcome.subtitle")}{" "}
+            <strong className="text-[var(--foreground)]">{t("welcome.no_commissions")}</strong>{" "}
+            {t("welcome.source_link")}
+          </p>
+        </section>
+
+        {/* Section 1 — How this works. Three numbered step cards. The
+            coverage line ("X policies across Y insurers") is folded into
+            step 2 here so it doesn't float as a standalone caption. */}
+        <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-sm px-5 sm:px-6 py-5 sm:py-6">
+          <div className="flex items-center gap-2 mb-4">
+            <SectionIcon kind="lightbulb" />
+            <h2 className="text-lg sm:text-xl font-semibold text-[var(--foreground)]">
+              {sectionHeading("How this works", "यह कैसे काम करता है")}
+            </h2>
+          </div>
+          <ol className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+            <StepCard
+              n={1}
+              title={sectionHeading(
+                "I'll ask you a few questions",
+                "मैं आपसे कुछ सवाल पूछूंगा"
+              )}
+              body={sectionHeading(
+                "We'll build your profile — age, family, location, budget, conditions — one short answer at a time.",
+                "हम आपकी प्रोफ़ाइल बनाएंगे — उम्र, परिवार, location, budget, conditions — एक-एक करके।"
+              )}
+            />
+            <StepCard
+              n={2}
+              title={sectionHeading(
+                "I'll match you with the right policies",
+                "सही policies match करूंगा"
+              )}
+              body={
+                coverage
+                  ? sectionHeading(
+                      `Ranked by fit-to-you, not by commission. ${coverage.total_policies} policies across ${coverage.total_insurers} Indian insurers are indexed — you can also upload your own policy PDF.`,
+                      `कमीशन से नहीं, आपके लिए fit के हिसाब से। ${coverage.total_policies} policies, ${coverage.total_insurers} बीमाकर्ताओं से indexed हैं — अपनी policy PDF भी upload कर सकते हैं।`
+                    )
+                  : sectionHeading(
+                      "Ranked by fit-to-you, not by commission. 150+ Indian health policies are indexed — you can also upload your own policy PDF.",
+                      "कमीशन से नहीं, आपके लिए fit के हिसाब से। 150+ Indian health policies indexed हैं — अपनी policy PDF भी upload कर सकते हैं।"
+                    )
+              }
+            />
+            <StepCard
+              n={3}
+              title={sectionHeading(
+                "I'll give you a premium estimate",
+                "Premium अनुमान दूंगा"
+              )}
+              body={sectionHeading(
+                "An illustrative annual premium band, tuned to your profile — so you know what you're walking into before you talk to any insurer.",
+                "आपकी profile पर आधारित illustrative वार्षिक premium band — ताकि किसी insurer से बात करने से पहले आपको पता हो क्या उम्मीद रखें।"
+              )}
+            />
+          </ol>
+        </section>
+
+        {/* Section 2 — Using the bot. Four input-mode rows with mini icons.
+            Mirrors the composer pill below (mic / spacebar / Live BETA). */}
+        <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-sm px-5 sm:px-6 py-5 sm:py-6">
+          <div className="flex items-center gap-2 mb-4">
+            <SectionIcon kind="mic" />
+            <h2 className="text-lg sm:text-xl font-semibold text-[var(--foreground)]">
+              {sectionHeading("Using the bot", "Bot का इस्तेमाल कैसे करें")}
+            </h2>
+          </div>
+          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <ModeRow
+              icon="keyboard"
+              title={sectionHeading("Type your message", "Message type करें")}
+              body={sectionHeading(
+                "Write in the chat box below and press Enter to send.",
+                "नीचे के chat box में लिखें और Enter दबाएं।"
+              )}
+            />
+            <ModeRow
+              icon="mic"
+              title={sectionHeading("Push-to-talk", "Push-to-talk")}
+              body={sectionHeading(
+                "Click the green mic button to dictate one voice turn.",
+                "हरे mic बटन पर click करके एक voice turn बोलें।"
+              )}
+            />
+            <ModeRow
+              icon="space"
+              title={sectionHeading("Hold SPACE to talk", "SPACE दबाकर बोलें")}
+              body={sectionHeading(
+                "Hold the space bar to talk hands-free; release to submit.",
+                "बिना हाथ लगाए बोलने के लिए spacebar दबाए रखें; छोड़ने पर submit हो जाएगा।"
+              )}
+            />
+            <ModeRow
+              icon="wave"
+              title={sectionHeading("Live (BETA)", "Live (BETA)")}
+              body={sectionHeading(
+                "Toggle on for always-on listening with barge-in. Experimental — may hear background noise.",
+                "हमेशा सुनने और बीच में रोकने (barge-in) के लिए toggle on करें। Experimental — background noise सुन सकता है।"
+              )}
+            />
+          </ul>
+          <p className="mt-4 text-xs text-[var(--muted-foreground)] leading-relaxed">
+            {sectionHeading(
+              "The bot speaks back automatically (Sarvam TTS, Hindi-capable).",
+              "Bot आवाज़ में जवाब देता है (Sarvam TTS, हिन्दी में भी)।"
+            )}
+          </p>
+        </section>
+
+        {/* Section 3 — Before we begin. Two side-by-side callouts:
+            (a) the honesty callout that previously lived as a standalone
+            yellow box; (b) voice-tips so the user knows how to speak. */}
+        <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-sm px-5 sm:px-6 py-5 sm:py-6">
+          <div className="flex items-center gap-2 mb-4">
+            <SectionIcon kind="shield" />
+            <h2 className="text-lg sm:text-xl font-semibold text-[var(--foreground)]">
+              {sectionHeading("Two things before we start", "शुरू करने से पहले दो बातें")}
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            {/* Left — honesty callout. Uses the existing welcome.trust_* keys
+                so the Hindi copy comes through untouched. */}
+            <div className="rounded-xl border border-[var(--primary)] bg-[var(--accent)] px-4 py-4 text-left">
+              <div className="text-sm font-semibold text-[var(--primary)] mb-1.5">
+                {t("welcome.trust_title")}
+              </div>
+              <p className="text-[13px] text-[var(--muted-foreground)] leading-relaxed">
+                {t("welcome.trust_body")}
+              </p>
+            </div>
+            {/* Right — voice tips. */}
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--muted)] px-4 py-4 text-left">
+              <div className="text-sm font-semibold text-[var(--foreground)] mb-1.5">
+                {sectionHeading("Speaking to the bot", "Bot से बात करना")}
+              </div>
+              <p className="text-[13px] text-[var(--muted-foreground)] leading-relaxed">
+                {sectionHeading(
+                  "Please speak slowly and clearly so the voice AI can understand you. You can speak in English OR Hindi — I'll respond in whichever language you used. If you say something unclear, just repeat or rephrase — no penalties.",
+                  "धीरे और साफ़ बोलिए ताकि voice AI समझ सके। आप English या हिन्दी, किसी भी भाषा में बोल सकते हैं — मैं उसी भाषा में जवाब दूंगा। अगर कुछ अस्पष्ट हो, तो दोबारा या अलग शब्दों में बोलिए — कोई penalty नहीं।"
+                )}
+              </p>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
+  );
+}
+
+// StepCard — one of the three numbered cards in Section 1.
+function StepCard({ n, title, body }: { n: number; title: string; body: string }) {
+  return (
+    <li className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-4 py-4 flex flex-col">
+      <div className="w-7 h-7 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] text-sm font-semibold flex items-center justify-center mb-3">
+        {n}
+      </div>
+      <div className="text-sm font-semibold text-[var(--foreground)] mb-1.5 leading-snug">
+        {title}
+      </div>
+      <p className="text-[13px] text-[var(--muted-foreground)] leading-relaxed">{body}</p>
+    </li>
+  );
+}
+
+// ModeRow — one of the four input-mode rows in Section 2.
+function ModeRow({
+  icon,
+  title,
+  body,
+}: {
+  icon: "keyboard" | "mic" | "space" | "wave";
+  title: string;
+  body: string;
+}) {
+  return (
+    <li className="flex items-start gap-3 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3.5 py-3">
+      <div className="shrink-0 w-9 h-9 rounded-lg bg-[var(--muted)] text-[var(--primary)] flex items-center justify-center">
+        <ModeIcon kind={icon} />
+      </div>
+      <div className="min-w-0">
+        <div className="text-sm font-semibold text-[var(--foreground)] leading-snug">{title}</div>
+        <p className="text-[13px] text-[var(--muted-foreground)] leading-relaxed mt-0.5">{body}</p>
+      </div>
+    </li>
+  );
+}
+
+// SectionIcon — leading icon for each section heading.
+function SectionIcon({ kind }: { kind: "lightbulb" | "mic" | "shield" }) {
+  const common = {
+    width: 20,
+    height: 20,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    className: "text-[var(--primary)]",
+  };
+  if (kind === "lightbulb") {
+    return (
+      <svg {...common}>
+        <path d="M9 18h6" />
+        <path d="M10 22h4" />
+        <path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2V17h6v-.3c0-.8.4-1.5 1-2A7 7 0 0 0 12 2Z" />
+      </svg>
+    );
+  }
+  if (kind === "mic") {
+    return (
+      <svg {...common}>
+        <rect x="9" y="2" width="6" height="12" rx="3" />
+        <path d="M5 10a7 7 0 0 0 14 0" />
+        <path d="M12 17v4" />
+      </svg>
+    );
+  }
+  // shield
+  return (
+    <svg {...common}>
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
+      <path d="m9 12 2 2 4-4" />
+    </svg>
+  );
+}
+
+// ModeIcon — small icons next to each input mode.
+function ModeIcon({ kind }: { kind: "keyboard" | "mic" | "space" | "wave" }) {
+  const common = {
+    width: 18,
+    height: 18,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+  };
+  if (kind === "keyboard") {
+    return (
+      <svg {...common}>
+        <rect x="2" y="6" width="20" height="12" rx="2" />
+        <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10" />
+      </svg>
+    );
+  }
+  if (kind === "mic") {
+    return (
+      <svg {...common}>
+        <rect x="9" y="2" width="6" height="12" rx="3" />
+        <path d="M5 10a7 7 0 0 0 14 0" />
+        <path d="M12 17v4" />
+      </svg>
+    );
+  }
+  if (kind === "space") {
+    return (
+      <svg {...common}>
+        <rect x="3" y="8" width="18" height="9" rx="2" />
+        <path d="M7 13h10" />
+      </svg>
+    );
+  }
+  // wave
+  return (
+    <svg {...common}>
+      <path d="M3 12h2" />
+      <path d="M7 8v8" />
+      <path d="M11 5v14" />
+      <path d="M15 8v8" />
+      <path d="M19 11v2" />
+      <path d="M21 12h.01" />
+    </svg>
   );
 }
 

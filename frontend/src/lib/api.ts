@@ -141,11 +141,23 @@ export async function postChat(args: {
   return resp.json();
 }
 
+// KI-242 — Backend now returns a clean error_code + user_message on STT
+// failures (HTTP 200 with empty text). Frontend consumes these directly
+// instead of parsing raw httpx text. error_code is a closed enum:
+// rate_limit | service_unavailable | network | auth | unknown.
+export type TranscribeResponse = {
+  text: string;
+  language_code?: string;
+  latency_ms: number;
+  error_code?: "rate_limit" | "service_unavailable" | "network" | "auth" | "unknown";
+  user_message?: string;
+};
+
 export async function postTranscribe(
   blob: Blob,
   language_code?: string,
   signal?: AbortSignal,
-): Promise<{ text: string; language_code?: string; latency_ms: number }> {
+): Promise<TranscribeResponse> {
   const fd = new FormData();
   // Use blob's mime to derive extension; default to wav
   const mime = blob.type || "audio/wav";

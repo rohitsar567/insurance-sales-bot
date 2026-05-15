@@ -17,6 +17,69 @@ from backend.config import settings
 from backend.providers.base import STTProvider, STTResult
 
 
+# Public error-code vocabulary returned by /api/transcribe when Sarvam fails.
+# Frontends (PTT + live voice) consume these as a closed enum so they can map
+# each cause to a user-friendly reply without ever parsing httpx error text.
+STT_ERROR_RATE_LIMIT = "rate_limit"
+STT_ERROR_SERVICE = "service_unavailable"
+STT_ERROR_NETWORK = "network"
+STT_ERROR_AUTH = "auth"
+STT_ERROR_UNKNOWN = "unknown"
+
+# Human-readable reply per error_code. Kept here so the message lives next to
+# the classifier — single source of truth for both backend response shaping
+# and any place a tool wants to render the same string.
+STT_ERROR_USER_MESSAGES = {
+    STT_ERROR_RATE_LIMIT: (
+        "Voice is busy right now — please try again in a moment, "
+        "or type your question."
+    ),
+    STT_ERROR_SERVICE: (
+        "Voice service is temporarily unavailable — please type your "
+        "question or try voice again shortly."
+    ),
+    STT_ERROR_NETWORK: (
+        "Network hiccup while transcribing — please try again, or "
+        "type your question."
+    ),
+    STT_ERROR_AUTH: (
+        "Voice service is unavailable right now — please type your question."
+    ),
+    STT_ERROR_UNKNOWN: (
+        "Couldn't transcribe that — please try again or type your question."
+    ),
+}
+
+
+def classify_stt_exception(exc: BaseException) -> str:
+    """Map an httpx / network exception to a STT_ERROR_* code.
+
+    KI-242 pattern — the frontend never reads raw httpx text. Backend
+    classifies once at the boundary so PTT + live voice + any future
+    caller share one closed vocabulary.
+    """
+    # httpx raises HTTPStatusError on resp.raise_for_status() with the
+    # original Response attached. Status code is the most reliable signal.
+    if isinstance(exc, httpx.HTTPStatusError):
+        status = exc.response.status_code if exc.response is not None else 0
+        if status == 429:
+            return STT_ERROR_RATE_LIMIT
+        if status in (401, 403):
+            return STT_ERROR_AUTH
+        if 500 <= status < 600:
+            return STT_ERROR_SERVICE
+        return STT_ERROR_UNKNOWN
+    # TimeoutException covers connect/read/write/pool timeouts.
+    if isinstance(exc, httpx.TimeoutException):
+        return STT_ERROR_NETWORK
+    # NetworkError covers ConnectError, ReadError, RemoteProtocolError, etc.
+    if isinstance(exc, httpx.NetworkError):
+        return STT_ERROR_NETWORK
+    if isinstance(exc, httpx.HTTPError):
+        return STT_ERROR_UNKNOWN
+    return STT_ERROR_UNKNOWN
+
+
 class SarvamSTT(STTProvider):
     name = "sarvam-saarika"
 

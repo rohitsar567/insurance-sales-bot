@@ -96,6 +96,13 @@ class TranscribeResponse(BaseModel):
     language_code: Optional[str] = None
     confidence: Optional[float] = None
     latency_ms: int
+    # KI-242 — When Sarvam STT fails, the endpoint returns HTTP 200 with
+    # `text=""` plus these two fields set so the frontend can render a
+    # friendly message instead of parsing raw httpx error strings.
+    # error_code is a closed enum: rate_limit | service_unavailable |
+    # network | auth | unknown. Absent on the success path.
+    error_code: Optional[str] = None
+    user_message: Optional[str] = None
 
 
 class CitationOut(BaseModel):
@@ -554,21 +561,86 @@ async def transcribe(
     file: UploadFile = File(...),
     language_code: Optional[str] = Form(None),
 ):
-    """Speech-to-text. Accepts an audio file upload (WAV/MP3/etc.)."""
+    """Speech-to-text. Accepts an audio file upload (WAV/MP3/etc.).
+
+    KI-242 — Sarvam errors are classified into a closed `error_code` enum
+    and the endpoint always returns HTTP 200 with a friendly `user_message`
+    on failure. The frontend never parses raw httpx text. 429 (rate limit)
+    is retried ONCE with a 2 s backoff before being surfaced as
+    `error_code: "rate_limit"`.
+    """
+    import httpx as _httpx
+    from backend.providers.sarvam_stt import (
+        classify_stt_exception,
+        STT_ERROR_USER_MESSAGES,
+        STT_ERROR_RATE_LIMIT,
+    )
+
     t0 = time.time()
     audio_bytes = await file.read()
     ext = (file.filename or "audio.wav").rsplit(".", 1)[-1].lower()
-    # Pass the real extension through; sarvam_stt.py transcodes non-native
-    # containers (webm/opus from browser MediaRecorder) to WAV before upload.
-    try:
-        result = await get_stt().transcribe(
+    audio_format = (
+        ext if ext in ("wav", "mp3", "flac", "ogg", "m4a", "webm", "opus", "mp4")
+        else "wav"
+    )
+
+    async def _try_once():
+        return await get_stt().transcribe(
             audio_bytes=audio_bytes,
-            audio_format=ext if ext in ("wav", "mp3", "flac", "ogg", "m4a", "webm", "opus", "mp4") else "wav",
+            audio_format=audio_format,
             language_code=language_code,
         )
-    except Exception as e:
-        raise HTTPException(500, f"STT failed: {type(e).__name__}: {e}")
+
+    last_exc: Optional[BaseException] = None
+    try:
+        result = await _try_once()
+    except Exception as e:  # noqa: BLE001 — classifier narrows
+        last_exc = e
+        # 429-only single retry with 2s backoff, mirroring KI-242. Only retry
+        # on a positively identified rate-limit; other failures surface fast.
+        is_rate_limited = (
+            isinstance(e, _httpx.HTTPStatusError)
+            and e.response is not None
+            and e.response.status_code == 429
+        )
+        if is_rate_limited:
+            await asyncio.sleep(2.0)
+            try:
+                result = await _try_once()
+                last_exc = None
+            except Exception as e2:  # noqa: BLE001
+                last_exc = e2
+
     latency = int((time.time() - t0) * 1000)
+
+    if last_exc is not None:
+        code = classify_stt_exception(last_exc)
+        # Log the underlying error server-side so we keep diagnostics, but
+        # never leak the raw httpx string to the user-facing response.
+        logging.warning(
+            "STT failed: error_code=%s exc=%s: %s",
+            code,
+            type(last_exc).__name__,
+            last_exc,
+        )
+        # Force rate_limit code when the retry-arm exhausted on 429 too.
+        if (
+            isinstance(last_exc, _httpx.HTTPStatusError)
+            and last_exc.response is not None
+            and last_exc.response.status_code == 429
+        ):
+            code = STT_ERROR_RATE_LIMIT
+        return TranscribeResponse(
+            text="",
+            language_code=language_code,
+            confidence=0.0,
+            latency_ms=latency,
+            error_code=code,
+            user_message=STT_ERROR_USER_MESSAGES.get(
+                code, STT_ERROR_USER_MESSAGES["unknown"]
+            ),
+        )
+
     return TranscribeResponse(
         text=result.text,
         language_code=result.language_code,
