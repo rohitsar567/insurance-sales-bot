@@ -46,7 +46,11 @@ Slot → consumer matrix:
     parents_age_max       → pricing (parents age loading 1.0× / 1.4× / 1.8×)
     parents_has_ped       → pricing (PED loading inflation for parents)
 
-Total: 13 slots. `gender` is tolerated by save_profile_field for forward
+  D2 ADDITIONS (2026-05-15 — copay + family medical history)
+    copay_pct             → pricing (copay discount 1.0× / 0.95× / 0.88× / 0.80×)
+    family_medical_history → pricing (family-history loading) + retrieval boost
+
+Total: 15 slots. `gender` is tolerated by save_profile_field for forward
 compat but is NOT on the Profile dataclass today; it does not appear in
 SLOT_UNION because no consumer reads it.
 """
@@ -83,6 +87,9 @@ _ACCEPTED_FIELDS = {
     "parents_to_insure",
     "parents_age_max",
     "parents_has_ped",
+    # D2 (2026-05-15) — coupled additions: co-pay tolerance + family medical history
+    "copay_pct",
+    "family_medical_history",
     "gender",  # tolerated; not persisted unless Profile gains the field
 }
 
@@ -128,6 +135,9 @@ SLOT_UNION: tuple[str, ...] = (
     "parents_to_insure",
     "parents_age_max",
     "parents_has_ped",
+    # D2 additions (2026-05-15)
+    "copay_pct",
+    "family_medical_history",
 )
 
 # Invariant: every SLOT_UNION field must be accepted by save_profile_field
@@ -218,6 +228,10 @@ def save_profile_field(session, field: str, value: Any) -> dict:
             normalized = _coerce_bool(value)
         elif fld == "parents_age_max":
             normalized = _coerce_age(value)
+        elif fld == "copay_pct":
+            normalized = _coerce_copay_pct(value)
+        elif fld == "family_medical_history":
+            normalized = _coerce_family_medical_history(value)
         elif fld == "name":
             normalized = (str(value).strip() if value is not None else None) or None
         elif fld == "gender":
@@ -802,6 +816,143 @@ def _coerce_health_conditions(value: Any) -> Optional[list[str]]:
     # conditions.
     real = [t for t in cleaned if t not in _NEGATION]
     return real
+
+
+# ---------------------------------------------------------------------------
+# D2 (2026-05-15) — copay_pct + family_medical_history coercers
+# ---------------------------------------------------------------------------
+
+# Word-number map for "twenty", "ten" etc. (RULE 2.5 asks the user in
+# multiples of 10; Gemini sometimes echoes the user's word verbatim).
+_COPAY_WORD_TO_INT: dict[str, int] = {
+    "zero": 0, "none": 0, "no": 0,
+    "ten": 10, "fifteen": 15, "twenty": 20,
+    "twenty five": 25, "twenty-five": 25,
+    "thirty": 30, "forty": 40, "fifty": 50,
+}
+
+
+def _coerce_copay_pct(value: Any) -> Optional[int]:
+    """Parse a co-pay tolerance percent, clamped to [0, 50].
+
+    Accepts:
+      - int / float  → int + clamp
+      - "20", "20%", "  20 % ", "20 percent" → 20
+      - "no copay" / "zero" / "none" → 0
+      - word numbers like "twenty" → 20
+      - bool → blocked (KI-091 null-overwrite caution: bool is an int subclass)
+
+    Returns None for unrecognised input so the null-overwrite guard in
+    save_profile_field can refuse to clobber a previously-captured slot.
+    """
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        n = int(value)
+        return max(0, min(50, n))
+    s = str(value).strip().lower()
+    if not s:
+        return None
+    # Explicit zero phrasings.
+    if s in ("no", "none", "nil", "zero", "no copay", "no co-pay", "no co pay"):
+        return 0
+    # Word-number lookup (exact match).
+    if s in _COPAY_WORD_TO_INT:
+        return _COPAY_WORD_TO_INT[s]
+    # Strip "%" + "percent" + "pct".
+    cleaned = (
+        s.replace("%", " ")
+         .replace("percent", " ")
+         .replace("pct", " ")
+         .replace("copay", " ")
+         .replace("co-pay", " ")
+         .replace("co pay", " ")
+    )
+    # Digit run.
+    import re as _re
+    m = _re.search(r"\d+(?:\.\d+)?", cleaned)
+    if m:
+        try:
+            n = int(float(m.group(0)))
+            return max(0, min(50, n))
+        except ValueError:
+            return None
+    # Word-number fall-through (substring on cleaned text).
+    for word, num in _COPAY_WORD_TO_INT.items():
+        if word in cleaned.split():
+            return num
+    return None
+
+
+# Alias map for family medical history — same canonicalisation logic as
+# health_conditions but kept inline so this slot stays self-contained.
+_FAMILY_HISTORY_ALIASES: dict[str, str] = {
+    "bp": "hypertension",
+    "high bp": "hypertension",
+    "high-bp": "hypertension",
+    "hi-bp": "hypertension",
+    "high blood pressure": "hypertension",
+    "blood pressure": "hypertension",
+    "sugar": "diabetes",
+    "diabetic": "diabetes",
+    "type 2 diabetes": "diabetes",
+    "type 1 diabetes": "diabetes",
+    "heart attack": "heart",
+    "heart disease": "heart",
+    "cardiac": "heart",
+    "cardiac disease": "heart",
+    "stroke": "heart",
+    "tumor": "cancer",
+    "tumour": "cancer",
+    "carcinoma": "cancer",
+}
+
+_FAMILY_HISTORY_NEGATION = {
+    "none", "no", "n/a", "na", "nil", "nothing", "healthy",
+    "no family history", "no history", "no medical history",
+}
+
+
+def _coerce_family_medical_history(value: Any) -> Optional[list[str]]:
+    """Return list[str] lowercase canonical conditions running in BLOOD family.
+
+    Accepts:
+      - list / tuple of strings
+      - comma-joined string ("cancer, diabetes")
+      - "none" / "no family history" → []
+
+    Alias map collapses BP/sugar/cardiac/tumor → hypertension/diabetes/heart/
+    cancer respectively (same family as _coerce_health_conditions). Negation
+    sentinels return `[]` since downstream pricing & retrieval BOTH treat an
+    empty list as the "no family history" branch (different from health_
+    conditions where the explicit `["none"]` sentinel is needed for the
+    profile-completeness gate).
+    """
+    if value is None:
+        return None
+    if isinstance(value, str):
+        items = [t.strip() for t in value.split(",")]
+    elif isinstance(value, (list, tuple)):
+        items = [str(t).strip() for t in value]
+    else:
+        items = [str(value).strip()]
+    cleaned = [t.lower() for t in items if t]
+    # Full-string negation collapses to [].
+    if cleaned and all(t in _FAMILY_HISTORY_NEGATION for t in cleaned):
+        return []
+    # Drop negation noise from mixed input ("cancer, none").
+    cleaned = [t for t in cleaned if t not in _FAMILY_HISTORY_NEGATION]
+    # Canonicalise via alias map.
+    canonical: list[str] = []
+    seen: set[str] = set()
+    for t in cleaned:
+        c = _FAMILY_HISTORY_ALIASES.get(t, t)
+        if c and c not in seen:
+            seen.add(c)
+            canonical.append(c)
+    return canonical
 
 
 __all__ = [

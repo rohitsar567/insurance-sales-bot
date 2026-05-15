@@ -29,6 +29,9 @@ location / family_size that B2 already handles):
   parents_age_max         → parents_loading 1.0× / 1.4× / 1.8×
                             (only when `dependents` mentions "parents")
   parents_has_ped         → adds +0.10× on top of parents_loading
+  copay_pct (D2)          → copay_discount 1.0× / 0.95× / 0.88× / 0.80×
+  family_medical_history  → family_history_loading 1.0× / 1.03× / 1.05× / 1.10×
+  (D2)                      (cancer/heart +5%, 2+ conditions +10%, other +3%)
 
 Slots that are profile-only (no pricing effect): name, primary_goal,
 income_band, budget_band (matched against output, not folded into the
@@ -189,6 +192,95 @@ def _parents_loading(dependents, parents_age_max, parents_has_ped=None) -> tuple
     return base, label
 
 
+# ───────────────────────────────────────────────────────────────────────────
+# D2 (2026-05-15) — copay_pct + family_medical_history loadings
+# ───────────────────────────────────────────────────────────────────────────
+
+def _copay_discount(copay_pct) -> tuple[float, str]:
+    """Return (multiplier, label) for SLOT_UNION's `copay_pct` slot.
+
+    Distinct from the legacy `_copay_multiplier` (formula-based, used by the
+    `copayment_pct` arg on estimate()). This is a profile-driven step-discount
+    grid keyed to the 4 buckets RULE 2.5 asks the user about (0/10/20/30):
+
+      0%  → 1.00× ("no copay")          — insurer pays it all (highest premium)
+      10% → 0.95× ("10% copay")          — mild tier
+      20% → 0.88× ("20% copay")          — typical
+      30% → 0.80× ("30% copay")          — aggressive
+      other → linear interpolate between the two nearest buckets, clamped to [0,50]
+    """
+    if copay_pct is None:
+        return 1.0, "no_copay"
+    try:
+        pct = int(copay_pct)
+    except (TypeError, ValueError):
+        return 1.0, "no_copay"
+    if pct <= 0:
+        return 1.0, "no_copay"
+    # Clamp to [0, 50] to match _coerce_copay_pct.
+    pct = min(50, pct)
+    # Step grid (exact buckets).
+    if pct == 10:
+        return 0.95, "10_pct_copay"
+    if pct == 20:
+        return 0.88, "20_pct_copay"
+    if pct == 30:
+        return 0.80, "30_pct_copay"
+    # Linear interpolation for off-grid values (e.g. 15, 25, 40).
+    grid = [(0, 1.00), (10, 0.95), (20, 0.88), (30, 0.80), (50, 0.70)]
+    for i in range(len(grid) - 1):
+        p0, m0 = grid[i]
+        p1, m1 = grid[i + 1]
+        if p0 <= pct <= p1:
+            t = (pct - p0) / (p1 - p0) if p1 != p0 else 0
+            mult = m0 + (m1 - m0) * t
+            return round(mult, 3), f"{pct}_pct_copay"
+    return 1.0, "no_copay"
+
+
+# Family medical history canonical condition keywords. Matches the canonical
+# tokens emitted by brain_tools._coerce_family_medical_history (cancer /
+# diabetes / heart / hypertension).
+_FAM_CANCER_KEYWORDS = {"cancer"}
+_FAM_HEART_KEYWORDS = {"heart"}
+
+
+def _family_history_loading(family_medical_history) -> tuple[float, str]:
+    """Return (multiplier, label) for blood-family medical history.
+
+    Logic (D2 spec):
+      • empty list / None / ["none"]  → (1.00, "no_family_history")
+      • 2+ family conditions          → (1.10, "multi_family_history")
+                                        (highest — compounded genetic risk)
+      • contains "cancer"             → (1.05, "family_cancer")
+      • contains "heart"              → (1.05, "family_heart")
+      • other single condition (e.g. diabetes / hypertension) → (1.03, "family_history")
+
+    Order: 2+ check FIRST so a profile with both cancer + diabetes lands on
+    the multi-family multiplier (not the cancer-only +5%).
+    """
+    if not family_medical_history:
+        return 1.0, "no_family_history"
+    if isinstance(family_medical_history, str):
+        items = [t.strip().lower() for t in family_medical_history.split(",") if t.strip()]
+    else:
+        items = [str(t).strip().lower() for t in family_medical_history if str(t).strip()]
+    # Drop the "none" sentinel if a caller passed it (defensive).
+    items = [t for t in items if t != "none"]
+    if not items:
+        return 1.0, "no_family_history"
+    # 2+ conditions wins — compounded genetic risk loading.
+    if len(items) >= 2:
+        return 1.10, "multi_family_history"
+    # Single condition — bucket by keyword.
+    single = items[0]
+    if any(k in single for k in _FAM_CANCER_KEYWORDS):
+        return 1.05, "family_cancer"
+    if any(k in single for k in _FAM_HEART_KEYWORDS):
+        return 1.05, "family_heart"
+    return 1.03, "family_history_single"
+
+
 # Co-pay reduces premium. Industry norm (PolicyBazaar/Acko): each 10 pct
 # points of co-pay yields ~7% premium reduction, capped at 40% co-pay.
 def _copay_multiplier(pct: float) -> float:
@@ -256,6 +348,9 @@ def estimate(
     dependents: Optional[str] = None,
     parents_age_max: Optional[int] = None,
     parents_has_ped: Optional[bool] = None,
+    # D2 additions (2026-05-15) — copay_pct + family_medical_history.
+    copay_pct: Optional[int] = None,
+    family_medical_history: Optional[list] = None,
 ) -> PremiumEstimate:
     data = _load_data()
     base_premiums = data.get("base_premiums", {})
@@ -317,6 +412,14 @@ def estimate(
         dependents, parents_age_max, parents_has_ped
     )
     base *= parents_mult
+
+    # D2 — copay_pct discount + family_medical_history loading. Each is 1.0×
+    # when the corresponding SLOT_UNION field is None / empty, so legacy
+    # callers see no change.
+    copay_mult, copay_label = _copay_discount(copay_pct)
+    base *= copay_mult
+    fam_mult, fam_label = _family_history_loading(family_medical_history)
+    base *= fam_mult
 
     point = int(round(base / 100) * 100)  # round to nearest ₹100
     return PremiumEstimate(
@@ -488,6 +591,9 @@ def bulk_estimate(
     dependents = profile.get("dependents")
     parents_age_max = profile.get("parents_age_max")
     parents_has_ped = profile.get("parents_has_ped")
+    # D2 — copay_pct + family_medical_history (same read pattern).
+    copay_pct = profile.get("copay_pct")
+    family_medical_history = profile.get("family_medical_history")
     # desired_sum_insured_inr — when present, becomes the default SI for
     # any policy without an explicit overrides entry (per-policy override
     # still wins, since this is the DEFAULT).
@@ -504,6 +610,11 @@ def bulk_estimate(
     parents_mult, parents_label = _parents_loading(
         dependents, parents_age_max, parents_has_ped
     )
+    # D2 — copay_pct discount + family_medical_history loading. Each is 1.0×
+    # when the corresponding SLOT_UNION field is None / empty, so legacy
+    # callers see no change.
+    copay_mult, copay_label = _copay_discount(copay_pct)
+    fam_mult, fam_label = _family_history_loading(family_medical_history)
 
     out: dict[str, BulkPolicyPremium] = {}
     for pid in policy_ids:
@@ -547,6 +658,9 @@ def bulk_estimate(
                     dependents=dependents,
                     parents_age_max=parents_age_max,
                     parents_has_ped=parents_has_ped,
+                    # D2 — copay + family-history threaded through too
+                    copay_pct=copay_pct,
+                    family_medical_history=family_medical_history,
                 )
                 # estimate() already folded age/location/family AND the B6
                 # loadings — unwind so the widget can display the same
@@ -585,6 +699,8 @@ def bulk_estimate(
                 * health_mult
                 * ec_mult
                 * parents_mult
+                * copay_mult
+                * fam_mult
                 * tenure_mult
                 * ded_mult
             )
@@ -617,6 +733,12 @@ def bulk_estimate(
         if parents_mult != 1.0:
             breakdown["parents_loading_x"] = round(parents_mult, 3)
             breakdown["parents_loading_reason"] = parents_label
+        if copay_mult != 1.0:
+            breakdown["copay_discount_x"] = round(copay_mult, 3)
+            breakdown["copay_discount_reason"] = copay_label
+        if fam_mult != 1.0:
+            breakdown["family_history_loading_x"] = round(fam_mult, 3)
+            breakdown["family_history_loading_reason"] = fam_label
         if desired_si and not ov.get("sum_insured_inr"):
             breakdown["desired_si_default_inr"] = int(desired_si)
 

@@ -160,7 +160,13 @@ Required ingredients:
   health-condition keywords — every captured condition by name ("diabetes", "hypertension", "heart disease") OR the literal "no PED" when health_conditions == ["none"],
   primary goal keyword,
   existing cover signal — when existing_cover_inr > 0 add "top-up over existing X lakh cover"; when 0 add "fresh base policy",
-  parents-cover signal — when dependents mentions parents add "parents age ~XX" using parents_age_max (if captured).
+  parents-cover signal — when dependents mentions parents add "parents age ~XX" using parents_age_max (if captured),
+  family-history rider boost — if family_medical_history is non-empty, INCLUDE keywords in the query that bias retrieval toward policies with relevant coverage:
+    - "cancer" → "critical illness rider cancer cover"
+    - "diabetes" → "diabetes short waiting period reduced PED wait"
+    - "heart" → "cardiac care rider heart cover"
+    - "hypertension" → "hypertension short waiting period"
+    Multiple family conditions → concatenate the relevant phrases.
 
 Worked example A (no PED, no existing cover). Profile = {age=34, location_tier=metro, income_band=10L-25L, dependents=spouse+1 kid, primary_goal=first_buy, health_conditions=["none"], desired_sum_insured_inr=1500000, existing_cover_inr=0}:
   retrieve_policies(query="family floater plan metro sum insured 15 lakh adult 30-40 with spouse and one child no PED fresh base policy first-time buyer", top_k=8)
@@ -178,12 +184,16 @@ After all 7 slots are saved AND the user has confirmed the recap (RULE 4 implici
    1. How much sum insured? (e.g., ₹5L / ₹10L / ₹25L / ₹1Cr)
    2. Premium budget? (e.g., ₹10–15K/year, or ₹50K+ for premium covers)
    3. Any existing health cover from work or otherwise? (e.g., '5L through employer' or 'no')  [SKIP if existing_cover_inr already captured]
-   4. Approximate age of the eldest parent you'd cover?  [ASK ONLY IF dependents mentions parents AND parents_age_max not yet captured]"
+   4. Co-pay tolerance: Are you OK with a co-pay — sharing 10-30% of every claim — to lower the premium? Or do you want zero co-pay (insurer pays it all)?
+   5. Family medical history: Any major conditions running in your blood family (parents/siblings) — cancer / diabetes / heart disease / hypertension?
+   6. Approximate age of the eldest parent you'd cover?  [ASK ONLY IF dependents mentions parents AND parents_age_max not yet captured]"
 
 When the user answers, call save_profile_field once per provided value:
   save_profile_field(field="desired_sum_insured_inr", value="1000000")  # ₹10L
   save_profile_field(field="budget_band",            value="10K-20K")
   save_profile_field(field="existing_cover_inr",     value="500000")    # 5L corporate top-up; 'no' / 'none' → value="0"
+  save_profile_field(field="copay_pct",              value="0" or "10" or "20" or "30")  # 0 = no co-pay (higher premium), 10-30 = typical tiers
+  save_profile_field(field="family_medical_history", value="cancer, diabetes" or "none")  # blood family only (parents/siblings)
   save_profile_field(field="parents_age_max",        value="68")        # eldest parent's age, only if covering parents
 
 Gender hint: if the user mentions gender, keep it for conversational context only — Profile has no `gender` slot. Do NOT call save_profile_field(field="gender", ...) — it returns `field_not_on_profile_dataclass` and wastes a tool-call iteration.

@@ -1367,24 +1367,10 @@ export default function Page() {
                 )}
               </div>
             </button>
-            <button
-              onClick={() => { setShowPremium(!showPremium); setShowMarketplace(false); setShowCoverage(false); setShowProfile(false); setShowAdmin(false); }}
-              className={`group relative overflow-hidden rounded-xl transition-all shadow-sm hover:shadow-md ${
-                showPremium ? "ring-2 ring-[var(--primary)]" : ""
-              }`}
-              title={t("header.annual_premium")}
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500" />
-              <div className="relative flex items-stretch text-white">
-                <div className="flex items-center justify-center px-3 py-2 bg-black/15">
-                  <RupeeIcon />
-                </div>
-                <div className="px-3 py-2 text-left">
-                  <div className="text-[10px] uppercase tracking-wider opacity-85 leading-none">{t("header.annual_premium_kicker")}</div>
-                  <div className="text-xs font-bold leading-tight whitespace-nowrap">{t("header.annual_premium")}</div>
-                </div>
-              </div>
-            </button>
+            {/* KI (2026-05-15) — old "ESTIMATE Annual premium" CTA chip
+                removed. The premium-band chip below is now itself the
+                clickable surface to open the PremiumCalculatorPanel, so
+                two redundant premium UI elements collapsed into one. */}
             <button
               onClick={() => { setShowProfile(!showProfile); setShowMarketplace(false); setShowPremium(false); setShowCoverage(false); setShowAdmin(false); }}
               className={`group relative overflow-hidden rounded-xl transition-all shadow-sm hover:shadow-md ${
@@ -1417,9 +1403,13 @@ export default function Page() {
               profileCompleteness.completeness_pct >= 50 &&
               premiumBand &&
               premiumBand.sample_size > 0 && (
-              <div
-                className="group relative overflow-hidden rounded-xl shadow-sm"
-                title={`Estimate across ${premiumBand.sample_size} polic${premiumBand.sample_size === 1 ? "y" : "ies"}. Refresh as your profile fills in.`}
+              <button
+                type="button"
+                onClick={() => { setShowPremium(!showPremium); setShowMarketplace(false); setShowCoverage(false); setShowProfile(false); setShowAdmin(false); }}
+                className={`group relative overflow-hidden rounded-xl shadow-sm transition-all hover:shadow-md hover:brightness-110 cursor-pointer ${
+                  showPremium ? "ring-2 ring-[var(--primary)]" : ""
+                }`}
+                title={uiLang === "hi" ? "Premium को sliders से refine करने के लिए tap करें" : "Tap to refine premium with sliders"}
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600" />
                 <div className="relative flex items-stretch text-white">
@@ -1434,8 +1424,16 @@ export default function Page() {
                       ₹{premiumBand.min_inr.toLocaleString("en-IN")}–₹{premiumBand.max_inr.toLocaleString("en-IN")}/yr
                     </div>
                   </div>
+                  {/* Subtle "edit" affordance — pencil-on-slider icon hints
+                      that tapping the chip opens the slider panel. */}
+                  <div className="flex items-center justify-center px-2 py-2 bg-white/15 border-l border-white/20 transition-transform group-hover:translate-x-0.5">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M4 21v-4l11-11 4 4-11 11H4z" />
+                      <path d="M14 6l4 4" />
+                    </svg>
+                  </div>
                 </div>
-              </div>
+              </button>
             )}
             {/* Admin access — opens the LLM control panel in an embedded view.
                 Backend admin API is password-gated (KI-097); enter the admin
@@ -1779,7 +1777,12 @@ export default function Page() {
                 isPersonalized={profileCompleteness?.is_personalized === true}
               />
             )}
-            {showPremium && <PremiumCalculatorPanel onClose={() => setShowPremium(false)} />}
+            {showPremium && (
+              <PremiumCalculatorPanel
+                onClose={() => setShowPremium(false)}
+                initialProfile={profileCompleteness?.profile}
+              />
+            )}
             {showProfile && (
               <ProfileBuilderPanel
                 sessionId={sessionId}
@@ -2089,13 +2092,72 @@ function ProfileBuilderPanel({
   );
 }
 
-function PremiumCalculatorPanel({ onClose }: { onClose: () => void }) {
-  const [age, setAge] = useState(35);
-  const [sumInsured, setSumInsured] = useState(1000000);
-  const [cityTier, setCityTier] = useState<"metro" | "tier1" | "tier2">("metro");
+function PremiumCalculatorPanel({
+  onClose,
+  initialProfile,
+}: {
+  onClose: () => void;
+  initialProfile?: UserProfile;
+}) {
+  // KI (2026-05-15) — Fix B. The panel previously opened with static
+  // defaults (Age 35 / SI 10L / Self only / None / metro) which felt
+  // disconnected from the user's already-captured profile. We now seed
+  // each slider from initialProfile (forwarded by page.tsx from
+  // profileCompleteness.profile) and fall back to the legacy default
+  // only when a slot is missing. User can still slide to override.
+  //
+  // The UserProfile schema (api.ts) does not yet carry a
+  // `desired_sum_insured_inr` slot, so we fall back to
+  // `existing_cover_inr` as the closest available signal; if that's
+  // also missing we land on the legacy 10L default.
+  const deriveFamilySize = (dep?: string | null): number => {
+    if (!dep) return 0;
+    const d = dep.toLowerCase();
+    if (d === "self" || d === "self only" || d === "self_only") return 0;
+    if (d.includes("parents") && d.includes("spouse")) return 4; // self+spouse+2 parents
+    if (d.includes("parents")) return 2; // self+parents
+    if (d.includes("kids") || d.includes("children")) return 3; // self+spouse+kids -> floater
+    if (d.includes("spouse")) return 1; // self+spouse
+    return 0;
+  };
+  const derivePed = (
+    conds?: string[] | null,
+  ): "none" | "diabetes_or_hypertension" | "heart_disease" | "multiple" => {
+    if (!conds || conds.length === 0) return "none";
+    const lower = conds.map((c) => (c || "").toLowerCase());
+    if (lower.every((c) => !c || c === "none")) return "none";
+    if (lower.length >= 2 && lower.some((c) => c !== "none")) {
+      const distinct = lower.filter((c) => c && c !== "none");
+      if (distinct.length >= 2) return "multiple";
+    }
+    if (lower.some((c) => c.includes("heart"))) return "heart_disease";
+    if (lower.some((c) => c.includes("diabetes") || c.includes("hypertension") || c.includes("bp")))
+      return "diabetes_or_hypertension";
+    return "diabetes_or_hypertension"; // any single non-none condition lands on the closest model bucket
+  };
+  const deriveCityTier = (loc?: string | null): "metro" | "tier1" | "tier2" => {
+    const l = (loc || "metro").toLowerCase();
+    if (l === "metro") return "metro";
+    if (l === "tier1" || l === "tier_1" || l === "tier-1") return "tier1";
+    if (l === "tier2" || l === "tier_2" || l === "tier-2") return "tier2";
+    // tier3 / unknown — fold down to tier2 (closest supported bucket)
+    return "tier2";
+  };
+
+  const [age, setAge] = useState<number>(initialProfile?.age ?? 35);
+  const [sumInsured, setSumInsured] = useState<number>(
+    initialProfile?.existing_cover_inr && initialProfile.existing_cover_inr > 0
+      ? initialProfile.existing_cover_inr
+      : 1000000,
+  );
+  const [cityTier, setCityTier] = useState<"metro" | "tier1" | "tier2">(
+    deriveCityTier(initialProfile?.location_tier),
+  );
   const [smoker, setSmoker] = useState(false);
-  const [familySize, setFamilySize] = useState(0);
-  const [ped, setPed] = useState<"none" | "diabetes_or_hypertension" | "heart_disease" | "multiple">("none");
+  const [familySize, setFamilySize] = useState<number>(deriveFamilySize(initialProfile?.dependents));
+  const [ped, setPed] = useState<"none" | "diabetes_or_hypertension" | "heart_disease" | "multiple">(
+    derivePed(initialProfile?.health_conditions),
+  );
   const [copay, setCopay] = useState(0);
   const [estimate, setEstimate] = useState<PremiumEstimateResponse | null>(null);
   const [busy, setBusy] = useState(false);

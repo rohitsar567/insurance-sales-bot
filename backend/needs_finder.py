@@ -42,6 +42,12 @@ class Profile:
     budget_band: Optional[str] = None  # "under_15k", "15k_30k", "30k_60k", "60k+"
     desired_sum_insured_inr: Optional[int] = None  # SOFT pricing input (post-recap)
     health_conditions: Optional[list[str]] = field(default_factory=list)  # ["diabetes", "hypertension", ...]
+    # D2 (2026-05-15) — co-pay tolerance + family medical history. Coupled
+    # SLOT_UNION additions captured via RULE 2.5 post-recap, both flow into
+    # premium_calculator (copay discount + family-history loading) and
+    # retrieval (family-history rider boost keywords).
+    copay_pct: Optional[int] = None  # 0-50, % of every claim user accepts
+    family_medical_history: list[str] = field(default_factory=list)  # blood-family conditions
     asked: list[str] = field(default_factory=list)  # question IDs / field names already asked
     free_form_session: bool = False  # True = user asks free questions, not driven by us
     # KI-063 (2026-05-15) — per-user policy interaction log so the bot
