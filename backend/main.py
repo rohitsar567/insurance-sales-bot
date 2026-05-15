@@ -27,6 +27,7 @@ from pydantic import BaseModel, Field
 
 from backend.config import settings
 from backend import nim_fallback
+from backend import brain_tools  # KI-271 — SLOT_UNION-driven profile_dict in 3 endpoints
 from backend.providers.sarvam_stt import SarvamSTT
 from backend.providers.sarvam_tts import SarvamTTS
 
@@ -1620,13 +1621,11 @@ async def profile_update(req: ProfileUpdateRequest):
             print(f"[profile_store] save failed for {req.name}: {type(e).__name__}: {e}")
 
     p = sess.profile
+    # KI-271 — SLOT_UNION-driven profile_dict (15 fields) so copay_pct +
+    # family_medical_history + desired_sum_insured_inr propagate to the
+    # save endpoint's response + RAG chunk.
     profile_dict = {
-        "name": p.name,  # KI-077
-        "age": p.age, "dependents": p.dependents, "income_band": p.income_band,
-        "existing_cover_inr": p.existing_cover_inr, "primary_goal": p.primary_goal,
-        "location_tier": p.location_tier, "parents_to_insure": p.parents_to_insure,
-        "parents_age_max": p.parents_age_max, "parents_has_ped": p.parents_has_ped,
-        "health_conditions": p.health_conditions, "budget_band": p.budget_band,
+        slot: getattr(p, slot, None) for slot in brain_tools.SLOT_UNION
     }
     # KI-196 (ADR-041) — same answered-only gate as profile_completeness_view.
     answered = set(getattr(p, "asked", []) or [])
@@ -1682,20 +1681,16 @@ async def profile_completeness_view(session_id: Optional[str] = None):
         )
     sess = get_session(session_id)
     p = sess.profile
+    # KI-271 — profile_dict now built from brain_tools.SLOT_UNION (15 fields)
+    # so every captured slot (including B5 desired_sum_insured_inr, D2 copay_pct,
+    # D2 family_medical_history) propagates through to /api/profile/completeness,
+    # /api/profile/predicted-premium-band, /api/profile/recall-by-name. Prior
+    # 12-key hand-roll caused E3 to discover the band endpoint ignoring copay
+    # + family entirely.
     profile_dict = {
-        "name": p.name,  # KI-252 — Path B 7-slot alignment with completeness bar
-        "age": p.age, "dependents": p.dependents, "income_band": p.income_band,
-        "existing_cover_inr": p.existing_cover_inr, "primary_goal": p.primary_goal,
-        "location_tier": p.location_tier, "parents_to_insure": p.parents_to_insure,
-        "parents_age_max": p.parents_age_max, "parents_has_ped": p.parents_has_ped,
-        "health_conditions": p.health_conditions, "budget_band": p.budget_band,
+        slot: getattr(p, slot, None) for slot in brain_tools.SLOT_UNION
     }
-    # KI-196 (ADR-041) — Profile completeness must reflect fields the user
-    # EXPLICITLY answered, not defaults that were never touched. Default
-    # `dependents="self"` pre-populated in the builder UI used to count as
-    # "done" and produced the misleading "25% DONE" badge on a zero-input
-    # session. Gate every field on Profile.asked containing the field name
-    # before exposing it to the completeness scorer.
+    # KI-196 (ADR-041) — Profile completeness gates on Profile.asked.
     answered = set(getattr(p, "asked", []) or [])
     completeness_input = {
         k: (v if k in answered else None) for k, v in profile_dict.items()
@@ -3077,19 +3072,12 @@ async def predicted_premium_band(session_id: Optional[str] = None):
 
     sess = get_session(session_id)
     p = sess.profile
+    # KI-271 — band endpoint now drives off SLOT_UNION so copay_pct +
+    # family_medical_history (D2/KI-269) actually shift the band. Prior
+    # 12-key hand-roll silently omitted both → E3 smoke caught identical
+    # bands with/without copay+family input.
     profile_dict = {
-        "name": p.name,
-        "age": p.age,
-        "dependents": p.dependents,
-        "income_band": p.income_band,
-        "existing_cover_inr": p.existing_cover_inr,
-        "primary_goal": p.primary_goal,
-        "location_tier": p.location_tier,
-        "parents_to_insure": p.parents_to_insure,
-        "parents_age_max": p.parents_age_max,
-        "parents_has_ped": p.parents_has_ped,
-        "health_conditions": p.health_conditions,
-        "budget_band": p.budget_band,
+        slot: getattr(p, slot, None) for slot in brain_tools.SLOT_UNION
     }
     # Same answered-only gate as profile_completeness_view (KI-196 / ADR-041) —
     # only feed slots the user has actually answered, not pre-populated
