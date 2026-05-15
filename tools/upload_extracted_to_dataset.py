@@ -20,7 +20,7 @@ def main():
         path_in_repo="rag/extracted",
         repo_id="rohitsar567/insurance-bot-data",
         repo_type="dataset",
-        commit_message="sync rag/extracted JSONs (post-NIM-extraction)",
+        commit_message="feat(extracted): KI-138 — canonicalize policy_name across 84 mismatches",
         ignore_patterns=["*._raw.txt"],
     )
     n = len(list((ROOT / "rag" / "extracted").glob("*.json")))

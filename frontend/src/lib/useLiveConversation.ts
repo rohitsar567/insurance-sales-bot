@@ -87,10 +87,12 @@ export type LiveConversationState = {
 };
 
 const DEFAULTS = {
-  // KI-113 (2026-05-15) — raised from 18 → 26 to reject ambient background
-  // noise (HVAC, traffic, distant chatter). Effective threshold is
-  // max(this, adaptive noise_floor * 2.5 + 6) — see KI-114 in the VAD loop.
-  rmsThreshold: 26,
+  // KI-113 raised from 18 → 26 to reject ambient noise.
+  // KI-139 (2026-05-15) — backed off to 18 because voice-forensics agent
+  // proved 26 sat ABOVE typical speech avg on consumer mics (especially
+  // built-ins with active noise gate that pin noiseFloor to 0). VAD never
+  // opened → green pill rendered → zero audio posted.
+  rmsThreshold: 18,
   // KI-113 — raised 3 → 5 (~80 ms sustained). Single clicks / cutlery /
   // typing transients no longer flip the gate. Preroll buffer (KI-044)
   // still captures the first phoneme via the 300 ms look-back.
@@ -119,12 +121,15 @@ const DEFAULTS = {
   // segment. Avoids bot's TTS attack transient bleeding through even
   // with echoCancellation on.
   postUtteranceCooldownMs: 700,
-  // KI-113 raised 0.35 → 0.50 to gate out broadband HVAC / fan / traffic.
-  // KI-134 (2026-05-15) — backed off to 0.35 because some laptop built-in
-  // mics with aggressive noiseSuppression flatten the voice-band proportion
-  // to 0.35-0.45, so the VAD never opens and the green pill renders but
-  // no audio is ever posted — matches the live-test symptom exactly.
-  voiceBandMinProp: 0.35,
+  // KI-113 raised to 0.50, KI-134 backed off to 0.35.
+  // KI-139 (2026-05-15) — voice-forensics agent measured live bundle on
+  // user's actual hardware: voiceProp sits at 0.25–0.33 on quiet laptop
+  // mics with NS enabled. 0.35 still gates the user out. 0.20 puts the
+  // floor well below voiced-speech minimum and only rejects pure tones
+  // (constant whine of HVAC, traffic). This is the deepest pushback
+  // — if HVAC noise creeps in, KI-140 will add a /api/transcribe round
+  // trip that detects empty responses and surfaces "couldn't hear you".
+  voiceBandMinProp: 0.20,
 };
 
 // AudioWorklet processor source — inlined as a Blob URL so we don't need
@@ -329,9 +334,14 @@ export function useLiveConversation(opts: LiveConversationOptions): LiveConversa
       // (which sits just above ambient because high frequencies attenuate
       // with distance) is rejected. Close-in speech still clears the gate
       // because the speaker's directly-radiated energy is ~10-20× ambient.
+      // KI-139 (2026-05-15) — noise-floor multiplier 2.5 → 1.8. On built-in
+      // mics with active noise gate, noiseFloor EMAs to 0 → effectiveThreshold
+      // pinned at max(rmsThreshold, 6). User's voice avg sits 18-22 then
+      // never crosses. 1.8 keeps headroom for HVAC (which pins at 5-7) but
+      // lets quiet voice through.
       const effectiveThreshold = Math.max(
         cfg.rmsThreshold,
-        noiseFloorRef.current * 2.5 + 6,
+        noiseFloorRef.current * 1.8 + 6,
       );
 
       // KI-057 — suppress new triggers right after we closed a segment
@@ -506,6 +516,17 @@ export function useLiveConversation(opts: LiveConversationOptions): LiveConversa
             setLive(false);
             return;
           }
+        }
+        // KI-139 (2026-05-15) — Safari iOS resume() can return without
+        // throwing yet leave state at "suspended" — silent rejection of the
+        // autoplay-policy unlock. Treat anything other than "running" as a
+        // failure and surface to the user.
+        if (ctx.state !== "running") {
+          // eslint-disable-next-line no-console
+          console.error("[live-mode] AudioContext state stuck at", ctx.state, "— giving up");
+          setMicPermissionDenied(true);
+          setLive(false);
+          return;
         }
         sampleRateRef.current = ctx.sampleRate;
 
