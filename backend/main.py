@@ -1201,11 +1201,37 @@ async def policies_all(session_id: Optional[str] = None):
     # JSON that doesn't have an extracted counterpart yet. This way, even
     # policies whose LLM extraction failed still surface in the marketplace
     # with their human-curated data.
+    #
+    # KI-133 (2026-05-15) — dedup marketplace cards to ONE per policy product
+    # (not one per PDF document). Previously wordings + brochure + cis of
+    # the same product created three separate cards, ballooning the
+    # marketplace from 138 products to ~209 cards and confusing users who
+    # see "138 POLICIES" in the badge but 209 cards below.
+    #
+    # Algorithm: sort source filenames so the canonical "wordings" variant
+    # is encountered first for each product, then dedup by stripped
+    # policy_id (everything before the trailing __<doctype>).
+    # Doctype preference: wordings > prospectus > cis > brochure > anything
+    # else (alphabetical fallback).
+    _DOCTYPE_RANK = {"wordings": 0, "prospectus": 1, "cis": 2, "brochure": 3}
+    def _doctype_of(stem: str) -> str:
+        return stem.rsplit("__", 1)[1] if "__" in stem else ""
+    def _product_key_of(policy_id: str) -> str:
+        # Strip trailing __<doctype> so wordings/brochure/cis of the same
+        # product collapse to a single key.
+        return policy_id.rsplit("__", 1)[0] if "__" in policy_id else policy_id
+
+    sorted_files = sorted(
+        settings.EXTRACTED_DIR.glob("*.json"),
+        key=lambda fp: (_DOCTYPE_RANK.get(_doctype_of(fp.stem), 99), fp.stem),
+    )
+
+    seen_product_keys: set[str] = set()
     seen_policy_ids: set[str] = set()
     out = []
 
     # Pass 1: existing extracted policies (merged with curated overrides)
-    for fp in sorted(settings.EXTRACTED_DIR.glob("*.json")):
+    for fp in sorted_files:
         try:
             data = _json.loads(fp.read_text())
         except Exception:
@@ -1220,6 +1246,13 @@ async def policies_all(session_id: Optional[str] = None):
         # in chat answers, they just don't appear as marketplace cards.
         if slug == "regulatory":
             continue
+        # KI-133 (2026-05-15) — dedup by product (insurer__product), so the
+        # wordings PDF wins and the brochure/cis variants don't generate
+        # duplicate cards. Pass-1 sort order guarantees wordings comes first.
+        product_key = _product_key_of(policy_id_local)
+        if product_key in seen_product_keys:
+            continue
+        seen_product_keys.add(product_key)
         name, home = insurer_meta.get(slug, (slug, ""))
         # Get insurer reviews if available for the scorecard
         ir = None
