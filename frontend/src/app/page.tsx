@@ -62,8 +62,22 @@ export default function Page() {
   // brain in flight, "speaking" = TTS playing (informational).
   const [voicePhase, setVoicePhase] = useState<null | "transcribing" | "thinking" | "speaking">(null);
   const [recording, setRecording] = useState(false);
-  const [returnAudio, setReturnAudio] = useState(true);
-  const [ttsLang, setTtsLang] = useState<"en-IN" | "hi-IN">("en-IN");
+  // KI-257 — voice reply + tts language UI toggles removed per user request.
+  // returnAudio stays true (bot always replies with audio); ttsLang stays
+  // en-IN by default (Sarvam STT auto-detects user's input language; LLM
+  // mirrors via SYSTEM_PROMPT RULE 8 Indic mirroring). Underlying state
+  // preserved so backend contract is unchanged.
+  const [returnAudio] = useState(true);
+  const [ttsLang] = useState<"en-IN" | "hi-IN">("en-IN");
+  // KI-257 — master Voice toggle. When OFF, the chat input shows only
+  // textarea + Send. When ON, reveals Live (BETA) option, Push-to-talk
+  // button. Hold-SPACE-to-talk is always active while Voice is on
+  // (no separate toggle) so the user can just press space whenever the
+  // textarea isn't focused. Persisted via localStorage.
+  const [voiceMasterOn, setVoiceMasterOn] = useState(false);
+  // KI-257 — true while the user is holding SPACE (drives the visual
+  // "ready to take audio" indicator near the PTT button).
+  const [spaceHoldActive, setSpaceHoldActive] = useState(false);
   // Visual UI language — same source as ttsLang so the toggle controls both
   const uiLang: UILang = ttsLang === "hi-IN" ? "hi" : "en";
   const t = (key: StringKey, vars?: Record<string, string | number>) => translate(uiLang, key, vars);
@@ -428,6 +442,25 @@ export default function Page() {
     live.setLive(userPrefersLive);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userPrefersLive]);
+
+  // KI-257 — restore master Voice pref from localStorage on first mount.
+  // Master toggle off by default. When master goes OFF we also force
+  // userPrefersLive=false so the Live always-on path is suspended.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const m = localStorage.getItem("insurance_voice_master") === "on";
+      if (m) setVoiceMasterOn(true);
+    } catch { /* ignore */ }
+  }, []);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem("insurance_voice_master", voiceMasterOn ? "on" : "off");
+    if (!voiceMasterOn && userPrefersLive) {
+      setUserPrefersLive(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [voiceMasterOn]);
 
   // V3 FIX 2 + FIX 3 — Hardened TTS interrupt cleanup. When the bot is
   // mid-sentence and the user starts speaking / toggles voice off / clicks
@@ -1070,6 +1103,56 @@ export default function Page() {
   }
   function stopRecording() { mediaRecorderRef.current?.stop(); }
 
+  // KI-257 — Hold-SPACE-to-talk. When Voice is on AND the user is NOT
+  // focused on any text input, holding SPACE acts like Push-to-talk:
+  // press starts recording, release stops + submits. Refs avoid stale
+  // closures since startRecording/stopRecording are inline functions
+  // recreated each render.
+  const startRecordingRef = useRef<(() => Promise<void>) | null>(null);
+  const stopRecordingRef = useRef<(() => void) | null>(null);
+  useEffect(() => {
+    startRecordingRef.current = startRecording;
+    stopRecordingRef.current = stopRecording;
+  });
+  useEffect(() => {
+    if (!voiceMasterOn) return;
+    if (typeof window === "undefined") return;
+    const isInputFocused = () => {
+      const ae = document.activeElement as HTMLElement | null;
+      if (!ae) return false;
+      const tag = ae.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return true;
+      if (ae.isContentEditable) return true;
+      return false;
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== " " && e.code !== "Space") return;
+      if (e.repeat) return;
+      if (isInputFocused()) return;
+      if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+      e.preventDefault();
+      if (recording || busy) return;
+      setSpaceHoldActive(true);
+      const sr = startRecordingRef.current;
+      if (sr) void sr();
+    };
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.key !== " " && e.code !== "Space") return;
+      if (!spaceHoldActive && !recording) return;
+      e.preventDefault();
+      setSpaceHoldActive(false);
+      const sp = stopRecordingRef.current;
+      if (sp && recording) sp();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [voiceMasterOn, recording, busy, spaceHoldActive]);
+
   async function handleFile(ev: React.ChangeEvent<HTMLInputElement>) {
     const f = ev.target.files?.[0];
     if (!f) return;
@@ -1257,14 +1340,9 @@ export default function Page() {
                 </div>
               </div>
             </button>
-            {/* UI language toggle — flips visual chrome + voice TTS together */}
-            <button
-              onClick={() => setTtsLang(ttsLang === "en-IN" ? "hi-IN" : "en-IN")}
-              className="text-xs font-semibold px-2 py-1 rounded-md border border-[var(--border)] bg-[var(--card)] hover:border-[var(--primary)] hover:text-[var(--primary)]"
-              title={ttsLang === "en-IN" ? "Switch to Hindi" : "अंग्रेज़ी में बदलें"}
-            >
-              {ttsLang === "en-IN" ? "EN · हिं" : "हिं · EN"}
-            </button>
+            {/* KI-257 — header EN/HI toggle removed per user request.
+                Sarvam STT auto-detects user language; LLM mirrors via
+                SYSTEM_PROMPT RULE 8. ttsLang stays en-IN by default. */}
           </div>
         </div>
       </header>
@@ -1383,49 +1461,6 @@ export default function Page() {
               className="flex-1 resize-none bg-transparent outline-none text-sm sm:text-base px-2 py-2 min-h-[40px] max-h-32"
               disabled={busy}
             />
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="application/pdf"
-              onChange={handleFile}
-              className="hidden"
-            />
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={busy || !!uploadStatus}
-              title="Upload your own policy PDF"
-              className="shrink-0 w-11 h-11 rounded-xl flex items-center justify-center bg-[var(--muted)] hover:bg-[var(--border)] disabled:opacity-40 transition"
-            >
-              <UploadIcon />
-            </button>
-            {/* KI-029 (2026-05-14) — push-to-talk button is now LABELED and
-                visually highlighted when Voice is OFF, so the user can find
-                it. Was just a 40px icon indistinguishable from the upload
-                icon; user reported "no push to talk button" despite it
-                technically existing. */}
-            <button
-              type="button"
-              onClick={recording ? stopRecording : startRecording}
-              disabled={busy && !recording}
-              className={`shrink-0 h-11 px-3 rounded-xl flex items-center gap-1.5 transition-all text-sm font-medium ${
-                recording
-                  ? "bg-[var(--error)] text-white animate-record-pulse"
-                  : userPrefersLive
-                    ? "bg-[var(--muted)] hover:bg-[var(--border)] text-[var(--foreground)]"
-                    : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-md ring-2 ring-emerald-300 dark:ring-emerald-700"
-              } disabled:opacity-40`}
-              title={recording
-                ? "Recording… click to stop, or stay silent for 2s"
-                : userPrefersLive
-                  ? "Push-to-talk (one turn — Live resumes after)"
-                  : "Push-to-talk — click and speak; Voice will stay off until you click the red dot"}
-            >
-              {recording ? <StopIcon /> : <MicIcon />}
-              <span className="hidden sm:inline">
-                {recording ? "Stop" : "Push-to-talk"}
-              </span>
-            </button>
             <button
               type="button"
               onClick={() => send(input)}
@@ -1435,34 +1470,35 @@ export default function Page() {
               Send
             </button>
           </div>
-          {/* V4 FIX 1 — live PTT interim transcript directly under the mic
-              row, shown in gray italic. Updates ~5/sec via the throttled
-              pttInterim state. Hidden when not recording or when there's
-              no partial yet, so we don't render an empty 1-line strip. */}
-          {recording && pttInterim && (
-            <div
-              className="mt-1 px-2 text-xs italic text-[var(--muted-foreground)] leading-snug truncate"
-              aria-live="polite"
-              aria-atomic="true"
-              title={pttInterim}
-            >
-              {pttInterim}
-            </div>
-          )}
+
+          {/* KI-257 — Voice control row. Master "Enable voice" toggle on
+              the left; helper text "Enter to submit chat" on the right.
+              When Voice is ON the Live + Push-to-talk sub-row appears
+              below this. */}
           <div className="flex items-center justify-between gap-3 mt-2 pt-2 px-2 text-xs text-[var(--muted-foreground)]">
-            <div className="flex items-center gap-3">
-              {/* KI-028 — Clickable Live toggle. Green = always-on listening,
-                  red = off (user explicitly disabled). PTT works in BOTH states:
-                  in green it temporarily suspends then resumes; in red it does
-                  its one turn and leaves Live off so the user keeps using PTT
-                  until they click back to green. */}
+            <button
+              type="button"
+              onClick={() => setVoiceMasterOn((v) => !v)}
+              className={`flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-medium transition cursor-pointer ${
+                voiceMasterOn
+                  ? "border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+                  : "border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--primary)] hover:text-[var(--primary)]"
+              }`}
+              title={voiceMasterOn ? "Voice is on. Click to disable voice." : "Enable voice (shows Live and Push-to-talk options)"}
+            >
+              <span className={`inline-block w-2 h-2 rounded-full ${voiceMasterOn ? "bg-emerald-500 animate-pulse" : "bg-gray-400"}`} />
+              {voiceMasterOn ? "Voice ON" : "Enable voice"}
+            </button>
+            <div className="hidden sm:block">Enter to submit chat</div>
+          </div>
+
+          {voiceMasterOn && (
+            <div className="mt-2 px-2 flex flex-wrap items-center gap-2">
+              {/* Live (BETA) toggle — gated behind the confirm dialog */}
               {!live.micPermissionDenied ? (
                 <button
                   type="button"
                   onClick={() => {
-                    // KI-256 — show a one-time confirm when enabling live voice
-                    // so users know it's beta + may cut them off / echo.
-                    // Once they accept, persist a flag so we don't nag again.
                     if (!userPrefersLive) {
                       const seen = (typeof window !== "undefined")
                         ? window.localStorage.getItem("insurance_live_beta_ack") === "1"
@@ -1482,14 +1518,14 @@ export default function Page() {
                     }
                     setUserPrefersLive((p) => !p);
                   }}
-                  className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs font-medium transition cursor-pointer ${
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-medium transition cursor-pointer ${
                     userPrefersLive
                       ? "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
                       : "border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--primary)] hover:text-[var(--primary)]"
                   }`}
                   title={userPrefersLive
-                    ? "Always-on voice is BETA — may cut you off / echo. PTT (🎤) is more reliable."
-                    : "Always-on voice (BETA — unstable). Prefer 🎤 push-to-talk for reliable input."}
+                    ? "Live voice is BETA — may cut you off / echo. Click to turn off."
+                    : "Enable Live always-on voice (BETA — unstable). Prefer Push-to-talk for reliable input."}
                 >
                   <span className={`inline-block w-2 h-2 rounded-full ${
                     userPrefersLive
@@ -1497,27 +1533,58 @@ export default function Page() {
                       : "bg-gray-400"
                   }`} />
                   {userPrefersLive
-                    ? (live.recording ? "Listening… (BETA)" : "Voice on · BETA — unstable")
-                    : "Voice off · Always-on (BETA)"}
+                    ? (live.recording ? "Listening… (BETA)" : "Live ON · BETA")
+                    : "Live (BETA — unstable)"}
                 </button>
               ) : (
-                <span className="text-rose-500 text-xs" title="Allow mic in your browser site settings, or use the 🎤 push-to-talk button">
-                  🔇 Mic blocked — use 🎤 to speak, or type below
+                <span className="text-rose-500 text-xs" title="Allow mic in your browser site settings, or use Push-to-talk">
+                  🔇 Mic blocked
                 </span>
               )}
-              <label className="flex items-center gap-1.5 cursor-pointer" title="Bot replies with both text and audio">
-                <input type="checkbox" checked={returnAudio} onChange={(e) => setReturnAudio(e.target.checked)} className="w-3.5 h-3.5 accent-[var(--primary)]" /> Voice reply
-              </label>
-              <label className="flex items-center gap-1.5">
-                Lang:
-                <select value={ttsLang} onChange={(e) => setTtsLang(e.target.value as "en-IN" | "hi-IN")} className="bg-transparent border border-[var(--border)] rounded px-1.5 py-0.5">
-                  <option value="en-IN">English</option>
-                  <option value="hi-IN">हिन्दी</option>
-                </select>
-              </label>
+
+              {/* Push-to-talk button — click OR hold SPACE */}
+              <button
+                type="button"
+                onClick={recording ? stopRecording : startRecording}
+                disabled={busy && !recording}
+                className={`h-9 px-3 rounded-full flex items-center gap-1.5 text-xs font-medium transition-all ${
+                  recording
+                    ? "bg-[var(--error)] text-white animate-record-pulse"
+                    : spaceHoldActive
+                      ? "bg-emerald-700 text-white ring-2 ring-emerald-300"
+                      : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-md ring-2 ring-emerald-300 dark:ring-emerald-700"
+                } disabled:opacity-40`}
+                title={recording
+                  ? "Recording… click to stop and submit (or release SPACE)"
+                  : "Push-to-talk: click to start, click again to stop. Or hold SPACE."}
+              >
+                {recording ? <StopIcon /> : <MicIcon />}
+                <span>{recording ? "Stop & send" : "Push-to-talk"}</span>
+              </button>
+
+              {/* Hold SPACE helper — shows "ready to take audio" when
+                  user holds SPACE without yet recording. */}
+              <span className="text-xs text-[var(--muted-foreground)] italic">
+                {recording && spaceHoldActive
+                  ? "Listening… release SPACE to submit"
+                  : recording
+                    ? "Listening… click Stop to submit"
+                    : "or hold SPACE to talk · release to submit"}
+              </span>
             </div>
-            <div className="hidden sm:block">Enter to send · 🎤 to push-to-talk · 📎 PDF</div>
-          </div>
+          )}
+
+          {/* PTT interim transcript — visible only while actually recording */}
+          {voiceMasterOn && recording && pttInterim && (
+            <div
+              className="mt-1 px-2 text-xs italic text-[var(--muted-foreground)] leading-snug truncate"
+              aria-live="polite"
+              aria-atomic="true"
+              title={pttInterim}
+            >
+              {pttInterim}
+            </div>
+          )}
         </div>
       </main>
 
