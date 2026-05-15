@@ -480,17 +480,42 @@ def _build_contents(
     return out
 
 
-def _system_instruction(profile) -> dict:
+def _system_instruction(profile, is_returning_user: bool = False) -> dict:
     """Bake the profile snapshot into the system prompt so each turn the
     LLM knows what's already captured. Returned in Gemini's expected
-    `systemInstruction` shape."""
+    `systemInstruction` shape.
+
+    KI-255 (2026-05-15) — added `is_returning_user` so the LLM can
+    distinguish "profile loaded from prior conversation" (RULE 4 Welcome
+    Back fires) from "profile captured during THIS turn / earlier in
+    this conversation" (no Welcome Back). Smoke-3-personas showed RULE 4
+    firing on every first session because the snapshot label said only
+    "already captured this session" which Gemini reads as "pre-populated."
+    """
     snapshot = _profile_to_snapshot(profile)
     extra = ""
     if snapshot:
-        extra = (
-            "\n\nKNOWN PROFILE (already captured this session; do NOT re-ask):\n"
-            + json.dumps(snapshot, ensure_ascii=False, sort_keys=True)
-        )
+        if is_returning_user:
+            extra = (
+                "\n\nSESSION TYPE: RETURNING USER. Profile below was LOADED FROM A "
+                "PRIOR CONVERSATION (the user is coming back). RULE 4 applies — "
+                "your first reply must greet by name, summarise, and ask if anything "
+                "has changed. After the user confirms or provides new data, proceed."
+                "\n\nKNOWN PROFILE (pre-populated from prior session; do NOT re-ask):\n"
+                + json.dumps(snapshot, ensure_ascii=False, sort_keys=True)
+            )
+        else:
+            extra = (
+                "\n\nSESSION TYPE: FRESH SESSION. Profile below was CAPTURED IN THIS "
+                "CONVERSATION (current turn or earlier turns of this same chat). "
+                "RULE 4 does NOT apply — do NOT greet with 'Welcome back', the user "
+                "did not come from a prior session. Just continue the conversation "
+                "naturally and ask for the next missing slot, or recommend if 7 slots "
+                "are filled."
+                "\n\nPROFILE CAPTURED IN THIS CONVERSATION (do NOT re-ask, do NOT "
+                "say 'Welcome back'):\n"
+                + json.dumps(snapshot, ensure_ascii=False, sort_keys=True)
+            )
     text = SYSTEM_PROMPT + extra
     return {"parts": [{"text": text}]}
 
@@ -944,7 +969,27 @@ async def handle_turn(
 
     model = _resolve_model()
     language = _detect_language(user_text)
-    system_instruction = _system_instruction(session.profile)
+
+    # KI-255 — detect "returning user" so RULE 4 (Welcome Back greeting)
+    # only fires when the profile was actually loaded from a prior
+    # session. Signal: session.turn_idx == 1 (we just incremented above,
+    # so this is the FIRST turn of this session_id) AND profile has any
+    # captured slot. If turn_idx > 1, slots were populated by prior
+    # save_profile_field calls within THIS conversation — not a
+    # returning user, do NOT trigger RULE 4 Welcome Back.
+    _current_turn = int(getattr(session, "turn_idx", 1) or 1)
+    _has_prior_profile = any(
+        getattr(session.profile, fld, None) not in (None, "", [])
+        for fld in (
+            "name", "age", "dependents", "location_tier",
+            "income_band", "primary_goal", "health_conditions",
+        )
+    )
+    is_returning_user = (_current_turn == 1) and _has_prior_profile
+
+    system_instruction = _system_instruction(
+        session.profile, is_returning_user=is_returning_user,
+    )
 
     # The running `contents` list — we append model turns + function
     # responses to it across loop iterations so Gemini sees the entire
