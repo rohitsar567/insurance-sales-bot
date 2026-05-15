@@ -59,6 +59,14 @@ FACT_FIND_TRIGGERS = (
     "have kids", "have parents", "for my parents", "for my family",
     "my income", "earn ", "salary",
     "first policy", "first time buyer",
+    # KI-154 (2026-05-15) — additional buying-intent phrasings that don't
+    # contain "buy health insurance" as a tight substring. Live bug: user
+    # said "to buy a health insurance policy" — fell through to qa because
+    # the literal "buy health insurance" (no article) didn't match.
+    "to buy", "want to buy", "looking to buy", "buy a ", "buy an ",
+    "purchase", "purchasing", "shopping for a", "get a policy",
+    "get a plan", "need a policy", "need a plan", "buy a policy",
+    "buy a plan", "buy insurance", "buy a policy for",
 )
 
 COMPARISON_KEYWORDS = (
@@ -264,6 +272,24 @@ def should_route_to_fact_find(
         # lookups (route to qa), not profile-dependent recommendations.
         if intent == "comparison" and _names_two_specific_policies(query):
             return False
+        return True
+    # KI-154 (2026-05-15) — empty-profile + qa intent: route to fact_find
+    # UNLESS the query names a specific policy / insurer (real policy-fact
+    # lookup) or asks about specific policy mechanics. Without this rule,
+    # broad questions like "to buy a health insurance policy" or "tell me
+    # about health insurance" dumped raw policy facts on users who haven't
+    # even given their name yet.
+    if profile_is_empty and intent == "qa":
+        # If query names a specific insurer/SKU, it's a legitimate policy-fact
+        # lookup (e.g., "Does Star Comprehensive cover IVF?"). Let qa handle.
+        if _names_two_specific_policies(query):
+            return False
+        # Single named policy/insurer is also fine for qa
+        ql = query.lower()
+        if any(tok in ql for tok in _NAMED_INSURER_TOKENS):
+            return False
+        # Otherwise — empty-profile generic intent — route to fact_find so the
+        # bot collects basic context before quoting policy specifics.
         return True
     return False
 
