@@ -2162,9 +2162,49 @@ function PremiumCalculatorPanel({
   const [ped, setPed] = useState<"none" | "diabetes_or_hypertension" | "heart_disease" | "multiple">(
     derivePed(initialProfile?.health_conditions),
   );
-  const [copay, setCopay] = useState(0);
+  // KI-272 — copay pre-fill (D1 missed this). When profile has copay_pct,
+  // start the slider there instead of 0.
+  const [copay, setCopay] = useState<number>(initialProfile?.copay_pct ?? 0);
   const [estimate, setEstimate] = useState<PremiumEstimateResponse | null>(null);
   const [busy, setBusy] = useState(false);
+
+  // KI-272 — re-sync sliders if profile loads AFTER the panel has mounted
+  // (race: user clicks the chip the moment profile data finishes fetching).
+  // We use a "user has not yet touched this slider" guard: only update from
+  // profile when the slider still holds its initial-default value. Once the
+  // user moves a slider, profile updates no longer override their choice.
+  const profileSnapshotRef = useRef<string>("");
+  useEffect(() => {
+    if (!initialProfile) return;
+    const snap = JSON.stringify([
+      initialProfile.age,
+      initialProfile.desired_sum_insured_inr ?? initialProfile.existing_cover_inr,
+      initialProfile.location_tier,
+      initialProfile.dependents,
+      initialProfile.health_conditions,
+      initialProfile.copay_pct,
+    ]);
+    if (snap === profileSnapshotRef.current) return;
+    profileSnapshotRef.current = snap;
+    if (initialProfile.age != null && age === 35) setAge(initialProfile.age);
+    const newSI =
+      initialProfile.desired_sum_insured_inr ??
+      initialProfile.existing_cover_inr;
+    if (newSI != null && sumInsured === 1_000_000) setSumInsured(newSI);
+    if (initialProfile.location_tier && cityTier === "metro") {
+      setCityTier(deriveCityTier(initialProfile.location_tier));
+    }
+    if (initialProfile.dependents && familySize === 0) {
+      setFamilySize(deriveFamilySize(initialProfile.dependents));
+    }
+    if (initialProfile.health_conditions?.length && ped === "none") {
+      setPed(derivePed(initialProfile.health_conditions));
+    }
+    if (initialProfile.copay_pct != null && copay === 0) {
+      setCopay(initialProfile.copay_pct);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialProfile]);
 
   useEffect(() => {
     const handler = setTimeout(() => {
