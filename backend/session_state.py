@@ -74,6 +74,16 @@ class SessionState:
     # "Conversation turn" column in the admin Recommendation History panel
     # (previously showed "—" because no caller populated the field).
     turn_idx: int = 0
+    # Z2 fix — Issue 3 (brain election bouncing). Priya's session hopped
+    # sales_brain → single_brain → single_brain → sales_brain across 6
+    # turns even though USE_SINGLE_BRAIN=true; the Gemini 503 fallback
+    # (Z1 retry already softens) was dropping the session back onto the
+    # legacy orchestrator mid-stream. Belt-and-suspenders: main.py stamps
+    # this True after the FIRST successful single_brain turn, and
+    # subsequent SingleBrainError responses on the same session must NOT
+    # fall through to the orchestrator — they emit a graceful retry
+    # prompt so the session stays sticky on single_brain.
+    single_brain_sticky: bool = False
 
     def _flush(self) -> None:
         """No-op since KI-118 (2026-05-15). Disk persistence was removed; the

@@ -328,6 +328,25 @@ def mark_recommendation(
             seen.add(s)
             cleaned.append(s)
 
+    # Z2 fix — Issue 2 (hallucinated closure). Vikram T6 saw the LLM emit
+    # mark_recommendation with an empty policy_ids list, the tool silently
+    # returned {"recorded": True, "policy_ids": []}, and the bot then said
+    # "I'm glad we found a good fit" despite ZERO cards shown. Two
+    # preconditions, gated BEFORE any session write so we don't poison
+    # last_recommendation_ids / shown_policies events with junk:
+    #   (a) empty (after dedup)  → no_policies_supplied
+    #   (b) non-empty BUT no retrieval history this session → caller
+    #       must run retrieve_policies first (Y2 cache check via
+    #       session.last_retrieved_chunks)
+    if not cleaned:
+        return {"recorded": False, "error": "no_policies_supplied"}
+    _retrieval_cache = getattr(session, "last_retrieved_chunks", None)
+    if not _retrieval_cache:
+        return {
+            "recorded": False,
+            "error": "no_retrieval_history — call retrieve_policies first",
+        }
+
     try:
         session.last_recommendation_ids = cleaned
     except Exception as e:  # noqa: BLE001

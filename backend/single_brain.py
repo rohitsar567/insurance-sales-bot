@@ -402,8 +402,17 @@ async def _gemini_call(
         "tools": [{"functionDeclarations": tools}],
         "toolConfig": {"functionCallingConfig": {"mode": "AUTO"}},
         "generationConfig": {
+            # Z2 fix — Issue 1 (mid-session amnesia). Priya T3 + Vikram T2/T4
+            # came back with the "I lost my train of thought" template even
+            # though slot capture succeeded. Root cause matches KI-150
+            # (fact_find LLM, 420 → 700): when Gemini must emit prose AND a
+            # tool-call trailer in the same response, the model hits
+            # maxOutputTokens mid-emission, the trailer truncates, and the
+            # caller falls through to the defensive reply. Budget breakdown
+            # at p95: prose ~600 tok + tool-call JSON ~800 tok + 20% margin
+            # ⇒ 1680, rounded up to a safe power-of-two-ish 2048.
             "temperature": 0.4,
-            "maxOutputTokens": 1024,
+            "maxOutputTokens": 2048,
         },
     }
     headers = {"Content-Type": "application/json"}
@@ -477,9 +486,34 @@ async def _gemini_call(
             raise SingleBrainError(last_err)
 
         try:
-            return resp.json()
+            _payload = resp.json()
         except Exception as e:  # noqa: BLE001
             raise SingleBrainError(f"Gemini malformed JSON: {e}") from e
+
+        # Z2 fix — Issue 1 truncation detector. If Gemini hit our
+        # maxOutputTokens budget the candidate's finishReason will be
+        # "MAX_TOKENS" and the tool-call trailer (if any) is likely
+        # truncated → caller will degrade to the defensive "I lost my
+        # train of thought" reply. Log a WARNING (not raise) so the turn
+        # still flows, but ops can detect a future budget regression by
+        # alerting on this log line. Swallow any shape errors — this is
+        # purely observational.
+        try:
+            _cands = _payload.get("candidates") or []
+            if _cands:
+                _fr = (_cands[0].get("finishReason") or "").upper()
+                if _fr == "MAX_TOKENS":
+                    _log.warning(
+                        "single_brain Gemini finishReason=MAX_TOKENS "
+                        "(model=%s, budget=%d) — prose+tool-call trailer "
+                        "may be truncated; raise maxOutputTokens if this "
+                        "recurs",
+                        model, body["generationConfig"]["maxOutputTokens"],
+                    )
+        except Exception:  # noqa: BLE001
+            pass
+
+        return _payload
 
     # Defensive — loop fell through without returning or raising. Should
     # be unreachable, but raise so we never silently return None.

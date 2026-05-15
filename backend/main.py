@@ -445,6 +445,14 @@ async def chat(req: ChatRequest, request: Request):
             from backend.session_state import get_session
 
             _sb_session = get_session(session_id)
+            # Z2 fix — Issue 3 (brain election bouncing). Once a session
+            # has had ANY successful single_brain turn, it must stay on
+            # single_brain for the rest of its lifetime. Falling back to
+            # the legacy orchestrator mid-stream (which is what Priya saw
+            # 6 turns in a row) discards everything single_brain captured
+            # in last_recommendation_ids / last_retrieved_chunks /
+            # slug_to_insurer and confuses the user. Sticky check below.
+            _sb_was_sticky = getattr(_sb_session, "single_brain_sticky", False)
             try:
                 turn = await asyncio.wait_for(
                     single_brain.handle_turn(
@@ -454,23 +462,58 @@ async def chat(req: ChatRequest, request: Request):
                     ),
                     timeout=45.0,
                 )
+                # First successful single_brain turn stamps the flag so
+                # every subsequent turn on this session is locked in.
+                try:
+                    _sb_session.single_brain_sticky = True
+                except Exception:  # noqa: BLE001
+                    pass
             except single_brain.SingleBrainError as _sb_err:
-                logging.warning(
-                    "single_brain failed, falling back to orchestrator "
-                    "(session=%s): %s",
-                    session_id, _sb_err,
-                )
-                turn = await asyncio.wait_for(
-                    handle_turn(
-                        user_text=req.user_text,
-                        chat_history=req.chat_history,
-                        user_profile=req.profile,
-                        policy_filter_ids=req.policy_filter_ids,
-                        session_id=session_id,
-                        view_context=req.view_context,
-                    ),
-                    timeout=45.0,
-                )
+                if _sb_was_sticky:
+                    # Z2 belt+suspenders — session already had a clean
+                    # single_brain turn. Do NOT cross-fade to the legacy
+                    # orchestrator (loses turn state + frontend sees the
+                    # brain hop). Emit a graceful retry prompt instead.
+                    logging.warning(
+                        "single_brain failed on STICKY session (session=%s); "
+                        "emitting graceful retry, NOT falling back to "
+                        "orchestrator: %s",
+                        session_id, _sb_err,
+                    )
+                    turn = single_brain.TurnResult(
+                        reply_text=(
+                            "Sorry, I'm having trouble — could you say "
+                            "that again?"
+                        ),
+                        citations=[],
+                        retrieved_chunk_ids=[],
+                        brain_used="single_brain::sticky_graceful_retry",
+                        intent="qa",
+                        language="en",
+                        latency_ms=int((time.time() - t_chat0) * 1000),
+                        raw_reply=f"SingleBrainError: {_sb_err}",
+                        faithfulness_passed=True,
+                        faithfulness_reasons=[],
+                        blocked=False,
+                        profile_updates={},
+                    )
+                else:
+                    logging.warning(
+                        "single_brain failed, falling back to orchestrator "
+                        "(session=%s): %s",
+                        session_id, _sb_err,
+                    )
+                    turn = await asyncio.wait_for(
+                        handle_turn(
+                            user_text=req.user_text,
+                            chat_history=req.chat_history,
+                            user_profile=req.profile,
+                            policy_filter_ids=req.policy_filter_ids,
+                            session_id=session_id,
+                            view_context=req.view_context,
+                        ),
+                        timeout=45.0,
+                    )
         else:
             turn = await asyncio.wait_for(
                 handle_turn(
