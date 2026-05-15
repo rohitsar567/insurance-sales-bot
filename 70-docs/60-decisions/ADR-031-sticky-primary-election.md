@@ -1,6 +1,8 @@
 # ADR-031 — Sticky primary election for LLM chains
 
-**Status:** Accepted — 2026-05-15
+**Status:** Superseded by [ADR-038](ADR-038-nim-only-chains.md) — 2026-05-15 (KI-160). Cross-provider election candidates (Groq, OpenRouter) removed from all three chains after KI-155 demonstrated Groq Llama-3.3 silently ignores the `<FF>` trailer contract. Sticky-primary election mechanics still apply, but only within the NIM candidate pool. Body retained below for history.
+
+**Status (original):** Accepted — 2026-05-15
 **Owner:** Rohit Saraf
 **Supersedes:** None (extends [ADR-019](ADR-019-nim-single-provider-consolidation.md) + [ADR-026](ADR-026-provider-load-balancing.md))
 **Deprecates:** [ADR-026](ADR-026-provider-load-balancing.md)'s `_balanced_brain_chain` 50/50 NIM ↔ Groq rotation (kept as a feature-flagged bypass branch for one-release rollback; default-off).

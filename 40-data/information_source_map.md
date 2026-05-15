@@ -1,6 +1,6 @@
 # Insurance Sales Bot — Information Source Map
 
-Generated: 2026-05-14 05:57:43 IST
+Generated: 2026-05-15 (KI-125–KI-150 sync; slug renames applied)
 Total claims audited: **2772**
 
 ## Verdict Summary
@@ -69,7 +69,7 @@ Audited 2504 claims — ✅ 798 verified, ⚠️ 321 quote-missing, ❌ 0 broken
 | `bajaj-allianz__extra-care-plus` | `policy_type` | ⚠️ url-ok-quote-missing | `rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf` | PDF exists but source_quote not found in extracted text |
 | `bajaj-allianz__global-health-care` | `copayment_pct` | ⚠️ url-ok-quote-missing | `rag/corpus/bajaj-allianz/global-health-care__wordings.pdf` | PDF exists but source_quote not found in extracted text |
 | `bajaj-allianz__global-health-care` | `policy_type` | ⚠️ url-ok-quote-missing | `rag/corpus/bajaj-allianz/global-health-care__wordings.pdf` | PDF exists but source_quote not found in extracted text |
-| `bajaj-allianz__group-health-guard-gold__wordings` | `policy_type` | ⚠️ url-ok-quote-missing | `rag/corpus/bajaj-allianz/group-health-guard-gold__wordings.pdf` | PDF exists but source_quote not found in extracted text |
+| `bajaj-allianz__group-health-guard-silver__wordings` | `policy_type` | ⚠️ url-ok-quote-missing | `rag/corpus/bajaj-allianz/group-health-guard-silver__wordings.pdf` | PDF exists but source_quote not found in extracted text |
 | `bajaj-allianz__group-personal-accident__wordings` | `policy_type` | ⚠️ url-ok-quote-missing | `rag/corpus/bajaj-allianz/group-personal-accident__wordings.pdf` | PDF exists but source_quote not found in extracted text |
 | `bajaj-allianz__health-guard-gold-individual__wordings` | `policy_type` | ⚠️ url-ok-quote-missing | `rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf` | PDF exists but source_quote not found in extracted text |
 | `bajaj-allianz__health-guard-gold` | `max_entry_age` | ⚠️ url-ok-quote-missing | `rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf` | PDF exists but source_quote not found in extracted text |
@@ -537,7 +537,7 @@ _None._
 | bajaj-allianz__criti-care__wordings | 1 | 1 | 0 |
 | bajaj-allianz__extra-care-plus | 12 | 6 | 0 |
 | bajaj-allianz__global-health-care | 11 | 2 | 0 |
-| bajaj-allianz__group-health-guard-gold__wordings | 6 | 1 | 0 |
+| bajaj-allianz__group-health-guard-silver__wordings | 6 | 1 | 0 |
 | bajaj-allianz__group-personal-accident__wordings | 0 | 1 | 0 |
 | bajaj-allianz__health-guard | 14 | 2 | 0 |
 | bajaj-allianz__health-guard-gold | 10 | 9 | 0 |

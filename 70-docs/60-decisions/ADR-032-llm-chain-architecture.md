@@ -1,6 +1,14 @@
 # ADR-032 — LLM Chain Architecture Reference
 
-**Status:** Accepted — 2026-05-15
+**Status:** Superseded by [ADR-038](ADR-038-nim-only-chains.md) — 2026-05-15 (KI-160). All three chains locked to NIM candidates only after KI-155. Current candidate lists:
+
+- **BRAIN:** `nvidia/llama-3.3-nemotron-super-49b-v1.5` (primary), `qwen/qwen3-next-80b-a3b-instruct` (backup), `mistralai/mistral-large-3-675b-instruct-2512` (3rd)
+- **FAST_BRAIN:** `qwen/qwen3-next-80b-a3b-instruct` (primary), `nvidia/llama-3.3-nemotron-super-49b-v1.5` (backup)
+- **JUDGE:** `meta/llama-4-maverick-17b-128e-instruct` (primary), `mistralai/mistral-large-3-675b-instruct-2512` (backup)
+
+Body below retained as architectural reference for probe / election / timeout machinery — all still in effect within the NIM-only scope.
+
+**Status (original):** Accepted — 2026-05-15
 **Type:** Architecture reference (not a decision ADR)
 **Owner:** Rohit Saraf
 **Consolidates:** [ADR-019](ADR-019-nim-single-provider-consolidation.md), [ADR-026](ADR-026-provider-load-balancing.md) (superseded), [ADR-030](ADR-030-llm-driven-fact-find.md), [ADR-031](ADR-031-sticky-primary-election.md)

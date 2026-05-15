@@ -139,6 +139,32 @@ Bot reply: Fair enough — let me put together a shortlist based on what you've 
 User: "What's the waiting period for PED usually?"
 Bot reply: Most policies in India have a 24-36 month waiting period for pre-existing diseases — IRDAI caps the maximum, and a few insurers offer shorter waits as a premium upgrade. Happy to dig into a specific policy if you have one in mind. Meanwhile, what budget range are you comfortable with annually — under ₹15k, ₹15-30k, ₹30-60k, or ₹60k+?
 <FF>{"captured": {}, "slot_driving": "budget_band", "complete": false}</FF>
+
+User: "Hi"
+Bot reply: Hi there — happy to help you find a health policy. What should I call you?
+<FF>{"captured": {}, "slot_driving": "name", "complete": false}</FF>
+
+User: "ok"
+Bot reply: Sure. To get started, could you tell me your age?
+<FF>{"captured": {}, "slot_driving": "age", "complete": false}</FF>
+
+==========================================================
+FINAL INSTRUCTION — READ THIS CAREFULLY. APPLIES TO EVERY REPLY.
+==========================================================
+EVERY reply you produce MUST end with the structured trailer in this EXACT format on its own line:
+
+<FF>{"captured": {...}, "slot_driving": "...", "complete": false}</FF>
+
+This rule is ABSOLUTE. There are NO exceptions:
+- Short reply? Still emit the trailer.
+- One-word user message ("ok", "hi", "yes")? Still emit the trailer.
+- User asks an off-topic question? Still emit the trailer after your answer.
+- User wants to end fact-find ("show me policies")? Emit trailer with "complete": true.
+- Nothing new captured this turn? Emit "captured": {} (empty object). Still emit the trailer.
+
+The trailer is the LAST thing in your output. Nothing comes after </FF>.
+
+If you do not emit a valid <FF>...</FF> trailer, your entire reply is DISCARDED by the backend and the user sees a scripted fallback question. This is the single most important rule. NEVER omit the trailer.
 """
 
 
@@ -270,7 +296,24 @@ def _validate_capture(field_name: str, value: Any) -> Any:
         try:
             from backend.profile_store import is_valid_name
             v = str(value).strip()
-            return v if is_valid_name(v) else None
+            if not is_valid_name(v):
+                return None
+            # KI-156 (2026-05-15) — reject LLM-hallucinated names that are
+            # actually status/negation phrases. Live bug: user said "I am
+            # currently not having any policy" and the LLM emitted
+            # captured={"name":"Currently Not Having Any"}. is_valid_name
+            # passes on length+alpha but doesn't catch semantic garbage.
+            _bad_starts = {
+                "currently", "not", "no", "none", "nothing", "never",
+                "without", "looking", "buying", "shopping",
+                "i", "we", "my", "this", "that", "the",
+                "first", "still", "yet", "haven", "haven't",
+                "don't", "don", "dont", "havent",
+            }
+            first = v.split()[0].lower().strip(".,!?")
+            if first in _bad_starts:
+                return None
+            return v
         except Exception:
             return None
 
@@ -776,9 +819,18 @@ def _canonical_fallback(session, user_text: str, *, reason: str) -> FactFindOutc
 
             # Build the prioritised slot order — try high-signal slots first
             # (numbers, enums) before name (which has explicit-intro guard).
+            # KI-158 (2026-05-15) — added "health_conditions". Its absence
+            # meant a user replying "I'm not having any pre-existing condition"
+            # NEVER got the slot captured here; the LLM brain failing on a
+            # `no_trailer` reply for that turn (common under NIM load) bumped
+            # _failed_attempts['health_conditions'] each turn until the
+            # loop-breaker force-skipped the slot, which then made
+            # next_question() return None and triggered the gentle hand-off
+            # mid-fact-find.
             _GREEDY_ORDER = [
                 "age", "dependents", "income_band", "existing_cover",
-                "primary_goal", "location", "parents_age", "budget", "name",
+                "primary_goal", "location", "parents_age", "health_conditions",
+                "budget", "name",
             ]
             ordered_slots: list[str] = [
                 sid for sid in _GREEDY_ORDER
@@ -863,7 +915,33 @@ def _canonical_fallback(session, user_text: str, *, reason: str) -> FactFindOutc
     except Exception:
         q = None
     if q is not None:
-        reply = q.prompt_en
+        # KI-156 (2026-05-15) — when the LLM bailed but we DID greedy-capture
+        # something this turn, prepend a brief acknowledgement so the user
+        # doesn't perceive the bot as ignoring them. Pre-fix the fallback
+        # emitted only the bare scripted prompt_en, making the conversation
+        # look unresponsive ("user gives city → bot asks name again" pattern).
+        ack_parts: list[str] = []
+        _PRETTY = {
+            "name": "name",
+            "age": "age",
+            "dependents": "who you're covering",
+            "income_band": "income band",
+            "existing_cover_inr": "existing cover",
+            "primary_goal": "goal",
+            "location_tier": "city",
+            "parents_age_max": "parents' age",
+            "health_conditions": "health conditions",
+            "budget_band": "budget",
+        }
+        for k in ("name", "age", "dependents", "location_tier", "income_band",
+                 "existing_cover_inr", "primary_goal", "budget_band"):
+            if k in captured:
+                ack_parts.append(_PRETTY.get(k, k))
+        if ack_parts:
+            ack = f"Got that — {', '.join(ack_parts)}. "
+            reply = ack + q.prompt_en
+        else:
+            reply = q.prompt_en
         slot = q.field
         return FactFindOutcome(
             reply_text=reply,
@@ -873,17 +951,36 @@ def _canonical_fallback(session, user_text: str, *, reason: str) -> FactFindOutc
             ambiguous=True,
             _fallback_reason=reason,  # KI-078 — telemetry stamp
         )
-    # Nothing left to ask — gentle hand-off.
+    # Nothing left to ask — fact-find is genuinely complete (every applicable
+    # slot is filled OR has been intentionally skipped by the loop-breaker).
+    #
+    # KI-158 (2026-05-15) — was emitting the "Let me know a bit about yourself
+    # — your age..." gentle hand-off which is the WRONG message at this point:
+    # the user just answered the LAST slot, every prior slot is on file, but
+    # the canonical-fallback path landed here because the LLM brain failed on
+    # the trailer block (no_trailer / empty_reply). Re-asking "tell me a bit
+    # about yourself" makes the bot look forgetful mid-conversation.
+    #
+    # Fix:
+    #   1. Propagate `captured` (was discarded as `{}`) so any greedy capture
+    #      made this turn — most commonly the no-PED `health_conditions=[]` —
+    #      is applied to the profile by the orchestrator post-loop.
+    #   2. Flip `fact_find_complete=True` so the orchestrator switches the
+    #      session into free-form mode and the NEXT user turn routes to the
+    #      retrieval brain (which can recommend), not back here.
+    #   3. Replace the awkward hand-off prose with a clean acknowledge +
+    #      transition that mirrors the brain's `complete=true` summary path
+    #      — the user just told us they're healthy, we have everything else
+    #      already, so transition to recommendations.
     reply = (
-        "Let me know a bit about yourself — your age, who you'd want covered "
-        "(just you, family, parents), and your annual income band — and I'll "
-        "tailor the options for you."
+        "Got it — no pre-existing conditions noted. I have everything I need. "
+        "Want me to suggest a couple of policies that fit your profile?"
     )
     return FactFindOutcome(
         reply_text=reply,
-        captured_updates={},
+        captured_updates=captured,  # KI-158 — propagate greedy captures
         slot_driving=None,
-        fact_find_complete=False,
+        fact_find_complete=True,    # KI-158 — flip to free-form
         ambiguous=True,
         _fallback_reason=reason,  # KI-078 — telemetry stamp
     )

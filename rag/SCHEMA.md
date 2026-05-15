@@ -94,3 +94,18 @@ The schema is forward-compatible without breaking changes:
     queries like "policies with PED waiting < 24 months" can still match).
 - The original policy wordings PDF stays in `rag/corpus/` for citation
   fallback. The schema's `source_pdf_path` field is the link back.
+
+## Chroma chunk metadata
+
+Each chunk persisted in Chroma carries the following metadata keys (set by
+`rag/ingest.py`):
+
+| Key | Type | Notes |
+|---|---|---|
+| `policy_id` | str | e.g. `aditya-birla__activ-one`. Primary filter for per-policy retrieval. |
+| `insurer_slug` | str | e.g. `aditya-birla`. Secondary filter. |
+| `source_pdf` | str | Relative path under `rag/corpus/`. |
+| `page` | int | 1-indexed PDF page number. |
+| `chunk_index` | int | Position within the policy's chunk sequence. |
+| `doc_type` | str | `'wordings'` / `'brochure'` / `'cis'` / `'prospectus'` / `'curated'`. **`'curated'` (KI-137)** marks chunks ingested from hand-curated `40-data/policy_facts/<id>.json` rather than raw PDF text. |
+| `legacy_issuer` | str (optional) | **KI-144.** Present on `indusind-general__*` chunks whose source PDFs carry the previous `reliance-general` issuer branding. Value: `'reliance-general'`. Lets retrieval surface legacy citations without breaking the canonical slug. |

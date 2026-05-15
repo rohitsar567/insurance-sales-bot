@@ -41,11 +41,30 @@ short_description: Voice-first AI advisor for Indian health insurance
 
 ## 1. Executive summary
 
-A **voice-first health-insurance advisor** for Indian buyers, grounded in a curated corpus of **206 documents** — 188 product documents from 19 leading insurers plus 18 IRDAI / regulatory documents — extracted into a 62-field structured schema with a rules-based A–F scorecard and a **4-gate hallucination defense** on every reply.
+A **voice-first health-insurance advisor** for Indian buyers, grounded in a curated corpus of **206 documents** — 188 product documents from 19 leading insurers plus 18 IRDAI / regulatory documents — extracted into a 62-field structured schema with a rules-based A–F scorecard and a **4-gate hallucination defense** on every reply. The marketplace surfaces **166 cards** across the 19 real insurers (one card per IRDAI-filed product after KI-133 / KI-141 / KI-142 / KI-145 dedup); the `profile` and `regulatory` Chroma slugs are filtered out of all user-facing counts (KI-129 / KI-130 / KI-132).
 
 The bot is **consumer-facing in experience, B2B in commercial application.** The realistic deployment is an insurer or aggregator white-labelling this advisor on top of Sarvam's ASR/TTS/LLM stack. The build deliberately optimises for the artifacts a BFSI buyer would audit: provenance, refusal behaviour, eval rigor, citation grammar.
 
 **Try on the live demo:** *"What's the pre-existing disease waiting period under Care Supreme, and how does that compare to ICICI Elevate?"* — comparative answer with `[Source: ...]` citations linking to specific policy PDFs and page ranges, brain tag showing which model handled it, audio synthesised by Sarvam Bulbul. Ask the same in Hinglish — *"Care Supreme mein PED ka waiting period kya hai?"* — and the response flows through the Indic translation cascade with three drift checks.
+
+### 1.0 Today's session (2026-05-15) — KI-125 → KI-150
+
+Thirty-plus knowledge increments landed today. The corpus was rebuilt, the marketplace dedup logic was rewritten, the voice stack was retuned, and an insurer rename was migrated end-to-end. One-line each:
+
+- **KI-125 / KI-126 / KI-127** — full corpus rebuild + dedup; **Chroma chunks 3,799 → 7,317** (wordings 5,401 · brochure 611 · regulatory 498 · prospectus 483 · cis 302 · curated 21 · profile 1); **marketplace cards 138 → 166** correctly counted; **2 image-only PDFs dropped** (`royal-sundaram/family-plus__brochure.pdf` + `aditya-birla/activ-one__brochure.pdf`) so source-PDF total is now 206 (188 product + 18 regulatory) with 201 extracted JSONs.
+- **KI-128** — `tools/upload_to_hf.py` LFS quota silent-failure fix.
+- **KI-129 / KI-130 / KI-132** — filter `profile` + `regulatory` slugs from user-facing marketplace counts (19 real insurers + 1 regulatory bucket = 20 internal slugs).
+- **KI-131 / KI-134 / KI-139 / KI-148** — voice mode now defaults **OFF**; AudioContext.resume() unlocks autoplay; VAD threshold retuned (`rmsThreshold=18`, `voiceBandMinProp=0.20`, `noiseFloor * 1.8`); TTS `k → thousand` expansion.
+- **KI-133 / KI-141 / KI-142 / KI-145** — marketplace dedup: one card per IRDAI-filed product; aliases handle marketing renames; sub-variants stay separate when material terms differ.
+- **KI-136** — named-SKU comparison routes to `qa` instead of `fact_find`.
+- **KI-137** — ingested 21 curated-facts policies (Activ One, Optima Secure, …) into Chroma so the bot can retrieve them.
+- **KI-138** — canonicalized 84 `policy_name` mismatches across extracted JSONs + Chroma metadata.
+- **KI-143** — `bajaj/group-health-guard` slug correction (gold → silver per the PDF).
+- **KI-144** — `reliance-general` → `indusind-general` migration (Reliance General Insurance was rebranded to IndusInd General). The `indusind-general` slug did not exist anywhere in the codebase before today.
+- **KI-149** — budget + income parser captures bare numerals like `"30000"`.
+- **KI-150** — `fact_find_brain` `max_tokens` 420 → 700 (root cause of the "robotic language" user complaint).
+
+Per-insurer card counts (166 total across 19 real insurers): HDFC ERGO 15 · National Insurance 14 · Niva Bupa 14 · Bajaj Allianz 13 · ICICI Lombard 13 · Star Health 11 · Care Health 10 · New India Assurance 9 · Tata AIG 9 · Acko 7 · Aditya Birla 7 · Royal Sundaram 7 · Cholamandalam MS 6 · Go Digit 6 · IFFCO Tokio 6 · ManipalCigna 6 · SBI General 6 · IndusInd General 3 · Oriental Insurance 3 · Reliance General 1.
 
 ### 1.1 Demo runbook — 7 questions to try
 
@@ -71,13 +90,13 @@ A take-home is a sample of how the engineer thinks under constraint. Three thing
 
 2. **Hallucination defense and refusal as product features.** BFSI deployments get fined for mis-selling; the bot is biased toward refusal over confident wrong answers. The 4 faithfulness gates + cross-check retry + 3 Indic drift checks + audit log are the BFSI-compliance-grade version of "we shipped a chatbot." When the eval shows a headline accuracy below 100% because the gates are aggressive, the right response is to soften the gates carefully — not to ship a higher number by relaxing the verifier.
 
-3. **Honest model picks — Sarvam where Sarvam is uniquely strong, open-weights frontier for reasoning.** Voice and Indic are non-substitutable: **Sarvam Saarika v2.5** for speech-to-text, **Sarvam Bulbul v2** (speaker `anushka`) for text-to-speech, and **Sarvam-M** for Hindi/Hinglish/vernacular translation — no closed-source frontier matches Sarvam on Indian accents or code-mixed Hinglish. Reasoning is a different problem and runs on open-weights frontier models behind a fallback chain, not a single hardcoded brain. The chain architecture has three roles, each a `NimChainLLM` (`backend/providers/nvidia_nim_llm.py`) with a NIM-primary preference order plus OpenRouter and Groq cross-provider fallbacks:
+3. **Honest model picks — Sarvam where Sarvam is uniquely strong, open-weights frontier for reasoning.** Voice and Indic are non-substitutable: **Sarvam Saarika v2.5** for speech-to-text, **Sarvam Bulbul v2** (speaker `anushka`) for text-to-speech, and **Sarvam-M** for Hindi/Hinglish/vernacular translation — no closed-source frontier matches Sarvam on Indian accents or code-mixed Hinglish. Reasoning is a different problem and runs on open-weights frontier models behind a NIM-only candidate pool per role (KI-160 / [ADR-038](70-docs/60-decisions/ADR-038-nim-only-chains.md)), not a single hardcoded brain. Each role is a `NimChainLLM` (`backend/providers/nvidia_nim_llm.py`) whose candidates are all NIM-hosted — KI-155 demonstrated that Groq Llama-3.3 silently ignores the `<FF>` structured-output trailer contract, so cross-provider fallback was removed as a silent-failure trap:
 
-   - **`BRAIN_CHAIN`** (comparison, recommendation, synthesis) — primary **Qwen 3-Next 80B** (`qwen/qwen3-next-80b-a3b-instruct`, 80B / 3B-active MoE, multilingual, ~2s TTFT on NIM free tier), with **Qwen 3.5 122B**, **OpenAI GPT-OSS 120B**, **Mistral Large 3 675B**, **NVIDIA Nemotron-Super 49B**, **Meta Llama-3.3 70B**, and **DeepSeek V4-Pro** as in-NIM fallbacks, then **OpenRouter GPT-OSS 120B** and **Groq Llama-3.3-70B** as cross-provider fallbacks for full-NIM-outage survival.
-   - **`FAST_BRAIN_CHAIN`** (fact-find turns, QA, paraphrase, normalize, extract — every latency-sensitive role) — primary **NVIDIA Nemotron Nano 30B** (`nvidia/nemotron-3-nano-30b-a3b`, ~1.6s TTFT — bottleneck is TTFT not capability on these jobs), with Qwen 3-Next 80B, GPT-OSS 120B, Qwen 3.5 122B, and **DeepSeek V4-Flash** as NIM fallbacks, then Groq Llama-3.3-70B as the cross-provider fallback.
-   - **`JUDGE_CHAIN`** (faithfulness Gate 4, Hinglish drift LLM-judge, eval grader) — primary **Mistral Large 3 675B** (`mistralai/mistral-large-3-675b-instruct-2512`, MIT). Mistral is a deliberately different model family from the Qwen brain so the judge does not mark its own homework. Fallbacks: GPT-OSS 120B, Moonshot Kimi K2, MiniMax M2.5, and **Meta Llama-4 Maverick 17B/128E** (the original D-019 judge — kept in the chain for when NIM's Llama pool recovers), then OpenRouter and Groq cross-provider entries.
+   - **`BRAIN_CHAIN`** (comparison, recommendation, synthesis) — primary **NVIDIA Nemotron-Super 49B v1.5** (`nvidia/llama-3.3-nemotron-super-49b-v1.5`), backup **Qwen 3-Next 80B** (`qwen/qwen3-next-80b-a3b-instruct`, 80B / 3B-active MoE), 3rd candidate **Mistral Large 3 675B** (`mistralai/mistral-large-3-675b-instruct-2512`).
+   - **`FAST_BRAIN_CHAIN`** (fact-find turns, QA, paraphrase, normalize, extract — every latency-sensitive role) — primary **Qwen 3-Next 80B** (`qwen/qwen3-next-80b-a3b-instruct`), backup **NVIDIA Nemotron-Super 49B v1.5** (`nvidia/llama-3.3-nemotron-super-49b-v1.5`).
+   - **`JUDGE_CHAIN`** (faithfulness Gate 4, Hinglish drift LLM-judge, eval grader) — primary **Meta Llama-4 Maverick 17B/128E** (`meta/llama-4-maverick-17b-128e-instruct`), backup **Mistral Large 3 675B** (`mistralai/mistral-large-3-675b-instruct-2512`). Deliberately different model families from the brain pool so the judge does not mark its own homework.
 
-   **Provider load-balancing (KI-025, [ADR-026](70-docs/60-decisions/ADR-026-provider-load-balancing.md)).** The brain and fast-brain chains' *primary* slot rotates 50/50 per call between the NIM Qwen entry and the Groq Llama-3.3-70B entry via `_balanced_brain_chain` (per-call `random.random()`, no shared cycle state). NIM's free-tier rate cap is 40 req/min shared across every model on a key; splitting brain load across two independent free-tier quotas (NIM + Groq) effectively doubles sustained brain throughput. Groq's LPU TTFT (~1s) is often *lower* than NIM Qwen's, so the rotation is a strict latency win on top of the throughput win. A Groq-primary call that fails still gets the full NIM fallback ladder underneath, so reliability is unchanged.
+   **NIM-only election, no cross-provider cascade (KI-160, [ADR-038](70-docs/60-decisions/ADR-038-nim-only-chains.md)).** If every NIM candidate in a chain fails, orchestrator returns a graceful error message rather than falling to Groq or OpenRouter — fail-loud is preferred over fail-silent-with-garbage for structured-output contracts. The 50/50 NIM ↔ Groq rotation of KI-025 ([ADR-026](70-docs/60-decisions/ADR-026-provider-load-balancing.md)) and the cross-provider-fallback variant of KI-080 ([ADR-031](70-docs/60-decisions/ADR-031-sticky-primary-election.md)) are both superseded. KI-085's proactive credit gating still applies within the NIM pool via a per-model 60-second rate-meter (gate at 35-of-40 req/min, headroom 5). `GROQ_API_KEY` + `OPENROUTER_API_KEY` remain in HF Space secrets for future re-enable but the chain config no longer references them.
 
    The result: a Sarvam customer deploying this stack gets a product that *uses Sarvam exactly where Sarvam beats the world* and uses MIT-licensed open-weights frontier models for everything else — $0 inference, two independent free-tier providers, single-key-per-provider for the entire non-voice stack.
 
@@ -520,8 +539,9 @@ The bot is two flows running together — the customer's experience and the tech
                  ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
 │  206 source PDFs in HF Dataset rohitsar567/insurance-bot-data            │
-│  · 188 product PDFs across 19 insurers                                   │
+│  · 188 product PDFs across 19 insurers (2 image-only dropped, KI-126)    │
 │  · 18 regulatory PDFs (IRDAI master circulars, Insurance Act, etc.)      │
+│  · 7,317 Chroma chunks (KI-125→127) · 166 marketplace cards              │
 │  · Playwright same-origin fetch past Akamai for irdai.gov.in            │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
@@ -586,7 +606,7 @@ Every LLM role is served by a **candidate pool** of models elected over by a pro
 | Admin panel | IP+password gated, in-app tab | [ADR-023](70-docs/60-decisions/ADR-023-admin-panel-ip-gated.md) |
 | Resilience | Triple-mirror code + data | [ADR-024](70-docs/60-decisions/ADR-024-triple-mirror-code-and-data.md) |
 
-Every D-NNN in the legacy decisions log is now a stand-alone ADR — see [`70-docs/60-decisions/README.md`](70-docs/60-decisions/README.md) for the full 24-entry index.
+Every D-NNN in the legacy decisions log is now a stand-alone ADR — see [`70-docs/60-decisions/README.md`](70-docs/60-decisions/README.md) for the full ADR index.
 
 ---
 
@@ -596,13 +616,15 @@ Every D-NNN in the legacy decisions log is now a stand-alone ADR — see [`70-do
 
 | Type | Count | Source | Notes |
 |---|---|---|---|
-| Product PDFs | 188 | 19 insurers' public websites | Wordings + Brochures + CIS |
+| Product PDFs | 188 | 19 insurers' public websites | Wordings + Brochures + CIS (2 image-only PDFs dropped in KI-126) |
 | Regulatory PDFs | 18 | irdai.gov.in, indiacode.nic.in, others | Playwright rescue past Akamai |
-| Structured extractions (JSON) | 206 | fast-brain chain (Nemotron 30B / Qwen 80B / Groq Llama-3.3 fallback) extraction | 62-field Pydantic schema |
-| Vector chunks (Chroma) | 7,295 | BGE-small @ 800/120 | One sqlite + HNSW binaries |
+| Structured extractions (JSON) | 201 | fast-brain chain (Nemotron 30B / Qwen 80B / Groq Llama-3.3 fallback) extraction | 62-field Pydantic schema |
+| Curated `policy_facts` JSONs | 253 | Hand-curated marketplace facts | KI-137 ingested 21 of these into Chroma so the bot can retrieve them |
+| Vector chunks (Chroma) | 7,317 | BGE-small @ 800/120 | wordings 5,401 · brochure 611 · regulatory 498 · prospectus 483 · cis 302 · curated 21 · profile 1 |
+| Marketplace cards | 166 | Aggregated across 19 real insurers | One card per IRDAI-filed product after KI-133 / KI-141 / KI-142 / KI-145 dedup |
 | Policy markdown sheets | 222 | Generated from extractions | One per policy_id in `kb/policies/` |
 
-19 insurers: Acko, Aditya Birla, Bajaj Allianz, Care Health, Cholamandalam MS, Go Digit, HDFC ERGO, ICICI Lombard, IFFCO Tokio, ManipalCigna, National Insurance, New India Assurance, Niva Bupa, Oriental Insurance, Reliance General, Royal Sundaram, SBI General, Star Health, Tata AIG.
+19 real insurers (alphabetical): Acko, Aditya Birla, Bajaj Allianz, Care Health, Cholamandalam MS, Go Digit, HDFC ERGO, ICICI Lombard, IFFCO Tokio, IndusInd General (formerly Reliance General — renamed in KI-144), ManipalCigna, National Insurance, New India Assurance, Niva Bupa, Oriental Insurance, Reliance General, Royal Sundaram, SBI General, Star Health, Tata AIG. Internally there are 20 Chroma slugs (the 19 above + a `regulatory` bucket); the regulatory + `profile` slugs are filtered out of every user-facing marketplace count (KI-129 / KI-130 / KI-132).
 
 ### 5.2 Ingestion pipeline
 
@@ -808,7 +830,7 @@ npm run dev   # http://localhost:3000
 
 - Frontend at `localhost:3000` should show the chat UI.
 - `localhost:7860/api/health` should return `{"status":"ok", "providers_ok": {"sarvam": true, "nvidia_nim": true}}`.
-- `localhost:7860/api/coverage` should return 206 policies indexed.
+- `localhost:7860/api/coverage` should return 166 marketplace cards across 19 real insurers (the `profile` and `regulatory` slugs are filtered out of user-facing counts per KI-129 / KI-130 / KI-132).
 
 ---
 
@@ -931,7 +953,7 @@ A new Claude Code session should ingest these to bootstrap understanding:
 
 ## Footer
 
-**Authored 2026-05-13. Last updated 2026-05-15.**
+**Authored 2026-05-13. Last updated 2026-05-15 (KI-125 → KI-150 — corpus rebuild + marketplace dedup + voice retune + IndusInd migration).**
 
 Live demo: https://rohitsar567-insurancebot.hf.space  
 Code: https://github.com/rohitsar567/insurance-sales-bot  

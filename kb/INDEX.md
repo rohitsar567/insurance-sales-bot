@@ -1,10 +1,10 @@
 # Knowledge Base — Insurance Sales Bot
 
-_Last synced: 2026-05-14._
+_Last synced: 2026-05-15._
 
 Canonical knowledge base for the Insurance Sales Bot. Every user-facing answer, scorecard, and comparison surface must trace back to a file in this directory.
 
-## Policies (253)
+## Policies (222)
 
 | Insurer | Policy | UIN | Completeness | KB path |
 | --- | --- | --- | --- | --- |
@@ -27,7 +27,7 @@ Canonical knowledge base for the Insurance Sales Bot. Every user-facing answer, 
 | Bajaj Allianz General Insurance | Criti Care | `BAJHLIP21273V012021` | 9% | [`policies/bajaj-allianz__criti-care__wordings.md`](policies/bajaj-allianz__criti-care__wordings.md) |
 | Bajaj Allianz General Insurance | Extra Care Plus | `BAJHLIP21321V012021` | — | [`policies/bajaj-allianz__extra-care-plus__wordings.md`](policies/bajaj-allianz__extra-care-plus__wordings.md) |
 | Bajaj Allianz General Insurance | Global Health Care Policy | `BAJHLIP23209V022223` | — | [`policies/bajaj-allianz__global-health-care__wordings.md`](policies/bajaj-allianz__global-health-care__wordings.md) |
-| Bajaj Allianz General Insurance | Group Health Guard Gold | `BAJHLGP21181V022021` | 32% | [`policies/bajaj-allianz__group-health-guard-gold__wordings.md`](policies/bajaj-allianz__group-health-guard-gold__wordings.md) |
+| Bajaj Allianz General Insurance | Group Health Guard Silver | `BAJHLGP21181V022021` | 32% | [`policies/bajaj-allianz__group-health-guard-silver__wordings.md`](policies/bajaj-allianz__group-health-guard-silver__wordings.md) |
 | Bajaj Allianz General Insurance | Group Personal Accident | `—` | 5% | [`policies/bajaj-allianz__group-personal-accident__wordings.md`](policies/bajaj-allianz__group-personal-accident__wordings.md) |
 | Bajaj Allianz General Insurance | Health Guard | `BAJHLIP25035V072425` | — | [`policies/bajaj-allianz__health-guard__wordings.md`](policies/bajaj-allianz__health-guard__wordings.md) |
 | Bajaj Allianz General Insurance | Health Guard Gold Individual | `BAJHLIP21185V032021` | 41% | [`policies/bajaj-allianz__health-guard-gold-individual__wordings.md`](policies/bajaj-allianz__health-guard-gold-individual__wordings.md) |
@@ -231,9 +231,9 @@ Canonical knowledge base for the Insurance Sales Bot. Every user-facing answer, 
 | oriental-insurance | Happy Family Floater Policy - 2021 | `OICHLIP22010V042223` | — | [`policies/oriental-insurance__happy-family-floater__wordings.md`](policies/oriental-insurance__happy-family-floater__wordings.md) |
 | oriental-insurance | Oriental Mediclaim Insurance Policy (Individual) | `OICHLIP23084V042223` | — | [`policies/oriental-insurance__oriental-mediclaim-individual__cis.md`](policies/oriental-insurance__oriental-mediclaim-individual__cis.md) |
 | oriental-insurance | Oriental Mediclaim Insurance Policy (Individual) | `OICHLIP23084V042223` | — | [`policies/oriental-insurance__oriental-mediclaim-individual__wordings.md`](policies/oriental-insurance__oriental-mediclaim-individual__wordings.md) |
-| reliance-general | IndusInd Group Mediclaim | `RELHLGP21523V022021` | — | [`policies/reliance-general__group-mediclaim__wordings.md`](policies/reliance-general__group-mediclaim__wordings.md) |
-| reliance-general | IndusInd HealthGain Policy | `INIHLIP26040V042526` | — | [`policies/reliance-general__health-gain__wordings.md`](policies/reliance-general__health-gain__wordings.md) |
-| reliance-general | IndusInd Hospi Care Insurance | `RELHLIP20027V012021` | — | [`policies/reliance-general__hospi-care__wordings.md`](policies/reliance-general__hospi-care__wordings.md) |
+| indusind-general | IndusInd Group Mediclaim | `RELHLGP21523V022021` | — | [`policies/indusind-general__group-mediclaim__wordings.md`](policies/indusind-general__group-mediclaim__wordings.md) |
+| indusind-general | IndusInd HealthGain Policy | `INIHLIP26040V042526` | — | [`policies/indusind-general__health-gain__wordings.md`](policies/indusind-general__health-gain__wordings.md) |
+| indusind-general | IndusInd Hospi Care Insurance | `RELHLIP20027V012021` | — | [`policies/indusind-general__hospi-care__wordings.md`](policies/indusind-general__hospi-care__wordings.md) |
 | reliance-general | Personal Accident Policy | `RELPAGP01001V010001` | — | [`policies/reliance-general__personal-accident__wordings.md`](policies/reliance-general__personal-accident__wordings.md) |
 | royal-sundaram | Advanced Top Up Health Insurance Plan | `RSAHLIP23029V012223` | — | [`policies/royal-sundaram__advanced-top-up__brochure.md`](policies/royal-sundaram__advanced-top-up__brochure.md) |
 | royal-sundaram | Advanced Top Up Health Insurance Plan | `RSAHLIP23029V012223` | — | [`policies/royal-sundaram__advanced-top-up__cis.md`](policies/royal-sundaram__advanced-top-up__cis.md) |
@@ -283,7 +283,7 @@ Canonical knowledge base for the Insurance Sales Bot. Every user-facing answer, 
 kb/
 ├── INDEX.md                       (this file)
 ├── AUDIT_TRAIL.md                 (data lineage + curation history)
-├── policies/<policy_id>.md       (255 files — one per curated policy)
+├── policies/<policy_id>.md       (222 files — one per curated policy)
 ├── methodology/
 │   ├── scorecard.json             (6 sub-scores + weights + anchors)
 │   ├── glossary.json              (13 terms × en/hi)

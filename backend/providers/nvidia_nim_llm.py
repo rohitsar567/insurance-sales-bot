@@ -241,27 +241,28 @@ class NvidiaNimLLM(LLMProvider):
 # cross-family-grading invariant survives any failover.
 
 BRAIN_CHAIN = [
-    # Primary: Qwen 3-Next 80B — verified ~2s response, clean JSON, multilingual
+    # KI-155 (2026-05-15) — NIM-ONLY ENFORCEMENT. Cross-provider (Groq /
+    # OpenRouter) fallbacks REMOVED. Groq's Llama-3.3-70B failed the `<FF>`
+    # trailer contract during a fact-find probe and silently flipped the
+    # entire pipeline to scripted prompts. Chain is now strictly NIM. Each
+    # NIM candidate's `<FF>` adherence has been verified or is structurally
+    # safer (different family / smaller routing surface). Pruned candidates
+    # that have been "down" for 48+ consecutive probes (qwen3.5-122b,
+    # gpt-oss-120b, deepseek-v4-pro) so the election pool only contains
+    # demonstrably-healthy NIM models.
+    # Primary: Qwen 3-Next 80B — 5/5 recent probes ok, clean JSON, multilingual
     "qwen/qwen3-next-80b-a3b-instruct",
-    # 1st fallback: Qwen 3.5 122B — same family, bigger, slightly slower
-    "qwen/qwen3.5-122b-a10b",
-    # 2nd fallback: OpenAI GPT-OSS 120B — different family, MIT open weights
-    "openai/gpt-oss-120b",
-    # 3rd fallback: Mistral Large 3 (also the judge — used only if all above fail)
-    "mistralai/mistral-large-3-675b-instruct-2512",
-    # 4th fallback: NVIDIA Nemotron-Super 49B — different family again
+    # 1st fallback: NVIDIA Nemotron-Super 49B — recent 3/3 probes ok, ~354ms
+    # latency, different family (nvidia) from Qwen primary → preserves
+    # cross-family-grading invariant if elevated to judge.
     "nvidia/llama-3.3-nemotron-super-49b-v1.5",
-    # 5th fallback: Meta Llama-3.3 70B (intermittently times out; last resort)
-    "meta/llama-3.3-70b-instruct",
-    # 6th fallback: DeepSeek-V4-Pro (back when NIM's pool recovers)
-    "deepseek-ai/deepseek-v4-pro",
-    # CROSS-PROVIDER FALLBACKS — only reached when the entire NIM block above
-    # has failed (regional outage / DNS / ingress brownout). These hit a
-    # completely different provider so the brain survives a full NIM down.
-    # 7th fallback: OpenRouter GPT-OSS 120B (different provider, MIT weights)
-    "openrouter:openai/gpt-oss-120b",
-    # 8th fallback: Groq Llama-3.3 70B (different provider, LPU inference)
-    "groq:llama-3.3-70b-versatile",
+    # 2nd fallback: Mistral Large 3 675B — recent 3/3 probes ok, different
+    # family (mistral). Also the judge primary; only reached when both Qwen +
+    # Nemotron are unavailable.
+    "mistralai/mistral-large-3-675b-instruct-2512",
+    # 3rd fallback: Meta Llama-4 Maverick 17B — 5/5 probes ok, different
+    # family (meta), keeps the chain alive through a single-family outage.
+    "meta/llama-4-maverick-17b-128e-instruct",
 ]
 
 # Same chain for fast brain — Qwen 80B is already fast (~2s); no need for a
@@ -270,52 +271,44 @@ BRAIN_CHAIN = [
 # is the lowest-TTFT free-tier option, so a fast-brain fall-through to it is
 # still acceptable from a latency-budget standpoint.
 FAST_BRAIN_CHAIN = [
-    # KI-035 (2026-05-14) — reordered for latency. Fast brain serves
-    # fact-find + QA + paraphrase + normalize + extract: every single one
-    # of these is a sub-second job by content size, so the bottleneck IS
-    # TTFT, not capability. Nemotron Nano 30B hits ~1.6s; Qwen 80B is
-    # ~2-3s. Moved Nemotron to primary; Qwen 80B stays as next fallback so
-    # if Nemotron's NIM pool degrades we still get quality.
-    #
-    # KI-079 (2026-05-15) — moved Groq Llama-3.3 70B from chain bottom to
-    # candidate #2 (right after Nemotron primary). Live 10-turn probe
-    # (commit 078ff45) showed 7/10 fact-find turns timing out at 26.6s with
-    # _fallback_reason="timeout" — ALL the slow links were NIM-hosted, so
-    # NIM per-key concurrency had them queueing together and the chain
-    # burned its 22s total_budget_s inside NIM before ever reaching Groq.
-    # With Groq as #2, a Nemotron hang (~6s per-link timeout) falls
-    # through to Groq's LPU (~0.3s TTFT) in ~6-7s total — well inside the
-    # 22s chain budget AND the 25s wait_for cap.
-    "nvidia/nemotron-3-nano-30b-a3b",     # ~1.6s TTFT (Reddit bench), NIM
-    # CROSS-PROVIDER FALLBACK #1 — Groq Llama-3.3 70B (LPU, lowest TTFT of
-    # all free-tier options). Promoted to #2 in KI-079 so a single NIM
-    # degradation falls through to a non-NIM provider in ~6s, not 22s.
-    "groq:llama-3.3-70b-versatile",
-    "qwen/qwen3-next-80b-a3b-instruct",   # ~2-3s, NIM
-    "openai/gpt-oss-120b",
-    "qwen/qwen3.5-122b-a10b",
-    "deepseek-ai/deepseek-v4-flash",
+    # KI-155 (2026-05-15) — NIM-ONLY ENFORCEMENT. Groq Llama-3.3-70B
+    # REMOVED from candidate #2 (the KI-079 promotion) after it failed the
+    # `<FF>` trailer contract in a live fact-find probe, silently
+    # cascading the orchestrator to scripted prompts. Also dropped models
+    # that have been "down" for 48+ consecutive probes (nemotron-3-nano-30b
+    # = empty_content, qwen3.5-122b = timeout, gpt-oss-120b = empty_content,
+    # deepseek-v4-flash = timeout) so the election pool only contains
+    # demonstrably-healthy NIM models. With election (KI-080) picking the
+    # actually-fastest healthy candidate per turn, chain order matters
+    # only for cold-start; the elector handles steady-state.
+    # Primary: Qwen 3-Next 80B — 5/5 recent probes ok, ~2s, multilingual,
+    # verified `<FF>` adherence in production traffic.
+    "qwen/qwen3-next-80b-a3b-instruct",
+    # 1st fallback: NVIDIA Nemotron-Super 49B — 3/3 recent ok, ~354ms
+    # (fastest healthy NIM model), different family for diversity.
+    "nvidia/llama-3.3-nemotron-super-49b-v1.5",
+    # 2nd fallback: Mistral Large 3 675B — 3/3 recent ok, different family,
+    # keeps fact-find alive through a Qwen+Nemotron simultaneous outage.
+    "mistralai/mistral-large-3-675b-instruct-2512",
 ]
 
-# Judge chain — non-Qwen, non-DeepSeek (different family from brain primary)
+# Judge chain — non-Qwen (different family from brain primary so the judge
+# never grades its own family's output).
+# KI-155 (2026-05-15) — NIM-ONLY ENFORCEMENT. Groq + OpenRouter REMOVED.
+# Dropped candidates that have been "down" for 48+ consecutive probes
+# (gpt-oss-120b = empty_content, kimi-k2 = http_404, minimax-m2.5 = http_410)
+# so the election pool only contains demonstrably-healthy NIM models.
 JUDGE_CHAIN = [
-    # Primary: Mistral Large 3 675B — different family from Qwen brain
+    # Primary: Mistral Large 3 675B — 3/3 recent ok, different family
+    # (mistral) from Qwen brain, preserves cross-family grading invariant.
     "mistralai/mistral-large-3-675b-instruct-2512",
-    # 1st fallback: OpenAI GPT-OSS 120B — different family
-    "openai/gpt-oss-120b",
-    # 2nd fallback: Moonshot Kimi K2 — different family (Chinese provider)
-    "moonshotai/kimi-k2-instruct-0905",
-    # 3rd fallback: MiniMax M2.5 — different family
-    "minimaxai/minimax-m2.5",
-    # 4th fallback: Meta Llama-4 Maverick (was the original judge — back if NIM Llama pool recovers)
+    # 1st fallback: Meta Llama-4 Maverick 17B — 5/5 probes ok, different
+    # family (meta), original judge primary pre-KI-080.
     "meta/llama-4-maverick-17b-128e-instruct",
-    # CROSS-PROVIDER FALLBACKS — reached only when every NIM judge candidate
-    # above has failed. Critical for keeping faithfulness Gate 4 + Hinglish
-    # drift judge alive through a full NIM outage.
-    # 5th fallback: OpenRouter GPT-OSS 120B (different provider, MIT weights)
-    "openrouter:openai/gpt-oss-120b",
-    # 6th fallback: Groq Llama-3.3 70B (different provider, LPU inference)
-    "groq:llama-3.3-70b-versatile",
+    # 2nd fallback: NVIDIA Nemotron-Super 49B — 3/3 recent ok, different
+    # family (nvidia/nemotron) from Qwen brain. Note: branded "llama" but
+    # NVIDIA-finetuned, distinct decision surface.
+    "nvidia/llama-3.3-nemotron-super-49b-v1.5",
 ]
 
 
@@ -414,28 +407,24 @@ class NimChainLLM(LLMProvider):
         return model_id.split("/")[-1]
 
     def _get_worker_for(self, model_id: str, timeout: float) -> LLMProvider:
-        """Dispatch a chain entry to the right provider client.
+        """Dispatch a chain entry to the NIM provider client.
 
-        Recognised prefixes:
-          - 'openrouter:<model>' -> OpenRouterLLM
-          - 'groq:<model>'       -> GroqLLM
-          - <anything else>      -> NvidiaNimLLM (existing default)
+        KI-155 (2026-05-15) — NIM-ONLY ENFORCEMENT. Cross-provider
+        (`openrouter:` / `groq:`) prefixes are explicitly rejected here even
+        though the chains no longer contain them. This is a defense-in-depth
+        short-circuit: if anyone (admin override, monkeypatch, future drift)
+        injects a non-NIM candidate into a chain, the dispatcher raises
+        rather than silently routing to a provider that has demonstrated
+        contract drift (Groq Llama-3.3-70B / `<FF>` trailer failure).
 
         KI-085 — passes `chain_name=self._chain_name` so the credit
         trackers in the provider clients route their response-header
         signals to the right chain state.
         """
-        if model_id.startswith("openrouter:"):
-            return OpenRouterLLM(
-                model=model_id[len("openrouter:"):],
-                timeout=timeout,
-                chain_name=self._chain_name,
-            )
-        if model_id.startswith("groq:"):
-            return GroqLLM(
-                model=model_id[len("groq:"):],
-                timeout=timeout,
-                chain_name=self._chain_name,
+        if model_id.startswith(("openrouter:", "groq:", "or:")):
+            raise RuntimeError(
+                f"NimChainLLM ({self._chain_name}): non-NIM candidate "
+                f"'{model_id}' rejected. Chains are NIM-only as of KI-155."
             )
         return NvidiaNimLLM(model=model_id, api_key=self.api_key, timeout=timeout)
 

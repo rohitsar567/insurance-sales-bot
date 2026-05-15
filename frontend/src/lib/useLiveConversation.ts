@@ -7,6 +7,14 @@
  * KI-057 (2026-05-15) — Noise-robust VAD + flush-on-stop.
  * KI-060 (2026-05-15) — Silence-end window lengthened (40 → 90 frames,
  *   ~640 ms → ~1.5 s) so natural mid-sentence pauses don't auto-submit.
+ * KI-159 (2026-05-15) — Early-close on stable silence. If the user has
+ *   already spoken ≥3× minUtteranceMs (~1.2 s) and silence has accumulated
+ *   to half the silenceEndFrames window (~1.5 s), close the segment NOW.
+ *   Prevents notification dings / transient background noise mid-pause
+ *   from re-triggering `speechLike`, zeroing the silence counter, and
+ *   extending the segment until either the full 3 s window or the 18 s
+ *   max-cap fires — by which point the real words are buried in a bloated
+ *   blob that Sarvam STT either drops or mis-transcribes.
  *
  * Why KI-057 was needed
  * --------------------------------------------------------------------
@@ -209,6 +217,16 @@ export function useLiveConversation(opts: LiveConversationOptions): LiveConversa
   const noiseFloorRef = useRef<number>(0);
   // KI-057 — gates "did the bot just stop talking?" cooldown.
   const lastUtteranceEndedAtRef = useRef<number>(0);
+  // KI-141 (2026-05-15) — TTS-playback awareness for reliable barge-in.
+  // When the bot's <audio> element is playing, the mic re-captures the
+  // speaker output (echoCancellation is imperfect). The noiseFloor EMA
+  // would otherwise learn the bot's voice level and pull effectiveThreshold
+  // up to bot-loudness, making user voice unable to clear the gate. We
+  // (a) freeze noise-floor learning, (b) bypass the post-utterance cooldown
+  // (cooldown only makes sense AFTER bot finishes), and (c) drop the
+  // speech-start frame count so barge-in fires in ~30 ms instead of ~80 ms.
+  const ttsPlayingRef = useRef<boolean>(false);
+  const ttsAudioElementsRef = useRef<Set<HTMLAudioElement>>(new Set());
 
   const onUtteranceRef = useRef(opts.onUtterance);
   const onSpeechStartRef = useRef(opts.onSpeechStart);
@@ -239,7 +257,98 @@ export function useLiveConversation(opts: LiveConversationOptions): LiveConversa
         } catch {}
       });
     }
+    // KI-141 — clearing TTS-playing immediately on barge-in so the VAD
+    // resumes idle-mode noise-floor learning even before the `pause`
+    // event fires on the (now stopped) <audio> element.
+    ttsPlayingRef.current = false;
+    // KI-141 — anchor cooldown to barge-in moment so the next 700 ms
+    // suppresses any residual decay tail / echo from the just-paused TTS.
+    lastUtteranceEndedAtRef.current = Date.now();
   }, []);
+
+  // KI-141 (2026-05-15) — TTS-playback observer.
+  // Watch every <audio> element in the document for play/pause/ended so
+  // the VAD knows when the bot is currently speaking. This is the signal
+  // that flips the VAD into "barge-in mode" (no cooldown, faster start,
+  // frozen noise floor). MutationObserver picks up new <audio> elements
+  // as Message components mount.
+  useEffect(() => {
+    if (!live || typeof document === "undefined") return;
+
+    const tracked = ttsAudioElementsRef.current;
+
+    const refreshPlayingState = () => {
+      let anyPlaying = false;
+      tracked.forEach((a) => {
+        if (!a.paused && !a.ended && a.currentTime > 0) anyPlaying = true;
+      });
+      ttsPlayingRef.current = anyPlaying;
+    };
+
+    const onPlay = () => {
+      ttsPlayingRef.current = true;
+    };
+    const onPauseOrEnded = () => {
+      refreshPlayingState();
+      // KI-141 — anchor the post-utterance cooldown to the moment TTS
+      // actually finished, not to when the user's previous segment closed.
+      // This is what the 700 ms cooldown was always meant to gate: the
+      // bot's tail decay / echo bleeding back into the mic.
+      if (!ttsPlayingRef.current) {
+        lastUtteranceEndedAtRef.current = Date.now();
+      }
+    };
+
+    const attach = (a: HTMLAudioElement) => {
+      if (tracked.has(a)) return;
+      tracked.add(a);
+      a.addEventListener("play", onPlay);
+      a.addEventListener("playing", onPlay);
+      a.addEventListener("pause", onPauseOrEnded);
+      a.addEventListener("ended", onPauseOrEnded);
+      a.addEventListener("emptied", onPauseOrEnded);
+      // If the element is already playing when we attach, capture that.
+      if (!a.paused && !a.ended) ttsPlayingRef.current = true;
+    };
+
+    const detach = (a: HTMLAudioElement) => {
+      a.removeEventListener("play", onPlay);
+      a.removeEventListener("playing", onPlay);
+      a.removeEventListener("pause", onPauseOrEnded);
+      a.removeEventListener("ended", onPauseOrEnded);
+      a.removeEventListener("emptied", onPauseOrEnded);
+      tracked.delete(a);
+    };
+
+    // Attach to anything already in the DOM.
+    document.querySelectorAll("audio").forEach((el) => attach(el as HTMLAudioElement));
+
+    const observer = new MutationObserver((mutations) => {
+      for (const m of mutations) {
+        m.addedNodes.forEach((n) => {
+          if (n instanceof HTMLAudioElement) attach(n);
+          else if (n instanceof Element) {
+            n.querySelectorAll("audio").forEach((el) => attach(el as HTMLAudioElement));
+          }
+        });
+        m.removedNodes.forEach((n) => {
+          if (n instanceof HTMLAudioElement) detach(n);
+          else if (n instanceof Element) {
+            n.querySelectorAll("audio").forEach((el) => detach(el as HTMLAudioElement));
+          }
+        });
+      }
+      refreshPlayingState();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => {
+      observer.disconnect();
+      tracked.forEach((a) => detach(a));
+      tracked.clear();
+      ttsPlayingRef.current = false;
+    };
+  }, [live]);
 
   // KI-044 — open speech capture: snapshot the preroll into speechBuffer,
   // flag recording, fire callbacks. The PCM keeps flowing via the worklet
@@ -346,8 +455,18 @@ export function useLiveConversation(opts: LiveConversationOptions): LiveConversa
 
       // KI-057 — suppress new triggers right after we closed a segment
       // (bot's TTS onset can bleed in via the mic loopback).
+      // KI-141 — but DO NOT suppress during TTS playback itself; that's
+      // exactly when barge-in must work. Cooldown is only meaningful for
+      // the brief window after bot speech ends.
+      const ttsPlaying = ttsPlayingRef.current;
       const cooldownActive =
+        !ttsPlaying &&
         Date.now() - lastUtteranceEndedAtRef.current < cfg.postUtteranceCooldownMs;
+
+      // KI-141 — barge-in must be SNAPPY. During TTS, 2 frames (~30 ms) is
+      // enough to confirm voice and pause the bot; the longer 5-frame gate
+      // is only needed in idle mode where it rejects click/clack transients.
+      const startFrames = ttsPlaying ? 2 : cfg.speechStartFrames;
 
       const speechLike =
         avg > effectiveThreshold &&
@@ -357,7 +476,7 @@ export function useLiveConversation(opts: LiveConversationOptions): LiveConversa
       if (speechLike) {
         loud++;
         quiet = 0;
-        if (loud === cfg.speechStartFrames && !recordingRef.current) {
+        if (loud >= startFrames && !recordingRef.current) {
           // Barge in: kill bot audio + cancel in-flight chat + begin capture.
           interruptBotAudio();
           if (inflightAbortRef.current) {
@@ -371,13 +490,45 @@ export function useLiveConversation(opts: LiveConversationOptions): LiveConversa
         loud = 0;
         // KI-057 — only learn the noise floor while idle, so ongoing
         // speech doesn't poison the EMA.
-        if (!recordingRef.current) {
+        // KI-141 — also freeze noise-floor learning while TTS is playing.
+        // The bot's voice bleeding through the speakers would otherwise be
+        // EMA'd into the floor, pulling effectiveThreshold up to bot loudness
+        // — at which point the user's voice can't clear it. Holding the
+        // pre-TTS noise floor keeps the gate at room-ambient level where
+        // user speech reliably crosses.
+        if (!recordingRef.current && !ttsPlaying) {
           noiseFloorRef.current =
             noiseFloorRef.current === 0
               ? avg
               : noiseFloorRef.current * 0.95 + avg * 0.05;
         }
         if (quiet === cfg.silenceEndFrames && recordingRef.current) {
+          void endSpeechCapture();
+        }
+        // KI-159 (2026-05-15) — early-close on stable silence after enough
+        // captured speech. Protects against transient noise bursts (e.g. a
+        // notification ding mid-pause) that would otherwise re-trigger
+        // speechLike, zero `quiet`, and extend the segment until either the
+        // full silenceEndFrames (180 ≈ 3 s) accumulates AGAIN or the
+        // maxUtteranceMs (18 s) hard-cap fires — by which point the real
+        // words are buried in a bloated blob that Sarvam STT mis-transcribes
+        // or returns empty for.
+        //
+        // Trigger: half the silence window AND we already have 3× the
+        // minUtteranceMs (~1.2 s) of captured speech. Submit the user's
+        // words IMMEDIATELY at the first stable pause, before any noise can
+        // contaminate the segment.
+        else if (
+          recordingRef.current &&
+          quiet >= Math.floor(cfg.silenceEndFrames / 2) &&
+          recStartTsRef.current > 0 &&
+          Date.now() - recStartTsRef.current >= cfg.minUtteranceMs * 3
+        ) {
+          // eslint-disable-next-line no-console
+          console.debug(
+            "[live-mode] early-close on stable silence (KI-159)",
+            { quiet, durationMs: Date.now() - recStartTsRef.current },
+          );
           void endSpeechCapture();
         }
       }

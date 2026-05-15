@@ -210,7 +210,28 @@ def _keyword_normalize(question_id: str, raw_text: str) -> Any:
         return _parse_budget_band(raw_text)
 
     elif question_id == "health_conditions":
-        if any(p in s for p in ["none", "no condition", "nothing", "no pre-exist", "no health", "no chronic"]):
+        # KI-158 (2026-05-15) — broadened no-PED denial detection. The previous
+        # substring list missed "I'm not having any pre-existing condition",
+        # "no pre-existing condition" (singular), "don't have any", "nothing
+        # chronic", etc. Each miss let _canonical_fallback's loop-breaker tick
+        # the health_conditions slot toward force-skip, eventually making
+        # next_question() return None → gentle hand-off fires mid-fact-find.
+        # The fix uses regex to cover the natural phrasings without
+        # over-triggering on actual conditions like "I have diabetes".
+        _NO_PED_PATTERNS = [
+            r"\b(?:no|none|nothing|nope|nah|negative)\b\s*(?:condition|pre[-\s]?exist|health\s+issue|chronic|illness)?",
+            r"\b(?:not|don'?t|do\s+not|haven'?t|have\s+not|isn'?t|aren'?t)\s+(?:got|have|having|had|got\s+any|have\s+any)\b",
+            r"\b(?:no|zero|nil)\s+(?:pre[-\s]?exist\w*|condition|chronic|health\s+issue|illness|disease)",
+            r"\b(?:i\s+am|i'm)\s+(?:healthy|fine|fit|alright|all\s+good|good|ok|okay)\b",
+            r"\bnothing\s+(?:chronic|major|serious|to\s+report|like\s+that)\b",
+            r"\ball\s+(?:good|fine|clear|healthy)\b",
+            r"\bclean\s+bill\s+of\s+health\b",
+        ]
+        if any(re.search(p, s) for p in _NO_PED_PATTERNS):
+            # Belt-and-braces: ensure the user didn't ALSO mention a real
+            # condition in the same message (e.g., "no diabetes but I have BP").
+            # If a condition keyword is present below, the canonical list
+            # branch will pick it up regardless.
             return []
         canonical = []
         cond_keywords = {
@@ -257,7 +278,15 @@ def _parse_existing_cover(text: str) -> int | None:
     """
     s = text.lower().strip()
     # Negative answers map to 0 (no existing cover).
-    if re.search(r"\b(no|none|nothing|zero|nope|nah|haven'?t|don'?t|never)\b", s):
+    # KI-156 (2026-05-15) — extended to cover gerund/auxiliary phrasings.
+    # Pre-fix "I am not having any policy" / "currently not having" / "not
+    # got any" / "without any" all returned None, causing the fact-find
+    # loop to keep re-asking the existing_cover slot.
+    if re.search(
+        r"\b(no|none|nothing|zero|nope|nah|haven'?t|don'?t|never|"
+        r"not\s+having|not\s+got|not\s+have|without\s+(?:any|a))\b",
+        s,
+    ):
         return 0
     # KI-067 — first-time-buyer signals also imply zero existing cover.
     _first_time_patterns = (

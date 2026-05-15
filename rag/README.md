@@ -28,7 +28,7 @@ Lineage for every artefact below is documented in [`kb/AUDIT_TRAIL.md`](../kb/AU
 | Path | Source of truth | Notes |
 | --- | --- | --- |
 | `rag/corpus/<insurer>/*.pdf` | insurer CDNs | 206 PDFs (188 product PDFs across 19 insurers + 18 regulatory IRDAI/NHA docs). Not in git — hydrated at Docker build from the companion HF dataset. |
-| `rag/extracted/<policy_id>.json` | `extract.py` | 206 JSONs, one per policy, conforming to `schema.HealthPolicy`. Generated; never hand-edit. |
+| `rag/extracted/<policy_id>.json` | `extract.py` | 201 JSONs, one per policy, conforming to `schema.HealthPolicy`. Generated; never hand-edit. |
 | `rag/vectors/chroma.sqlite3` + HNSW binaries | `ingest.py` | Persistent Chroma store. Symlinked to `rag/_hf_dataset_backup/rag/vectors/` for the offline canonical copy. |
 | `rag/policies.duckdb` | `extract.py` | DuckDB rollup of the 62-field JSONs; used for SQL-style filters in `backend/main.py`. |
 | `rag/source_map.json` | `source_map.py` | chunk_id → (pdf_path, page, span) for the citation links shown in the UI. |
