@@ -53,8 +53,11 @@ export interface RetryOptions {
 
 /**
  * Wraps an async transcribe call with up to `maxAttempts` retries on
- * network errors. Backs off 1s → 2s → 4s. Aborts propagate immediately
- * (we don't retry a user-initiated abort).
+ * network errors. With defaults (maxAttempts=3, baseDelayMs=1000) the
+ * loop performs 3 attempts separated by exponential pre-attempt delays
+ * of 1s then 2s — max ~3s of additional wait across the run. (Delays
+ * sit BETWEEN attempts; no delay follows the final attempt.) Aborts
+ * propagate immediately (we don't retry a user-initiated abort).
  *
  * The caller passes a thunk that performs the actual POST. The thunk MUST
  * accept its own AbortSignal so each attempt can be individually timed
@@ -117,8 +120,14 @@ export async function retryPostTranscribe<T>(
 // ---------------------------------------------------------------------------
 // V1.3 — sample-rate-aware ZCR band.
 // The original VAD assumes fftSize=2048 @ 48 kHz, where speech ZCR sits in
-// ~20..250 zero crossings per buffer. At 16 kHz the same 2048-sample window
-// covers 3x as long in time → ZCR counts scale by sampleRate/48000.
+// ~20..250 zero crossings per 2048-sample buffer. At a fixed fftSize the
+// buffer's TIME duration = fftSize / sampleRate, so a 16 kHz buffer covers
+// 128 ms (vs 48 kHz's 42.7 ms — 3× longer). Speech ZCR per SECOND is roughly
+// constant for a given phoneme class (cf. Kedem 1986 "Spectral analysis and
+// discrimination by zero-crossings"; Bachu et al. "Separation of Voiced and
+// Unvoiced using Zero Crossing Rate"; WebRTC VAD per-rate feature tuning),
+// so a longer-duration window observes MORE crossings, not fewer. Net: the
+// per-buffer count scales INVERSELY with sampleRate (ratio = 48000 / actual).
 //
 // We expose a helper so the hook can compute the band at AudioContext init.
 // ---------------------------------------------------------------------------
@@ -130,12 +139,10 @@ export function scaleSpeechZcrBand(actualSampleRate: number): { min: number; max
   if (!actualSampleRate || actualSampleRate <= 0) {
     return { min: REFERENCE_ZCR_MIN, max: REFERENCE_ZCR_MAX };
   }
-  // ZCR scales linearly with the time-window length per buffer at fixed
-  // fftSize, which scales inversely with sampleRate. So a SHORTER window
-  // (higher rate) sees PROPORTIONALLY fewer crossings — but the per-second
-  // speech crossing rate is roughly constant. Net: the per-buffer count
-  // scales linearly with sampleRate.
-  const ratio = actualSampleRate / REFERENCE_SAMPLE_RATE;
+  // Per-buffer ZCR = ZCR_per_second * (fftSize / sampleRate). With fftSize
+  // fixed, per-buffer count scales as 1/sampleRate. So at 16 kHz we expect
+  // ~3× the crossings seen at 48 kHz for the same speech signal.
+  const ratio = REFERENCE_SAMPLE_RATE / actualSampleRate;
   return {
     min: Math.max(1, Math.round(REFERENCE_ZCR_MIN * ratio)),
     max: Math.max(REFERENCE_ZCR_MIN + 1, Math.round(REFERENCE_ZCR_MAX * ratio)),

@@ -597,6 +597,18 @@ def _profile_tuned_weights(profile: Optional[dict]) -> dict[str, float]:
 def profile_completeness(profile: Optional[dict]) -> float:
     """0.0–1.0 measure of how much we know about the buyer.
 
+    KI-252 (2026-05-15): aligned with Path B's `_REQUIRED_FOR_READY` 7-slot
+    list (see brain_tools.py + single_brain.py). Previously this checked 9
+    weighted fields including budget_band / existing_cover_inr /
+    parents_age_max which Path B doesn't gather, causing the UI bar to read
+    70% while Path B already considered the profile "ready to recommend".
+
+    The 7 slots: name, age, dependents, location_tier, income_band,
+    primary_goal, health_conditions. `name` is the identifier; the other 6
+    are decision-critical for retrieval. Existing-cover and budget-band are
+    captured opportunistically (Rajesh provided existing_cover_inr in turn 1)
+    but are NOT required to recommend.
+
     Used by the frontend to GATE the personalized scorecard view — until
     completeness >= 0.6, we show insurer-level metrics (CSR, complaints —
     universal) but suppress the per-user grade since it's meaningless without
@@ -604,18 +616,15 @@ def profile_completeness(profile: Optional[dict]) -> float:
     """
     if not profile:
         return 0.0
-    # Weighted by signal importance: age + dependents + budget are core; goal
-    # + conditions + location are deep-dives that further refine.
+    # Weights align with Path B _REQUIRED_FOR_READY. Sum = 1.0.
     weights = {
         "age": 0.20,
-        "dependents": 0.15,
-        "budget_band": 0.15,
-        "existing_cover_inr": 0.10,
-        "primary_goal": 0.10,
-        "location_tier": 0.10,
-        "health_conditions": 0.10,
-        "income_band": 0.05,
-        "parents_age_max": 0.05,
+        "dependents": 0.17,
+        "income_band": 0.16,
+        "primary_goal": 0.15,
+        "location_tier": 0.14,
+        "health_conditions": 0.13,
+        "name": 0.05,
     }
     total = 0.0
     for field_name, weight in weights.items():

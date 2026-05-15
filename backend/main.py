@@ -1429,6 +1429,7 @@ async def profile_completeness_view(session_id: Optional[str] = None):
     sess = get_session(session_id)
     p = sess.profile
     profile_dict = {
+        "name": p.name,  # KI-252 — Path B 7-slot alignment with completeness bar
         "age": p.age, "dependents": p.dependents, "income_band": p.income_band,
         "existing_cover_inr": p.existing_cover_inr, "primary_goal": p.primary_goal,
         "location_tier": p.location_tier, "parents_to_insure": p.parents_to_insure,

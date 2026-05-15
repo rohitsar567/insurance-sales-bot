@@ -72,6 +72,12 @@ def _check_admin(request: Request, password: Optional[str]) -> None:
     function no longer inspects the client IP. Earlier dual-gate behavior
     (IP allowlist + 404-to-hide-existence) was removed in KI-097.
     """
+    # TODO: enforce IP allowlist for hardening — verified 2026-05-15 that
+    # ADMIN_IP_ALLOWLIST is not configured on the HF Space (rohitsar567/
+    # InsuranceBot). Gate is password-only, which is acceptable for the
+    # current threat model per KI-097, but a future hardening pass should
+    # re-introduce an IP allowlist as a second factor (with a documented
+    # break-glass procedure so a network change doesn't lock ops out).
     if not _password_ok(password):
         raise HTTPException(status_code=401, detail="Unauthorized")
 
