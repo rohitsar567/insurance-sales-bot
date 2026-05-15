@@ -73,6 +73,32 @@ INDIC_KEYWORDS = (
 )
 
 
+# KI-136 (2026-05-15) — named-SKU detector. Comparisons that name >=2
+# specific insurers/policies are policy-fact lookups, not profile-dependent
+# recommendations — same carve-out spirit as KI-018 for qa intent.
+_NAMED_INSURER_TOKENS = (
+    "hdfc ergo", "niva bupa", "star health", "care health", "icici lombard",
+    "bajaj allianz", "tata aig", "aditya birla", "manipal cigna", "sbi general",
+    "new india", "national insurance", "oriental insurance", "united india",
+    "reliance general", "go digit", "iffco tokio", "raheja qbe",
+    "cholamandalam", "acko", "royal sundaram",
+    # Common product names
+    "optima secure", "optima restore", "aspire", "activ assure", "activ one",
+    "activ health", "health companion", "young star", "senior citizen red carpet",
+    "arogya sanjeevani", "reassure", "health guard", "prohealth", "elevate",
+    "medicare", "criti", "saral suraksha", "comprehensive care",
+)
+
+
+def _names_two_specific_policies(q: str) -> bool:
+    """KI-136 — return True if the user's text mentions >=2 named SKUs/insurers,
+    indicating a policy-fact lookup rather than a profile-dependent
+    recommendation."""
+    ql = q.lower()
+    hits = sum(1 for tok in _NAMED_INSURER_TOKENS if tok in ql)
+    return hits >= 2
+
+
 def _phrase_present(phrase: str, q: str) -> bool:
     """Word-boundary phrase match. KI-023 (2026-05-14) — replaces naive
     substring matching that incorrectly tripped triggers like "hi" on words
@@ -204,6 +230,7 @@ def should_route_to_fact_find(
     profile_is_empty: bool,
     in_fact_find_continuation: bool,
     free_form_session: bool,
+    query: str = "",
 ) -> bool:
     """Pure decision function for the fact-find routing branch.
 
@@ -217,6 +244,10 @@ def should_route_to_fact_find(
     if in_fact_find_continuation:
         return True
     if profile_is_empty and intent in CONTEXT_DEPENDENT_INTENTS:
+        # KI-136 (2026-05-15) — exempt named-SKU comparisons. They're policy-fact
+        # lookups (route to qa), not profile-dependent recommendations.
+        if intent == "comparison" and _names_two_specific_policies(query):
+            return False
         return True
     return False
 
@@ -476,6 +507,7 @@ async def handle_turn(
         profile_is_empty=profile_is_empty,
         in_fact_find_continuation=in_fact_find_continuation,
         free_form_session=session.free_form_session,
+        query=user_text,
     )
 
     if treat_as_fact_find:

@@ -274,6 +274,7 @@ export type CompareResponse = {
 export type MarketplacePolicy = {
   policy_id: string;
   policy_name: string;
+  aliases?: string[];
   insurer_slug: string;
   insurer_name: string;
   insurer_home_url: string;

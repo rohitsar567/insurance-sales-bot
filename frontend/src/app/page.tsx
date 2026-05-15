@@ -1951,7 +1951,11 @@ function MarketplacePanel({
   const insurers = Array.from(new Set(data.policies.map((p) => p.insurer_slug))).sort();
 
   const filtered = data.policies.filter((p) => {
-    if (search && !p.policy_name.toLowerCase().includes(search.toLowerCase()) && !p.insurer_name.toLowerCase().includes(search.toLowerCase())) return false;
+    if (search) {
+      const q = search.toLowerCase();
+      const aliasHit = (p.aliases || []).some((a) => a.toLowerCase().includes(q));
+      if (!p.policy_name.toLowerCase().includes(q) && !p.insurer_name.toLowerCase().includes(q) && !aliasHit) return false;
+    }
     if (insurerFilter !== "all" && p.insurer_slug !== insurerFilter) return false;
     if (grade !== "all" && p.grade !== grade) return false;
     if (p.pre_existing_disease_waiting_months && p.pre_existing_disease_waiting_months > maxPED) return false;
@@ -2321,6 +2325,11 @@ function PolicyCard({
           <div className="flex-1 min-w-0">
             <div className="text-xs text-[var(--muted-foreground)] truncate">{policy.insurer_name}</div>
             <div className="font-semibold text-sm truncate group-hover:text-[var(--primary)] transition">{policy.policy_name}</div>
+            {policy.aliases && policy.aliases.length > 0 && (
+              <div className="text-xs text-slate-500 italic mt-0.5 truncate">
+                Also marketed as: {policy.aliases.join(", ")}
+              </div>
+            )}
           </div>
           {/* Score badge ONLY when we have a profile — otherwise CTA pill */}
           {isPersonalized ? (

@@ -42,7 +42,7 @@ rag/corpus/bajaj-allianz/comprehensive-care-plan__wordings.pdf filter=lfs diff=l
 rag/corpus/bajaj-allianz/criti-care__wordings.pdf filter=lfs diff=lfs merge=lfs -text
 rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf filter=lfs diff=lfs merge=lfs -text
 rag/corpus/bajaj-allianz/global-health-care__wordings.pdf filter=lfs diff=lfs merge=lfs -text
-rag/corpus/bajaj-allianz/group-health-guard-gold__wordings.pdf filter=lfs diff=lfs merge=lfs -text
+rag/corpus/bajaj-allianz/group-health-guard-silver__wordings.pdf filter=lfs diff=lfs merge=lfs -text
 rag/corpus/bajaj-allianz/group-personal-accident__wordings.pdf filter=lfs diff=lfs merge=lfs -text
 rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf filter=lfs diff=lfs merge=lfs -text
 rag/corpus/bajaj-allianz/health-guard__wordings.pdf filter=lfs diff=lfs merge=lfs -text

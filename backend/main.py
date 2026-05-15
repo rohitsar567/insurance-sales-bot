@@ -140,6 +140,12 @@ class InsurerCoverage(BaseModel):
     home_url: str  # insurer's main website (manually curated, verified)
     policy_count: int
     sample_policies: list[PolicyEntry]
+    # KI-141 (2026-05-15) — backward-compatible default empty. Per-product
+    # alias list isn't actually surfaced on the coverage card today, but the
+    # field is mirrored from MarketplacePolicy so callers that union the two
+    # endpoints see a consistent schema. Total aliases collapsed into this
+    # insurer's parents — useful for QA + future UI surfacing.
+    alias_count: int = 0
 
 
 class CoverageResponse(BaseModel):
@@ -557,6 +563,7 @@ async def coverage():
         "national-insurance": ("National Insurance Company", "https://nationalinsurance.nic.co.in/"),
         "new-india":          ("New India Assurance", "https://www.newindia.co.in/"),
         "niva-bupa":          ("Niva Bupa Health Insurance", "https://www.nivabupa.com/"),
+        "indusind-general":   ("IndusInd General Insurance (formerly Reliance General)", "https://www.indusind.com/general-insurance/"),
         "oriental-insurance": ("Oriental Insurance Company", "https://orientalinsurance.org.in/"),
         "reliance-general":   ("Reliance General Insurance", "https://www.reliancegeneral.co.in/"),
         "royal-sundaram":     ("Royal Sundaram General Insurance", "https://www.royalsundaram.in/"),
@@ -592,9 +599,103 @@ async def coverage():
     seen_product_keys: set[str] = set()
     seen_policy_ids: set[str] = set()
 
+    # KI-141 (2026-05-15) — pre-compute the alias mapping (curated marketing
+    # renames whose source PDF maps to an extracted parent). These curated
+    # entries collapse onto the parent card; they DO NOT count separately.
+    # Same algorithm as /api/policies/all so the totals stay in sync.
+    #
+    # KI-142 (2026-05-15, REFACTORED) — UIN-primary invariant: 1 unique UIN
+    # = 1 unique marketplace card. Mirrors the /api/policies/all algorithm
+    # so the coverage policy_count stays in lockstep with the marketplace
+    # card count. See the long-form comment block in that endpoint for the
+    # full algorithm rationale.
+    extracted_stems_cov = {fp.stem for fp in sorted_files}
+
+    # Phase A — extracted parents claim their UINs first.
+    uin_to_parent_cov: dict[str, str] = {}
+    extracted_uin_cov: dict[str, str] = {}
+    for fp in sorted_files:
+        try:
+            _d = _json.loads(fp.read_text())
+        except Exception:
+            continue
+        _u = _d.get("uin_code")
+        if isinstance(_u, dict):
+            _u = _u.get("value")
+        _u = (_u or "").strip() if isinstance(_u, str) else ""
+        if _u:
+            extracted_uin_cov[fp.stem] = _u
+            uin_to_parent_cov.setdefault(_u, fp.stem)
+
+    direct_parent_cov: dict[str, str] = {}
+    curated_canonical_ids_cov: list[str] = []
+
+    # Phase B — walk curated entries deterministically (sorted by policy_id).
+    for curated_pid, cdata in sorted(curated_facts.items()):
+        if curated_pid != cdata.get("policy_id", curated_pid):
+            continue
+        if any(curated_pid.endswith(f"__{dt}")
+               for dt in ("wordings", "brochure", "cis", "prospectus")):
+            continue
+        curated_canonical_ids_cov.append(curated_pid)
+
+        curated_uin = cdata.get("uin_code")
+        if isinstance(curated_uin, dict):
+            curated_uin = curated_uin.get("value")
+        curated_uin = (curated_uin or "").strip() if isinstance(curated_uin, str) else ""
+
+        parent_id: str | None = None
+        if curated_uin and curated_uin in uin_to_parent_cov \
+                and uin_to_parent_cov[curated_uin] != curated_pid:
+            parent_id = uin_to_parent_cov[curated_uin]
+        elif curated_uin:
+            uin_to_parent_cov[curated_uin] = curated_pid
+
+        if parent_id is None:
+            # KI-142 — fall back to source_pdf gate when UIN doesn't match
+            # any prior claimant (curated UIN may be more accurate than
+            # extracted; multi-variant PDFs naturally share one filing).
+            fb_parent = _source_pdf_to_policy_id(cdata.get("_primary_source_pdf"))
+            if fb_parent and fb_parent in extracted_stems_cov and fb_parent != curated_pid:
+                parent_id = fb_parent
+
+        if parent_id:
+            direct_parent_cov[curated_pid] = parent_id
+
+    # Phase C — chain-compress (see /api/policies/all for rationale).
+    aliased_curated_ids_cov: set[str] = set()
+    parent_pkey_alias_count: dict[str, int] = {}
+
+    def _terminal_parent_cov(start: str) -> str | None:
+        seen_chain: set[str] = set()
+        cur = start
+        while True:
+            nxt = direct_parent_cov.get(cur)
+            if not nxt:
+                return cur if cur != start else None
+            if nxt in seen_chain or nxt == start:
+                return None
+            seen_chain.add(nxt)
+            cur = nxt
+
+    for curated_pid in curated_canonical_ids_cov:
+        if curated_pid not in direct_parent_cov:
+            continue
+        terminal = _terminal_parent_cov(curated_pid)
+        if not terminal:
+            continue
+        if terminal in extracted_stems_cov:
+            terminal_pkey = _product_key_of_cov(terminal)
+        else:
+            terminal_pkey = terminal
+        aliased_curated_ids_cov.add(curated_pid)
+        parent_pkey_alias_count[terminal_pkey] = parent_pkey_alias_count.get(terminal_pkey, 0) + 1
+
     # by_insurer entries:
     #   products: set of product_keys (matches /api/policies/all card count)
     #   names:    ordered dict of policy_NAME -> first product_key (for sample display)
+    #   aliases:  KI-141 — count of curated marketing-rename entries merged
+    #             into this insurer's parent cards (for the alias_count field).
     # KI-135 (2026-05-15) — track product_keys (not names) for counting so the
     # ~1 within-insurer policy_name collision (e.g. new-india Floater listed
     # as both extracted + curated_facts) doesn't collapse the count below the
@@ -618,8 +719,10 @@ async def coverage():
         name = data.get("policy_name", "") or pid
         url = data.get("source_pdf_url", "")
         if slug not in by_insurer:
-            by_insurer[slug] = {"products": set(), "names": [], "chunks": 0}
+            by_insurer[slug] = {"products": set(), "names": [], "chunks": 0, "aliases": 0}
         by_insurer[slug]["products"].add(pkey)
+        # KI-141 — accumulate alias count from the pre-pass
+        by_insurer[slug]["aliases"] += parent_pkey_alias_count.get(pkey, 0)
         if name not in by_insurer[slug]["names"]:
             by_insurer[slug]["names"].append(name)
         by_insurer[slug]["chunks"] += 1
@@ -634,6 +737,10 @@ async def coverage():
             continue
         if any(eid.startswith(curated_pid + "__") for eid in seen_policy_ids):
             continue
+        # KI-141 — skip curated entries that have already been collapsed into
+        # a pass-1 parent's alias list.
+        if curated_pid in aliased_curated_ids_cov:
+            continue
         seen_policy_ids.add(curated_pid)
         slug = data.get("insurer_slug", "")
         if slug == "regulatory":
@@ -647,8 +754,12 @@ async def coverage():
         name = data.get("policy_name", "") or curated_pid
         url = data.get("source_pdf_url", "")
         if slug not in by_insurer:
-            by_insurer[slug] = {"products": set(), "names": [], "chunks": 0}
+            by_insurer[slug] = {"products": set(), "names": [], "chunks": 0, "aliases": 0}
         by_insurer[slug]["products"].add(pkey)
+        # KI-142 — accumulate alias count for curated parents (curated entries
+        # that themselves became the claimant of a new UIN, with later curated
+        # siblings aliasing onto them).
+        by_insurer[slug]["aliases"] += parent_pkey_alias_count.get(pkey, 0)
         if name not in by_insurer[slug]["names"]:
             by_insurer[slug]["names"].append(name)
         by_insurer[slug]["chunks"] += 1
@@ -680,6 +791,7 @@ async def coverage():
                 home_url=home_url,
                 policy_count=product_count,
                 sample_policies=sample_entries,
+                alias_count=info.get("aliases", 0),
             )
         )
 
@@ -1073,6 +1185,12 @@ class MarketplacePolicy(BaseModel):
     maternity_coverage: Optional[bool] = None
     cashless_treatment_supported: Optional[bool] = None
     room_rent_capping: Optional[str] = None
+    # KI-141 (2026-05-15) — marketing-rename aliases that share the same
+    # source PDF (e.g. "Activ One" and "Activ Health" both point to the
+    # activ-health-individual__wordings.pdf parent). Default empty list so
+    # the field is backward-compatible. Frontend renders these as small
+    # "Also known as: X, Y" sub-labels under the parent card title.
+    aliases: list[str] = Field(default_factory=list)
 
 
 class MarketplaceResponse(BaseModel):
@@ -1151,8 +1269,14 @@ def _load_curated_facts() -> dict[str, dict]:
     `{field: {value, source_pdf_path, source_quote}}` shape. We unwrap to a
     flat `{field: value}` dict for the marketplace endpoint, preserving the
     provenance in a `_facts_provenance` field for transparency.
+
+    KI-141 (2026-05-15) — also computes `_primary_source_pdf`, the most-common
+    `source_pdf_path` across this curated entry's fields. Used by both
+    /api/policies/all and /api/coverage to alias-merge marketing-rename
+    curated entries into their extracted-JSON parent card.
     """
     import json as _json
+    from collections import Counter
     facts: dict[str, dict] = {}
     facts_dir = settings.CORPUS_DIR.parent.parent / "40-data" / "policy_facts"
     if not facts_dir.exists():
@@ -1165,6 +1289,7 @@ def _load_curated_facts() -> dict[str, dict]:
         policy_id = d.get("policy_id") or f.stem
         flat: dict = {}
         provenance: dict = {}
+        all_source_pdfs: list[str] = []
         for k, v in d.items():
             if k.startswith("_") or k in ("policy_id", "policy_name", "insurer_slug"):
                 flat[k] = v
@@ -1177,9 +1302,19 @@ def _load_curated_facts() -> dict[str, dict]:
                         "source_quote": v.get("source_quote"),
                         "source_url": v.get("source_url"),
                     }
+                if v.get("source_pdf_path"):
+                    all_source_pdfs.append(v["source_pdf_path"])
             else:
                 flat[k] = v
         flat["_facts_provenance"] = provenance
+        # KI-141 — pick the most-common source PDF path as this curated
+        # entry's "primary source". When this path's extracted-JSON parent
+        # already exists, the marketplace collapses this curated entry into
+        # the parent's aliases list instead of emitting a separate card.
+        flat["_primary_source_pdf"] = (
+            Counter(all_source_pdfs).most_common(1)[0][0]
+            if all_source_pdfs else None
+        )
         # Try a couple of policy_id permutations to maximise lookup hit rate
         facts[policy_id] = flat
         # Some extracted JSONs use `_wordings` suffix; the curated files don't
@@ -1187,6 +1322,23 @@ def _load_curated_facts() -> dict[str, dict]:
         facts.setdefault(f"{policy_id}__brochure", flat)
         facts.setdefault(f"{policy_id}__cis", flat)
     return facts
+
+
+def _source_pdf_to_policy_id(pdf_path: str | None) -> str | None:
+    """KI-141 — map a curated `source_pdf_path` like
+    'rag/corpus/aditya-birla/activ-health-individual__wordings.pdf' to the
+    extracted-JSON policy_id 'aditya-birla__activ-health-individual__wordings'.
+
+    Returns None if the input is empty/None.
+    """
+    if not pdf_path:
+        return None
+    s = pdf_path
+    if s.startswith("rag/corpus/"):
+        s = s[len("rag/corpus/"):]
+    if s.endswith(".pdf"):
+        s = s[: -len(".pdf")]
+    return s.replace("/", "__")
 
 
 def _merge_curated(extracted: dict, curated: dict | None) -> dict:
@@ -1251,6 +1403,7 @@ async def policies_all(session_id: Optional[str] = None):
         "national-insurance": ("National Insurance Company", "https://nationalinsurance.nic.co.in/"),
         "new-india":          ("New India Assurance", "https://www.newindia.co.in/"),
         "niva-bupa":          ("Niva Bupa Health Insurance", "https://www.nivabupa.com/"),
+        "indusind-general":   ("IndusInd General Insurance (formerly Reliance General)", "https://www.indusind.com/general-insurance/"),
         "oriental-insurance": ("Oriental Insurance Company", "https://orientalinsurance.org.in/"),
         "reliance-general":   ("Reliance General Insurance", "https://www.reliancegeneral.co.in/"),
         "royal-sundaram":     ("Royal Sundaram General Insurance", "https://www.royalsundaram.in/"),
@@ -1292,6 +1445,146 @@ async def policies_all(session_id: Optional[str] = None):
         settings.EXTRACTED_DIR.glob("*.json"),
         key=lambda fp: (_DOCTYPE_RANK.get(_doctype_of(fp.stem), 99), fp.stem),
     )
+
+    # KI-141 (2026-05-15) — alias-dedup pre-pass. Curated "marketing rename"
+    # entries that re-describe the SAME IRDAI-filed product collapse onto a
+    # single marketplace card; the marketing names surface as `aliases`.
+    #
+    # KI-142 (2026-05-15, REFACTORED) — UIN-primary invariant: 1 unique UIN
+    # = 1 unique marketplace card. The PDF-based gate is now a fallback for
+    # entries that lack a UIN.
+    #
+    # Algorithm (two phases so PDF-backed extracted entries always claim
+    # their UIN before any curated rename does):
+    #   Phase A: walk extracted/*.json (sorted by doctype rank, then stem).
+    #     Each extracted parent claims its uin_code into `uin_to_parent`.
+    #   Phase B: walk curated_facts (sorted by policy_id for determinism).
+    #     For each canonical curated entry (skip lookup-permutation aliases
+    #     and entries that ARE __wordings/__brochure/__cis themselves):
+    #       1. Read curated UIN (scalar OR nested .value form).
+    #       2. If UIN non-empty AND already in `uin_to_parent` (claimant !=
+    #          self) → alias of that parent.
+    #       3. Else if UIN non-empty → claim it (so subsequent curated
+    #          siblings with the same UIN alias onto THIS entry in pass 2).
+    #       4. Else (UIN empty) OR (UIN had no prior claimant) → fall back
+    #          to the source_pdf gate: if `_primary_source_pdf` maps to an
+    #          extracted parent stem, alias under that parent.
+    #       5. Otherwise the curated entry stays as a standalone card.
+    #
+    # Multi-variant wordings PDFs with a single filed UIN (e.g.
+    # manipalcigna prohealth-insurance-all-variants.pdf — the PDF text
+    # confirms only ONE UIN `MCIHLIP24011V072324` is filed for that
+    # product) correctly collapse all sub-product curated entries onto one
+    # card. Distinct-UIN siblings under a shared PDF would surface as
+    # separate cards because their UINs claim independent parents.
+    extracted_stems = {fp.stem for fp in sorted_files}
+
+    # Phase A — extracted parents claim their UINs first.
+    uin_to_parent: dict[str, str] = {}
+    extracted_uin: dict[str, str] = {}  # kept for downstream introspection
+    for fp in sorted_files:
+        try:
+            _d = _json.loads(fp.read_text())
+        except Exception:
+            continue
+        _u = _d.get("uin_code")
+        if isinstance(_u, dict):
+            _u = _u.get("value")
+        _u = (_u or "").strip() if isinstance(_u, str) else ""
+        if _u:
+            extracted_uin[fp.stem] = _u
+            uin_to_parent.setdefault(_u, fp.stem)
+
+    # Direct-parent map for each curated entry (built in Phase B), then
+    # chain-compressed in Phase C so transitive aliases (e.g. activ-one →
+    # activ-health → activ-health-individual__wordings) flatten onto the
+    # ultimate extracted parent.
+    direct_parent: dict[str, str] = {}
+    curated_canonical_ids: list[str] = []
+
+    # Phase B — walk curated entries deterministically (sorted by policy_id).
+    for curated_policy_id, cdata in sorted(curated_facts.items()):
+        # Skip the __wordings/__brochure/__cis lookup-permutation aliases
+        # that _load_curated_facts adds for hit-rate (canonical policy_id is
+        # stored in the JSON's "policy_id" field).
+        if curated_policy_id != cdata.get("policy_id", curated_policy_id):
+            continue
+        # Skip curated entries that ARE their own __wordings/__brochure/__cis
+        # (doctype-permutation curated files, not marketing renames; pass-2
+        # dedup handles them via the seen_policy_ids prefix check).
+        if any(curated_policy_id.endswith(f"__{dt}")
+               for dt in ("wordings", "brochure", "cis", "prospectus")):
+            continue
+        curated_canonical_ids.append(curated_policy_id)
+
+        # Read curated UIN (scalar OR nested {value, source_pdf_path, ...}).
+        curated_uin = cdata.get("uin_code")
+        if isinstance(curated_uin, dict):
+            curated_uin = curated_uin.get("value")
+        curated_uin = (curated_uin or "").strip() if isinstance(curated_uin, str) else ""
+
+        parent_id: str | None = None
+        if curated_uin and curated_uin in uin_to_parent \
+                and uin_to_parent[curated_uin] != curated_policy_id:
+            # UIN-primary path: collapse onto the prior claimant of this UIN
+            # (different policy_name same regulator filing = pure rename).
+            parent_id = uin_to_parent[curated_uin]
+        elif curated_uin:
+            # New UIN — this curated entry becomes the claimant so any
+            # later curated sibling with the same UIN aliases onto it.
+            uin_to_parent[curated_uin] = curated_policy_id
+
+        if parent_id is None and not curated_uin:
+            # KI-142 (user rule, 2026-05-15): source-PDF fallback only fires
+            # when the curated entry has NO UIN at all. If UIN exists but
+            # doesn't match any extracted parent, they're different
+            # regulator-filed products and must stay as separate cards —
+            # source-PDF coincidence (multi-variant wordings) does NOT merge.
+            fb_parent = _source_pdf_to_policy_id(cdata.get("_primary_source_pdf"))
+            if fb_parent and fb_parent in extracted_stems and fb_parent != curated_policy_id:
+                parent_id = fb_parent
+
+        if parent_id:
+            direct_parent[curated_policy_id] = parent_id
+
+    # Phase C — chain-compress direct_parent so every curated alias points
+    # at its terminal parent (an extracted stem, or a curated parent that
+    # itself has no parent). Detect cycles defensively. After compression
+    # we emit one alias entry per curated descendant onto the terminal
+    # parent's product_key.
+    parent_pkey_aliases: dict[str, list[str]] = {}
+    aliased_curated_ids: set[str] = set()
+
+    def _terminal_parent(start: str) -> str | None:
+        """Walk direct_parent until we hit an extracted stem or a curated id
+        with no further parent. Returns None on cycle (defensive)."""
+        seen_chain: set[str] = set()
+        cur = start
+        while True:
+            nxt = direct_parent.get(cur)
+            if not nxt:
+                return cur if cur != start else None
+            if nxt in seen_chain or nxt == start:
+                return None  # cycle — drop the alias attempt
+            seen_chain.add(nxt)
+            cur = nxt
+
+    for curated_policy_id in curated_canonical_ids:
+        if curated_policy_id not in direct_parent:
+            continue
+        terminal = _terminal_parent(curated_policy_id)
+        if not terminal:
+            continue
+        # Alias-target product_key: extracted stems use _product_key_of()
+        # (strips __doctype). Curated terminals use the policy_id directly.
+        if terminal in extracted_stems:
+            terminal_pkey = _product_key_of(terminal)
+        else:
+            terminal_pkey = terminal
+        alias_name = (curated_facts.get(curated_policy_id, {}).get("policy_name")
+                      or curated_policy_id)
+        parent_pkey_aliases.setdefault(terminal_pkey, []).append(alias_name)
+        aliased_curated_ids.add(curated_policy_id)
 
     seen_product_keys: set[str] = set()
     seen_policy_ids: set[str] = set()
@@ -1371,6 +1664,9 @@ async def policies_all(session_id: Optional[str] = None):
                 maternity_coverage=_coerce_bool(data.get("maternity_coverage")),
                 cashless_treatment_supported=_coerce_bool(data.get("cashless_treatment_supported")),
                 room_rent_capping=data.get("room_rent_capping") if isinstance(data.get("room_rent_capping"), str) else None,
+                # KI-141 — merge marketing-rename curated entries onto this
+                # parent card. Sorted for deterministic output.
+                aliases=sorted(parent_pkey_aliases.get(product_key, [])),
             ))
         except Exception as e:
             # One malformed extraction should not kill the whole feed
@@ -1389,6 +1685,11 @@ async def policies_all(session_id: Optional[str] = None):
             continue
         # Also skip if any extracted ID matches with a suffix
         if any(eid.startswith(curated_policy_id + "__") for eid in seen_policy_ids):
+            continue
+        # KI-141 — skip curated entries that have already been collapsed onto
+        # a pass-1 parent card via the aliases mechanism (e.g. Activ One →
+        # Activ Health Individual Wordings).
+        if curated_policy_id in aliased_curated_ids:
             continue
         seen_policy_ids.add(curated_policy_id)
         slug = data.get("insurer_slug", "")
@@ -1440,6 +1741,10 @@ async def policies_all(session_id: Optional[str] = None):
                 maternity_coverage=_coerce_bool(data.get("maternity_coverage")),
                 cashless_treatment_supported=_coerce_bool(data.get("cashless_treatment_supported")),
                 room_rent_capping=data.get("room_rent_capping") if isinstance(data.get("room_rent_capping"), str) else None,
+                # KI-142 — curated entries can ALSO be UIN-claimants when no
+                # extracted parent owns their UIN. In that case their later
+                # curated siblings alias onto them and surface here.
+                aliases=sorted(parent_pkey_aliases.get(curated_policy_id, [])),
             ))
         except Exception as e:
             print(f"[marketplace] skipping curated {curated_policy_id}: {type(e).__name__}: {str(e)[:120]}")

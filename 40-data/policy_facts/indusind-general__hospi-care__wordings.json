@@ -1,7 +1,7 @@
 {
-  "policy_id": "reliance-general__hospi-care__wordings",
+  "policy_id": "indusind-general__hospi-care__wordings",
   "policy_name": "IndusInd Hospi Care Insurance",
-  "insurer_slug": "reliance-general",
+  "insurer_slug": "indusind-general",
   "source_pdf_path": "rag/corpus/reliance-general/hospi-care__wordings.pdf",
   "uin_code": {
     "value": "RELHLIP20027V012021",
@@ -134,5 +134,6 @@
     "unit": null,
     "source_pdf_path": "rag/corpus/reliance-general/hospi-care__wordings.pdf",
     "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
-  }
+  },
+  "legacy_issuer": "Reliance General Insurance"
 }
