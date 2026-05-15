@@ -937,9 +937,25 @@ async def handle_turn(
     # by fact_find_brain which has its own slot-extraction validation; the
     # judge gate is additive overhead with negative production value here.
     # Gate: skip if intent=='fact_find' OR we're mid-fact-find continuation.
-    _skip_judge = (intent == "fact_find") or bool(in_fact_find_continuation)
+    # KI-171 (2026-05-15) — also skip faithfulness on RECOMMENDATION queries.
+    # The judge is designed for policy-fact lookups ("does Policy X cover Y?"),
+    # not for generative synthesis ("which policy fits me?"). Recommendation
+    # answers stitch together evidence from many policies plus the user's
+    # profile — the judge can't grade that fairly and currently blocks valid
+    # recommendation flows after fact_find completes. Detect via query shape.
+    _user_text_lc = (user_text or "").lower()
+    _is_recommendation = any(
+        kw in _user_text_lc for kw in (
+            "recommend", "suggest", "best polic", "top 3", "top three",
+            "top 5", "top five", "show me polic", "show me what", "fits me",
+            "right for me", "policies for me", "which polic", "good polic",
+            "what polic", "your suggestion", "your recommendation",
+        )
+    )
+    _skip_judge = (intent == "fact_find") or bool(in_fact_find_continuation) or _is_recommendation
     if _skip_judge:
-        verdict = FaithfulnessVerdict(passed=True, reasons=["ki091_skip_on_fact_find"])
+        skip_reason = "ki171_skip_on_recommendation" if _is_recommendation else "ki091_skip_on_fact_find"
+        verdict = FaithfulnessVerdict(passed=True, reasons=[skip_reason])
     else:
         verdict: FaithfulnessVerdict = await check_faithfulness(
             reply=reply,
@@ -999,7 +1015,12 @@ async def handle_turn(
             blocked = True
             reply = verdict.suggested_reply or "I don't have grounded evidence for that. Could you rephrase?"
 
-    # 6. Citations (derived from retrieved chunks)
+    # 6. Citations (derived from retrieved chunks).
+    # KI-172 (2026-05-15) — exclude profile chunks from user-facing citations.
+    # The profile chunk is retrieved alongside policy chunks so the LLM has
+    # context about the user (age/dependents/income/etc.), but it is NOT a
+    # "cited policy" and should not appear in the chat's "CITED POLICIES"
+    # card. Filter by insurer_slug=='profile' (set by profile_rag.upsert).
     citations = [
         {
             "policy_id": c.policy_id,
@@ -1011,6 +1032,7 @@ async def handle_turn(
             "score": round(c.score, 3),
         }
         for c in chunks
+        if (c.insurer_slug or "").lower() != "profile"
     ]
 
     # 7. INDIC CASCADE — translate the English reply back into Hinglish/Hindi,
