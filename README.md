@@ -62,7 +62,9 @@ Thirty-plus knowledge increments landed today. The corpus was rebuilt, the marke
 - **KI-143** — `bajaj/group-health-guard` slug correction (gold → silver per the PDF).
 - **KI-144** — `reliance-general` → `indusind-general` migration (Reliance General Insurance was rebranded to IndusInd General). The `indusind-general` slug did not exist anywhere in the codebase before today.
 - **KI-149** — budget + income parser captures bare numerals like `"30000"`.
-- **KI-150** — `fact_find_brain` `max_tokens` 420 → 700 (root cause of the "robotic language" user complaint).
+- **KI-150** — `fact_find_brain` `max_tokens` 420 → 700 (one of eight band-aids on the prose+`<FF>`-trailer prompt shape; superseded by KI-167).
+- **KI-160** — chains locked to NIM-only ([ADR-038](70-docs/60-decisions/ADR-038-nim-only-chains.md)) after KI-155 demonstrated Groq Llama-3.3 silently ignores the `<FF>` structured-output trailer contract.
+- **KI-167** — `backend/fact_find_brain.py` ripped out and replaced by `backend/sales_brain.py` ([ADR-039](70-docs/60-decisions/ADR-039-llm-driven-sales-brain.md)). Single LLM call per turn using NIM `response_format={"type":"json_object"}`; no scripted `Question.prompt_en`, no `<FF>` trailer, no `_canonical_fallback`, no `"Got that — {slot}."` prefix. Deterministic post-processor (`backend/sales_brain_normalizer.py`) normalizes captures; profile persists via `profile_store` + `profile_rag` as before.
 
 Per-insurer card counts (166 total across 19 real insurers): HDFC ERGO 15 · National Insurance 14 · Niva Bupa 14 · Bajaj Allianz 13 · ICICI Lombard 13 · Star Health 11 · Care Health 10 · New India Assurance 9 · Tata AIG 9 · Acko 7 · Aditya Birla 7 · Royal Sundaram 7 · Cholamandalam MS 6 · Go Digit 6 · IFFCO Tokio 6 · ManipalCigna 6 · SBI General 6 · IndusInd General 3 · Oriental Insurance 3 · Reliance General 1.
 
@@ -93,7 +95,7 @@ A take-home is a sample of how the engineer thinks under constraint. Three thing
 3. **Honest model picks — Sarvam where Sarvam is uniquely strong, open-weights frontier for reasoning.** Voice and Indic are non-substitutable: **Sarvam Saarika v2.5** for speech-to-text, **Sarvam Bulbul v2** (speaker `anushka`) for text-to-speech, and **Sarvam-M** for Hindi/Hinglish/vernacular translation — no closed-source frontier matches Sarvam on Indian accents or code-mixed Hinglish. Reasoning is a different problem and runs on open-weights frontier models behind a NIM-only candidate pool per role (KI-160 / [ADR-038](70-docs/60-decisions/ADR-038-nim-only-chains.md)), not a single hardcoded brain. Each role is a `NimChainLLM` (`backend/providers/nvidia_nim_llm.py`) whose candidates are all NIM-hosted — KI-155 demonstrated that Groq Llama-3.3 silently ignores the `<FF>` structured-output trailer contract, so cross-provider fallback was removed as a silent-failure trap:
 
    - **`BRAIN_CHAIN`** (comparison, recommendation, synthesis) — primary **NVIDIA Nemotron-Super 49B v1.5** (`nvidia/llama-3.3-nemotron-super-49b-v1.5`), backup **Qwen 3-Next 80B** (`qwen/qwen3-next-80b-a3b-instruct`, 80B / 3B-active MoE), 3rd candidate **Mistral Large 3 675B** (`mistralai/mistral-large-3-675b-instruct-2512`).
-   - **`FAST_BRAIN_CHAIN`** (fact-find turns, QA, paraphrase, normalize, extract — every latency-sensitive role) — primary **Qwen 3-Next 80B** (`qwen/qwen3-next-80b-a3b-instruct`), backup **NVIDIA Nemotron-Super 49B v1.5** (`nvidia/llama-3.3-nemotron-super-49b-v1.5`).
+   - **`FAST_BRAIN_CHAIN`** (sales-brain fact-find turns per KI-167, QA, normalize, extract — every latency-sensitive role) — primary **Qwen 3-Next 80B** (`qwen/qwen3-next-80b-a3b-instruct`), backup **NVIDIA Nemotron-Super 49B v1.5** (`nvidia/llama-3.3-nemotron-super-49b-v1.5`).
    - **`JUDGE_CHAIN`** (faithfulness Gate 4, Hinglish drift LLM-judge, eval grader) — primary **Meta Llama-4 Maverick 17B/128E** (`meta/llama-4-maverick-17b-128e-instruct`), backup **Mistral Large 3 675B** (`mistralai/mistral-large-3-675b-instruct-2512`). Deliberately different model families from the brain pool so the judge does not mark its own homework.
 
    **NIM-only election, no cross-provider cascade (KI-160, [ADR-038](70-docs/60-decisions/ADR-038-nim-only-chains.md)).** If every NIM candidate in a chain fails, orchestrator returns a graceful error message rather than falling to Groq or OpenRouter — fail-loud is preferred over fail-silent-with-garbage for structured-output contracts. The 50/50 NIM ↔ Groq rotation of KI-025 ([ADR-026](70-docs/60-decisions/ADR-026-provider-load-balancing.md)) and the cross-provider-fallback variant of KI-080 ([ADR-031](70-docs/60-decisions/ADR-031-sticky-primary-election.md)) are both superseded. KI-085's proactive credit gating still applies within the NIM pool via a per-model 60-second rate-meter (gate at 35-of-40 req/min, headroom 5). `GROQ_API_KEY` + `OPENROUTER_API_KEY` remain in HF Space secrets for future re-enable but the chain config no longer references them.
@@ -184,7 +186,7 @@ The bot is two flows running together — the customer's experience and the tech
 **Step 2 — Ask the first question (voice or text)**
 - User just talks — VAD detects speech start/end automatically
 - *"Suggest a health insurance plan for me"*
-- Bot recognises fact-find intent. The orchestrator picks the next slot from a 9-question graph; an LLM paraphraser rewrites the canonical question in a warmer voice each session (verified to still target the same slot before sending)
+- Bot recognises fact-find intent. **`backend/sales_brain.py`** issues one NIM call per turn (KI-167 / [ADR-039](70-docs/60-decisions/ADR-039-llm-driven-sales-brain.md)) using `response_format={"type":"json_object"}`; the LLM owns voice + flow + slot order, returning a `{reply, captures, slot_driving, complete}` JSON body. A deterministic post-processor normalizes the captured fields against the 9-slot schema.
 - Slots in order: age → dependents → income → existing cover → primary goal → location → parents (conditional) → health → budget
 
 </td><td>
@@ -199,8 +201,8 @@ The bot is two flows running together — the customer's experience and the tech
 - `detect_language(user_text)` → `english / indic`
 - Indic cascade: if indic, Sarvam-M translates → English for reasoning, response translated back
 
-**Tech 4 — Fact-find branch**
-- If profile empty AND intent ∈ {fact_find, recommendation, comparison}: pick next slot, paraphrase via `question_paraphraser` + verifier, emit question, return early
+**Tech 4 — Fact-find branch (KI-167 / [ADR-039](70-docs/60-decisions/ADR-039-llm-driven-sales-brain.md))**
+- If profile empty AND intent ∈ {fact_find, recommendation, comparison}: hand the turn to `backend/sales_brain.py::drive_sales_brain()` — one NIM call with `response_format={"type":"json_object"}`, system prompt carries the 9-slot schema + current profile state. Response: `{reply, captures, slot_driving, complete}`. `backend/sales_brain_normalizer.py` normalizes captures → `session.update_profile_field()` → `profile_store.save_profile()` + `profile_rag.upsert_profile_chunk()`. Emit `reply` to the user.
 - Else: continue to retrieval
 
 </td></tr>
@@ -252,9 +254,9 @@ The bot is two flows running together — the customer's experience and the tech
 </td><td>
 
 **Tech 7 — Brain selection, `pick_brain(intent, language)`**
-- `intent ∈ {comparison, recommendation}` → BRAIN_CHAIN with probe-elected primary across NIM / Groq / OpenRouter candidates (KI-080)
-- `intent ∈ {qa, fact_find}` → FAST_BRAIN_CHAIN with probe-elected primary (typically Nemotron Nano 30B or Groq Llama-3.3 in steady state)
-- KI-080 election: 1 LLM call per turn (most cases) or 2 (primary fails real-time → cross-provider backup). Per-chain primary refreshed every 60s by background probe.
+- `intent ∈ {comparison, recommendation}` → BRAIN_CHAIN with probe-elected primary within the [ADR-038](70-docs/60-decisions/ADR-038-nim-only-chains.md) NIM-only pool (KI-080 / KI-160)
+- `intent ∈ {qa, fact_find}` → FAST_BRAIN_CHAIN with probe-elected primary in the NIM-only pool (typically Qwen 3-Next 80B in steady state); `fact_find` turns go through `backend/sales_brain.py` with `response_format={"type":"json_object"}` (KI-167 / [ADR-039](70-docs/60-decisions/ADR-039-llm-driven-sales-brain.md))
+- KI-080 election: 1 LLM call per turn (most cases) or 2 (primary fails real-time → NIM-pool backup). Per-chain primary refreshed every 300s by background probe. On total NIM exhaustion: graceful error to user (fail-loud, [ADR-038](70-docs/60-decisions/ADR-038-nim-only-chains.md)).
 
 **Tech 8 — System prompt construction, `build_messages()`**
 - `[System: ADVISOR_PROMPT + USER PROFILE block + USER IS LOOKING AT (view_context) block]`
@@ -374,12 +376,15 @@ The bot is two flows running together — the customer's experience and the tech
                                   │
                                   ▼
 ┌──────────────────────────────────────────────────────────────────────────┐
-│  TECH 4.  Fact-find OR free-form branch                                   │
+│  TECH 4.  Fact-find OR free-form branch (KI-167 / ADR-039)                │
 │  -------                                                                  │
-│  · If session.awaiting_question_id and not free_form:                    │
-│      record_answer(session.profile, qid, raw)                            │
-│      next_question(profile) → asks next                                  │
-│      RETURN early                                                         │
+│  · If intent ∈ {fact_find, recommendation, comparison} AND profile        │
+│    incomplete:                                                            │
+│      drive_sales_brain() — one NIM call, response_format=json_object     │
+│      → {reply, captures, slot_driving, complete}                          │
+│      normalize captures → session.update_profile_field()                 │
+│      → profile_store.save_profile() + profile_rag.upsert_profile_chunk() │
+│      emit reply to user, RETURN early                                     │
 │  · Else: set free_form_session = True, continue to retrieval             │
 └──────────────────────────────────────────────────────────────────────────┘
                                   │
@@ -410,9 +415,9 @@ The bot is two flows running together — the customer's experience and the tech
 ┌──────────────────────────────────────────────────────────────────────────┐
 │  TECH 7.  Brain selection — pick_brain(intent, language)                  │
 │  -------                                                                  │
-│  · intent ∈ {comparison, recommendation} → BRAIN_CHAIN with probe-elected primary across NIM/Groq/OpenRouter (heavy, KI-080)      │
-│  · intent ∈ {qa, fact_find} → FAST_BRAIN_CHAIN with probe-elected primary (fast, KI-080)                                          │
-│  · NIM Qwen 80B / Nemotron 30B + Groq Llama-3.3 + OpenRouter GPT-OSS as election candidates                                       │
+│  · intent ∈ {comparison, recommendation} → BRAIN_CHAIN with probe-elected primary in NIM-only pool (heavy, KI-080 / KI-160 / ADR-038)│
+│  · intent ∈ {qa, fact_find} → FAST_BRAIN_CHAIN; fact_find turns dispatched to sales_brain.py (KI-167 / ADR-039, JSON mode)         │
+│  · NIM Qwen 80B + Nemotron-Super 49B as fast-brain election candidates (NIM-only post-KI-160)                                     │
 └──────────────────────────────────────────────────────────────────────────┘
                                   │
                                   ▼
@@ -573,11 +578,11 @@ Every LLM role is served by a **candidate pool** of models elected over by a pro
 | Role | Primary | Fallback chain (in order) | Provider(s) | Why this primary |
 |---|---|---|---|---|
 | **Heavy brain** (comparison, recommendation, synthesis) | Probe-elected primary (KI-080) — typically Qwen 3-Next 80B or Groq Llama-3.3-70B in steady state | Qwen 3.5 122B → GPT-OSS 120B → Mistral Large 3 675B → Nemotron-Super 49B → Llama-3.3-70B → DeepSeek V4-Pro → OpenRouter GPT-OSS 120B → Groq Llama-3.3-70B (all as election candidates; probe scores them every 60s) | NIM + Groq + OpenRouter | Probe-driven election picks the actually-faster candidate dynamically (latency × success-rate score), with provider-diverse BACKUP. Pre-KI-080 static 50/50 ([ADR-026](70-docs/60-decisions/ADR-026-provider-load-balancing.md)) was deprecated in favour of [ADR-031](70-docs/60-decisions/ADR-031-sticky-primary-election.md). |
-| **Fast brain** (voice turns, fact-find, QA, paraphrase, normalize, extract) | Probe-elected primary (KI-080) — typically Nemotron Nano 30B or Groq Llama-3.3-70B in steady state | Qwen 3-Next 80B → GPT-OSS 120B → Qwen 3.5 122B → DeepSeek V4-Flash → Groq Llama-3.3-70B (election candidates) | NIM + Groq | Bottleneck on these short jobs is TTFT, not capability. Nemotron Nano hits ~1.6s; Qwen 80B is ~2-3s. Reordered for latency in KI-035. Election adds adaptation: when one provider degrades, the probe re-elects within 60s. |
+| **Fast brain** (voice turns, sales-brain fact-find KI-167, QA, normalize, extract) | Probe-elected primary within the [ADR-038](70-docs/60-decisions/ADR-038-nim-only-chains.md) NIM-only pool — typically Qwen 3-Next 80B in steady state | Qwen 3-Next 80B → NVIDIA Nemotron-Super 49B v1.5 (NIM-only election candidates) | NIM | Bottleneck on these short jobs is TTFT, not capability. Sales brain (KI-167) calls this chain with `response_format={"type":"json_object"}` for guaranteed structured output. Election adapts within the NIM pool when one candidate degrades. |
 | **Judge** (faithfulness Gate 4, Hinglish drift, eval grader) | Mistral Large 3 675B | GPT-OSS 120B → Kimi K2 → MiniMax M2.5 → Llama-4 Maverick 17B/128E → OpenRouter GPT-OSS 120B → Groq Llama-3.3-70B | NIM + OpenRouter + Groq | Different family from the Qwen brain (Mistral, not Qwen / DeepSeek / Llama family) so the judge sees the brain's output from a genuinely different decision surface. 675B dense, MIT, ~4.3s on NIM. |
 | **Profile extractor** (free-form profile updates → 9-slot schema, ADR-022) | Fast brain chain (Nemotron Nano 30B primary) | inherits FAST_BRAIN_CHAIN | NIM + Groq | Short prompt, structured JSON out — Nemotron Nano is fast and reliable enough; same chain as fact-find. |
 | **Fact-find normalizer** (user answer → typed slot value) | Fast brain chain (Nemotron Nano 30B primary) | inherits FAST_BRAIN_CHAIN | NIM + Groq | Same shape as profile extractor — narrow input, narrow JSON output. |
-| **Question paraphraser** *(deprecated by KI-070)* | Fast brain chain (Nemotron Nano 30B primary), 4s per-link / 6s total budget | inherits FAST_BRAIN_CHAIN | NIM + Groq | ADR-027 layered an LLM paraphraser on top of the hardcoded GRAPH to make fact-find sound less robotic. **KI-070 replaces the paraphraser + opener-rotation + acknowledger machinery with a single LLM brain call per fact-find turn (ADR-030).** The paraphraser module is scheduled for deletion in the KI-070 sync sweep. |
+| **Sales brain** (fact-find conversation driver — KI-167 / [ADR-039](70-docs/60-decisions/ADR-039-llm-driven-sales-brain.md)) | Fast brain chain (Qwen 3-Next 80B primary in NIM-only pool) | inherits FAST_BRAIN_CHAIN | NIM | One NIM call per turn using `response_format={"type":"json_object"}`. System prompt carries the 9-slot schema + current profile state; LLM owns voice + flow + slot order, returns `{reply, captures, slot_driving, complete}`. Replaces the scripted-`prompt_en` + paraphraser + opener-rotation + `<FF>` trailer + `_canonical_fallback` machinery (ADR-027 / ADR-030 retired). |
 | **Indic translation** (English ↔ Hindi / Hinglish / vernacular) | Sarvam-M | — (no fallback; Indic is non-substitutable) | Sarvam | Best-in-class on Hinglish and code-mixed Indian languages; no open-weights frontier model is competitive here. |
 | **STT** (speech-to-text) | Sarvam Saarika v2.5 (`saarika:v2.5`) | — | Sarvam | Best-in-class on Indian-accented English and Hinglish; WebM transcoded to 16kHz mono WAV at the gateway (`backend/providers/sarvam_stt.py`). |
 | **TTS** (text-to-speech) | Sarvam Bulbul v2 (`bulbul:v2`, speaker `anushka`) | — | Sarvam | Best-in-class on Hinglish prosody; 22.05kHz output, base64 WAV from Sarvam endpoint. |
