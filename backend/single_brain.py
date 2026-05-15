@@ -56,6 +56,16 @@ PER_CALL_TIMEOUT_SEC = 25.0
 # where the LLM keeps calling save_profile_field on the same value.
 MAX_ITERATIONS = 5
 
+# Transient-error retry policy (2026-05-15 / KI-singlebrain-503).
+# Live HF Space logs (rohitsar567/InsuranceBot, 2026-05-15 08:15Z) show
+# Gemini intermittently returns HTTP 503 "model is currently experiencing
+# high demand" — sometimes 3 in a row on the same session — which immediately
+# tripped the orchestrator fallback. We retry ONCE on these transient codes
+# with a short backoff before raising SingleBrainError so the legacy
+# orchestrator only takes over on a genuinely sustained outage.
+_TRANSIENT_HTTP_CODES = {429, 500, 502, 503, 504}
+_TRANSIENT_RETRY_BACKOFF_SEC = 1.5
+
 
 SYSTEM_PROMPT = """You are an Indian health-insurance advisor speaking with a customer.
 
@@ -377,6 +387,13 @@ async def _gemini_call(
 ) -> dict:
     """Single non-streaming Gemini generateContent call. Returns the raw
     JSON payload. Raises SingleBrainError on any 4xx/5xx/transport error.
+
+    Internal retry: on transient failures (HTTP 429/5xx, httpx
+    TimeoutException, httpx.HTTPError) we retry ONCE after a short
+    backoff before raising. This soaks up the brief Gemini "high demand"
+    503 bursts observed live (2026-05-15) so we don't fall through to
+    the legacy orchestrator mid-session for what is usually a sub-second
+    blip on the provider side.
     """
     url = f"{GEMINI_BASE_URL}/{model}:generateContent?key={api_key}"
     body: dict = {
@@ -397,34 +414,79 @@ async def _gemini_call(
         pool=2.0,
     )
 
-    async with httpx.AsyncClient(timeout=client_timeout) as client:
-        try:
-            resp = await client.post(url, headers=headers, json=body)
-        except (asyncio.CancelledError, KeyboardInterrupt, SystemExit):
-            raise
-        except httpx.TimeoutException as e:
-            raise SingleBrainError(
-                f"Gemini timeout after {timeout_sec:.1f}s (model={model})"
-            ) from e
-        except httpx.HTTPError as e:
-            raise SingleBrainError(
-                f"Gemini transport error ({type(e).__name__}): {str(e)[:200]}"
-            ) from e
+    last_err: Optional[str] = None
+    last_status: Optional[int] = None
+    # 2 attempts total: initial + 1 retry on transient failure.
+    for attempt in range(2):
+        async with httpx.AsyncClient(timeout=client_timeout) as client:
+            try:
+                resp = await client.post(url, headers=headers, json=body)
+            except (asyncio.CancelledError, KeyboardInterrupt, SystemExit):
+                raise
+            except httpx.TimeoutException as e:
+                last_err = (
+                    f"Gemini timeout after {timeout_sec:.1f}s (model={model})"
+                )
+                last_status = None
+                if attempt == 0:
+                    _log.warning(
+                        "single_brain transient timeout (attempt=1); "
+                        "retrying once after %.1fs backoff",
+                        _TRANSIENT_RETRY_BACKOFF_SEC,
+                    )
+                    await asyncio.sleep(_TRANSIENT_RETRY_BACKOFF_SEC)
+                    continue
+                raise SingleBrainError(last_err) from e
+            except httpx.HTTPError as e:
+                last_err = (
+                    f"Gemini transport error "
+                    f"({type(e).__name__}): {str(e)[:200]}"
+                )
+                last_status = None
+                if attempt == 0:
+                    _log.warning(
+                        "single_brain transient transport error "
+                        "(attempt=1, %s); retrying once after %.1fs backoff",
+                        type(e).__name__, _TRANSIENT_RETRY_BACKOFF_SEC,
+                    )
+                    await asyncio.sleep(_TRANSIENT_RETRY_BACKOFF_SEC)
+                    continue
+                raise SingleBrainError(last_err) from e
 
-    if resp.status_code >= 400:
-        detail = ""
-        try:
-            detail = resp.text[:500]
-        except Exception:
-            pass
-        raise SingleBrainError(
-            f"Gemini HTTP {resp.status_code}: {detail}"
-        )
+        if resp.status_code >= 400:
+            detail = ""
+            try:
+                detail = resp.text[:500]
+            except Exception:
+                pass
+            last_status = resp.status_code
+            last_err = f"Gemini HTTP {resp.status_code}: {detail}"
+            # Transient → retry once. Permanent (4xx like 400/401/403/404) →
+            # raise immediately; retrying won't help.
+            if (
+                attempt == 0
+                and resp.status_code in _TRANSIENT_HTTP_CODES
+            ):
+                _log.warning(
+                    "single_brain transient HTTP %d (attempt=1); "
+                    "retrying once after %.1fs backoff",
+                    resp.status_code, _TRANSIENT_RETRY_BACKOFF_SEC,
+                )
+                await asyncio.sleep(_TRANSIENT_RETRY_BACKOFF_SEC)
+                continue
+            raise SingleBrainError(last_err)
 
-    try:
-        return resp.json()
-    except Exception as e:  # noqa: BLE001
-        raise SingleBrainError(f"Gemini malformed JSON: {e}") from e
+        try:
+            return resp.json()
+        except Exception as e:  # noqa: BLE001
+            raise SingleBrainError(f"Gemini malformed JSON: {e}") from e
+
+    # Defensive — loop fell through without returning or raising. Should
+    # be unreachable, but raise so we never silently return None.
+    raise SingleBrainError(
+        last_err
+        or f"Gemini exhausted retries (last_status={last_status})"
+    )
 
 
 def _extract_parts(payload: dict) -> list[dict]:
