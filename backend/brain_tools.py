@@ -207,15 +207,51 @@ async def retrieve_policies(
             if getattr(profile, slot, None) in (None, "", [])
         ]
         if missing:
+            # KI-Z6-NONE follow-up (2026-05-15): make the response
+            # extremely directive so Gemini doesn't burn an iteration
+            # re-trying retrieve_policies on the same incomplete profile.
+            # Provide an exact_question string the model can literally
+            # relay to the user for the first missing slot.
+            _SLOT_QUESTIONS = {
+                "name": "What's your name?",
+                "age": "How old are you?",
+                "dependents": (
+                    "Who would you like the cover to include — just you, "
+                    "or spouse / kids / parents?"
+                ),
+                "location_tier": "Which city do you live in?",
+                "income_band": (
+                    "Roughly what's your annual household income — "
+                    "under 10 lakh, 10-25 lakh, or above 25 lakh?"
+                ),
+                "primary_goal": (
+                    "Is this your first health policy, an upgrade, for "
+                    "tax planning, or to find a cheaper option?"
+                ),
+                "health_conditions": (
+                    "Do you or your family have any pre-existing health "
+                    "conditions like diabetes, BP, or thyroid? If none, "
+                    "just say no."
+                ),
+            }
+            first = missing[0]
             return {
                 "chunks": [],
                 "count": 0,
                 "error": "profile_incomplete",
                 "missing_slots": missing,
+                "action_required": "ask_user_for",
+                "field": first,
+                "exact_question": _SLOT_QUESTIONS.get(
+                    first,
+                    f"Could you share your {first.replace('_', ' ')}?",
+                ),
                 "instruction": (
                     f"Profile is incomplete — missing: {', '.join(missing)}. "
-                    "Do NOT make a recommendation. Ask the user for the "
-                    "missing slot(s) before calling retrieve_policies again."
+                    "Do NOT call retrieve_policies again this turn. Do NOT "
+                    "retry save_profile_field for the same field. Emit a "
+                    "TEXT reply that asks the user the `exact_question` "
+                    "above verbatim."
                 ),
             }
 
@@ -490,7 +526,21 @@ def _coerce_existing_cover(value: Any) -> Optional[int]:
 
 
 def _coerce_health_conditions(value: Any) -> Optional[list[str]]:
-    """Always return list[str] lowercase, stripped, empties dropped."""
+    """Always return list[str] lowercase, stripped, empties dropped.
+
+    KI-Z6-NONE (2026-05-15): "none" / "no" / "n/a" — used to be stripped to
+    `[]`, but downstream `save_profile_field` then hits the KI-091 null-
+    overwrite guard (`normalized in (None, "", [])`) and refuses to persist
+    the slot. Result: profile.health_conditions stays empty forever,
+    `_profile_complete` returns False, retrieve_policies returns
+    profile_incomplete, the brain loops, MAX_ITERATIONS exhausts, the bot
+    emits "Sorry — I lost my train of thought" (W1 Turn 3 live blocker).
+
+    Fix: keep the explicit-negation sentinel `["none"]` so:
+      • the slot is non-empty → _profile_complete=True → retrieve fires
+      • downstream consumers can still detect "no PED" via the literal
+        token `"none"` in the list (callers already lowercase-compare).
+    """
     if value is None:
         return None
     if isinstance(value, str):
@@ -501,9 +551,15 @@ def _coerce_health_conditions(value: Any) -> Optional[list[str]]:
     else:
         items = [str(value).strip()]
     cleaned = [t.lower() for t in items if t]
-    # "none" / "no" → empty list (user explicitly said no conditions).
-    cleaned = [t for t in cleaned if t not in {"none", "no", "n/a", "na", "nil"}]
-    return cleaned
+    # Explicit-negation tokens — collapse to the canonical sentinel
+    # `["none"]` rather than `[]` so the slot is captured, not blanked.
+    _NEGATION = {"none", "no", "n/a", "na", "nil", "nothing", "healthy"}
+    if cleaned and all(t in _NEGATION for t in cleaned):
+        return ["none"]
+    # Mixed input ("diabetes, none") — drop the negation noise, keep real
+    # conditions.
+    real = [t for t in cleaned if t not in _NEGATION]
+    return real
 
 
 __all__ = [

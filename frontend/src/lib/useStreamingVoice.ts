@@ -46,8 +46,18 @@ import {
   retryPostTranscribe,
   scaleSpeechZcrBand,
   AdaptiveNoiseFloor,
-  type VoiceError,
+  type VoiceError as VoiceErrorBase,
 } from "./voice_resilience";
+
+// W1 (2026-05-15) — additive 4th voice-error code. Surfaces a silent
+// `getUserMedia` permission/denial failure (NotAllowedError /
+// NotFoundError / SecurityError / generic DOMException) so page.tsx can
+// render an actionable banner and revert the "Voice on" pill. Kept as a
+// local widening of the base `VoiceError` union from voice_resilience.ts
+// (which we don't touch per scope) — callers see the same
+// `onVoiceError(err: VoiceError) => void` shape, just with one more legal
+// string value.
+export type VoiceError = VoiceErrorBase | "mic_permission_denied";
 
 // KI-189 (2026-05-15) — live-speak barge-in tuning constants.
 // The MediaRecorder mic stream IS echo-cancelled by the browser (KI-185
@@ -453,8 +463,47 @@ export function useStreamingVoice(
       console.debug("[useStreamingVoice] MediaRecorder started", { mime: recorderMimeRef.current });
       return true;
     } catch (err) {
-      console.debug("[useStreamingVoice] MediaRecorder init failed — falling back to Web Speech only", err);
+      // W1 (2026-05-15) — DOMException name → VoiceError mapping.
+      //   NotAllowedError / SecurityError → user denied or browser-blocked
+      //   NotFoundError / OverconstrainedError → no usable input device
+      //   NotReadableError / AbortError → OS-level mic owned by another app
+      //   anything else (incl. plain Error) → treat as denial so the UI still
+      //                                       surfaces an actionable banner
+      // ALL of these map to "mic_permission_denied" because the user-visible
+      // remediation is the same: open site permissions, allow mic, reload.
+      // Returning `false` alone was insufficient — `start()` calls this via
+      // `void ensureAudioCapture()` and never sees the rejection, so the pill
+      // stayed at "Voice on" with zero mic. Emitting onVoiceError + flipping
+      // wantRunningRef false + onListening(false) is the recovery contract.
+      const name = (err as { name?: string } | null)?.name ?? "Error";
+      console.debug(
+        "[useStreamingVoice] getUserMedia / MediaRecorder init failed",
+        { name, err },
+      );
       recorderActiveRef.current = false;
+      // `getUserMedia` rejection happens BEFORE we assign mediaStreamRef /
+      // mediaRecorderRef, so there's nothing to tear down here. The
+      // `wantRunningRef = false` + `onListening(false)` below is enough to
+      // halt the SR auto-restart loop. The parent's `enabled = false` flip
+      // (driven by the banner code) will run stop() which idempotently
+      // re-runs full cleanup.
+      // Surface to the page-level banner. Cast through the local widened
+      // VoiceError union (W1) so TS accepts the new string code.
+      try {
+        onVoiceErrorRef.current("mic_permission_denied" as VoiceError);
+      } catch {
+        /* never let a user-supplied callback crash the hook */
+      }
+      // Stop the recognition restart loop and reset listening state so the
+      // pill doesn't stay green over a dead mic. The parent (page.tsx) is
+      // expected to also flip `enabled` back to false on the banner code,
+      // which calls our `stop()` and idempotently cleans up.
+      wantRunningRef.current = false;
+      try {
+        onListeningRef.current(false);
+      } catch {
+        /* ignore */
+      }
       return false;
     }
   }, [pickRecorderMime]);
@@ -837,10 +886,27 @@ export function useStreamingVoice(
     }
     finalsRef.current = [];
     finalsConsumedRef.current = 0;
-    // Kick off audio capture in parallel with recognition. If it fails we
-    // degrade to Web Speech-only — onend handles the fallback path.
-    void ensureAudioCapture();
-    safeStart();
+    // W1 (2026-05-15) — gate the SR start on a successful `getUserMedia`.
+    // Previously this was `void ensureAudioCapture(); safeStart();` which
+    // raced the two in parallel: on a Chromium / iOS Safari permission
+    // denial, the recognition started, the pill flipped to "Voice on —
+    // just speak", but the mic was dead (zero audio, no banner, no log).
+    // By awaiting the capture result and skipping safeStart() on a hard
+    // denial, the pill-flip (driven by page.tsx's
+    // `onVoiceError("mic_permission_denied")` handler) lands BEFORE
+    // recognition kicks off. The ensureAudioCapture catch already sets
+    // wantRunningRef=false and emits onVoiceError on its way out.
+    void (async () => {
+      const ok = await ensureAudioCapture();
+      // Hard denial path: capture failed AND ensureAudioCapture reset
+      // wantRunningRef. Skip recognition.start — page.tsx will flip
+      // `enabled` to false on the banner code, which triggers stop().
+      if (!ok && !wantRunningRef.current) return;
+      // Soft-degraded path: capture failed but wantRunning is still true
+      // (e.g. MediaRecorder mime mismatch on a niche browser). Fall back
+      // to Web-Speech-only — onend's restart loop handles the fallback.
+      safeStart();
+    })();
   }, [isSupported, buildRecognition, safeStart, ensureAudioCapture]);
 
   const stop = useCallback(() => {

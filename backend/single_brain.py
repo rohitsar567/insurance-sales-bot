@@ -54,7 +54,13 @@ PER_CALL_TIMEOUT_SEC = 25.0
 
 # Max iterations of the tool-call loop. Prevents runaway tool-call cycles
 # where the LLM keeps calling save_profile_field on the same value.
-MAX_ITERATIONS = 5
+# KI-Z6-NONE (2026-05-15): bumped 5 → 8 after W1 Turn 3 live blocker.
+# The Z6 "no medical issues" path used to need: save(health=none) +
+# retrieve → profile_incomplete → save(health=none) + retrieve → loop
+# exhaust. Coercer fix in brain_tools resolves the primary cause; the
+# extra headroom protects against the next variant where Gemini chains
+# 3-4 saves + 2 retrieves on a long pre-recommendation user turn.
+MAX_ITERATIONS = 8
 
 # Transient-error retry policy (2026-05-15 / KI-singlebrain-503).
 # Live HF Space logs (rohitsar567/InsuranceBot, 2026-05-15 08:15Z) show
@@ -455,6 +461,61 @@ def _detect_language(user_text: str) -> str:
         if "ऀ" <= ch <= "ॿ":
             return "indic"
     return "en"
+
+
+_FALLBACK_SLOT_QUESTIONS = {
+    "name": "What's your name?",
+    "age": "How old are you?",
+    "dependents": (
+        "Who would you like the cover to include — just you, "
+        "or spouse / kids / parents?"
+    ),
+    "location_tier": "Which city do you live in?",
+    "income_band": (
+        "Roughly what's your annual household income — under 10 lakh, "
+        "10-25 lakh, or above 25 lakh?"
+    ),
+    "primary_goal": (
+        "Is this your first health policy, an upgrade, for tax planning, "
+        "or to find a cheaper option?"
+    ),
+    "health_conditions": (
+        "Do you or your family have any pre-existing health conditions "
+        "like diabetes, BP, or thyroid? If none, just say no."
+    ),
+}
+
+_FALLBACK_REQUIRED_SLOTS = (
+    "name", "age", "dependents", "location_tier",
+    "income_band", "primary_goal", "health_conditions",
+)
+
+
+def _synthesise_fallback(profile) -> str:
+    """KI-Z6-NONE (2026-05-15): replace the legacy 'I lost my train of
+    thought' reply with a useful next-question synthesised from the
+    profile snapshot. If a slot is still missing, ask for the first
+    missing one verbatim. If everything's captured, ask for a recap
+    confirmation. Never empty-string — always returns user-visible text.
+    """
+    try:
+        for slot in _FALLBACK_REQUIRED_SLOTS:
+            v = getattr(profile, slot, None)
+            if v in (None, "", []):
+                return _FALLBACK_SLOT_QUESTIONS.get(
+                    slot,
+                    f"Could you share your {slot.replace('_', ' ')}?",
+                )
+        # All slots present — ask the user to confirm before recommending.
+        return (
+            "Let me confirm what I have before pulling up options — "
+            "does this look right, or anything to update?"
+        )
+    except Exception:  # noqa: BLE001 — never fail the fallback
+        return (
+            "Could you tell me a bit more about what you're looking for "
+            "so I can pull up the right options?"
+        )
 
 
 def _classify_intent(user_text: str, tool_calls_made: list[str]) -> str:
@@ -933,16 +994,10 @@ async def handle_turn(
             "single_brain hit MAX_ITERATIONS=%d (tool_calls=%s)",
             MAX_ITERATIONS, tool_calls_made,
         )
-        last_text = (
-            last_text
-            or "Let me pause for a second — could you tell me a bit more about "
-               "what you're looking for, so I can give you a clean recommendation?"
-        )
+        last_text = last_text or _synthesise_fallback(session.profile)
 
     # Build TurnResult.
-    reply_text = last_text or (
-        "Sorry — I lost my train of thought there. Could you say that again?"
-    )
+    reply_text = last_text or _synthesise_fallback(session.profile)
 
     # Bug C secondary defense — log a WARNING if the reply name-drops an
     # insurer/product brand even though no retrieve_policies result was

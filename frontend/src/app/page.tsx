@@ -220,6 +220,16 @@ export default function Page() {
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [voiceListening, setVoiceListening] = useState(false);
   const [voicePermDenied, setVoicePermDenied] = useState(false);
+  // Hydration guard — `streamingVoice.isSupported` resolves via `typeof
+  // window` inside `useStreamingVoice`, so it's `false` on the SSR pass and
+  // (typically) `true` on the client. Rendering JSX that branches on it
+  // before hydration completes triggers React error #418 (text content
+  // mismatch / hydration failure). We pin the SSR + first-client-render
+  // output to the same shape, then flip on a post-mount effect.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   // KI-223 (2026-05-15) — V1.1 / V1.2. Structured voice-error banner state.
   // Populated by useStreamingVoice's onVoiceError callback when the hook hits
   // a recoverable failure mode that the user can act on (tap to unlock audio,
@@ -288,11 +298,21 @@ export default function Page() {
     },
     onListening: setVoiceListening,
     // KI-223 (2026-05-15) — V1.1 / V1.2. Surface recoverable voice failures
-    // as a top-right banner. The hook emits one of three error strings; the
+    // as a top-right banner. The hook emits one of four error strings; the
     // banner state stamps a fresh `ts` so the auto-dismiss timer restarts on
     // every new emission (useful when the same error fires twice in a row).
+    // W1 (2026-05-15) — added "mic_permission_denied". When the hook reports
+    // a getUserMedia DOMException (NotAllowedError / NotFoundError / etc.)
+    // we also revert the pill back to grey + set the legacy permDenied flag
+    // so the "🔇 Mic blocked" branch fires. Without these flips the pill
+    // stayed green over a dead mic ("green pill, zero audio") until the user
+    // manually toggled off — the exact silent-failure mode this fix targets.
     onVoiceError: (error) => {
       setVoiceErrorBanner({ type: error, ts: Date.now() });
+      if (error === "mic_permission_denied") {
+        setVoicePermDenied(true);
+        setVoiceEnabled(false);
+      }
     },
   });
 
@@ -334,7 +354,13 @@ export default function Page() {
   const live = {
     live: voiceEnabled,
     recording: voiceListening,
-    micPermissionDenied: voicePermDenied || !streamingVoice.isSupported,
+    // Hydration-safe: until the post-mount effect runs, force this to false
+    // so the SSR pass and the first client render emit identical JSX (the
+    // Voice toggle pill, not the "Mic blocked" badge). After mount we trust
+    // the hook's `isSupported` flag (which reads `window.SpeechRecognition`).
+    micPermissionDenied: mounted
+      ? (voicePermDenied || !streamingVoice.isSupported)
+      : false,
     setLive: setVoiceEnabled,
   };
 
@@ -1065,6 +1091,17 @@ export default function Page() {
             )}
             {voiceErrorBanner.type === "worklet_failed" && (
               <span>Audio capture failed — please reload the page.</span>
+            )}
+            {/* W1 (2026-05-15) — silent getUserMedia denial. The default
+                non-yellow branch above already renders a red background;
+                we just supply the human-readable copy here. Triggered when
+                the user (or browser policy / OS / another app holding the
+                mic) rejects the permission prompt. */}
+            {voiceErrorBanner.type === "mic_permission_denied" && (
+              <span>
+                Microphone access denied. Click the lock icon next to the URL
+                bar and allow microphone, then reload.
+              </span>
             )}
           </div>
           <button
