@@ -539,6 +539,42 @@ export function useStreamingVoice(
     return () => clearInterval(tick);
   }, [enabled, isSupported, isTextRequestPendingRef, safeStart]);
 
+  // KI-174 (2026-05-15) — immediate-revival on visibility/focus changes.
+  // User reported: "sometimes when I go away from clicking the text box,
+  // it seems to not input my voice anymore. I have to restart the whole
+  // voice thing." Root cause: Chrome's SpeechRecognition auto-stops
+  // when the tab loses visibility (tab switch, app switch, screenshot,
+  // OS modal). The KI-173 heartbeat is throttled to ~1Hz when the tab
+  // is hidden, so it takes several seconds to revive after returning.
+  // Force-revival on:
+  //   - document `visibilitychange` → visible
+  //   - window `focus`
+  // Both check wantRunningRef + isTextRequestPendingRef before firing.
+  useEffect(() => {
+    if (!enabled || !isSupported) return;
+    if (typeof window === "undefined" || typeof document === "undefined") return;
+
+    const tryRevive = (trigger: string) => {
+      if (
+        wantRunningRef.current
+        && !isTextRequestPendingRef.current
+        && document.visibilityState === "visible"
+      ) {
+        console.debug("[useStreamingVoice] revival trigger=" + trigger);
+        safeStart();
+      }
+    };
+
+    const onVisible = () => tryRevive("visibilitychange");
+    const onFocus = () => tryRevive("window.focus");
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onFocus);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [enabled, isSupported, isTextRequestPendingRef, safeStart]);
+
   // Unmount cleanup.
   useEffect(() => {
     return () => {
