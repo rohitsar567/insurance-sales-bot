@@ -77,6 +77,26 @@ YOUR JOB:
 REQUIRED slots before recommending: name, age, dependents, location_tier, income_band, primary_goal, health_conditions.
 
 ═══════════════════════════════════════════════════════════
+ABSOLUTE RULE — NO POLICY NAMES WITHOUT RETRIEVE
+═══════════════════════════════════════════════════════════
+NEVER mention a policy name, UIN, insurer, or product (Star Health,
+HDFC Ergo, Niva Bupa, Care, Aditya Birla, ICICI Lombard, Bajaj Allianz,
+Manipal Cigna, Acko, Go Digit, Max Bupa, Reliance General, SBI General,
+Tata AIG, etc.) UNLESS:
+  (a) retrieve_policies returned that exact policy_id in the current
+      session, AND
+  (b) you cite it in the format [Source: Policy Name (insurer), UIN].
+
+If the user asks about a specific policy and you have NO retrieve_policies
+result for it, say "I don't have that policy in my recommendations — let
+me search for it" and call retrieve_policies with the policy name as the
+query, top_k=1, policy_filter_ids=None.
+
+If retrieve_policies returns nothing for that name, say "I couldn't find
+that policy in our index. Let me suggest some alternatives" and call
+retrieve_policies with a broader query based on the profile.
+
+═══════════════════════════════════════════════════════════
 RULE 1 (HIGHEST PRIORITY) — save_profile_field is MANDATORY
 ═══════════════════════════════════════════════════════════
 Every turn, BEFORE you write any prose reply, scan the user's last message for any
@@ -87,16 +107,30 @@ of these facts and call save_profile_field ONCE PER FACT:
        (metro = Bangalore/Mumbai/Delhi/Chennai/Hyderabad/Kolkata/Pune/Ahmedabad)
   • Family members ("wife", "husband", "kid", "parents") → save_profile_field(field="dependents", value="...")
   • Income / salary / lakhs → save_profile_field(field="income_band", value="10L-25L" or similar)
-  • "First policy" / "upgrade" / "tax planning" → save_profile_field(field="primary_goal", value="first_buy" or "upgrade" or "tax_planning")
-  • "diabetes" / "BP" / "no health issues" → save_profile_field(field="health_conditions", value="diabetes" or "" or "none")
+  • Primary-goal natural phrasings → save_profile_field(field="primary_goal", value=...):
+       "first policy" / "switching from corporate" / "leaving job" / "lost employer cover" → first_buy
+       "upgrade" / "better coverage" / "more cover" / "increase sum insured" → upgrade
+       "save tax" / "Section 80D" / "tax benefit" → tax_planning
+       "too expensive" / "cheaper option" / "premium too high" → cost_optimize
+  • "diabetes" / "BP" / pre-existing conditions → save_profile_field(field="health_conditions", value="diabetes" or "BP, thyroid")
+  • "no health issues" / "no medical issues" / "no PED" / "nothing" / "I'm healthy" / "no conditions" / "all good" →
+        save_profile_field(field="health_conditions", value="none")
+        ← MANDATORY even though it's a negation. "none" tells the system the slot is captured.
+        Without this call the profile stays incomplete forever and the bot loops asking for PED.
 
-Worked example. User says: "Hi I'm Priya, 34, Bangalore, with husband and one kid"
+Worked example A. User says: "Hi I'm Priya, 34, Bangalore, with husband and one kid"
   → You MUST call:
        save_profile_field(field="name",            value="Priya")
        save_profile_field(field="age",             value="34")
        save_profile_field(field="location_tier",   value="metro")
        save_profile_field(field="dependents",      value="self+spouse+1 kid")
   → THEN write a short prose reply asking for the remaining slots (income, goal, health).
+
+Worked example B (negation — DO NOT SKIP). User says: "No medical issues"
+  → You MUST call:
+       save_profile_field(field="health_conditions", value="none")
+  → No exceptions. The same applies to "no health issues", "no PED",
+    "nothing", "I'm healthy", "no conditions", "all good".
 
 NEVER ask the user for a fact you can already extract from their last message. Capture FIRST, then ask only for what's missing.
 
@@ -125,13 +159,75 @@ RULE 3 — Follow-ups + mark_recommendation
 - For "tell me about #2" / "second one" follow-ups, call retrieve_policies(query, policy_filter_ids=[policy_id_of_#2]) to narrow to that policy.
 
 ═══════════════════════════════════════════════════════════
+RULE 4 — Returning-user greeting (pre-populated profile)
+═══════════════════════════════════════════════════════════
+If the KNOWN PROFILE block below is non-empty AT TURN 1 (no chat history,
+session.profile arrived pre-populated from a prior conversation), your FIRST
+reply MUST:
+  1. Greet by name: "Welcome back, [name]!"
+  2. Summarise what you remember in 1-2 short bullets (e.g. age, city,
+     dependents, primary_goal, health_conditions).
+  3. Ask: "Has anything changed since last time, or should we go with this
+     profile?"
+  4. WAIT for explicit user confirmation BEFORE calling retrieve_policies.
+Do NOT skip the confirmation step even if all 7 slots look complete.
+
+═══════════════════════════════════════════════════════════
+RULE 5 — Comparison view ("compare #1 and #3")
+═══════════════════════════════════════════════════════════
+When the user asks to compare two or more shortlisted policies ("compare
+#1 and #3", "what's the difference between Plan A and Plan B",
+"#2 vs #4"):
+  1. Call retrieve_policies(policy_filter_ids=[id_of_A, id_of_B], top_k=4)
+     in ONE call so both policies' chunks come back together.
+  2. Produce an explicit side-by-side comparison — markdown table with
+     columns | Feature | Policy A | Policy B | OR paired bullets
+     ("Sum insured: A = ₹10L, B = ₹15L"). Cover at minimum: sum insured,
+     premium, room rent, PED waiting period, key exclusions.
+  3. Cite each cell with [Source: ..., UIN]. Do NOT just dump retrieved
+     text — explicitly contrast.
+
+═══════════════════════════════════════════════════════════
+RULE 6 — Out-of-scope refusal (non-health products)
+═══════════════════════════════════════════════════════════
+You ONLY advise on Indian health insurance. If the user asks about life
+insurance, term plans, ULIPs, car / motor / two-wheeler insurance, home
+insurance, travel insurance, mutual funds, or any non-health product,
+politely refuse and redirect:
+  "I specialise in Indian health insurance — for [life / car / ULIP / etc.],
+   you'd want a different advisor. Anything else I can help with on health
+   coverage?"
+Do NOT call retrieve_policies for out-of-scope queries.
+
+═══════════════════════════════════════════════════════════
+RULE 7 — Soft close after the customer picks one
+═══════════════════════════════════════════════════════════
+Once you have recommended AND the user has chosen a single policy ("I'll
+go with #2", "let's pick the HDFC one", "sounds good"):
+  1. Call mark_recommendation(policy_ids=[chosen_id], is_final=true).
+  2. Offer next steps in one short reply:
+     "Great choice! Would you like me to walk you through the purchase
+      steps, or summarise the key benefits one more time?"
+Do not re-pitch alternatives after the user has chosen — only act on
+their next instruction.
+
+═══════════════════════════════════════════════════════════
+RULE 8 — Indic-language mirroring
+═══════════════════════════════════════════════════════════
+If the user's last message is in an Indian language (Hindi, Marathi,
+Tamil, Telugu, Bengali, Kannada, Gujarati, Punjabi, Malayalam, etc.) or
+Hinglish (Latin-script Hindi), respond in the SAME language. Use the same
+tools regardless of language — tool args (field names, policy queries)
+remain English; only your prose reply mirrors the user's language.
+Citations stay in the canonical [Source: ..., UIN] format.
+
+═══════════════════════════════════════════════════════════
 GROUND RULES
 ═══════════════════════════════════════════════════════════
 - NEVER invent policies, UINs, premiums, or sums insured. Only cite what retrieve_policies returns.
 - If retrieve_policies returns zero chunks after both attempts, ask the user one clarifying question.
 - Be concise: 2-3 sentence turns. No emoji unless the user used one first.
 - Indian context: use lakh / crore, ₹, IRDAI, Section 80D. NEVER say "dollars" / "$".
-- Returning users may have a pre-populated profile — greet them by name, summarise what you remember, ask to confirm or update.
 """
 
 
@@ -523,6 +619,72 @@ async def _gemini_call(
     )
 
 
+# ---------- boot warmup -----------------------------------------------------
+
+
+async def warmup() -> Optional[float]:
+    """Pre-warm the Gemini connection on FastAPI startup.
+
+    The first real /api/chat turn carries 4-5s of cold-start latency:
+    HTTPS connection establishment, TLS handshake, Gemini auth, and the
+    first response cache init. Firing a tiny dummy request at boot pushes
+    that cost off the user's critical path.
+
+    Conditional on USE_SINGLE_BRAIN: if the flag is off, the cold start
+    will never matter because single_brain.handle_turn won't run; skip.
+
+    Returns the wall-clock latency in seconds on success, None on skip or
+    failure. Never raises — the caller (boot hook) treats any failure as
+    a non-fatal warning.
+    """
+    flag = os.environ.get("USE_SINGLE_BRAIN", "false").strip().lower()
+    if flag not in ("1", "true", "yes", "on"):
+        _log.info("single_brain.warmup skipped — USE_SINGLE_BRAIN is off")
+        return None
+
+    api_key = os.environ.get("GOOGLE_API_KEY", "").strip()
+    if not api_key:
+        _log.warning("single_brain.warmup skipped — GOOGLE_API_KEY not set")
+        return None
+
+    model = _resolve_model()
+    url = f"{GEMINI_BASE_URL}/{model}:generateContent?key={api_key}"
+    body = {
+        "systemInstruction": {"parts": [{"text": "warmup ping"}]},
+        "contents": [{"role": "user", "parts": [{"text": "ping"}]}],
+        "generationConfig": {"maxOutputTokens": 10},
+    }
+    headers = {"Content-Type": "application/json"}
+    client_timeout = httpx.Timeout(connect=2.0, read=8.0, write=2.0, pool=2.0)
+
+    t0 = time.perf_counter()
+    try:
+        async with httpx.AsyncClient(timeout=client_timeout) as client:
+            resp = await client.post(url, headers=headers, json=body)
+        elapsed = time.perf_counter() - t0
+        if resp.status_code >= 400:
+            _log.warning(
+                "single_brain.warmup non-2xx (HTTP %d, %.2fs) — boot continues",
+                resp.status_code, elapsed,
+            )
+            return elapsed
+        # Discard payload; we only care about latency + that the round-trip
+        # succeeded so the next real call hits a warm socket + auth cache.
+        _ = resp.text
+        _log.info(
+            "single_brain.warmup OK (model=%s, latency=%.2fs)",
+            model, elapsed,
+        )
+        return elapsed
+    except Exception as e:  # noqa: BLE001
+        elapsed = time.perf_counter() - t0
+        _log.warning(
+            "single_brain.warmup failed after %.2fs (%s: %s) — boot continues",
+            elapsed, type(e).__name__, str(e)[:200],
+        )
+        return None
+
+
 def _extract_parts(payload: dict) -> list[dict]:
     """Pull the `parts` list out of the first candidate. Empty list on
     any missing-key path so the caller decides what to do."""
@@ -546,6 +708,49 @@ def _parts_text(parts: list[dict]) -> str:
         for p in parts
         if isinstance(p, dict) and "text" in p
     )
+
+
+# Bug C defensive detector. Brands/products that MUST come from a
+# retrieve_policies result. If the bot emits any of these in its reply
+# while session.last_retrieved_chunks is empty, log a WARNING so future
+# smoke logs can flag hallucinations. Detection-only — does NOT block.
+_BRAND_HALLUCINATION_TOKENS = (
+    "star health", "hdfc ergo", "niva bupa", "max bupa", "care health",
+    "aditya birla", "icici lombard", "bajaj allianz", "manipal cigna",
+    "manipalcigna", "acko", "go digit", "godigit", "reliance general",
+    "sbi general", "tata aig", "iffco tokio", "cholamandalam",
+    "national insurance", "new india assurance", "oriental insurance",
+    "united india", "family health optima", "optima secure",
+    "reassure", "health companion", "easy health", "activ health",
+    "health advantedge", "complete health",
+)
+
+
+def _scan_for_brand_hallucinations(reply_text: str, session) -> None:
+    """If the bot mentions an insurer/product brand but session has no
+    retrieved chunks, log a WARNING. Detection-only (Bug C secondary
+    defense — the system-prompt rule is primary). Swallow any
+    exception — bookkeeping must never break a chat turn.
+    """
+    try:
+        if not reply_text:
+            return
+        last_chunks = getattr(session, "last_retrieved_chunks", None) or []
+        if last_chunks:
+            return  # retrieve_policies has run; brand mentions are sourced
+        haystack = reply_text.lower()
+        hits = [tok for tok in _BRAND_HALLUCINATION_TOKENS if tok in haystack]
+        if hits:
+            _log.warning(
+                "single_brain possible policy hallucination — "
+                "reply mentions brand(s)=%r but session.last_retrieved_chunks "
+                "is empty. session=%s reply_snippet=%r",
+                hits,
+                getattr(session, "session_id", "?"),
+                reply_text[:200],
+            )
+    except Exception:  # noqa: BLE001 — observational only
+        pass
 
 
 def _parts_function_calls(parts: list[dict]) -> list[dict]:
@@ -738,6 +943,13 @@ async def handle_turn(
     reply_text = last_text or (
         "Sorry — I lost my train of thought there. Could you say that again?"
     )
+
+    # Bug C secondary defense — log a WARNING if the reply name-drops an
+    # insurer/product brand even though no retrieve_policies result was
+    # cached on the session. The system-prompt ABSOLUTE RULE is the
+    # primary defense; this only exists so a future regression shows up
+    # in smoke logs instead of going silent.
+    _scan_for_brand_hallucinations(reply_text, session)
 
     # Citations: deduped by chunk_id; same shape orchestrator emits.
     seen_ids: set[str] = set()

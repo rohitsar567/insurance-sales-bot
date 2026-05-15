@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Optional
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -196,6 +197,50 @@ app.add_middleware(
 )
 
 
+# Bug B (2026-05-15) — /api/chat raw 422 leak. Live smoke saw the frontend
+# render `{"detail":[{"type":"missing","loc":["body","user_text"]...}]}` as
+# the bot reply because a malformed POST (missing user_text) hit FastAPI's
+# default RequestValidationError handler — that body bypasses our
+# ChatResponse envelope and the frontend has no shape-mapping for it.
+# We intercept the chat endpoint specifically and return a clean
+# ChatResponse-shaped JSON so frontend parsing never errors out. Other
+# endpoints keep FastAPI's default 422 behaviour (which their callers
+# already handle).
+@app.exception_handler(RequestValidationError)
+async def _validation_exception_handler(request: Request, exc: RequestValidationError):
+    if request.url.path == "/api/chat":
+        logging.warning(
+            "chat endpoint received malformed body — returning graceful "
+            "ChatResponse-shaped 200 instead of raw 422. errors=%r",
+            exc.errors()[:3],
+        )
+        return JSONResponse(
+            status_code=200,
+            content={
+                "reply_text": (
+                    "Sorry, something went wrong — try again."
+                ),
+                "citations": [],
+                "brain_used": "error_fallback",
+                "intent": "qa",
+                "language": "en",
+                "latency_ms": 0,
+                "session_id": "",
+                "audio_base64": None,
+                "audio_mime": None,
+                "faithfulness_passed": True,
+                "faithfulness_reasons": [],
+                "blocked": False,
+                "profile_updates": {},
+            },
+        )
+    # Default behaviour for every other endpoint.
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors()},
+    )
+
+
 # ---------- Admin panel + LLM health background loop ----------
 # Mount the password-gated admin endpoints (KI-097). Unauthorized callers
 # get 401 Unauthorized. The earlier IP allowlist gate (ADMIN_IP_ALLOWLIST +
@@ -231,6 +276,28 @@ async def _startup_llm_health_probe():
     import asyncio
     from backend import llm_health
     asyncio.create_task(llm_health.background_probe_loop())
+
+
+@app.on_event("startup")
+async def _startup_single_brain_warmup():
+    """Pre-warm the Gemini single-brain connection so the FIRST /api/chat turn
+    doesn't eat 4-5s of cold-start latency (TLS + auth + cache init).
+
+    Wrapped in try/except — warmup is an optimization, not a boot
+    requirement. A failed warmup must NEVER crash the server.
+    """
+    try:
+        from backend import single_brain
+        latency = await single_brain.warmup()
+        if latency is not None:
+            logging.info(
+                "single_brain warmup completed at boot (%.2fs)", latency,
+            )
+    except Exception as e:  # noqa: BLE001
+        logging.warning(
+            "single_brain warmup raised at top level (%s: %s) — boot continues",
+            type(e).__name__, e,
+        )
 
 
 async def _startup_purge_dangling_profile_chunks():
@@ -607,36 +674,98 @@ async def chat(req: ChatRequest, request: Request):
             log_turn({"session_id": session_id, "tts_error": f"{type(e).__name__}: {e}"})
             audio_mime = None
 
-    log_turn({
-        "session_id": session_id,
-        "user_text": req.user_text,
-        "reply_text": turn.reply_text,
-        "brain_used": turn.brain_used,
-        "intent": turn.intent,
-        "language": turn.language,
-        "latency_ms": turn.latency_ms,
-        "retrieved_chunk_ids": turn.retrieved_chunk_ids,
-        "citation_count": len(turn.citations),
-        "faithfulness_passed": turn.faithfulness_passed,
-        "faithfulness_reasons": turn.faithfulness_reasons,
-        "blocked": turn.blocked,
-    })
+    try:
+        log_turn({
+            "session_id": session_id,
+            "user_text": req.user_text,
+            "reply_text": turn.reply_text,
+            "brain_used": turn.brain_used,
+            "intent": turn.intent,
+            "language": turn.language,
+            "latency_ms": turn.latency_ms,
+            "retrieved_chunk_ids": turn.retrieved_chunk_ids,
+            "citation_count": len(turn.citations),
+            "faithfulness_passed": turn.faithfulness_passed,
+            "faithfulness_reasons": turn.faithfulness_reasons,
+            "blocked": turn.blocked,
+        })
+    except Exception:  # noqa: BLE001 — log IO must never block a reply
+        pass
 
-    return ChatResponse(
-        reply_text=turn.reply_text,
-        citations=[CitationOut(**c) for c in turn.citations],
-        brain_used=turn.brain_used,
-        intent=turn.intent,
-        language=turn.language,
-        latency_ms=turn.latency_ms,
-        session_id=session_id,
-        audio_base64=audio_b64,
-        audio_mime=audio_mime,
-        faithfulness_passed=turn.faithfulness_passed,
-        faithfulness_reasons=turn.faithfulness_reasons,
-        blocked=turn.blocked,
-        profile_updates=turn.profile_updates,
-    )
+    # Bug B defense — CitationOut requires page_start/page_end as ints, but
+    # single_brain.TurnResult.citations dicts don't carry those fields (its
+    # citation shape is {chunk_id, policy_id, policy_name, insurer_slug,
+    # doc_type, source_url, score}). Without this normalisation the
+    # Pydantic constructor below would raise ValidationError, the
+    # exception would escape /api/chat, and FastAPI would return a raw
+    # 500 (or its default JSON error envelope) that the frontend can't
+    # parse as a ChatResponse. We patch every citation dict to satisfy
+    # CitationOut's required fields and wrap the whole response build in
+    # an explicit try/except so a malformed citation can never silently
+    # bypass our envelope.
+    try:
+        safe_citations: list[CitationOut] = []
+        for c in turn.citations or []:
+            if not isinstance(c, dict):
+                continue
+            try:
+                safe_citations.append(
+                    CitationOut(
+                        policy_id=str(c.get("policy_id", "") or ""),
+                        policy_name=str(c.get("policy_name", "") or ""),
+                        insurer_slug=str(c.get("insurer_slug", "") or ""),
+                        page_start=int(c.get("page_start", 0) or 0),
+                        page_end=int(c.get("page_end", 0) or 0),
+                        source_url=str(c.get("source_url", "") or ""),
+                        score=float(c.get("score", 0.0) or 0.0),
+                    )
+                )
+            except Exception as _cite_err:  # noqa: BLE001
+                logging.warning(
+                    "drop malformed citation (session=%s): %s — payload=%r",
+                    session_id, _cite_err, c,
+                )
+
+        return ChatResponse(
+            reply_text=turn.reply_text,
+            citations=safe_citations,
+            brain_used=turn.brain_used,
+            intent=turn.intent,
+            language=turn.language,
+            latency_ms=turn.latency_ms,
+            session_id=session_id,
+            audio_base64=audio_b64,
+            audio_mime=audio_mime,
+            faithfulness_passed=turn.faithfulness_passed,
+            faithfulness_reasons=turn.faithfulness_reasons,
+            blocked=turn.blocked,
+            profile_updates=turn.profile_updates,
+        )
+    except Exception as _resp_err:  # noqa: BLE001
+        # Anything else (TypeError/AttributeError/ValidationError) on the
+        # response-build path — return the standard error_fallback shape
+        # so the frontend always parses cleanly. Bug B catch-all.
+        logging.exception(
+            "chat response-build failed (session=%s): %s",
+            session_id, _resp_err,
+        )
+        return ChatResponse(
+            reply_text=(
+                "Sorry, something went wrong — try again"
+            ),
+            citations=[],
+            brain_used="error_fallback",
+            intent="qa",
+            language="en",
+            latency_ms=int((time.time() - t_chat0) * 1000),
+            session_id=session_id,
+            audio_base64=None,
+            audio_mime=None,
+            faithfulness_passed=True,
+            faithfulness_reasons=[],
+            blocked=False,
+            profile_updates={},
+        )
 
 
 @app.get("/api/coverage", response_model=CoverageResponse)
