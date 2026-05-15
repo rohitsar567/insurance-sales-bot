@@ -611,14 +611,18 @@ async def coverage():
     # full algorithm rationale.
     extracted_stems_cov = {fp.stem for fp in sorted_files}
 
-    # Phase A — extracted parents claim their UINs first.
+    # Phase A — extracted parents claim their UINs first. We also retain the
+    # parsed extracted JSON so Phase B can run the KI-145 material-diff check
+    # without re-reading from disk.
     uin_to_parent_cov: dict[str, str] = {}
     extracted_uin_cov: dict[str, str] = {}
+    extracted_data_cov: dict[str, dict] = {}
     for fp in sorted_files:
         try:
             _d = _json.loads(fp.read_text())
         except Exception:
             continue
+        extracted_data_cov[fp.stem] = _d
         _u = _d.get("uin_code")
         if isinstance(_u, dict):
             _u = _u.get("value")
@@ -647,7 +651,15 @@ async def coverage():
         parent_id: str | None = None
         if curated_uin and curated_uin in uin_to_parent_cov \
                 and uin_to_parent_cov[curated_uin] != curated_pid:
-            parent_id = uin_to_parent_cov[curated_uin]
+            # KI-145 (2026-05-15) — same UIN ≠ same product. Compare
+            # decision-critical fields against the candidate extracted
+            # parent; if 2+ disagree (non-null on both sides) this is a
+            # VARIANT and stays as its own card. Pure RENAME (< 2 diffs)
+            # falls through to the alias-merge as before.
+            candidate = uin_to_parent_cov[curated_uin]
+            ext_data = extracted_data_cov.get(candidate, {})
+            if _ki145_material_diffs(cdata, ext_data) < 2:
+                parent_id = candidate
         elif curated_uin:
             uin_to_parent_cov[curated_uin] = curated_pid
 
@@ -657,7 +669,12 @@ async def coverage():
             # extracted; multi-variant PDFs naturally share one filing).
             fb_parent = _source_pdf_to_policy_id(cdata.get("_primary_source_pdf"))
             if fb_parent and fb_parent in extracted_stems_cov and fb_parent != curated_pid:
-                parent_id = fb_parent
+                # KI-145 — same material-diff gate on the source-PDF path so
+                # multi-variant PDFs don't drag genuinely different products
+                # onto the first claimant via source-PDF coincidence.
+                ext_data = extracted_data_cov.get(fb_parent, {})
+                if _ki145_material_diffs(cdata, ext_data) < 2:
+                    parent_id = fb_parent
 
         if parent_id:
             direct_parent_cov[curated_pid] = parent_id
@@ -1354,6 +1371,112 @@ def _merge_curated(extracted: dict, curated: dict | None) -> dict:
     return merged
 
 
+# KI-145 (2026-05-15) — decision-critical fields used to distinguish a
+# RENAME (curated entry folds onto extracted parent) from a VARIANT (same
+# UIN but materially different product — must stay as its own card).
+# Same UIN ≠ same product: regulators file one "wordings" PDF that covers
+# multiple marketed variants (e.g. ProHealth Prime vs ProHealth Protect
+# both filed under MCIHLIP24011V072324; copay/PED/maternity/NCB differ).
+_KI145_DIFF_FIELDS: tuple[str, ...] = (
+    "copayment_pct",
+    "pre_existing_disease_waiting_months",
+    "maternity_coverage",
+    "maternity_waiting_months",
+    "room_rent_capping",
+    "restoration_benefit",
+    "no_claim_bonus_pct",
+    "post_hospitalization_days",
+)
+
+
+def _ki145_extract_value(raw, field: str):
+    """Unwrap the value from either scalar OR nested `{value, ...}` shapes.
+    For two fields the extracted-side shape is `{covered, ...}` instead of
+    `{value, ...}`: maternity_coverage and restoration_benefit. We project
+    those onto the boolean `covered` so a curated bool/str compares cleanly
+    against the extracted dict's truthiness.
+    """
+    if raw is None:
+        return None
+    if isinstance(raw, dict):
+        if "value" in raw:
+            return raw.get("value")
+        if field in ("maternity_coverage", "restoration_benefit") and "covered" in raw:
+            return raw.get("covered")
+        # Unknown dict shape — treat as opaque non-null marker so a real
+        # diff isn't accidentally suppressed.
+        return raw
+    return raw
+
+
+def _ki145_normalize(field: str, val):
+    """Coerce field value into a comparable form (numbers as floats, bools as
+    bools, strings stripped lower-case). Returns None on null/empty/"" so it
+    is consistently skipped in the diff count."""
+    if val is None:
+        return None
+    # Numeric fields
+    if field in (
+        "copayment_pct",
+        "pre_existing_disease_waiting_months",
+        "maternity_waiting_months",
+        "no_claim_bonus_pct",
+        "post_hospitalization_days",
+    ):
+        try:
+            return float(val)
+        except (TypeError, ValueError):
+            return None
+    # Boolean fields
+    if field == "maternity_coverage":
+        if isinstance(val, bool):
+            return val
+        if isinstance(val, (int, float)):
+            return bool(val)
+        if isinstance(val, str):
+            s = val.strip().lower()
+            if s in ("true", "yes", "covered"):
+                return True
+            if s in ("false", "no", "not covered", "excluded"):
+                return False
+            return None
+        return None
+    # Restoration may arrive as bool (extracted .covered), str (curated prose)
+    # or dict (already unwrapped above). Treat presence/absence as the signal:
+    # a free-text limit phrase = True, explicit False/None = False.
+    if field == "restoration_benefit":
+        if isinstance(val, bool):
+            return val
+        if isinstance(val, str):
+            s = val.strip().lower()
+            if not s:
+                return None
+            if s in ("false", "no", "none", "n/a", "not available"):
+                return False
+            return True
+        return None
+    # String fields (room_rent_capping)
+    if isinstance(val, str):
+        s = val.strip().lower()
+        return s or None
+    return val
+
+
+def _ki145_material_diffs(curated: dict, extracted: dict) -> int:
+    """Count fields where BOTH sides have non-null values that disagree.
+    Null on either side = SKIP (extraction incompleteness, not a real diff).
+    >= 2 diffs → VARIANT (keep separate). < 2 → RENAME (alias-merge)."""
+    diffs = 0
+    for f in _KI145_DIFF_FIELDS:
+        cur_v = _ki145_normalize(f, _ki145_extract_value(curated.get(f), f))
+        ext_v = _ki145_normalize(f, _ki145_extract_value(extracted.get(f), f))
+        if cur_v is None or ext_v is None:
+            continue  # extraction incompleteness, not a real diff
+        if cur_v != ext_v:
+            diffs += 1
+    return diffs
+
+
 @app.get("/api/policies/all", response_model=MarketplaceResponse)
 async def policies_all(session_id: Optional[str] = None):
     """The marketplace data feed — every extracted policy + scorecard + filterable fields.
@@ -1479,14 +1602,18 @@ async def policies_all(session_id: Optional[str] = None):
     # separate cards because their UINs claim independent parents.
     extracted_stems = {fp.stem for fp in sorted_files}
 
-    # Phase A — extracted parents claim their UINs first.
+    # Phase A — extracted parents claim their UINs first. We also retain the
+    # parsed extracted JSON so Phase B can run the KI-145 material-diff check
+    # without re-reading from disk.
     uin_to_parent: dict[str, str] = {}
     extracted_uin: dict[str, str] = {}  # kept for downstream introspection
+    extracted_data: dict[str, dict] = {}
     for fp in sorted_files:
         try:
             _d = _json.loads(fp.read_text())
         except Exception:
             continue
+        extracted_data[fp.stem] = _d
         _u = _d.get("uin_code")
         if isinstance(_u, dict):
             _u = _u.get("value")
@@ -1526,9 +1653,18 @@ async def policies_all(session_id: Optional[str] = None):
         parent_id: str | None = None
         if curated_uin and curated_uin in uin_to_parent \
                 and uin_to_parent[curated_uin] != curated_policy_id:
-            # UIN-primary path: collapse onto the prior claimant of this UIN
-            # (different policy_name same regulator filing = pure rename).
-            parent_id = uin_to_parent[curated_uin]
+            # KI-145 (2026-05-15) — UIN-primary path with smart variant
+            # detection. Same UIN does NOT guarantee same product: a single
+            # regulator-filed PDF often covers multiple marketed variants
+            # (e.g. ProHealth Prime vs ProHealth Protect both filed under
+            # MCIHLIP24011V072324; activ-assure-diamond curated vs extracted
+            # disagree on PED/NCB). Compare 8 decision-critical fields; if
+            # 2+ disagree on non-null values, treat as a VARIANT and keep
+            # this curated entry as its own card. < 2 = pure rename → merge.
+            candidate = uin_to_parent[curated_uin]
+            ext_data = extracted_data.get(candidate, {})
+            if _ki145_material_diffs(cdata, ext_data) < 2:
+                parent_id = candidate
         elif curated_uin:
             # New UIN — this curated entry becomes the claimant so any
             # later curated sibling with the same UIN aliases onto it.
@@ -1542,7 +1678,12 @@ async def policies_all(session_id: Optional[str] = None):
             # source-PDF coincidence (multi-variant wordings) does NOT merge.
             fb_parent = _source_pdf_to_policy_id(cdata.get("_primary_source_pdf"))
             if fb_parent and fb_parent in extracted_stems and fb_parent != curated_policy_id:
-                parent_id = fb_parent
+                # KI-145 — apply the same material-diffs gate so multi-variant
+                # PDFs without UIN coverage don't drag genuinely different
+                # products into the parent card.
+                ext_data = extracted_data.get(fb_parent, {})
+                if _ki145_material_diffs(cdata, ext_data) < 2:
+                    parent_id = fb_parent
 
         if parent_id:
             direct_parent[curated_policy_id] = parent_id
