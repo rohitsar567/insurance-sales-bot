@@ -46,16 +46,23 @@ import { postTranscribe } from "./api";
 // very low RMS (~0.001-0.005) while actual user speech sits at ~0.05-0.2.
 // We pick a threshold in between, and require ~300ms sustained energy
 // to avoid firing on coughs / room thumps / single-frame spikes.
-const BARGE_IN_RMS_THRESHOLD = 0.025;
-const BARGE_IN_SUSTAINED_FRAMES = 18; // ~300ms @ 60fps rAF
+// KI-212 (2026-05-15) — was 0.025 / 18 frames. User reported barge-in
+// completely failing: bot reads entire 14s reply uninterrupted. Lowered
+// to fire on ANY decent speech burst within 100ms. Risk: false positives
+// (chair creak, cough) — acceptable trade vs. broken barge-in.
+const BARGE_IN_RMS_THRESHOLD = 0.008;
+const BARGE_IN_SUSTAINED_FRAMES = 6; // ~100ms @ 60fps rAF
 // KI-190 (2026-05-15) — adaptive threshold. The MediaRecorder mic stream
 // has AEC, but for very loud bot TTS the residual bleed can still cross
 // the static 0.025 threshold. We instead compute the threshold dynamically
 // from the bot's CURRENT audio level: bot_rms * MULTIPLIER + BASE. Bot
 // loud → threshold rises so user must speak loudly to overcome residual;
 // bot quiet → threshold drops near floor so soft speech still wins.
-const BARGE_IN_BOT_RMS_MULTIPLIER = 2.0;
-const BARGE_IN_BASE_THRESHOLD = 0.005;
+// KI-212 — multiplier lowered 2.0 → 1.5 + base 0.005 → 0.002. Together
+// with the static threshold drop, makes barge-in fire on much softer
+// user speech even when bot is loud.
+const BARGE_IN_BOT_RMS_MULTIPLIER = 1.5;
+const BARGE_IN_BASE_THRESHOLD = 0.002;
 // KI-191 (2026-05-15) — duck bot TTS volume while voice mode is on.
 // Reducing playback amplitude further widens the gap between the bot's
 // residual mic bleed (after AEC) and the user's normal-volume speech,

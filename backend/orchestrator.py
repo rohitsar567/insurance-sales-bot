@@ -669,16 +669,42 @@ async def handle_turn(
             if field_name not in session.profile.asked:
                 session.profile.asked.append(field_name)
 
-        # Completion gate. The LLM owns conversation flow; we only flip
-        # free_form_session when its own readiness signal is True AND every
-        # required slot is filled. Otherwise leave free_form_session=False so
-        # the next turn routes back here and the LLM continues gathering.
+        # KI-215 (2026-05-15) — completion gate WITHOUT premature flip.
+        # Previously we flipped session.free_form_session=True as soon as
+        # sb_result.ready_for_recommendations=True + all 6 required slots
+        # were filled. Bug: user's NEXT message (e.g., "Yes, that sounds
+        # correct" in response to sales_brain's confirmation recap) would
+        # route to the QA path → faithfulness gate → reject with "I'd
+        # rather not answer that without stronger evidence...".
+        #
+        # New rule: stay in fact_find UNTIL the user's text explicitly
+        # contains a recommendation request keyword. Sales_brain keeps
+        # owning the conversation through the recap + confirmation phase;
+        # only when the user says "show me", "recommend", "best for me",
+        # "options", etc., do we flip to free_form mode.
+        # KI-216 — health_conditions now REQUIRED (pre-existing conditions
+        # materially affect waiting periods / exclusions / premium loadings).
         _REQUIRED_SLOTS = ("name", "age", "dependents", "location_tier",
-                           "income_band", "primary_goal")
-        if sb_result.ready_for_recommendations and all(
-            getattr(session.profile, slot, None) not in (None, "", [])
-            for slot in _REQUIRED_SLOTS
-        ):
+                           "income_band", "primary_goal", "health_conditions")
+        # health_conditions=[] (empty list) is a VALID capture ("no conditions").
+        # Treat as "captured" if the field is a list (regardless of contents).
+        def _slot_filled(slot):
+            val = getattr(session.profile, slot, None)
+            if slot == "health_conditions":
+                return isinstance(val, list)
+            return val not in (None, "", [])
+        _slots_complete = all(_slot_filled(slot) for slot in _REQUIRED_SLOTS)
+        _utl = (user_text or "").lower()
+        _user_asked_for_recs = any(kw in _utl for kw in (
+            "recommend", "suggest", "show me", "best polic", "top 3",
+            "top three", "top 5", "top five", "side by side", "side-by-side",
+            "three options", "few options", "some options", "compare options",
+            "shortlist", "give me three", "give me options", "fits me",
+            "right for me", "policies for me", "which polic", "good polic",
+            "what polic", "your recommendation", "your suggestion",
+            "go ahead", "proceed", "let's see", "lets see",
+        ))
+        if sb_result.ready_for_recommendations and _slots_complete and _user_asked_for_recs:
             session.free_form_session = True
             session._flush()
 

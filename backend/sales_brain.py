@@ -134,12 +134,18 @@ _SLOT_DESCRIPTIONS: dict[str, str] = {
 # Order of slots — used to determine "required remaining" so the LLM has a
 # stable sense of what to ask next. The first six are the recommendation-
 # readiness minimum; the rest are deepening signals.
+# KI-216 (2026-05-15) — `health_conditions` PROMOTED from nice-to-have to
+# REQUIRED. Pre-existing conditions massively affect premium, waiting
+# periods, and claim outcomes — skipping it means recommending policies
+# that may exclude the user's actual needs. The brain MUST ask before
+# advancing to recommendations.
 _REQUIRED_FOR_READY: tuple = (
-    "name", "age", "dependents", "location_tier", "income_band", "primary_goal",
+    "name", "age", "dependents", "location_tier", "income_band",
+    "primary_goal", "health_conditions",
 )
 
 _NICE_TO_HAVE: tuple = (
-    "existing_cover_inr", "budget_band", "health_conditions",
+    "existing_cover_inr", "budget_band",
     "parents_to_insure", "parents_age_max", "parents_has_ped",
 )
 
@@ -180,7 +186,8 @@ Return a SINGLE JSON object with exactly these three keys:
 Rules for the JSON:
 - "reply" — natural conversational prose. NO scripted prefixes ("Got that —", "Noted —", "Sure —", "Perfect —"). Acknowledge what they said by reflecting it back, then continue.
 - "captures" — only fields the user CHANGED or NEWLY revealed in their LAST message. If they didn't reveal anything new this turn, emit `"captures": {}` (empty object). Do NOT re-emit slots that haven't changed. Do NOT include null / empty-string values.
-- "ready_for_recommendations" — set to true ONLY when you have AT LEAST name, age, dependents, location, income_band, primary_goal. Otherwise false.
+- "ready_for_recommendations" — set to true ONLY when you have ALL of: name, age, dependents, location, income_band, primary_goal, AND health_conditions. **You MUST ask about pre-existing health conditions before setting this to true** — it materially affects which policies fit (waiting periods, exclusions, premium loadings). Empty list `[]` means "no conditions" — that's valid and counts as captured. Otherwise leave false.
+- "reply" before flipping ready: when ALL required slots above ARE captured this turn, your reply should EXPLICITLY ask the user "Shall I put together some options for you now?" (or similar natural confirmation). Do NOT auto-recommend or auto-pivot. The user has to affirm before we move to the recommendation phase.
 - All enum values must match the slot schema EXACTLY (case-sensitive). All ints as JSON numbers, not strings. Lists as JSON arrays.
 
 EXAMPLES OF GOOD REPLIES (illustrative — the JSON shape is what matters):

@@ -148,6 +148,51 @@ export default function Page() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // KI-213 (2026-05-15) — PTT-scoped browser SpeechRecognition. Runs in
+  // PARALLEL with the existing MediaRecorder + Sarvam pipeline so the user
+  // sees an interim transcript in the chat input as they speak (matching the
+  // live-voice UX) instead of staring at an empty input until Sarvam returns.
+  // Final Sarvam result still wins; the recognition transcript is only used
+  // as a fallback if Sarvam fails or returns empty.
+  //
+  // Types redeclared locally (instead of imported from useStreamingVoice.ts)
+  // because that module doesn't export them and they're tiny — keeping PTT a
+  // self-contained path in page.tsx per the existing architecture.
+  type PTTSpeechRecognitionAlternative = { transcript: string; confidence: number };
+  type PTTSpeechRecognitionResult = {
+    isFinal: boolean;
+    length: number;
+    [index: number]: PTTSpeechRecognitionAlternative;
+  };
+  type PTTSpeechRecognitionResultList = {
+    length: number;
+    [index: number]: PTTSpeechRecognitionResult;
+  };
+  interface PTTSpeechRecognitionEventLike extends Event {
+    resultIndex: number;
+    results: PTTSpeechRecognitionResultList;
+  }
+  interface PTTSpeechRecognitionErrorEventLike extends Event {
+    error: string;
+    message?: string;
+  }
+  interface PTTSpeechRecognitionInstance extends EventTarget {
+    lang: string;
+    continuous: boolean;
+    interimResults: boolean;
+    maxAlternatives: number;
+    start: () => void;
+    stop: () => void;
+    abort: () => void;
+    onresult: ((ev: PTTSpeechRecognitionEventLike) => void) | null;
+    onerror: ((ev: PTTSpeechRecognitionErrorEventLike) => void) | null;
+    onend: ((ev: Event) => void) | null;
+    onstart: ((ev: Event) => void) | null;
+  }
+  type PTTSpeechRecognitionCtor = new () => PTTSpeechRecognitionInstance;
+  const pttRecognitionRef = useRef<PTTSpeechRecognitionInstance | null>(null);
+  const pttFinalTranscriptRef = useRef<string>("");
+
   // KI-168 (2026-05-15) — streaming-voice path replaces the legacy
   // useLiveConversation full-duplex VAD machinery. Interim transcript shows
   // in the chat input as the user speaks; browser silence-detection auto-
@@ -504,9 +549,66 @@ export default function Page() {
       mediaRecorderRef.current = recorder;
       audioChunksRef.current = [];
       recorder.ondataavailable = (ev) => { if (ev.data.size > 0) audioChunksRef.current.push(ev.data); };
+
+      // KI-213 (2026-05-15) — start browser SpeechRecognition in parallel
+      // for interim transcript display. Sarvam still produces the
+      // authoritative transcript; this is purely UX (so the input fills as
+      // the user speaks). Best-effort: if SR is unsupported or start() throws
+      // we silently continue with the existing Sarvam-only flow.
+      pttFinalTranscriptRef.current = "";
+      try {
+        const w = window as unknown as {
+          SpeechRecognition?: PTTSpeechRecognitionCtor;
+          webkitSpeechRecognition?: PTTSpeechRecognitionCtor;
+        };
+        const Ctor = w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
+        if (Ctor) {
+          const rec = new Ctor();
+          rec.continuous = false;
+          rec.interimResults = true;
+          rec.maxAlternatives = 1;
+          // ttsLang is the same locale the live-voice path uses; en-IN is the
+          // default fallback per the spec.
+          rec.lang = ttsLang || "en-IN";
+          rec.onresult = (ev: PTTSpeechRecognitionEventLike) => {
+            // Assemble interim transcript from ALL results (finals + currently
+            // in-progress interim). Mirror useStreamingVoice's pattern.
+            let interim = "";
+            let final = "";
+            for (let i = 0; i < ev.results.length; i++) {
+              const r = ev.results[i];
+              const alt = r[0];
+              if (!alt) continue;
+              if (r.isFinal) final += alt.transcript;
+              else interim += alt.transcript;
+            }
+            if (final) pttFinalTranscriptRef.current = final;
+            const display = (final + interim).trim();
+            if (display) setInput(display);
+          };
+          rec.onerror = () => { /* best-effort — Sarvam is the source of truth */ };
+          rec.onend = () => { /* nothing — recorder.onstop drives the submit */ };
+          pttRecognitionRef.current = rec;
+          rec.start();
+        }
+      } catch {
+        // SR unavailable or already running — fall through, Sarvam still works.
+        pttRecognitionRef.current = null;
+      }
       recorder.onstop = async () => {
         stopVAD();
         stream.getTracks().forEach((t) => t.stop());
+        // KI-213 (2026-05-15) — tear down the parallel SpeechRecognition.
+        // abort() is preferred over stop() to avoid a trailing onresult
+        // event firing AFTER we've already set the input to the Sarvam
+        // transcript (which would clobber it). The final transcript captured
+        // so far is preserved in pttFinalTranscriptRef as a Sarvam fallback.
+        const sr = pttRecognitionRef.current;
+        pttRecognitionRef.current = null;
+        if (sr) {
+          try { sr.abort(); } catch { /* already stopped */ }
+        }
+        const srFallback = pttFinalTranscriptRef.current.trim();
         const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType || "audio/webm" });
         setRecording(false);
         // KI-028 — Resume Live ONLY if the user's persistent preference is
@@ -518,22 +620,47 @@ export default function Page() {
         // instead of returning quietly. Previously, holding PTT briefly and
         // releasing produced no feedback at all; now they at least see why.
         if (blob.size < 1000) {
+          // KI-213 — clear the lingering interim that SR may have left in the
+          // input so the user isn't confused by a stale partial transcript.
+          setInput("");
           pushAssistant("Didn't catch any audio — try holding the mic button while speaking.");
           maybeResumeLive();
           return;
         }
         setBusy(true);
         setVoicePhase("transcribing"); // KI-038 — STT in flight on PTT
+        // KI-213 — keep the interim transcript visible in the input as a
+        // placeholder while Sarvam runs. send() will clear it when (and only
+        // when) we actually submit, so the user sees their words throughout.
         try {
           const { text } = await postTranscribe(blob, ttsLang);
           if (text && text.trim()) {
+            // KI-213 — replace the interim SR transcript with Sarvam's
+            // authoritative version, then submit. send() clears the input
+            // itself so the brief flash here is intentional UX feedback.
+            setInput(text);
             // send() flips voicePhase to "thinking" itself; no need to set here
             await send(text);
+          } else if (srFallback) {
+            // KI-213 — Sarvam returned empty but the browser caught
+            // something. Better than telling the user "couldn't hear that
+            // clearly" when we actually have a usable transcript.
+            setInput(srFallback);
+            await send(srFallback);
           } else {
+            setInput("");
             pushAssistant("Sorry, I couldn't hear that clearly. Please try again.");
           }
         } catch (e: unknown) {
-          pushAssistant(`Sorry — transcribe error: ${e instanceof Error ? e.message : String(e)}`);
+          // KI-213 — Sarvam failed (network / 5xx / rate limit). Fall back to
+          // the SR transcript if we have one rather than dropping the turn.
+          if (srFallback) {
+            setInput(srFallback);
+            try { await send(srFallback); } catch { /* send handles its own errors */ }
+          } else {
+            setInput("");
+            pushAssistant(`Sorry — transcribe error: ${e instanceof Error ? e.message : String(e)}`);
+          }
         } finally {
           setBusy(false);
           setVoicePhase(null);
