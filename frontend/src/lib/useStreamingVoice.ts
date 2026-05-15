@@ -516,6 +516,29 @@ export function useStreamingVoice(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled]);
 
+  // KI-173 (2026-05-15) — heartbeat watchdog. Browser SpeechRecognition
+  // occasionally enters a stopped state without `onend` firing (certain
+  // network errors, transient OS audio interruptions, tab visibility
+  // edge cases). The auto-restart in `onend` never gets the chance to
+  // run, and the mic stays silently dead until the user toggles voice
+  // off+on. Every 4s, if we WANT to be listening (enabled + wantRunningRef)
+  // and no text turn is racing and no restart is already scheduled, call
+  // `safeStart()` unconditionally — InvalidStateError is swallowed if
+  // recognition is already running, otherwise this revives the dead state.
+  useEffect(() => {
+    if (!enabled || !isSupported) return;
+    const tick = setInterval(() => {
+      if (
+        wantRunningRef.current
+        && !isTextRequestPendingRef.current
+        && restartTimerRef.current === null
+      ) {
+        safeStart();
+      }
+    }, 4000);
+    return () => clearInterval(tick);
+  }, [enabled, isSupported, isTextRequestPendingRef, safeStart]);
+
   // Unmount cleanup.
   useEffect(() => {
     return () => {
