@@ -43,6 +43,22 @@ FACT_FIND_TRIGGERS = (
     "want to buy", "best policy for me", "what do you recommend",
     "i don't have", "no policy", "no insurance",
     "hi", "hello", "hey", "namaste",
+    # KI-153 (2026-05-15) — profile-update phrasings. When a user provides
+    # personal information (name, age, city, family, income, existing
+    # cover), classify_intent was returning "qa" because none of these
+    # matched the recommend/comparison/fact-find triggers. They'd go to QA
+    # brain which had no idea what to do and produced defensive "not
+    # enough evidence in the policy documents" replies. These patterns
+    # cover the answers users give during fact-find collection so the
+    # orchestrator can route them back to fact_find_brain for slot capture.
+    "my name is", "i am called", "call me", "i'm called",
+    "i am ", "i'm ", "im ",  # "I am 29 years old", "I'm single"
+    "years old", "year old", "age is",
+    "live in", "i'm in ", "i am in ", "from ", "based in",
+    "married", "single", "with spouse", "with my family",
+    "have kids", "have parents", "for my parents", "for my family",
+    "my income", "earn ", "salary",
+    "first policy", "first time buyer",
 )
 
 COMPARISON_KEYWORDS = (
