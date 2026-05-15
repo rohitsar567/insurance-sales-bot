@@ -585,6 +585,9 @@
       gap: 6px;
       font-variant-numeric: tabular-nums;
     }
+    /* LEGACY (KI-208) — .stale-badge rules retained but no longer referenced by
+       the LLM Health header (consolidated into a single-line refresh-meta row).
+       Still used by per-table footers via setFooter(). Safe to keep. */
     .stale-badge {
       display: inline-block;
       padding: 1px 7px;
@@ -609,6 +612,26 @@
       color: var(--red);
       border-color: rgba(248, 81, 73, 0.40);
     }
+
+    /* KI-208 — consolidated LLM Health header row: heading + last refresh +
+       next refresh + refresh button on one flex line. */
+    .llm-health-header-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+    .llm-health-header-row h2 { margin: 0; }
+    .llm-refresh-meta {
+      color: var(--muted, #888);
+      font-size: 12px;
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .llm-refresh-meta .dot-sep { opacity: 0.5; }
+    #btn-refresh-llm-health { margin-left: auto; }
 
     /* A5 — Persona drift panel + recommendation history panel */
     .collapsible {
@@ -795,8 +818,15 @@
            may live inside this section: the h2 header (with snapshot timestamp
            span), the refresh button, and the chains container that holds the
            two generated tables (Currently In Use + All Eligible Models). -->
-      <h2>LLM health <span class="small muted" id="llm-health-snapshot-ts"></span> <span id="llm-health-stale-badge"></span></h2>
-      <button id="btn-refresh-llm-health">Refresh</button>
+      <div class="llm-health-header-row">
+        <h2>LLM Health</h2>
+        <span class="llm-refresh-meta">
+          <span>Last refresh: <span id="llm-last-refresh-ago">--</span></span>
+          <span class="dot-sep">·</span>
+          <span>Next in: <span id="llm-next-refresh-in">--</span></span>
+        </span>
+        <button id="btn-refresh-llm-health">Refresh now</button>
+      </div>
       <div id="llm-health-chains" class="llm-simple-tables"></div>
       <div id="llm-health-footer" class="table-footer"></div>
     </section>
@@ -1409,22 +1439,27 @@
       }
 
       function renderUpdatedLabel() {
-        var el = $('last-updated');
-        if (!el) return;
-        // Only show the LLM-Chain probe staleness when that tab is active —
-        // it's irrelevant on Profiles / Performance.
+        var ago = $('llm-last-refresh-ago');
+        var next = $('llm-next-refresh-in');
+        if (!ago || !next) return;
+        // Only render the LLM-Chain refresh timing when that tab is active —
+        // irrelevant on Profiles / Performance.
         if (STATE.activeTab !== 'chain') {
-          el.textContent = '';
+          ago.textContent = '--';
+          next.textContent = '--';
           return;
         }
         var probeAt = probeTimestampMs();
-        if (!probeAt) { el.textContent = ''; return; }
+        if (!probeAt) { ago.textContent = '--'; next.textContent = '--'; return; }
         var now = Date.now();
-        var since = formatMinSec(now - probeAt);
-        var nextAt = probeAt + PROBE_INTERVAL_MS;
-        var untilNext = nextAt > now ? formatMinSec(nextAt - now) : 'due now';
-        var wallClock = new Date(probeAt).toLocaleTimeString();
-        el.textContent = 'Updated ' + wallClock + ' · ' + since + ' ago · next auto-probe in ' + untilNext;
+        ago.textContent = formatMinSec(now - probeAt) + ' ago';
+        // KI-258b — never display "due now". If the auto-probe is overdue,
+        // project forward to the NEXT interval boundary so the countdown
+        // always shows a real minutes:seconds value the user can act on.
+        var elapsed = now - probeAt;
+        var intoNext = ((elapsed % PROBE_INTERVAL_MS) + PROBE_INTERVAL_MS) % PROBE_INTERVAL_MS;
+        var untilNext = PROBE_INTERVAL_MS - intoNext;
+        next.textContent = formatMinSec(untilNext);
       }
 
       setInterval(renderUpdatedLabel, 1000);
@@ -1739,6 +1774,62 @@
         return td;
       }
 
+      // KI-202 (2026-05-15) — operator-facing Health cell renderer. Reads
+      // the per-model snapshot built from `healthPayload.candidates` (a
+      // {model -> snapshot} map populated by renderLlmSimpleTables before
+      // each row). Returns a <td> element so the caller can append directly.
+      //
+      // Display contract (matches admin spec):
+      //   Live              — green dot + "Live"            (effective_status='healthy')
+      //   Off — [reason]    — red dot   + "Off — reason"    (everything else)
+      // Reasons come from backend `health_reason`; fallback "unknown" when
+      // the field is absent. The full `last_error` (when present) is
+      // surfaced via a tooltip on hover.
+      function renderHealthCell(snap) {
+        var td = createEl('td', { className: 'health-cell' });
+        td.style.whiteSpace = 'nowrap';
+        var dot = createEl('span', { className: 'health-dot' });
+        dot.style.marginRight = '6px';
+        if (!snap) {
+          // No snapshot for this model — render "Off — unknown" rather
+          // than blank so the operator sees the gap.
+          dot.className = 'health-dot bad';
+          td.appendChild(dot);
+          td.appendChild(document.createTextNode('Off — unknown'));
+          return td;
+        }
+        var eff = (snap.effective_status || snap.status || 'unknown').toLowerCase();
+        var isLive = (eff === 'healthy');
+        dot.className = 'health-dot ' + (isLive ? 'ok' : 'bad');
+        td.appendChild(dot);
+        if (isLive) {
+          td.appendChild(document.createTextNode('Live'));
+        } else {
+          var reason = snap.health_reason;
+          if (!reason) {
+            if (eff === 'stale')        reason = 'stale';
+            else if (eff === 'unknown') reason = 'unknown';
+            else                        reason = 'unknown';
+          }
+          td.appendChild(document.createTextNode('Off — ' + reason));
+        }
+        if (snap.last_error) {
+          td.title = String(snap.last_error);
+        }
+        return td;
+      }
+
+      // Build {model -> candidate snapshot} from healthPayload.candidates
+      // so renderHealthCell() can look up by model id in O(1).
+      function buildCandidatesMap(healthPayload) {
+        var out = {};
+        var cands = (healthPayload && healthPayload.candidates) || [];
+        cands.forEach(function (c) {
+          if (c && c.model) out[c.model] = c;
+        });
+        return out;
+      }
+
       // KI-200 — accepts the full llm-health payload so we can read
       // `gemini_available` (when backend exposes it). Caller signature
       // updated below in renderLlmHealth().
@@ -1746,6 +1837,8 @@
         var chains = (healthPayload && healthPayload.chains) || [];
         var chainsByRole = {};
         chains.forEach(function (c) { if (c && c.role) chainsByRole[c.role] = c; });
+        // KI-202 — model -> candidate snapshot map, used by renderHealthCell().
+        var candByModel = buildCandidatesMap(healthPayload);
 
         // ---- Table 1: Currently In Use ----
         var liveBlock = createEl('div', { className: 'simple-table-block' });
@@ -1753,9 +1846,10 @@
         var liveTable = createEl('table');
         var liveThead = createEl('thead');
         var liveHr = createEl('tr');
-        ['Use', 'Current Model', 'Provider', 'Tier'].forEach(function (h, i) {
+        // KI-202 — Health column appended at end (5 cols total).
+        ['Use', 'Current Model', 'Provider', 'Tier', 'Health'].forEach(function (h, i) {
           var th = createEl('th', { text: h });
-          if (i >= 2) th.style.textAlign = 'center';
+          if (i >= 2 && i <= 3) th.style.textAlign = 'center';
           liveHr.appendChild(th);
         });
         liveThead.appendChild(liveHr);
@@ -1789,6 +1883,19 @@
           tierCell.textContent = live.tier;
           tr.appendChild(tierCell);
 
+          // KI-202 — HEALTH cell. Tier-0 (Gemini) currently has no
+          // health snapshot in `candidates` (probe loop only covers NIM/
+          // OpenRouter chain entries), so fall back to a "Live" pill when
+          // gemini_available flag is set / defaulted true. For Tier-1 NIM
+          // rows we look up by model id in the candidates map.
+          var healthSnap = candByModel[live.model];
+          if (!healthSnap && live.isTier0) {
+            // Synthesize a "live" snapshot — Gemini availability is assumed
+            // until backend exposes a per-Gemini health row.
+            healthSnap = { effective_status: 'healthy' };
+          }
+          tr.appendChild(renderHealthCell(healthSnap));
+
           liveTbody.appendChild(tr);
         });
         liveTable.appendChild(liveTbody);
@@ -1801,10 +1908,13 @@
         var availTable = createEl('table');
         var availThead = createEl('thead');
         var availHr = createEl('tr');
-        var availCols = ['Model', 'Provider', 'Tier'].concat(SIMPLE_USE_ORDER.map(function (r) { return SIMPLE_USE_LABELS[r]; }));
+        // KI-202 — Health column appended at end.
+        var availCols = ['Model', 'Provider', 'Tier']
+          .concat(SIMPLE_USE_ORDER.map(function (r) { return SIMPLE_USE_LABELS[r]; }))
+          .concat(['Health']);
         availCols.forEach(function (h, i) {
           var th = createEl('th', { text: h });
-          if (i >= 1) th.style.textAlign = 'center';
+          if (i >= 1 && i < availCols.length - 1) th.style.textAlign = 'center';
           availHr.appendChild(th);
         });
         availThead.appendChild(availHr);
@@ -1833,6 +1943,13 @@
           SIMPLE_USE_ORDER.forEach(function (role) {
             tr.appendChild(renderRoleLabelCell(entry.roles[role]));
           });
+
+          // KI-202 — HEALTH cell. Same Tier-0 fallback as Table 1.
+          var entryHealthSnap = candByModel[entry.model];
+          if (!entryHealthSnap && entry.tier === 'T0') {
+            entryHealthSnap = { effective_status: 'healthy' };
+          }
+          tr.appendChild(renderHealthCell(entryHealthSnap));
 
           availTbody.appendChild(tr);
         });
@@ -1959,15 +2076,15 @@
 
       function renderLlmHealth() {
         var chainsHost = $('llm-health-chains');
-        var snapEl = $('llm-health-snapshot-ts');
         if (!chainsHost) return;
 
+        // KI-208 — snapshot timestamp moved out of the header into the
+        // consolidated "Last refresh / Next in" row driven by renderUpdatedLabel.
         if (!STATE.llmHealth) {
           clearChildren(chainsHost);
           chainsHost.appendChild(createEl('div', { className: 'empty-state', text: 'Loading…' }));
           clearChildren($('llm-health-candidates'));
           clearChildren($('llm-health-recent'));
-          if (snapEl) snapEl.textContent = '';
           return;
         }
         if (STATE.llmHealth.__notDeployed) {
@@ -1975,7 +2092,6 @@
           chainsHost.appendChild(buildPendingMessage('/api/admin/llm-health'));
           clearChildren($('llm-health-candidates'));
           clearChildren($('llm-health-recent'));
-          if (snapEl) snapEl.textContent = '';
           return;
         }
 
@@ -1985,12 +2101,6 @@
 
         renderLlmHealthCandidates(STATE.llmHealth.candidates || []);
         renderLlmHealthRecent(STATE.llmHealth.recent_turns || []);
-
-        if (snapEl) {
-          snapEl.textContent = STATE.llmHealth.snapshot_ts
-            ? '· updated ' + fmtIST(STATE.llmHealth.snapshot_ts)
-            : '';
-        }
       }
 
       // Auto-poll every 30s while the LLM Chain tab is the active tab.
@@ -2757,21 +2867,8 @@
         }
         if (!probeAt) probeAt = STATE.llmHealthLoadedAt;
         setFooter('llm-health-footer', probeAt);
-        // LLM-health stale badge sits next to the section header — render
-        // separately so it's visible even when the body is empty.
-        var badgeHost = $('llm-health-stale-badge');
-        if (badgeHost) {
-          clearChildren(badgeHost);
-          if (probeAt) {
-            var ageMs = Date.now() - probeAt;
-            var stale = ageMs > STALE_THRESHOLD_MS;
-            var badge = createEl('span', {
-              className: 'stale-badge ' + (stale ? '' : 'fresh'),
-              text: stale ? 'STALE' : 'FRESH'
-            });
-            badgeHost.appendChild(badge);
-          }
-        }
+        // KI-208 — FRESH/STALE header badge removed; the consolidated header
+        // row's "Last refresh / Next in" timing conveys freshness instead.
       }
       setInterval(tickFooters, 1000);
 
@@ -2977,13 +3074,13 @@
           llmHealthBtn.onclick = function () {
             var btn = this;
             btn.disabled = true;
-            btn.textContent = 'Probing…';
+            btn.textContent = 'Refreshing…';
             apiPost('/api/admin/probe', null)
               .catch(function () { /* tolerate probe failure; still re-fetch cached state */ })
               .then(function () { return fetchLlmHealth(); })
-              .then(function () { renderLlmHealth(); toast('LLM health refreshed (fresh probe)', 'success'); })
+              .then(function () { renderLlmHealth(); toast('LLM health refreshed', 'success'); })
               .catch(handleFetchErr)
-              .then(function () { btn.disabled = false; btn.textContent = 'Refresh'; });
+              .then(function () { btn.disabled = false; btn.textContent = 'Refresh now'; });
           };
         }
       }

@@ -678,10 +678,13 @@ def _candidate_snapshot(model: str, health, chain_membership: list[str],
             "provider":           llm_health.provider_of(model),
             "chain_membership":   chain_membership,
             "status":             "unknown",
+            "effective_status":   "unknown",
             "latency_ms":         None,
             "success_rate":       None,
             "probe_age_seconds":  None,
             "last_error":         None,
+            "last_status_code":   None,
+            "health_reason":      None,
             "credits_remaining":  None,
             "credits_unit":       None,
             "credits_low_water":  None,
@@ -692,15 +695,29 @@ def _candidate_snapshot(model: str, health, chain_membership: list[str],
     deg_for = None
     if deg_until and deg_until > now_mono:
         deg_for = round(deg_until - now_mono, 1)
+    # KI-202 — operator-facing reason for the admin Health column. None when
+    # the row is healthy (renders "Live" only) or has no error signal yet.
+    eff = llm_health.effective_status(health)
+    if eff == "stale":
+        health_reason = "stale"
+    elif eff == "healthy":
+        health_reason = None
+    else:
+        health_reason = llm_health._classify_error_reason(
+            health.last_error, health.last_status_code,
+        )
     return {
         "model":             model,
         "provider":          llm_health.provider_of(model),
         "chain_membership":  chain_membership,
         "status":            health.status,
+        "effective_status":  eff,
         "latency_ms":        health.latency_ms,
         "success_rate":      _success_rate_for(health),
         "probe_age_seconds": _probe_age_seconds(health.tested_at),
         "last_error":        health.last_error,
+        "last_status_code":  health.last_status_code,
+        "health_reason":     health_reason,
         "credits_remaining": health.credits_remaining,
         "credits_unit":      health.credits_unit,
         "credits_low_water": health.credits_low_water,

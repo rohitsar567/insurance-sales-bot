@@ -194,6 +194,94 @@ def _headers_for(model_id: str, api_key: str) -> dict[str, str]:
     return h
 
 
+# KI-202 (2026-05-15) — categorize a `last_error` string + optional HTTP
+# status code into the short operator-facing reason rendered by the admin
+# Health columns. Centralised here so backend and any other consumer agree
+# on the same vocabulary ("network issue" / "rate limit (429)" / etc.).
+# Use lookbehind/lookahead on non-digit so we still match e.g. "Status429",
+# "http_429", "HTTPStatusError:503" — \b word-boundary alone treats "_" as
+# a word char so "http_429" wouldn't match.
+_RATE_LIMIT_RE = re.compile(r"(?<!\d)429(?!\d)|rate[_\s-]?limit", re.IGNORECASE)
+_AUTH_RE       = re.compile(r"(?<!\d)40[13](?!\d)|unauthor|forbidden",  re.IGNORECASE)
+_QUOTA_RE      = re.compile(r"(?<!\d)402(?!\d)|quota|out[\s_-]?of[\s_-]?credit|insufficient[_\s]?funds|payment[_\s]?required", re.IGNORECASE)
+_TIMEOUT_RE    = re.compile(r"timeout|timed[_\s-]?out|connect(ion)?[_\s-]?(refused|reset|error)|network|dns|name[_\s-]?or[_\s-]?service", re.IGNORECASE)
+_5XX_RE        = re.compile(r"(?<!\d)5\d{2}(?!\d)|service[_\s-]?unavailable|bad[_\s-]?gateway|gateway[_\s-]?timeout|internal[_\s-]?server", re.IGNORECASE)
+
+
+def _classify_error_reason(last_error: Optional[str],
+                            last_status_code: Optional[int] = None) -> Optional[str]:
+    """Map a stored `last_error` string (+ optional HTTP code) into a short
+    operator-facing reason for the admin Health column. Returns None when
+    there is no error signal at all (caller renders just "Live" or "Off —
+    unknown" depending on status).
+
+    Categories (matches the display contract in the admin spec):
+      - "network issue"            — timeout / connection refused / DNS
+      - "out of credits"           — HTTP 402 / quota / insufficient funds
+      - "rate limit (429)"         — HTTP 429 / rate-limit keywords
+      - "service unavailable (5xx)"— HTTP 5xx
+      - "auth error (4xx)"         — HTTP 401 / 403
+      - "stale"                    — explicitly surfaced by effective_status()
+      - first-40-chars fallback    — anything else, truncated so the cell
+                                     doesn't blow up the table width.
+    """
+    if not last_error:
+        return None
+
+    # Prefer the explicit status code when present — it's unambiguous.
+    if last_status_code is not None:
+        code = int(last_status_code)
+        if code == 429:
+            return "rate limit (429)"
+        if code == 402:
+            return "out of credits"
+        if code in (401, 403):
+            return f"auth error ({code})"
+        if 500 <= code < 600:
+            return f"service unavailable ({code})"
+
+    text = str(last_error)
+
+    if _RATE_LIMIT_RE.search(text):
+        return "rate limit (429)"
+    if _QUOTA_RE.search(text):
+        return "out of credits"
+    if _AUTH_RE.search(text):
+        # Try to surface the code if it's embedded in the string.
+        m = re.search(r"(?<!\d)(40[13])(?!\d)", text)
+        return f"auth error ({m.group(1)})" if m else "auth error"
+    if _TIMEOUT_RE.search(text):
+        return "network issue"
+    if _5XX_RE.search(text):
+        m = re.search(r"(?<!\d)(5\d{2})(?!\d)", text)
+        return f"service unavailable ({m.group(1)})" if m else "service unavailable"
+
+    # Final fallback — truncate so the table cell stays readable.
+    snippet = text.strip().splitlines()[0] if text.strip() else ""
+    return snippet[:40] if snippet else None
+
+
+def _extract_status_code(err: str) -> Optional[int]:
+    """Best-effort scrape of an HTTP status code out of an error string —
+    used by the probe path to backfill `last_status_code` from the existing
+    `http_{code}` / `HTTPStatusError:{code}` tags without changing every
+    probe-result producer. Returns None when no 3-digit HTTP code is found."""
+    if not err:
+        return None
+    # Surround-by-non-digit boundary so we still catch "http_429" / "Status429"
+    # where \b would fail because '_' is a word char.
+    m = re.search(r"(?<!\d)(\d{3})(?!\d)", err)
+    if not m:
+        return None
+    try:
+        code = int(m.group(1))
+    except ValueError:
+        return None
+    if 100 <= code < 600:
+        return code
+    return None
+
+
 def provider_of(model_id: str) -> str:
     """Coarse provider bucket — used by the election routine to prefer a
     cross-provider backup so a NIM regional outage can't take out both
@@ -221,6 +309,13 @@ class ModelHealth:
     last_success_at: Optional[str] = None
     last_failure_at: Optional[str] = None
     last_error: Optional[str] = None
+    # KI-202 (2026-05-15) — explicit HTTP status code from the most recent
+    # failed probe / chat call. `last_error` is a free-form string ("timeout",
+    # "http_429", "net: TimeoutException: ..."); `last_status_code` is the
+    # parsed integer (or None when the failure wasn't HTTP-shaped). Surfaced
+    # in admin Health columns so the operator can see "Off — rate limit (429)"
+    # vs "Off — service unavailable (503)" at a glance.
+    last_status_code: Optional[int] = None
     latency_ms: Optional[int] = None
     consecutive_failures: int = 0
     tested_at: Optional[str] = None
@@ -312,6 +407,7 @@ def _load_into_memory() -> None:
                     # records missing the five credits_* fields).
                     v.setdefault("probe_history", [])
                     v.setdefault("degraded_until_monotonic", 0.0)
+                    v.setdefault("last_status_code", None)
                     v.setdefault("credits_remaining", None)
                     v.setdefault("credits_unit", None)
                     v.setdefault("credits_reset_at", None)
@@ -642,6 +738,11 @@ def report_failure(chain_name: str, model: str, error_class: str) -> None:
         h.degraded_until_monotonic = time.monotonic() + degrade_for_s
         h.last_failure_at = _now_iso()
         h.last_error = f"chat_failure: {error_class}"
+        # KI-202 — `error_class` from NimChainLLM._classify_error is
+        # `Status429`, `HTTPStatusError:503`, `TimeoutException`, etc.
+        # Pull the trailing 3-digit code out so the admin Health column
+        # can render a code-specific label.
+        h.last_status_code = _extract_status_code(error_class)
         h.probe_history.append({
             "ok": False,
             "latency_ms": None,
@@ -676,6 +777,7 @@ def report_success(chain_name: str, model: str, latency_ms: int) -> None:
         h = _STATE.get(model) or ModelHealth(model=model)
         h.last_success_at = _now_iso()
         h.last_error = None
+        h.last_status_code = None
         h.latency_ms = int(latency_ms)
         h.consecutive_failures = 0
         h.tested_at = _now_iso()
@@ -1059,12 +1161,17 @@ def _absorb_probe_result(model: str, ok: bool, err: str, latency: Optional[int])
         if ok:
             h.last_success_at = _now_iso()
             h.last_error = None
+            h.last_status_code = None
             h.latency_ms = latency
             h.consecutive_failures = 0
             h.status = "healthy" if (latency or 0) < 5000 else "degraded"
         else:
             h.last_failure_at = _now_iso()
             h.last_error = err
+            # KI-202 — backfill last_status_code from the err tag so the
+            # admin Health column can render code-specific reasons (429 /
+            # 503 / etc.) without changing every producer.
+            h.last_status_code = _extract_status_code(err)
             h.consecutive_failures += 1
             if h.consecutive_failures >= DOWN_AFTER_CONSECUTIVE_FAILS:
                 h.status = "down"
@@ -1152,14 +1259,26 @@ def status_summary() -> dict:
         # rows whose stored 'healthy' verdict is older than STALE_AGE_SEC.
         eff = effective_status(h)
         summary["by_status"][eff] = summary["by_status"].get(eff, 0) + 1
+        # KI-202 — operator-facing reason string for the admin Health
+        # column. None when there is no error signal (caller renders just
+        # "Live" or "Off — stale"/"Off — unknown" based on `effective_status`).
+        if eff == "stale":
+            health_reason = "stale"
+        elif eff in ("healthy",):
+            health_reason = None
+        else:
+            health_reason = _classify_error_reason(h.last_error, h.last_status_code)
         summary["models"].append({
             "model": m,
             "status": eff,
+            "effective_status": eff,
             "stored_status": h.status,  # preserved for debug / drift detection
             "latency_ms": h.latency_ms,
             "last_success_at": h.last_success_at,
             "last_failure_at": h.last_failure_at,
             "last_error": h.last_error,
+            "last_status_code": h.last_status_code,
+            "health_reason": health_reason,
             "tested_at": h.tested_at,
             # KI-085 — surface credits state for the admin UI.
             "credits_remaining": h.credits_remaining,
