@@ -1,8 +1,9 @@
 # ADR-026 — Brain provider load-balancing (NIM ↔ Groq, 50/50)
 
-**Status:** Accepted — 2026-05-14
+**Status:** Superseded by [ADR-040](ADR-040-google-gemini-primary.md) (2026-05-15) — the 50/50 random-coin load balance was first deprecated by [ADR-031](ADR-031-sticky-primary-election.md)'s probe-driven sticky-primary election (KI-080) and is now fully retired. The current chain shape (Google AI Studio Tier 0 primary → NIM Tier 1 fallback → OpenRouter `:free` Tier 2 diversity) is decided by per-call election against probe scores rather than a static probability split.
+**Date:** 2026-05-14
 **Owner:** Rohit Saraf
-**Supersedes:** Partial override of [ADR-019](ADR-019-nim-single-provider-consolidation.md)'s single-provider stance
+**Originally supersedes:** Partial override of [ADR-019](ADR-019-nim-single-provider-consolidation.md)'s single-provider stance
 
 ## Context
 

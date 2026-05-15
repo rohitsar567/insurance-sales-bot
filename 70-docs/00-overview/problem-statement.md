@@ -219,9 +219,9 @@ To protect against scope creep — and to give the interviewer something to grad
 
 ### 8.4 Technical envelope
 
-- v1 UI: Streamlit. Business logic is decoupled into a separate `app/` Python module so a future FastAPI + React v2 swaps the UI layer only.
+- v1 UI: Next.js 14 (App Router) + Tailwind v4 + shadcn/ui, calling a FastAPI backend. (The original draft scoped Streamlit; the migration to Next.js + FastAPI is captured in [ADR-005](../60-decisions/ADR-005-nextjs-fastapi-frontend.md).)
 - v1 corpus: 15–20 health policies across 5 leading Indian insurers (Star Health, HDFC ERGO, Niva Bupa, Care Health, ICICI Lombard — exact list pending availability check).
-- v1 deployment: local development + a single-instance deploy (Streamlit Community Cloud or equivalent) for the interviewer to demo.
+- v1 deployment: local development + a single-instance deploy on Hugging Face Spaces (Docker) for the interviewer to demo.
 
 ---
 

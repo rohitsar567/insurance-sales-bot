@@ -28,6 +28,7 @@ from backend.providers.nvidia_nim_llm import (
     get_brain_llm,
     get_fast_brain_llm,
 )
+from backend.providers.tiered_brain_llm import get_tiered_brain_llm
 from rag.retrieve import RetrievedChunk, format_for_llm_context, retrieve
 
 
@@ -297,12 +298,15 @@ def should_route_to_fact_find(
 def pick_brain(intent: str, language: str) -> BrainPick:
     """Route to the reasoning brain per D-019 (2026-05-14, tiered routing).
 
-    All routes go through NVIDIA NIM (single provider, $0 cost). Tier picked
-    by intent classification:
-      - 'comparison' / 'recommendation' → DeepSeek-V4-Pro (1.6T/49B MoE)
-            Heavy synthesis, multi-policy reasoning. Quality > latency.
-      - 'fact_find' / 'qa'              → DeepSeek-V4-Flash (284B/13B MoE)
-            Single-turn voice responses. Latency > quality, still frontier-tier.
+    KI-179 (2026-05-15) — every route now goes through a 3-tier wrapper
+    (TieredBrainLLM) that prefers Google Gemini Flash, falls back to NIM,
+    then OpenRouter free-tier. The intent-based heavy vs fast split is
+    preserved at the wrapper level — heavy intents get `gemini-2.5-flash`
+    + BRAIN_CHAIN, light intents get `gemini-2.0-flash` + FAST_BRAIN_CHAIN.
+
+    Original D-019 design (kept for context):
+      - 'comparison' / 'recommendation' → heavy brain (quality > latency)
+      - 'fact_find' / 'qa'              → fast brain (latency > quality)
 
     Indic queries get a Sarvam-M translation pass in `handle_turn` before
     retrieval, then another after reasoning to convert the English reply back
@@ -311,8 +315,8 @@ def pick_brain(intent: str, language: str) -> BrainPick:
     """
     HEAVY_INTENTS = {"comparison", "recommendation"}
     if intent in HEAVY_INTENTS:
-        return BrainPick(get_brain_llm(), f"v4-pro::{intent}")
-    return BrainPick(get_fast_brain_llm(), f"v4-flash::{intent}")
+        return BrainPick(get_tiered_brain_llm(role="brain"), f"v4-pro::{intent}")
+    return BrainPick(get_tiered_brain_llm(role="fast_brain"), f"v4-flash::{intent}")
 
 
 # ---------- welcome-back greeting helpers ----------

@@ -727,6 +727,7 @@
       function $(id) { return document.getElementById(id); }
 
       function clearChildren(el) {
+        if (!el) return;
         while (el.firstChild) el.removeChild(el.firstChild);
       }
 

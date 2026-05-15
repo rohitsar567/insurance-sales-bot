@@ -30,27 +30,32 @@ PARSE                     CHUNK                     EMBED
 
 [7]                       [8]                       [9]
 VECTOR INDEX              STRUCTURED EXTRACTION     SCORECARD
-- Chroma persistent       - Sarvam-M extraction     - rules-based 6-sub-score
+- Chroma persistent       - NimChainLLM(BRAIN_CHAIN)- rules-based 6-sub-score
   client                    with HealthPolicy        weighted aggregation
 - metadata per chunk        Pydantic schema         - A-F grade
-- rag/vectors/*.sqlite3   - DeepSeek-V3 fallback    - 24 of 62 fields used
+- rag/vectors/*.sqlite3   - native JSON mode        - 24 of 62 fields used
                           → rag/extracted/*.json
                           → rag/policies.duckdb
 
 [10]                      [11]                      [12]
 RETRIEVAL                 ORCHESTRATION             FAITHFULNESS GATES
-- Voyage at query time    - intent classifier       - Gate 1: retrieval floor
-  (BGE for matching)      - brain router (Sarvam-M  - Gate 2: citation integrity
-- top-k cosine            → Llama/DeepSeek)         - Gate 3: regex numeric
-- per-policy filter       - persona prompt           grounding
-                          - chat history             - Gate 4: LLM-judge
+- BGE-small at query time - intent classifier       - Gate 1: retrieval floor
+  (local CPU, 384-d)      - sales_brain (fact-find) - Gate 2: citation integrity
+- top-k cosine              / BRAIN_CHAIN (QA, etc) - Gate 3: regex numeric
+- per-policy filter       - persona prompt            grounding
+- profile_rag (session-   - chat history            - Gate 4: LLM-judge
+  scoped, KI-102)                                     (NIM Mistral 675B,
+                                                      skipped on fact-find +
+                                                      recommendation, KI-171)
 
 [13]                      [14]                      [15]
 RESPONSE                  TTS                       UI RENDER
-- reply_text + citations  - Sarvam Bulbul          - chat bubble
-- brain used, latency     - audio response          - source links per
-- faithfulness verdict    - language match           citation
-                                                    - scorecard (P1)
+- reply_text + citations  - Sarvam Bulbul v2       - chat bubble
+- brain used (Gemini /    - voice_format strips    - source links per
+  NIM / OR + model id),     CoT + ₹ shorthand       citation
+  latency                 - base64 in same JSON    - scorecard (P1)
+- faithfulness verdict      response                - in-DOM <audio> for
+                                                    barge-in compatibility
 ```
 
 ## 2. Every artifact at every stage
@@ -65,7 +70,7 @@ RESPONSE                  TTS                       UI RENDER
 | 5 CHUNK | chunks (in-memory) | _ephemeral_ | `rag/ingest.py:chunk_pages` | run ingest with `--dry-run` |
 | 6 EMBED | 384-dim vectors | _embedded in Chroma_ | `backend/providers/local_embeddings.py` | re-encode the same text |
 | 7 VECTOR INDEX | persistent sqlite | `rag/vectors/chroma.sqlite3` + HNSW binaries | `chromadb.PersistentClient` | open with chromadb client |
-| 8 STRUCTURED EXTRACTION | 62-field JSON per policy | `rag/extracted/<policy_id>.json` | `rag/extract.py` (Sarvam-M → DeepSeek-V3 fallback) | re-run extraction; compare |
+| 8 STRUCTURED EXTRACTION | 62-field JSON per policy | `rag/extracted/<policy_id>.json` | `rag/extract.py` (`NimChainLLM(BRAIN_CHAIN)` with native JSON mode) | re-run extraction; compare |
 | 8 STRUCTURED EXTRACTION | aggregate table | `rag/policies.duckdb` | upsert in `rag/extract.py` | `duckdb` CLI query |
 | 9 SCORECARD | per-policy grade | `kb/policies/<policy_id>.md` (live in code via `backend/scorecard.py`) | `rag/build_kb.py` + `backend/scorecard.py` | re-run `build_kb` |
 | 10 RETRIEVAL (runtime) | top-k chunks | _ephemeral, logged_ | `rag/retrieve.py` | replay query against Chroma |
@@ -88,7 +93,7 @@ RESPONSE                  TTS                       UI RENDER
 - **Risk if tampered**: silent retrieval poisoning. Mitigation: chunk content stored alongside the embedding; can be re-verified against source PDF on demand.
 
 ### Extracted structured data (Stage 8)
-- **Provenance**: LLM (Sarvam-M / DeepSeek-V3) over full PDF text + Pydantic schema
+- **Provenance**: `NimChainLLM(BRAIN_CHAIN)` over full PDF text + Pydantic schema, native JSON mode
 - **Verifiable**: `extraction_confidence_pct` field per record + re-runnable in <30s with `python -m rag.extract --policy <id>`
 - **Risk if tampered**: bad downstream scorecard + filter results. Mitigation: schema validates types; manual spot-check 5%.
 
@@ -134,7 +139,7 @@ Every architectural decision in `70-docs/decisions.md` produces a specific artif
 Honesty about gaps:
 
 - **Insurer-side PDF tampering** — we trust the insurer's published PDF was real at download time. We don't have a re-fetch + diff pipeline yet. v2 enhancement.
-- **LLM determinism** — Sarvam-M / DeepSeek-V3 can produce slightly different extraction across runs even at `temperature=0`. We pin model versions in `backend/config.py`; for full reproducibility we'd cache extraction outputs. v2 enhancement.
+- **LLM determinism** — every brain candidate (Gemini, Qwen, Mistral, Maverick) can produce slightly different extraction across runs even at `temperature=0`. Model versions are pinned in `backend/config.py`; for full reproducibility we'd cache extraction outputs. v2 enhancement.
 - **Embedding model drift** — if BGE updates, our cached vectors become stale relative to query-time embeddings. v2: pin model commit hash.
 - **Chroma version compatibility** — different `chromadb` releases store metadata differently (we hit `KeyError: '_type'` on first HF deploy). Pinned to `0.5.20` in `requirements.txt`.
 
@@ -194,5 +199,19 @@ Three back-to-back curation passes brought the `40-data/policy_facts/` directory
 - **EN ↔ हिं i18n** — full bilingual UI with the 13-term jargon glossary at `frontend/src/lib/i18n.ts` (mirrored to `kb/methodology/glossary.json`).
 - **Scorecard methodology expander** — every grade opens a transparency panel sourced from `METHODOLOGY_BLUEPRINT` (mirrored to `kb/methodology/scorecard.json`).
 - **Source-quote popovers** — hovering a fact on a policy card surfaces the verbatim PDF quote that backed it.
-- **2026-05-14 Stack A consolidation (D-019)** — 4 third-party LLM providers (Groq, OpenRouter, direct DeepSeek, Cerebras) collapsed onto a single NVIDIA NIM endpoint. Brain = Qwen 80B (current brain primary) (heavy intents) + V4-Flash (voice + fact-find). Judge = Meta Mistral Large 3 675B (different family). Sarvam scoped to voice STT/TTS + Indic translation only. Free tier, 40 req/min, no daily cap. ~600 LOC of legacy provider wiring deleted.
+- **2026-05-14 Stack A consolidation (D-019)** — 4 third-party LLM providers (Groq, OpenRouter, direct DeepSeek, Cerebras) collapsed onto a single NVIDIA NIM endpoint. Brain = Qwen 80B (heavy intents) + Nemotron Nano 30B (voice + fact-find). Judge = Mistral Large 3 675B (different family). Sarvam scoped to voice STT/TTS + Indic translation only. Free tier, 40 req/min, no daily cap. ~600 LOC of legacy provider wiring deleted.
 - **2026-05-14 Space/data split (D-020)** — `rag/corpus/` (188 MB), `rag/vectors/` (129 MB), and `rag/extracted/` moved to companion HF dataset `rohitsar567/insurance-bot-data` (50 GB free quota). Dockerfile pulls them at image build time. Space repo collapses from 286 MB → ~3 MB code-only.
+
+## Batch — 2026-05-15
+
+The day's sprint produced a chain-level rewrite, a provider integration, and a fact-find rip-out. See [`70-docs/40-evaluation/quality-sprint-2026-05-14.md`](../70-docs/40-evaluation/quality-sprint-2026-05-14.md) (Follow-on sprint section) for the full KI list.
+
+- **KI-167 / [ADR-039](../70-docs/60-decisions/ADR-039-llm-driven-sales-brain.md)** — Ripped out `backend/fact_find_brain.py` (441 LOC) + `_canonical_fallback` + the `<FF>{...}</FF>` trailer convention. Replaced with `backend/sales_brain.py` — one LLM call per turn against `FAST_BRAIN_CHAIN` using native provider JSON mode (`response_mime_type=application/json` on Gemini, `response_format={"type":"json_object"}` on NIM). New deterministic post-processor `backend/sales_brain_normalizer.py` validates and normalises captured fields.
+- **KI-168** — Hybrid voice capture: Web Speech API streams interim transcripts to chat input (live UX feel) while `MediaRecorder` runs in parallel; on browser silence-detect the audio blob is POSTed to `/api/transcribe` (Sarvam Saarika v2.5) for the authoritative transcript. Auto-submits the Sarvam result; falls back to Web Speech only if Sarvam errors.
+- **KI-171** — Skip faithfulness Gate 4 (LLM judge) on `fact_find` + `recommendation` intents — no retrieved context to grade against on those turns.
+- **KI-173 / KI-174** — Voice heartbeat + `visibilitychange` / `focus` revival keeps the mic alive across tab / app switches.
+- **KI-175 / KI-176** — Chain reorder: NIM Nemotron 49B demoted from primary to last resort across all three chains (Mistral 675B / Qwen 80B consistently outperform on live audit). OpenRouter re-added as cross-provider diversity using OR's `models: [...]` server-side fallback within the OR free pool.
+- **KI-178** — Live audit of which OpenRouter free-tier models support `response_format`. Only NIM-style native JSON mode is supported on `nvidia/nemotron-3-super-120b-a12b:free`, `qwen/qwen3-next-80b-a3b-instruct:free`, and `google/gemma-4-31b:free`. Llama 3.3 70B / Hermes 3 405B on OR free do NOT — excluded from chains.
+- **KI-179 / [ADR-040](../70-docs/60-decisions/ADR-040-google-gemini-primary.md)** — Operator obtained a Google AI Studio API key. New `backend/providers/google_gemini_llm.py` wraps Google's REST API (`gemini-2.0-flash` for Brain Fast / sales_brain, `gemini-2.5-flash` for Brain Main / synthesis; native JSON mode via `response_mime_type=application/json`; 1500 req/day free quota). Promoted to **Tier 0 primary** on Brain Fast + Brain Main. NIM stays as Tier 1 fallback (Mistral 675B / Maverick / Qwen 80B); OpenRouter `:free` sits as Tier 2 diversity. **Judge stays on NIM Mistral Large 3 675B** (different family from Gemini — preserves brain ↔ judge family-diversity invariant). NIM-only lock from [ADR-038](../70-docs/60-decisions/ADR-038-nim-only-chains.md) relaxed (the `<FF>` trailer convention that motivated the lock is permanently retired post-KI-167). KI-080 sticky-primary election machinery extends naturally to the Google provider.
+
+**Net architectural shape after the sprint:** 3-tier chains across Google → NIM → OpenRouter for Brain Fast + Brain Main; NIM-only with OR `:free` diversity for Judge. Sarvam unchanged (STT + TTS + Indic translation). All structured-output traffic uses native provider JSON mode; no trailer conventions remain.

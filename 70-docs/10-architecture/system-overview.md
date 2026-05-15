@@ -3,10 +3,10 @@
 | Field | Value |
 | --- | --- |
 | Project | Insurance Sales Portfolio Expert |
-| Document version | 0.1 (draft) |
-| Date | 2026-05-13 |
-| Depends on | `01-requirements.md` |
-| Status | In review |
+| Document version | 0.2 |
+| Date | 2026-05-15 |
+| Depends on | `problem-statement.md` |
+| Status | Live |
 
 ---
 
@@ -27,40 +27,64 @@ This document specifies the technical architecture: the stack, the data flow, th
                                   │  audio bytes / text / clicks
                                   ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│                      STREAMLIT UI (app/main.py)                      │
-│   ─ chat pane · audio recorder · filter sidebar · comparison view    │
-│   ─ session state · @st.cache_resource for heavy clients             │
+│             NEXT.JS 14 UI (frontend/src/app/page.tsx)                │
+│  ─ chat surface · Live + push-to-talk toggle · profile builder       │
+│  ─ Web Speech (interim) + MediaRecorder (authoritative) hybrid       │
+│  ─ in-DOM <audio> for TTS playback (barge-in compatible)             │
 └─────────────────────────────────────────────────────────────────────┘
         │                              │                          │
-        │ audio bytes                  │ user_query (text)        │ filter / select
+        │ audio blob                   │ user_query (text)        │ filter / select
         ▼                              ▼                          ▼
 ┌──────────────────┐         ┌─────────────────────┐   ┌──────────────────────┐
-│ VOICE (app/voice)│         │ ORCHESTRATOR        │   │ STRUCTURED STORE     │
-│ ─ Sarvam Saaras  │ ──────► │ (app/orchestrator)  │ ◄ │ DuckDB               │
-│   (STT)          │  text   │ ─ persona prompt    │   │ ─ 1 row per policy   │
-│ ─ Sarvam Bulbul  │ ◄────── │ ─ fact-find graph   │   │ ─ 40-50 fields       │
-│   (TTS)          │  audio  │ ─ tool routing      │   │ ─ filter / compare   │
-└──────────────────┘         │ ─ citation grammar  │   └──────────────────────┘
-                             │                     │              ▲
-                             │                     │              │ extracted
+│ VOICE            │         │ ORCHESTRATOR        │   │ STRUCTURED STORE     │
+│ ─ Sarvam Saarika │ ──────► │ (backend/           │ ◄ │ DuckDB               │
+│   STT            │  text   │  orchestrator.py)   │   │ ─ 1 row per policy   │
+│ ─ Sarvam Bulbul  │ ◄────── │ ─ classify_intent   │   │ ─ 62-field schema    │
+│   TTS            │  audio  │ ─ profile RAG       │   │ ─ filter / compare   │
+└──────────────────┘         │ ─ sales_brain /     │   └──────────────────────┘
+                             │   QA brain dispatch │              ▲
+                             │ ─ faithfulness gates│              │ extracted
                              └──────────┬──────────┘              │ at ingest time
                                         │                          │
                                         ▼                          │
-                             ┌─────────────────────┐               │
-                             │  Sarvam-M (LLM)     │               │
-                             └─────────────────────┘               │
+                  ┌──────────────────────────────────┐             │
+                  │  LLM CHAINS (3-tier, ADR-040)    │             │
+                  │  ┌────────────────────────────┐  │             │
+                  │  │ Brain Fast (sales_brain):  │  │             │
+                  │  │  Gemini 2.0 Flash (Tier 0) │  │             │
+                  │  │  → NIM Qwen/Mistral/Llama4 │  │             │
+                  │  │  → OR :free fallback       │  │             │
+                  │  │  → NIM Nemotron 49B (last) │  │             │
+                  │  ├────────────────────────────┤  │             │
+                  │  │ Brain Main (synthesis):    │  │             │
+                  │  │  Gemini 2.5 Flash (Tier 0) │  │             │
+                  │  │  → NIM Mistral/Maverick/   │  │             │
+                  │  │    Qwen                    │  │             │
+                  │  │  → OR Nemotron-3-Super     │  │             │
+                  │  │  → NIM Nemotron 49B (last) │  │             │
+                  │  ├────────────────────────────┤  │             │
+                  │  │ Judge (cross-family):      │  │             │
+                  │  │  NIM Mistral Large 3 675B  │  │             │
+                  │  │  → NIM Llama-4 Maverick    │  │             │
+                  │  │  → OR Qwen 80B :free       │  │             │
+                  │  │  → NIM Nemotron 49B (last) │  │             │
+                  │  └────────────────────────────┘  │             │
+                  │  Sticky-primary election (KI-080)│             │
+                  │  per chain via                   │             │
+                  │  backend/llm_health.py probe loop│             │
+                  └──────────────────────────────────┘             │
                                         ▲                          │
                                         │ retrieved chunks         │
                                         │                          │
                              ┌──────────┴──────────┐               │
                              │ VECTOR STORE        │   ┌───────────┴──────────┐
                              │ Chroma              │   │ INGEST PIPELINE      │
-                             │ ─ chunk + embedding │ ◄ │ (rag/ingest.py)      │
+                             │ ─ chunk + BGE-small │ ◄ │ (rag/ingest.py)      │
                              │ ─ metadata: policy, │   │ ─ download PDFs      │
                              │   page, clause      │   │ ─ chunk + embed      │
-                             └─────────────────────┘   │ ─ LLM extract → DB   │
-                                                       │ ─ per-insurer adapter│
-                                                       └──────────────────────┘
+                             │ ─ profile chunks    │   │ ─ LLM extract → DB   │
+                             │   (session-scoped)  │   │ ─ per-insurer adapter│
+                             └─────────────────────┘   └──────────────────────┘
                                                                     ▲
                                                                     │ raw PDFs
                                                        ┌────────────┴─────────┐
@@ -71,21 +95,26 @@ This document specifies the technical architecture: the stack, the data flow, th
 
 ---
 
-## 2. Stack picks (v1)
+## 2. Stack picks (current)
 
-| Layer | Pick | Why | Alternative considered | Decision in `decisions.md` |
-| --- | --- | --- | --- | --- |
-| STT | **Sarvam Saaras** | Sarvam-first per assignment context; strong Indic/Hinglish handling | Whisper-large-v3, Deepgram Nova | D-006 |
-| TTS | **Sarvam Bulbul** | First-party Indic prosody; Sarvam-first | ElevenLabs, OpenAI TTS | D-006 |
-| LLM | **Sarvam-M** (or current Sarvam flagship) | Sarvam-first; Indic-tuned reasoning | GPT-4o, Claude Sonnet | D-006 |
-| Embeddings | **Sarvam embedding API if available, else `text-embedding-3-small`** | Will benchmark; whichever scores higher on retrieval @5 against our gold set | OpenAI embeddings, BGE-large local | D-006 |
-| Vector DB | **Chroma** (local, persisted to disk) | Zero-config, embedded, works on Streamlit Cloud | FAISS (no metadata filtering), Qdrant (overkill) | D-004 |
-| Structured DB | **DuckDB** (single file, embedded) | One-file, columnar, no server, deployable to Streamlit Cloud | SQLite, Postgres | D-004 |
-| UI | **Streamlit** | Fastest v1; business logic decoupled so v2 swaps UI only | FastAPI + React (v2) | D-005 |
-| Audio capture | **`streamlit-mic-recorder`** or `streamlit-webrtc` (whichever proves stable in <1h spike) | Required for browser-side mic | Native HTML5 + WebSocket (too much glue) | — |
-| Deployment | **Streamlit Community Cloud** | Free, GitHub-connected, supports Streamlit out of box, secrets UI for API keys | Render, Fly.io | — |
+| Layer | Pick | Why | Decision |
+| --- | --- | --- | --- |
+| STT | **Sarvam Saarika v2.5** | Best-in-class Indian-accent + Hinglish handling. | [ADR-006](../60-decisions/ADR-006-sarvam-first-stack.md) |
+| TTS | **Sarvam Bulbul v2** | First-party Indic prosody; ₹ + lakh shorthand normalised pre-TTS by `voice_format.py`. | [ADR-006](../60-decisions/ADR-006-sarvam-first-stack.md) |
+| LLM — Brain Fast (sales_brain) | **Gemini 2.0 Flash** primary → NIM Qwen 80B / Mistral Large 3 675B / Llama-4 Maverick → OR `:free` (Nemotron-3-Super, Qwen 80B) → NIM Nemotron 49B last resort. Native JSON mode via `response_mime_type=application/json` / `response_format={"type":"json_object"}`. | Frontier free-tier quality on Gemini (1500 req/day) with NIM diversity below it. Sticky-primary election (KI-080) picks one candidate per call. | [ADR-040](../60-decisions/ADR-040-google-gemini-primary.md), [ADR-039](../60-decisions/ADR-039-llm-driven-sales-brain.md) |
+| LLM — Brain Main (QA / comparison / recommendation) | **Gemini 2.5 Flash** primary → NIM Mistral 675B / Maverick / Qwen 80B → OR Nemotron-3-Super → NIM Nemotron 49B last resort. | Higher synthesis quality than 2.0 on long-context recommendation; shares the Google quota with sales_brain. | [ADR-040](../60-decisions/ADR-040-google-gemini-primary.md) |
+| LLM — Judge (faithfulness Gate 4) | **NIM Mistral Large 3 675B** primary → NIM Llama-4 Maverick → OR Qwen 80B `:free` → NIM Nemotron 49B last resort. | Different family from the Gemini brain — preserves brain ↔ judge family-diversity invariant ([ADR-014](../60-decisions/ADR-014-groq-llama-grader.md) lineage). | [ADR-040](../60-decisions/ADR-040-google-gemini-primary.md) |
+| Indic translation | **Sarvam-M** | Best-in-class Hinglish ↔ English translation. | [ADR-006](../60-decisions/ADR-006-sarvam-first-stack.md) |
+| Embeddings | **BGE-small-en-v1.5 (local CPU, 384-d)** | Free, runs offline, no rate limits. | [ADR-011](../60-decisions/ADR-011-bge-local-embeddings.md) |
+| Vector DB | **Chroma** (local persisted) | Embedded, supports metadata filtering, HNSW bloat guard ([ADR-029](../60-decisions/ADR-029-hnsw-bloat-tripwire.md)) | [ADR-004](../60-decisions/ADR-004-hybrid-structured-vector.md) |
+| Structured DB | **DuckDB** (single file) | One-file, columnar, no server. | [ADR-004](../60-decisions/ADR-004-hybrid-structured-vector.md) |
+| UI | **Next.js 14 (App Router) + Tailwind v4 + shadcn/ui** | Production-pattern, full UI flexibility. | [ADR-005](../60-decisions/ADR-005-nextjs-fastapi-frontend.md), [ADR-013](../60-decisions/ADR-013-tailwind-shadcn-ui.md) |
+| Audio capture | **Web Speech API (interim text) + `MediaRecorder` (authoritative blob), hybrid (KI-168)** | Live UX cadence on the UI + Sarvam-grade STT for the actual transcript. | [ADR-028](../60-decisions/ADR-028-voice-ux-single-default-mode.md) |
+| Deployment | **HF Spaces (Docker) + companion HF Dataset for corpus / vectors** | Free, GitHub-mirrored, snapshot_download for data hydration. | [ADR-012](../60-decisions/ADR-012-render-then-hf-space-deploy.md), [ADR-020](../60-decisions/ADR-020-code-data-split-hf-dataset.md) |
 
-**Provider abstraction:** every provider is behind a thin interface (`app/providers/stt.py`, `app/providers/tts.py`, `app/providers/llm.py`) so a benchmark swap is a config flag. **This is non-negotiable** — it's c-readiness commitment #5.
+**Provider keys:** `GOOGLE_API_KEY` (Google AI Studio, 1500 req/day free), `NVIDIA_NIM_API_KEY` (free, 40 req/min), `OPENROUTER_API_KEY` ($10 unlocks 1000 req/day on `:free` models), `SARVAM_API_KEY` (Sarvam STT + TTS + translation).
+
+**Provider abstraction:** every LLM provider lives under `backend/providers/` (`google_gemini_llm.py`, `nvidia_nim_llm.py`, `openrouter_llm.py`) behind a common `LLMProvider` interface. `NimChainLLM` is provider-agnostic — chains may freely mix Google / NIM / OpenRouter candidates by URL. **This is non-negotiable** — it's c-readiness commitment #5.
 
 ---
 
@@ -94,31 +123,46 @@ This document specifies the technical architecture: the stack, the data flow, th
 ```
 user speaks
     │
-    ▼ (audio bytes)
-voice.transcribe()  ── Sarvam Saaras ──► text
+    │  Web Speech streams interim transcript to chat input (live UX)
+    │  MediaRecorder captures audio blob in parallel
     │
-    ▼
-orchestrator.handle_turn(text, session)
+    ▼ (browser silence-detect → audio blob)
+POST /api/transcribe  ── Sarvam Saarika v2.5 ──► authoritative text
+    │  (fallback to Web Speech transcript if Sarvam errors)
     │
-    ├── if fact-find phase: needs_finder.next_question(profile) → returns next Q
+    ▼ (auto-submit)
+POST /api/chat  → orchestrator.handle_turn(text, session)
     │
-    ├── if filter/compare intent detected: structured_store.query(filters) → rows
+    ├── if intent == fact_find:
+    │       sales_brain.drive_sales_turn(profile, history, user_text)
+    │           ─ ONE LLM call against FAST_BRAIN_CHAIN (Gemini 2.0 Flash primary)
+    │           ─ native JSON mode returns {reply, captures, slot_driving, complete}
+    │           ─ sales_brain_normalizer maps loose captures → canonical fields
+    │           ─ KI-094 None-guard ensures null captures don't wipe filled fields
+    │           ─ KI-171 skips faithfulness judge on fact-find turns
     │
-    └── if Q&A intent: 
-            rag.retrieve(query, top_k=5)
+    ├── if intent == comparison: structured_store.query(filters) → rows
+    │
+    └── if intent ∈ {qa, recommendation}:
+            rag.retrieve(query, top_k=10)
                 ─ returns chunks with (policy_id, page, clause, text, score)
-            llm.generate(persona_prompt + chat_history + retrieved_chunks + user_query)
+                ─ profile_rag chunks filtered to current session_id (KI-102)
+            BRAIN_CHAIN.chat(persona_prompt + history + chunks + user_query)
+                ─ Gemini 2.5 Flash primary → NIM Mistral 675B fallback
                 ─ enforces citation grammar [Source: ...]
-                ─ enforces refusal when retrieval is weak
-                ─ returns text response
+                ─ refusal returned when retrieval is weak
+            faithfulness gates (skipped on recommendation per KI-171):
+                Gate 1: retrieval floor    Gate 2: citation integrity
+                Gate 3: regex numeric      Gate 4: cross-family judge
+                                              (NIM Mistral Large 3 675B)
     │
     ▼
-voice.synthesize(text)  ── Sarvam Bulbul ──► audio bytes
+voice.synthesize(text)  ── Sarvam Bulbul v2 ──► base64 audio
+    │  (voice_format.tts_preprocess strips CoT leaks + expands ₹ shorthand)
     │
     ▼
-ui.play_audio(audio_bytes)
-ui.append_to_chat(text + citations)
-log_turn({stt_confidence, retrieved_ids, latency_ms, cost_usd, refused})
+frontend in-DOM <audio> element plays the response (barge-in compatible)
+log_turn({intent, brain_used, retrieved_ids, latency_ms, faithfulness, refused})
 ```
 
 ---
@@ -151,18 +195,18 @@ Full Pydantic model lives in `rag/schema.py` (designed in parallel by a sub-agen
 for pdf in corpus:
     text_chunks = chunk(pdf, target_tokens=800, overlap=120)
     # chunks indexed in Chroma with metadata: policy_id, page, clause_path
-    
+
     # one-shot LLM extraction with the schema as a structured-output target
-    extracted = llm.extract_structured(
+    extracted = NimChainLLM(BRAIN_CHAIN).extract_structured(
         full_pdf_text,
         schema=HealthPolicy,
         few_shot_examples=[hdfc_ergo_example, niva_bupa_example]
     )
-    
-    # self-critique pass: LLM checks every field's evidence in the source
-    confidence_per_field = llm.self_critique(extracted, full_pdf_text)
+
+    # self-critique pass: judge LLM checks every field's evidence in the source
+    confidence_per_field = NimChainLLM(JUDGE_CHAIN).self_critique(extracted, full_pdf_text)
     extracted.extraction_confidence_pct = aggregate(confidence_per_field)
-    
+
     # write to DuckDB
     structured_store.upsert(extracted)
 ```
@@ -246,52 +290,68 @@ Every turn writes one JSON line to `logs/turns.jsonl`:
 
 ```
 insurance-sales-bot/
-├── app/
-│   ├── __init__.py
-│   ├── main.py                 # Streamlit entrypoint
+├── backend/
+│   ├── main.py                 # FastAPI app; HTTP routes (/api/chat, /api/transcribe, /api/profile, admin)
 │   ├── orchestrator.py         # turn handler, persona prompt, intent routing
-│   ├── needs_finder.py         # adaptive fact-find question graph
-│   ├── ui_chat.py
-│   ├── ui_filter.py            # schema-driven filter UI
-│   ├── ui_compare.py           # side-by-side comparison
+│   ├── sales_brain.py          # LLM-driven fact-find (one call/turn, native JSON mode)
+│   ├── sales_brain_normalizer.py  # deterministic post-processor over LLM captures
+│   ├── needs_finder.py         # 9-slot fact-find SCHEMA (data only; prompts retired)
+│   ├── profile_extractor.py    # conversational profile-update extractor
+│   ├── profile_store.py        # persistent named-profile JSON store (KI-040)
+│   ├── profile_rag.py          # session-scoped profile chunk in Chroma (KI-102)
+│   ├── faithfulness.py         # 4-gate hallucination guard
+│   ├── persona.py              # consultative-advisor system prompt
+│   ├── voice_format.py         # TTS pre-processing (CoT strip, ₹ shorthand)
+│   ├── translator.py           # Sarvam-M Indic ↔ English translation
+│   ├── llm_health.py           # background probe + sticky-primary election
+│   ├── admin.py                # /api/admin/* (LLM health, performance, profiles)
 │   └── providers/
-│       ├── stt.py              # Sarvam Saaras client behind interface
-│       ├── tts.py              # Sarvam Bulbul client behind interface
-│       ├── llm.py              # Sarvam-M client behind interface
-│       └── embeddings.py
+│       ├── sarvam_stt.py       # Sarvam Saarika v2.5 client
+│       ├── sarvam_tts.py       # Sarvam Bulbul v2 client
+│       ├── google_gemini_llm.py  # Google AI Studio (Tier 0 primary)
+│       ├── nvidia_nim_llm.py   # NIM client + NimChainLLM dispatcher
+│       ├── openrouter_llm.py   # OpenRouter client (cross-provider diversity)
+│       └── local_embeddings.py # BGE-small-en-v1.5 sentence-transformers
+├── frontend/
+│   ├── src/app/page.tsx        # chat surface + voice toolbar + tab switcher
+│   ├── src/lib/api.ts          # typed API client (openapi-typescript codegen)
+│   ├── src/lib/useStreamingVoice.ts  # hybrid Web Speech + MediaRecorder hook (KI-168)
+│   └── src/lib/useLiveConversation.ts  # Live-mode VAD hook
 ├── rag/
-│   ├── corpus/                 # raw PDFs (committed for reproducibility)
-│   ├── extracted/              # per-policy JSON (committed)
-│   ├── vectors/                # Chroma persistence (gitignored — rebuilt)
-│   ├── policies.duckdb         # structured store (committed)
+│   ├── corpus/                 # raw PDFs (hydrated from HF dataset at Docker build)
+│   ├── extracted/              # per-policy JSON (62-field HealthPolicy)
+│   ├── vectors/                # Chroma persistence (HF dataset side)
+│   ├── policies.duckdb         # DuckDB rollup
 │   ├── schema.py               # Pydantic HealthPolicy model
 │   ├── ingest.py               # download → chunk → embed → extract → store
 │   ├── retrieve.py             # query → top-k chunks
-│   ├── extract.py              # LLM-driven structured extraction
-│   └── adapters/
-│       ├── base.py
-│       ├── star_health.py
-│       ├── hdfc_ergo.py
-│       └── ... (10 adapters)
+│   └── extract.py              # LLM-driven structured extraction
+├── 40-data/
+│   ├── policy_facts/           # curated {value, source_quote} JSONs (256 variants)
+│   ├── premiums/illustrative_premiums.json
+│   ├── reviews/                # per-insurer IRDAI + aggregator + Reddit data
+│   ├── profiles/               # persistent named profiles (KI-040)
+│   ├── llm_health.json         # last probe snapshot
+│   └── llm_usage.jsonl         # per-call telemetry
 ├── eval/
-│   ├── gold_qa.json            # 50–100 gold Q&A pairs (10/policy for top policies)
-│   ├── grader.py               # automated grader (LLM judge + regex)
-│   ├── run.py                  # batch runner
-│   └── results.md              # last run's accuracy table
-├── data/
-│   ├── insurers.json           # 10 insurers metadata
-│   └── corpus_urls.md          # output of corpus-discovery sub-agent
+│   ├── gold_qa.json            # 96+ gold Q&A pairs
+│   ├── run.py                  # in-process orchestrator runner + regex + judge
+│   └── results.md / results.json
 ├── 70-docs/
-│   ├── 01-requirements.md
-│   ├── 02-architecture.md      # THIS FILE
-│   ├── 03-eval-plan.md
-│   ├── 04-failure-modes.md
-│   ├── 05-needs-analysis-flow.md
-│   ├── decisions.md
-│   └── ROADMAP.md
+│   ├── 00-overview/            # roadmap + problem-statement
+│   ├── 10-architecture/        # this doc + stack-rationale + safety + scoring
+│   ├── 20-data-pipeline/       # ingestion-policy + info-source-map
+│   ├── 30-engineering/         # discovery-script + needs-analysis-flow
+│   ├── 40-evaluation/          # eval-methodology + known-issues + quality sprints
+│   └── 60-decisions/           # ADR-001 … ADR-040
+├── 80-audit/
+│   ├── ENTERPRISE_AUDIT.md     # live defect register
+│   └── <run_id>/               # 100-persona audit transcripts
+├── tools/                      # operational scripts (corpus / KB / probes / cron)
 ├── tests/
-│   └── test_smoke.py
-├── streamlit_app.py            # Streamlit Cloud entrypoint (thin wrapper)
+│   ├── test_routing_regression.py
+│   └── test_persona_*.py
+├── Dockerfile                  # HF Space image (Python + snapshot_download)
 ├── requirements.txt
 ├── .env / .env.example
 ├── .gitignore
@@ -302,11 +362,12 @@ insurance-sales-bot/
 
 ## 10. Deployment
 
-- **Repo:** `github.com/rohitsar567/insurance-sales-bot` (public)
-- **Hosting:** Streamlit Community Cloud — `share.streamlit.io` connects to the repo, deploys `streamlit_app.py` on push
-- **Secrets:** Sarvam API key set via Streamlit Cloud's secrets manager (mirrors `.env`)
-- **Resources:** ~1 GB ephemeral, persistent disk for `rag/` (corpus + DuckDB committed to repo so deploy is reproducible from `git clone`)
-- **Vector store rebuild:** on first deploy, app detects empty `rag/vectors/` and rebuilds from `rag/corpus/` (one-time ~5 min cold start; subsequent starts cached)
+- **Code repo:** `github.com/rohitsar567/insurance-sales-bot` (public; mirrored to HF Space `huggingface.co/spaces/rohitsar567/InsuranceBot`).
+- **Data repo:** `huggingface.co/datasets/rohitsar567/insurance-bot-data` — 539 files / ~498 MB (corpus PDFs + Chroma vectors + extracted JSONs). See [ADR-020](../60-decisions/ADR-020-code-data-split-hf-dataset.md).
+- **Hosting:** HF Space Docker image. `Dockerfile` runs `huggingface_hub.snapshot_download` at build time to hydrate `rag/` from the data repo so the Space repo stays code-only (~3 MB).
+- **Secrets (HF Space repository secrets):** `GOOGLE_API_KEY`, `NVIDIA_NIM_API_KEY`, `OPENROUTER_API_KEY`, `SARVAM_API_KEY`, admin password / IP allowlist. Mirrored locally in `.env` (chmod 600, gitignored).
+- **Per-deploy verification:** `tests/live_verify.py` runs a small smoke against the live Space URL post-deploy.
+- **Triple-mirror invariant ([ADR-024](../60-decisions/ADR-024-triple-mirror-code-and-data.md)):** every commit pushed to BOTH GitHub origin AND the HF Space remote; data side mirrors via `tools/upload_*_to_dataset.py`.
 
 ---
 

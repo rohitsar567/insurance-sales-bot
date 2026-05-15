@@ -1,7 +1,11 @@
 # ADR-016: Hybrid brain router (Sarvam primary + Llama / DeepSeek fallback)
 
-**Status:** Superseded by [ADR-019](ADR-019-nim-single-provider-consolidation.md)
+**Status:** Superseded by [ADR-040](ADR-040-google-gemini-primary.md) (2026-05-15) — the cross-provider router intent survives, but the candidate pool now leads with Google AI Studio (Gemini 2.0 / 2.5 Flash) on Brain Fast / Brain Main with NIM Mistral / Maverick / Qwen and OpenRouter `:free` as cross-provider diversity. Originally superseded by [ADR-019](ADR-019-nim-single-provider-consolidation.md).
 **Date:** 2026-05-13
+
+## Why superseded
+
+The original Sarvam-primary + Llama/DeepSeek-fallback router was retired in two steps. ADR-019 first collapsed cross-provider sprawl onto a single NIM key. ADR-040 then re-opened the cross-provider surface — but on a different basis: native JSON-mode contract validation (`response_mime_type=application/json` / `response_format={"type":"json_object"}`) replaces empirical query-class routing as the candidate-selection rule. The current chain is Google → NIM → OpenRouter, scored by KI-080 probe-driven election rather than a static "Indic → Sarvam, comparison → DeepSeek" heuristic.
 
 ## Context
 

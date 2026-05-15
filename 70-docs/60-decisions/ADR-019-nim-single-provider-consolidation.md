@@ -1,6 +1,6 @@
 # ADR-019: NVIDIA NIM as the single non-Sarvam provider
 
-**Status:** Locked
+**Status:** Superseded by [ADR-040](ADR-040-google-gemini-primary.md) (2026-05-15) — the single-provider stance is retired. Google AI Studio (Gemini 2.0 / 2.5 Flash, 1500 req/day free, native JSON mode) is now Tier 0 primary on Brain Fast + Brain Main; NIM stays as Tier 1 fallback (Mistral Large 3 675B + Llama-4 Maverick + Qwen 80B) and is still the judge primary (cross-family from Gemini). OpenRouter `:free` is Tier 2 diversity. ADR-019's "cross-family judge" + "single-key per provider" + "$0 free-tier" principles are preserved across the multi-provider stack.
 **Date:** 2026-05-14
 
 **Partial supersession (D-022, 2026-05-14):** NIM's DeepSeek V4-Pro / V4-Flash and Llama-4 Maverick inference pools degraded with hours-long timeouts during a production incident. The chains were re-ordered to put **Qwen 3-Next 80B** (brain primary), **Nemotron Nano 30B** (fast brain primary), and **Mistral Large 3 675B** (judge primary) at the head, with DeepSeek + Maverick retained as fallback chain entries that re-enter rotation when those pools recover. The single-provider consolidation decision in this ADR still stands (NIM remains the primary inference provider); only the *specific model picks* were swapped. See `backend/providers/nvidia_nim_llm.py` for the current chain definitions.

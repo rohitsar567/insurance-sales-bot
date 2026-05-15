@@ -1,6 +1,10 @@
 # ADR-031 — Sticky primary election for LLM chains
 
-**Status:** Superseded by [ADR-038](ADR-038-nim-only-chains.md) — 2026-05-15 (KI-160). Cross-provider election candidates (Groq, OpenRouter) removed from all three chains after KI-155 demonstrated Groq Llama-3.3 silently ignores the `<FF>` trailer contract. Sticky-primary election mechanics still apply, but only within the NIM candidate pool. Body retained below for history.
+**Status:** Superseded by [ADR-040](ADR-040-google-gemini-primary.md) — 2026-05-15 (KI-179) on the candidate-pool scope. The sticky-primary election machinery (per-chain probe + scored election + provider-diverse BACKUP) is preserved and now scores Google AI Studio / NIM / OpenRouter candidates uniformly. Previously superseded by [ADR-038](ADR-038-nim-only-chains.md) (KI-160) on the same scope. Body retained below for history.
+
+## Why superseded
+
+ADR-038 had locked the candidate pool to NIM-only after KI-155 showed cross-provider candidates silently violated the `<FF>` trailer contract. ADR-039 / KI-167 retired the `<FF>` trailer entirely in favour of native provider JSON mode, which removes the structural reason for the lock. ADR-040 then added Google AI Studio (Gemini 2.0 / 2.5 Flash) as Tier 0 primary on Brain Fast / Brain Main with NIM as Tier 1 fallback and OpenRouter `:free` as Tier 2 diversity. The election scoring (latency × success_rate) and the provider-diverse BACKUP rule are unchanged.
 
 **Status (original):** Accepted — 2026-05-15
 **Owner:** Rohit Saraf

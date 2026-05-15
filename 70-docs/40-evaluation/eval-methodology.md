@@ -32,7 +32,7 @@ For every successfully extracted policy in DuckDB, generate templated Q&A where 
 
 ### Pipeline B — LLM-drafted nuanced questions (curated)
 
-For top-priority policies (top 10–20), run an LLM (Sarvam-M, with DeepSeek-V3 fallback) on the policy text with prompt: *"generate 5 buyer-style questions whose answers are explicitly in this document; include the source clause."* Each generated pair is **human spot-checked** before commit.
+For top-priority policies (top 10–20), run `NimChainLLM(BRAIN_CHAIN)` on the policy text with prompt: *"generate 5 buyer-style questions whose answers are explicitly in this document; include the source clause."* Each generated pair is **human spot-checked** before commit.
 
 Target: 5 × 20 = 100 questions covering multi-clause and edge-case reasoning that Pipeline A can't generate.
 
@@ -56,9 +56,9 @@ Each pair marked with `expected_refusal: bool`. Refusal cases test that the bot 
 
 Numbers, dates, currency, durations, percentages are extracted via regex from both gold and bot reply. Exact match (after normalization) is the strongest signal. Catches "the premium is ₹15,000" hallucinations without an LLM.
 
-### Signal 2 — LLM-judge faithfulness (Groq Llama-3.3-70B)
+### Signal 2 — LLM-judge faithfulness (JUDGE_CHAIN: NIM Mistral Large 3 675B primary)
 
-Different model family from Sarvam-M (the brain) → **non-circular evaluation**. Judge prompt:
+Different model family from the Gemini-led Brain Fast / Brain Main → **non-circular evaluation**. Falls through NIM Llama-4 Maverick → OR Qwen 80B `:free` → NIM Nemotron 49B as last resort. Judge prompt:
 
 > Given GOLD and BOT answers, output strict JSON: `{factual_match: bool, citation_present: bool, score: 0-1, reason: str}`. Be strict on partial matches.
 
@@ -76,7 +76,7 @@ Different model family from Sarvam-M (the brain) → **non-circular evaluation**
 | Citation accuracy | C3 ≥ 95% | n_correct_citations / n_non_refusal |
 | Refusal precision | C4 ≥ 90% | n_correct_refusals / n_expected_refusals |
 | Hindi parity | C8 within 5pp | factual_acc(hi) vs factual_acc(en) |
-| Brain winners | (router config) | factual_acc grouped by brain_used |
+| Brain winners | (router config) | factual_acc grouped by `brain_used` — emitted values include `sales_brain::continue`, `sales_brain::complete`, `brain_main::<elected_model>`, `brain_main::graceful_error` |
 
 ## 4. Output artifacts per run
 
@@ -100,6 +100,6 @@ Bilingual sub-set: 20 questions translated to Hindi + Hinglish via Sarvam-M with
 ## 7. Known limitations (transparent)
 
 - **Sample bias:** Pipeline A questions are templated, so accuracy on Pipeline A is upper-bound real-world performance. Pipeline B + C provide the harder signal.
-- **Single judge model:** Groq Llama is one judge. Risk of judge-specific bias. v2: 3-judge consensus.
+- **Single judge model:** NIM Mistral Large 3 675B is the elected judge primary; the fallback ladder includes Llama-4 Maverick + OR Qwen 80B + NIM Nemotron 49B for resilience but every grade run uses a single judge per question. Risk of judge-specific bias. v2: 3-judge consensus.
 - **No human evaluation:** Cost-prohibitive for 1,100 questions. We rely on the grader; manual spot-check 5%.
 - **No latency budget enforcement in eval:** Latency is captured per record but doesn't gate the score. Doc 01 C1 (p50 ≤ 4s) is monitored separately.

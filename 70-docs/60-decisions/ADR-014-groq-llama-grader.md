@@ -1,7 +1,11 @@
 # ADR-014: Groq Llama-3.3-70B as eval grader
 
-**Status:** Superseded by [ADR-019](ADR-019-nim-single-provider-consolidation.md)
+**Status:** Superseded by [ADR-040](ADR-040-google-gemini-primary.md) (2026-05-15) — Groq is no longer in any chain. The judge primary is NIM Mistral Large 3 675B (different family from the Gemini brain — preserves the non-circular cross-family principle this ADR introduced). Originally superseded by [ADR-019](ADR-019-nim-single-provider-consolidation.md).
 **Date:** 2026-05-13
+
+## Why supersession (current)
+
+Groq was removed from all chains in [ADR-038](ADR-038-nim-only-chains.md) (KI-160) after KI-155 demonstrated Groq Llama-3.3-70B silently ignores structured-output contracts. The brain ↔ judge family-diversity principle this ADR introduced is now expressed differently — the brain is Gemini (Google family), the judge is Mistral (Mistral family) — but the architectural intent (judge does not mark its own homework) is unchanged.
 
 ## Context
 

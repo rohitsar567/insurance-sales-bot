@@ -68,13 +68,26 @@ class OpenRouterLLM(LLMProvider):
         temperature: float = 0.2,
         max_tokens: int = 1024,
         response_format: Optional[dict] = None,
+        models: Optional[list[str]] = None,
     ) -> LLMResult:
+        """Send a chat completion to OpenRouter.
+
+        KI-176 — `models` (optional list of model ids) activates OpenRouter's
+        native server-side fallback: the server tries each id in order and
+        returns the first that succeeds. When provided, `models[0]` is also
+        set as the primary `model` field (OpenRouter requires both for
+        routing; if `models` is omitted the lone `model` field is used).
+        Reference: https://openrouter.ai/docs/features/model-routing
+        """
+        primary_model = models[0] if models else self.model
         body: dict = {
-            "model": self.model,
+            "model": primary_model,
             "messages": [{"role": m.role, "content": m.content} for m in messages],
             "temperature": temperature,
             "max_tokens": max_tokens,
         }
+        if models:
+            body["models"] = list(models)
         if response_format:
             body["response_format"] = response_format
 
@@ -138,3 +151,52 @@ class OpenRouterLLM(LLMProvider):
             completion_tokens=usage.get("completion_tokens"),
             raw=payload,
         )
+
+
+# ----------------------------------------------------------------------------
+# KI-176 — Factory for the OpenRouter free-tier frontier pool.
+#
+# User loaded $10 on OpenRouter; that unlocks 1000 req/day across all `:free`
+# suffix models. This factory returns an OpenRouterLLM whose `model` field is
+# a sane single-model default; callers that want server-side fallback should
+# pass `models=[...]` to `chat()`.
+#
+# Model IDs verified against the LIVE OpenRouter catalog
+# (GET /api/v1/models, 2026-05-15). The model IDs from the KI-176 brief
+# (gemini-2.0-flash-exp:free, llama-3.3-70b-instruct:free,
+# hermes-3-llama-3.1-405b:free) were checked:
+#   - gemini-2.0-flash-exp:free                 — NOT in catalog
+#   - llama-3.3-70b-instruct:free               — PRESENT but no response_format
+#   - hermes-3-llama-3.1-405b:free              — PRESENT but no response_format
+# So those would silently lose JSON mode. The IDs below are the actual
+# free-tier set that declare `response_format` (and most also
+# `structured_outputs`) in their `supported_parameters`:
+#   - nvidia/nemotron-3-super-120b-a12b:free    (120B, structured_outputs)
+#   - qwen/qwen3-next-80b-a3b-instruct:free     (80B,  structured_outputs)
+#   - google/gemma-4-31b-it:free                (31B,  response_format)
+#   - minimax/minimax-m2.5:free                 (?,    response_format)
+#   - google/gemma-4-26b-a4b-it:free            (26B,  response_format)
+# ----------------------------------------------------------------------------
+
+# Default JSON-mode-capable free-tier model. Callers usually override this by
+# passing `models=[...]` to chat() — this is just the lone-model fallback.
+DEFAULT_FREE_BRAIN_MODEL = "nvidia/nemotron-3-super-120b-a12b:free"
+
+
+def get_openrouter_llm(
+    chain_name: str = "sales_brain",
+    model: str = DEFAULT_FREE_BRAIN_MODEL,
+    timeout: float = 60.0,
+) -> "OpenRouterLLM":
+    """Return a fresh OpenRouterLLM ready for sales_brain.
+
+    The returned client is single-use-shaped (one chat() call per turn) and
+    intended to be passed `models=[primary, fallback1, fallback2]` so the
+    OpenRouter server handles in-pool failover before the caller falls back
+    to the NIM chain.
+    """
+    return OpenRouterLLM(
+        model=model,
+        timeout=timeout,
+        chain_name=chain_name,
+    )

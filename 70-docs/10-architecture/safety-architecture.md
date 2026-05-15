@@ -19,7 +19,7 @@ In a regulated BFSI domain, the worst failure isn't "the bot looks slow" — it'
 
 **Description:** Bot claims a policy covers something it doesn't, or quotes a wrong waiting period / sub-limit.
 **Detection:**
-- Run-time: Faithfulness Gate 4 (LLM-judge the judge chain (Mistral Large 3 675B primary) — different family from the brain (Qwen 80B primary); see D-019).
+- Run-time: Faithfulness Gate 4 (LLM-judge — JUDGE_CHAIN with NIM Mistral Large 3 675B primary; different family from the Gemini brain so grading stays non-circular; see [ADR-040](../60-decisions/ADR-040-google-gemini-primary.md)). KI-171 skips Gate 4 on `fact_find` + `recommendation` intents.
 - Run-time: Faithfulness Gate 3 (regex grounding — every ₹, %, day/month/year in the reply must appear in retrieved chunks).
 - Post-hoc: Gold Q&A eval (factual_accuracy metric).
 **Mitigation:** Block reply → return safe refusal → log to `logs/hallucinations.jsonl`. Audit log enables manual review and corpus improvement.
@@ -50,7 +50,7 @@ In a regulated BFSI domain, the worst failure isn't "the bot looks slow" — it'
 
 **Description:** Sarvam-M emits `<think>...</think>` reasoning. If `max_tokens` is exhausted before `</think>` is reached, the reply is unusable. This was a recurring issue when Sarvam-M was the primary brain.
 **Detection:** `strip_think_tags()` checks for `<think>` without matching `</think>`.
-**Resolution (2026-05-14, D-019; refined 2026-05-15, KI-080):** Sarvam-M moved out of the brain role entirely. The NIM brain chains (Qwen 80B / Nemotron 30B / Groq Llama-3.3 / OpenRouter GPT-OSS as probe-elected candidates) handle all reasoning; they emit direct responses without `<think>` preambles. Per-turn primary is elected from a 60s background probe (KI-080, [ADR-031](../60-decisions/ADR-031-sticky-primary-election.md)) — adapts to live provider degradation. Sarvam-M remains only for Indic translation (Hinglish ↔ English), where its `<think>` doesn't interfere because translation outputs are short. F-04 cannot fire on the current stack.
+**Resolution (2026-05-14, D-019 → refined 2026-05-15 across KI-080 / KI-167 / KI-179):** Sarvam-M moved out of the brain role entirely. The current Brain Fast + Brain Main chains lead with Google AI Studio (Gemini 2.0 / 2.5 Flash) with NIM (Qwen 80B / Mistral Large 3 675B / Llama-4 Maverick) and OpenRouter `:free` (Nemotron-3-Super, Qwen 80B) as fallbacks; see [ADR-040](../60-decisions/ADR-040-google-gemini-primary.md). All chain primaries emit direct responses without `<think>` preambles, and native JSON mode (`response_mime_type=application/json` on Gemini, `response_format={"type":"json_object"}` on NIM / OpenRouter) provides server-side parseable output. Per-turn primary is elected from a 300s background probe (KI-080, [ADR-031](../60-decisions/ADR-031-sticky-primary-election.md)) — adapts to live provider degradation. Sarvam-M remains only for Indic translation. F-04 cannot fire on the current stack.
 **Owner:** `backend/orchestrator.py`
 **Status:** Resolved by architecture change.
 
@@ -95,9 +95,9 @@ In a regulated BFSI domain, the worst failure isn't "the bot looks slow" — it'
 **Description:** End-to-end (user speech end → bot speech start) p95 > 7s (Doc 01 C1).
 **Detection:** Per-turn latency logged in `logs/turns.jsonl`. Aggregate via eval harness.
 **Mitigation v1:**
-- Tiered brain routing (D-019): voice turns and fact-find go to the fast-brain chain (Nemotron Nano 30B primary) (~3-4s TTFT); only `comparison` and `recommendation` intents hit V4-Pro (slower but higher quality). Sarvam-M no longer in the brain hot path.
+- Tiered brain routing (ADR-040): voice turns and fact-find go to Brain Fast (Gemini 2.0 Flash primary, ~1-2s TTFT); `comparison` and `recommendation` intents hit Brain Main (Gemini 2.5 Flash primary, slightly higher latency but stronger synthesis). Sarvam-M no longer in the brain hot path.
 - TTS happens server-side and is streamed via base64 in same response. Future: WebSocket for streaming TTS.
-**Status:** Mostly within budget for Llama brain (3-4s); Sarvam-M brain occasionally hits 15-25s due to reasoning.
+**Status:** Brain Fast / Brain Main typically respond in 2-6s; long-tail latency comes from heavy fallback candidates (NIM Mistral 675B) only when Google quota is exhausted.
 
 ### F-10 — Streamlit-Cloud-Free / Render-Free cold start
 
@@ -171,7 +171,7 @@ Run-time. Auditable. Tested.
 
 ### F-16 — Translation cascade introduces drift after faithfulness gate
 
-**Description:** Indic queries use the cascade: Sarvam translates Hinglish → English, DeepSeek reasons → English answer, faithfulness gates run on English answer, Sarvam translates English answer → Hinglish. **Faithfulness does NOT re-verify the final Hinglish output.** If Sarvam corrupts the translation (drops a citation, changes a number, invents a benefit), we wouldn't catch it.
+**Description:** Indic queries use the cascade: Sarvam translates Hinglish → English, the elected Brain Main candidate (Gemini 2.5 Flash by default, NIM Mistral 675B / Maverick / Qwen as fallbacks) reasons → English answer, faithfulness gates run on English answer, Sarvam translates English answer → Hinglish. **Faithfulness does NOT re-verify the final Hinglish output.** If Sarvam corrupts the translation (drops a citation, changes a number, invents a benefit), we wouldn't catch it.
 **Detection v1:** None automated. Manual spot-check of bilingual eval set.
 **Mitigation v1:** Sarvam translator system prompt explicitly forbids changing numbers/citations + caps at 60 words; preserves `[Source: ...]` tags.
 **Mitigation v2:** Back-translate Hinglish→English; compare against original English; block if cosine similarity < 0.85.
@@ -190,5 +190,5 @@ Run-time. Auditable. Tested.
 | M-07 | Nightly synthetic eval cron | Infra | v2 |
 | M-08 | Live-traffic spot grading | Eval | v2 |
 | M-09 | 3-judge consensus for grader | Eval | v2 |
-| M-10 | Sarvam-M no longer brain — V4-Flash/V4-Pro on NIM | Orchestrator (D-019) | Live ✅ |
+| M-10 | Sarvam-M no longer brain — Gemini 2.0 / 2.5 Flash primary on Brain Fast / Brain Main, NIM fallback | Orchestrator (ADR-040) | Live ✅ |
 | M-11 | Faithfulness 4-gate verifier | Orchestrator | Live ✅ |

@@ -64,7 +64,11 @@ Thirty-plus knowledge increments landed today. The corpus was rebuilt, the marke
 - **KI-149** — budget + income parser captures bare numerals like `"30000"`.
 - **KI-150** — `fact_find_brain` `max_tokens` 420 → 700 (one of eight band-aids on the prose+`<FF>`-trailer prompt shape; superseded by KI-167).
 - **KI-160** — chains locked to NIM-only ([ADR-038](70-docs/60-decisions/ADR-038-nim-only-chains.md)) after KI-155 demonstrated Groq Llama-3.3 silently ignores the `<FF>` structured-output trailer contract.
-- **KI-167** — `backend/fact_find_brain.py` ripped out and replaced by `backend/sales_brain.py` ([ADR-039](70-docs/60-decisions/ADR-039-llm-driven-sales-brain.md)). Single LLM call per turn using NIM `response_format={"type":"json_object"}`; no scripted `Question.prompt_en`, no `<FF>` trailer, no `_canonical_fallback`, no `"Got that — {slot}."` prefix. Deterministic post-processor (`backend/sales_brain_normalizer.py`) normalizes captures; profile persists via `profile_store` + `profile_rag` as before.
+- **KI-167** — `backend/fact_find_brain.py` ripped out and replaced by `backend/sales_brain.py` ([ADR-039](70-docs/60-decisions/ADR-039-llm-driven-sales-brain.md)). Single LLM call per turn using native JSON mode; no scripted `Question.prompt_en`, no `<FF>` trailer, no `_canonical_fallback`, no `"Got that — {slot}."` prefix. Deterministic post-processor (`backend/sales_brain_normalizer.py`) normalizes captures; profile persists via `profile_store` + `profile_rag` as before.
+- **KI-171** — orchestrator skips the Judge chain on `fact_find` + `recommendation` queries (faithfulness scoring is meaningless on profile-capture turns and on multi-policy ranked shortlists where the rubric is structural, not factual grounding).
+- **KI-175** — NIM chain reorder: Mistral Large 3 675B promoted to primary, nemotron-49b demoted to last resort across all three chains. The old "nemotron primary" ordering predated the 675B model's availability.
+- **KI-176** — OpenRouter re-added to the chain pool with `models: [...]` server-side fallback within the OR free pool. KI-178 live-audit then confirmed which OR free-tier models actually support `response_format` (nemotron-3-super-120b, qwen3-next-80b, gemma-4 — not Llama 3.3 70B or Hermes 3 405B).
+- **KI-179** — Google AI Studio added as Tier 0 primary on Brain Fast + Brain Main ([ADR-040](70-docs/60-decisions/ADR-040-google-gemini-primary.md)). `backend/providers/google_gemini_llm.py` wrapper matches the `LLMProvider` interface; chains now span {Google → NIM → OpenRouter}. ADR-038 (NIM-only lock) is superseded — the lock was relaxed once KI-167 retired the `<FF>` trailer convention that originally motivated it. Brain Fast primary is `gemini-2.0-flash`; Brain Main primary is `gemini-2.5-flash`; Judge stays NIM Mistral Large 3 675B (different family from Gemini, preserving the brain ↔ judge non-circular grading invariant). Google's free tier: 1500 req/day, 15 req/min, native JSON via `response_mime_type=application/json`.
 
 Per-insurer card counts (166 total across 19 real insurers): HDFC ERGO 15 · National Insurance 14 · Niva Bupa 14 · Bajaj Allianz 13 · ICICI Lombard 13 · Star Health 11 · Care Health 10 · New India Assurance 9 · Tata AIG 9 · Acko 7 · Aditya Birla 7 · Royal Sundaram 7 · Cholamandalam MS 6 · Go Digit 6 · IFFCO Tokio 6 · ManipalCigna 6 · SBI General 6 · IndusInd General 3 · Oriental Insurance 3 · Reliance General 1.
 
@@ -92,15 +96,15 @@ A take-home is a sample of how the engineer thinks under constraint. Three thing
 
 2. **Hallucination defense and refusal as product features.** BFSI deployments get fined for mis-selling; the bot is biased toward refusal over confident wrong answers. The 4 faithfulness gates + cross-check retry + 3 Indic drift checks + audit log are the BFSI-compliance-grade version of "we shipped a chatbot." When the eval shows a headline accuracy below 100% because the gates are aggressive, the right response is to soften the gates carefully — not to ship a higher number by relaxing the verifier.
 
-3. **Honest model picks — Sarvam where Sarvam is uniquely strong, open-weights frontier for reasoning.** Voice and Indic are non-substitutable: **Sarvam Saarika v2.5** for speech-to-text, **Sarvam Bulbul v2** (speaker `anushka`) for text-to-speech, and **Sarvam-M** for Hindi/Hinglish/vernacular translation — no closed-source frontier matches Sarvam on Indian accents or code-mixed Hinglish. Reasoning is a different problem and runs on open-weights frontier models behind a NIM-only candidate pool per role (KI-160 / [ADR-038](70-docs/60-decisions/ADR-038-nim-only-chains.md)), not a single hardcoded brain. Each role is a `NimChainLLM` (`backend/providers/nvidia_nim_llm.py`) whose candidates are all NIM-hosted — KI-155 demonstrated that Groq Llama-3.3 silently ignores the `<FF>` structured-output trailer contract, so cross-provider fallback was removed as a silent-failure trap:
+3. **Honest model picks — Sarvam where Sarvam is uniquely strong, frontier-tier free brains for reasoning.** Voice and Indic are non-substitutable: **Sarvam Saarika v2.5** for speech-to-text, **Sarvam Bulbul v2** (speaker `anushka`) for text-to-speech, and **Sarvam-M** for Hindi/Hinglish/vernacular translation — no closed-source frontier matches Sarvam on Indian accents or code-mixed Hinglish. Reasoning runs on a three-tier candidate pool per role (KI-179 / [ADR-040](70-docs/60-decisions/ADR-040-google-gemini-primary.md)), not a single hardcoded brain. Every candidate supports native JSON mode server-side — Google's `response_mime_type=application/json`, NIM's `response_format={"type":"json_object"}`, OpenRouter's `response_format` pass-through on the audited free-tier models (KI-178). Cross-provider fallback is safe again now that the `<FF>` trailer convention that triggered KI-160 / ADR-038's NIM-only lock has been retired by KI-167 / [ADR-039](70-docs/60-decisions/ADR-039-llm-driven-sales-brain.md):
 
-   - **`BRAIN_CHAIN`** (comparison, recommendation, synthesis) — primary **NVIDIA Nemotron-Super 49B v1.5** (`nvidia/llama-3.3-nemotron-super-49b-v1.5`), backup **Qwen 3-Next 80B** (`qwen/qwen3-next-80b-a3b-instruct`, 80B / 3B-active MoE), 3rd candidate **Mistral Large 3 675B** (`mistralai/mistral-large-3-675b-instruct-2512`).
-   - **`FAST_BRAIN_CHAIN`** (sales-brain fact-find turns per KI-167, QA, normalize, extract — every latency-sensitive role) — primary **Qwen 3-Next 80B** (`qwen/qwen3-next-80b-a3b-instruct`), backup **NVIDIA Nemotron-Super 49B v1.5** (`nvidia/llama-3.3-nemotron-super-49b-v1.5`).
-   - **`JUDGE_CHAIN`** (faithfulness Gate 4, Hinglish drift LLM-judge, eval grader) — primary **Meta Llama-4 Maverick 17B/128E** (`meta/llama-4-maverick-17b-128e-instruct`), backup **Mistral Large 3 675B** (`mistralai/mistral-large-3-675b-instruct-2512`). Deliberately different model families from the brain pool so the judge does not mark its own homework.
+   - **Brain Main** (comparison, recommendation, synthesis) — primary **Google `gemini-2.5-flash`** via Google AI Studio (1500 req/day free, native JSON mode), Tier 1 fallback **NIM Mistral Large 3 675B** (`mistralai/mistral-large-3-675b-instruct-2512`), then **NIM Llama-4 Maverick 17B/128E**, then **NIM Qwen 3-Next 80B**, then **OpenRouter `nvidia/nemotron-3-super-120b-a12b:free`**, last resort **NIM Nemotron-Super 49B v1.5**.
+   - **Brain Fast** (sales-brain fact-find turns per KI-167, fast QA) — primary **Google `gemini-2.0-flash`**, Tier 1 fallback **NIM Qwen 3-Next 80B**, then **NIM Mistral Large 3 675B**, then **NIM Llama-4 Maverick 17B/128E**, then **OpenRouter `nvidia/nemotron-3-super-120b-a12b:free`** + `qwen/qwen3-next-80b-a3b-instruct:free`, last resort **NIM Nemotron-Super 49B v1.5**.
+   - **Judge** (faithfulness Gate 4, Hinglish drift LLM-judge, eval grader; KI-171 skips this on `fact_find` + `recommendation` queries) — primary **NIM Mistral Large 3 675B** (different family from the Gemini brain — preserves cross-family non-circular grading), Tier 1 fallback **NIM Llama-4 Maverick 17B/128E**, then **OpenRouter `qwen/qwen3-next-80b-a3b-instruct:free`**, last resort **NIM Nemotron-Super 49B v1.5**.
 
-   **NIM-only election, no cross-provider cascade (KI-160, [ADR-038](70-docs/60-decisions/ADR-038-nim-only-chains.md)).** If every NIM candidate in a chain fails, orchestrator returns a graceful error message rather than falling to Groq or OpenRouter — fail-loud is preferred over fail-silent-with-garbage for structured-output contracts. The 50/50 NIM ↔ Groq rotation of KI-025 ([ADR-026](70-docs/60-decisions/ADR-026-provider-load-balancing.md)) and the cross-provider-fallback variant of KI-080 ([ADR-031](70-docs/60-decisions/ADR-031-sticky-primary-election.md)) are both superseded. KI-085's proactive credit gating still applies within the NIM pool via a per-model 60-second rate-meter (gate at 35-of-40 req/min, headroom 5). `GROQ_API_KEY` + `OPENROUTER_API_KEY` remain in HF Space secrets for future re-enable but the chain config no longer references them.
+   **Three-tier election (KI-179, [ADR-040](70-docs/60-decisions/ADR-040-google-gemini-primary.md)).** Google → NIM → OpenRouter, with the chain falling through naturally when an upper tier 429s, exhausts quota, or fails real-time. On total chain exhaustion the orchestrator returns a graceful error message — fail-loud > fail-silent-with-garbage is preserved. The 50/50 NIM ↔ Groq rotation of KI-025 ([ADR-026](70-docs/60-decisions/ADR-026-provider-load-balancing.md)) and the NIM-only lock of KI-160 ([ADR-038](70-docs/60-decisions/ADR-038-nim-only-chains.md)) are both superseded. KI-085's proactive credit gating applies per-candidate (60-second rate-meter, gate at 35-of-40 req/min). `GROQ_API_KEY` remains in HF Space secrets but is dormant — no chain references it.
 
-   The result: a Sarvam customer deploying this stack gets a product that *uses Sarvam exactly where Sarvam beats the world* and uses MIT-licensed open-weights frontier models for everything else — $0 inference, two independent free-tier providers, single-key-per-provider for the entire non-voice stack.
+   The result: a Sarvam customer deploying this stack gets a product that *uses Sarvam exactly where Sarvam beats the world*, uses **Google Gemini Flash on the free path for frontier-tier conversational quality**, and uses MIT-licensed open-weights frontier models (Mistral Large 3 675B, Llama-4 Maverick, Qwen 3-Next 80B, Nemotron-Super 49B) for everything else — $0 inference, three independent free-tier providers, single-key-per-provider for the entire non-voice stack.
 
 The rest is craftsmanship. The 8-section KB ([`kb/`](kb/)) is regeneratable from primary sources in <40 minutes for <$2 cold. Every numeric value in every reviewer-facing artifact traces to a source PDF + page + clause. Every architectural decision is in [`70-docs/60-decisions/`](70-docs/60-decisions/) with alternatives and revisit-at-scale notes. Every production-readiness defect is in [`80-audit/ENTERPRISE_AUDIT.md`](80-audit/ENTERPRISE_AUDIT.md). The repo is structured so a new engineer joining on Monday could ship v1.1 by Friday.
 
@@ -201,8 +205,8 @@ The bot is two flows running together — the customer's experience and the tech
 - `detect_language(user_text)` → `english / indic`
 - Indic cascade: if indic, Sarvam-M translates → English for reasoning, response translated back
 
-**Tech 4 — Fact-find branch (KI-167 / [ADR-039](70-docs/60-decisions/ADR-039-llm-driven-sales-brain.md))**
-- If profile empty AND intent ∈ {fact_find, recommendation, comparison}: hand the turn to `backend/sales_brain.py::drive_sales_brain()` — one NIM call with `response_format={"type":"json_object"}`, system prompt carries the 9-slot schema + current profile state. Response: `{reply, captures, slot_driving, complete}`. `backend/sales_brain_normalizer.py` normalizes captures → `session.update_profile_field()` → `profile_store.save_profile()` + `profile_rag.upsert_profile_chunk()`. Emit `reply` to the user.
+**Tech 4 — Fact-find branch (KI-167 / [ADR-039](70-docs/60-decisions/ADR-039-llm-driven-sales-brain.md); primary candidate is Google Gemini 2.0 Flash post-KI-179 / [ADR-040](70-docs/60-decisions/ADR-040-google-gemini-primary.md))**
+- If profile empty AND intent ∈ {fact_find, recommendation, comparison}: hand the turn to `backend/sales_brain.py::drive_sales_brain()` — one LLM call against the Brain Fast chain (Google `gemini-2.0-flash` primary → NIM Qwen / Mistral 675B / Llama-4 Maverick → OpenRouter free → NIM Nemotron-49b last resort) using native JSON mode (`response_mime_type=application/json` on Gemini, `response_format={"type":"json_object"}` on NIM / OR). System prompt carries the 9-slot schema + current profile state. Response: `{reply, captures, slot_driving, complete}`. `backend/sales_brain_normalizer.py` normalizes captures → `session.update_profile_field()` → `profile_store.save_profile()` + `profile_rag.upsert_profile_chunk()`. Emit `reply` to the user.
 - Else: continue to retrieval
 
 </td></tr>
@@ -254,9 +258,9 @@ The bot is two flows running together — the customer's experience and the tech
 </td><td>
 
 **Tech 7 — Brain selection, `pick_brain(intent, language)`**
-- `intent ∈ {comparison, recommendation}` → BRAIN_CHAIN with probe-elected primary within the [ADR-038](70-docs/60-decisions/ADR-038-nim-only-chains.md) NIM-only pool (KI-080 / KI-160)
-- `intent ∈ {qa, fact_find}` → FAST_BRAIN_CHAIN with probe-elected primary in the NIM-only pool (typically Qwen 3-Next 80B in steady state); `fact_find` turns go through `backend/sales_brain.py` with `response_format={"type":"json_object"}` (KI-167 / [ADR-039](70-docs/60-decisions/ADR-039-llm-driven-sales-brain.md))
-- KI-080 election: 1 LLM call per turn (most cases) or 2 (primary fails real-time → NIM-pool backup). Per-chain primary refreshed every 300s by background probe. On total NIM exhaustion: graceful error to user (fail-loud, [ADR-038](70-docs/60-decisions/ADR-038-nim-only-chains.md)).
+- `intent ∈ {comparison, recommendation}` → Brain Main chain with probe-elected primary across the three-tier pool ([ADR-040](70-docs/60-decisions/ADR-040-google-gemini-primary.md)): Google `gemini-2.5-flash` → NIM Mistral Large 3 675B → NIM Llama-4 Maverick → NIM Qwen 3-Next 80B → OpenRouter `nemotron-3-super-120b:free` → NIM Nemotron-49b
+- `intent ∈ {qa, fact_find}` → Brain Fast chain: Google `gemini-2.0-flash` → NIM Qwen → NIM Mistral 675B → NIM Llama-4 Maverick → OpenRouter free pool → NIM Nemotron-49b. `fact_find` turns go through `backend/sales_brain.py` with native JSON mode (KI-167 / [ADR-039](70-docs/60-decisions/ADR-039-llm-driven-sales-brain.md))
+- KI-080 election: 1 LLM call per turn (most cases) or 2 (primary fails real-time → next tier). Per-chain primary refreshed every 300s by background probe. On total three-tier exhaustion: graceful error to user (fail-loud — KI-179 preserves the [ADR-038](70-docs/60-decisions/ADR-038-nim-only-chains.md) principle even though the NIM-only candidate-pool scope is superseded).
 
 **Tech 8 — System prompt construction, `build_messages()`**
 - `[System: ADVISOR_PROMPT + USER PROFILE block + USER IS LOOKING AT (view_context) block]`
@@ -376,11 +380,13 @@ The bot is two flows running together — the customer's experience and the tech
                                   │
                                   ▼
 ┌──────────────────────────────────────────────────────────────────────────┐
-│  TECH 4.  Fact-find OR free-form branch (KI-167 / ADR-039)                │
+│  TECH 4.  Fact-find OR free-form branch (KI-167 / ADR-039 / ADR-040)      │
 │  -------                                                                  │
 │  · If intent ∈ {fact_find, recommendation, comparison} AND profile        │
 │    incomplete:                                                            │
-│      drive_sales_brain() — one NIM call, response_format=json_object     │
+│      drive_sales_brain() — one LLM call against Brain Fast chain         │
+│      (Gemini 2.0 Flash → NIM Qwen / Mistral 675B → OR free)              │
+│      using native JSON mode (response_mime_type / response_format)        │
 │      → {reply, captures, slot_driving, complete}                          │
 │      normalize captures → session.update_profile_field()                 │
 │      → profile_store.save_profile() + profile_rag.upsert_profile_chunk() │
@@ -415,9 +421,14 @@ The bot is two flows running together — the customer's experience and the tech
 ┌──────────────────────────────────────────────────────────────────────────┐
 │  TECH 7.  Brain selection — pick_brain(intent, language)                  │
 │  -------                                                                  │
-│  · intent ∈ {comparison, recommendation} → BRAIN_CHAIN with probe-elected primary in NIM-only pool (heavy, KI-080 / KI-160 / ADR-038)│
-│  · intent ∈ {qa, fact_find} → FAST_BRAIN_CHAIN; fact_find turns dispatched to sales_brain.py (KI-167 / ADR-039, JSON mode)         │
-│  · NIM Qwen 80B + Nemotron-Super 49B as fast-brain election candidates (NIM-only post-KI-160)                                     │
+│  · intent ∈ {comparison, recommendation} → Brain Main chain                │
+│    Gemini 2.5 Flash → NIM Mistral 675B → NIM Llama-4 Maverick →           │
+│    NIM Qwen 80B → OR nemotron-3-super-120b:free → NIM Nemotron-49b       │
+│  · intent ∈ {qa, fact_find} → Brain Fast chain                            │
+│    Gemini 2.0 Flash → NIM Qwen 80B → NIM Mistral 675B → NIM Llama-4 →     │
+│    OR free pool → NIM Nemotron-49b last resort                            │
+│  · fact_find turns dispatched to sales_brain.py (KI-167 / ADR-039)        │
+│  · Three-tier election: Google → NIM → OpenRouter (KI-179 / ADR-040)      │
 └──────────────────────────────────────────────────────────────────────────┘
                                   │
                                   ▼
@@ -435,7 +446,7 @@ The bot is two flows running together — the customer's experience and the tech
 ┌──────────────────────────────────────────────────────────────────────────┐
 │  TECH 9.  Brain LLM call → reply text                                     │
 │  -------                                                                  │
-│  · NIM streaming chat call (V4-Pro or V4-Flash)                           │
+│  · Provider-agnostic chat call via NimChainLLM (Google / NIM / OR)       │
 │  · strip_think_tags() removes <think>…</think> chain-of-thought          │
 │  · Capture brain_model_actual for non-circular judge selection           │
 └──────────────────────────────────────────────────────────────────────────┘
@@ -521,14 +532,18 @@ The bot is two flows running together — the customer's experience and the tech
 │        ┌───────────────────────┼──────────────────────────┐              │
 │        ▼                       ▼                          ▼              │
 │  ┌──────────────┐    ┌──────────────────┐    ┌──────────────────────┐   │
-│  │ STRUCTURED   │    │ VECTOR STORE     │    │ NIM BRAIN ROUTER     │   │
-│  │ DuckDB       │    │ Chroma 0.5.20    │    │ V4-Pro (heavy)       │   │
-│  │ 62 fields    │    │ BGE-small (384d) │    │ V4-Flash (fast)      │   │
-│  │ per policy   │    │ 800/120 chunk    │    │ Mistral Large 3 675B     │   │
-│  └──────────────┘    │ +profile chunk   │    │   (judge + xcheck    │   │
-│                      │   per session    │    │    + Indic gates)    │   │
-│                      └──────────────────┘    │ single NIM key       │   │
-│                                              │ 40 req/min · $0      │   │
+│  │ STRUCTURED   │    │ VECTOR STORE     │    │ 3-TIER BRAIN ROUTER  │   │
+│  │ DuckDB       │    │ Chroma 0.5.20    │    │ Tier 0: Google AI    │   │
+│  │ 62 fields    │    │ BGE-small (384d) │    │   Studio (Gemini     │   │
+│  │ per policy   │    │ 800/120 chunk    │    │   2.0 / 2.5 Flash)   │   │
+│  └──────────────┘    │ +profile chunk   │    │ Tier 1: NIM (Mistral │   │
+│                      │   per session    │    │   675B, Llama-4,     │   │
+│                      └──────────────────┘    │   Qwen 80B, Nemo-49) │   │
+│                                              │ Tier 2: OR free pool │   │
+│                                              │   (nemotron-120b,    │   │
+│                                              │    qwen-80b:free)    │   │
+│                                              │ KI-179 / ADR-040     │   │
+│                                              │ $0 inference path    │   │
 │                                              └──────────────────────┘   │
 └─────────────────────────────────────────────────────────────────────────┘
                                   │
@@ -573,16 +588,16 @@ The bot is two flows running together — the customer's experience and the tech
 
 ### 4.3 Model stack
 
-Every LLM role is served by a **candidate pool** of models elected over by a probe-driven sticky-primary scheme ([ADR-031](70-docs/60-decisions/ADR-031-sticky-primary-election.md), end-to-end spec in [ADR-032](70-docs/60-decisions/ADR-032-llm-chain-architecture.md)), never a hardcoded single model. Chains were curated to preserve brain ↔ judge family diversity (Qwen brain ↔ Mistral judge) so any failover still produces non-circular grading. Cross-provider entries (OpenRouter, Groq) sit inside every chain so the whole reasoning stack survives a full NIM regional outage.
+Every LLM role is served by a **three-tier candidate pool** elected over by a probe-driven sticky-primary scheme ([ADR-031](70-docs/60-decisions/ADR-031-sticky-primary-election.md), end-to-end spec in [ADR-032](70-docs/60-decisions/ADR-032-llm-chain-architecture.md), current candidate-pool shape in [ADR-040](70-docs/60-decisions/ADR-040-google-gemini-primary.md)), never a hardcoded single model. Chains preserve brain ↔ judge family diversity (Gemini brain ↔ Mistral judge) so any failover still produces non-circular grading. Tier 0 (Google AI Studio) is the steady-state primary; Tier 1 (NIM) is the fallback; Tier 2 (OpenRouter free pool) is the diversity tail before the last-resort NIM Nemotron-49b. Every candidate enforces native JSON mode server-side — `response_mime_type=application/json` on Google, `response_format={"type":"json_object"}` on NIM and on the audited OR free-tier models (KI-178).
 
 | Role | Primary | Fallback chain (in order) | Provider(s) | Why this primary |
 |---|---|---|---|---|
-| **Heavy brain** (comparison, recommendation, synthesis) | Probe-elected primary (KI-080) — typically Qwen 3-Next 80B or Groq Llama-3.3-70B in steady state | Qwen 3.5 122B → GPT-OSS 120B → Mistral Large 3 675B → Nemotron-Super 49B → Llama-3.3-70B → DeepSeek V4-Pro → OpenRouter GPT-OSS 120B → Groq Llama-3.3-70B (all as election candidates; probe scores them every 60s) | NIM + Groq + OpenRouter | Probe-driven election picks the actually-faster candidate dynamically (latency × success-rate score), with provider-diverse BACKUP. Pre-KI-080 static 50/50 ([ADR-026](70-docs/60-decisions/ADR-026-provider-load-balancing.md)) was deprecated in favour of [ADR-031](70-docs/60-decisions/ADR-031-sticky-primary-election.md). |
-| **Fast brain** (voice turns, sales-brain fact-find KI-167, QA, normalize, extract) | Probe-elected primary within the [ADR-038](70-docs/60-decisions/ADR-038-nim-only-chains.md) NIM-only pool — typically Qwen 3-Next 80B in steady state | Qwen 3-Next 80B → NVIDIA Nemotron-Super 49B v1.5 (NIM-only election candidates) | NIM | Bottleneck on these short jobs is TTFT, not capability. Sales brain (KI-167) calls this chain with `response_format={"type":"json_object"}` for guaranteed structured output. Election adapts within the NIM pool when one candidate degrades. |
-| **Judge** (faithfulness Gate 4, Hinglish drift, eval grader) | Mistral Large 3 675B | GPT-OSS 120B → Kimi K2 → MiniMax M2.5 → Llama-4 Maverick 17B/128E → OpenRouter GPT-OSS 120B → Groq Llama-3.3-70B | NIM + OpenRouter + Groq | Different family from the Qwen brain (Mistral, not Qwen / DeepSeek / Llama family) so the judge sees the brain's output from a genuinely different decision surface. 675B dense, MIT, ~4.3s on NIM. |
-| **Profile extractor** (free-form profile updates → 9-slot schema, ADR-022) | Fast brain chain (Nemotron Nano 30B primary) | inherits FAST_BRAIN_CHAIN | NIM + Groq | Short prompt, structured JSON out — Nemotron Nano is fast and reliable enough; same chain as fact-find. |
-| **Fact-find normalizer** (user answer → typed slot value) | Fast brain chain (Nemotron Nano 30B primary) | inherits FAST_BRAIN_CHAIN | NIM + Groq | Same shape as profile extractor — narrow input, narrow JSON output. |
-| **Sales brain** (fact-find conversation driver — KI-167 / [ADR-039](70-docs/60-decisions/ADR-039-llm-driven-sales-brain.md)) | Fast brain chain (Qwen 3-Next 80B primary in NIM-only pool) | inherits FAST_BRAIN_CHAIN | NIM | One NIM call per turn using `response_format={"type":"json_object"}`. System prompt carries the 9-slot schema + current profile state; LLM owns voice + flow + slot order, returns `{reply, captures, slot_driving, complete}`. Replaces the scripted-`prompt_en` + paraphraser + opener-rotation + `<FF>` trailer + `_canonical_fallback` machinery (ADR-027 / ADR-030 retired). |
+| **Brain Main** (comparison, recommendation, synthesis) | **Google `gemini-2.5-flash`** (1500 req/day free, native JSON mode) | NIM Mistral Large 3 675B → NIM Llama-4 Maverick 17B/128E → NIM Qwen 3-Next 80B → OpenRouter `nvidia/nemotron-3-super-120b-a12b:free` → NIM Nemotron-Super 49B v1.5 (last resort) | Google + NIM + OpenRouter | Best-in-class conversational + synthesis quality on the free path; 1500 req/day adequate for demo + early production. NIM Mistral 675B Tier 1 fallback preserves dense 675B reasoning when Google quota / 429 trips. KI-179 / [ADR-040](70-docs/60-decisions/ADR-040-google-gemini-primary.md). |
+| **Brain Fast** (voice turns, sales-brain fact-find KI-167, QA) | **Google `gemini-2.0-flash`** (same 1500 req/day quota, lower-latency tier for fast turns) | NIM Qwen 3-Next 80B → NIM Mistral Large 3 675B → NIM Llama-4 Maverick → OpenRouter `nemotron-3-super-120b:free` + `qwen3-next-80b:free` → NIM Nemotron-Super 49B v1.5 (last resort) | Google + NIM + OpenRouter | Bottleneck on these short jobs is TTFT — Gemini 2.0 Flash optimised for low-latency JSON. Sales brain (KI-167) calls this chain with native JSON mode for guaranteed structured output. KI-179 / [ADR-040](70-docs/60-decisions/ADR-040-google-gemini-primary.md). |
+| **Judge** (faithfulness Gate 4, Hinglish drift, eval grader; KI-171 skips on `fact_find` + `recommendation`) | **NIM Mistral Large 3 675B** (`mistralai/mistral-large-3-675b-instruct-2512`) | NIM Llama-4 Maverick 17B/128E → OpenRouter `qwen/qwen3-next-80b-a3b-instruct:free` → NIM Nemotron-Super 49B v1.5 | NIM + OpenRouter | Different family from the Gemini brain (Mistral, not Google / Llama / Qwen) so the judge sees the brain's output from a genuinely different decision surface. 675B dense, MIT, ~4.3s on NIM. Brain ↔ judge family diversity is the structural defence against circular grading. |
+| **Profile extractor** (free-form profile updates → 9-slot schema, ADR-022) | Brain Fast chain (Gemini 2.0 Flash primary) | inherits Brain Fast chain | Google + NIM + OpenRouter | Short prompt, structured JSON out — same chain as sales brain. |
+| **Fact-find normalizer** (user answer → typed slot value) | Brain Fast chain (Gemini 2.0 Flash primary) | inherits Brain Fast chain | Google + NIM + OpenRouter | Same shape as profile extractor — narrow input, narrow JSON output. |
+| **Sales brain** (fact-find conversation driver — KI-167 / [ADR-039](70-docs/60-decisions/ADR-039-llm-driven-sales-brain.md), KI-179 / [ADR-040](70-docs/60-decisions/ADR-040-google-gemini-primary.md)) | Brain Fast chain (Gemini 2.0 Flash primary) | inherits Brain Fast chain | Google + NIM + OpenRouter | One LLM call per turn using native JSON mode. System prompt carries the 9-slot schema + current profile state; LLM owns voice + flow + slot order, returns `{reply, captures, slot_driving, complete}`. Replaces the scripted-`prompt_en` + paraphraser + opener-rotation + `<FF>` trailer + `_canonical_fallback` machinery (ADR-027 / ADR-030 retired). |
 | **Indic translation** (English ↔ Hindi / Hinglish / vernacular) | Sarvam-M | — (no fallback; Indic is non-substitutable) | Sarvam | Best-in-class on Hinglish and code-mixed Indian languages; no open-weights frontier model is competitive here. |
 | **STT** (speech-to-text) | Sarvam Saarika v2.5 (`saarika:v2.5`) | — | Sarvam | Best-in-class on Indian-accented English and Hinglish; WebM transcoded to 16kHz mono WAV at the gateway (`backend/providers/sarvam_stt.py`). |
 | **TTS** (text-to-speech) | Sarvam Bulbul v2 (`bulbul:v2`, speaker `anushka`) | — | Sarvam | Best-in-class on Hinglish prosody; 22.05kHz output, base64 WAV from Sarvam endpoint. |
@@ -806,9 +821,15 @@ cp -R rag/_hf_dataset_backup/rag/* rag/   # corpus/, extracted/, vectors/
 
 ```bash
 cp .env.example .env
-# Edit .env and fill in the 8 keys (see 70-docs/60-decisions/ADR-010-secret-handling.md):
-#   SARVAM_API_KEY, VOYAGE_API_KEY, NVIDIA_NIM_API_KEY, HF_TOKEN,
-#   ADMIN_PASSWORD, ADMIN_IP_ALLOWLIST, GROQ_API_KEY, OPENROUTER_API_KEY
+# Edit .env and fill in the keys (see 70-docs/60-decisions/ADR-010-secret-handling.md):
+#   GOOGLE_API_KEY        — Tier 0 brain (Gemini 2.0/2.5 Flash, KI-179 / ADR-040)
+#   NVIDIA_NIM_API_KEY    — Tier 1 brain fallback + Judge primary
+#   OPENROUTER_API_KEY    — Tier 2 diversity pool (free-tier OR models)
+#   SARVAM_API_KEY        — STT / TTS / Indic translation (non-substitutable)
+#   VOYAGE_API_KEY        — offline ingest embeddings only (BGE on hot path)
+#   HF_TOKEN              — data-dataset pull at boot
+#   ADMIN_PASSWORD        — /api/admin/* gating (post-KI-097, password-only)
+#   GROQ_API_KEY          — DORMANT (no chain references it post-KI-160)
 chmod 600 .env
 ```
 

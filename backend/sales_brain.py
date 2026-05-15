@@ -56,8 +56,26 @@ from typing import Any, Optional
 
 from backend.needs_finder import Profile
 from backend.providers.base import ChatMessage
+from backend.providers.google_gemini_llm import get_gemini_llm
 from backend.providers.nvidia_nim_llm import get_fast_brain_llm
+from backend.providers.openrouter_llm import get_openrouter_llm
 from backend.sales_brain_normalizer import normalize_captures
+
+
+# ----------------------------------------------------------------------------
+# KI-176 — OpenRouter free-tier frontier pool (PRIMARY tier).
+#
+# User loaded $10 on OpenRouter which unlocks 1000 req/day on `:free` models.
+# These IDs were verified against the LIVE OpenRouter catalog and ALL declare
+# `response_format` in their supported_parameters (the first two also declare
+# `structured_outputs`). The list is passed to OpenRouter's native `models`
+# array for server-side in-pool fallback BEFORE we fall through to NIM.
+# ----------------------------------------------------------------------------
+_OR_MODELS: list[str] = [
+    "nvidia/nemotron-3-super-120b-a12b:free",         # 120B, structured_outputs
+    "qwen/qwen3-next-80b-a3b-instruct:free",          # 80B,  structured_outputs
+    "google/gemma-4-31b-it:free",                     # 31B,  response_format
+]
 
 
 # ----------------------------------------------------------------------------
@@ -376,44 +394,150 @@ async def drive_sales_brain(
                 messages.append(ChatMessage(role=role, content=str(content)))
     messages.append(ChatMessage(role="user", content=user_text or ""))
 
-    # Call the fast-brain NIM chain with response_format=json_object
-    # (singleton-via-factory — see KI-080; the factory builds a fresh
-    # NimChainLLM each call but the underlying election state is shared
-    # via backend.llm_health module-level dicts).
-    llm = get_fast_brain_llm()
+    # KI-179 (2026-05-15) — 3-tier LLM stack with Google Gemini 2.0 Flash
+    # PRIMARY (Tier 0), NIM fast-brain chain Tier 1, OpenRouter free-tier
+    # pool Tier 2. Google AI Studio's free tier is 1500 req/day with native
+    # JSON mode; quality > NIM/OR free tiers for conversational fact-find.
+    #
+    # Order: Gemini → NIM → OR → final error.
+    # `llm` is rebound to whichever provider served so the empty-reply
+    # retry path (KI-169, further down) re-uses the SAME provider that
+    # just answered — no re-tier on retry.
+    llm = None
+    result = None
+    served_tier: str = ""  # "gemini" | "nim" | "or"
+    gemini_exc: Optional[BaseException] = None
+    nim_exc: Optional[BaseException] = None
+    or_exc: Optional[BaseException] = None
+
+    # ---- Tier 0 — Google Gemini 2.5 Flash Lite ----
+    # KI-183 (2026-05-15) — gemini-2.0-flash is retired for new accounts
+    # (HTTP 404 "no longer available to new users"). gemini-2.5-flash-lite
+    # is the supported replacement: faster (~900ms vs ~1100ms for 2.5-flash),
+    # cleaner JSON-mode output, same free quota.
+    gemini_llm = None
     try:
-        result = await asyncio.wait_for(
-            llm.chat(
-                messages=messages,
-                temperature=_TEMPERATURE,
-                max_tokens=_MAX_TOKENS,
-                response_format={"type": "json_object"},
-            ),
-            timeout=_TIMEOUT_S,
-        )
-    except asyncio.TimeoutError:
-        elapsed = time.time() - t0
-        logging.warning(
-            "sales_brain timeout (session=%s, %.1fs)", session_id, elapsed,
-        )
-        return SalesBrainResult(
-            reply_text="",
-            captured_updates={},
-            ready_for_recommendations=False,
-            brain_used="sales_brain::error:timeout",
-            error_reason=f"timeout_after_{elapsed:.1f}s",
-        )
-    except Exception as e:  # noqa: BLE001 — broad catch is intentional here
-        logging.warning(
-            "sales_brain LLM call failed (session=%s): %s: %s",
+        gemini_llm = get_gemini_llm(model="gemini-2.5-flash-lite", timeout=25.0)
+    except Exception as e:  # noqa: BLE001
+        gemini_exc = e
+        logging.info(
+            "sales_brain: Gemini unavailable, skipping to NIM (session=%s): %s: %s",
             session_id, type(e).__name__, str(e)[:200],
         )
+
+    if gemini_llm is not None:
+        try:
+            result = await asyncio.wait_for(
+                gemini_llm.chat(
+                    messages=messages,
+                    temperature=_TEMPERATURE,
+                    max_tokens=_MAX_TOKENS,
+                    response_format={"type": "json_object"},
+                ),
+                timeout=_TIMEOUT_S,
+            )
+            llm = gemini_llm
+            served_tier = "gemini"
+        except asyncio.TimeoutError as e:
+            gemini_exc = e
+            logging.info(
+                "sales_brain: Gemini timed out, falling back to NIM (session=%s)",
+                session_id,
+            )
+        except Exception as e:  # noqa: BLE001
+            gemini_exc = e
+            logging.info(
+                "sales_brain: Gemini raised %s, falling back to NIM (session=%s): %s",
+                type(e).__name__, session_id, str(e)[:200],
+            )
+
+    # ---- Tier 1 — NIM fast-brain chain ----
+    if result is None:
+        nim_llm = get_fast_brain_llm()
+        try:
+            result = await asyncio.wait_for(
+                nim_llm.chat(
+                    messages=messages,
+                    temperature=_TEMPERATURE,
+                    max_tokens=_MAX_TOKENS,
+                    response_format={"type": "json_object"},
+                ),
+                timeout=_TIMEOUT_S,
+            )
+            llm = nim_llm
+            served_tier = "nim"
+        except asyncio.TimeoutError as e:
+            nim_exc = e
+            logging.info(
+                "sales_brain: NIM timed out, falling back to OpenRouter (session=%s)",
+                session_id,
+            )
+        except Exception as e:  # noqa: BLE001
+            nim_exc = e
+            logging.info(
+                "sales_brain: NIM raised %s, falling back to OpenRouter (session=%s): %s",
+                type(e).__name__, session_id, str(e)[:200],
+            )
+
+    # ---- Tier 2 — OpenRouter free-tier frontier pool ----
+    if result is None:
+        or_llm = None
+        try:
+            or_llm = get_openrouter_llm(chain_name="sales_brain")
+        except Exception as e:  # noqa: BLE001 — missing API key etc.
+            or_exc = e
+            logging.info(
+                "sales_brain: OpenRouter unavailable (session=%s): %s: %s",
+                session_id, type(e).__name__, str(e)[:200],
+            )
+
+        if or_llm is not None:
+            try:
+                result = await asyncio.wait_for(
+                    or_llm.chat(
+                        messages=messages,
+                        temperature=_TEMPERATURE,
+                        max_tokens=_MAX_TOKENS,
+                        response_format={"type": "json_object"},
+                        models=_OR_MODELS,
+                    ),
+                    timeout=_TIMEOUT_S,
+                )
+                llm = or_llm
+                served_tier = "or"
+            except asyncio.TimeoutError as e:
+                or_exc = e
+            except Exception as e:  # noqa: BLE001
+                or_exc = e
+
+    # ---- All three tiers exhausted — final error ----
+    if result is None:
+        elapsed = time.time() - t0
+        logging.warning(
+            "sales_brain ALL TIERS FAILED (session=%s, %.1fs, "
+            "gemini_exc=%s, nim_exc=%s, or_exc=%s)",
+            session_id, elapsed,
+            f"{type(gemini_exc).__name__}" if gemini_exc else "n/a",
+            f"{type(nim_exc).__name__}" if nim_exc else "n/a",
+            f"{type(or_exc).__name__}" if or_exc else "n/a",
+        )
+        # Classify reason: timeout-everywhere is its own bucket vs mixed errors.
+        all_timeouts = all(
+            isinstance(e, asyncio.TimeoutError) for e in (gemini_exc, nim_exc, or_exc)
+            if e is not None
+        )
+        reason_tag = "timeout_all_tiers" if all_timeouts else "llm_error_all_tiers"
         return SalesBrainResult(
             reply_text="",
             captured_updates={},
             ready_for_recommendations=False,
-            brain_used=f"sales_brain::error:llm_error_{type(e).__name__}",
-            error_reason=f"{type(e).__name__}: {str(e)[:200]}",
+            brain_used=f"sales_brain::error:{reason_tag}",
+            error_reason=(
+                f"gemini_exc={type(gemini_exc).__name__ if gemini_exc else 'n/a'}; "
+                f"nim_exc={type(nim_exc).__name__ if nim_exc else 'n/a'}; "
+                f"or_exc={type(or_exc).__name__ if or_exc else 'n/a'}; "
+                f"elapsed={elapsed:.1f}s"
+            ),
         )
 
     # Parse the JSON object from the LLM response.
@@ -510,7 +634,7 @@ async def drive_sales_brain(
                             reply_text=retry_reply,
                             captured_updates=captured_updates,
                             ready_for_recommendations=ready_for_recommendations,
-                            brain_used=f"sales_brain::nim:{retry_model}::retry",
+                            brain_used=f"sales_brain::{served_tier}:{retry_model}::retry",
                             raw_json=retry_parsed,
                             error_reason=None,
                         )
@@ -533,7 +657,7 @@ async def drive_sales_brain(
         reply_text=reply_text,
         captured_updates=captured_updates,
         ready_for_recommendations=ready_for_recommendations,
-        brain_used=f"sales_brain::nim:{served_model}",
+        brain_used=f"sales_brain::{served_tier}:{served_model}",
         raw_json=parsed,
         error_reason=None,
     )

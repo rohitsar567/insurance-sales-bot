@@ -31,6 +31,7 @@ REPO_ID = "rohitsar567/InsuranceBot"
 SECRETS_TO_SET = [
     "SARVAM_API_KEY", "VOYAGE_API_KEY", "NVIDIA_NIM_API_KEY",
     "OPENROUTER_API_KEY", "GROQ_API_KEY",
+    "GOOGLE_API_KEY",  # KI-179 (2026-05-15) — Gemini Flash via Google AI Studio
     "ADMIN_IP_ALLOWLIST", "ADMIN_PASSWORD",
 ]
 # Truly retired providers — delete from Space to prevent confusion.

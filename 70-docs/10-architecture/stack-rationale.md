@@ -62,14 +62,15 @@ The product is split into five layers. Each layer has independent technology cho
 | 8 | Backend | FE↔BE type safety | **`openapi-typescript` codegen** from FastAPI's auto-generated OpenAPI | Locked | Single source of truth; backend route changes propagate automatically | tRPC (Node-only), GraphQL, manual TS types |
 | 9 | Orchestration | STT | **Sarvam Saarika v2.5** | Locked | Sarvam-first; their newer Indic ASR model | Whisper-large-v3, Deepgram Nova-2, Sarvam Saaras v3 |
 | 10 | Orchestration | TTS | **Sarvam Bulbul** | Locked | Sarvam-first; Indic prosody first-class | ElevenLabs, OpenAI TTS, Coqui local |
-| 11 | Orchestration | LLM (brain) | **NVIDIA NIM tiered: Qwen 80B (current brain primary) (heavy) + Nemotron Nano 30B (current fast-brain primary) (fast)** | Locked (D-019) | V4-Pro (1.6T/49B MoE, frontier, beats Opus-4.6 + GPT-5.4 on SimpleQA) for comparison/recommendation; V4-Flash (284B/13B MoE, lower TTFT) for voice + fact-find. Single NIM key, free tier, no daily cap. Sarvam-M moved to Indic translation only — its 2048 output cap was truncating advisor responses. | Sarvam-M as brain (rejected — truncation), OpenRouter `:free` (rejected — 50/day cap), Gemini 2.5 Flash (rejected — adds 2nd provider ecosystem), GPT-4o via GitHub Models (rejected — same 50/day cap) |
-| 12 | Orchestration | LLM (grader / self-critique) | **NVIDIA the judge chain (Mistral Large 3 675B primary) (Meta MoE)** | Locked (D-019) | Different family from the brain (Qwen 80B primary) — Meta MoE judging DeepSeek MoE, so the brain does not mark its own homework. Same NIM endpoint and key. 400B/17B MoE, frontier-tier. Replaces Groq Llama-3.3-70B (30 req/min cap blocked sweeps). | Groq Llama (rejected — rate limit), Cerebras Qwen-235B (rejected — same family as another DeepSeek path), Sarvam-M held-out |
+| 11 | Orchestration | LLM — Brain Fast (sales_brain) | **Gemini 2.0 Flash** primary (Google AI Studio, 1500 req/day free, native JSON mode) → NIM Qwen 80B → NIM Mistral Large 3 675B → NIM Llama-4 Maverick → OR `:free` (Nemotron-3-Super 120B, Qwen 80B) → NIM Nemotron 49B last resort | Locked (ADR-040) | Frontier free-tier conversational quality on the fact-find surface; native JSON mode via `response_mime_type=application/json` matches NIM's `response_format` contract validated since [ADR-039](../60-decisions/ADR-039-llm-driven-sales-brain.md) / KI-167. 6-level fallback survives Google quota exhaustion or 429. | NIM-only (rejected — strictly worse free-tier primary post-Gemini), OR Llama 3.3 70B (rejected — no `response_format` on OR free per KI-178), Sarvam-M as brain (rejected long ago for `<think>` truncation) |
+| 11a | Orchestration | LLM — Brain Main (QA / comparison / recommendation) | **Gemini 2.5 Flash** primary → NIM Mistral Large 3 675B → NIM Llama-4 Maverick → NIM Qwen 80B → OR Nemotron-3-Super 120B → NIM Nemotron 49B last resort | Locked (ADR-040) | Higher synthesis quality than 2.0 Flash on long-context recommendation; shares the 1500 req/day Google quota. | (see row 11) |
+| 12 | Orchestration | LLM — Judge (faithfulness Gate 4) | **NIM Mistral Large 3 675B** primary → NIM Llama-4 Maverick → OR Qwen 80B `:free` → NIM Nemotron 49B last resort | Locked (ADR-040) | Different family from the Gemini brain — preserves the brain ↔ judge family-diversity invariant ([ADR-014](../60-decisions/ADR-014-groq-llama-grader.md) lineage). KI-171 skips the judge on `fact_find` + `recommendation` intents (no retrieved context to grade). | Gemini as judge (rejected — same family as brain, circular grading), Groq Llama (rejected — rate cap), Sarvam-M held out |
 | 13 | Orchestration | Embeddings | **BGE-small-en-v1.5 (local CPU, sentence-transformers)** | Locked | Free, runs offline, 384-dim, BEIR-strong on insurance/legal text. Voyage path kept for v2 swap (~3pp retrieval-quality delta in BEIR-style spot checks). | Voyage AI voyage-3 (rejected for v1 — 3 RPM free-tier blocked 104-PDF ingest), OpenAI text-embedding-3-small (rejected — no GPT), Cohere |
 | 14 | Storage | Structured DB | **DuckDB** (single file) | Locked | One file, columnar, no server; deploys via `git clone` | SQLite, Postgres |
 | 15 | Storage | Vector DB | **Chroma** (local persisted) | Locked | Embedded, no infra, supports metadata filtering | FAISS, Pinecone, Qdrant, Weaviate |
 | 16 | Ingest | PDF parsing | **pdfplumber** | Locked | Clean text + page numbers — critical for citation grammar | PyMuPDF, Unstructured.io |
 | 17 | Ingest | Chunking | **Custom 800-token chunks, 120-token overlap, page-aware** | Locked | Standard for technical docs; overlap protects clause boundaries | LangChain text splitter, fixed-size |
-| 18 | Ingest | Structured extraction | **Sarvam-M (Llama-3.3-70B / DeepSeek-V3 fallback) with Pydantic structured output + self-critique pass** | Locked | Reliable JSON-mode extraction; self-critique gives per-field confidence; fallback brain handles tables / complex clauses Sarvam-M misses | Pure regex, LangChain extraction, Instructor lib |
+| 18 | Ingest | Structured extraction | **`NimChainLLM(BRAIN_CHAIN)` with Pydantic structured output + self-critique pass** | Locked | Reliable JSON-mode extraction via native provider JSON mode; self-critique runs through `NimChainLLM(JUDGE_CHAIN)` for per-field confidence. | Pure regex, LangChain extraction, Instructor lib |
 | 19 | Pricing | Approach | **Hand-curated illustrative bands** from public PolicyBazaar quotes | Locked | Honest, defensible; "advisor-not-broker" positioning | Live scraping, actuarial model |
 | 20 | Cross-cutting | Auth | **None for v1** (single-tenant demo) | Locked | Out of scope per `01-requirements.md` §7 | Auth0, Clerk, NextAuth |
 | 21 | Cross-cutting | Observability | **JSONL turn log + cost tracker** | Locked | Lightweight; one log file, queryable post-hoc | Langfuse, Helicone, custom dashboard |
@@ -169,10 +170,12 @@ Every pick here corresponds to one or more entries in `decisions.md`:
 | Consultative persona | D-008 |
 | 10 insurers × all health policies | D-009 |
 | Secret handling | D-010 |
-| Embeddings provider (pending) | D-011 |
-| Render deployment over alternatives | D-012 |
+| Embeddings provider (pending → BGE local) | D-011 / ADR-011 |
+| Render deployment (superseded by HF Spaces) | D-012 / ADR-012 |
 | Next.js + Tailwind + shadcn UI stack | D-013 |
-| GPT-4o-mini as grader to avoid circular eval | D-014 |
+| Groq Llama grader (superseded → NIM Mistral) | D-014 / ADR-014 / ADR-040 |
+| LLM-driven sales brain (rip-out of `<FF>` trailer) | ADR-039 |
+| Google Gemini Flash as Tier 0 primary | ADR-040 |
 
 ---
 

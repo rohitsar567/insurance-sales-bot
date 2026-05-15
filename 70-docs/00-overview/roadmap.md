@@ -10,12 +10,21 @@
 
 v1 is a **vertical slice**: 10 insurers × Health × ~80 policies × voice-first advisor. The architecture is built so v2 is a **data/config change, not a rebuild**. This document maps the path.
 
+## 0.1 Recently shipped (2026-05-15)
+
+- **KI-167 / [ADR-039](../60-decisions/ADR-039-llm-driven-sales-brain.md)** — Ripped out `backend/fact_find_brain.py` + canonical_fallback + the `<FF>` trailer convention. Replaced with `backend/sales_brain.py` — one LLM call per turn using native provider JSON mode. No scripted prompts, multi-fact capture per turn, ~500 LOC deleted.
+- **KI-168** — Hybrid voice capture: Web Speech API streams interim transcripts for live UX feel while MediaRecorder runs in parallel; Sarvam STT is the authoritative transcript posted on browser silence-detect.
+- **KI-171** — Skip faithfulness judge on `fact_find` + `recommendation` intents (the judge has no retrieved context to grade against on those turns).
+- **KI-173 / KI-174** — Voice heartbeat + `visibilitychange` / `focus` revival hooks keep the mic alive across tab and app switches.
+- **KI-175 / KI-176** — NIM chain reorder (Nemotron 49B demoted to last resort), OpenRouter re-added as cross-provider diversity via `models: [...]` server-side fallback.
+- **KI-178 / KI-179 / [ADR-040](../60-decisions/ADR-040-google-gemini-primary.md)** — OpenRouter free-tier `response_format` audit; added Google AI Studio (Gemini 2.0 / 2.5 Flash, 1500 req/day free) as Tier 0 primary on Brain Fast + Brain Main.
+
 ## 1. What v1 ships
 
 **Working product:**
 - Voice-first chat advisor over a curated corpus of Indian health insurance policies (~76 PDFs from 10 insurers, ingested into Chroma + DuckDB)
 - Multi-language: English + Hindi/Hinglish via Sarvam Saarika STT + Sarvam Bulbul TTS
-- Brain router (D-019, KI-080): BRAIN_CHAIN with probe-elected primary across NIM Qwen 80B / Groq Llama-3.3 / OpenRouter candidates (heavy intents) + FAST_BRAIN_CHAIN with probe-elected primary across Nemotron 30B / Qwen 80B / Groq (voice + fact-find), Mistral Large 3 675B judge primary. Sarvam-M scoped to Indic translation + voice only.
+- 3-tier brain chain (ADR-040, KI-179): Brain Fast (`backend/sales_brain.py`, fact-find) leads with **Gemini 2.0 Flash** (Google AI Studio, 1500 req/day free, native JSON mode) → NIM Qwen 80B / Mistral Large 3 675B / Llama-4 Maverick → OpenRouter `:free` (Nemotron-3-Super 120B, Qwen 80B) → NIM Nemotron 49B last resort. Brain Main (synthesis / comparison / recommendation) leads with **Gemini 2.5 Flash** → NIM Mistral 675B / Maverick / Qwen 80B → OR Nemotron-3-Super → NIM Nemotron 49B. Judge primary stays on **NIM Mistral Large 3 675B** (different family from the Gemini brain — preserves the cross-family invariant). Sticky-primary election (KI-080) per chain. Sarvam scoped to Indic translation + voice only.
 - 4-gate hallucination defense + auditable refusal log
 - 62-field structured extraction per policy
 - Clean Next.js + Tailwind frontend
@@ -23,7 +32,7 @@ v1 is a **vertical slice**: 10 insurers × Health × ~80 policies × voice-first
 - 8 design / decision documents totaling ~30 pages
 
 **Eval signal:**
-- Gold Q&A harness (~300 pairs targeted) + automated grader (the judge chain (Mistral Large 3 675B primary) — different family from DeepSeek brain)
+- Gold Q&A harness (~300 pairs targeted) + automated grader (the JUDGE_CHAIN with NIM Mistral Large 3 675B primary — different family from the Gemini brain so grading stays non-circular)
 - `eval/results.md` versioned table per run
 - Live audit log `logs/hallucinations.jsonl` for every blocked claim
 

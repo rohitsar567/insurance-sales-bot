@@ -376,6 +376,58 @@ visually misleading — looks like a real store, isn't.
 **Recommendation:** (A) — once activated, the marketplace tab gets
 proper SQL filtering that's faster than the current N-JSON-load pattern.
 
+### KI-167 — Scripted `<FF>` trailer + canonical_fallback removed in favour of LLM-driven `sales_brain` — **FIXED** (ADR-039)
+
+**Severity:** P0
+**Source:** `backend/fact_find_brain.py` + `_canonical_fallback` + `_pick_opener` family in `backend/orchestrator.py`
+**Discovered:** 2026-05-15 — user report *"zero natural LLM chat — it always defaults to the script."*
+
+Pre-fix, every fact-find turn ran through ADR-030's one-call brain with a `<FF>...</FF>` trailer convention; on parse failure or contract violation the orchestrator fell to `_canonical_fallback`, which emitted the scripted `Question.prompt_en` of the next unfilled slot prefixed with `"Got that — {slot}."`. Real LLMs (Qwen, Nemotron, Mistral) under load regularly dropped the trailer tags (KI-090 lenient parser bought partial recovery; KI-155 / KI-156 / KI-158 / KI-161 showed it was structural) and silently violated the contract, so the scripted prefix became the dominant user-facing path.
+
+**Fix:** Ripped out `backend/fact_find_brain.py` (441 LOC) + `_canonical_fallback` + `_pick_opener` + `_NEUTRAL_OPENERS` + `_FAMILY_OPENERS` + `_contains_self_introduction`. Replaced with `backend/sales_brain.py` — one LLM call per turn against `FAST_BRAIN_CHAIN` using native provider JSON mode (`response_mime_type=application/json` on Gemini, `response_format={"type":"json_object"}` on NIM). New deterministic post-processor `backend/sales_brain_normalizer.py` validates and normalises the captured fields. KI-091 / KI-094 None-guards retained. See [ADR-039](../60-decisions/ADR-039-llm-driven-sales-brain.md).
+
+---
+
+### KI-168 — Hybrid voice capture (Web Speech + MediaRecorder + Sarvam) — **FIXED**
+
+**Severity:** P1
+**Source:** `frontend/src/lib/useStreamingVoice.ts`
+**Discovered:** 2026-05-15
+
+Pre-fix voice UX waited for the full Sarvam STT round-trip before showing the user their transcribed text — felt sluggish on the chat surface. New hybrid: Web Speech API streams interim transcripts into the chat input live, while `MediaRecorder` captures the authoritative audio blob in parallel; on browser silence-detect the blob is POSTed to `/api/transcribe` (Sarvam Saarika STT) for the authoritative transcript. Auto-submit falls back to the Web Speech transcript only if Sarvam errors. KI-173 heartbeat + KI-174 `visibilitychange` / `focus` revival hooks keep the mic alive across tab and app switches.
+
+---
+
+### KI-171 — Skip faithfulness judge on `fact_find` + `recommendation` intents — **FIXED**
+
+**Severity:** P1
+**Source:** `backend/orchestrator.py`
+**Discovered:** 2026-05-15
+
+Faithfulness Gate 4 (LLM judge) was being run on every turn including fact-find and recommendation, where there's no retrieved-chunks context to grade the reply against — burning judge calls and occasionally blocking valid replies. Now gated behind `intent ∈ {qa, comparison}` only. Recommendation replies still go through Gates 1-3 (retrieval floor, citation integrity, regex numeric grounding).
+
+---
+
+### KI-175 / KI-176 — NIM chain reorder + OpenRouter re-added as cross-provider diversity — **FIXED**
+
+**Severity:** P2
+**Source:** Chain definitions in `backend/providers/nvidia_nim_llm.py`
+**Discovered:** 2026-05-15
+
+KI-175 demoted NIM Nemotron 49B from primary to last resort across all three chains — Mistral Large 3 675B and Qwen 80B consistently outperform on the live audit. KI-176 re-added OpenRouter as a cross-provider diversity tier using OR's `models: [...]` array param for server-side fallback within the OR free pool. The NIM-only lock from [ADR-038](../60-decisions/ADR-038-nim-only-chains.md) was relaxed in scope (the `<FF>` trailer convention that motivated it no longer exists post-KI-167); only OR `:free` candidates with verified native JSON mode are included (Nemotron-3-Super 120B, Qwen 80B `:free`).
+
+---
+
+### KI-178 / KI-179 — Google Gemini Flash added as Tier 0 primary — **FIXED** (ADR-040)
+
+**Severity:** P2
+**Source:** `backend/providers/google_gemini_llm.py` (new); chain definitions in `nvidia_nim_llm.py`
+**Discovered:** 2026-05-15
+
+Operator obtained a Google AI Studio API key. KI-178 audited which OpenRouter free-tier models support `response_format` (only Nemotron-3-Super 120B + Qwen 80B + Gemma-4 31B). KI-179 added a new `LLMProvider` against Google AI Studio's REST API (`gemini-2.0-flash` + `gemini-2.5-flash`, native JSON mode via `response_mime_type=application/json`, 1500 req/day free quota). Promoted to Tier 0 primary on Brain Fast (Gemini 2.0 Flash) + Brain Main (Gemini 2.5 Flash). NIM stays as Tier 1 fallback with Mistral 675B as the strongest non-Gemini candidate; OpenRouter sits as Tier 2 diversity. Judge stays on NIM Mistral 675B (different family from Gemini — preserves brain ↔ judge family-diversity invariant). See [ADR-040](../60-decisions/ADR-040-google-gemini-primary.md).
+
+---
+
 ### KI-019 — `kb/policies/*.md` not embedded (224 human-readable summaries left out of retrieval)
 
 **Severity:** P3

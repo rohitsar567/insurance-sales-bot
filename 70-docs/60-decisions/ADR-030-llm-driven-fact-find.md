@@ -1,9 +1,14 @@
 # ADR-030 — LLM-driven fact-find (single brain call per turn)
 
-**Status:** Accepted — 2026-05-15
+**Status:** Superseded by [ADR-039](ADR-039-llm-driven-sales-brain.md) (2026-05-15, KI-167) — partially superseded by [ADR-040](ADR-040-google-gemini-primary.md) (chain candidates). The "schema-aware single LLM call per turn" intuition is preserved in `backend/sales_brain.py`; the `<FF>...</FF>` trailer convention, the `_canonical_fallback` greedy slot-walker, and the scripted `Question.prompt_en` prefix are all retired in favour of native provider JSON mode (`response_mime_type=application/json` / `response_format={"type":"json_object"}`).
+**Date:** 2026-05-15
 **Owner:** Rohit Saraf
-**Supersedes:** [ADR-027](ADR-027-fact-find-llm-paraphraser.md) (the LLM paraphraser was a band-aid on the hardcoded-graph stitching; this is the full replacement.)
-**Related:** [ADR-022](ADR-022-conversational-profile-updates.md) (free-form profile updates — the answer-side LLM that this ADR generalizes into the whole loop)
+**Originally supersedes:** [ADR-027](ADR-027-fact-find-llm-paraphraser.md) (the LLM paraphraser was a band-aid on the hardcoded-graph stitching; this was the full replacement.)
+**Related:** [ADR-022](ADR-022-conversational-profile-updates.md) (free-form profile updates — the answer-side LLM that this ADR generalized into the whole loop)
+
+## Why superseded
+
+The `<FF>{...}</FF>` trailer convention proved structurally fragile under load — see KI-155 / KI-156 / KI-158 / KI-161. Even with the KI-090 lenient parser ladder, real LLMs (Qwen, Nemotron, Mistral) regularly returned grammatically fine prose with no parseable trailer, causing `_canonical_fallback` to fire and the user to see the scripted `Question.prompt_en` of the next unfilled slot. The scripted prefix became the dominant user-facing path even when the LLM call had "succeeded." ADR-039 retires the trailer convention entirely in favour of native provider JSON mode; ADR-040 expanded the candidate pool to Google AI Studio + NIM + OpenRouter, all of which natively support server-enforced JSON mode.
 
 ## Context
 

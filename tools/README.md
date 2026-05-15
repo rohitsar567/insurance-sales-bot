@@ -41,15 +41,15 @@ Scheduling for the long-running ones is wired via macOS LaunchAgents — see `CR
 | --- | --- |
 | `upload_to_hf.py` | Code-side push to the HF Space repo (`huggingface.co/spaces/rohitsar567/InsuranceBot`). |
 | `upload_corpus_to_dataset.py`, `upload_extracted_to_dataset.py`, `upload_vectors_to_dataset.py`, `upload_all_to_dataset.py` | Push specific slices of `rag/` to the companion HF Dataset `rohitsar567/insurance-bot-data`. See [ADR-020](../70-docs/60-decisions/ADR-020-code-data-split-hf-dataset.md) and [ADR-024](../70-docs/60-decisions/ADR-024-triple-mirror-code-and-data.md). |
-| `set_hf_secrets.py` | One-shot helper that pushes the runtime secrets into the HF Space (idempotent). |
+| `set_hf_secrets.py` | One-shot helper that pushes the runtime secrets into the HF Space (idempotent). Current secret set: `GOOGLE_API_KEY` (Google AI Studio, per [ADR-040](../70-docs/60-decisions/ADR-040-google-gemini-primary.md)), `NVIDIA_NIM_API_KEY`, `OPENROUTER_API_KEY`, `SARVAM_API_KEY`, plus admin password / IP allowlist. |
 
 ## Probes + diagnostics
 
 | Script | Provider it pokes |
 | --- | --- |
 | `sarvam_probe.py`, `sarvam_nothink_probe.py` | Sarvam-M / Saarika / Bulbul connectivity + latency. |
-| `groq_probe.py`, `groq_long_probe.py` | Groq Llama free-tier latency + sustained-rate test. |
-| `openrouter_probe.py`, `or_models.py` | OpenRouter routing + model-list inspection. |
+| `groq_probe.py`, `groq_long_probe.py` | Historical Groq Llama free-tier probe — Groq is no longer in any production chain (removed in [ADR-038](../70-docs/60-decisions/ADR-038-nim-only-chains.md), not re-added in [ADR-040](../70-docs/60-decisions/ADR-040-google-gemini-primary.md)). Kept for benchmarking. |
+| `openrouter_probe.py`, `or_models.py` | OpenRouter routing + model-list inspection. Used by KI-178 to audit which `:free` models expose `response_format`. |
 | `pdf_probe.py` | pdfplumber parse on a single PDF — first stop when extraction silently produces empty text. |
 | `heavy_smoke_test.py` | End-to-end smoke against the live HF Space (every provider in one call). |
 

@@ -1,7 +1,7 @@
 # Enterprise-Grade Readiness Audit
 
 **Target deployment:** top-tier Indian insurance companies (HDFC ERGO, ICICI Lombard, Bajaj Allianz, Star Health, Tata AIG, etc.)
-**Audit date:** 2026-05-14
+**Audit date:** 2026-05-14 (initial) · 2026-05-15 (follow-on sprint KI-167 → KI-179 landed)
 **Audit window:** active — this is a living document. Background audits (100-persona simulation + full gold-QA eval) running concurrently; results merge here as they land.
 
 ---
@@ -19,8 +19,9 @@
 | Language-handling fairness | ⚠️ Hinglish concern was a 20-persona sampling artifact. Real outliers: tax_planner archetype (4.6 refusals) + stream style (4.3) — open. | P1 — India-market regulatory risk |
 | Code hygiene | ✅ Loose tmp files removed; `fact_find_normalizer` + `profile_extractor` migrated to chain pattern (KI-033) | — |
 | Test coverage | 🟡 15 unit tests pinning KI-018 / KI-023 / KI-080 routing + primary-election invariants. Broader coverage still open. | P1 |
-| Voice UX | ✅ Live default-on + clickable toggle + labeled push-to-talk + barge-in working (ADR-028) | — |
-| Fact-find robotic tone | ✅ LLM paraphraser w/ verifier (ADR-027) | — |
+| Voice UX | ✅ Live default-on + clickable toggle + labeled push-to-talk + barge-in working (ADR-028) + hybrid Web Speech + MediaRecorder capture (KI-168) + tab-switch revival (KI-173 / KI-174) | — |
+| Fact-find robotic tone | ✅ Replaced with `sales_brain` LLM-driven loop ([ADR-039](../70-docs/60-decisions/ADR-039-llm-driven-sales-brain.md), KI-167) — no scripted prompts, no `<FF>` trailer, native provider JSON mode | — |
+| LLM stack | ✅ 3-tier chain Google → NIM → OpenRouter per [ADR-040](../70-docs/60-decisions/ADR-040-google-gemini-primary.md). Gemini 2.0/2.5 Flash primary; NIM Mistral 675B fallback; OR `:free` diversity. Judge stays NIM Mistral 675B (cross-family from Gemini). | — |
 | Secrets handling | ✅ Verified clean (.env never committed) | — |
 
 Legend: ✅ fixed / ⚠️ partial / 🟡 improving / 🔴 open
@@ -336,4 +337,21 @@ This audit so far covers items 1-3, 5 (in progress), and 6. Items 7-10 require a
 
 ---
 
-*This file regenerates as new evidence lands. Last updated: 2026-05-15 (KI-101..KI-107 landed).*
+## Sprint 2026-05-15 (KI-167 → KI-179) — chain rewrite + sales_brain rip-out
+
+Second-day follow-on sprint after live user testing flagged that the scripted `<FF>` trailer convention was leaking into every fallback turn. Full timeline in [`70-docs/40-evaluation/quality-sprint-2026-05-14.md`](../70-docs/40-evaluation/quality-sprint-2026-05-14.md) (Follow-on sprint section). Highlights against the register:
+
+| KI | Impact on register | Note |
+|---|---|---|
+| **KI-167** ([ADR-039](../70-docs/60-decisions/ADR-039-llm-driven-sales-brain.md)) | Closes the "scripted fact-find leakage" defect at root — `backend/fact_find_brain.py` + `_canonical_fallback` + the `<FF>` trailer convention all deleted. Replaced with `backend/sales_brain.py` (one LLM call per turn, native provider JSON mode). KI-090 lenient parser, KI-103 no_trailer loop-breaker, and the entire `fact_find_brain::fallback:*` telemetry vocabulary are retired. | Net negative LOC. |
+| **KI-168 / KI-173 / KI-174** | Voice UX hardening — hybrid Web Speech (live UX) + MediaRecorder (authoritative blob → Sarvam STT) + tab-switch revival hooks. | Frontend-only. |
+| **KI-171** | Skip faithfulness Gate 4 on `fact_find` + `recommendation` intents (no retrieval context to grade against). | Tightens D-006 fairness risk surface. |
+| **KI-175 / KI-176** | NIM chain reorder — Nemotron 49B demoted from primary to last resort; OpenRouter re-added as cross-provider diversity (using OR's `models: [...]` server-side fallback). | Mitigates D-004 latency long-tail. |
+| **KI-178** | Live audit of OR `:free` `response_format` support — Llama 3.3 70B / Hermes 3 405B excluded; only Nemotron-3-Super 120B + Qwen 80B `:free` + Gemma-4 31B included. | Closes a silent-failure class proactively. |
+| **KI-179** ([ADR-040](../70-docs/60-decisions/ADR-040-google-gemini-primary.md)) | New `backend/providers/google_gemini_llm.py`; Gemini 2.0 Flash → Brain Fast primary, Gemini 2.5 Flash → Brain Main primary. NIM Tier 1 fallback, OR `:free` Tier 2 diversity. Judge stays on NIM Mistral 675B (different family from Gemini — preserves brain ↔ judge family-diversity invariant). | Tier 0 free-tier conversational quality lift. |
+
+The 2026-05-14 scoreboard rows for "Voice UX", "Fact-find robotic tone", and the new "LLM stack" row are now fully green. D-003 (factual accuracy) and D-004 (latency) remain partially open pending a fresh full-eval re-run on the new chain shape.
+
+---
+
+*This file regenerates as new evidence lands. Last updated: 2026-05-15 (sprint KI-167 → KI-179 landed; ADR-039 + ADR-040 ship).*

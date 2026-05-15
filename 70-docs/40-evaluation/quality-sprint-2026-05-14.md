@@ -85,3 +85,45 @@ ffefacf  KI-013 reinforcement — persona rules 8 + 9 for demographic-aware recs
 
 Every commit pushed to BOTH `origin` (HF Space) and `github` per the
 triple-mirror contract in [ADR-024](../60-decisions/ADR-024-triple-mirror-code-and-data.md).
+
+---
+
+## Follow-on sprint — 2026-05-15 (KI-167 → KI-179)
+
+A second-day sprint after live testing flagged that the scripted `<FF>` trailer convention was leaking into every fallback turn ("zero natural LLM chat — it always defaults to the script"). The day produced one ADR (ADR-039), one provider integration (Google AI Studio), and a chain-level rewrite (ADR-040).
+
+### Findings & fixes by source
+
+| KI | Severity | Issue | Resolution |
+|---|---|---|---|
+| KI-167 | P0 | `<FF>` trailer + `_canonical_fallback` dominated user-visible turns when LLM contract violations occurred; bot felt robotic | Ripped out `fact_find_brain.py` + canonical_fallback + scripted prompts; new `backend/sales_brain.py` with one LLM call/turn using native provider JSON mode. ADR-039. |
+| KI-168 | P1 | Voice UX waited for full Sarvam STT round-trip before showing transcript | Hybrid Web Speech (interim) + MediaRecorder (authoritative blob → Sarvam STT on silence-detect). |
+| KI-171 | P1 | Faithfulness judge ran on `fact_find` + `recommendation` turns where there's no retrieval context | Skip Gate 4 on those intents; Gates 1-3 still run. |
+| KI-173 | P2 | Mic died when user switched tabs / minimised the app | Heartbeat keeps mic stream alive. |
+| KI-174 | P2 | Mic state did not recover on `visibilitychange` / `focus` | Revival hooks reattach the mic on tab return. |
+| KI-175 | P2 | NIM Nemotron 49B was a chain primary but consistently underperformed Mistral 675B / Qwen 80B | Demoted Nemotron 49B to last resort across all chains. |
+| KI-176 | P2 | OpenRouter dropped from chains in ADR-038 was no longer needed after ADR-039 retired `<FF>` | Re-added OR `:free` candidates with verified JSON mode as cross-provider diversity. |
+| KI-178 | P2 | Audit of which OR `:free` models support `response_format` | Llama 3.3 70B / Hermes 3 405B excluded (no native JSON mode); Nemotron-3-Super 120B + Qwen 80B `:free` + Gemma-4 31B included. |
+| KI-179 | P2 | Google AI Studio key obtained; need to wire it into chains | New `backend/providers/google_gemini_llm.py`; Gemini 2.0 Flash → Brain Fast primary, Gemini 2.5 Flash → Brain Main primary. ADR-040. |
+
+### What changed in the architecture
+
+- **Brain Fast (sales_brain):** Gemini 2.0 Flash → NIM Qwen 80B → NIM Mistral Large 3 675B → NIM Llama-4 Maverick → OR Nemotron-3-Super 120B → OR Qwen 80B `:free` → NIM Nemotron 49B (last resort).
+- **Brain Main:** Gemini 2.5 Flash → NIM Mistral Large 3 675B → NIM Llama-4 Maverick → NIM Qwen 80B → OR Nemotron-3-Super → NIM Nemotron 49B (last resort).
+- **Judge:** NIM Mistral Large 3 675B → NIM Llama-4 Maverick → OR Qwen 80B `:free` → NIM Nemotron 49B (last resort).
+
+### What was deleted
+
+- `backend/fact_find_brain.py` (441 LOC).
+- `_canonical_fallback`, `_normalize_for_slot`, `_pick_opener`, `_NEUTRAL_OPENERS`, `_FAMILY_OPENERS`, `_contains_self_introduction` in `backend/orchestrator.py`.
+- The `<FF>{...}</FF>` trailer convention + lenient parser ladder + `:no_trailer` / `:empty_reply` / `:llm_error` telemetry variants from `TurnResult.brain_used`.
+- Dead `prompt_en` / `prompt_hi` strings in `backend/needs_finder.py::GRAPH` are no longer rendered (data structure retained for the LLM's system-prompt schema).
+
+### What stayed
+
+- KI-080 sticky-primary election machinery (now scores Google / NIM / OpenRouter candidates uniformly).
+- KI-084 per-phase httpx timeouts.
+- KI-085 proactive credit gating (extended to Google quota).
+- KI-091 / KI-094 None-guards on the profile extractor (still relevant for QA-mode turns).
+- KI-102 / KI-107 session-isolated profile RAG.
+- KI-106 graceful `TimeoutError` + `Exception` handling on `/api/chat`.

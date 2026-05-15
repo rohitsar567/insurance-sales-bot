@@ -1,12 +1,12 @@
 # ADR-032 — LLM Chain Architecture Reference
 
-**Status:** Superseded by [ADR-038](ADR-038-nim-only-chains.md) — 2026-05-15 (KI-160). All three chains locked to NIM candidates only after KI-155. Current candidate lists:
+**Status:** Superseded by [ADR-040](ADR-040-google-gemini-primary.md) — 2026-05-15 (KI-179) on the candidate-pool scope. The NIM-only lock from ADR-038 was relaxed once ADR-039 / KI-167 retired the `<FF>` trailer convention. Current candidate lists per ADR-040:
 
-- **BRAIN:** `nvidia/llama-3.3-nemotron-super-49b-v1.5` (primary), `qwen/qwen3-next-80b-a3b-instruct` (backup), `mistralai/mistral-large-3-675b-instruct-2512` (3rd)
-- **FAST_BRAIN:** `qwen/qwen3-next-80b-a3b-instruct` (primary), `nvidia/llama-3.3-nemotron-super-49b-v1.5` (backup)
-- **JUDGE:** `meta/llama-4-maverick-17b-128e-instruct` (primary), `mistralai/mistral-large-3-675b-instruct-2512` (backup)
+- **BRAIN (Fast — sales_brain):** Gemini 2.0 Flash (Google AI Studio Tier 0 primary), then NIM `qwen/qwen3-next-80b-a3b-instruct` → NIM `mistralai/mistral-large-3-675b-instruct-2512` → NIM `meta/llama-4-maverick-17b-128e-instruct` → OpenRouter `nvidia/nemotron-3-super-120b-a12b:free` → OpenRouter `qwen/qwen3-next-80b-a3b-instruct:free` → NIM `nvidia/llama-3.3-nemotron-super-49b-v1.5` (last resort).
+- **BRAIN (Main — synthesis / QA / comparison / recommendation):** Gemini 2.5 Flash (Tier 0 primary), then NIM Mistral 675B → NIM Maverick → NIM Qwen 80B → OpenRouter Nemotron-3-Super → NIM Nemotron 49B (last resort).
+- **JUDGE:** NIM `mistralai/mistral-large-3-675b-instruct-2512` (primary), NIM Maverick (backup), OpenRouter Qwen 80B `:free`, NIM Nemotron 49B (last resort).
 
-Body below retained as architectural reference for probe / election / timeout machinery — all still in effect within the NIM-only scope.
+Body below retained as architectural reference for probe / election / timeout / credit-gating machinery — all still in effect across the multi-provider pool. Section 4 "Election algorithm" treats Google / NIM / OpenRouter candidates uniformly via `provider_of()` for the cross-provider BACKUP rule.
 
 **Status (original):** Accepted — 2026-05-15
 **Type:** Architecture reference (not a decision ADR)

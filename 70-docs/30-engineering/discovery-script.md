@@ -129,10 +129,14 @@ This is the customer-protection framing. It tells the user honesty is **self-pro
 
 ## Implementation notes
 
-The questions live in `backend/needs_finder.py::GRAPH`. To add a new question:
+The 9-slot fact-find SCHEMA still lives in `backend/needs_finder.py::GRAPH` — used now as the schema source for the `sales_brain` LLM system prompt rather than as a scripted question list. Each entry's `id`, `field`, `is_core`, and `condition` are consumed by the LLM as a structured contract; the `prompt_en` / `prompt_hi` strings are no longer rendered to the user post-[ADR-039](../60-decisions/ADR-039-llm-driven-sales-brain.md) / KI-167 (the LLM owns voice + cadence end-to-end via its system prompt + the conversation so far).
 
-1. Add a `Question(...)` entry with `id`, `prompt_en` (plain language + WHY), `prompt_hi` (Hindi rendering), `field` (which Profile attribute it sets), `is_core` (boolean — counts toward completeness), optional `condition` callable, optional `parser`.
-2. Add a row in `70-docs/scorecard-knowledge-graph.md` Part B showing how the new input shifts weights.
-3. Wire the shift into `_profile_tuned_weights()` in `backend/scorecard.py`.
+To add a new question:
 
-Drift between these three places breaks the transparency promise. Keep them in sync.
+1. Add a `Question(...)` entry with `id`, `field` (which Profile attribute it sets), `is_core` (boolean — counts toward completeness), optional `condition` callable, optional `parser`.
+2. Surface the new slot in the `sales_brain` system prompt's 9-slot schema (alongside accepted value shapes + examples) so the LLM knows to capture it. See `backend/sales_brain.py::_SYSTEM_PROMPT`.
+3. Wire any post-capture validation into `backend/sales_brain_normalizer.py` (enum coercion, INR parsing, bounds).
+4. Add a row in `70-docs/scorecard-knowledge-graph.md` Part B showing how the new input shifts weights.
+5. Wire the shift into `_profile_tuned_weights()` in `backend/scorecard.py`.
+
+Drift between these places breaks the transparency promise. Keep them in sync.

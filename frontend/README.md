@@ -13,12 +13,15 @@ For Claude / agent-specific rules (e.g. the "this is NOT the Next.js you know" n
 | `src/app/globals.css` | Tailwind v4 entrypoint + the shadcn/ui token layer ([ADR-013](../70-docs/60-decisions/ADR-013-tailwind-shadcn-ui.md)). |
 | `src/lib/api.ts` | Typed API client. Generated types via `openapi-typescript` from the FastAPI OpenAPI schema ([ADR-015](../70-docs/60-decisions/ADR-015-openapi-typescript-codegen.md)). |
 | `src/lib/useLiveConversation.ts` | The continuously-open-mic VAD hook that powers Live mode + barge-in. State persists in `localStorage.insurance_live_pref` ([ADR-028](../70-docs/60-decisions/ADR-028-voice-ux-single-default-mode.md)). |
+| `src/lib/useStreamingVoice.ts` | **KI-168 hybrid voice capture.** Runs Web Speech API (interim transcripts streamed live to the chat input) and `MediaRecorder` (authoritative audio blob) in parallel; on browser silence-detect the blob is POSTed to `/api/transcribe` (Sarvam Saarika STT). Auto-submits the Sarvam transcript; falls back to the Web Speech transcript only if Sarvam errors. KI-173 heartbeat + KI-174 `visibilitychange` / `focus` revival hooks keep the mic alive across tab / app switches. |
 | `src/lib/i18n.ts` | EN ↔ हिं strings + the 13-term `GLOSSARY` mirrored to [`kb/methodology/glossary.json`](../kb/methodology/glossary.json). |
 
 ## Voice UX invariants ([ADR-028](../70-docs/60-decisions/ADR-028-voice-ux-single-default-mode.md))
 
 - **One default voice mode + one fallback.** Live mode is the default; the toolbar pill toggles it (green = on, red = off). The 🎤 push-to-talk button suspends Live for one turn → captures with VAD silence-cutoff → resumes Live if the user preference is still on.
 - **Hands-free mode was removed in KI-027.** Any reference to it in code or docs is stale.
+- **Hybrid capture (KI-168).** Web Speech API drives the live interim transcript on the chat input; `MediaRecorder` captures the authoritative blob in parallel. On browser silence-detect the blob is POSTed to `/api/transcribe` (Sarvam) for the authoritative transcript; Web Speech is the fallback only if Sarvam errors. See `src/lib/useStreamingVoice.ts`.
+- **Mic survives tab / app switches (KI-173 / KI-174).** Heartbeat keeps the mic stream alive while the tab is backgrounded; `visibilitychange` / `focus` revival hooks reattach the mic on tab return.
 - **Bot TTS plays via the in-DOM `<audio>` element inside `Message`** (autoplay-on-mount via ref'd `useEffect`). **Never use `new Audio(url).play()`** — those detached instances are invisible to the `document.querySelectorAll("audio").pause()` call in the barge-in handler, so they keep playing under the user's speech.
 
 ## Tooling

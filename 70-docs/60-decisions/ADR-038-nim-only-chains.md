@@ -1,6 +1,8 @@
 # ADR-038 — NIM-only chains (KI-160)
 
-**Status:** Accepted — 2026-05-15
+**Status:** Superseded by [ADR-040](ADR-040-google-gemini-primary.md) (2026-05-15). The NIM-only lock was relaxed once KI-167 ([ADR-039](ADR-039-llm-driven-sales-brain.md))'s sales_brain eliminated the `<FF>` trailer convention that originally motivated the lock. Native provider JSON mode (`response_format={"type":"json_object"}` on NIM, `response_mime_type=application/json` on Gemini) is now the structured-output contract, so cross-provider candidates that natively support JSON mode are safe to re-add to the election pool. The "fail-loud > fail-silent-with-garbage" principle and brain ↔ judge family-diversity invariant from this ADR are preserved in ADR-040.
+
+**Original status:** Accepted — 2026-05-15
 **Owner:** Rohit Saraf
 **Supersedes:** [ADR-031](ADR-031-sticky-primary-election.md) (cross-provider election scope), [ADR-032](ADR-032-llm-chain-architecture.md) (candidate-pool scope)
 **Related KIs:** KI-155 (Groq `<FF>` contract violation, root cause), KI-160 (this lock-down), KI-080 / KI-081 / KI-084 / KI-085 / KI-087 (probe + election mechanics, retained within NIM scope)
