@@ -120,6 +120,21 @@ export type PolicyCompareModalProps = {
   policyDataFor?: (policyId: string) => MarketplacePolicy | undefined;
   // Hook for "Open in full marketplace" — defaults to no-op + closes modal.
   onOpenMarketplace?: () => void;
+  // User's profile-level predicted premium band (same number rendered in
+  // the chat header chip). Threaded down to PolicyPremiumWidget so that
+  // non-curated policies (base_sample_used: false) can surface the band
+  // as their indicative reference instead of a heuristic slider estimate.
+  // Optional: when omitted, non-curated widgets fall back to a "band not
+  // available" hint. The parent (page.tsx) typically closes over the same
+  // value inside renderPremiumFor too — this prop is the declarative
+  // contract for future callers.
+  aggregateBand?: {
+    min_inr: number;
+    max_inr: number;
+    median_inr: number;
+    sample_size?: number;
+    assumed?: boolean;
+  } | null;
 };
 
 export default function PolicyCompareModal({
@@ -130,6 +145,8 @@ export default function PolicyCompareModal({
   profile: _profile,
   policyDataFor,
   onOpenMarketplace,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  aggregateBand: _aggregateBand,
 }: PolicyCompareModalProps) {
   const uniq = uniquePolicies(policies).slice(0, 4);
   const n = uniq.length;
