@@ -347,121 +347,60 @@
     .chain-table .icon-btn { padding: 2px 7px; font-size: 12px; line-height: 1.2; }
     .chain-table tbody tr.is-primary td { background: rgba(63, 185, 80, 0.05); }
 
-    /* KI-086: LLM Health & Credits section */
-    .llm-health-chains {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
-      gap: 12px;
-    }
-    .llm-health-chain {
-      padding: 12px;
-      background: #0b0d12;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-    }
-    .llm-health-chain .chain-head {
-      display: flex; align-items: center; gap: 8px;
-      margin-bottom: 10px;
-    }
-    .llm-health-chain .chain-head .role-badge { margin-right: 4px; }
-    .llm-health-chain .role-block {
-      margin-bottom: 8px;
-      padding-bottom: 8px;
-      border-bottom: 1px dashed var(--border);
-    }
-    .llm-health-chain .role-block:last-of-type { border-bottom: none; }
-    .llm-health-chain .role-block .role-label {
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--muted);
-      margin-bottom: 4px;
-    }
-    .llm-health-chain .role-block .model-name {
-      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, monospace;
-      font-size: 12px;
-      word-break: break-all;
-    }
-    .llm-health-chain .role-block .stats-line {
-      margin-top: 4px;
-      font-size: 11px;
-      color: var(--muted);
-    }
-    .llm-health-chain .role-block .stats-line .sep {
-      margin: 0 6px;
-      color: #3a4250;
-    }
-    .llm-health-chain .credit-banner {
-      margin-top: 8px;
-      padding: 8px 10px;
-      background: rgba(248, 81, 73, 0.12);
-      border: 1px solid rgba(248, 81, 73, 0.45);
-      border-radius: 6px;
-      font-size: 12px;
-      color: var(--red);
-    }
-    .llm-health-chain .none-elected {
-      color: var(--yellow);
-      font-style: italic;
-      font-size: 12px;
-    }
-
-    /* KI-122 — "Currently in use" header + per-member availability pills */
-    .llm-health-chain .in-use-line {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-      padding: 8px 10px;
-      margin-bottom: 12px;
-      background: rgba(63, 185, 80, 0.06);
-      border: 1px solid rgba(63, 185, 80, 0.25);
-      border-radius: 6px;
-    }
-    .llm-health-chain .in-use-line .role-label {
-      margin-bottom: 0;
+    /* KI-162: simple 2-table layout for LLM Chain section (replaces legacy .llm-health-chains grid) */
+    .llm-simple-tables { display: flex; flex-direction: column; gap: 18px; }
+    .llm-simple-tables .simple-table-block h3 {
+      margin: 0 0 8px;
+      font-size: 13px;
+      font-weight: 600;
       color: var(--text);
     }
-    .llm-health-chain .in-use-line .model-name {
-      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, monospace;
+    .llm-simple-tables table {
+      width: 100%;
+      border-collapse: collapse;
       font-size: 12px;
-      word-break: break-all;
     }
-    .llm-health-chain .chain-members-list {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      margin: 6px 0 12px;
-      padding: 8px 10px;
-      background: #050709;
-      border: 1px solid var(--border);
-      border-radius: 6px;
+    .llm-simple-tables thead th {
+      text-align: left;
+      padding: 8px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-size: 10px;
     }
-    .llm-health-chain .chain-member-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 11px;
+    .llm-simple-tables tbody td {
+      padding: 8px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
     }
-    .llm-health-chain .chain-member-row .model-name {
+    .llm-simple-tables tbody tr:last-child td { border-bottom: none; }
+    .llm-simple-tables td.model-name,
+    .llm-simple-tables td.mono {
       font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, monospace;
       word-break: break-all;
     }
-    .avail-pill {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      border: 1px solid transparent;
+    .llm-simple-tables td.use-label {
+      font-weight: 600;
       white-space: nowrap;
     }
-    .avail-pill.pill-inuse     { background: rgba(63, 185, 80, 0.20);  color: var(--green);  border-color: rgba(63, 185, 80, 0.55); }
-    .avail-pill.pill-available { background: rgba(63, 185, 80, 0.10);  color: var(--green);  border-color: rgba(63, 185, 80, 0.35); }
-    .avail-pill.pill-gated     { background: rgba(139, 149, 164, 0.15);color: var(--muted);  border-color: rgba(139, 149, 164, 0.40); }
-    .avail-pill.pill-degraded  { background: rgba(210, 153, 34, 0.15); color: var(--yellow); border-color: rgba(210, 153, 34, 0.45); }
-    .avail-pill.pill-down      { background: rgba(248, 81, 73, 0.15);  color: var(--red);    border-color: rgba(248, 81, 73, 0.45); }
+    .llm-simple-tables td.healthy-cell { text-align: center; width: 80px; }
+    .llm-simple-tables .health-dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    .llm-simple-tables .health-dot.ok  { background: var(--green, #3fb950); }
+    .llm-simple-tables .health-dot.bad { background: var(--red, #f85149); }
+    .llm-simple-tables td.used-by-cell { color: var(--muted); }
+    .llm-simple-tables td.probed-cell {
+      color: var(--muted);
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+    /* KI-162: legacy .llm-health-chain* + .avail-pill CSS removed — replaced by .llm-simple-tables above */
 
     /* Status badges — three colors: ✓ green / ⚠ amber / ✗ red */
     .health-badge {
@@ -617,11 +556,21 @@
     }
 
     /* Profiles table */
-    .profile-table td.name-cell { font-weight: 500; }
+    .profile-table td.name-cell {
+      font-weight: 500;
+      max-width: 200px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
     .profile-table td.slug-cell {
       font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, monospace;
       font-size: 12px;
       color: var(--muted);
+      max-width: 140px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .profile-table td.num-cell { text-align: right; font-variant-numeric: tabular-nums; }
     .profile-table td.time-cell { white-space: nowrap; font-size: 12px; }
@@ -722,13 +671,13 @@
       <!-- KI-086: LLM Health & Credits snapshot (KI-080..KI-085 telemetry) -->
       <div class="card" id="llm-health-card">
         <div class="row-between" style="margin-bottom: 12px;">
-          <h2>LLM health &amp; credits <span class="small muted" id="llm-health-snapshot-ts"></span></h2>
+          <h2>LLM health <span class="small muted" id="llm-health-snapshot-ts"></span></h2>
           <div class="actions">
             <button id="btn-refresh-llm-health">Refresh</button>
           </div>
         </div>
-        <!-- Section A: per-chain election cards -->
-        <div id="llm-health-chains" class="llm-health-chains"></div>
+        <!-- KI-162: simplified 2-table layout (What's Live + What's Available) -->
+        <div id="llm-health-chains" class="llm-simple-tables"></div>
         <!-- Section B: candidate health grid -->
         <h3 style="margin-top: 18px;">Candidate health grid</h3>
         <div id="llm-health-candidates" class="llm-health-candidates"></div>
@@ -1490,129 +1439,174 @@
         return { cls: 'unknown', symbol: '?', label: 'UNKNOWN' };
       }
 
-      function renderLlmHealthChain(chainBlock) {
-        var card = createEl('div', { className: 'llm-health-chain' });
-        var head = createEl('div', { className: 'chain-head' });
-        var badge = createEl('span', { className: 'role-badge', text: (ROLE_LABELS[chainBlock.role] || chainBlock.role).toUpperCase() });
-        badge.style.background = ROLE_COLORS[chainBlock.role] || '#444';
-        head.appendChild(badge);
-        var title = createEl('span', { text: 'Chain status' });
-        title.style.fontWeight = '600';
-        title.style.fontSize = '13px';
-        head.appendChild(title);
-        // KI-122 — staleness signal at the chain head so the operator can
-        // see whether they're looking at fresh probe data or stale state.
-        if (chainBlock.last_probe_age_seconds != null) {
-          var stale = createEl('span', {
-            className: 'small muted',
-            text: '· probed ' + fmtDurationShort(chainBlock.last_probe_age_seconds) + ' ago',
-          });
-          stale.style.marginLeft = 'auto';
-          head.appendChild(stale);
-        }
-        card.appendChild(head);
+      // KI-162 — simplified 2-table renderer for the LLM Chain section.
+      // Table 1: "What's Live" — one row per chain role with the currently-elected model.
+      // Table 2: "What's Available" — NIM-only pool deduped across chains, with Healthy + Used By.
+      // Replaces the per-chain cards / chain-members lists / availability pills.
+      var SIMPLE_USE_LABELS = {
+        fast_brain: 'Brain Fast',
+        brain:      'Brain Main',
+        judge:      'Judge'
+      };
+      var SIMPLE_USE_ORDER = ['fast_brain', 'brain', 'judge'];
 
-        // KI-122 — top-of-card "Currently in use" line so the operator
-        // doesn't have to infer the live model from the PRIMARY row.
-        var inUse = createEl('div', { className: 'in-use-line' });
-        var inUseLabel = createEl('span', { className: 'role-label', text: 'Currently in use:' });
-        inUse.appendChild(inUseLabel);
-        if (chainBlock.current_primary) {
-          var pillCls = chainBlock.current_primary_available ? 'pill-inuse' : 'pill-degraded';
-          var pillText = chainBlock.current_primary_available ? '● IN USE' : '● ELECTED BUT GATED';
-          var pill = createEl('span', { className: 'avail-pill ' + pillCls, text: pillText });
-          inUse.appendChild(pill);
-          var nm = createEl('span', { className: 'model-name', text: chainBlock.current_primary });
-          inUse.appendChild(nm);
-        } else {
-          var none = createEl('span', { className: 'avail-pill pill-down', text: '● NONE ELECTED' });
-          inUse.appendChild(none);
-        }
-        card.appendChild(inUse);
+      function isRetiredModel(model) {
+        // Post-KI-160 NIM-only: filter out any stale Groq / OpenRouter entries
+        // that might still appear in chain_members[] payloads.
+        if (!model) return true;
+        var m = String(model).toLowerCase();
+        return (
+          m.indexOf('groq:') === 0 ||
+          m.indexOf('openrouter:') === 0 ||
+          m.indexOf('or:') === 0
+        );
+      }
 
-        // KI-122 — full chain member list with per-model availability pills,
-        // so the operator can see at a glance every model that's wired up
-        // and which ones are actually callable RIGHT NOW.
-        var members = chainBlock.chain_members || [];
-        if (members.length) {
-          var listLabel = createEl('div', { className: 'role-label', text: 'Chain members (' + members.length + ')' });
-          listLabel.style.marginTop = '10px';
-          card.appendChild(listLabel);
-          var list = createEl('div', { className: 'chain-members-list' });
-          members.forEach(function (mi) {
-            var row = createEl('div', { className: 'chain-member-row' });
-            var p;
-            if (mi.is_current_primary) {
-              p = createEl('span', { className: 'avail-pill pill-inuse', text: '● IN USE' });
-            } else if (mi.available_for_calls) {
-              p = createEl('span', { className: 'avail-pill pill-available', text: '● AVAILABLE' });
-            } else if (mi.credit_exhausted) {
-              p = createEl('span', { className: 'avail-pill pill-gated', text: '● GATED' });
-            } else {
-              p = createEl('span', { className: 'avail-pill pill-down', text: '● UNAVAILABLE' });
+      function renderLlmSimpleTables(host, chains) {
+        // ---- Table 1: What's Live ----
+        var liveBlock = createEl('div', { className: 'simple-table-block' });
+        liveBlock.appendChild(createEl('h3', { text: "What's Live" }));
+        var liveTable = createEl('table');
+        var liveThead = createEl('thead');
+        var liveHr = createEl('tr');
+        ['Use', 'Currently In Use', 'Probed'].forEach(function (h) {
+          liveHr.appendChild(createEl('th', { text: h }));
+        });
+        liveThead.appendChild(liveHr);
+        liveTable.appendChild(liveThead);
+        var liveTbody = createEl('tbody');
+
+        // Index chains by role for stable Brain Fast / Brain Main / Judge ordering.
+        var chainsByRole = {};
+        (chains || []).forEach(function (c) { if (c && c.role) chainsByRole[c.role] = c; });
+
+        SIMPLE_USE_ORDER.forEach(function (role) {
+          var c = chainsByRole[role];
+          var tr = createEl('tr');
+          tr.appendChild(createEl('td', { className: 'use-label', text: SIMPLE_USE_LABELS[role] }));
+
+          var modelCell = createEl('td', { className: 'mono' });
+          if (c && c.current_primary && !isRetiredModel(c.current_primary)) {
+            if (c.current_primary_available === false) {
+              var dot = createEl('span', { className: 'health-dot bad' });
+              dot.style.marginRight = '6px';
+              modelCell.appendChild(dot);
             }
-            row.appendChild(p);
-            row.appendChild(createEl('span', { className: 'model-name', text: mi.model }));
-            list.appendChild(row);
+            modelCell.appendChild(document.createTextNode(c.current_primary));
+          } else {
+            modelCell.textContent = '—';
+          }
+          tr.appendChild(modelCell);
+
+          var probedCell = createEl('td', { className: 'probed-cell' });
+          if (c && c.last_probe_age_seconds != null) {
+            probedCell.textContent = fmtDurationShort(c.last_probe_age_seconds) + ' ago';
+          } else {
+            probedCell.textContent = '—';
+          }
+          tr.appendChild(probedCell);
+          liveTbody.appendChild(tr);
+        });
+        liveTable.appendChild(liveTbody);
+        liveBlock.appendChild(liveTable);
+        host.appendChild(liveBlock);
+
+        // ---- Table 2: What's Available ----
+        // Walk every chain_members[] across the 3 chains, dedupe by model,
+        // and collect: healthy boolean + used-by-role list with primary-first ordering.
+        var modelMap = {};  // model -> { healthy, roleEntries: [{role, isPrimary, idx}] }
+        (chains || []).forEach(function (c) {
+          if (!c || !Array.isArray(c.chain_members)) return;
+          c.chain_members.forEach(function (mi, idx) {
+            if (!mi || !mi.model || isRetiredModel(mi.model)) return;
+            if (!modelMap[mi.model]) {
+              modelMap[mi.model] = {
+                healthy: !!mi.available_for_calls,
+                roleEntries: []
+              };
+            } else {
+              // If any chain reports the model as available, treat it as healthy.
+              if (mi.available_for_calls) modelMap[mi.model].healthy = true;
+            }
+            modelMap[mi.model].roleEntries.push({
+              role: c.role,
+              isPrimary: !!mi.is_current_primary,
+              idx: idx
+            });
           });
-          card.appendChild(list);
-        }
-
-        // Render PRIMARY + BACKUP detail rows (kept for the per-model
-        // latency/success/credit telemetry the operator drills into).
-        ['primary', 'backup'].forEach(function (role) {
-          var snap = chainBlock[role + '_snapshot'];
-          var name = chainBlock['elected_' + role];
-          var block = createEl('div', { className: 'role-block' });
-          var label = createEl('div', { className: 'role-label', text: role.toUpperCase() });
-          block.appendChild(label);
-          if (!name || !snap) {
-            var noneEl = createEl('div', { className: 'none-elected', text: 'none elected (no eligible candidate)' });
-            block.appendChild(noneEl);
-            card.appendChild(block);
-            return;
-          }
-          var nameLine = createEl('div', { className: 'model-name' });
-          var b = candidateBadge(snap);
-          var statusBadge = createEl('span', { className: 'health-badge ' + b.cls, text: b.symbol + ' ' + b.label });
-          statusBadge.style.marginRight = '6px';
-          nameLine.appendChild(statusBadge);
-          nameLine.appendChild(document.createTextNode(name));
-          block.appendChild(nameLine);
-
-          var stats = createEl('div', { className: 'stats-line' });
-          var pushed = false;
-          function pushPart(text) {
-            if (pushed) stats.appendChild(createEl('span', { className: 'sep', text: '·' }));
-            stats.appendChild(document.createTextNode(text));
-            pushed = true;
-          }
-          if (snap.latency_ms != null) pushPart('latency ' + fmtLatency(snap.latency_ms));
-          if (snap.success_rate != null) pushPart('success ' + (Number(snap.success_rate) * 100).toFixed(0) + '%');
-          if (snap.credits_remaining != null) pushPart('credits ' + fmtCredits(snap.credits_remaining, snap.credits_unit, null));
-          if (snap.credits_reset_in_seconds != null && snap.credits_reset_in_seconds > 0) {
-            pushPart('reset in ' + fmtDurationShort(snap.credits_reset_in_seconds));
-          }
-          if (snap.degraded_for_seconds != null && snap.degraded_for_seconds > 0) {
-            pushPart('sin-bin ' + fmtDurationShort(snap.degraded_for_seconds));
-          }
-          if (!pushed) stats.textContent = 'No telemetry yet.';
-          block.appendChild(stats);
-          card.appendChild(block);
         });
 
-        // KI-122 — banner is now backend-gated by the STRICT exhausted rule
-        // (`chain_credit_exhausted` true only when zero members are
-        // available_for_calls AND at least one is strictly credit-exhausted).
-        // This prevents the historic "HEALTHY 100% + credit-exhausted banner"
-        // contradiction the operator reported.
-        if (chainBlock.chain_credit_exhausted) {
-          var banner = createEl('div', { className: 'credit-banner' });
-          banner.textContent = 'All candidates for ' + (ROLE_LABELS[chainBlock.role] || chainBlock.role).toUpperCase() +
-            '_CHAIN are credit-exhausted; canonical fallback will fire until quotas reset.';
-          card.appendChild(banner);
+        var availBlock = createEl('div', { className: 'simple-table-block' });
+        availBlock.appendChild(createEl('h3', { text: "What's Available" }));
+        var availTable = createEl('table');
+        var availThead = createEl('thead');
+        var availHr = createEl('tr');
+        ['Model', 'Healthy', 'Used By'].forEach(function (h) {
+          availHr.appendChild(createEl('th', { text: h }));
+        });
+        availThead.appendChild(availHr);
+        availTable.appendChild(availThead);
+        var availTbody = createEl('tbody');
+
+        var modelNames = Object.keys(modelMap);
+        if (!modelNames.length) {
+          var emptyTr = createEl('tr');
+          var emptyTd = createEl('td', { attrs: { colspan: '3' }, text: 'No models in any chain.' });
+          emptyTd.style.color = 'var(--muted)';
+          emptyTd.style.textAlign = 'center';
+          emptyTr.appendChild(emptyTd);
+          availTbody.appendChild(emptyTr);
+        } else {
+          // Stable sort: models that are anyone's primary first, then by name.
+          modelNames.sort(function (a, b) {
+            var aPrim = modelMap[a].roleEntries.some(function (e) { return e.isPrimary; });
+            var bPrim = modelMap[b].roleEntries.some(function (e) { return e.isPrimary; });
+            if (aPrim !== bPrim) return aPrim ? -1 : 1;
+            return a.localeCompare(b);
+          });
+          modelNames.forEach(function (model) {
+            var info = modelMap[model];
+            var tr = createEl('tr');
+            tr.appendChild(createEl('td', { className: 'model-name', text: model }));
+
+            var healthyCell = createEl('td', { className: 'healthy-cell' });
+            var hd = createEl('span', { className: 'health-dot ' + (info.healthy ? 'ok' : 'bad') });
+            hd.title = info.healthy ? 'Healthy' : 'Unhealthy';
+            healthyCell.appendChild(hd);
+            tr.appendChild(healthyCell);
+
+            // "Used By" — primary first per role, then backups; relabel via SIMPLE_USE_LABELS.
+            // Group by role, identify primary vs. backup using is_current_primary + chain index.
+            var entriesByRole = {};
+            info.roleEntries.forEach(function (e) {
+              if (!entriesByRole[e.role]) entriesByRole[e.role] = [];
+              entriesByRole[e.role].push(e);
+            });
+            // Order: primaries first (in SIMPLE_USE_ORDER), then backups by chain position.
+            var primaryParts = [];
+            var backupParts = [];
+            SIMPLE_USE_ORDER.forEach(function (role) {
+              var roleList = entriesByRole[role] || [];
+              roleList.forEach(function (e) {
+                var label = SIMPLE_USE_LABELS[role] || role;
+                if (e.isPrimary) {
+                  primaryParts.push(label);
+                } else {
+                  // idx 0 inside members is the primary itself when the chain has it;
+                  // anything else is a backup of some rank.
+                  backupParts.push(label + ' (backup)');
+                }
+              });
+            });
+            var usedBy = primaryParts.concat(backupParts).join(', ');
+            tr.appendChild(createEl('td', { className: 'used-by-cell', text: usedBy || '—' }));
+
+            availTbody.appendChild(tr);
+          });
         }
-        return card;
+        availTable.appendChild(availTbody);
+        availBlock.appendChild(availTable);
+        host.appendChild(availBlock);
       }
 
       function renderLlmHealthCandidates(rows) {
@@ -1754,9 +1748,7 @@
         }
 
         clearChildren(chainsHost);
-        (STATE.llmHealth.chains || []).forEach(function (c) {
-          chainsHost.appendChild(renderLlmHealthChain(c));
-        });
+        renderLlmSimpleTables(chainsHost, STATE.llmHealth.chains || []);
 
         renderLlmHealthCandidates(STATE.llmHealth.candidates || []);
         renderLlmHealthRecent(STATE.llmHealth.recent_turns || []);
@@ -1912,9 +1904,11 @@
           var tr = createEl('tr');
 
           var nameCell = createEl('td', { className: 'name-cell', text: p.name_display || '—' });
+          if (p.name_display) nameCell.title = p.name_display;
           tr.appendChild(nameCell);
 
           var slugCell = createEl('td', { className: 'slug-cell', text: p.slug || '—' });
+          if (p.slug) slugCell.title = p.slug;
           tr.appendChild(slugCell);
 
           var firstCell = createEl('td', { className: 'time-cell', text: fmtIST(p.first_seen) });
