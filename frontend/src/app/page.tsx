@@ -13,6 +13,7 @@ import {
   getHealth,
   getInsurerReviews,
   getMarketplace,
+  getPredictedPremiumBand,
   getProfileCompleteness,
   getScorecard,
   InsurerReviews,
@@ -24,12 +25,14 @@ import {
   postSessionClear,
   postTranscribe,
   PremiumEstimateResponse,
+  PredictedPremiumBandResponse,
   ProfileCompletenessResponse,
   ScorecardResponse,
   uploadPolicy,
   UserProfile,
 } from "@/lib/api";
 import { translate, UILang, StringKey, GLOSSARY } from "@/lib/i18n";
+import PolicyCompareModal from "@/components/PolicyCompareModal";
 // KI-168 (2026-05-15) — voice path migrated from custom-VAD `useLiveConversation`
 // to native browser SpeechRecognition via `useStreamingVoice`. The old hook
 // remains on disk as a graveyard reference until KI-168 is field-verified.
@@ -95,6 +98,11 @@ export default function Page() {
   const [openPolicy, setOpenPolicy] = useState<MarketplacePolicy | null>(null);
   const [sessionId, setSessionId] = useState<string | undefined>();
   const [profileCompleteness, setProfileCompleteness] = useState<ProfileCompletenessResponse | null>(null);
+  // Predicted-premium BAND chip — sits next to the "X% DONE" profile pill.
+  // Refetches reactively on every completeness_pct change (same trigger as
+  // the completeness bar) so the user sees their personal premium envelope
+  // tighten as they fill in slots. Debounced 500ms to coalesce bursts.
+  const [premiumBand, setPremiumBand] = useState<PredictedPremiumBandResponse | null>(null);
 
   // Re-fetch profile completeness whenever sessionId changes (after first chat
   // turn) — drives the score-gate on marketplace cards + detail modal.
@@ -108,6 +116,22 @@ export default function Page() {
         .catch(() => setProfileCompleteness(null));
     }
   }, [sessionId]);
+
+  // Debounced refetch of the premium band whenever the profile's
+  // completeness_pct shifts. We deliberately key off the percentage (not
+  // the whole completeness object) because the underlying signal we care
+  // about is "the user answered another slot". 500ms debounce coalesces
+  // rapid-fire updates from a single chat turn that fills multiple slots.
+  const completenessPct = profileCompleteness?.completeness_pct ?? 0;
+  useEffect(() => {
+    if (!sessionId) return;
+    const handle = setTimeout(() => {
+      getPredictedPremiumBand(sessionId)
+        .then(setPremiumBand)
+        .catch(() => { /* keep prior on transient error */ });
+    }, 500);
+    return () => clearTimeout(handle);
+  }, [sessionId, completenessPct]);
 
   // Session persistence: rehydrate chat history + sessionId on mount so the
   // user's conversation survives view changes, page reloads, and tab switches.
@@ -1103,46 +1127,69 @@ export default function Page() {
   }
   function stopRecording() { mediaRecorderRef.current?.stop(); }
 
-  // KI-257 — Hold-SPACE-to-talk. When Voice is on AND the user is NOT
-  // focused on any text input, holding SPACE acts like Push-to-talk:
-  // press starts recording, release stops + submits. Refs avoid stale
-  // closures since startRecording/stopRecording are inline functions
-  // recreated each render.
+  // KI-258 — Hold-SPACE-to-talk. Fixes from KI-257 first ship:
+  //   (a) textarea ALWAYS had focus → isInputFocused() was always true →
+  //       SPACE never fired. Fix: allow SPACE-hold when the textarea is
+  //       focused-AND-empty; only block when it has user-typed text.
+  //   (b) `recording`/`spaceHoldActive` in the effect deps recreated
+  //       handlers mid-press, splitting keydown/keyup across closures
+  //       with stale values. Fix: read all state via refs; deps reduced
+  //       to [voiceMasterOn] so handlers bind once.
   const startRecordingRef = useRef<(() => Promise<void>) | null>(null);
   const stopRecordingRef = useRef<(() => void) | null>(null);
+  const recordingRef = useRef<boolean>(recording);
+  const busyRef = useRef<boolean>(busy);
+  const spaceHoldOwnsRecRef = useRef<boolean>(false);
   useEffect(() => {
     startRecordingRef.current = startRecording;
     stopRecordingRef.current = stopRecording;
+    recordingRef.current = recording;
+    busyRef.current = busy;
   });
   useEffect(() => {
     if (!voiceMasterOn) return;
     if (typeof window === "undefined") return;
-    const isInputFocused = () => {
+    // SPACE-hold is suppressed only when the user is mid-edit in an
+    // input/textarea WITH content. An EMPTY textarea (the common case
+    // for a fresh chat with focus on the composer) still triggers
+    // hold-to-talk; preventDefault stops a stray space from typing.
+    const shouldSuppressSpace = () => {
       const ae = document.activeElement as HTMLElement | null;
       if (!ae) return false;
       const tag = ae.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA") return true;
-      if (ae.isContentEditable) return true;
+      if (tag === "INPUT") {
+        const ip = ae as HTMLInputElement;
+        return (ip.value || "").length > 0;
+      }
+      if (tag === "TEXTAREA") {
+        const ta = ae as HTMLTextAreaElement;
+        return (ta.value || "").length > 0;
+      }
+      if (ae.isContentEditable) return (ae.textContent || "").length > 0;
       return false;
     };
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key !== " " && e.code !== "Space") return;
       if (e.repeat) return;
-      if (isInputFocused()) return;
       if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+      if (shouldSuppressSpace()) return;
       e.preventDefault();
-      if (recording || busy) return;
+      if (recordingRef.current || busyRef.current) return;
+      spaceHoldOwnsRecRef.current = true;
       setSpaceHoldActive(true);
       const sr = startRecordingRef.current;
       if (sr) void sr();
     };
     const onKeyUp = (e: KeyboardEvent) => {
       if (e.key !== " " && e.code !== "Space") return;
-      if (!spaceHoldActive && !recording) return;
+      // Only react if THIS keydown started the recording; otherwise the
+      // textarea may have been the legitimate target and we'd nuke it.
+      if (!spaceHoldOwnsRecRef.current) return;
       e.preventDefault();
+      spaceHoldOwnsRecRef.current = false;
       setSpaceHoldActive(false);
       const sp = stopRecordingRef.current;
-      if (sp && recording) sp();
+      if (sp && recordingRef.current) sp();
     };
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
@@ -1151,7 +1198,7 @@ export default function Page() {
       window.removeEventListener("keyup", onKeyUp);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [voiceMasterOn, recording, busy, spaceHoldActive]);
+  }, [voiceMasterOn]);
 
   async function handleFile(ev: React.ChangeEvent<HTMLInputElement>) {
     const f = ev.target.files?.[0];
@@ -1319,6 +1366,34 @@ export default function Page() {
                 )}
               </div>
             </button>
+            {/* Predicted-premium BAND chip — sits RIGHT NEXT TO the profile
+                completeness pill. Shown only once the profile is materially
+                populated (≥50%); below that the band would be too wide to
+                inform anything. Amber/orange to signal "estimate, not quote". */}
+            {profileCompleteness &&
+              profileCompleteness.completeness_pct >= 50 &&
+              premiumBand &&
+              premiumBand.sample_size > 0 && (
+              <div
+                className="group relative overflow-hidden rounded-xl shadow-sm"
+                title={`Estimate across ${premiumBand.sample_size} polic${premiumBand.sample_size === 1 ? "y" : "ies"}. Refresh as your profile fills in.`}
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600" />
+                <div className="relative flex items-stretch text-white">
+                  <div className="flex items-center justify-center px-3 py-2 bg-black/15">
+                    <RupeeIcon />
+                  </div>
+                  <div className="px-3 py-2 text-left">
+                    <div className="text-[10px] uppercase tracking-wider opacity-85 leading-none">
+                      {uiLang === "hi" ? "अनुमानित premium" : "Est. premium"}
+                    </div>
+                    <div className="text-xs font-bold leading-tight whitespace-nowrap">
+                      ₹{premiumBand.min_inr.toLocaleString("en-IN")}–₹{premiumBand.max_inr.toLocaleString("en-IN")}/yr
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
             {/* Admin access — opens the LLM control panel in an embedded view.
                 Backend admin API is password-gated (KI-097); enter the admin
                 password in the embedded dashboard to unlock the live data. */}
@@ -2249,7 +2324,7 @@ function Message({ m }: { m: DisplayMessage }) {
           />
         )}
         {!isUser && m.citations && m.citations.length > 0 && (
-          <PolicyChipsFromCitations citations={m.citations} />
+          <CitedPolicyCards citations={m.citations} />
         )}
       </div>
     </div>
@@ -2267,11 +2342,17 @@ function gradeColor(grade: string): string {
   return map[grade] || "bg-stone-400 text-white";
 }
 
-// Customer-facing chip: shows the cited policies as clickable pills with their
-// rating, no internal jargon (no "score X.YZ" or chunk metadata).
-function PolicyChipsFromCitations({ citations }: { citations: Citation[] }) {
+// CitedPolicyCards — structured per-policy cards rendered BELOW the
+// assistant's prose reply. One card per cited policy with insurer logo,
+// policy name, scorecard grade + one-liner, source-PDF link, and a
+// "View details" button. A top-right "Compare all" button opens the new
+// PolicyCompareModal in side-by-side mode.
+function CitedPolicyCards({ citations }: { citations: Citation[] }) {
   const [cards, setCards] = useState<Record<string, ScorecardResponse | null>>({});
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [compareOpen, setCompareOpen] = useState(false);
+
+  // Dedupe citations by policy_id (the LLM often cites the same policy from
+  // multiple chunks). Top 3 for chat-message density.
   const seen = new Set<string>();
   const topPolicies = citations.filter((c) => {
     if (seen.has(c.policy_id)) return false;
@@ -2286,53 +2367,100 @@ function PolicyChipsFromCitations({ citations }: { citations: Citation[] }) {
         .then((s) => setCards((p) => ({ ...p, [c.policy_id]: s })))
         .catch(() => setCards((p) => ({ ...p, [c.policy_id]: null })));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [citations.map((c) => c.policy_id).join("|")]);
+
+  if (topPolicies.length === 0) return null;
 
   return (
     <div className="mt-3 pt-3 border-t border-[var(--border)] space-y-2">
-      <div className="text-[10px] uppercase tracking-wide text-[var(--muted-foreground)] font-semibold">Cited policies</div>
-      <div className="flex flex-wrap gap-1.5">
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-[10px] uppercase tracking-wide text-[var(--muted-foreground)] font-semibold">
+          Cited policies
+        </div>
+        {topPolicies.length >= 2 && (
+          <button
+            onClick={() => setCompareOpen(true)}
+            className="text-[10px] uppercase tracking-wide font-semibold px-2 py-1 rounded-md border border-[var(--primary)] text-[var(--primary)] hover:bg-[var(--accent)] transition"
+          >
+            Compare all
+          </button>
+        )}
+      </div>
+      <div className="grid grid-cols-1 gap-2">
         {topPolicies.map((c) => {
           const sc = cards[c.policy_id];
-          const isOpen = openId === c.policy_id;
+          const insurerName = c.insurer_slug.replace(/-/g, " ");
           return (
-            <div key={c.policy_id} className="inline-flex items-center gap-1.5">
-              <button
-                onClick={() => setOpenId(isOpen ? null : c.policy_id)}
-                className={`text-xs px-2.5 py-1 rounded-lg border transition flex items-center gap-2 ${
-                  isOpen ? "border-[var(--primary)] bg-[var(--accent)]" : "border-[var(--border)] bg-[var(--card)] hover:border-[var(--primary)]"
-                }`}
-                title={sc?.one_liner || c.policy_name}
-              >
-                {sc && <span className={`inline-flex items-center justify-center w-5 h-5 rounded font-bold text-[11px] ${gradeColor(sc.grade)}`}>{sc.grade}</span>}
-                <span className="flex flex-col items-start leading-tight">
-                  {/* Bug B — show the insurer label above the policy name so
-                      "Sarvah Param" reads as "ManipalCigna · Sarvah Param"
-                      instead of an unattributed policy fragment. */}
-                  {c.insurer_slug && (
-                    <span className="text-[9px] uppercase tracking-wider text-[var(--muted-foreground)]">
-                      {c.insurer_slug.replace(/-/g, " ")}
-                    </span>
+            <div
+              key={c.policy_id}
+              className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-3 hover:border-[var(--primary)] hover:shadow-sm transition"
+            >
+              <div className="flex items-start gap-3">
+                <InsurerLogo slug={c.insurer_slug} name={insurerName} size={36} />
+                <div className="flex-1 min-w-0">
+                  <div className="text-[10px] uppercase tracking-wider text-[var(--muted-foreground)] truncate">
+                    {insurerName}
+                  </div>
+                  <div className="font-semibold text-sm truncate">{c.policy_name}</div>
+                  {sc ? (
+                    <div className="text-[11px] text-[var(--muted-foreground)] leading-snug line-clamp-2 mt-0.5">
+                      {sc.one_liner}
+                    </div>
+                  ) : sc === null ? (
+                    <div className="text-[11px] text-[var(--muted-foreground)] italic mt-0.5">
+                      Rating unavailable
+                    </div>
+                  ) : (
+                    <div className="text-[11px] text-[var(--muted-foreground)] italic mt-0.5">
+                      Loading rating…
+                    </div>
                   )}
-                  <span className="font-medium truncate max-w-[160px]">{c.policy_name}</span>
-                </span>
-              </button>
-              {c.source_url && (
-                <a
-                  href={c.source_url}
-                  target="_blank"
-                  rel="noopener"
-                  title="Open policy PDF"
-                  className="text-xs text-[var(--muted-foreground)] hover:text-[var(--primary)]"
+                </div>
+                {sc && (
+                  <div
+                    className={`shrink-0 flex flex-col items-center rounded-md overflow-hidden ${gradeColor(sc.grade)}`}
+                    title={`Grade ${sc.grade} · ${sc.overall_score}/100`}
+                  >
+                    <div className="px-1.5 pt-0.5 text-[9px] font-semibold opacity-90 uppercase tracking-wide">
+                      {sc.grade}
+                    </div>
+                    <div className="px-1.5 pb-0.5 text-xs font-bold leading-none">
+                      {sc.overall_score}
+                      <span className="text-[8px] font-normal opacity-80">/100</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="mt-2 flex items-center justify-end gap-2">
+                {c.source_url && (
+                  <a
+                    href={c.source_url}
+                    target="_blank"
+                    rel="noopener"
+                    className="inline-flex items-center gap-1 text-[10px] font-semibold text-[var(--muted-foreground)] hover:text-[var(--primary)] px-2 py-1 rounded border border-[var(--border)] hover:border-[var(--primary)]"
+                    title="Open policy PDF"
+                  >
+                    <PdfIcon /> PDF
+                  </a>
+                )}
+                <button
+                  onClick={() => setCompareOpen(true)}
+                  className="text-[10px] uppercase tracking-wide font-semibold px-2 py-1 rounded-md bg-[var(--primary)] text-white hover:opacity-90"
                 >
-                  <PdfIcon />
-                </a>
-              )}
+                  View details
+                </button>
+              </div>
             </div>
           );
         })}
       </div>
-      {openId && cards[openId] && <ScorecardCard sc={cards[openId]!} />}
+      {compareOpen && (
+        <PolicyCompareModal
+          policies={topPolicies}
+          onClose={() => setCompareOpen(false)}
+        />
+      )}
     </div>
   );
 }
