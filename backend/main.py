@@ -558,6 +558,12 @@ async def coverage():
             res = coll.get(limit=10000, include=["metadatas"])
             for m in res.get("metadatas", []):
                 slug = m.get("insurer_slug", "unknown")
+                # KI-129 (2026-05-15) — profile chunks live in the same
+                # collection as policies (KI-118 design — they get retrieval-
+                # boosted as USER CONTEXT inline with policy text), but they
+                # must NEVER count as a user-facing insurer or policy. Skip.
+                if slug == "profile" or m.get("doc_type") == "profile":
+                    continue
                 name = m.get("policy_name", "")
                 url = m.get("source_url", "")
                 if slug not in by_insurer:
