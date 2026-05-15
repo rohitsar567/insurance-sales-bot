@@ -3,8 +3,8 @@
 The four endpoints:
   GET  /api/admin/health        — full LLM health snapshot (every model)
   POST /api/admin/probe         — force a fresh probe of all models now
-  GET  /api/admin/chain         — current brain/fast/judge chain order
-  POST /api/admin/chain         — reorder a chain (promote a model to primary)
+  GET  /api/admin/chain         — current brain chain order
+  POST /api/admin/chain         — reorder the brain chain (promote a model to primary)
 
 Access gate (KI-097 — single check):
   Request must include `X-Admin-Password` header matching ADMIN_PASSWORD env.
@@ -109,18 +109,15 @@ async def admin_chain_get(
     x_admin_password: Optional[str] = Header(default=None, alias="X-Admin-Password"),
 ):
     _check_admin(request, x_admin_password)
-    from backend.providers.nvidia_nim_llm import (
-        BRAIN_CHAIN, FAST_BRAIN_CHAIN, JUDGE_CHAIN,
-    )
+    from backend.providers.nvidia_nim_llm import BRAIN_CHAIN
+    # Three-chain collapse (2026-05-15) — only the brain role remains.
     return {
-        "brain":      BRAIN_CHAIN,
-        "fast_brain": FAST_BRAIN_CHAIN,
-        "judge":      JUDGE_CHAIN,
+        "brain": BRAIN_CHAIN,
     }
 
 
 class ChainReorderRequest(BaseModel):
-    role: str   # 'brain' | 'fast_brain' | 'judge'
+    role: str   # 'brain'
     order: list[str]   # new ordering of model ids
 
 
@@ -131,13 +128,12 @@ async def admin_chain_set(
     x_admin_password: Optional[str] = Header(default=None, alias="X-Admin-Password"),
 ):
     _check_admin(request, x_admin_password)
-    if body.role not in ("brain", "fast_brain", "judge"):
-        raise HTTPException(status_code=400, detail="role must be brain | fast_brain | judge")
+    if body.role != "brain":
+        raise HTTPException(status_code=400, detail="role must be 'brain'")
 
     # Mutate the in-memory chain
     from backend.providers import nvidia_nim_llm as nim
-    name = {"brain": "BRAIN_CHAIN", "fast_brain": "FAST_BRAIN_CHAIN", "judge": "JUDGE_CHAIN"}[body.role]
-    setattr(nim, name, list(body.order))
+    setattr(nim, "BRAIN_CHAIN", list(body.order))
 
     # Persist for next process restart — write to 40-data/admin_overrides.json
     override_path = Path(__file__).resolve().parent.parent / "40-data" / "admin_overrides.json"
@@ -267,13 +263,12 @@ async def admin_usage(
     """
     _check_admin(request, x_admin_password)
 
-    # Live (post-override) chains — read attributes off the module so any
+    # Live (post-override) chain — read attribute off the module so any
     # admin reorder applied in the current process is reflected immediately.
+    # Three-chain collapse (2026-05-15) — only the brain role remains.
     from backend.providers import nvidia_nim_llm as nim
     chains = {
-        "brain":      list(getattr(nim, "BRAIN_CHAIN", [])),
-        "fast_brain": list(getattr(nim, "FAST_BRAIN_CHAIN", [])),
-        "judge":      list(getattr(nim, "JUDGE_CHAIN", [])),
+        "brain": list(getattr(nim, "BRAIN_CHAIN", [])),
     }
 
     usage_path = Path(__file__).resolve().parent.parent / "40-data" / "llm_usage.jsonl"
@@ -282,7 +277,7 @@ async def admin_usage(
 
     return {
         role: _stat_block_for_role(rows, role, chains[role], health_state)
-        for role in ("brain", "fast_brain", "judge")
+        for role in chains
     }
 
 
@@ -620,17 +615,18 @@ async def admin_performance(
 
 # Map of the on-wire chain role name → human-friendly label. The roles
 # themselves match llm_health.get_primary() input strings exactly.
-_LLM_HEALTH_CHAIN_ROLES = ("brain", "fast_brain", "judge")
+# Three-chain collapse (2026-05-15) — only the brain role remains; we
+# defer to llm_health.ROLES so a future role only needs to be added once.
+_LLM_HEALTH_CHAIN_ROLES = llm_health.ROLES
 
 
 def _chain_names_map() -> dict[str, list[str]]:
     """Live (post-admin-override) chain config — read off the module so admin
-    reorders applied earlier in the same process are reflected immediately."""
+    reorders applied earlier in the same process are reflected immediately.
+    Three-chain collapse (2026-05-15) — only the brain role remains."""
     from backend.providers import nvidia_nim_llm as nim
     return {
-        "brain":      list(getattr(nim, "BRAIN_CHAIN", [])),
-        "fast_brain": list(getattr(nim, "FAST_BRAIN_CHAIN", [])),
-        "judge":      list(getattr(nim, "JUDGE_CHAIN", [])),
+        "brain": list(getattr(nim, "BRAIN_CHAIN", [])),
     }
 
 
@@ -906,8 +902,9 @@ async def admin_llm_health(
     """KI-086 — composite LLM health + credits snapshot for the LLM Chain tab.
 
     Returns three keys:
-      chains       — Section A: one entry per chain (brain/fast_brain/judge)
-                     with elected primary + backup + their snapshots +
+      chains       — Section A: one entry per chain (brain — the only
+                     remaining role after the three-chain collapse) with
+                     elected primary + backup + their snapshots +
                      chain_credit_exhausted banner flag.
       candidates   — Section B: one row per known candidate across all chains,
                      with chain_membership listing every chain it appears in,

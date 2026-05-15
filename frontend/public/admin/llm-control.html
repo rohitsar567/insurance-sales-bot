@@ -268,7 +268,7 @@
     #toast.error { border-color: var(--red); }
     #toast.info { border-color: var(--blue); }
 
-    /* Role badge — colored pill (BRAIN / FAST_BRAIN / JUDGE) */
+    /* Role badge — colored pill (BRAIN) */
     .role-badge {
       display: inline-block;
       padding: 3px 10px;
@@ -844,8 +844,8 @@
         password: '',
         // LLM Chain tab
         health: null,    // { models: [...], counters: {...} }
-        chains: null,    // { brain: [...], fast_brain: [...], judge: [...] }
-        usage: null,     // { brain: {...}, fast_brain: {...}, judge: {...} }
+        chains: null,    // { brain: [...] }  (single-brain stack)
+        usage: null,     // { brain: {...} }  (single-brain stack)
         // KI-086 — LLM Health & Credits snapshot
         // Shape: { chains: [...], candidates: [...], recent_turns: [...], snapshot_ts }
         llmHealth: null,
@@ -873,16 +873,14 @@
         // Active tab
         activeTab: 'profiles'
       };
-      var ROLES = ['brain', 'fast_brain', 'judge'];
+      // KI-2xx (2026-05-15) — single-brain stack. fast_brain + judge roles
+      // retired; backend payload only emits `brain`.
+      var ROLES = ['brain'];
       var ROLE_COLORS = {
-        brain:      '#58a6ff',  // blue
-        fast_brain: '#39c5cf',  // cyan
-        judge:      '#a371f7'   // purple
+        brain: '#58a6ff'  // blue
       };
       var ROLE_LABELS = {
-        brain:      'BRAIN',
-        fast_brain: 'FAST_BRAIN',
-        judge:      'JUDGE'
+        brain: 'BRAIN'
       };
       var STORAGE_KEY = 'admin_password';
 
@@ -1579,12 +1577,13 @@
       // Table 1: "What's Live" — one row per chain role with the currently-elected model.
       // Table 2: "What's Available" — NIM-only pool deduped across chains, with Healthy + Used By.
       // Replaces the per-chain cards / chain-members lists / availability pills.
+      // KI-2xx (2026-05-15) — single-brain stack. Removed Brain Fast + Judge;
+      // only the Brain role remains across both Currently In Use and
+      // All Eligible Models tables.
       var SIMPLE_USE_LABELS = {
-        fast_brain: 'Brain Fast',
-        brain:      'Brain Main',
-        judge:      'Judge'
+        brain: 'Brain'
       };
-      var SIMPLE_USE_ORDER = ['fast_brain', 'brain', 'judge'];
+      var SIMPLE_USE_ORDER = ['brain'];
 
       function isRetiredModel(model) {
         // Post-KI-160 NIM-only: filter out any stale Groq / OpenRouter entries
@@ -1598,27 +1597,14 @@
         );
       }
 
-      // KI-200 (2026-05-15) — chain definitions mirror backend/sales_brain.py +
+      // KI-2xx (2026-05-15) — single-brain stack. Only the `brain` chain
+      // remains; fast_brain + judge chains were retired with the merged
+      // sales-brain provider. Mirrors backend/sales_brain.py +
       // backend/providers/tiered_brain_llm.py + nvidia_nim_llm.py chain order.
-      // Tier 0 = Google AI Studio (Gemini) — PRIMARY for fast_brain + brain.
+      // Tier 0 = Google AI Studio (Gemini) — PRIMARY.
       // Tier 1 = NVIDIA NIM (chain order matters; last entry = "Last resort").
       // Tier 2 = OpenRouter free pool — backstop inside NIM-failed path.
-      // Judge intentionally has NO Tier 0 (cross-family invariant, ADR-040).
       var CHAIN_DEFINITIONS = {
-        fast_brain: {
-          tier0: { provider: 'Google AI Studio', model: 'google/gemini-2.5-flash-lite' },
-          tier1: [
-            'qwen/qwen3-next-80b-a3b-instruct',
-            'mistralai/mistral-large-3-675b-instruct-2512',
-            'meta/llama-4-maverick-17b-128e-instruct',
-            'nvidia/llama-3.3-nemotron-super-49b-v1.5'
-          ],
-          tier2: [
-            'nvidia/nemotron-3-super-120b-a12b:free',
-            'qwen/qwen3-next-80b-a3b-instruct:free',
-            'google/gemma-4-31b-it:free'
-          ]
-        },
         brain: {
           tier0: { provider: 'Google AI Studio', model: 'google/gemini-2.5-flash' },
           tier1: [
@@ -1631,17 +1617,6 @@
             'nvidia/nemotron-3-super-120b-a12b:free',
             'qwen/qwen3-next-80b-a3b-instruct:free',
             'google/gemma-4-31b-it:free'
-          ]
-        },
-        judge: {
-          tier0: null,
-          tier1: [
-            'mistralai/mistral-large-3-675b-instruct-2512',
-            'meta/llama-4-maverick-17b-128e-instruct',
-            'nvidia/llama-3.3-nemotron-super-49b-v1.5'
-          ],
-          tier2: [
-            'qwen/qwen3-next-80b-a3b-instruct:free'
           ]
         }
       };
@@ -1665,7 +1640,6 @@
       // given role. Strategy:
       //   1. If Tier 0 exists for this role AND Gemini is available, return Tier 0.
       //   2. Else fall back to NIM's elected primary from chains[role].current_primary.
-      //   3. Judge never uses Tier 0 (cross-family invariant) — always NIM primary.
       // TODO(backend): expose top-level `gemini_available: bool` in
       //   /api/admin/llm-health response. Until then we ASSUME Gemini is
       //   available (true) — matches the deployed Tier-0-primary state.
@@ -1686,8 +1660,8 @@
 
       // KI-200 — build the unioned model list across all chains with
       // per-chain role labels. Returns array of:
-      //   { model, provider, tier, roles: { fast_brain, brain, judge } }
-      // where each `roles[r]` is one of:
+      //   { model, provider, tier, roles: { brain } }
+      // where `roles.brain` is one of:
       //   'Primary' | '1st backup' | '2nd backup' | '3rd backup' | 'Last resort' | null
       function buildEligibleModelTable() {
         var BACKUP_LABELS = ['Primary', '1st backup', '2nd backup', '3rd backup', '4th backup', '5th backup'];
@@ -1699,7 +1673,7 @@
               model: model,
               provider: providerForModel(model),
               tier: tier,
-              roles: { fast_brain: null, brain: null, judge: null },
+              roles: { brain: null },
               // for sorting: minimum chain position across all chains (lower = more important)
               minPos: 999,
               anyPrimary: false

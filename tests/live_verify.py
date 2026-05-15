@@ -5,7 +5,6 @@ subset of the gold Q&A, asserts every response has:
   - HTTP 200
   - non-empty reply_text
   - at least one citation (when not a refusal)
-  - faithfulness_passed=true (when not an intentional refusal-test question)
   - latency_ms within Doc 01 C1 budget (p95 ≤ 7000ms)
 
 Writes tests/live_results_<ts>.md with a pass/fail table + Doc 01 latency budget audit.
@@ -98,7 +97,6 @@ async def main():
                 latencies.append(elapsed_ms)
                 reply = resp.get("reply_text", "")
                 citations = resp.get("citations", [])
-                fp = resp.get("faithfulness_passed", True)
                 blocked = resp.get("blocked", False)
                 brain = resp.get("brain_used", "?")
                 expected_refusal = g.get("expected_refusal", False)

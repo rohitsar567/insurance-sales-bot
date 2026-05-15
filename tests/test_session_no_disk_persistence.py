@@ -107,7 +107,7 @@ class TestSessionNoDiskPersistence(unittest.TestCase):
 
     def test_flush_is_a_noop(self):
         """SessionState._flush() is kept for backwards-compat with existing
-        callers (orchestrator + fact_find_brain). It must do nothing — no
+        callers (single_brain + fact_find_brain). It must do nothing — no
         I/O, no exceptions on missing dir, no return value."""
         from backend.session_state import get_session
         sess = get_session(self.session_id)

@@ -33,6 +33,9 @@ import {
 } from "@/lib/api";
 import { translate, UILang, StringKey, GLOSSARY } from "@/lib/i18n";
 import PolicyCompareModal from "@/components/PolicyCompareModal";
+import PolicyPremiumWidget from "@/components/PolicyPremiumWidget";
+import PolicyScorecardWidget from "@/components/PolicyScorecardWidget";
+import type { PremiumBulkProfile, BulkScorecardProfile } from "@/lib/api";
 // KI-168 (2026-05-15) — voice path migrated from custom-VAD `useLiveConversation`
 // to native browser SpeechRecognition via `useStreamingVoice`. The old hook
 // remains on disk as a graveyard reference until KI-168 is field-verified.
@@ -1548,7 +1551,21 @@ export default function Page() {
               </div>
             )}
             <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-thin space-y-4 mb-4 pr-1">
-              {messages.map((m) => <Message key={m.id} m={m} />)}
+              {messages.map((m) => (
+                <Message
+                  key={m.id}
+                  m={m}
+                  marketplace={marketplace}
+                  profile={profileCompleteness?.profile}
+                  onOpenMarketplace={() => {
+                    setShowMarketplace(true);
+                    setShowPremium(false);
+                    setShowCoverage(false);
+                    setShowProfile(false);
+                    setShowAdmin(false);
+                  }}
+                />
+              ))}
               {(busy || voicePhase) && <ThinkingDots phase={voicePhase} />}
             </div>
           </>
@@ -2337,7 +2354,17 @@ function stripInlineCitations(text: string): string {
   return text.replace(/\s*\[(?:Source|Regulation):[^\]]+\]/gi, "").replace(/\s{2,}/g, " ").trim();
 }
 
-function Message({ m }: { m: DisplayMessage }) {
+function Message({
+  m,
+  marketplace,
+  profile,
+  onOpenMarketplace,
+}: {
+  m: DisplayMessage;
+  marketplace?: MarketplaceResponse | null;
+  profile?: UserProfile;
+  onOpenMarketplace?: () => void;
+}) {
   const isUser = m.role === "user";
   // V3 FIX 3 — split off the trailing "⏸ paused" marker (appended by
   // interruptBotAudio) so we can render it as gray italic instead of plain
@@ -2409,7 +2436,12 @@ function Message({ m }: { m: DisplayMessage }) {
           />
         )}
         {!isUser && m.citations && m.citations.length > 0 && (
-          <CitedPolicyCards citations={m.citations} />
+          <CitedPolicyCards
+            citations={m.citations}
+            marketplace={marketplace}
+            profile={profile}
+            onOpenMarketplace={onOpenMarketplace}
+          />
         )}
       </div>
     </div>
@@ -2432,9 +2464,70 @@ function gradeColor(grade: string): string {
 // policy name, scorecard grade + one-liner, source-PDF link, and a
 // "View details" button. A top-right "Compare all" button opens the new
 // PolicyCompareModal in side-by-side mode.
-function CitedPolicyCards({ citations }: { citations: Citation[] }) {
+function CitedPolicyCards({
+  citations,
+  marketplace,
+  profile,
+  onOpenMarketplace,
+}: {
+  citations: Citation[];
+  marketplace?: MarketplaceResponse | null;
+  profile?: UserProfile;
+  onOpenMarketplace?: () => void;
+}) {
   const [cards, setCards] = useState<Record<string, ScorecardResponse | null>>({});
   const [compareOpen, setCompareOpen] = useState(false);
+
+  // Build a policy_id → MarketplacePolicy lookup so the modal can render the
+  // same 4-stat grid + highlights that the marketplace cards show. When the
+  // marketplace hasn't loaded yet (or a cited policy isn't in the corpus),
+  // the modal's PolicyHighlights section silently skips.
+  const policyById: Record<string, MarketplacePolicy> = (() => {
+    const out: Record<string, MarketplacePolicy> = {};
+    if (!marketplace) return out;
+    for (const p of marketplace.policies) {
+      out[p.policy_id] = p;
+    }
+    return out;
+  })();
+
+  // Translate the live UserProfile (chat-side) into the shapes the
+  // premium-bulk and scorecard-bulk endpoints expect. These two shapes are
+  // similar but not identical — premium ignores parents_*; scorecard uses
+  // them — so we pick the subset each widget cares about.
+  const premiumProfile: PremiumBulkProfile | undefined = profile
+    ? {
+        age: profile.age ?? undefined,
+        family_size: undefined,
+        dependents: profile.dependents ?? undefined,
+        location_tier: profile.location_tier ?? undefined,
+        smoker: undefined,
+        pre_existing_conditions:
+          profile.health_conditions && profile.health_conditions.length > 0
+            ? (profile.health_conditions.includes("diabetes") ||
+              profile.health_conditions.includes("hypertension")
+                ? "diabetes_or_hypertension"
+                : profile.health_conditions.includes("heart_disease")
+                  ? "heart_disease"
+                  : "none")
+            : undefined,
+      }
+    : undefined;
+  const scorecardProfile: BulkScorecardProfile | undefined = profile
+    ? {
+        age: profile.age ?? undefined,
+        dependents: profile.dependents ?? undefined,
+        health_conditions: profile.health_conditions ?? undefined,
+        primary_goal: profile.primary_goal ?? undefined,
+        location_tier: profile.location_tier ?? undefined,
+        income_band: profile.income_band ?? undefined,
+        budget_band: profile.budget_band ?? undefined,
+        existing_cover_inr: profile.existing_cover_inr ?? undefined,
+        parents_to_insure: profile.parents_to_insure ?? undefined,
+        parents_age_max: profile.parents_age_max ?? undefined,
+        parents_has_ped: profile.parents_has_ped ?? undefined,
+      }
+    : undefined;
 
   // Dedupe citations by policy_id (the LLM often cites the same policy from
   // multiple chunks). Top 3 for chat-message density.
@@ -2544,6 +2637,23 @@ function CitedPolicyCards({ citations }: { citations: Citation[] }) {
         <PolicyCompareModal
           policies={topPolicies}
           onClose={() => setCompareOpen(false)}
+          profile={profile}
+          policyDataFor={(id) => policyById[id]}
+          renderPremiumFor={(policyId, policyName) => (
+            <PolicyPremiumWidget
+              policyId={policyId}
+              policyName={policyName}
+              profile={premiumProfile}
+            />
+          )}
+          renderScorecardFor={(policyId, policyName) => (
+            <PolicyScorecardWidget
+              policyId={policyId}
+              policyName={policyName}
+              profile={scorecardProfile}
+            />
+          )}
+          onOpenMarketplace={onOpenMarketplace}
         />
       )}
     </div>

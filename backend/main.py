@@ -26,14 +26,14 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from backend.config import settings
-from backend.orchestrator import handle_turn
+from backend import nim_fallback
 from backend.providers.sarvam_stt import SarvamSTT
 from backend.providers.sarvam_tts import SarvamTTS
 
 # Path B — opt-in single-LLM brain. Off by default; flip via env var.
 # When on we replace orchestrator.handle_turn with single_brain.handle_turn
-# for the /api/chat hot path and fall back to the legacy orchestrator on
-# any SingleBrainError (so users always get a reply).
+# for the /api/chat hot path and fall back to nim_fallback.handle_turn_fallback
+# on any SingleBrainError (so users always get a reply).
 import os as _os  # local alias to avoid stomping any later `import os`
 
 USE_SINGLE_BRAIN = _os.environ.get("USE_SINGLE_BRAIN", "false").lower() in (
@@ -673,32 +673,30 @@ async def chat(req: ChatRequest, request: Request):
                     )
                 else:
                     logging.warning(
-                        "single_brain failed, falling back to orchestrator "
+                        "single_brain failed, falling back to nim_fallback "
                         "(session=%s): %s",
                         session_id, _sb_err,
                     )
                     turn = await asyncio.wait_for(
-                        handle_turn(
+                        nim_fallback.handle_turn_fallback(
+                            session=_sb_session,
                             user_text=req.user_text,
                             chat_history=req.chat_history,
-                            user_profile=req.profile,
-                            policy_filter_ids=req.policy_filter_ids,
-                            session_id=session_id,
-                            view_context=req.view_context,
                         ),
-                        timeout=45.0,
+                        timeout=20.0,
                     )
         else:
+            # Legacy orchestrator path is gone (CLEAN2 deletion). When
+            # USE_SINGLE_BRAIN is off, route directly through the minimal
+            # NIM fallback so the bot still serves a reply.
+            from backend.session_state import get_session as _get_session
             turn = await asyncio.wait_for(
-                handle_turn(
+                nim_fallback.handle_turn_fallback(
+                    session=_get_session(session_id),
                     user_text=req.user_text,
                     chat_history=req.chat_history,
-                    user_profile=req.profile,
-                    policy_filter_ids=req.policy_filter_ids,
-                    session_id=session_id,
-                    view_context=req.view_context,
                 ),
-                timeout=45.0,
+                timeout=20.0,
             )
     except asyncio.TimeoutError:
         logging.warning(

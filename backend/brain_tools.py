@@ -589,16 +589,92 @@ def _coerce_age(value: Any) -> Optional[int]:
     return n
 
 
+# Ported from sales_brain_normalizer.py (B6 cleanup, 2026-05-15) — the legacy
+# normalizer module is being deleted; this is the only consumer left.
+_DEPENDENT_VAGUE_TERMS = (
+    "family", "everyone", "all of us", "everybody",
+    "whole family", "joint family",
+)
+
+
+def _normalize_dependents_inline(value: Any) -> Optional[str]:
+    """Port of sales_brain_normalizer._normalize_dependents.
+
+    Schema-free variant — the original required a `schema["values"]` lookup
+    for direct enum hits; here we hard-code the canonical bucket set used
+    by the bot (kept in sync with the previous fact-find schema).
+    """
+    if not isinstance(value, str):
+        return None
+    s = value.strip().lower()
+    if not s:
+        return None
+    # Canonical enum values (formerly schema["values"]).
+    _CANONICAL_VALUES = (
+        "self",
+        "self+spouse",
+        "self+spouse+kids",
+        "self+spouse+parents",
+        "self+spouse+kids+parents",
+        "self+kids",
+        "self+parents",
+    )
+    if s in _CANONICAL_VALUES:
+        return s
+
+    has_spouse = any(k in s for k in ("spouse", "wife", "husband", "partner"))
+    has_kids = ("kid" in s) or ("child" in s) or ("children" in s) or ("son" in s) or ("daughter" in s)
+    has_parents = "parent" in s
+
+    # Vague terms with no specific signals → cannot coerce
+    if any(v in s for v in _DEPENDENT_VAGUE_TERMS) and not (has_spouse or has_kids or has_parents):
+        return None
+
+    if has_spouse and has_kids and has_parents:
+        return "self+spouse+kids+parents"
+    if has_spouse and has_parents:
+        return "self+spouse+parents"
+    if has_spouse and has_kids:
+        return "self+spouse+kids"
+    if has_spouse:
+        return "self+spouse"
+    if has_kids and has_parents:
+        # No canonical bucket — fold parents into the wider bundle
+        return "self+spouse+kids+parents"
+    if has_kids:
+        return "self+kids"
+    if has_parents:
+        return "self+parents"
+    # KI-222 — expand the "self" alias set. Live captures showed users
+    # answering "single", "unmarried", "no dependents", "just myself" etc.,
+    # which previously fell through to None and got silently dropped — the
+    # bot then re-asked the same slot on the next turn.
+    _SELF_ALIASES = (
+        "self", "me", "just me", "only me", "myself", "only self",
+        "single", "unmarried", "alone", "bachelor", "no dependents",
+        "just myself", "nobody else", "no one else", "nobody",
+        "myself only", "by myself", "solo",
+    )
+    if s in _SELF_ALIASES:
+        return "self"
+    # Substring fall-through for the same intents when wrapped in extra prose
+    # (e.g. "i'm single right now", "just myself for now").
+    if any(alias in s for alias in (
+        "single", "unmarried", "no dependents", "just myself",
+        "by myself", "nobody else", "no one else", "myself only",
+        "bachelor", "solo",
+    )):
+        return "self"
+    return None
+
+
 def _coerce_dependents(value: Any) -> Optional[str]:
-    """Delegate to sales_brain_normalizer when importable; else stringify."""
+    """Normalize raw dependents text to a canonical bucket; see
+    `_normalize_dependents_inline` (ported from sales_brain_normalizer)."""
     if value is None:
         return None
     try:
-        from backend.sales_brain_normalizer import _normalize_dependents
-
-        # The normalizer signature is (value, schema); pass an empty dict
-        # so it falls back to its built-in canonical-string mapping.
-        return _normalize_dependents(value, {})
+        return _normalize_dependents_inline(value)
     except Exception:  # noqa: BLE001 — best-effort
         s = str(value).strip()
         return s or None

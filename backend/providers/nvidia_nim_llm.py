@@ -1,4 +1,4 @@
-"""NVIDIA NIM — primary brain + judge for the entire reasoning stack.
+"""NVIDIA NIM — single-brain reasoning stack.
 
 NIM exposes an OpenAI-compatible chat completions endpoint at
 POST https://integrate.api.nvidia.com/v1/chat/completions.
@@ -8,23 +8,17 @@ Why NIM:
   - Single provider replaces OpenRouter + DeepSeek-direct + Cerebras + Groq
   - Same Bearer-auth + OpenAI request shape — drop-in retry/backoff
 
-Roles (tiered routing — pick brain by intent classification):
-  - Heavy brain (comparison / recommendation / synthesis): deepseek-ai/deepseek-v4-pro
-      DeepSeek's frontier MoE (1.6T total / 49B active, 1M context, MIT-
-      licensed). Beats Opus-4.6 + GPT-5.4 on SimpleQA-Verified and
-      LiveCodeBench. Used when quality > latency.
-  - Fast brain (voice turns / fact-find / simple QA): deepseek-ai/deepseek-v4-flash
-      284B total / 13B active MoE, 1M context, MIT-licensed. ~27% FLOPs of
-      V3.2 → significantly lower TTFT. Frontier-tier on HMMT 2026 + LiveCode-
-      Bench. Used when voice latency dominates.
-  - Judge (faithfulness Gate 4 + Hinglish drift LLM-judge): meta/llama-4-maverick-17b-128e-instruct
-      Meta's MoE flagship (17B active / 400B total, 128 experts). Different
-      company, different architecture, different training corpus from the
-      brain — strongest cross-grading independence. The brain (DeepSeek) does
-      not mark its own homework.
+Role (collapsed 2026-05-15 — single brain only):
+  - Brain (every reasoning turn): one elected candidate from BRAIN_CHAIN.
+      The chain is ordered Qwen 3-Next → Mistral Large 3 → Llama-4 Maverick
+      → Nemotron-Super (last resort). Election (KI-080) picks the actually
+      healthy/fastest candidate per turn from background probe data.
 
-Sarvam stays for voice STT/TTS + Hindi/Hinglish/vernacular translation.
-Everything else (brain, judge, eval grader) runs through this module.
+The FAST_BRAIN_CHAIN + JUDGE_CHAIN abstractions were removed in the
+three-chain collapse: voice fact-find now reuses BRAIN_CHAIN with its own
+budget, and the LLM-judge gate was retired in favour of in-process
+faithfulness checks. Sarvam stays for voice STT/TTS + Hindi/Hinglish/
+vernacular translation.
 """
 
 from __future__ import annotations
@@ -327,54 +321,10 @@ BRAIN_CHAIN = [
     "nvidia/llama-3.3-nemotron-super-49b-v1.5",
 ]
 
-# Same chain for fast brain — Qwen 80B is already fast (~2s); no need for a
-# separate "small + faster" model since the candidate chain already has
-# Nemotron Nano further down. Last entry is Groq because its LPU inference
-# is the lowest-TTFT free-tier option, so a fast-brain fall-through to it is
-# still acceptable from a latency-budget standpoint.
-FAST_BRAIN_CHAIN = [
-    # KI-155 (2026-05-15) — NIM-ONLY ENFORCEMENT. Groq Llama-3.3-70B
-    # REMOVED from candidate #2 (the KI-079 promotion) after it failed the
-    # `<FF>` trailer contract in a live fact-find probe, silently
-    # cascading the orchestrator to scripted prompts. Also dropped models
-    # that have been "down" for 48+ consecutive probes (nemotron-3-nano-30b
-    # = empty_content, qwen3.5-122b = timeout, gpt-oss-120b = empty_content,
-    # deepseek-v4-flash = timeout) so the election pool only contains
-    # demonstrably-healthy NIM models. With election (KI-080) picking the
-    # actually-fastest healthy candidate per turn, chain order matters
-    # only for cold-start; the elector handles steady-state.
-    # KI-175 (2026-05-15) — Nemotron demoted to LAST RESORT per operator
-    # preference: nemotron is the weakest practical NIM model.
-    # Primary: Qwen 3-Next 80B — 5/5 recent probes ok, ~2s, multilingual,
-    # verified `<FF>` adherence in production traffic.
-    "qwen/qwen3-next-80b-a3b-instruct",
-    # 1st fallback: Mistral Large 3 675B — 3/3 recent ok, different family.
-    "mistralai/mistral-large-3-675b-instruct-2512",
-    # 2nd fallback: Meta Llama-4 Maverick 17B — 5/5 probes ok, different family.
-    "meta/llama-4-maverick-17b-128e-instruct",
-    # 3rd / LAST RESORT: NVIDIA Nemotron-Super 49B — barely usable.
-    # Only reached when Qwen + Mistral + Maverick are ALL down.
-    "nvidia/llama-3.3-nemotron-super-49b-v1.5",
-]
-
-# Judge chain — non-Qwen (different family from brain primary so the judge
-# never grades its own family's output).
-# KI-155 (2026-05-15) — NIM-ONLY ENFORCEMENT. Groq + OpenRouter REMOVED.
-# Dropped candidates that have been "down" for 48+ consecutive probes
-# (gpt-oss-120b = empty_content, kimi-k2 = http_404, minimax-m2.5 = http_410)
-# so the election pool only contains demonstrably-healthy NIM models.
-JUDGE_CHAIN = [
-    # Primary: Mistral Large 3 675B — 3/3 recent ok, different family
-    # (mistral) from Qwen brain, preserves cross-family grading invariant.
-    "mistralai/mistral-large-3-675b-instruct-2512",
-    # 1st fallback: Meta Llama-4 Maverick 17B — 5/5 probes ok, different
-    # family (meta), original judge primary pre-KI-080.
-    "meta/llama-4-maverick-17b-128e-instruct",
-    # 2nd fallback: NVIDIA Nemotron-Super 49B — 3/3 recent ok, different
-    # family (nvidia/nemotron) from Qwen brain. Note: branded "llama" but
-    # NVIDIA-finetuned, distinct decision surface.
-    "nvidia/llama-3.3-nemotron-super-49b-v1.5",
-]
+# Three-chain collapse (2026-05-15): FAST_BRAIN_CHAIN + JUDGE_CHAIN removed.
+# Every reasoning role now resolves to BRAIN_CHAIN above. Voice fact-find
+# reuses get_brain_llm() with a tighter outer wait_for cap; the LLM-judge
+# gate (Gate 4 / Hinglish drift) was retired in favour of in-process checks.
 
 
 def _classify_error(e: BaseException) -> str:
@@ -450,8 +400,8 @@ class NimChainLLM(LLMProvider):
         # final filter_chain-refresh fallback path + cold-start edge cases.
         self.total_budget_s = total_budget_s if total_budget_s is not None else max(timeout * 2.5, 30.0)
         self.per_model_attempts = per_model_attempts
-        self.role = role  # 'brain' | 'fast_brain' | 'judge' | 'unknown' — flows into usage log
-        self._chain_name = role if role in ("brain", "fast_brain", "judge") else "unknown"
+        self.role = role  # 'brain' | 'unknown' — flows into usage log
+        self._chain_name = role if role == "brain" else "unknown"
         self.model = chain[0]
         self.name = f"nim-chain::{self._short_id(chain[0])}"
 
@@ -504,11 +454,10 @@ class NimChainLLM(LLMProvider):
         'deepseek', 'moonshot', 'minimax', 'nvidia', 'nemotron', 'llama3',
         'google', 'unknown'.
 
-        A4 (2026-05-15) — EVERY model in BRAIN_CHAIN / FAST_BRAIN_CHAIN /
-        JUDGE_CHAIN must map to a known family. The `assert_family_coverage()`
-        helper below walks the chains at module-import time (or on demand
-        from tests / admin / probe loop) and raises if any candidate falls
-        through to "unknown".
+        A4 (2026-05-15) — EVERY model in BRAIN_CHAIN must map to a known
+        family. The `assert_family_coverage()` helper walks the chain on
+        demand (from tests / admin / probe loop) and raises if any
+        candidate falls through to "unknown".
         """
         m = (model_id or "").lower()
         # KI-220 — recognise Google's Gemini family BEFORE prefix-stripping so
@@ -888,43 +837,42 @@ def _balanced_brain_chain(base: list[str], *, groq_first_probability: float = 0.
 
 
 def assert_family_coverage() -> dict[str, str]:
-    """A4 (2026-05-15) — Verify every model in every chain maps to a known
+    """A4 (2026-05-15) — Verify every model in BRAIN_CHAIN maps to a known
     family (i.e. NOT 'unknown'). Returns a {model: family} dict on success;
     raises RuntimeError listing any 'unknown'-mapped models on failure.
 
-    KI-175 — also verifies nemotron is the TAIL (last entry) of each brain
-    chain so the last-resort ordering invariant survives any chain edit.
+    KI-175 — also verifies nemotron is the TAIL (last entry) of BRAIN_CHAIN
+    so the last-resort ordering invariant survives any chain edit.
+
+    Three-chain collapse (2026-05-15): FAST_BRAIN_CHAIN + JUDGE_CHAIN have
+    been removed, so this helper now walks BRAIN_CHAIN only.
 
     Call from admin diagnostics or tests; not invoked on import to keep
     cold-start cheap. Safe to run from a probe loop tick.
     """
     coverage: dict[str, str] = {}
     unknown: list[str] = []
-    for chain in (BRAIN_CHAIN, FAST_BRAIN_CHAIN, JUDGE_CHAIN):
-        for m in chain:
-            fam = NimChainLLM._family_of(m)
-            coverage[m] = fam
-            if fam == "unknown":
-                unknown.append(m)
+    for m in BRAIN_CHAIN:
+        fam = NimChainLLM._family_of(m)
+        coverage[m] = fam
+        if fam == "unknown":
+            unknown.append(m)
     if unknown:
         raise RuntimeError(
             f"_family_of returned 'unknown' for: {unknown}. "
-            "Extend NimChainLLM._family_of so cross-family grading checks "
+            "Extend NimChainLLM._family_of so cross-family checks "
             "have a stable bucket for every candidate."
         )
     # KI-175 tail-position invariant — nemotron MUST be the last entry of
-    # both brain chains (it's the last-resort fallback). Judge chain is
-    # exempt because Nemotron is a legitimate cross-family judge there.
-    for label, chain in (("BRAIN_CHAIN", BRAIN_CHAIN),
-                          ("FAST_BRAIN_CHAIN", FAST_BRAIN_CHAIN)):
-        nemo_idx = next(
-            (i for i, m in enumerate(chain) if "nemotron" in m.lower()), None
+    # BRAIN_CHAIN (it's the last-resort fallback).
+    nemo_idx = next(
+        (i for i, m in enumerate(BRAIN_CHAIN) if "nemotron" in m.lower()), None
+    )
+    if nemo_idx is not None and nemo_idx != len(BRAIN_CHAIN) - 1:
+        raise RuntimeError(
+            f"KI-175 violation: nemotron must be the LAST entry of BRAIN_CHAIN "
+            f"(found at index {nemo_idx}, chain length {len(BRAIN_CHAIN)})."
         )
-        if nemo_idx is not None and nemo_idx != len(chain) - 1:
-            raise RuntimeError(
-                f"KI-175 violation: nemotron must be the LAST entry of {label} "
-                f"(found at index {nemo_idx}, chain length {len(chain)})."
-            )
     return coverage
 
 
@@ -948,38 +896,6 @@ def get_brain_llm() -> NimChainLLM:
                        role="brain", total_budget_s=35.0)
 
 
-def get_fast_brain_llm() -> NimChainLLM:
-    """Fast brain — KI-080 sticky-primary election over FAST_BRAIN_CHAIN.
-
-    Pre-KI-080 (KI-025 + KI-078 + KI-079): per-call rotation between NIM
-    Qwen and Groq Llama, 6s per-link timeout, 22s total chain budget,
-    Groq promoted to chain position #2 so a single NIM degradation could
-    fall through fast enough. Even so, the 10-turn live probe at commit
-    078ff45 showed 7/10 fact-find turns hitting the wait_for cap at 26.6s
-    because every chain-iteration burned the full budget exploring 5+
-    queued NIM candidates.
-
-    Post-KI-080: probe-driven election picks ONE primary per chain (the
-    fastest-responding healthy candidate by rolling probe data) and ONE
-    cross-provider backup. chat() invokes the primary ONCE with a 12s
-    timeout, falls to the backup ONCE on failure, and only walks the
-    filter_chain fallback as a final safety net. The KI-079 escalation in
-    fact_find_brain still runs if primary+backup both fail, providing one
-    more bite via BRAIN_CHAIN.
-
-    KI-025 supersession: the 50/50 rotation is no longer wired in — see
-    the docstring on `_balanced_brain_chain` for the reasoning.
-    """
-    return NimChainLLM(chain=FAST_BRAIN_CHAIN, timeout=6.0,
-                       role="fast_brain", total_budget_s=22.0)
-
-
-def get_judge_llm(language: str = "en") -> NimChainLLM:
-    """The grader for faithfulness Gate 4 + Hinglish drift + eval harness.
-
-    Returns a JUDGE_CHAIN — primary Mistral Large 3 (different family from
-    Qwen brain so cross-grading independence is preserved), with non-Qwen
-    fallbacks (GPT-OSS, Kimi, MiniMax, Llama-4 Maverick) when the primary
-    pool is congested. `language` arg kept for call-site compatibility.
-    """
-    return NimChainLLM(chain=JUDGE_CHAIN, timeout=30.0, role="judge")
+# Three-chain collapse (2026-05-15): get_fast_brain_llm + get_judge_llm
+# factories removed. Any straggler caller should import get_brain_llm()
+# directly. The FAST_BRAIN_CHAIN + JUDGE_CHAIN constants are also gone.

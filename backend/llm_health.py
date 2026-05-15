@@ -28,8 +28,9 @@ Records per model:
                       the success_rate signal in the election score.
 
 Election (KI-201, 2026-05-15 — supersedes KI-080/KI-087 score-based election):
-  - Walk the chain definition (BRAIN_CHAIN / FAST_BRAIN_CHAIN / JUDGE_CHAIN)
-    in priority order. CURRENT_PRIMARY = first election-eligible model.
+  - Walk the chain definition (BRAIN_CHAIN — the only chain after the
+    three-chain collapse on 2026-05-15) in priority order.
+    CURRENT_PRIMARY = first election-eligible model.
     CURRENT_BACKUP  = next election-eligible model after primary.
   - Chain hierarchy IS the truth — nemotron-49b is LAST in BRAIN_CHAIN so
     it only serves when qwen + mistral + maverick are all unavailable.
@@ -118,6 +119,12 @@ HEALTHY_PROBE_AGE_SEC = 600       # KI-084 — election candidates need a probe
 STALE_AGE_SEC = HEALTHY_PROBE_AGE_SEC  # alias for clarity; same threshold.
 DEGRADED_WINDOW_SEC = 30          # report_failure sidelines a model this long
                                   # for transient failures (timeout / 5xx).
+
+# Three-chain collapse (2026-05-15) — collapsed FAST_BRAIN_CHAIN + JUDGE_CHAIN
+# out of the architecture. "brain" is now the sole election role; every
+# consumer that used to iterate ("brain", "fast_brain", "judge") now iterates
+# ROLES so we only have one place to add a future role.
+ROLES: tuple[str, ...] = ("brain",)
 # KI-084 — rate-limit failures (HTTP 429 + provider 'RateLimit' bodies) are
 # almost always the daily quota on free tiers (Groq TPD, etc.) — they do
 # NOT reset in 30s. Demote the model from election for an hour so the
@@ -355,29 +362,26 @@ def _iso_age_seconds(iso_ts: Optional[str]) -> Optional[float]:
 
 
 def _all_known_models() -> list[str]:
-    """Pull the union of every model name from every chain at module import."""
-    from backend.providers.nvidia_nim_llm import (
-        BRAIN_CHAIN, FAST_BRAIN_CHAIN, JUDGE_CHAIN,
-    )
+    """Pull every model name from BRAIN_CHAIN (the only remaining chain
+    after the three-chain collapse on 2026-05-15)."""
+    from backend.providers.nvidia_nim_llm import BRAIN_CHAIN
     seen: list[str] = []
-    for chain in (BRAIN_CHAIN, FAST_BRAIN_CHAIN, JUDGE_CHAIN):
-        for m in chain:
-            if m not in seen:
-                seen.append(m)
+    for m in BRAIN_CHAIN:
+        if m not in seen:
+            seen.append(m)
     return seen
 
 
 def _chain_for(chain_name: str) -> list[str]:
     """Resolve a chain name → live chain list. Reads off the module so
-    runtime admin reorderings are respected by the elector."""
+    runtime admin reorderings are respected by the elector.
+
+    Three-chain collapse (2026-05-15): "brain" is the only valid role.
+    Any other input is coerced to "brain" for back-compat with stragglers
+    that still pass "fast_brain"/"judge" (CLEAN1 nim_fallback callers etc.).
+    """
     from backend.providers import nvidia_nim_llm as nim
-    if chain_name == "brain":
-        return list(getattr(nim, "BRAIN_CHAIN", []))
-    if chain_name == "fast_brain":
-        return list(getattr(nim, "FAST_BRAIN_CHAIN", []))
-    if chain_name == "judge":
-        return list(getattr(nim, "JUDGE_CHAIN", []))
-    return []
+    return list(getattr(nim, "BRAIN_CHAIN", []))
 
 
 # KI-080 — in-process state. Probe history + degraded windows are
@@ -1290,9 +1294,10 @@ def status_summary() -> dict:
         summary["updated_at"] = max((m.get("tested_at") or "") for m in summary["models"])
     # KI-080 — surface currently-elected primary/backup per chain for the
     # admin UI. Cheap (a couple of dict lookups + sort over <=10 entries).
+    # Three-chain collapse (2026-05-15) — "brain" is the only remaining role.
     summary["elections"] = {
         role: {"primary": get_primary(role), "backup": get_backup(role)}
-        for role in ("brain", "fast_brain", "judge")
+        for role in ROLES
     }
     return summary
 
@@ -1339,5 +1344,5 @@ if __name__ == "__main__":
         print(f"  {h.status:8s}  {latency:>8s}  {m:50s}  {h.last_error or 'ok'}")
     print()
     print("Elections:")
-    for role in ("brain", "fast_brain", "judge"):
+    for role in ROLES:
         print(f"  {role:10s}  primary={get_primary(role)}  backup={get_backup(role)}")

@@ -10,7 +10,12 @@
 // compare matches the marketplace-side compare (same fonts, borders, radii).
 
 import { useEffect, useState, type ReactNode } from "react";
-import { Citation, ScorecardResponse, getScorecard } from "@/lib/api";
+import {
+  Citation,
+  MarketplacePolicy,
+  ScorecardResponse,
+  getScorecard,
+} from "@/lib/api";
 
 // ----- local visual helpers (forked from page.tsx so this file is
 // self-contained; the originals stay in page.tsx untouched). -----
@@ -102,13 +107,17 @@ export type PolicyCompareModalProps = {
   policies: Citation[];
   onClose: () => void;
   // B2 + B3 plug points. Both are optional; safe fallbacks render below.
-  renderPremiumFor?: (policyId: string) => ReactNode;
-  renderScorecardFor?: (policyId: string) => ReactNode;
+  renderPremiumFor?: (policyId: string, policyName: string) => ReactNode;
+  renderScorecardFor?: (policyId: string, policyName: string) => ReactNode;
   // Profile hint for downstream personalized widgets (unused by the shell
   // itself; pass-through so widgets opened via renderXxxFor can read it).
   // Typed loosely (any) by contract; harness should narrow when wiring.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   profile?: any;
+  // Optional resolver returning the marketplace MarketplacePolicy row for a
+  // citation. Powers the new "POLICY HIGHLIGHTS" section (4-stat grid +
+  // bullets). When undefined, the highlights section is skipped.
+  policyDataFor?: (policyId: string) => MarketplacePolicy | undefined;
   // Hook for "Open in full marketplace" — defaults to no-op + closes modal.
   onOpenMarketplace?: () => void;
 };
@@ -119,6 +128,7 @@ export default function PolicyCompareModal({
   renderPremiumFor,
   renderScorecardFor,
   profile: _profile,
+  policyDataFor,
   onOpenMarketplace,
 }: PolicyCompareModalProps) {
   const uniq = uniquePolicies(policies).slice(0, 4);
@@ -133,7 +143,7 @@ export default function PolicyCompareModal({
       aria-label={`Compare ${n} polic${n === 1 ? "y" : "ies"}`}
     >
       <div
-        className="bg-[var(--card)] sm:rounded-2xl shadow-xl w-full sm:max-w-6xl sm:w-[80vw] max-h-screen sm:max-h-[92vh] overflow-y-auto scrollbar-thin"
+        className="bg-[var(--card)] sm:rounded-2xl shadow-xl w-full sm:max-w-7xl sm:w-[92vw] max-h-screen sm:max-h-[92vh] overflow-y-auto scrollbar-thin"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -168,8 +178,9 @@ export default function PolicyCompareModal({
               <CompareColumn
                 key={c.policy_id}
                 citation={c}
-                premiumSlot={renderPremiumFor?.(c.policy_id)}
-                scorecardSlot={renderScorecardFor?.(c.policy_id)}
+                premiumSlot={renderPremiumFor?.(c.policy_id, c.policy_name)}
+                scorecardSlot={renderScorecardFor?.(c.policy_id, c.policy_name)}
+                marketplacePolicy={policyDataFor?.(c.policy_id)}
               />
             ))}
           </div>
@@ -201,12 +212,18 @@ function CompareColumn({
   citation,
   premiumSlot,
   scorecardSlot,
+  marketplacePolicy,
 }: {
   citation: Citation;
   premiumSlot?: ReactNode;
   scorecardSlot?: ReactNode;
+  marketplacePolicy?: MarketplacePolicy;
 }) {
-  const insurerName = citation.insurer_slug.replace(/-/g, " ");
+  // Prefer the canonical insurer name from the marketplace row when we
+  // have it (e.g. "HDFC ERGO General Insurance" vs the slug "hdfc-ergo"
+  // un-prettified). Falls back to the slug humanised.
+  const insurerName =
+    marketplacePolicy?.insurer_name ?? citation.insurer_slug.replace(/-/g, " ");
   return (
     <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 flex flex-col gap-4 min-w-0">
       {/* Header — logo + insurer + policy name */}
@@ -219,21 +236,115 @@ function CompareColumn({
           <div className="font-semibold text-sm leading-tight break-words">
             {citation.policy_name}
           </div>
+          {marketplacePolicy?.aliases && marketplacePolicy.aliases.length > 0 && (
+            <div className="text-[11px] text-slate-500 italic mt-0.5 break-words">
+              Also marketed as: {marketplacePolicy.aliases.join(", ")}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* PREMIUM CALCULATOR slot (B2) */}
-      <Section title="Premium calculator">
+      {/* POLICY HIGHLIGHTS — 4-stat grid + bullets. Mirrors the marketplace
+          PolicyCard so a chat-side compare looks the same as a marketplace-
+          side compare. Skipped when no marketplace row is available. */}
+      {marketplacePolicy && (
+        <PolicyHighlights policy={marketplacePolicy} />
+      )}
+
+      {/* PREMIUM ESTIMATE slot (B2). Render the slot directly — the parent's
+          PolicyPremiumWidget already owns its own bordered card chrome, so
+          double-wrapping it produces nested boxes. Only fall back to a
+          placeholder when the parent didn't wire renderPremiumFor at all. */}
+      <Section title="Premium estimate">
         {premiumSlot ?? <PlaceholderWidget label="Premium calculator coming soon" />}
       </Section>
 
-      {/* YOUR FIT SCORECARD slot (B3) */}
+      {/* FIT SCORECARD slot (B3). Same direct-render rule. */}
       <Section title="Your fit scorecard">
         {scorecardSlot ?? <ScorecardFallback policyId={citation.policy_id} />}
       </Section>
 
       {/* POLICY DETAILS expandable */}
       <PolicyDetails citation={citation} />
+    </div>
+  );
+}
+
+// 4-stat grid + bullets sourced from the MarketplacePolicy row. Matches
+// PolicyCard's body in MarketplacePanel so the user sees the same numbers
+// in both surfaces.
+function PolicyHighlights({ policy }: { policy: MarketplacePolicy }) {
+  const maxSI = policy.sum_insured_options.length
+    ? Math.max(...policy.sum_insured_options)
+    : null;
+  const siDisplay = maxSI
+    ? maxSI >= 10_000_000
+      ? `${maxSI / 10_000_000} cr`
+      : `${maxSI / 100_000} L`
+    : "—";
+  const network = policy.network_hospital_count
+    ? `${(policy.network_hospital_count / 1000).toFixed(0)}K+`
+    : "—";
+  const pedWait = policy.pre_existing_disease_waiting_months
+    ? `${policy.pre_existing_disease_waiting_months} mo`
+    : "—";
+  const cashless =
+    policy.cashless_treatment_supported === true
+      ? "Yes"
+      : policy.cashless_treatment_supported === false
+        ? "No"
+        : "—";
+
+  const bullets: string[] = [];
+  if (policy.no_claim_bonus_pct) {
+    bullets.push(`No-claim bonus up to ${policy.no_claim_bonus_pct}%`);
+  }
+  if (policy.room_rent_capping && policy.room_rent_capping.trim() !== "") {
+    bullets.push(`Room rent: ${policy.room_rent_capping}`);
+  }
+  if (policy.ayush_coverage === true) {
+    bullets.push("AYUSH treatments covered");
+  }
+  if (policy.maternity_coverage === true && policy.maternity_waiting_months) {
+    bullets.push(
+      `Maternity covered (${policy.maternity_waiting_months}-mo wait)`,
+    );
+  } else if (policy.maternity_coverage === true) {
+    bullets.push("Maternity covered");
+  }
+  if (policy.copayment_pct != null && policy.copayment_pct > 0) {
+    bullets.push(`Co-payment: ${policy.copayment_pct}%`);
+  }
+
+  return (
+    <Section title="Policy highlights">
+      <div className="grid grid-cols-2 gap-2 text-xs">
+        <MiniStat label="Sum insured" value={siDisplay} />
+        <MiniStat label="PED waiting" value={pedWait} />
+        <MiniStat label="Network" value={network} />
+        <MiniStat label="Cashless" value={cashless} />
+      </div>
+      {bullets.length > 0 && (
+        <ul className="mt-2.5 space-y-1 text-[11px] text-[var(--foreground)] leading-snug">
+          {bullets.slice(0, 4).map((b, i) => (
+            <li key={i} className="flex items-start gap-1.5">
+              <span className="text-[var(--primary)] mt-[1px]">•</span>
+              <span>{b}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Section>
+  );
+}
+
+function MiniStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <div className="text-[10px] text-[var(--muted-foreground)] uppercase tracking-wide">
+        {label}
+      </div>
+      <div className="text-xs font-semibold">{value}</div>
     </div>
   );
 }
