@@ -540,19 +540,30 @@ async def coverage():
         total = 0
 
     # Insurer metadata — names + home URLs are curated + verified
-    # (see eval/verified_urls.json + tools/verify_urls.py)
+    # (see eval/verified_urls.json + tools/verify_urls.py).
+    # KI-132 (2026-05-15) — expanded to all 19 real insurers so /api/coverage
+    # also returns proper display names (was 10 of 19).
     insurer_meta = {
-        "aditya-birla":  ("Aditya Birla Health Insurance", "https://www.adityabirlacapital.com/healthinsurance"),
-        "bajaj-allianz": ("Bajaj Allianz General Insurance", "https://www.bajajallianz.com/"),
-        "care-health":   ("Care Health Insurance", "https://www.careinsurance.com/"),
-        "hdfc-ergo":     ("HDFC ERGO General Insurance", "https://www.hdfcergo.com/"),
-        "icici-lombard": ("ICICI Lombard General Insurance", "https://www.icicilombard.com/"),
-        "manipalcigna":  ("ManipalCigna Health Insurance", "https://www.manipalcigna.com/"),
-        "new-india":     ("New India Assurance", "https://www.newindia.co.in/"),
-        "niva-bupa":     ("Niva Bupa Health Insurance", "https://www.nivabupa.com/"),
-        "star-health":   ("Star Health & Allied Insurance", "https://www.starhealth.in/"),
-        "tata-aig":      ("Tata AIG General Insurance", "https://www.tataaig.com/"),
-        "user-upload":   ("Your uploaded policies", ""),
+        "acko":               ("Acko Health Insurance", "https://www.acko.com/health-insurance/"),
+        "aditya-birla":       ("Aditya Birla Health Insurance", "https://www.adityabirlacapital.com/healthinsurance"),
+        "bajaj-allianz":      ("Bajaj Allianz General Insurance", "https://www.bajajallianz.com/"),
+        "care-health":        ("Care Health Insurance", "https://www.careinsurance.com/"),
+        "cholamandalam":      ("Cholamandalam MS General Insurance", "https://www.cholainsurance.com/"),
+        "go-digit":           ("Go Digit General Insurance", "https://www.godigit.com/"),
+        "hdfc-ergo":          ("HDFC ERGO General Insurance", "https://www.hdfcergo.com/"),
+        "icici-lombard":      ("ICICI Lombard General Insurance", "https://www.icicilombard.com/"),
+        "iffco-tokio":        ("IFFCO Tokio General Insurance", "https://www.iffcotokio.co.in/"),
+        "manipalcigna":       ("ManipalCigna Health Insurance", "https://www.manipalcigna.com/"),
+        "national-insurance": ("National Insurance Company", "https://nationalinsurance.nic.co.in/"),
+        "new-india":          ("New India Assurance", "https://www.newindia.co.in/"),
+        "niva-bupa":          ("Niva Bupa Health Insurance", "https://www.nivabupa.com/"),
+        "oriental-insurance": ("Oriental Insurance Company", "https://orientalinsurance.org.in/"),
+        "reliance-general":   ("Reliance General Insurance", "https://www.reliancegeneral.co.in/"),
+        "royal-sundaram":     ("Royal Sundaram General Insurance", "https://www.royalsundaram.in/"),
+        "sbi-general":        ("SBI General Insurance", "https://www.sbigeneral.in/"),
+        "star-health":        ("Star Health & Allied Insurance", "https://www.starhealth.in/"),
+        "tata-aig":           ("Tata AIG General Insurance", "https://www.tataaig.com/"),
+        "user-upload":        ("Your uploaded policies", ""),
     }
 
     # policy -> source_url (verified at download time)
@@ -1154,17 +1165,31 @@ async def policies_all(session_id: Optional[str] = None):
     corpus_url_index = _build_corpus_url_index()
     curated_facts = _load_curated_facts()
 
+    # KI-132 (2026-05-15) — expanded insurer_meta to cover all 19 real
+    # insurers. Previously only 10 had curated display-names + home URLs,
+    # so 9 insurers rendered as raw slugs in the marketplace dropdown
+    # (acko, cholamandalam, go-digit, iffco-tokio, national-insurance,
+    # oriental-insurance, reliance-general, royal-sundaram, sbi-general).
     insurer_meta = {
-        "aditya-birla":  ("Aditya Birla Health Insurance", "https://www.adityabirlacapital.com/healthinsurance"),
-        "bajaj-allianz": ("Bajaj Allianz General Insurance", "https://www.bajajallianz.com/"),
-        "care-health":   ("Care Health Insurance", "https://www.careinsurance.com/"),
-        "hdfc-ergo":     ("HDFC ERGO General Insurance", "https://www.hdfcergo.com/"),
-        "icici-lombard": ("ICICI Lombard General Insurance", "https://www.icicilombard.com/"),
-        "manipalcigna":  ("ManipalCigna Health Insurance", "https://www.manipalcigna.com/"),
-        "new-india":     ("New India Assurance", "https://www.newindia.co.in/"),
-        "niva-bupa":     ("Niva Bupa Health Insurance", "https://www.nivabupa.com/"),
-        "star-health":   ("Star Health & Allied Insurance", "https://www.starhealth.in/"),
-        "tata-aig":      ("Tata AIG General Insurance", "https://www.tataaig.com/"),
+        "acko":               ("Acko Health Insurance", "https://www.acko.com/health-insurance/"),
+        "aditya-birla":       ("Aditya Birla Health Insurance", "https://www.adityabirlacapital.com/healthinsurance"),
+        "bajaj-allianz":      ("Bajaj Allianz General Insurance", "https://www.bajajallianz.com/"),
+        "care-health":        ("Care Health Insurance", "https://www.careinsurance.com/"),
+        "cholamandalam":      ("Cholamandalam MS General Insurance", "https://www.cholainsurance.com/"),
+        "go-digit":           ("Go Digit General Insurance", "https://www.godigit.com/"),
+        "hdfc-ergo":          ("HDFC ERGO General Insurance", "https://www.hdfcergo.com/"),
+        "icici-lombard":      ("ICICI Lombard General Insurance", "https://www.icicilombard.com/"),
+        "iffco-tokio":        ("IFFCO Tokio General Insurance", "https://www.iffcotokio.co.in/"),
+        "manipalcigna":       ("ManipalCigna Health Insurance", "https://www.manipalcigna.com/"),
+        "national-insurance": ("National Insurance Company", "https://nationalinsurance.nic.co.in/"),
+        "new-india":          ("New India Assurance", "https://www.newindia.co.in/"),
+        "niva-bupa":          ("Niva Bupa Health Insurance", "https://www.nivabupa.com/"),
+        "oriental-insurance": ("Oriental Insurance Company", "https://orientalinsurance.org.in/"),
+        "reliance-general":   ("Reliance General Insurance", "https://www.reliancegeneral.co.in/"),
+        "royal-sundaram":     ("Royal Sundaram General Insurance", "https://www.royalsundaram.in/"),
+        "sbi-general":        ("SBI General Insurance", "https://www.sbigeneral.in/"),
+        "star-health":        ("Star Health & Allied Insurance", "https://www.starhealth.in/"),
+        "tata-aig":           ("Tata AIG General Insurance", "https://www.tataaig.com/"),
     }
 
     def _coerce_bool(v):
@@ -1190,6 +1215,11 @@ async def policies_all(session_id: Optional[str] = None):
         data = _merge_curated(data, curated_for_this)
         seen_policy_ids.add(policy_id_local)
         slug = data.get("insurer_slug", "")
+        # KI-132 (2026-05-15) — regulatory is not an insurer; drop entirely
+        # from the marketplace. IRDAI/NHA docs are still retrieved and cited
+        # in chat answers, they just don't appear as marketplace cards.
+        if slug == "regulatory":
+            continue
         name, home = insurer_meta.get(slug, (slug, ""))
         # Get insurer reviews if available for the scorecard
         ir = None
