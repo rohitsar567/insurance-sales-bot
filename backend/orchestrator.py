@@ -383,6 +383,111 @@ def _format_known_profile_summary(profile) -> str:
     return summary
 
 
+# KI-218 (2026-05-15) — readable welcome-back recall summary.
+# The original KI-196 implementation joined raw enum values with commas
+# ("first buy" alone). This formatter enumerates every captured slot in
+# natural English so the user can recognise their stored profile at a glance.
+_DEPENDENTS_LABEL = {
+    "self": "single",
+    "self+spouse": "with spouse",
+    "self+spouse+kids": "with spouse and kids",
+    "self+parents": "with parents",
+    "self+spouse+kids+parents": "with spouse, kids and parents",
+}
+_INCOME_LABEL = {
+    "under_5L": "income under ₹5L",
+    "5L-10L": "income ₹5-10L",
+    "10L-25L": "income ₹10-25L",
+    "25L+": "income ₹25L+",
+}
+_LOCATION_LABEL = {
+    "metro": "metro city",
+    "tier1": "tier-1 city",
+    "tier2": "tier-2 city",
+    "tier3": "tier-3 city",
+}
+_GOAL_LABEL = {
+    "first_buy": "first-time buyer",
+    "upgrade": "upgrading existing cover",
+    "compare_specific": "comparing specific policies",
+    "tax_planning": "tax-planning",
+}
+_BUDGET_LABEL = {
+    "under_15k": "budget under ₹15k",
+    "15k_30k": "budget ₹15-30k",
+    "30k_60k": "budget ₹30-60k",
+    "60k+": "budget ₹60k+",
+}
+
+
+def _format_recall_summary_phrase(summary: dict) -> str:
+    """Build a natural-English phrase enumerating captured profile slots.
+
+    Skips slots that are None / unset / empty. Maps enum values to
+    user-readable words (no JSON, no underscores). Returns a comma-joined
+    string suitable to slot into the welcome-back ask.
+
+    See KI-218 — the prior implementation showed only raw enum tokens for
+    the 4 of 8 slots it touched, leaving the user unable to recognise the
+    stored profile.
+    """
+    bits: list[str] = []
+
+    age = summary.get("age")
+    if age is not None:
+        bits.append(f"age {age}")
+
+    dependents = summary.get("dependents")
+    if dependents:
+        bits.append(_DEPENDENTS_LABEL.get(dependents, str(dependents).replace("_", " ")))
+
+    location = summary.get("location_tier")
+    if location:
+        bits.append(_LOCATION_LABEL.get(location, str(location)))
+
+    income = summary.get("income_band")
+    if income:
+        bits.append(_INCOME_LABEL.get(income, f"income {income}"))
+
+    goal = summary.get("primary_goal")
+    if goal:
+        bits.append(_GOAL_LABEL.get(goal, str(goal).replace("_", " ")))
+
+    # health_conditions: [] is a meaningful capture ("no PEDs") but the
+    # orchestrator's pre-filter drops empty lists, so [] won't reach us.
+    # We still handle it defensively in case future call sites pass it through.
+    if "health_conditions" in summary:
+        hc = summary.get("health_conditions")
+        if isinstance(hc, list):
+            if len(hc) == 0:
+                bits.append("no pre-existing conditions")
+            else:
+                bits.append("conditions: " + ", ".join(str(c) for c in hc))
+        elif hc:
+            bits.append(f"conditions: {hc}")
+
+    existing = summary.get("existing_cover_inr")
+    if existing is not None:
+        try:
+            n = int(existing)
+            if n == 0:
+                bits.append("no existing cover")
+            elif n >= 100000:
+                lakhs = n / 100000
+                lakh_str = f"{lakhs:.0f}" if lakhs.is_integer() else f"{lakhs:.1f}"
+                bits.append(f"₹{lakh_str}L existing cover")
+            else:
+                bits.append(f"₹{n:,} existing cover")
+        except (TypeError, ValueError):
+            bits.append(f"existing cover {existing}")
+
+    budget = summary.get("budget_band")
+    if budget:
+        bits.append(_BUDGET_LABEL.get(budget, f"budget {budget}"))
+
+    return ", ".join(bits) if bits else "your earlier captures"
+
+
 _HELPFUL_GAP_LABELS = {
     "age": "your age",
     "dependents": "who you're covering",
@@ -820,16 +925,9 @@ async def handle_turn(
                         # the user should see right now. Subsequent turns
                         # WILL go through the brain with the recall directive
                         # in the system prompt (see _build_system_prompt).
-                        _bits = []
-                        if summary.get("age") is not None:
-                            _bits.append(f"age {summary['age']}")
-                        if summary.get("location_tier"):
-                            _bits.append(str(summary["location_tier"]))
-                        if summary.get("dependents"):
-                            _bits.append(str(summary["dependents"]))
-                        if summary.get("primary_goal"):
-                            _bits.append(str(summary["primary_goal"]).replace("_", " "))
-                        _summary_phrase = ", ".join(_bits) if _bits else "your earlier captures"
+                        # KI-218 — rich, all-8-slot natural-English summary
+                        # so user can recognise their stored profile.
+                        _summary_phrase = _format_recall_summary_phrase(summary)
                         sb_result.reply_text = (
                             f"Welcome back, {session.profile.name} — I have a profile under your name "
                             f"from before: {_summary_phrase}. Continue from there or start fresh?"

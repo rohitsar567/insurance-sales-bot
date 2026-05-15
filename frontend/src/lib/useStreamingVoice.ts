@@ -193,6 +193,15 @@ export function useStreamingVoice(
 
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   const finalsRef = useRef<string[]>([]);
+  // KI-217 (2026-05-15) — track how many entries of finalsRef have already
+  // been drained to pendingUtteranceRef. Each onend reads the slice from
+  // `finalsConsumedRef.current` to end, then bumps the cursor. finalsRef
+  // itself is NOT reset between restart cycles — only after the grace-timer
+  // submit (when onFinalRef fires) or on user-toggled start/stop. This
+  // prevents a Chrome quirk where late-delivered isFinal results arriving
+  // after onend on a mid-utterance restart cycle would land in a freshly
+  // wiped finalsRef and get dropped on the NEXT onend cycle's drain.
+  const finalsConsumedRef = useRef<number>(0);
   const wantRunningRef = useRef(false); // mirrors `enabled` for handler closures
   const restartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const errorBackoffRef = useRef(0);
@@ -410,8 +419,11 @@ export function useStreamingVoice(
       // TTS audio ("perfect days to get started Rohit") was leaking into
       // the user input field between `audio.play()` firing and our abort()
       // actually taking effect.
-      if (dropResultsRef.current) {
-        console.debug("[useStreamingVoice] KI-203 dropping recognition result during/after TTS");
+      if (dropResultsRef.current || isTextRequestPendingRef.current) {
+        console.debug("[useStreamingVoice] KI-203/214 dropping recognition result", {
+          drop: dropResultsRef.current,
+          textPending: isTextRequestPendingRef.current,
+        });
         return;
       }
       let interim = "";
@@ -460,8 +472,14 @@ export function useStreamingVoice(
 
     rec.onend = () => {
       onListeningRef.current(false);
-      const webSpeechText = finalsRef.current.join(" ").trim();
-      finalsRef.current = [];
+      // KI-217 — drain only the NEW finals (everything past the consumed
+      // cursor). DO NOT reset finalsRef here: a late-delivered isFinal
+      // chunk arriving after onend would otherwise be wiped before the
+      // next onend cycle can pick it up. finalsRef is reset on actual
+      // utterance submit (grace-timer flush) and on user start/stop.
+      const newFinals = finalsRef.current.slice(finalsConsumedRef.current);
+      const webSpeechText = newFinals.join(" ").trim();
+      finalsConsumedRef.current = finalsRef.current.length;
 
       // KI-168 PHASE 2 — race guard: if a typed-text turn is in flight,
       // drop both transcripts on the floor (text wins). Don't start a
@@ -576,6 +594,11 @@ export function useStreamingVoice(
         const accumulatedChunks = pendingChunksRef.current;
         pendingUtteranceRef.current = "";
         pendingChunksRef.current = [];
+        // KI-217 — the utterance is now being submitted; safe to wipe
+        // finalsRef + reset the consumed cursor. Any late results that
+        // arrive after this point are for a NEW utterance.
+        finalsRef.current = [];
+        finalsConsumedRef.current = 0;
         console.debug("[useStreamingVoice] KI-202 grace window elapsed — submitting", {
           textLen: accumulatedText.length,
           chunkCount: accumulatedChunks.length,
@@ -694,6 +717,7 @@ export function useStreamingVoice(
       recognitionRef.current = buildRecognition();
     }
     finalsRef.current = [];
+    finalsConsumedRef.current = 0;
     // Kick off audio capture in parallel with recognition. If it fails we
     // degrade to Web Speech-only — onend handles the fallback path.
     void ensureAudioCapture();
@@ -713,6 +737,7 @@ export function useStreamingVoice(
     }
     teardownAudio();
     finalsRef.current = [];
+    finalsConsumedRef.current = 0;
     // KI-202 — drop any pending utterance so toggling voice off mid-grace
     // doesn't auto-submit a stale half-sentence next time voice comes on.
     if (pendingSubmitTimerRef.current !== null) {
