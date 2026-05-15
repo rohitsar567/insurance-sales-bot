@@ -73,8 +73,11 @@ class LocalEmbeddings(EmbeddingsProvider):
             texts = [f"Represent this sentence for searching relevant passages: {t}" for t in texts]
         # Batch size scales by device: MPS / CUDA throughput benefits from
         # bigger batches; CPU prefers smaller to avoid memory pressure on M1.
-        # 800-token chunks at batch_size=64 is ~50 MB which fits 8GB M1 fine.
-        batch = 64 if self.device in ("mps", "cuda") else 32
+        # KI-125 (2026-05-15): bumped MPS 64→128 to halve the number of GPU
+        # kernel launches during bulk re-ingest. 800-token chunks at 128 ≈
+        # 100 MB per batch — still well within Mac M-series unified memory.
+        # CPU stays at 32 to keep peak RSS bounded on machines without a GPU.
+        batch = 128 if self.device in ("mps", "cuda") else 32
         vectors = self.model.encode(
             texts,
             batch_size=batch,
