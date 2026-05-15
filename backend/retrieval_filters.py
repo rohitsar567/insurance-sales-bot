@@ -326,27 +326,29 @@ def empty_retrieval_guard(
 # ---------------------------------------------------------------------------
 
 def enforce_citation_grounding(chunks: Iterable[Any]) -> list[Any]:
-    """Drop chunks missing any of the three citation-critical fields.
+    """Drop chunks missing citation-critical fields.
 
-    The "chunk_offset" requirement maps onto either `chunk_offset` (newer
-    ingestions) or the existing `chunk_idx` (legacy + current). At least
-    one must be a non-negative int.
+    A citable chunk MUST expose:
+      - policy_id   (non-empty str)
+      - policy_name (non-empty str)
+
+    The chunk offset field (`chunk_offset` or legacy `chunk_idx`) is
+    INFORMATIONAL only — it is not required for citation grounding because
+    upstream call sites (e.g. brain_tools.retrieve_policies) build pruned
+    dicts that intentionally omit it, and the brain cites by policy
+    identity, not by chunk offset. Z2 live test (2026-05-15) showed 15/15
+    retrieve_policies calls returning 0 chunks because we required an
+    offset that the upstream builder never included → every chunk dropped
+    here even though raw retrieval was healthy.
     """
     kept: list[Any] = []
     for ch in chunks:
         m = _meta(ch)
         pid = m.get("policy_id")
         pname = m.get("policy_name")
-        # accept either field name; chunk_idx is the existing schema in rag/retrieve.py
-        offset = m.get("chunk_offset")
-        if offset is None:
-            offset = m.get("chunk_idx")
-
         if not pid or not isinstance(pid, str):
             continue
         if not pname or not isinstance(pname, str):
-            continue
-        if not isinstance(offset, int) or offset < 0:
             continue
         kept.append(ch)
     return kept
