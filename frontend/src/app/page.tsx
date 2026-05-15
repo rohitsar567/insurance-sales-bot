@@ -1395,21 +1395,26 @@ export default function Page() {
                 )}
               </div>
             </button>
-            {/* Predicted-premium BAND chip — sits RIGHT NEXT TO the profile
-                completeness pill. Shown only once the profile is materially
-                populated (≥50%); below that the band would be too wide to
-                inform anything. Amber/orange to signal "estimate, not quote". */}
-            {profileCompleteness &&
-              profileCompleteness.completeness_pct >= 50 &&
-              premiumBand &&
-              premiumBand.sample_size > 0 && (
+            {/* KI-273 — Premium chip is now ALWAYS visible (the entry point
+                to the premium calculator). Shows a real band ("₹X–₹Y/yr")
+                when profile is ≥50% complete AND we have a sample; below
+                that it shows a tap-to-start placeholder so the user always
+                has a way to open the calculator regardless of profile state.
+                Amber/orange signals "estimate, not a binding quote". */}
+            {(() => {
+              const hasMeaningfulBand =
+                profileCompleteness &&
+                profileCompleteness.completeness_pct >= 50 &&
+                premiumBand &&
+                premiumBand.sample_size > 0;
+              return (
               <button
                 type="button"
                 onClick={() => { setShowPremium(!showPremium); setShowMarketplace(false); setShowCoverage(false); setShowProfile(false); setShowAdmin(false); }}
                 className={`group relative overflow-hidden rounded-xl shadow-sm transition-all hover:shadow-md hover:brightness-110 cursor-pointer ${
                   showPremium ? "ring-2 ring-[var(--primary)]" : ""
                 }`}
-                title={uiLang === "hi" ? "Premium को sliders से refine करने के लिए tap करें" : "Tap to refine premium with sliders"}
+                title={uiLang === "hi" ? "Premium को sliders से refine करने के लिए tap करें" : "Tap to estimate / refine premium with sliders"}
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600" />
                 <div className="relative flex items-stretch text-white">
@@ -1421,11 +1426,11 @@ export default function Page() {
                       {uiLang === "hi" ? "अनुमानित premium" : "Est. premium"}
                     </div>
                     <div className="text-xs font-bold leading-tight whitespace-nowrap">
-                      ₹{premiumBand.min_inr.toLocaleString("en-IN")}–₹{premiumBand.max_inr.toLocaleString("en-IN")}/yr
+                      {hasMeaningfulBand
+                        ? `₹${premiumBand!.min_inr.toLocaleString("en-IN")}–₹${premiumBand!.max_inr.toLocaleString("en-IN")}/yr`
+                        : (uiLang === "hi" ? "Tap करें" : "Tap to estimate")}
                     </div>
                   </div>
-                  {/* Subtle "edit" affordance — pencil-on-slider icon hints
-                      that tapping the chip opens the slider panel. */}
                   <div className="flex items-center justify-center px-2 py-2 bg-white/15 border-l border-white/20 transition-transform group-hover:translate-x-0.5">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <path d="M4 21v-4l11-11 4 4-11 11H4z" />
@@ -1434,7 +1439,8 @@ export default function Page() {
                   </div>
                 </div>
               </button>
-            )}
+              );
+            })()}
             {/* Admin access — opens the LLM control panel in an embedded view.
                 Backend admin API is password-gated (KI-097); enter the admin
                 password in the embedded dashboard to unlock the live data. */}
