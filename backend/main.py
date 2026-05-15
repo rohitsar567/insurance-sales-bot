@@ -569,27 +569,91 @@ async def coverage():
     # policy -> source_url (verified at download time)
     policy_urls: dict[tuple[str, str], str] = {}
     by_insurer: dict[str, dict] = {}
-    if total > 0:
+
+    # KI-135 (2026-05-15) — count policies the SAME way /api/policies/all
+    # does (extracted/*.json + curated-facts pass-2) so the marketplace badge
+    # ALWAYS matches the marketplace card count. Previously this loop read
+    # Chroma metadata, which under-counted by ~20 because ~15 curated-facts
+    # policies (Activ One, Optima Secure, Reassure 2/3, Health Guard Gold,
+    # etc.) are legitimate distinct products that have no Chroma chunks yet,
+    # plus ~5 display-name mismatches collapsed two policies into one. After
+    # this refactor: badge = cards = 158 / 19.
+    # KI-129 + KI-130 invariants still hold (profile + regulatory excluded).
+    import json as _json
+    _DOCTYPE_RANK_COV = {"wordings": 0, "prospectus": 1, "cis": 2, "brochure": 3}
+    _doctype_of_cov = lambda stem: stem.rsplit("__", 1)[1] if "__" in stem else ""
+    _product_key_of_cov = lambda pid: pid.rsplit("__", 1)[0] if "__" in pid else pid
+
+    curated_facts = _load_curated_facts()
+    sorted_files = sorted(
+        settings.EXTRACTED_DIR.glob("*.json"),
+        key=lambda fp: (_DOCTYPE_RANK_COV.get(_doctype_of_cov(fp.stem), 99), fp.stem),
+    )
+    seen_product_keys: set[str] = set()
+    seen_policy_ids: set[str] = set()
+
+    # by_insurer entries:
+    #   products: set of product_keys (matches /api/policies/all card count)
+    #   names:    ordered dict of policy_NAME -> first product_key (for sample display)
+    # KI-135 (2026-05-15) — track product_keys (not names) for counting so the
+    # ~1 within-insurer policy_name collision (e.g. new-india Floater listed
+    # as both extracted + curated_facts) doesn't collapse the count below the
+    # marketplace card count. Both representations are still distinct products.
+
+    # Pass 1: extracted JSONs (KI-133 dedup by product_key — wordings wins)
+    for fp in sorted_files:
         try:
-            res = coll.get(limit=10000, include=["metadatas"])
-            for m in res.get("metadatas", []):
-                slug = m.get("insurer_slug", "unknown")
-                # KI-129 (2026-05-15) — profile chunks live in the same
-                # collection as policies (KI-118 design — they get retrieval-
-                # boosted as USER CONTEXT inline with policy text), but they
-                # must NEVER count as a user-facing insurer or policy. Skip.
-                if slug == "profile" or m.get("doc_type") == "profile":
-                    continue
-                name = m.get("policy_name", "")
-                url = m.get("source_url", "")
-                if slug not in by_insurer:
-                    by_insurer[slug] = {"policies": set(), "chunks": 0}
-                by_insurer[slug]["policies"].add(name)
-                by_insurer[slug]["chunks"] += 1
-                if url and (slug, name) not in policy_urls:
-                    policy_urls[(slug, name)] = url
+            data = _json.loads(fp.read_text())
         except Exception:
-            pass
+            continue
+        pid = data.get("policy_id", fp.stem)
+        seen_policy_ids.add(pid)
+        slug = data.get("insurer_slug", "")
+        if slug == "regulatory":
+            continue
+        pkey = _product_key_of_cov(pid)
+        if pkey in seen_product_keys:
+            continue
+        seen_product_keys.add(pkey)
+        name = data.get("policy_name", "") or pid
+        url = data.get("source_pdf_url", "")
+        if slug not in by_insurer:
+            by_insurer[slug] = {"products": set(), "names": [], "chunks": 0}
+        by_insurer[slug]["products"].add(pkey)
+        if name not in by_insurer[slug]["names"]:
+            by_insurer[slug]["names"].append(name)
+        by_insurer[slug]["chunks"] += 1
+        if url and (slug, name) not in policy_urls:
+            policy_urls[(slug, name)] = url
+
+    # Pass 2: curated-facts policies that have no extracted counterpart
+    for curated_pid, data in curated_facts.items():
+        if curated_pid != data.get("policy_id", curated_pid):
+            continue  # permutation alias
+        if curated_pid in seen_policy_ids:
+            continue
+        if any(eid.startswith(curated_pid + "__") for eid in seen_policy_ids):
+            continue
+        seen_policy_ids.add(curated_pid)
+        slug = data.get("insurer_slug", "")
+        if slug == "regulatory":
+            continue
+        # Curated entries don't have a __doctype suffix, so use the full
+        # policy_id as the product_key.
+        pkey = curated_pid
+        if pkey in seen_product_keys:
+            continue
+        seen_product_keys.add(pkey)
+        name = data.get("policy_name", "") or curated_pid
+        url = data.get("source_pdf_url", "")
+        if slug not in by_insurer:
+            by_insurer[slug] = {"products": set(), "names": [], "chunks": 0}
+        by_insurer[slug]["products"].add(pkey)
+        if name not in by_insurer[slug]["names"]:
+            by_insurer[slug]["names"].append(name)
+        by_insurer[slug]["chunks"] += 1
+        if url and (slug, name) not in policy_urls:
+            policy_urls[(slug, name)] = url
 
     insurers_out = []
     total_policies = 0
@@ -599,19 +663,22 @@ async def coverage():
         # and cited in chat answers — they just don't show in the marketplace.
         if slug == "regulatory":
             continue
-        policy_names = sorted(info["policies"])
-        total_policies += len(policy_names)
+        # KI-135 — count by product_key set (matches /api/policies/all); use
+        # the names list for the sample display ordered by first occurrence.
+        product_count = len(info["products"])
+        sample_names = sorted(info["names"])[:8]
+        total_policies += product_count
         name, home_url = insurer_meta.get(slug, (slug, ""))
         sample_entries = [
             PolicyEntry(name=p, source_url=policy_urls.get((slug, p), ""))
-            for p in policy_names[:8]
+            for p in sample_names
         ]
         insurers_out.append(
             InsurerCoverage(
                 slug=slug,
                 name=name,
                 home_url=home_url,
-                policy_count=len(policy_names),
+                policy_count=product_count,
                 sample_policies=sample_entries,
             )
         )
