@@ -96,7 +96,16 @@ def _parse_inr_amount(text: str) -> Optional[int]:
       - strips fluff: "maximum 30000", "I can pay 30000", "around 25000"
       - tolerates per-year qualifiers: "/year", "per year", "p.a."
 
-    Returns the integer rupee amount, or None if no number is recognisable.
+    KI-161 (2026-05-15) — REJECTS bare digits below ₹1000 (no plausible
+    annual health insurance budget/income falls there) and REJECTS any
+    text whose only number is in an age context ("29 years old", "age 29",
+    "I am 29"). Origin: user answered the age question with "I am 29
+    years old" and the parser wrote ₹29 into both budget_band and
+    income_band, leading the bot to claim it captured age + income + budget
+    from a single utterance.
+
+    Returns the integer rupee amount, or None if no number is recognisable
+    or if the only numbers in the text are clearly not currency.
     """
     if not text:
         return None
@@ -125,14 +134,27 @@ def _parse_inr_amount(text: str) -> Optional[int]:
             return int(float(m.group(1)) * 1_000)
         except ValueError:
             return None
+    # KI-161 — bare-digit fallback now guarded against age contexts.
+    # If the text is clearly about age, refuse to interpret any number
+    # as a currency amount.
+    if re.search(
+        r"\b(?:year|years|yr|yrs|y\s*o)\s*(?:old)?\b|\bage\b|\bi\s*am\s+\d{1,3}\b",
+        s,
+    ):
+        return None
     # Bare digit run — pick the largest number-like token (handles
-    # "maximum 30000", "around 25000", "I can pay 30000").
+    # "maximum 30000", "around 25000", "I can pay 30000"). Magnitude
+    # floor of ₹1000 — anything smaller is implausible for an annual
+    # health-insurance budget or income.
     nums = re.findall(r"\d+(?:\.\d+)?", s)
     if nums:
         try:
-            return int(float(max(nums, key=lambda x: float(x))))
+            amt = int(float(max(nums, key=lambda x: float(x))))
         except ValueError:
             return None
+        if amt < 1_000:
+            return None
+        return amt
     return None
 
 

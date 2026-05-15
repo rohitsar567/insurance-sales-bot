@@ -149,11 +149,19 @@ export default function Page() {
   // in the component body so it can reference `sessionId`, `messages`, etc.
   // via closure when the onUtterance handler fires. See useLiveConversation.ts.
   const liveOnUtteranceRef = useRef<((blob: Blob, abort: AbortController) => Promise<void>) | null>(null);
+  // KI-165 (2026-05-15) — typed-text request inflight flag, observed by the
+  // voice hook so background-noise-triggered captures during a typed-text
+  // turn are discarded silently instead of clobbering the text response.
+  // Set to true at the start of `send()`, reset to false in its finally.
+  // Use a ref (not state) so the voice hook reads the latest value without
+  // re-rendering / re-subscribing.
+  const isTextRequestPendingRef = useRef(false);
   const live = useLiveConversation({
     onUtterance: async (blob, abort) => {
       const fn = liveOnUtteranceRef.current;
       if (fn) await fn(blob, abort);
     },
+    isTextRequestPendingRef,
   });
 
   useEffect(() => {
@@ -278,6 +286,12 @@ export default function Page() {
   async function send(text: string) {
     if (!text.trim() || busy) return;
     setBusy(true);
+    // KI-165 (2026-05-15) — flip the text-in-flight flag so the voice hook
+    // (useLiveConversation) discards any captures that close during this
+    // request. Prevents background notification dings from opening the mic,
+    // submitting an empty STT round-trip, and clobbering the typed-text
+    // response in the chat pane. Reset in finally regardless of outcome.
+    isTextRequestPendingRef.current = true;
     setVoicePhase("thinking"); // KI-038 — show "..." while waiting on brain
     setInput("");
 
@@ -374,6 +388,9 @@ export default function Page() {
       setUploadStatus(null);
       setBusy(false);
       setVoicePhase(null);
+      // KI-165 (2026-05-15) — clear the text-in-flight flag so subsequent
+      // genuine voice captures can be submitted again.
+      isTextRequestPendingRef.current = false;
     }
   }
 

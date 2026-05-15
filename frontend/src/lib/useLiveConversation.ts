@@ -84,6 +84,14 @@ export type LiveConversationOptions = {
   rmsThreshold?: number;
   speechStartFrames?: number;
   silenceEndFrames?: number;
+  // KI-165 (2026-05-15) — caller-owned signal indicating a typed-text chat
+  // request is currently in flight. When true, voice captures that close
+  // during this window are silently discarded (no /api/transcribe call,
+  // no UI mutation). Prevents the "text typed → background notification
+  // dings → empty voice capture clobbers the typed-text response" UX bug.
+  // Caller flips this ref true at the start of its text send() and false
+  // in the finally; the voice hook reads it inside endSpeechCapture.
+  isTextRequestPendingRef?: React.MutableRefObject<boolean>;
 };
 
 export type LiveConversationState = {
@@ -138,6 +146,14 @@ const DEFAULTS = {
   // — if HVAC noise creeps in, KI-140 will add a /api/transcribe round
   // trip that detects empty responses and surfaces "couldn't hear you".
   voiceBandMinProp: 0.20,
+  // KI-165 (2026-05-15) — minimum genuinely-voiced frames required before
+  // we'll submit a captured segment. A frame ≈ 1 raf tick (~16 ms). 8 frames
+  // ≈ 130 ms of audio that actually cleared the voice-band + threshold gate.
+  // Anything shorter is almost certainly a notification ding / cough / chair
+  // creak that briefly cleared `speechLike` for the speechStartFrames burst
+  // and then died — we must not POST that to /api/transcribe + clobber the
+  // chat pane.
+  minVoicedFrames: 8,
 };
 
 // AudioWorklet processor source — inlined as a Blob URL so we don't need
@@ -213,6 +229,16 @@ export function useLiveConversation(opts: LiveConversationOptions): LiveConversa
   const rafIdRef = useRef<number | null>(null);
   const inflightAbortRef = useRef<AbortController | null>(null);
   const recStartTsRef = useRef<number>(0);
+  // KI-165 (2026-05-15) — count VAD frames that genuinely cleared the
+  // voice-band + threshold gate while a capture is in progress. Used by
+  // endSpeechCapture / flush-on-stop to discard captures that opened on a
+  // notification ding / cough but never accumulated real speech. Reset on
+  // every beginSpeechCapture so each segment is judged on its own merits.
+  const voicedFramesRef = useRef<number>(0);
+  // KI-165 (2026-05-15) — caller-owned flag indicating a typed-text chat
+  // request is currently awaiting its response. Voice captures closed
+  // during this window are discarded silently.
+  const isTextRequestPendingRef = opts.isTextRequestPendingRef;
   // KI-057 — adaptive noise floor (EMA of ambient avg while idle).
   const noiseFloorRef = useRef<number>(0);
   // KI-057 — gates "did the bot just stop talking?" cooldown.
@@ -358,6 +384,13 @@ export function useLiveConversation(opts: LiveConversationOptions): LiveConversa
     prerollRef.current = [];
     recordingRef.current = true;
     recStartTsRef.current = Date.now();
+    // KI-165 — reset the voiced-frame counter for this segment. The frames
+    // that triggered speechStart (1 burst of speechStartFrames) are
+    // intentionally NOT pre-counted; we want endSpeechCapture's >= 8-frame
+    // floor to mean "8 frames of *sustained* voiced energy DURING capture",
+    // not "the trigger burst was long enough" — a notification ding can
+    // easily produce 5 frames of broadband energy that clears voiceBandMinProp.
+    voicedFramesRef.current = 0;
     setRecording(true);
     onSpeechStartRef.current?.();
   }, []);
@@ -372,11 +405,44 @@ export function useLiveConversation(opts: LiveConversationOptions): LiveConversa
     const durationMs = Date.now() - (recStartTsRef.current || Date.now());
     const chunks = speechBufferRef.current;
     speechBufferRef.current = [];
+    const voicedFrames = voicedFramesRef.current;
+    voicedFramesRef.current = 0;
 
     if (chunks.length === 0) return;
     if (durationMs < cfg.minUtteranceMs) {
       // eslint-disable-next-line no-console
       console.debug("[live-mode] dropped short utterance", durationMs, "ms");
+      return;
+    }
+
+    // KI-165 (2026-05-15) — discard captures with too few genuinely-voiced
+    // frames. Notification dings / Mac camera screenshot clicks / chair
+    // creaks can briefly clear the voice-band threshold for the trigger
+    // burst (speechStartFrames) but never accumulate real speech. Without
+    // this guard, we POST a 1.5s WAV of mostly silence to /api/transcribe,
+    // get back an empty string, but still flap UI state (voicePhase,
+    // isProcessing) and — most damagingly — race with an in-flight typed
+    // text response.
+    if (voicedFrames < DEFAULTS.minVoicedFrames) {
+      // eslint-disable-next-line no-console
+      console.debug(
+        "[live-mode] discarded near-empty capture (KI-165)",
+        { voicedFrames, minRequired: DEFAULTS.minVoicedFrames, durationMs },
+      );
+      return;
+    }
+
+    // KI-165 (2026-05-15) — if the user typed a message and that chat
+    // request is still in flight, the voice path silently discards this
+    // capture. Text wins; voice never touches chat state during a typed
+    // turn. Prevents the "type → mac notif ding opens mic → empty STT
+    // response clobbers the typed-text response" UX bug.
+    if (isTextRequestPendingRef?.current) {
+      // eslint-disable-next-line no-console
+      console.debug(
+        "[live-mode] discarded capture: text request in flight (KI-165)",
+        { voicedFrames, durationMs },
+      );
       return;
     }
 
@@ -485,6 +551,12 @@ export function useLiveConversation(opts: LiveConversationOptions): LiveConversa
           }
           beginSpeechCapture();
         }
+        // KI-165 (2026-05-15) — count voiced frames during capture. Used by
+        // endSpeechCapture to discard segments that opened on a transient
+        // (notification ding) but never accumulated real speech.
+        if (recordingRef.current) {
+          voicedFramesRef.current++;
+        }
       } else {
         quiet++;
         loud = 0;
@@ -572,7 +644,15 @@ export function useLiveConversation(opts: LiveConversationOptions): LiveConversa
       // KI-057 — flush a mid-utterance capture before dropping refs.
       // If the user toggled Live OFF while speaking, encode + fire
       // onUtterance once (fire-and-forget) so their words still land.
-      if (recordingRef.current && speechBufferRef.current.length > 0) {
+      // KI-165 (2026-05-15) — honor the same voiced-frames + text-in-flight
+      // guards here so toggling Live OFF mid-noise-burst doesn't also
+      // submit garbage.
+      if (
+        recordingRef.current &&
+        speechBufferRef.current.length > 0 &&
+        voicedFramesRef.current >= DEFAULTS.minVoicedFrames &&
+        !isTextRequestPendingRef?.current
+      ) {
         const durationMs = Date.now() - (recStartTsRef.current || Date.now());
         if (durationMs >= DEFAULTS.minUtteranceMs) {
           let total = 0;
@@ -607,6 +687,7 @@ export function useLiveConversation(opts: LiveConversationOptions): LiveConversa
       prerollRef.current = [];
       noiseFloorRef.current = 0;
       recStartTsRef.current = 0;
+      voicedFramesRef.current = 0;
       if (workletRef.current) {
         try { workletRef.current.disconnect(); } catch {}
         workletRef.current = null;

@@ -666,9 +666,8 @@
       </div>
     </section>
 
-    <!-- Tab 3: LLM Chain (existing functionality, preserved) -->
+    <!-- Tab 3: LLM Chain — KI-164: stripped to ONLY the 2-table view. -->
     <section id="tab-chain" class="tabpane" role="tabpanel">
-      <!-- KI-086: LLM Health & Credits snapshot (KI-080..KI-085 telemetry) -->
       <div class="card" id="llm-health-card">
         <div class="row-between" style="margin-bottom: 12px;">
           <h2>LLM health <span class="small muted" id="llm-health-snapshot-ts"></span></h2>
@@ -676,42 +675,8 @@
             <button id="btn-refresh-llm-health">Refresh</button>
           </div>
         </div>
-        <!-- KI-162: simplified 2-table layout (What's Live + What's Available) -->
         <div id="llm-health-chains" class="llm-simple-tables"></div>
-        <!-- Section B: candidate health grid -->
-        <h3 style="margin-top: 18px;">Candidate health grid</h3>
-        <div id="llm-health-candidates" class="llm-health-candidates"></div>
-        <!-- Section C: recent turns -->
-        <h3 style="margin-top: 18px;">Recent turns (last 20)</h3>
-        <div id="llm-health-recent" class="llm-health-recent"></div>
       </div>
-
-      <!-- Health -->
-      <div class="card">
-        <div class="row-between" style="margin-bottom: 12px;">
-          <h2>Health snapshot</h2>
-          <div class="actions">
-            <button id="btn-refresh">Refresh (cached)</button>
-            <button id="btn-probe" class="primary">Force fresh probe (slow)</button>
-          </div>
-        </div>
-        <div id="counters" class="counters"></div>
-        <table>
-          <thead>
-            <tr>
-              <th>Model</th>
-              <th>Status</th>
-              <th>Latency</th>
-              <th>Last error</th>
-              <th>Last success</th>
-            </tr>
-          </thead>
-          <tbody id="health-tbody"></tbody>
-        </table>
-      </div>
-
-      <!-- Chains -->
-      <div class="chains-grid" id="chains-grid"></div>
     </section>
   </div>
 
@@ -1358,10 +1323,11 @@
       }
 
       function refreshChain() {
-        return Promise.all([fetchHealth(), fetchChains(), fetchUsage(), fetchLlmHealth()]).then(function () {
-          renderCounters();
-          renderHealthTable();
-          renderChains();
+        // KI-164: only the simplified 2-table view remains on the LLM Chain
+        // tab. fetchHealth/fetchChains/fetchUsage targeted DOM elements that
+        // no longer exist (#counters, #chains-grid, #health-tbody) so they're
+        // no longer called. fetchLlmHealth + renderLlmHealth feed the 2 tables.
+        return fetchLlmHealth().then(function () {
           renderLlmHealth();
           setLastUpdated();
           STATE.chainLoaded = true;
@@ -1541,8 +1507,13 @@
         var availTable = createEl('table');
         var availThead = createEl('thead');
         var availHr = createEl('tr');
-        ['Model', 'Healthy', 'Used By'].forEach(function (h) {
-          availHr.appendChild(createEl('th', { text: h }));
+        // KI-164: per-role columns. Each model row shows where it can be used
+        // (— / ✓ / primary) plus a single Status column.
+        var availCols = ['Model', 'Status'].concat(SIMPLE_USE_ORDER.map(function (r) { return SIMPLE_USE_LABELS[r]; }));
+        availCols.forEach(function (h, i) {
+          var th = createEl('th', { text: h });
+          if (i >= 2) th.style.textAlign = 'center';
+          availHr.appendChild(th);
         });
         availThead.appendChild(availHr);
         availTable.appendChild(availThead);
@@ -1551,13 +1522,13 @@
         var modelNames = Object.keys(modelMap);
         if (!modelNames.length) {
           var emptyTr = createEl('tr');
-          var emptyTd = createEl('td', { attrs: { colspan: '3' }, text: 'No models in any chain.' });
+          var emptyTd = createEl('td', { attrs: { colspan: String(availCols.length) }, text: 'No models in any chain.' });
           emptyTd.style.color = 'var(--muted)';
           emptyTd.style.textAlign = 'center';
           emptyTr.appendChild(emptyTd);
           availTbody.appendChild(emptyTr);
         } else {
-          // Stable sort: models that are anyone's primary first, then by name.
+          // Sort: anyone's-primary first, then alphabetical by model name.
           modelNames.sort(function (a, b) {
             var aPrim = modelMap[a].roleEntries.some(function (e) { return e.isPrimary; });
             var bPrim = modelMap[b].roleEntries.some(function (e) { return e.isPrimary; });
@@ -1569,37 +1540,38 @@
             var tr = createEl('tr');
             tr.appendChild(createEl('td', { className: 'model-name', text: model }));
 
-            var healthyCell = createEl('td', { className: 'healthy-cell' });
+            // Status cell: dot + word.
+            var statusCell = createEl('td', { className: 'status-cell' });
             var hd = createEl('span', { className: 'health-dot ' + (info.healthy ? 'ok' : 'bad') });
-            hd.title = info.healthy ? 'Healthy' : 'Unhealthy';
-            healthyCell.appendChild(hd);
-            tr.appendChild(healthyCell);
+            statusCell.appendChild(hd);
+            statusCell.appendChild(document.createTextNode(info.healthy ? ' Healthy' : ' Down'));
+            tr.appendChild(statusCell);
 
-            // "Used By" — primary first per role, then backups; relabel via SIMPLE_USE_LABELS.
-            // Group by role, identify primary vs. backup using is_current_primary + chain index.
+            // Group role entries by role for per-column lookup.
             var entriesByRole = {};
             info.roleEntries.forEach(function (e) {
               if (!entriesByRole[e.role]) entriesByRole[e.role] = [];
               entriesByRole[e.role].push(e);
             });
-            // Order: primaries first (in SIMPLE_USE_ORDER), then backups by chain position.
-            var primaryParts = [];
-            var backupParts = [];
+            // Per-role cell: (primary) / ✓ / —.
             SIMPLE_USE_ORDER.forEach(function (role) {
-              var roleList = entriesByRole[role] || [];
-              roleList.forEach(function (e) {
-                var label = SIMPLE_USE_LABELS[role] || role;
-                if (e.isPrimary) {
-                  primaryParts.push(label);
-                } else {
-                  // idx 0 inside members is the primary itself when the chain has it;
-                  // anything else is a backup of some rank.
-                  backupParts.push(label + ' (backup)');
-                }
-              });
+              var roleEntries = entriesByRole[role] || [];
+              var td = createEl('td', { className: 'role-cell' });
+              td.style.textAlign = 'center';
+              if (!roleEntries.length) {
+                td.textContent = '—';
+                td.style.color = 'var(--muted)';
+              } else if (roleEntries.some(function (e) { return e.isPrimary; })) {
+                td.textContent = 'primary';
+                td.style.color = 'var(--green)';
+                td.style.fontWeight = '600';
+              } else {
+                td.textContent = '✓';
+                td.style.color = 'var(--text)';
+                td.title = 'Backup in this chain';
+              }
+              tr.appendChild(td);
             });
-            var usedBy = primaryParts.concat(backupParts).join(', ');
-            tr.appendChild(createEl('td', { className: 'used-by-cell', text: usedBy || '—' }));
 
             availTbody.appendChild(tr);
           });
@@ -2424,27 +2396,11 @@
             .then(function () { btn.disabled = false; btn.textContent = 'Refresh'; });
         };
 
-        // LLM Chain refresh + probe (preserved from original)
-        $('btn-refresh').onclick = function () {
-          var btn = this;
-          btn.disabled = true;
-          btn.textContent = 'Refreshing…';
-          refreshChain()
-            .then(function () { toast('Refreshed from cache', 'success'); })
-            .catch(handleFetchErr)
-            .then(function () { btn.disabled = false; btn.textContent = 'Refresh (cached)'; });
-        };
-
-        $('btn-probe').onclick = function () {
-          var btn = this;
-          btn.disabled = true;
-          btn.textContent = 'Probing…';
-          apiPost('/api/admin/probe', null)
-            .then(function () { return refreshChain(); })
-            .then(function () { toast('Fresh probe complete', 'success'); })
-            .catch(handleFetchErr)
-            .then(function () { btn.disabled = false; btn.textContent = 'Force fresh probe (slow)'; });
-        };
+        // KI-164: #btn-refresh and #btn-probe were removed alongside the
+        // "Health snapshot" card. The LLM Chain tab now only has the
+        // simplified 2-table view, refreshed via #btn-refresh-llm-health
+        // and a 30s auto-poll. The legacy buttons no longer exist; their
+        // handlers are gone.
 
         // KI-086 — manual refresh for the LLM Health & Credits card.
         var llmHealthBtn = $('btn-refresh-llm-health');
