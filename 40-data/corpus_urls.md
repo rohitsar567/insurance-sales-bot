@@ -78,7 +78,6 @@
 | new-india | New India Assurance | Universal Health Insurance | wordings | https://www.newindia.co.in/assets/70-docs/know-more/health/universal-health-insurance/Policy%20Clause%20Universal%20Health%20Insurance%20Policy.pdf | govt-sponsored |
 | aditya-birla | Aditya Birla Health Insurance | Activ Health (individual) | wordings | https://www.adityabirlacapital.com/healthinsurance/assets/pdf/policy-wording-form.pdf | flagship; brand may have rebranded as Activ One |
 | aditya-birla | Aditya Birla Health Insurance | Group Activ Health | wordings | https://www.adityabirlacapital.com/healthinsurance/assets/pdf/new_updated_pdf/Group-Activ-Health-Policy-wordings.pdf | group, structurally similar |
-| aditya-birla | Aditya Birla Health Insurance | Activ One | brochure | https://www.adityabirlacapital.com/healthinsurance/assets/pdf/active-one/brochure.pdf | newer flagship |
 | aditya-birla | Aditya Birla Health Insurance | Activ Assure Diamond | wordings | https://www.adityabirlacapital.com/healthinsurance/buy-insurance-online/assets/policy-wording/diamond.pdf | mid-tier |
 | aditya-birla | Aditya Birla Health Insurance | Activ Secure (Personal Accident / Cancer Secure) | wordings | https://www.adityabirlacapital.com/healthinsurance/assets/pdf/planpdf/Activ-Secure-PW.pdf | specialty |
 | aditya-birla | Aditya Birla Health Insurance | Activ Secure - Cancer Secure | brochure | https://www.adityabirlacapital.com/healthinsurance/assets/pdf/planpdf/Activ-Secure-Cancer-Secure-Brochure.pdf | cancer-specific |

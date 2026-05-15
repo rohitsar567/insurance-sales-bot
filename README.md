@@ -12,7 +12,7 @@ short_description: Voice-first AI advisor for Indian health insurance
 
 # Insurance Sales Portfolio Expert
 
-**A voice-first, BFSI-compliance-grade AI advisor for Indian health insurance.** Built as a Sarvam AI take-home, deployed on HuggingFace Spaces, with grounding, citations, faithfulness gates, and a curated 208-document corpus.
+**A voice-first, BFSI-compliance-grade AI advisor for Indian health insurance.** Built as a Sarvam AI take-home, deployed on HuggingFace Spaces, with grounding, citations, faithfulness gates, and a curated 224-document corpus.
 
 | | |
 |---|---|
@@ -41,7 +41,7 @@ short_description: Voice-first AI advisor for Indian health insurance
 
 ## 1. Executive summary
 
-A **voice-first health-insurance advisor** for Indian buyers, grounded in a curated corpus of **208 documents** — 190 product documents from 19 leading insurers plus 18 IRDAI / regulatory documents — extracted into a 62-field structured schema with a rules-based A–F scorecard and a **4-gate hallucination defense** on every reply.
+A **voice-first health-insurance advisor** for Indian buyers, grounded in a curated corpus of **224 documents** — 206 product documents from 20 leading insurers plus 18 IRDAI / regulatory documents — extracted into a 62-field structured schema with a rules-based A–F scorecard and a **4-gate hallucination defense** on every reply.
 
 The bot is **consumer-facing in experience, B2B in commercial application.** The realistic deployment is an insurer or aggregator white-labelling this advisor on top of Sarvam's ASR/TTS/LLM stack. The build deliberately optimises for the artifacts a BFSI buyer would audit: provenance, refusal behaviour, eval rigor, citation grammar.
 
@@ -519,8 +519,8 @@ The bot is two flows running together — the customer's experience and the tech
                  │
                  ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│  208 source PDFs in HF Dataset rohitsar567/insurance-bot-data            │
-│  · 190 product PDFs across 19 insurers                                   │
+│  224 source PDFs in HF Dataset rohitsar567/insurance-bot-data            │
+│  · 206 product PDFs across 20 insurers                                   │
 │  · 18 regulatory PDFs (IRDAI master circulars, Insurance Act, etc.)      │
 │  · Playwright same-origin fetch past Akamai for irdai.gov.in            │
 └─────────────────────────────────────────────────────────────────────────┘
@@ -592,17 +592,17 @@ Every D-NNN in the legacy decisions log is now a stand-alone ADR — see [`70-do
 
 ## 5. Data architecture
 
-### 5.1 The corpus (208 documents)
+### 5.1 The corpus (224 documents)
 
 | Type | Count | Source | Notes |
 |---|---|---|---|
-| Product PDFs | 190 | 19 insurers' public websites | Wordings + Brochures + CIS |
+| Product PDFs | 206 | 19 insurers' public websites | Wordings + Brochures + CIS |
 | Regulatory PDFs | 18 | irdai.gov.in, indiacode.nic.in, others | Playwright rescue past Akamai |
-| Structured extractions (JSON) | 203 | fast-brain chain (Nemotron 30B / Qwen 80B / Groq Llama-3.3 fallback) extraction | 62-field Pydantic schema |
-| Vector chunks (Chroma) | ~7,400 | BGE-small @ 800/120 | One sqlite + HNSW binaries |
+| Structured extractions (JSON) | 206 | fast-brain chain (Nemotron 30B / Qwen 80B / Groq Llama-3.3 fallback) extraction | 62-field Pydantic schema |
+| Vector chunks (Chroma) | 7,295 | BGE-small @ 800/120 | One sqlite + HNSW binaries |
 | Policy markdown sheets | 224 | Generated from extractions | One per policy_id in `kb/policies/` |
 
-19 insurers: Star Health, HDFC ERGO, Niva Bupa, Care Health, ICICI Lombard, Bajaj Allianz, New India Assurance, Aditya Birla, Tata AIG, ManipalCigna, SBI General, Acko, IFFCO Tokio, Cholamandalam MS, Go Digit, Reliance General, Royal Sundaram, Oriental Insurance, National Insurance.
+19 insurers: Acko, Aditya Birla, Bajaj Allianz, Care Health, Cholamandalam MS, Go Digit, HDFC ERGO, ICICI Lombard, IFFCO Tokio, ManipalCigna, National Insurance, New India Assurance, Niva Bupa, Oriental Insurance, Reliance General, Royal Sundaram, SBI General, Star Health, Tata AIG.
 
 ### 5.2 Ingestion pipeline
 
@@ -808,7 +808,7 @@ npm run dev   # http://localhost:3000
 
 - Frontend at `localhost:3000` should show the chat UI.
 - `localhost:7860/api/health` should return `{"status":"ok", "providers_ok": {"sarvam": true, "nvidia_nim": true}}`.
-- `localhost:7860/api/coverage` should return 255 policies indexed.
+- `localhost:7860/api/coverage` should return 206 policies indexed.
 
 ---
 
@@ -881,7 +881,7 @@ This section is written so a fresh **Claude Code** session pointed at an empty d
 
 ### 10.2 Build sequence
 
-1. **Corpus acquisition** — use `tools/` agent crawl + Playwright fallback (see [ADR-017](70-docs/60-decisions/ADR-017-irdai-corpus-playwright-rescue.md)) to fetch 19 insurers' PDFs + 18 regulatory PDFs into `rag/corpus/`.
+1. **Corpus acquisition** — use `tools/` agent crawl + Playwright fallback (see [ADR-017](70-docs/60-decisions/ADR-017-irdai-corpus-playwright-rescue.md)) to fetch 19 insurers' PDFs (206 product PDFs total) + 18 regulatory PDFs into `rag/corpus/`.
 
 2. **Structured extraction** — `rag/extract.py` runs fast-brain chain (Nemotron 30B / Qwen 80B / Groq Llama-3.3 fallback) over each PDF with the 62-field Pydantic schema. Output to `rag/extracted/<policy_id>.json`.
 
@@ -919,7 +919,7 @@ A new Claude Code session should ingest these to bootstrap understanding:
 |---|---|---|
 | IRDAI URLs return Akamai bot-challenge HTML | Initial corpus crawl | Playwright same-origin fetch (ADR-017) |
 | Sarvam-M output cap 2048 tokens truncates JSON | Extraction phase | Use fast-brain chain (Nemotron 30B / Qwen 80B / Groq Llama-3.3 fallback) instead (ADR-019) |
-| Voyage 3 RPM free-tier blocks 208-PDF ingest | Embedding phase | Switch to local BGE-small (ADR-011) |
+| Voyage 3 RPM free-tier blocks 224-PDF ingest | Embedding phase | Switch to local BGE-small (ADR-011) |
 | Multiple LLM providers' free-tier limits collide on grader | Eval phase | Consolidate to NIM (ADR-019) |
 | HF Space 1 GB cap rejects vector DB | Deploy phase | Split data to HF Dataset (ADR-020) |
 | Chroma sqlite3 (157 MB) exceeds GitHub 100 MB per-file limit | GitHub mirror | Use Git LFS for the data repo (ADR-024) |
@@ -931,7 +931,7 @@ A new Claude Code session should ingest these to bootstrap understanding:
 
 ## Footer
 
-**Authored 2026-05-13. Last updated 2026-05-14.**
+**Authored 2026-05-13. Last updated 2026-05-15.**
 
 Live demo: https://rohitsar567-insurancebot.hf.space  
 Code: https://github.com/rohitsar567/insurance-sales-bot  

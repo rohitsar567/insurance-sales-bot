@@ -70,7 +70,7 @@ COPY 40-data ./40-data
 # (7356 chunks from a prior ingest) instead of the freshly-uploaded
 # cleaned one (3799 chunks). Bump CACHE_BUST manually each time the
 # dataset is re-uploaded; the value just needs to change.
-ARG DATASET_CACHE_BUST=2026-05-15-ki119-v2
+ARG DATASET_CACHE_BUST=2026-05-15-ki126-v1
 RUN echo "Dataset cache bust: ${DATASET_CACHE_BUST}" && python -c "\
 from huggingface_hub import snapshot_download; \
 snapshot_download(\

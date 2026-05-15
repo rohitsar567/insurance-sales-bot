@@ -4,13 +4,12 @@ _Last synced: 2026-05-14._
 
 Canonical knowledge base for the Insurance Sales Bot. Every user-facing answer, scorecard, and comparison surface must trace back to a file in this directory.
 
-## Policies (255)
+## Policies (253)
 
 | Insurer | Policy | UIN | Completeness | KB path |
 | --- | --- | --- | --- | --- |
 | Aditya Birla Health Insurance | Activ Assure (Diamond) | `ADIHLIP18077V011718` | — | [`policies/aditya-birla__activ-assure-diamond__wordings.md`](policies/aditya-birla__activ-assure-diamond__wordings.md) |
 | Aditya Birla Health Insurance | Activ Health Individual | `ADIHLIP24102V052324` | 32% | [`policies/aditya-birla__activ-health-individual__wordings.md`](policies/aditya-birla__activ-health-individual__wordings.md) |
-| Aditya Birla Health Insurance | Activ One | `ADIHLIP24108V012324` | — | [`policies/aditya-birla__activ-one__brochure.md`](policies/aditya-birla__activ-one__brochure.md) |
 | Aditya Birla Health Insurance | Activ Secure Cancer Secure | `ADIHLIP18076V011718` | 18% | [`policies/aditya-birla__activ-secure-cancer-secure__brochure.md`](policies/aditya-birla__activ-secure-cancer-secure__brochure.md) |
 | Aditya Birla Health Insurance | Activ Secure Personal Accident Cancer Secure | `ADIHLIP18076V011718` | 23% | [`policies/aditya-birla__activ-secure-personal-accident-cancer-secure__wordings.md`](policies/aditya-birla__activ-secure-personal-accident-cancer-secure__wordings.md) |
 | Aditya Birla Health Insurance | Aditya Birla Activ Assure Diamond | `ADIHLIP18077V011718` | 82% | [`policies/aditya-birla__activ-assure-diamond.md`](policies/aditya-birla__activ-assure-diamond.md) |
@@ -240,7 +239,6 @@ Canonical knowledge base for the Insurance Sales Bot. Every user-facing answer, 
 | royal-sundaram | Advanced Top Up Health Insurance Plan | `RSAHLIP23029V012223` | — | [`policies/royal-sundaram__advanced-top-up__cis.md`](policies/royal-sundaram__advanced-top-up__cis.md) |
 | royal-sundaram | Advanced Top Up Health Insurance Plan | `RSAHLIP23029V012223` | — | [`policies/royal-sundaram__advanced-top-up__wordings.md`](policies/royal-sundaram__advanced-top-up__wordings.md) |
 | royal-sundaram | Arogya Sanjeevani Policy | `RSAHLIP25013V022425` | — | [`policies/royal-sundaram__arogya-sanjeevani__wordings.md`](policies/royal-sundaram__arogya-sanjeevani__wordings.md) |
-| royal-sundaram | Family Plus | `RSAHLIP22200V032122` | — | [`policies/royal-sundaram__family-plus__brochure.md`](policies/royal-sundaram__family-plus__brochure.md) |
 | royal-sundaram | Family Plus | `RSAHLIP22200V032122` | — | [`policies/royal-sundaram__family-plus__cis.md`](policies/royal-sundaram__family-plus__cis.md) |
 | royal-sundaram | Family Plus | `RSAHLIP22200V032122` | — | [`policies/royal-sundaram__family-plus__wordings.md`](policies/royal-sundaram__family-plus__wordings.md) |
 | royal-sundaram | Lifeline (Classic / Supreme / Elite) | `RSAHLIP24146V032324` | — | [`policies/royal-sundaram__lifeline__brochure.md`](policies/royal-sundaram__lifeline__brochure.md) |

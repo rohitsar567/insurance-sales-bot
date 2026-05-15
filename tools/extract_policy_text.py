@@ -8,7 +8,6 @@ os.makedirs(CACHE, exist_ok=True)
 
 PDFS = [
     ("aditya-birla", "rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf"),
-    ("aditya-birla", "rag/corpus/aditya-birla/activ-one__brochure.pdf"),
     ("bajaj-allianz", "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf"),
     ("bajaj-allianz", "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf"),
     ("care-health", "rag/corpus/care-health/care-supreme__wordings.pdf"),
