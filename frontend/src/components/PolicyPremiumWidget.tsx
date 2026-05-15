@@ -4,24 +4,35 @@
  * PolicyPremiumWidget — per-policy slider-driven premium calculator.
  *
  * Embedded inside PolicyCompareModal (B1). Fetches an initial estimate from
- * /api/premium/bulk using the user's profile defaults, then re-fetches
+ * /api/premium/estimate using the user's profile defaults, then re-fetches
  * (debounced 300ms) whenever the user moves the SI / tenure / deductible
- * sliders. When the backend marks the row `assumed: true` (no curated
- * actuarial data for this policy) the widget shows an "Estimate" badge so
+ * sliders. When the backend reports `base_sample_used: false` (no curated
+ * actuarial sample for this policy) the widget shows an "Estimate" badge so
  * the user understands the number is heuristic, not a quote.
+ *
+ * KI-bugfix (2026-05-15): switched from /api/premium/bulk → /api/premium/estimate
+ * so per-policy pricing shares the curated-anchored math used by the standalone
+ * PremiumCalculatorPanel. The bulk endpoint's flat ₹500/lakh fallback was
+ * producing wildly low numbers (~₹6K) versus the panel's curated number
+ * (~₹18-25K) for the same profile. Tenure + deductible are still honoured —
+ * the estimate endpoint now applies the bulk multipliers post-anchor.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
-  postPremiumBulk,
+  postPremiumEstimate,
   type PremiumBulkProfile,
-  type PremiumBulkRow,
+  type PreExistingCondition,
+  type PremiumEstimateResponse,
 } from "@/lib/api";
 
 export type PolicyPremiumWidgetProps = {
   policyId: string;
   policyName: string;
+  // Kept the bulk-profile shape because PolicyCompareModal still hands us this
+  // exact object — it doubles as the predicted-premium-band profile. We map
+  // its fields onto the estimate-endpoint contract internally.
   profile?: PremiumBulkProfile;
   initialSumInsured?: number;
   initialTenureYears?: 1 | 2 | 3;
@@ -64,33 +75,35 @@ function summariseProfile(profile?: PremiumBulkProfile): string | null {
   return parts.length ? parts.join(", ") : null;
 }
 
-const BREAKDOWN_LABELS: Record<string, string> = {
-  base_inr: "Base",
-  age_loading_x: "Age loading",
-  location_loading_x: "Location loading",
-  family_loading_x: "Family loading",
-  tenure_discount_x: "Tenure discount",
-  deductible_discount_x: "Deductible discount",
-};
+/**
+ * Map the free-text `location_tier` we ship in PremiumBulkProfile onto the
+ * strict {metro|tier1|tier2} enum the /api/premium/estimate endpoint expects.
+ * Same normalization rule used inside premium_calculator.bulk_estimate.
+ */
+function normaliseCityTier(tier: string | null | undefined): "metro" | "tier1" | "tier2" {
+  if (!tier) return "metro";
+  const t = String(tier).toLowerCase().replace(/[-_\s]/g, "");
+  if (t === "metro") return "metro";
+  if (t.includes("1")) return "tier1";
+  if (t.includes("2")) return "tier2";
+  // tier3 / unknown — fall back to tier2 (closest cheaper bucket the estimate
+  // endpoint accepts; matches the standalone panel's default).
+  return "tier2";
+}
 
-function renderBreakdownBullets(breakdown: Record<string, number | string>): string[] {
-  const bullets: string[] = [];
-  const base = breakdown.base_inr;
-  if (typeof base === "number") bullets.push(`Base: ₹${formatInr(base)}`);
-  for (const key of [
-    "age_loading_x",
-    "location_loading_x",
-    "family_loading_x",
-    "tenure_discount_x",
-    "deductible_discount_x",
-  ]) {
-    const v = breakdown[key];
-    if (typeof v === "number" && Math.abs(v - 1.0) > 0.001) {
-      const label = BREAKDOWN_LABELS[key];
-      bullets.push(`${label}: ${v.toFixed(2)}×`);
-    }
-  }
-  return bullets;
+/**
+ * Coerce the typed `pre_existing_conditions` profile slot onto the
+ * estimate-endpoint's PreExistingCondition union, defaulting to "none".
+ */
+function normalisePed(ped: string | null | undefined): PreExistingCondition {
+  if (!ped) return "none";
+  const allowed: PreExistingCondition[] = [
+    "none",
+    "diabetes_or_hypertension",
+    "heart_disease",
+    "multiple",
+  ];
+  return (allowed as string[]).includes(ped) ? (ped as PreExistingCondition) : "none";
 }
 
 export default function PolicyPremiumWidget({
@@ -103,9 +116,11 @@ export default function PolicyPremiumWidget({
   onCalculated,
 }: PolicyPremiumWidgetProps) {
   const [sumInsured, setSumInsured] = useState<number>(initialSumInsured);
-  const [tenureYears, setTenureYears] = useState<number>(initialTenureYears);
-  const [deductibleInr, setDeductibleInr] = useState<number>(initialDeductibleInr);
-  const [row, setRow] = useState<PremiumBulkRow | null>(null);
+  const [tenureYears, setTenureYears] = useState<1 | 2 | 3>(initialTenureYears);
+  const [deductibleInr, setDeductibleInr] = useState<0 | 25000 | 50000 | 100000>(
+    initialDeductibleInr,
+  );
+  const [resp, setResp] = useState<PremiumEstimateResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -123,25 +138,26 @@ export default function PolicyPremiumWidget({
       setLoading(true);
       setError(null);
       try {
-        const resp = await postPremiumBulk({
-          policy_ids: [policyId],
-          profile: profile ?? {},
-          overrides: {
-            [policyId]: {
-              sum_insured_inr: sumInsured,
-              tenure_years: tenureYears,
-              deductible_inr: deductibleInr,
-            },
-          },
+        // Defaults match the standalone PremiumCalculatorPanel so the two
+        // surfaces converge on the same number for the same profile.
+        const age = typeof profile?.age === "number" ? profile.age : 35;
+        const familySize =
+          typeof profile?.family_size === "number" ? profile.family_size : 1;
+        const r = await postPremiumEstimate({
+          age,
+          sum_insured_inr: sumInsured,
+          city_tier: normaliseCityTier(profile?.location_tier),
+          smoker: profile?.smoker === true,
+          family_size: familySize,
+          policy_id: policyId,
+          pre_existing_conditions: normalisePed(profile?.pre_existing_conditions),
+          copayment_pct: 0,
+          tenure_years: tenureYears,
+          deductible_inr: deductibleInr,
         });
         if (signal.aborted) return;
-        const r = resp.per_policy[policyId];
-        if (!r) {
-          setError("No estimate returned for this policy.");
-          return;
-        }
-        setRow(r);
-        onCalculatedRef.current?.(r.premium_inr_annual);
+        setResp(r);
+        onCalculatedRef.current?.(r.point_estimate_inr);
       } catch (e) {
         if (signal.aborted) return;
         setError(e instanceof Error ? e.message : String(e));
@@ -165,13 +181,34 @@ export default function PolicyPremiumWidget({
   }, [fetchPremium]);
 
   const profileSummary = summariseProfile(profile);
-  const bullets = row ? renderBreakdownBullets(row.breakdown) : [];
+  // `base_sample_used: false` means the curated illustrative_premiums.json
+  // had no anchor sample for this policy → estimate() fell back to the generic
+  // FALLBACK_BASE_INR path. Same semantics as the old bulk row.assumed flag.
+  const isHeuristic = resp ? resp.base_sample_used === false : false;
+
+  // Compact, profile-only breakdown — the estimate endpoint doesn't expose
+  // a multiplicative chain so we surface the active overrides + methodology
+  // instead. This keeps the widget transparent without faking precision.
+  const bullets: string[] = [];
+  if (resp) {
+    bullets.push(
+      `Range: ₹${formatInr(resp.low_inr)} – ₹${formatInr(resp.high_inr)}/year (±15% band)`,
+    );
+    if (resp.tenure_years && resp.tenure_years !== 1) {
+      bullets.push(`Multi-year discount applied (${resp.tenure_years}-year policy)`);
+    }
+    if (resp.deductible_inr && resp.deductible_inr > 0) {
+      bullets.push(
+        `Voluntary deductible discount applied (${formatDeductibleLabel(resp.deductible_inr)})`,
+      );
+    }
+  }
 
   return (
     <div className="policy-premium-widget" style={widgetStyle}>
       <header style={headerStyle}>
         <div style={{ fontWeight: 600, fontSize: 14 }}>{policyName}</div>
-        {row?.assumed && (
+        {isHeuristic && (
           <span style={badgeStyle} title="Heuristic — no exact actuarial data for this policy.">
             Estimate
           </span>
@@ -252,13 +289,13 @@ export default function PolicyPremiumWidget({
       <div style={resultBoxStyle} aria-live="polite">
         {error ? (
           <div style={{ color: "#b00020" }}>Failed: {error}</div>
-        ) : loading && !row ? (
+        ) : loading && !resp ? (
           <div style={{ color: "#666" }}>Calculating estimate…</div>
-        ) : row ? (
+        ) : resp ? (
           <>
             <div style={resultHeadlineStyle}>
               Estimated premium:&nbsp;
-              <strong>₹{formatInr(row.premium_inr_annual)}</strong>
+              <strong>₹{formatInr(resp.point_estimate_inr)}</strong>
               <span style={resultSuffixStyle}>/year</span>
               {loading && <span style={spinnerHintStyle}> updating…</span>}
             </div>
@@ -269,8 +306,8 @@ export default function PolicyPremiumWidget({
                 ))}
               </ul>
             )}
-            {row.notes && row.notes.length > 0 && (
-              <div style={noteStyle}>{row.notes.join(" ")}</div>
+            {resp.methodology && (
+              <div style={noteStyle}>{resp.methodology}</div>
             )}
           </>
         ) : null}

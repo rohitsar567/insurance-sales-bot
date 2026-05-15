@@ -915,6 +915,120 @@ async def chat(req: ChatRequest, request: Request):
             session_id, type(_rec_err).__name__, _rec_err,
         )
 
+    # F3 — confirmation auto-extract safety net.
+    # Symptom: Gemini emits a recap bullet list ("**Primary Goal:** first
+    # family policy ...") from conversation context but skips one or more
+    # save_profile_field calls. User says "yes this is correct"; the
+    # _profile_complete gate refuses retrieval and the bot embarrassingly
+    # re-asks. This block parses the bot's prior recap turn, maps slot
+    # labels -> _REQUIRED_FOR_READY field names, and backfills any slot
+    # that's STILL missing on the live profile. Best-effort; never blocks.
+    # Mirror of KI-253 closer regex + KI-254 auto-mark pattern.
+    try:
+        _CONFIRM_RE = re.compile(
+            r"\b(yes|correct|that'?s right|all correct|looks good)\b",
+            re.IGNORECASE,
+        )
+        _RECAP_BULLET_RE = re.compile(r"^\s*\*\s*\*\*[^:]+:\*\*", re.MULTILINE)
+        _RECAP_LINE_RE = re.compile(
+            r"^\s*\*\s*\*\*([^:]+):\*\*\s*(.+?)\s*$",
+            re.MULTILINE,
+        )
+        # Slot label aliases -> canonical _REQUIRED_FOR_READY field names.
+        # Keys are lowercased + whitespace-collapsed.
+        _SLOT_ALIASES = {
+            "name": "name",
+            "full name": "name",
+            "age": "age",
+            "dependents": "dependents",
+            "family": "dependents",
+            "family members": "dependents",
+            "location": "location_tier",
+            "city": "location_tier",
+            "location tier": "location_tier",
+            "city tier": "location_tier",
+            "income": "income_band",
+            "income band": "income_band",
+            "annual income": "income_band",
+            "primary goal": "primary_goal",
+            "goal": "primary_goal",
+            "objective": "primary_goal",
+            "health conditions": "health_conditions",
+            "health": "health_conditions",
+            "medical conditions": "health_conditions",
+            "pre-existing conditions": "health_conditions",
+            "medical history": "health_conditions",
+        }
+
+        if (
+            USE_SINGLE_BRAIN
+            and turn is not None
+            and _CONFIRM_RE.search(req.user_text or "")
+            and not getattr(turn, "profile_complete", False)
+        ):
+            # Locate the most recent bot/assistant message in chat_history.
+            _prior_bot_text = ""
+            for _msg in reversed(req.chat_history or []):
+                if not isinstance(_msg, dict):
+                    continue
+                _role = (_msg.get("role") or "").lower()
+                if _role in ("assistant", "bot", "model"):
+                    _prior_bot_text = _msg.get("content") or ""
+                    break
+
+            if _prior_bot_text and _RECAP_BULLET_RE.search(_prior_bot_text):
+                from backend.session_state import get_session as _get_session_f3
+                from backend import brain_tools as _brain_tools_f3
+
+                _f3_session = _get_session_f3(session_id)
+                _profile_f3 = _f3_session.profile
+
+                _parsed: dict[str, str] = {}
+                for _label, _value in _RECAP_LINE_RE.findall(_prior_bot_text):
+                    _key = " ".join(_label.strip().lower().split())
+                    _slot = _SLOT_ALIASES.get(_key)
+                    if not _slot:
+                        continue
+                    _val = (_value or "").strip().rstrip(".")
+                    if not _val:
+                        continue
+                    # Don't override slots that already have values.
+                    _existing = getattr(_profile_f3, _slot, None)
+                    if _existing not in (None, "", []):
+                        continue
+                    # First mapping wins (in case a label appears twice).
+                    _parsed.setdefault(_slot, _val)
+
+                _backfilled: list[str] = []
+                for _slot in _brain_tools_f3._REQUIRED_FOR_READY:
+                    if _slot not in _parsed:
+                        continue
+                    _existing = getattr(_profile_f3, _slot, None)
+                    if _existing not in (None, "", []):
+                        continue
+                    try:
+                        _r = _brain_tools_f3.save_profile_field(
+                            session=_f3_session,
+                            field=_slot,
+                            value=_parsed[_slot],
+                        )
+                        if isinstance(_r, dict) and _r.get("saved"):
+                            _backfilled.append(_slot)
+                    except Exception:  # noqa: BLE001 — best-effort
+                        continue
+
+                if _backfilled:
+                    logging.info(
+                        "F3 confirmation auto-extract (session=%s): backfilled %s",
+                        session_id, _backfilled,
+                    )
+    except Exception as _f3_err:  # noqa: BLE001
+        # Safety-net must never break the reply.
+        logging.warning(
+            "F3 confirmation auto-extract failed (session=%s): %s: %s",
+            session_id, type(_f3_err).__name__, _f3_err,
+        )
+
     audio_b64 = None
     audio_mime: Optional[str] = None
     if req.return_audio and turn.reply_text:
@@ -2970,6 +3084,14 @@ class PremiumEstimateRequest(BaseModel):
     )
     # Voluntary co-payment % — reduces premium ~7% per 10pp of co-pay
     copayment_pct: float = Field(0.0, ge=0, le=40)
+    # B2 widget parity (KI-bugfix, 2026-05-15) — optional slider overrides so
+    # PolicyPremiumWidget (compare modal) can use the same curated-anchored
+    # estimate() pipeline as PremiumCalculatorPanel instead of the divergent
+    # bulk_estimate() flat-base path. Applied as straight multipliers on top
+    # of the estimate() result using premium_calculator.BULK_TENURE_MULT /
+    # BULK_DEDUCTIBLE_DISCOUNT constants — leaves estimate() math untouched.
+    tenure_years: Optional[int] = Field(None, ge=1, le=3)
+    deductible_inr: Optional[int] = Field(None, ge=0, le=200_000)
 
 
 class PremiumEstimateResponse(BaseModel):
@@ -2984,12 +3106,25 @@ class PremiumEstimateResponse(BaseModel):
         "Illustrative range only — actual premium depends on underwriting + "
         "medical history + risk factors. Confirm with the insurer before purchase."
     )
+    # Echo back the effective tenure / deductible so the widget can render a
+    # consistent breakdown line without re-deriving them. Optional for legacy
+    # callers (PremiumCalculatorPanel ignores both).
+    tenure_years: Optional[int] = None
+    deductible_inr: Optional[int] = None
+    # True when the underlying estimate() anchored to a curated quote sample.
+    # PolicyPremiumWidget uses this (instead of bulk_estimate's `assumed` flag)
+    # to decide whether to show its "Estimate" badge.
+    base_sample_used: bool = False
 
 
 @app.post("/api/premium/estimate", response_model=PremiumEstimateResponse)
 async def premium_estimate(req: PremiumEstimateRequest):
     """Illustrative premium calculator — rules-based estimate from curated public data."""
-    from backend.premium_calculator import estimate as _estimate
+    from backend.premium_calculator import (
+        estimate as _estimate,
+        BULK_TENURE_MULT,
+        BULK_DEDUCTIBLE_DISCOUNT,
+    )
     e = _estimate(
         age=req.age,
         sum_insured_inr=req.sum_insured_inr,
@@ -3000,13 +3135,43 @@ async def premium_estimate(req: PremiumEstimateRequest):
         pre_existing_conditions=req.pre_existing_conditions,
         copayment_pct=req.copayment_pct,
     )
+
+    # Snap incoming tenure / deductible to the nearest supported bucket so the
+    # widget can pass raw slider values without precomputing.
+    point = e.point_estimate_inr
+    low = e.low_inr
+    high = e.high_inr
+    effective_tenure: Optional[int] = None
+    effective_ded: Optional[int] = None
+    if req.tenure_years is not None:
+        effective_tenure = req.tenure_years if req.tenure_years in BULK_TENURE_MULT else 1
+        tenure_mult = BULK_TENURE_MULT.get(effective_tenure, 1.0)
+        point = int(round(point * tenure_mult))
+        low = int(round(low * tenure_mult))
+        high = int(round(high * tenure_mult))
+    if req.deductible_inr is not None:
+        if req.deductible_inr in BULK_DEDUCTIBLE_DISCOUNT:
+            effective_ded = req.deductible_inr
+        else:
+            effective_ded = min(
+                BULK_DEDUCTIBLE_DISCOUNT.keys(),
+                key=lambda d: abs(d - req.deductible_inr),
+            )
+        ded_mult = BULK_DEDUCTIBLE_DISCOUNT.get(effective_ded, 1.0)
+        point = int(round(point * ded_mult))
+        low = int(round(low * ded_mult))
+        high = int(round(high * ded_mult))
+
     return PremiumEstimateResponse(
         policy_id=e.policy_id,
-        point_estimate_inr=e.point_estimate_inr,
-        low_inr=e.low_inr,
-        high_inr=e.high_inr,
+        point_estimate_inr=point,
+        low_inr=low,
+        high_inr=high,
         methodology=e.methodology,
         sources=e.sources or [],
+        tenure_years=effective_tenure,
+        deductible_inr=effective_ded,
+        base_sample_used=e.base_sample_used is not None,
     )
 
 

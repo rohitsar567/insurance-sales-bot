@@ -32,6 +32,7 @@ location / family_size that B2 already handles):
   copay_pct (D2)          → copay_discount 1.0× / 0.95× / 0.88× / 0.80×
   family_medical_history  → family_history_loading 1.0× / 1.03× / 1.05× / 1.10×
   (D2)                      (cancer/heart +5%, 2+ conditions +10%, other +3%)
+  smoker (KI-275)         → smoker_loading 1.0× / 1.40× (+30-50% premium load)
 
 Slots that are profile-only (no pricing effect): name, primary_goal,
 income_band, budget_band (matched against output, not folded into the
@@ -594,6 +595,10 @@ def bulk_estimate(
     # D2 — copay_pct + family_medical_history (same read pattern).
     copay_pct = profile.get("copay_pct")
     family_medical_history = profile.get("family_medical_history")
+    # KI-275 — smoker / tobacco use (+30-50% loading). Same read pattern as
+    # the D2 fields above; mirrors how the panel slider already passes
+    # `smoker` straight through to estimate() on the curated path.
+    smoker = bool(profile.get("smoker") or False)
     # desired_sum_insured_inr — when present, becomes the default SI for
     # any policy without an explicit overrides entry (per-policy override
     # still wins, since this is the DEFAULT).
@@ -615,6 +620,10 @@ def bulk_estimate(
     # callers see no change.
     copay_mult, copay_label = _copay_discount(copay_pct)
     fam_mult, fam_label = _family_history_loading(family_medical_history)
+    # KI-275 — smoker loading. 1.40× (+40%) standard tobacco loading.
+    # 1.0× when smoker is False / None so legacy callers see no change.
+    smoker_mult = 1.4 if smoker else 1.0
+    smoker_label = "smoker_loading" if smoker else "non_smoker"
 
     out: dict[str, BulkPolicyPremium] = {}
     for pid in policy_ids:
@@ -644,7 +653,7 @@ def bulk_estimate(
                     age=age,
                     sum_insured_inr=sum_insured_inr,
                     city_tier="metro" if loc_label == "metro" else ("tier1" if "1" in loc_label else "tier2"),
-                    smoker=bool(profile.get("smoker", False)),
+                    smoker=smoker,
                     family_size=max(0, family_size - 1),
                     policy_id=pid,
                     pre_existing_conditions=profile.get("pre_existing_conditions") or "none",
@@ -701,6 +710,7 @@ def bulk_estimate(
                 * parents_mult
                 * copay_mult
                 * fam_mult
+                * smoker_mult
                 * tenure_mult
                 * ded_mult
             )
@@ -739,6 +749,9 @@ def bulk_estimate(
         if fam_mult != 1.0:
             breakdown["family_history_loading_x"] = round(fam_mult, 3)
             breakdown["family_history_loading_reason"] = fam_label
+        if smoker_mult != 1.0:
+            breakdown["smoker_loading_x"] = round(smoker_mult, 3)
+            breakdown["smoker_loading_reason"] = smoker_label
         if desired_si and not ov.get("sum_insured_inr"):
             breakdown["desired_si_default_inr"] = int(desired_si)
 

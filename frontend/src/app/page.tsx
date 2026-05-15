@@ -1429,7 +1429,7 @@ export default function Page() {
                 className={`group relative overflow-hidden rounded-xl shadow-sm transition-all hover:shadow-md hover:brightness-110 cursor-pointer ${
                   showPremium ? "ring-2 ring-[var(--primary)]" : ""
                 }`}
-                title={uiLang === "hi" ? "Premium को sliders से refine करने के लिए tap करें" : "Tap to estimate / refine premium with sliders"}
+                title={uiLang === "hi" ? "आपकी profile के सभी eligible plans का अनुमानित premium range. किसी एक plan के लिए estimate देखने के लिए tap करें." : "Estimated premium range across all eligible plans for your profile. Tap to estimate for a specific plan."}
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600" />
                 <div className="relative flex items-stretch text-white">
@@ -1438,7 +1438,7 @@ export default function Page() {
                   </div>
                   <div className="px-3 py-2 text-left">
                     <div className="text-[10px] uppercase tracking-wider opacity-85 leading-none">
-                      {uiLang === "hi" ? "अनुमानित premium" : "Est. premium"}
+                      {uiLang === "hi" ? "अनुमानित premium · सभी plans में" : "Est. range · across plans"}
                     </div>
                     <div className="text-xs font-bold leading-tight whitespace-nowrap">
                       {hasMeaningfulBand
@@ -1802,6 +1802,7 @@ export default function Page() {
               <PremiumCalculatorPanel
                 onClose={() => setShowPremium(false)}
                 initialProfile={profileCompleteness?.profile}
+                uiLang={uiLang}
               />
             )}
             {showProfile && (
@@ -2116,10 +2117,13 @@ function ProfileBuilderPanel({
 function PremiumCalculatorPanel({
   onClose,
   initialProfile,
+  uiLang = "en",
 }: {
   onClose: () => void;
   initialProfile?: UserProfile;
+  uiLang?: UILang;
 }) {
+  const isHi = uiLang === "hi";
   // KI (2026-05-15) — Fix B. The panel previously opened with static
   // defaults (Age 35 / SI 10L / Self only / None / metro) which felt
   // disconnected from the user's already-captured profile. We now seed
@@ -2246,9 +2250,16 @@ function PremiumCalculatorPanel({
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-5">
         <div className="flex items-baseline justify-between mb-3">
           <div>
-            <h2 className="text-sm font-semibold">Illustrative premium calculator</h2>
+            <h2 className="text-sm font-semibold">{isHi ? "एक-policy premium अनुमान" : "Per-plan premium estimate"}</h2>
             <p className="text-xs text-[var(--muted-foreground)]">
-              Indicative annual premium range from public quote data. Not a binding quote — actual depends on underwriting.
+              {isHi
+                ? "इन specific settings के साथ एक policy का अनुमानित premium देखने के लिए sliders adjust करें."
+                : "Adjust the sliders to see the estimated premium for a single plan with these specific settings."}
+            </p>
+            <p className="text-[11px] text-[var(--muted-foreground)] mt-1 italic">
+              {isHi
+                ? "Tip: header chip = सभी plans का range · panel = इन specific settings के लिए"
+                : "Tip: header chip = range across plans · panel = for these specific settings"}
             </p>
           </div>
           <button onClick={onClose} className="text-xs text-[var(--muted-foreground)] hover:underline">close</button>
@@ -2352,7 +2363,7 @@ function PremiumCalculatorPanel({
             {busy && <div className="text-xs text-[var(--muted-foreground)]">Estimating…</div>}
             {!busy && estimate && (
               <>
-                <div className="text-[10px] uppercase tracking-wide text-[var(--muted-foreground)] font-semibold">Indicative annual premium</div>
+                <div className="text-[10px] uppercase tracking-wide text-[var(--muted-foreground)] font-semibold">{isHi ? "इन settings के लिए · ₹/वर्ष" : "For these settings · ₹/year"}</div>
                 <div className="text-3xl font-bold mt-1">
                   {fmtINR(estimate.low_inr)} <span className="text-[var(--muted-foreground)] text-base font-normal">–</span> {fmtINR(estimate.high_inr)}
                 </div>

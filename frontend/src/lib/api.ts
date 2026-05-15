@@ -330,6 +330,12 @@ export type PremiumEstimateRequest = {
   policy_id?: string | null;
   pre_existing_conditions?: PreExistingCondition;
   copayment_pct?: number;
+  // B2 widget parity (KI-bugfix, 2026-05-15) — optional slider overrides so the
+  // PolicyPremiumWidget (compare modal) can share the curated-anchored
+  // estimate() pipeline with PremiumCalculatorPanel. Server snaps tenure to
+  // {1,2,3} and deductible to {0, 25k, 50k, 100k}.
+  tenure_years?: 1 | 2 | 3;
+  deductible_inr?: 0 | 25000 | 50000 | 100000;
 };
 
 export type PremiumEstimateResponse = {
@@ -341,6 +347,13 @@ export type PremiumEstimateResponse = {
   sources: string[];
   is_illustrative: boolean;
   disclaimer: string;
+  // Echoed back when caller passed tenure / deductible overrides.
+  tenure_years?: number | null;
+  deductible_inr?: number | null;
+  // True when the backend anchored the base to a curated quote sample (i.e.
+  // the policy is in illustrative_premiums.json). Drives the widget's
+  // "Estimate" badge — replaces bulk_estimate's `assumed` flag.
+  base_sample_used?: boolean;
 };
 
 export type ComparePolicyEntry = {

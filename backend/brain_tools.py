@@ -50,7 +50,10 @@ Slot → consumer matrix:
     copay_pct             → pricing (copay discount 1.0× / 0.95× / 0.88× / 0.80×)
     family_medical_history → pricing (family-history loading) + retrieval boost
 
-Total: 15 slots. `gender` is tolerated by save_profile_field for forward
+  KI-275 (2026-05-15 — smoker / tobacco)
+    smoker                → pricing (smoker_loading 1.0× / 1.40×, +30-50%)
+
+Total: 16 slots. `gender` is tolerated by save_profile_field for forward
 compat but is NOT on the Profile dataclass today; it does not appear in
 SLOT_UNION because no consumer reads it.
 """
@@ -90,6 +93,8 @@ _ACCEPTED_FIELDS = {
     # D2 (2026-05-15) — coupled additions: co-pay tolerance + family medical history
     "copay_pct",
     "family_medical_history",
+    # KI-275 (2026-05-15) — smoker / tobacco use, +30-50% premium loading.
+    "smoker",
     "gender",  # tolerated; not persisted unless Profile gains the field
 }
 
@@ -138,6 +143,8 @@ SLOT_UNION: tuple[str, ...] = (
     # D2 additions (2026-05-15)
     "copay_pct",
     "family_medical_history",
+    # KI-275 (2026-05-15) — smoker / tobacco use, +30-50% premium loading.
+    "smoker",
 )
 
 # Invariant: every SLOT_UNION field must be accepted by save_profile_field
@@ -232,6 +239,8 @@ def save_profile_field(session, field: str, value: Any) -> dict:
             normalized = _coerce_copay_pct(value)
         elif fld == "family_medical_history":
             normalized = _coerce_family_medical_history(value)
+        elif fld == "smoker":
+            normalized = _coerce_smoker(value)
         elif fld == "name":
             normalized = (str(value).strip() if value is not None else None) or None
         elif fld == "gender":
@@ -741,6 +750,51 @@ def _coerce_bool(value: Any) -> Optional[bool]:
         return True
     if s in ("false", "no", "n", "0"):
         return False
+    return None
+
+
+def _coerce_smoker(value: Any) -> Optional[bool]:
+    """KI-275 (2026-05-15) — tri-state bool for smoker / tobacco use.
+
+    Accepts:
+      - True / "yes" / "true" / "smoker" / "smokes" / "tobacco" / 1  → True
+      - False / "no" / "false" / "non-smoker" / "doesn't smoke" / 0  → False
+      - None / "" / unclear                                          → None
+
+    Returning None lets the KI-091 null-overwrite guard in
+    save_profile_field refuse to clobber a previously-captured value.
+    """
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    s = str(value).strip().lower()
+    if not s:
+        return None
+    _YES = {
+        "yes", "y", "true", "1",
+        "smoker", "smokes", "smoke", "i smoke",
+        "tobacco", "tobacco user", "uses tobacco",
+        "i do", "yep", "yeah", "yup",
+    }
+    _NO = {
+        "no", "n", "false", "0",
+        "non-smoker", "nonsmoker", "non smoker",
+        "doesn't smoke", "does not smoke", "dont smoke", "don't smoke",
+        "i don't", "i do not", "nope", "never", "no tobacco",
+    }
+    if s in _YES:
+        return True
+    if s in _NO:
+        return False
+    # Substring fall-through for prose ("I'm a non-smoker", "I smoke daily").
+    if any(tok in s for tok in ("non-smoker", "nonsmoker", "non smoker", "don't smoke",
+                                 "doesn't smoke", "do not smoke", "no tobacco")):
+        return False
+    if any(tok in s for tok in ("smoker", "smokes", "tobacco")):
+        return True
     return None
 
 
