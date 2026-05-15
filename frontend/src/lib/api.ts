@@ -131,13 +131,18 @@ export async function postTranscribe(
   const fd = new FormData();
   // Use blob's mime to derive extension; default to wav
   const mime = blob.type || "audio/wav";
+  // KI-134 (2026-05-15) — iOS Safari MediaRecorder produces audio/mp4 (no
+  // webm support). Without explicit mapping the file was sent as audio.wav
+  // with mp4 bytes inside, breaking the backend's mime/ext whitelist.
   const ext = mime.includes("webm")
     ? "webm"
-    : mime.includes("mp3")
-      ? "mp3"
-      : mime.includes("ogg")
-        ? "ogg"
-        : "wav";
+    : mime.includes("mp4") || mime.includes("m4a")
+      ? "m4a"
+      : mime.includes("mp3")
+        ? "mp3"
+        : mime.includes("ogg")
+          ? "ogg"
+          : "wav";
   fd.append("file", blob, `audio.${ext}`);
   if (language_code) fd.append("language_code", language_code);
 

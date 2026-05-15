@@ -119,12 +119,12 @@ const DEFAULTS = {
   // segment. Avoids bot's TTS attack transient bleeding through even
   // with echoCancellation on.
   postUtteranceCooldownMs: 700,
-  // KI-113 — raised 0.35 → 0.50 minimum fraction of total FFT energy
-  // that must sit in the voice band (bins 2-22 ≈ 190-2150 Hz at 48 kHz).
-  // Broadband HVAC / fan / traffic noise typically scores 0.20-0.30;
-  // voiced speech typically scores 0.40-0.70. Lifting to 0.50 puts the
-  // gate squarely above noise and just below the bottom of speech.
-  voiceBandMinProp: 0.50,
+  // KI-113 raised 0.35 → 0.50 to gate out broadband HVAC / fan / traffic.
+  // KI-134 (2026-05-15) — backed off to 0.35 because some laptop built-in
+  // mics with aggressive noiseSuppression flatten the voice-band proportion
+  // to 0.35-0.45, so the VAD never opens and the green pill renders but
+  // no audio is ever posted — matches the live-test symptom exactly.
+  voiceBandMinProp: 0.35,
 };
 
 // AudioWorklet processor source — inlined as a Blob URL so we don't need
@@ -489,6 +489,24 @@ export function useLiveConversation(opts: LiveConversationOptions): LiveConversa
           window.AudioContext;
         const ctx = new AudioCtx();
         audioCtxRef.current = ctx;
+        // KI-134 (2026-05-15) — Chrome/Safari autoplay policy starts new
+        // AudioContexts in state='suspended' when the click that toggled
+        // Voice on has already been consumed by React state propagation.
+        // Without resume(), the worklet's process() never runs, no PCM
+        // frames arrive, and the green pill renders forever with zero
+        // audio posted. This is THE canonical "voice on but nothing
+        // happens" trap. Resume + bail visibly if the context refuses.
+        if (ctx.state === "suspended") {
+          try {
+            await ctx.resume();
+          } catch (e) {
+            // eslint-disable-next-line no-console
+            console.error("[live-mode] AudioContext resume failed", e);
+            setMicPermissionDenied(true);
+            setLive(false);
+            return;
+          }
+        }
         sampleRateRef.current = ctx.sampleRate;
 
         const source = ctx.createMediaStreamSource(stream);

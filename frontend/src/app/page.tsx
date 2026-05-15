@@ -442,7 +442,11 @@ export default function Page() {
       // Small wait so useLiveConversation tears down its stream before we
       // open a fresh one; without this, two AudioContexts can briefly grab
       // the same input device.
-      await new Promise((r) => setTimeout(r, 120));
+      // KI-134 (2026-05-15) — bumped 120ms → 400ms because AudioContext.close()
+      // returns a Promise that's discarded; on HF Space hardware the previous
+      // context can still hold the device when getUserMedia fires, producing
+      // a silent stream with no error.
+      await new Promise((r) => setTimeout(r, 400));
     }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -461,7 +465,14 @@ export default function Page() {
         // does its one turn and leaves Live off. They'll keep using PTT
         // until they click the dot back to green themselves.
         const maybeResumeLive = () => { if (userPrefersLive) live.setLive(true); };
-        if (blob.size < 1000) { maybeResumeLive(); return; }
+        // KI-134 (2026-05-15) — surface the silent-recording case to the user
+        // instead of returning quietly. Previously, holding PTT briefly and
+        // releasing produced no feedback at all; now they at least see why.
+        if (blob.size < 1000) {
+          pushAssistant("Didn't catch any audio — try holding the mic button while speaking.");
+          maybeResumeLive();
+          return;
+        }
         setBusy(true);
         setVoicePhase("transcribing"); // KI-038 — STT in flight on PTT
         try {
