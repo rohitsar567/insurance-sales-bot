@@ -790,13 +790,26 @@ export default function Page() {
       // KI-185 (2026-05-15) — match the useStreamingVoice AEC constraints
       // on the PTT path too, so echo cancellation applies whether the user
       // is in live-voice mode OR push-to-talk.
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        },
-      });
+      // W2 (2026-05-15) — 2s watchdog so a stalled getUserMedia
+      // (corporate-locked Chromium, OS-mic-busy, certain Android WebViews)
+      // doesn't leave the PTT button red-pulsing over a dead mic with no
+      // banner. Mirrors useStreamingVoice.ensureAudioCapture's W2 race.
+      const stream: MediaStream = await Promise.race([
+        navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+        }),
+        new Promise<MediaStream>((_, reject) => {
+          setTimeout(() => {
+            const e = new Error("getUserMedia stalled >2s") as Error & { name: string };
+            e.name = "StallTimeout";
+            reject(e);
+          }, 2000);
+        }),
+      ]);
       const mime = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "";
       const recorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
       mediaRecorderRef.current = recorder;
@@ -962,6 +975,20 @@ export default function Page() {
         }
       };
       recorder.start();
+      // W2 (2026-05-15) — affirmative post-acquire validation. recorder.start()
+      // returns void and does NOT throw on a fake-mic / dead-stream / codec
+      // rejection; the only reliable signal is recorder.state. Without this
+      // check, Playwright's fake stream let the button flip to red-pulsing
+      // "Stop" over a silent capture with no banner. Treat any non-"recording"
+      // state as a hard fail and surface mic_permission_denied.
+      if (recorder.state !== "recording") {
+        try { stream.getTracks().forEach((t) => t.stop()); } catch { /* ignore */ }
+        mediaRecorderRef.current = null;
+        throw Object.assign(
+          new Error(`MediaRecorder did not enter recording state (got ${recorder.state})`),
+          { name: "RecorderNotRecording" },
+        );
+      }
       setRecording(true);
 
       // KI-027 — VAD auto-cutoff is now ALWAYS on for the push-to-talk
@@ -1020,6 +1047,14 @@ export default function Page() {
       }
     } catch (e) {
       console.error(e);
+      // W2 (2026-05-15) — route to the structured banner the same way the
+      // live-voice path does, so PTT denials / stalls / fake-stream failures
+      // surface in the same red banner (not just an in-chat assistant
+      // message). Also revert the button by clearing recording state and
+      // setting voicePermDenied so the "🔇 Mic blocked" branch fires.
+      setRecording(false);
+      setVoicePermDenied(true);
+      setVoiceErrorBanner({ type: "mic_permission_denied", ts: Date.now() });
       pushAssistant(`Sorry — mic permission denied or unavailable.`);
     }
   }

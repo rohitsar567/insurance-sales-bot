@@ -227,11 +227,38 @@ Do NOT call retrieve_policies for out-of-scope queries.
 RULE 7 — Soft close after the customer picks one
 ═══════════════════════════════════════════════════════════
 Once you have recommended AND the user has chosen a single policy ("I'll
-go with #2", "let's pick the HDFC one", "sounds good"):
-  1. Call mark_recommendation(policy_ids=[chosen_id], is_final=true).
-  2. Offer next steps in one short reply:
-     "Great choice! Would you like me to walk you through the purchase
-      steps, or summarise the key benefits one more time?"
+go with #2", "let's pick the HDFC one", "sounds good", "I'll take that",
+"let's do the first one", "sign me up", "buy this", "I want to purchase"):
+
+  STEP 1 (MANDATORY, NEVER SKIP) — Call the tool FIRST, before writing prose:
+    mark_recommendation(policy_ids=[chosen_id], is_final=true)
+
+    To resolve "chosen_id":
+      - "the first one" / "first" / "#1"  → session.last_recommendation_ids[0]
+      - "the second" / "#2"               → session.last_recommendation_ids[1]
+      - "the HDFC one"                    → match insurer slug in last rec list
+      - "that one" / "this one" / bare "I'll go with that"
+                                          → most recent recommendation =
+                                            session.last_recommendation_ids[0]
+
+  STEP 2 — Only AFTER the tool call, write the prose reply:
+    "Great choice! [Policy Name] is a solid pick for your profile. Would
+     you like me to walk through the purchase steps, or summarise the key
+     benefits?"
+
+WORKED EXAMPLE
+  User: "I'll go with that one"
+  Your flow:
+    i.   IDENTIFY which policy "that one" refers to. With no ordinal cue,
+         default to the most recent recommendation =
+         session.last_recommendation_ids[0].
+    ii.  Call mark_recommendation(policy_ids=[chosen_id], is_final=true)
+         FIRST. This is non-negotiable — the recommendation MUST be
+         recorded for analytics before any prose is written.
+    iii. THEN write the prose reply offering next steps.
+  DO NOT skip step (ii). Offering "would you like purchase steps?" without
+  the mark_recommendation tool call is a RULE 7 violation.
+
 Do not re-pitch alternatives after the user has chosen — only act on
 their next instruction.
 
@@ -936,6 +963,13 @@ async def handle_turn(
     last_payload: dict = {}
 
     for it in range(MAX_ITERATIONS):
+        # Issue A instrumentation (KI-Z6-LATENCY, 2026-05-15) — Priya T3
+        # timed at 18.7s vs an 8s budget. We need per-iteration breakdown
+        # of (Gemini call time) vs (tool exec time) to identify whether
+        # cold-start, embedding/Chroma, or sequential LLM calls dominate.
+        # Wall-clock timers below feed `_log.info("iter %d: ...")` so HF
+        # Space logs surface the breakdown without any extra plumbing.
+        _t_iter0 = time.perf_counter()
         try:
             payload = await _gemini_call(
                 api_key=api_key,
@@ -951,6 +985,7 @@ async def handle_turn(
             raise SingleBrainError(
                 f"gemini_call unexpected error: {type(e).__name__}: {e}"
             ) from e
+        _t_gemini = time.perf_counter() - _t_iter0
 
         last_payload = payload
         parts = _extract_parts(payload)
@@ -962,6 +997,11 @@ async def handle_turn(
         # called out — completely valid, return immediately.
         if not function_calls:
             last_text = text
+            _log.info(
+                "single_brain iter=%d gemini=%.2fs tools=%.2fs "
+                "tool_calls=[] final_text=True",
+                it, _t_gemini, 0.0,
+            )
             break
 
         # CASE B — one or more function calls. Append the model turn
@@ -975,12 +1015,35 @@ async def handle_turn(
             }
         )
 
+        _t_tools0 = time.perf_counter()
+        _per_tool_latency: list[str] = []  # logged tail for iter summary
         response_parts: list[dict] = []
         for fc in function_calls:
             name = fc["name"]
             args = fc.get("args") or {}
             tool_calls_made.append(name)
+            _t_tool0 = time.perf_counter()
             result = await _execute_tool(session, name, args)
+            _t_tool = time.perf_counter() - _t_tool0
+            _per_tool_latency.append(f"{name}={_t_tool:.2f}s")
+
+            # Issue A — when retrieve_policies dominates iter latency we
+            # need to know whether it's the embedding step or the Chroma
+            # ANN query. brain_tools.retrieve_policies already returns
+            # chunks + count; surface the elapsed wall-clock here so the
+            # log line tags retrieve_policies separately. The deeper
+            # embedding vs Chroma breakdown lives inside rag.retrieve and
+            # is out of scope for this patch; this gives ops enough signal
+            # to decide whether to drill further.
+            if name == "retrieve_policies":
+                _log.info(
+                    "single_brain retrieve_policies elapsed=%.2fs "
+                    "chunks=%d query_len=%d filter_ids=%s",
+                    _t_tool,
+                    len(result.get("chunks") or []),
+                    len(str(args.get("query") or "")),
+                    bool(args.get("policy_filter_ids")),
+                )
 
             # Bookkeeping for the TurnResult fields.
             if name == "save_profile_field" and result.get("saved"):
@@ -1001,6 +1064,15 @@ async def handle_turn(
                     }
                 }
             )
+        _t_tools = time.perf_counter() - _t_tools0
+
+        _log.info(
+            "single_brain iter=%d gemini=%.2fs tools=%.2fs "
+            "tool_calls=[%s] per_tool=[%s]",
+            it, _t_gemini, _t_tools,
+            ",".join(fc["name"] for fc in function_calls),
+            " ".join(_per_tool_latency),
+        )
 
         contents.append({"role": "user", "parts": response_parts})
         # And loop — Gemini gets another shot to either call more

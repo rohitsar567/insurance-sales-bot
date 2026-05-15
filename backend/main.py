@@ -12,6 +12,7 @@ import asyncio
 import base64
 import json
 import logging
+import re
 import time
 import uuid
 from pathlib import Path
@@ -37,6 +38,18 @@ import os as _os  # local alias to avoid stomping any later `import os`
 
 USE_SINGLE_BRAIN = _os.environ.get("USE_SINGLE_BRAIN", "false").lower() in (
     "1", "true", "yes", "on",
+)
+
+# U1 Test 9 — safety net for RULE 7. If Gemini forgets to call
+# mark_recommendation when the user clearly commits to a policy ("I'll go
+# with that one", "let's do #2", "buy this"), the post-turn detector below
+# auto-calls mark_recommendation against session.last_recommendation_ids[:1]
+# so the closure event is recorded for analytics even when the LLM whiffs.
+# Word-boundary anchored; case-insensitive at match-time.
+_CLOSER_KEYWORD_RE = re.compile(
+    r"\b(go with|i'?ll take|i will take|let'?s do|let me get|sign me up|"
+    r"purchase|buy this|i want to purchase|i'?ll go with|i want to buy)\b",
+    re.IGNORECASE,
 )
 
 # Singleton provider instances (initialized on first call)
@@ -133,6 +146,21 @@ class ChatResponse(BaseModel):
             "flash an acknowledgment + refresh the completeness panel."
         ),
     )
+    # Issue B (KI-Z6-PROFILECOMPLETE, 2026-05-15) — frontend was making a
+    # second roundtrip to /api/profile/completeness after every chat turn to
+    # learn whether the 7 required slots are now captured. Surface it in the
+    # primary chat response so the UI can flip to 100% in the same render
+    # cycle. Computed via brain_tools._REQUIRED_FOR_READY (same slot list
+    # used by retrieve_policies' profile-complete gate) so client + server
+    # never disagree.
+    profile_complete: bool = Field(
+        False,
+        description=(
+            "True when every required profile slot (name, age, dependents, "
+            "location_tier, income_band, primary_goal, health_conditions) is "
+            "non-empty on the live session.profile at end-of-turn."
+        ),
+    )
 
 
 class TTSRequest(BaseModel):
@@ -178,6 +206,27 @@ class UploadResponse(BaseModel):
     chunks_added: int
     pages_indexed: int
     elapsed_ms: int
+
+
+# Issue B (KI-Z6-PROFILECOMPLETE, 2026-05-15) — single source of truth for
+# "is this profile ready to recommend against". brain_tools._profile_complete
+# uses the same _REQUIRED_FOR_READY tuple; we mirror the call here instead of
+# duplicating the slot list so a future addition (e.g. risk_appetite) only
+# needs to be applied in brain_tools.
+def _compute_profile_complete(session_id: str) -> bool:
+    """Read the live session profile and return True iff every required slot
+    is populated. Tolerant of every failure mode (no session yet, session
+    state import explodes, profile missing attrs) — returns False on any
+    error so the frontend NEVER sees a stale `true` from a partial profile.
+    """
+    try:
+        from backend.session_state import get_session
+        from backend.brain_tools import _profile_complete
+
+        sess = get_session(session_id)
+        return bool(_profile_complete(sess.profile))
+    except Exception:  # noqa: BLE001 — never block a chat reply for this
+        return False
 
 
 # ---------- app ----------
@@ -232,6 +281,7 @@ async def _validation_exception_handler(request: Request, exc: RequestValidation
                 "faithfulness_reasons": [],
                 "blocked": False,
                 "profile_updates": {},
+                "profile_complete": False,
             },
         )
     # Default behaviour for every other endpoint.
@@ -620,6 +670,7 @@ async def chat(req: ChatRequest, request: Request):
             faithfulness_reasons=[],
             blocked=False,
             profile_updates={},
+            profile_complete=_compute_profile_complete(session_id),
         )
     except Exception as e:
         logging.exception(
@@ -646,6 +697,48 @@ async def chat(req: ChatRequest, request: Request):
             faithfulness_reasons=[],
             blocked=False,
             profile_updates={},
+            profile_complete=_compute_profile_complete(session_id),
+        )
+
+    # U1 Test 9 — server-side closer-keyword safety net for RULE 7.
+    # If the user clearly committed to a policy this turn but Gemini did
+    # NOT call mark_recommendation (single_brain stamps "mark_recommendation"
+    # into turn.brain_used when the tool fires — see single_brain.py:1052),
+    # auto-call mark_recommendation against session.last_recommendation_ids[:1]
+    # so the closure event is recorded for analytics regardless of whether
+    # the LLM remembered to pull the tool. Best-effort; never blocks the
+    # reply if anything goes wrong.
+    try:
+        if (
+            USE_SINGLE_BRAIN
+            and turn is not None
+            and getattr(turn, "reply_text", None)
+            and _CLOSER_KEYWORD_RE.search(req.user_text or "")
+            and "mark_recommendation" not in (turn.brain_used or "")
+        ):
+            from backend.session_state import get_session as _get_session
+            from backend import brain_tools as _brain_tools
+
+            _closer_session = _get_session(session_id)
+            _last_recs = list(
+                getattr(_closer_session, "last_recommendation_ids", []) or []
+            )
+            if _last_recs:
+                _result = _brain_tools.mark_recommendation(
+                    session=_closer_session,
+                    policy_ids=_last_recs[:1],
+                    is_final=True,
+                )
+                logging.info(
+                    "U1-T9 closer auto-mark (session=%s) user_text=%r "
+                    "policy_ids=%s result=%s",
+                    session_id, req.user_text, _last_recs[:1], _result,
+                )
+    except Exception as _closer_err:  # noqa: BLE001
+        # Safety-net must never break the reply.
+        logging.warning(
+            "U1-T9 closer auto-mark failed (session=%s): %s: %s",
+            session_id, type(_closer_err).__name__, _closer_err,
         )
 
     audio_b64 = None
@@ -740,6 +833,7 @@ async def chat(req: ChatRequest, request: Request):
             faithfulness_reasons=turn.faithfulness_reasons,
             blocked=turn.blocked,
             profile_updates=turn.profile_updates,
+            profile_complete=_compute_profile_complete(session_id),
         )
     except Exception as _resp_err:  # noqa: BLE001
         # Anything else (TypeError/AttributeError/ValidationError) on the
@@ -765,6 +859,7 @@ async def chat(req: ChatRequest, request: Request):
             faithfulness_reasons=[],
             blocked=False,
             profile_updates={},
+            profile_complete=_compute_profile_complete(session_id),
         )
 
 

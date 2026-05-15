@@ -432,13 +432,30 @@ export function useStreamingVoice(
       // For headphone users this gives near-perfect echo cancellation;
       // for speaker users it's 70-90% reduction (some bleed unavoidable
       // without server-side reference cancellation).
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        },
-      });
+      // W2 (2026-05-15) — 2s watchdog around getUserMedia.
+      // Some devices (Chromium on locked-down corporate Windows, certain
+      // Android WebViews, OS-level mic-busy states) STALL getUserMedia
+      // indefinitely instead of rejecting. Without a watchdog the pill
+      // sits at "Voice on" forever, no banner, no recovery path.
+      // Race the permission prompt against a 2000ms timeout that
+      // rejects with name="StallTimeout" so the catch below treats it
+      // identically to a hard denial (mic_permission_denied banner).
+      const stream: MediaStream = await Promise.race([
+        navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+        }),
+        new Promise<MediaStream>((_, reject) => {
+          setTimeout(() => {
+            const e = new Error("getUserMedia stalled >2s") as Error & { name: string };
+            e.name = "StallTimeout";
+            reject(e);
+          }, 2000);
+        }),
+      ]);
       const mime = pickRecorderMime();
       recorderMimeRef.current = mime || "audio/webm";
       const recorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
@@ -459,8 +476,27 @@ export function useStreamingVoice(
       // 1s timeslice so chunks land progressively — ondataavailable fires
       // once per second instead of only on stop().
       recorder.start(1000);
+      // W2 (2026-05-15) — affirmative post-acquire validation. A
+      // MediaRecorder that .start()s without throwing is NOT proof the
+      // capture is alive: Playwright's fake-mic stream, a stream from a
+      // device that was unplugged between getUserMedia and start(), or a
+      // codec rejection that fires `onerror` async — all leave recorder.state
+      // anything other than "recording". Without this check, the pill flipped
+      // to "Voice on" over a silent stream. Treat any non-"recording" state
+      // as a hard fail and route to the same mic_permission_denied banner.
+      if (recorder.state !== "recording") {
+        try { stream.getTracks().forEach((t) => t.stop()); } catch { /* ignore */ }
+        mediaStreamRef.current = null;
+        mediaRecorderRef.current = null;
+        throw Object.assign(new Error(`MediaRecorder did not enter recording state (got ${recorder.state})`), {
+          name: "RecorderNotRecording",
+        });
+      }
       recorderActiveRef.current = true;
-      console.debug("[useStreamingVoice] MediaRecorder started", { mime: recorderMimeRef.current });
+      console.debug("[useStreamingVoice] MediaRecorder started", {
+        mime: recorderMimeRef.current,
+        state: recorder.state,
+      });
       return true;
     } catch (err) {
       // W1 (2026-05-15) — DOMException name → VoiceError mapping.
