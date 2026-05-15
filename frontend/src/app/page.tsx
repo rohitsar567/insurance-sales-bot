@@ -1459,24 +1459,46 @@ export default function Page() {
               {!live.micPermissionDenied ? (
                 <button
                   type="button"
-                  onClick={() => setUserPrefersLive((p) => !p)}
+                  onClick={() => {
+                    // KI-256 — show a one-time confirm when enabling live voice
+                    // so users know it's beta + may cut them off / echo.
+                    // Once they accept, persist a flag so we don't nag again.
+                    if (!userPrefersLive) {
+                      const seen = (typeof window !== "undefined")
+                        ? window.localStorage.getItem("insurance_live_beta_ack") === "1"
+                        : true;
+                      if (!seen) {
+                        const ok = window.confirm(
+                          "Always-on voice is BETA and currently unstable:\n\n" +
+                          "• May cut you off mid-sentence\n" +
+                          "• May echo the bot's own voice\n" +
+                          "• May pick up later utterances incorrectly\n\n" +
+                          "Push-to-talk (🎤 button) is fully stable and uses Sarvam STT (handles Hindi/Indic correctly).\n\n" +
+                          "Enable always-on anyway?"
+                        );
+                        if (!ok) return;
+                        try { window.localStorage.setItem("insurance_live_beta_ack", "1"); } catch { /* ignore */ }
+                      }
+                    }
+                    setUserPrefersLive((p) => !p);
+                  }}
                   className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs font-medium transition cursor-pointer ${
                     userPrefersLive
-                      ? "border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+                      ? "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
                       : "border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--primary)] hover:text-[var(--primary)]"
                   }`}
                   title={userPrefersLive
-                    ? "Voice on — bot is always listening, you can speak over it. Click to turn off."
-                    : "Click to turn on always-on listening (you can also use 🎤 push-to-talk for one turn)"}
+                    ? "Always-on voice is BETA — may cut you off / echo. PTT (🎤) is more reliable."
+                    : "Always-on voice (BETA — unstable). Prefer 🎤 push-to-talk for reliable input."}
                 >
                   <span className={`inline-block w-2 h-2 rounded-full ${
                     userPrefersLive
-                      ? (live.recording ? "bg-red-500 animate-pulse" : "bg-emerald-500 animate-pulse")
+                      ? (live.recording ? "bg-red-500 animate-pulse" : "bg-amber-500 animate-pulse")
                       : "bg-gray-400"
                   }`} />
                   {userPrefersLive
-                    ? (live.recording ? "Listening…" : "Voice on — just speak")
-                    : "Voice off — click to enable always-on"}
+                    ? (live.recording ? "Listening… (BETA)" : "Voice on · BETA — unstable")
+                    : "Voice off · Always-on (BETA)"}
                 </button>
               ) : (
                 <span className="text-rose-500 text-xs" title="Allow mic in your browser site settings, or use the 🎤 push-to-talk button">
