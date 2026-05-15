@@ -27,13 +27,16 @@ Records per model:
   - probe_history:    last PROBE_HISTORY_LEN (ok, latency_ms) tuples; powers
                       the success_rate signal in the election score.
 
-Election (KI-080):
-  - For each chain (brain / fast_brain / judge), compute a score per healthy
-    candidate: score = (1 / max(50, latency_ms)) * success_rate_last_5.
-  - CURRENT_PRIMARY = highest scorer.
-  - CURRENT_BACKUP  = highest scorer among candidates with a DIFFERENT
-    provider (NIM vs Groq vs OpenRouter) than primary; falls back to next-
-    best same-provider candidate when no cross-provider option qualifies.
+Election (KI-201, 2026-05-15 — supersedes KI-080/KI-087 score-based election):
+  - Walk the chain definition (BRAIN_CHAIN / FAST_BRAIN_CHAIN / JUDGE_CHAIN)
+    in priority order. CURRENT_PRIMARY = first election-eligible model.
+    CURRENT_BACKUP  = next election-eligible model after primary.
+  - Chain hierarchy IS the truth — nemotron-49b is LAST in BRAIN_CHAIN so
+    it only serves when qwen + mistral + maverick are all unavailable.
+  - Latency / success_rate still gate ELIGIBILITY (probe-fresh, not in
+    sin-bin, credits above water) but no longer drive ORDERING. Pre-KI-201
+    the (1/latency)×success_rate score let a chain-#3 model beat chain-#0
+    on a faster probe, violating the operator-defined hierarchy.
   - DEGRADED window: when chat() calls report_failure(model), that model is
     sidelined for either DEGRADED_WINDOW_SEC (transient, 30s) or
     DEGRADE_DURATION_LONG_S (rate-limit / HTTP 429, 1h — KI-084) so the
@@ -420,62 +423,59 @@ def _ranked_candidates(chain_name: str) -> list[ModelHealth]:
 
 
 def get_primary(chain_name: str) -> Optional[str]:
-    """Top-scoring election-eligible candidate, or None when no probe data
-    is fresh enough.
+    """KI-201 (2026-05-15) — elect by CHAIN ORDER, not latency score.
 
-    KI-087 (2026-05-15) — **NIM-first preference.** NIM is the strategic
-    free provider (ADR-019, single-key, $0 cost, 110+ models, no daily
-    cap). Groq has a hard 100K tokens/day free-tier cap and OpenRouter
-    charges a real USD balance. Both should serve as EMERGENCY fallback
-    only, not as primary just because their probe latency is lower.
-    Election therefore prefers ANY eligible NIM candidate over ALL
-    non-NIM candidates. Only when the NIM pool is empty (every NIM
-    model is down, throttled, or out of credits) does election fall
-    through to Groq/OpenRouter as primary. Within the NIM pool, the
-    standard latency × success_rate score still picks the fastest
-    healthy NIM model.
+    Walk the chain definition in priority order. Return the first model
+    that's election-eligible. Chain hierarchy IS the truth — e.g. in
+    BRAIN_CHAIN, nemotron-49b is LAST so it only serves when every
+    higher-priority model is unavailable (KI-175 last-resort rule).
+
+    Pre-KI-201 the elector picked by (1/latency) × success_rate, which
+    meant a chain-#3 model (maverick) could beat chain-#0 (qwen) on a
+    faster probe. Live evidence: all 4 NIM models healthy but elector
+    picked maverick over qwen. User-stated spec: "If a model is not
+    already in use, but at the backend everything is live, then it
+    should always suggest it according to our set hierarchy."
+
+    Latency is no longer used for primary/backup selection — eligibility
+    filtering still uses the rolling probe state, but ordering is
+    purely chain-positional.
     """
-    ranked = _ranked_candidates(chain_name)
-    if not ranked:
+    chain = _chain_for(chain_name)
+    if not chain:
         return None
-    # KI-087: NIM-first within the eligible set.
-    nim_pool = [h for h in ranked if provider_of(h.model) == "nim"]
-    if nim_pool:
-        return nim_pool[0].model
-    # No eligible NIM candidate — fall through to cross-provider primary.
-    return ranked[0].model
+    # _ranked_candidates returns the eligibility-filtered set (probe-fresh,
+    # not in sin-bin, credit-not-exhausted, healthy). Reduce to a set for
+    # O(1) lookup; we ignore its score-based ordering.
+    eligible_models = {h.model for h in _ranked_candidates(chain_name)}
+    for model in chain:
+        if model in eligible_models:
+            return model
+    return None  # nothing eligible
 
 
 def get_backup(chain_name: str) -> Optional[str]:
-    """Second-best election candidate. Prefers a DIFFERENT provider from
-    primary so a single provider's regional outage can't take out both.
+    """KI-201 (2026-05-15) — backup is the SECOND eligible model in chain
+    order, skipping the elected primary.
 
-    KI-087 (2026-05-15) — when PRIMARY is NIM (the typical case under
-    NIM-first preference), BACKUP is the best NON-NIM candidate
-    (Groq / OpenRouter) — kept as the cross-provider safety net. When
-    NIM is wholly unavailable and PRIMARY is non-NIM, BACKUP is the
-    next-best non-NIM candidate or, failing that, the next-best
-    same-provider candidate.
+    Walks the chain definition in priority order, skips the elected
+    primary, and returns the next eligible model. Same chain-as-truth
+    philosophy as get_primary: the chains in nvidia_nim_llm.py were
+    designed with family/provider diversity baked in (Qwen → Mistral →
+    Meta → NVIDIA), so walking past the primary in chain order naturally
+    preserves the cross-family backup invariant KI-087 used to enforce
+    via provider_of().
     """
-    ranked = _ranked_candidates(chain_name)
-    if len(ranked) < 2:
-        # No usable backup. Either zero candidates or only one (in which
-        # case the cold-start path in NimChainLLM falls back to chain[1]).
+    chain = _chain_for(chain_name)
+    if not chain:
         return None
+    eligible_models = {h.model for h in _ranked_candidates(chain_name)}
     primary = get_primary(chain_name)
-    if primary is None:
-        return None
-    primary_provider = provider_of(primary)
-    # Prefer cross-provider against the PRIMARY's provider.
-    for h in ranked:
-        if h.model == primary:
+    for model in chain:
+        if model == primary:
             continue
-        if provider_of(h.model) != primary_provider:
-            return h.model
-    # No cross-provider candidate — accept same-provider next-best.
-    for h in ranked:
-        if h.model != primary:
-            return h.model
+        if model in eligible_models:
+            return model
     return None
 
 

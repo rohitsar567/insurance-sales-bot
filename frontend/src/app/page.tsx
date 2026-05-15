@@ -329,6 +329,20 @@ export default function Page() {
 
   async function send(text: string) {
     if (!text.trim() || busy) return;
+    // KI-204 (2026-05-15) — silence any prior bot TTS BEFORE submitting.
+    // User starting a new turn always takes precedence over the bot's
+    // current reply audio. Covers typed sends, voice barge-in, manual Send
+    // button, programmatic submits — every path through send() gets this.
+    if (typeof document !== "undefined") {
+      document.querySelectorAll("audio").forEach((el) => {
+        try {
+          (el as HTMLAudioElement).pause();
+          (el as HTMLAudioElement).currentTime = 0;
+        } catch {
+          // ignore — element may be in a state that disallows pause
+        }
+      });
+    }
     setBusy(true);
     // KI-165 (2026-05-15) — flip the text-in-flight flag so the voice hook
     // (useLiveConversation) discards any captures that close during this

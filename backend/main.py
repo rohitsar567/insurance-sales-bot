@@ -1933,6 +1933,13 @@ async def policies_all(session_id: Optional[str] = None):
             continue
         seen_policy_ids.add(curated_policy_id)
         slug = data.get("insurer_slug", "")
+        # KI-208 (2026-05-15) — defensive symmetry with pass-1 (line 1842): any
+        # curated_facts entry with insurer_slug=='regulatory' must NOT surface
+        # as a marketplace card. Today no curated regulatory docs exist, but
+        # adding the filter here closes a future-leak vector if an operator
+        # accidentally curates an IRDAI/NHA fact-sheet under 40-data/policy_facts.
+        if slug == "regulatory":
+            continue
         name, home = insurer_meta.get(slug, (slug, ""))
         # Insurer reviews for scorecard
         ir = None

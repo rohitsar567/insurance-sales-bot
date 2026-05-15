@@ -61,7 +61,12 @@ const BARGE_IN_BASE_THRESHOLD = 0.005;
 // residual mic bleed (after AEC) and the user's normal-volume speech,
 // making barge-in trivial. 0.6 is loud enough to hear clearly on
 // headphones and laptop speakers without overpowering user speech.
-const VOICE_MODE_TTS_VOLUME = 0.6;
+// KI-211 (2026-05-15) — was 0.6; lowered to 0.3 because first-turn barge-in
+// fails when adaptive calibration (KI-195) hasn't sampled user_speech_rms yet.
+// 0.3 is loud enough to hear clearly on speakers + mic bleed is well under
+// the static BARGE_IN_RMS_THRESHOLD, so users can talk over the bot on the
+// first turn without needing prior calibration.
+const VOICE_MODE_TTS_VOLUME = 0.3;
 // KI-195 (2026-05-15) — adaptive TTS volume calibration relative to user's
 // own measured speech level. Architecture: while user speaks (recorder
 // active, NOT TTS) we sample mic RMS and track a rolling peak in
@@ -77,6 +82,21 @@ const VOLUME_CALIB_TARGET_RATIO = 0.35;        // bot_rms_at_mic should be ≤ u
 const VOLUME_CALIB_TICK_MS = 300;              // calibration sample period during TTS
 const VOLUME_CALIB_DUCK_FACTOR = 0.8;          // multiply el.volume by this per tick if too loud
 const VOLUME_CALIB_FLOOR = 0.15;               // never drop bot below this — must stay audible
+
+// KI-202 (2026-05-15) — utterance batching grace window.
+// Web Speech API's `onend` fires after ~1.5s silence, which means a natural
+// mid-sentence pause ("So it will be just [pause] me") triggers TWO separate
+// onend events and the user's sentence is submitted in two halves. We delay
+// the actual submission by UTTERANCE_GRACE_MS after onend; if recognition
+// re-fires (next word burst) before the timer expires, we append the new
+// text/audio chunks and reset the timer. Only after a full UTTERANCE_GRACE_MS
+// of true silence do we submit.
+const UTTERANCE_GRACE_MS = 1500;
+// KI-203 (2026-05-15) — post-TTS result-drop window.
+// `recognition.abort()` doesn't immediately stop result delivery — onresult
+// events from the now-abandoned recognition can keep arriving for a beat
+// afterwards. Keep dropping results for this many ms after TTS ends.
+const POST_TTS_DROP_MS = 300;
 
 // Minimal types for the Web Speech API since lib.dom.d.ts ships them under
 // `webkitSpeechRecognition` only and the standard `SpeechRecognition` symbol
@@ -177,6 +197,24 @@ export function useStreamingVoice(
   // Tracked via a MutationObserver + per-element play/pause/ended hooks.
   const isTtsPlayingRef = useRef(false);
   const ttsAudioElementsRef = useRef<Set<HTMLAudioElement>>(new Set());
+  // KI-203 (2026-05-15) — silently discard SpeechRecognition.onresult events
+  // while this flag is true. Flipped on the instant TTS playback starts
+  // (closes the ~100-300ms window between `audio.play()` and our abort()
+  // taking effect, during which bot voice was being transcribed as user
+  // input). Flipped back ~POST_TTS_DROP_MS after TTS ends so any in-flight
+  // results from the dying recognition pipeline are still suppressed.
+  const dropResultsRef = useRef(false);
+  const dropResultsClearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // KI-202 (2026-05-15) — utterance-batching state.
+  // pendingUtteranceRef accumulates the Web Speech transcript across multiple
+  // onend events separated by sub-grace-window pauses. pendingChunksRef does
+  // the same for MediaRecorder blobs so the Sarvam POST sees the WHOLE
+  // utterance, not just the tail after the last pause. pendingSubmitTimerRef
+  // is the grace-window setTimeout; it gets reset every time onend appends
+  // more content.
+  const pendingUtteranceRef = useRef<string>("");
+  const pendingChunksRef = useRef<Blob[]>([]);
+  const pendingSubmitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ----------------------------------------------------------------------
   // KI-168 PHASE 2 — Sarvam authoritative-transcript layer.
@@ -206,6 +244,23 @@ export function useStreamingVoice(
       restartTimerRef.current = null;
     }
   }, []);
+
+  // KI-210 (2026-05-15) — wait for an in-flight text turn to clear instead of
+  // dropping the accumulated voice utterance. Polls isTextRequestPendingRef
+  // every 300ms; resolves true once the flag clears, or false if the
+  // maxWaitMs cap elapses first (we then proceed anyway rather than leak the
+  // utterance forever on a stuck text request).
+  const waitForTextClear = useCallback(async (maxWaitMs = 30000): Promise<boolean> => {
+    const startTs = Date.now();
+    while (isTextRequestPendingRef.current) {
+      if (Date.now() - startTs > maxWaitMs) {
+        console.debug("[useStreamingVoice] KI-210 wait timed out, submitting anyway");
+        return false; // gave up waiting — proceed anyway
+      }
+      await new Promise((r) => setTimeout(r, 300));
+    }
+    return true; // text cleared, ok to proceed
+  }, [isTextRequestPendingRef]);
 
   const safeStart = useCallback(() => {
     const rec = recognitionRef.current;
@@ -341,6 +396,17 @@ export function useStreamingVoice(
     };
 
     rec.onresult = (ev: SpeechRecognitionEventLike) => {
+      // KI-203 (2026-05-15) — early-return while TTS is playing (or within
+      // the POST_TTS_DROP_MS window after TTS ends). recognition.abort()
+      // doesn't immediately stop result delivery, so we silently discard
+      // every chunk that arrives during the dirty window. Without this, bot
+      // TTS audio ("perfect days to get started Rohit") was leaking into
+      // the user input field between `audio.play()` firing and our abort()
+      // actually taking effect.
+      if (dropResultsRef.current) {
+        console.debug("[useStreamingVoice] KI-203 dropping recognition result during/after TTS");
+        return;
+      }
       let interim = "";
       // Walk every result; finals get pushed onto finalsRef, interims get
       // concatenated into a running string that's displayed in the input.
@@ -423,109 +489,191 @@ export function useStreamingVoice(
         return drained;
       };
 
-      // If there's no audio recorder, or text is racing, fall back to the
-      // Phase 1 behaviour: submit the Web Speech transcript and bail.
-      if (!recorderActiveRef.current || textRacing) {
-        if (webSpeechText && !textRacing) {
-          onFinalRef.current(webSpeechText);
-        }
-        // Best-effort: clear any partial audio so the next utterance isn't
-        // contaminated with the previous one's tail.
-        if (recorderActiveRef.current) drainChunks();
-        scheduleRestart();
-        return;
+      // KI-202 (2026-05-15) — utterance batching. Web Speech's onend fires
+      // after ~1.5s of silence, so a natural mid-sentence pause splits one
+      // utterance into two onend events and the user's sentence gets
+      // submitted in halves ("First word getting cut off. Cutoff is the
+      // biggest issue. Auto-submitting without capturing the first half
+      // or the second half"). Instead of submitting immediately, we
+      // append THIS onend's text + audio chunks to pendingUtterance*Ref
+      // buffers, then start (or reset) a UTTERANCE_GRACE_MS timer. If
+      // recognition restarts (auto-restart picks up the next word burst)
+      // within the grace window, the next onend appends more content +
+      // resets the timer. Only after a FULL UTTERANCE_GRACE_MS of true
+      // silence does the timer fire and submit the accumulated buffer.
+      //
+      // Pauses < 1.5s merge into one turn (intended fix).
+      // Pauses > 1.5s split (intended — that IS a new turn).
+
+      // Drain the CURRENT onend's chunks now so the recorder keeps capturing
+      // the next word burst without contamination across pending utterances.
+      const drainedThisEnd = recorderActiveRef.current ? drainChunks() : [];
+      if (webSpeechText) {
+        pendingUtteranceRef.current = pendingUtteranceRef.current
+          ? `${pendingUtteranceRef.current} ${webSpeechText}`
+          : webSpeechText;
       }
+      if (drainedThisEnd.length > 0) {
+        pendingChunksRef.current.push(...drainedThisEnd);
+      }
+      console.debug("[useStreamingVoice] KI-202 onend appended to pending utterance", {
+        thisTextLen: webSpeechText.length,
+        thisChunkCount: drainedThisEnd.length,
+        pendingTextLen: pendingUtteranceRef.current.length,
+        pendingChunkCount: pendingChunksRef.current.length,
+        textRacing,
+      });
 
-      // Sarvam path. Fire-and-forget so we don't block the recognition
-      // restart loop on the network round-trip.
-      void (async () => {
-        // Snapshot user-visible interim so the input area doesn't go blank
-        // while Sarvam is in flight. The page-side input still shows the
-        // Web Speech transcript; we'll overwrite it via onFinalTranscript
-        // once Sarvam returns.
-        if (webSpeechText) onInterimRef.current(webSpeechText);
+      // Mic restart happens immediately regardless of grace window — we
+      // WANT recognition to come back online so it can pick up the next
+      // word burst within the grace window and append to pending.
+      scheduleRestart();
 
-        // We need to stop the recorder to get the final dataavailable
-        // chunk; then we re-arm a new recorder for the next utterance.
-        await stopRecorder();
-        const drained = drainChunks();
-        const totalSize = drained.reduce((n, b) => n + b.size, 0);
-        console.debug("[useStreamingVoice] silence-detect", {
-          webSpeechLen: webSpeechText.length,
-          chunkCount: drained.length,
-          blobBytes: totalSize,
-        });
+      // KI-210 (2026-05-15) — DO NOT drop pending utterance when text is
+      // racing. Previously we cleared pendingUtteranceRef + pendingChunksRef
+      // here, which silently lost any voice the user spoke during the bot's
+      // text-submit/TTS-thinking gap. The downstream wait-and-retry inside
+      // `submitPendingUtterance` (timer fire) + the post-await wait inside
+      // the Sarvam fire-and-forget now hold the buffer until the text turn
+      // clears, then submit. We leave `textRacing` as a debug breadcrumb in
+      // the log above and continue accumulating.
 
-        // Re-arm audio capture for the next utterance (don't block on it).
-        teardownAudio();
-        // Only restart the audio pipeline if the user still wants the mic
-        // live. Fire-and-forget; recognition restart is scheduled below.
-        if (wantRunningRef.current) {
-          void ensureAudioCapture();
-        }
+      // KI-210 — refactor the grace-timer body into a named async function
+      // so it can re-schedule itself (wait-and-retry) when text is in flight
+      // instead of dropping the utterance. Capped at 30s total wait so a
+      // stuck text request can't leak the timer forever; if the cap fires
+      // we proceed with submission anyway (better to submit than drop).
+      const SUBMIT_WAIT_CAP_MS = 30000;
+      const submitStartTsRef = { ts: 0 };
+      const submitPendingUtterance = async () => {
+        pendingSubmitTimerRef.current = null;
 
-        // Skip submit when there's effectively no audio or no Web Speech
-        // text. ~3 KB is the empirical noise floor used by the PTT path's
-        // KI-134 silence guard (page.tsx uses 1 KB; we're stricter here
-        // because Live mode auto-fires on every silence pause).
-        const MIN_BLOB_BYTES = 3000;
-        if (!webSpeechText && totalSize < MIN_BLOB_BYTES) {
-          console.debug("[useStreamingVoice] skipping submit — no text and tiny blob");
-          scheduleRestart();
-          return;
-        }
-
-        // If Web Speech got nothing, but we have a real blob, still try
-        // Sarvam — Web Speech occasionally drops short utterances on noisy
-        // mics that Sarvam handles fine.
-        if (!webSpeechText && totalSize < MIN_BLOB_BYTES) {
-          scheduleRestart();
-          return;
-        }
-
-        // Race-check again after the await — text turn may have started
-        // while we were stopping the recorder.
+        // KI-210 — if text is still in flight when the grace window fires,
+        // wait instead of dropping. Re-schedule a 300ms retry until either
+        // text clears or we hit the 30s cap.
         if (isTextRequestPendingRef.current) {
-          console.debug("[useStreamingVoice] text turn started mid-await; dropping voice turn");
-          scheduleRestart();
-          return;
-        }
-
-        let authoritativeText = webSpeechText;
-        if (drained.length > 0 && totalSize >= MIN_BLOB_BYTES) {
-          const blob = new Blob(drained, { type: recorderMimeRef.current || "audio/webm" });
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 8000);
-          try {
-            console.debug("[useStreamingVoice] POST /api/transcribe", { bytes: blob.size, mime: blob.type, lang: language });
-            const sarvam = await postTranscribe(blob, language, controller.signal);
-            const sarvamText = (sarvam.text || "").trim();
-            if (sarvamText) {
-              authoritativeText = sarvamText;
-              console.debug("[useStreamingVoice] Sarvam OK", {
-                latency_ms: sarvam.latency_ms,
-                webSpeechLen: webSpeechText.length,
-                sarvamLen: sarvamText.length,
-              });
-            } else {
-              console.debug("[useStreamingVoice] Sarvam returned empty; using Web Speech fallback");
-            }
-          } catch (err) {
-            console.debug("[useStreamingVoice] Sarvam failed; using Web Speech fallback", err);
-          } finally {
-            clearTimeout(timeoutId);
+          if (submitStartTsRef.ts === 0) submitStartTsRef.ts = Date.now();
+          if (Date.now() - submitStartTsRef.ts > SUBMIT_WAIT_CAP_MS) {
+            console.debug("[useStreamingVoice] KI-210 timer wait cap reached; submitting anyway");
+            // fall through and submit
+          } else {
+            console.debug("[useStreamingVoice] KI-210 timer fired but text in flight; waiting 300ms");
+            pendingSubmitTimerRef.current = setTimeout(() => {
+              void submitPendingUtterance();
+            }, 300);
+            return;
           }
         }
 
-        if (authoritativeText && !isTextRequestPendingRef.current) {
-          onFinalRef.current(authoritativeText);
+        const accumulatedText = pendingUtteranceRef.current.trim();
+        const accumulatedChunks = pendingChunksRef.current;
+        pendingUtteranceRef.current = "";
+        pendingChunksRef.current = [];
+        console.debug("[useStreamingVoice] KI-202 grace window elapsed — submitting", {
+          textLen: accumulatedText.length,
+          chunkCount: accumulatedChunks.length,
+        });
+
+        // No-recorder path: just submit Web Speech text.
+        if (!recorderActiveRef.current || accumulatedChunks.length === 0) {
+          if (accumulatedText) {
+            onFinalRef.current(accumulatedText);
+          }
+          return;
         }
-        scheduleRestart();
-      })();
+
+        // Sarvam path. Fire-and-forget so we don't block recognition.
+        void (async () => {
+          // Snapshot user-visible interim so the input area doesn't go blank
+          // while Sarvam is in flight. The page-side input still shows the
+          // Web Speech transcript; we'll overwrite it via onFinalTranscript
+          // once Sarvam returns.
+          if (accumulatedText) onInterimRef.current(accumulatedText);
+
+          // We need to stop the recorder to get the final dataavailable
+          // chunk for the LAST burst (anything mid-recording when the grace
+          // window opened is in chunksRef, which we now flush into our
+          // accumulated set before posting).
+          await stopRecorder();
+          const tailChunks = drainChunks();
+          const allChunks = [...accumulatedChunks, ...tailChunks];
+          const totalSize = allChunks.reduce((n, b) => n + b.size, 0);
+          console.debug("[useStreamingVoice] KI-202 batched submit", {
+            webSpeechLen: accumulatedText.length,
+            chunkCount: allChunks.length,
+            blobBytes: totalSize,
+          });
+
+          // Re-arm audio capture for the next utterance (don't block on it).
+          teardownAudio();
+          if (wantRunningRef.current) {
+            void ensureAudioCapture();
+          }
+
+          // Skip submit when there's effectively no audio or no Web Speech
+          // text. ~3 KB is the empirical noise floor used by the PTT path's
+          // KI-134 silence guard.
+          const MIN_BLOB_BYTES = 3000;
+          if (!accumulatedText && totalSize < MIN_BLOB_BYTES) {
+            console.debug("[useStreamingVoice] KI-202 skipping submit — no text and tiny blob");
+            return;
+          }
+
+          // KI-210 — wait-and-retry instead of dropping. If a text turn
+          // started during the await above, hold the utterance until it
+          // clears (capped at 30s) instead of throwing it away.
+          await waitForTextClear();
+
+          let authoritativeText = accumulatedText;
+          if (allChunks.length > 0 && totalSize >= MIN_BLOB_BYTES) {
+            const blob = new Blob(allChunks, { type: recorderMimeRef.current || "audio/webm" });
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 8000);
+            try {
+              console.debug("[useStreamingVoice] POST /api/transcribe", { bytes: blob.size, mime: blob.type, lang: language });
+              const sarvam = await postTranscribe(blob, language, controller.signal);
+              const sarvamText = (sarvam.text || "").trim();
+              if (sarvamText) {
+                authoritativeText = sarvamText;
+                console.debug("[useStreamingVoice] Sarvam OK", {
+                  latency_ms: sarvam.latency_ms,
+                  webSpeechLen: accumulatedText.length,
+                  sarvamLen: sarvamText.length,
+                });
+              } else {
+                console.debug("[useStreamingVoice] Sarvam returned empty; using Web Speech fallback");
+              }
+            } catch (err) {
+              console.debug("[useStreamingVoice] Sarvam failed; using Web Speech fallback", err);
+            } finally {
+              clearTimeout(timeoutId);
+            }
+          }
+
+          // KI-210 — final wait-and-retry after Sarvam round-trip. Don't
+          // drop the now-authoritative transcript if text raced us during
+          // the network call.
+          if (authoritativeText) {
+            await waitForTextClear();
+            onFinalRef.current(authoritativeText);
+          }
+        })();
+      };
+
+      // (Re)start the grace-window timer. Every onend resets it, so as long
+      // as the user keeps starting new word bursts within 1.5s of the last
+      // silence, the timer never fires and the utterance keeps growing.
+      if (pendingSubmitTimerRef.current !== null) {
+        clearTimeout(pendingSubmitTimerRef.current);
+      }
+      submitStartTsRef.ts = 0;
+      pendingSubmitTimerRef.current = setTimeout(() => {
+        void submitPendingUtterance();
+      }, UTTERANCE_GRACE_MS);
     };
 
     return rec;
-  }, [language, isTextRequestPendingRef, clearRestartTimer, safeStart, stopRecorder, teardownAudio, ensureAudioCapture]);
+  }, [language, isTextRequestPendingRef, clearRestartTimer, safeStart, stopRecorder, teardownAudio, ensureAudioCapture, waitForTextClear]);
 
   const start = useCallback(() => {
     if (!isSupported) {
@@ -558,6 +706,14 @@ export function useStreamingVoice(
     }
     teardownAudio();
     finalsRef.current = [];
+    // KI-202 — drop any pending utterance so toggling voice off mid-grace
+    // doesn't auto-submit a stale half-sentence next time voice comes on.
+    if (pendingSubmitTimerRef.current !== null) {
+      clearTimeout(pendingSubmitTimerRef.current);
+      pendingSubmitTimerRef.current = null;
+    }
+    pendingUtteranceRef.current = "";
+    pendingChunksRef.current = [];
     onListeningRef.current(false);
   }, [clearRestartTimer, teardownAudio]);
 
@@ -944,6 +1100,16 @@ export function useStreamingVoice(
         // TTS just started — abort any in-flight recognition so it stops
         // transcribing the bot voice.
         console.debug("[useStreamingVoice] KI-188 TTS started — pausing recognition");
+        // KI-203 (2026-05-15) — flip the result-drop flag the INSTANT TTS
+        // starts. abort() below has a ~100-300ms tail during which onresult
+        // can still fire with bot-voice transcripts; the flag closes that
+        // window unconditionally.
+        if (dropResultsClearTimerRef.current !== null) {
+          clearTimeout(dropResultsClearTimerRef.current);
+          dropResultsClearTimerRef.current = null;
+        }
+        dropResultsRef.current = true;
+        console.debug("[useStreamingVoice] KI-203 dropResultsRef=true (TTS start)");
         const rec = recognitionRef.current;
         if (rec) {
           try { rec.abort(); } catch { /* ignore */ }
@@ -982,6 +1148,19 @@ export function useStreamingVoice(
         // TTS just ended — let the heartbeat/visibility listeners revive.
         // Trigger immediately too so the user doesn't wait ~4s.
         console.debug("[useStreamingVoice] KI-188 TTS ended — resuming recognition");
+        // KI-203 (2026-05-15) — keep dropping recognition results for
+        // POST_TTS_DROP_MS after TTS ends. The recognition pipeline we
+        // abort()'d at TTS-start can still deliver buffered events for a
+        // beat; without this delayed clear, the tail of the bot's TTS
+        // leaks into the input box as the user starts speaking.
+        if (dropResultsClearTimerRef.current !== null) {
+          clearTimeout(dropResultsClearTimerRef.current);
+        }
+        dropResultsClearTimerRef.current = setTimeout(() => {
+          dropResultsRef.current = false;
+          dropResultsClearTimerRef.current = null;
+          console.debug("[useStreamingVoice] KI-203 dropResultsRef=false (post-TTS window over)");
+        }, POST_TTS_DROP_MS);
         stopBargeInLoop();
         // KI-195 — freeze the per-element calibrated volume and resume
         // learning the user's speech RMS for the next turn.
@@ -1075,6 +1254,13 @@ export function useStreamingVoice(
       });
       ttsAudioElementsRef.current.clear();
       isTtsPlayingRef.current = false;
+      // KI-203 — clear the post-TTS drop-results window timer so a
+      // disabled-then-re-enabled voice mode doesn't inherit a stale flag.
+      if (dropResultsClearTimerRef.current !== null) {
+        clearTimeout(dropResultsClearTimerRef.current);
+        dropResultsClearTimerRef.current = null;
+      }
+      dropResultsRef.current = false;
       // KI-189 — release AnalyserNode + AudioContext on unmount / disable.
       teardownAnalyser();
     };
@@ -1132,6 +1318,13 @@ export function useStreamingVoice(
       }
       recognitionRef.current = null;
       teardownAudio();
+      // KI-202 — clear pending utterance grace timer on unmount.
+      if (pendingSubmitTimerRef.current !== null) {
+        clearTimeout(pendingSubmitTimerRef.current);
+        pendingSubmitTimerRef.current = null;
+      }
+      pendingUtteranceRef.current = "";
+      pendingChunksRef.current = [];
     };
   }, [clearRestartTimer, teardownAudio]);
 

@@ -668,28 +668,14 @@
 
     <!-- Tab 3: LLM Chain — KI-164: stripped to ONLY the 2-table view. -->
     <section id="tab-chain" class="tabpane" role="tabpanel">
-      <div class="card" id="llm-health-card">
-        <div class="row-between" style="margin-bottom: 12px;">
-          <h2>LLM health <span class="small muted" id="llm-health-snapshot-ts"></span></h2>
-          <div class="actions">
-            <button id="btn-refresh-llm-health">Refresh</button>
-          </div>
-        </div>
-        <!-- KI-184 (2026-05-15) — Tier banner so the table below isn't
-             confused with the actual primary serving traffic. Real-world
-             call order: Tier 0 Google Gemini → Tier 1 NIM (shown below) →
-             Tier 2 OpenRouter free pool → NIM nemotron-49b last resort. -->
-        <div style="margin-bottom: 14px; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; background: #0b0d12; font-size: 12px; line-height: 1.5;">
-          <strong style="color: var(--text);">3-tier brain chain (KI-179 + ADR-040):</strong>
-          <span class="muted">
-            Tier 0 — <strong>Google Gemini 2.5 Flash / Flash Lite</strong> (PRIMARY, free 1500/day)
-            &nbsp;·&nbsp; Tier 1 — NIM (shown below)
-            &nbsp;·&nbsp; Tier 2 — OpenRouter free pool
-            &nbsp;·&nbsp; Last resort — NIM Nemotron-49B
-          </span>
-        </div>
-        <div id="llm-health-chains" class="llm-simple-tables"></div>
-      </div>
+      <!-- KI-207 (2026-05-15) — per user instruction "There should be nothing else
+           in that LLM router part of the control panel." Only the 3 elements below
+           may live inside this section: the h2 header (with snapshot timestamp
+           span), the refresh button, and the chains container that holds the
+           two generated tables (Currently In Use + All Eligible Models). -->
+      <h2>LLM health <span class="small muted" id="llm-health-snapshot-ts"></span></h2>
+      <button id="btn-refresh-llm-health">Refresh</button>
+      <div id="llm-health-chains" class="llm-simple-tables"></div>
     </section>
   </div>
 
@@ -1442,230 +1428,279 @@
         );
       }
 
-      function renderLlmSimpleTables(host, chains) {
-        // ---- Table 1: What's Live ----
+      // KI-200 (2026-05-15) — chain definitions mirror backend/sales_brain.py +
+      // backend/providers/tiered_brain_llm.py + nvidia_nim_llm.py chain order.
+      // Tier 0 = Google AI Studio (Gemini) — PRIMARY for fast_brain + brain.
+      // Tier 1 = NVIDIA NIM (chain order matters; last entry = "Last resort").
+      // Tier 2 = OpenRouter free pool — backstop inside NIM-failed path.
+      // Judge intentionally has NO Tier 0 (cross-family invariant, ADR-040).
+      var CHAIN_DEFINITIONS = {
+        fast_brain: {
+          tier0: { provider: 'Google AI Studio', model: 'google/gemini-2.5-flash-lite' },
+          tier1: [
+            'qwen/qwen3-next-80b-a3b-instruct',
+            'mistralai/mistral-large-3-675b-instruct-2512',
+            'meta/llama-4-maverick-17b-128e-instruct',
+            'nvidia/llama-3.3-nemotron-super-49b-v1.5'
+          ],
+          tier2: [
+            'nvidia/nemotron-3-super-120b-a12b:free',
+            'qwen/qwen3-next-80b-a3b-instruct:free',
+            'google/gemma-4-31b-it:free'
+          ]
+        },
+        brain: {
+          tier0: { provider: 'Google AI Studio', model: 'google/gemini-2.5-flash' },
+          tier1: [
+            'qwen/qwen3-next-80b-a3b-instruct',
+            'mistralai/mistral-large-3-675b-instruct-2512',
+            'meta/llama-4-maverick-17b-128e-instruct',
+            'nvidia/llama-3.3-nemotron-super-49b-v1.5'
+          ],
+          tier2: [
+            'nvidia/nemotron-3-super-120b-a12b:free',
+            'qwen/qwen3-next-80b-a3b-instruct:free',
+            'google/gemma-4-31b-it:free'
+          ]
+        },
+        judge: {
+          tier0: null,
+          tier1: [
+            'mistralai/mistral-large-3-675b-instruct-2512',
+            'meta/llama-4-maverick-17b-128e-instruct',
+            'nvidia/llama-3.3-nemotron-super-49b-v1.5'
+          ],
+          tier2: [
+            'qwen/qwen3-next-80b-a3b-instruct:free'
+          ]
+        }
+      };
+
+      // KI-187 — provider colors: blue for Google, green for NVIDIA NIM,
+      // orange for OpenRouter.
+      var PROVIDER_COLORS = {
+        'Google AI Studio': '#4285f4',
+        'NVIDIA NIM':       '#76b900',
+        'OpenRouter':       '#ffa657'
+      };
+
+      function providerForModel(model) {
+        if (!model) return 'NVIDIA NIM';
+        if (model.indexOf('google/gemini') === 0) return 'Google AI Studio';
+        if (model.indexOf(':free') !== -1) return 'OpenRouter';
+        return 'NVIDIA NIM';
+      }
+
+      // KI-200 — compute the model that would ACTUALLY serve right now for a
+      // given role. Strategy:
+      //   1. If Tier 0 exists for this role AND Gemini is available, return Tier 0.
+      //   2. Else fall back to NIM's elected primary from chains[role].current_primary.
+      //   3. Judge never uses Tier 0 (cross-family invariant) — always NIM primary.
+      // TODO(backend): expose top-level `gemini_available: bool` in
+      //   /api/admin/llm-health response. Until then we ASSUME Gemini is
+      //   available (true) — matches the deployed Tier-0-primary state.
+      function resolveCurrentlyInUse(role, chainsByRole, healthPayload) {
+        var def = CHAIN_DEFINITIONS[role];
+        var geminiAvailable = (healthPayload && typeof healthPayload.gemini_available === 'boolean')
+          ? healthPayload.gemini_available
+          : true;  // default-assume true; backend can override later
+        if (def && def.tier0 && geminiAvailable) {
+          return { model: def.tier0.model, provider: def.tier0.provider, tier: 'T0', isTier0: true };
+        }
+        var c = chainsByRole[role];
+        if (c && c.current_primary && !isRetiredModel(c.current_primary)) {
+          return { model: c.current_primary, provider: providerForModel(c.current_primary), tier: 'T1', isTier0: false };
+        }
+        return { model: '—', provider: '—', tier: '—', isTier0: false };
+      }
+
+      // KI-200 — build the unioned model list across all chains with
+      // per-chain role labels. Returns array of:
+      //   { model, provider, tier, roles: { fast_brain, brain, judge } }
+      // where each `roles[r]` is one of:
+      //   'Primary' | '1st backup' | '2nd backup' | '3rd backup' | 'Last resort' | null
+      function buildEligibleModelTable() {
+        var BACKUP_LABELS = ['Primary', '1st backup', '2nd backup', '3rd backup', '4th backup', '5th backup'];
+        var models = {};  // model -> entry
+
+        function ensureEntry(model, tier) {
+          if (!models[model]) {
+            models[model] = {
+              model: model,
+              provider: providerForModel(model),
+              tier: tier,
+              roles: { fast_brain: null, brain: null, judge: null },
+              // for sorting: minimum chain position across all chains (lower = more important)
+              minPos: 999,
+              anyPrimary: false
+            };
+          }
+          return models[model];
+        }
+
+        Object.keys(CHAIN_DEFINITIONS).forEach(function (role) {
+          var def = CHAIN_DEFINITIONS[role];
+          // Build the ordered chain for this role:
+          // [tier0?, ...tier1, ...tier2]. The LAST entry overall is "Last resort".
+          var ordered = [];
+          if (def.tier0) ordered.push({ model: def.tier0.model, tier: 'T0' });
+          (def.tier1 || []).forEach(function (m) { ordered.push({ model: m, tier: 'T1' }); });
+          (def.tier2 || []).forEach(function (m) { ordered.push({ model: m, tier: 'T2' }); });
+          var lastIdx = ordered.length - 1;
+          ordered.forEach(function (slot, idx) {
+            var entry = ensureEntry(slot.model, slot.tier);
+            // If a model appears in multiple chains/tiers, the tier sticks to
+            // its first-seen value — but Tier 0 wins (lowest number) since
+            // Gemini fast-lite/flash are unique per role and never collide.
+            if (slot.tier === 'T0') entry.tier = 'T0';
+            else if (entry.tier !== 'T0' && slot.tier === 'T1') entry.tier = 'T1';
+            // (T2 only overrides nothing.)
+            var label;
+            if (idx === lastIdx) {
+              label = 'Last resort';
+            } else if (idx < BACKUP_LABELS.length) {
+              label = BACKUP_LABELS[idx];
+            } else {
+              label = (idx + 1) + 'th backup';
+            }
+            entry.roles[role] = label;
+            if (idx < entry.minPos) entry.minPos = idx;
+            if (label === 'Primary') entry.anyPrimary = true;
+          });
+        });
+
+        // Sort: tier asc (T0 < T1 < T2), then primaries first, then by minPos.
+        var TIER_RANK = { 'T0': 0, 'T1': 1, 'T2': 2 };
+        var arr = Object.keys(models).map(function (k) { return models[k]; });
+        arr.sort(function (a, b) {
+          var ta = TIER_RANK[a.tier] != null ? TIER_RANK[a.tier] : 99;
+          var tb = TIER_RANK[b.tier] != null ? TIER_RANK[b.tier] : 99;
+          if (ta !== tb) return ta - tb;
+          if (a.anyPrimary !== b.anyPrimary) return a.anyPrimary ? -1 : 1;
+          if (a.minPos !== b.minPos) return a.minPos - b.minPos;
+          return a.model.localeCompare(b.model);
+        });
+        return arr;
+      }
+
+      function renderRoleLabelCell(label) {
+        var td = createEl('td', { className: 'role-cell' });
+        td.style.textAlign = 'center';
+        if (!label) {
+          td.textContent = '—';
+          td.style.color = 'var(--muted)';
+        } else if (label === 'Primary') {
+          td.textContent = 'Primary';
+          td.style.color = 'var(--green)';
+          td.style.fontWeight = '600';
+        } else if (label === 'Last resort') {
+          td.textContent = 'Last resort';
+          td.style.color = 'var(--muted)';
+          td.style.fontStyle = 'italic';
+        } else {
+          td.textContent = label;
+          td.style.color = 'var(--text)';
+        }
+        return td;
+      }
+
+      // KI-200 — accepts the full llm-health payload so we can read
+      // `gemini_available` (when backend exposes it). Caller signature
+      // updated below in renderLlmHealth().
+      function renderLlmSimpleTables(host, healthPayload) {
+        var chains = (healthPayload && healthPayload.chains) || [];
+        var chainsByRole = {};
+        chains.forEach(function (c) { if (c && c.role) chainsByRole[c.role] = c; });
+
+        // ---- Table 1: Currently In Use ----
         var liveBlock = createEl('div', { className: 'simple-table-block' });
-        liveBlock.appendChild(createEl('h3', { text: "What's Live" }));
+        liveBlock.appendChild(createEl('h3', { text: 'Currently In Use' }));
         var liveTable = createEl('table');
         var liveThead = createEl('thead');
         var liveHr = createEl('tr');
-        ['Use', 'Currently In Use', 'Probed'].forEach(function (h) {
-          liveHr.appendChild(createEl('th', { text: h }));
+        ['Use', 'Current Model', 'Provider', 'Tier'].forEach(function (h, i) {
+          var th = createEl('th', { text: h });
+          if (i >= 2) th.style.textAlign = 'center';
+          liveHr.appendChild(th);
         });
         liveThead.appendChild(liveHr);
         liveTable.appendChild(liveThead);
         var liveTbody = createEl('tbody');
 
-        // Index chains by role for stable Brain Fast / Brain Main / Judge ordering.
-        var chainsByRole = {};
-        (chains || []).forEach(function (c) { if (c && c.role) chainsByRole[c.role] = c; });
-
         SIMPLE_USE_ORDER.forEach(function (role) {
-          var c = chainsByRole[role];
+          var live = resolveCurrentlyInUse(role, chainsByRole, healthPayload);
           var tr = createEl('tr');
+          if (live.isTier0) {
+            // KI-200 — subtle green wash to signal "real primary serving traffic"
+            tr.style.background = 'rgba(118, 185, 0, 0.06)';
+          }
           tr.appendChild(createEl('td', { className: 'use-label', text: SIMPLE_USE_LABELS[role] }));
 
           var modelCell = createEl('td', { className: 'mono' });
-          if (c && c.current_primary && !isRetiredModel(c.current_primary)) {
-            if (c.current_primary_available === false) {
-              var dot = createEl('span', { className: 'health-dot bad' });
-              dot.style.marginRight = '6px';
-              modelCell.appendChild(dot);
-            }
-            modelCell.appendChild(document.createTextNode(c.current_primary));
-          } else {
-            modelCell.textContent = '—';
-          }
+          modelCell.textContent = live.model;
           tr.appendChild(modelCell);
 
-          var probedCell = createEl('td', { className: 'probed-cell' });
-          if (c && c.last_probe_age_seconds != null) {
-            probedCell.textContent = fmtDurationShort(c.last_probe_age_seconds) + ' ago';
-          } else {
-            probedCell.textContent = '—';
-          }
-          tr.appendChild(probedCell);
+          var provCell = createEl('td', { className: 'provider-cell' });
+          provCell.style.textAlign = 'center';
+          provCell.style.fontWeight = '600';
+          provCell.style.color = PROVIDER_COLORS[live.provider] || 'var(--muted)';
+          provCell.textContent = live.provider;
+          tr.appendChild(provCell);
+
+          var tierCell = createEl('td', { className: 'tier-cell' });
+          tierCell.style.textAlign = 'center';
+          tierCell.style.fontWeight = '600';
+          tierCell.style.color = live.tier === 'T0' ? 'var(--green)' : 'var(--muted)';
+          tierCell.textContent = live.tier;
+          tr.appendChild(tierCell);
+
           liveTbody.appendChild(tr);
         });
         liveTable.appendChild(liveTbody);
         liveBlock.appendChild(liveTable);
         host.appendChild(liveBlock);
 
-        // ---- Table 2: What's Available ----
-        // Walk every chain_members[] across the 3 chains, dedupe by model,
-        // and collect: healthy boolean + used-by-role list with primary-first ordering.
-        var modelMap = {};  // model -> { healthy, roleEntries: [{role, isPrimary, idx}] }
-        (chains || []).forEach(function (c) {
-          if (!c || !Array.isArray(c.chain_members)) return;
-          c.chain_members.forEach(function (mi, idx) {
-            if (!mi || !mi.model || isRetiredModel(mi.model)) return;
-            if (!modelMap[mi.model]) {
-              modelMap[mi.model] = {
-                healthy: !!mi.available_for_calls,
-                roleEntries: []
-              };
-            } else {
-              // If any chain reports the model as available, treat it as healthy.
-              if (mi.available_for_calls) modelMap[mi.model].healthy = true;
-            }
-            modelMap[mi.model].roleEntries.push({
-              role: c.role,
-              isPrimary: !!mi.is_current_primary,
-              idx: idx
-            });
-          });
-        });
-
+        // ---- Table 2: All Eligible Models ----
         var availBlock = createEl('div', { className: 'simple-table-block' });
-        availBlock.appendChild(createEl('h3', { text: "What's Available" }));
+        availBlock.appendChild(createEl('h3', { text: 'All Eligible Models' }));
         var availTable = createEl('table');
         var availThead = createEl('thead');
         var availHr = createEl('tr');
-        // KI-186 (2026-05-15) — added "Tier" column so Gemini + OR rows can
-        // be shown alongside NIM rows. Tier 0 = Google AI Studio, Tier 1 =
-        // NIM (probed), Tier 2 = OpenRouter free pool.
-        // KI-187 (2026-05-15) — added explicit "Provider" column ("Google
-        // AI Studio" / "NVIDIA NIM" / "OpenRouter") so users don't have to
-        // infer provider from the model-id suffix (e.g., qwen3-next-80b
-        // appears in BOTH NIM and OR; only `:free` suffix disambiguated).
-        var availCols = ['Model', 'Provider', 'Tier', 'Status'].concat(SIMPLE_USE_ORDER.map(function (r) { return SIMPLE_USE_LABELS[r]; }));
+        var availCols = ['Model', 'Provider', 'Tier'].concat(SIMPLE_USE_ORDER.map(function (r) { return SIMPLE_USE_LABELS[r]; }));
         availCols.forEach(function (h, i) {
           var th = createEl('th', { text: h });
-          if (i >= 4) th.style.textAlign = 'center';
-          if (i === 1 || i === 2 || i === 3) th.style.textAlign = 'center';
+          if (i >= 1) th.style.textAlign = 'center';
           availHr.appendChild(th);
         });
         availThead.appendChild(availHr);
         availTable.appendChild(availThead);
         var availTbody = createEl('tbody');
 
-        // KI-186 — Tier 0 (Google) + Tier 2 (OR) are STATIC rows; they're
-        // not in llm_health's probe registry but they're real members of
-        // the production chain per sales_brain.py + tiered_brain_llm.py.
-        // Status defaults to 'Healthy' (we don't have probe data for these
-        // tiers; they fail-loud at call time per the fail-loud > silent-
-        // garbage invariant).
-        var STATIC_TIER_ROWS = [
-          // Tier 0 — Google AI Studio (Gemini, free 1500/day)
-          { model: 'google/gemini-2.5-flash',          provider: 'Google AI Studio', tier: 'T0', healthy: true,  brainFast: '—',       brainMain: 'primary', judge: '—' },
-          { model: 'google/gemini-2.5-flash-lite',     provider: 'Google AI Studio', tier: 'T0', healthy: true,  brainFast: 'primary', brainMain: '—',       judge: '—' },
-          // Tier 2 — OpenRouter free pool (server-side fallback inside OR)
-          { model: 'nvidia/nemotron-3-super-120b-a12b:free', provider: 'OpenRouter', tier: 'T2', healthy: true, brainFast: '✓', brainMain: '✓', judge: '—' },
-          { model: 'qwen/qwen3-next-80b-a3b-instruct:free',  provider: 'OpenRouter', tier: 'T2', healthy: true, brainFast: '✓', brainMain: '—', judge: '✓' },
-          { model: 'google/gemma-4-31b-it:free',              provider: 'OpenRouter', tier: 'T2', healthy: true, brainFast: '✓', brainMain: '—', judge: '—' },
-        ];
-        // KI-187 — provider colors: blue for Google (matches their brand),
-        // green for NVIDIA NIM (matches NVIDIA), orange for OpenRouter
-        // (distinct from the others).
-        var PROVIDER_COLORS = {
-          'Google AI Studio': '#4285f4',   // Google blue
-          'NVIDIA NIM':       '#76b900',   // NVIDIA green
-          'OpenRouter':       '#ffa657',   // OR orange
-        };
-        STATIC_TIER_ROWS.forEach(function (row) {
+        var rows = buildEligibleModelTable();
+        rows.forEach(function (entry) {
           var tr = createEl('tr');
-          tr.appendChild(createEl('td', { className: 'model-name', text: row.model }));
-          // Provider badge — KI-187
+          tr.appendChild(createEl('td', { className: 'model-name', text: entry.model }));
+
           var provCell = createEl('td', { className: 'provider-cell' });
           provCell.style.textAlign = 'center';
           provCell.style.fontWeight = '600';
-          provCell.style.color = PROVIDER_COLORS[row.provider] || 'var(--muted)';
-          provCell.textContent = row.provider;
+          provCell.style.color = PROVIDER_COLORS[entry.provider] || 'var(--muted)';
+          provCell.textContent = entry.provider;
           tr.appendChild(provCell);
-          // Tier badge
+
           var tierCell = createEl('td', { className: 'tier-cell' });
           tierCell.style.textAlign = 'center';
           tierCell.style.fontWeight = '600';
-          tierCell.style.color = row.tier === 'T0' ? 'var(--green)' : 'var(--muted)';
-          tierCell.textContent = row.tier;
+          tierCell.style.color = entry.tier === 'T0' ? 'var(--green)' : 'var(--muted)';
+          tierCell.textContent = entry.tier;
           tr.appendChild(tierCell);
-          // Status cell
-          var statusCell = createEl('td', { className: 'status-cell' });
-          var hd = createEl('span', { className: 'health-dot ' + (row.healthy ? 'ok' : 'bad') });
-          statusCell.appendChild(hd);
-          statusCell.appendChild(document.createTextNode(row.healthy ? ' Healthy' : ' Down'));
-          tr.appendChild(statusCell);
-          // Per-role cells
-          [row.brainFast, row.brainMain, row.judge].forEach(function (val) {
-            var td = createEl('td', { className: 'role-cell' });
-            td.style.textAlign = 'center';
-            td.textContent = val;
-            if (val === '—') { td.style.color = 'var(--muted)'; }
-            else if (val === 'primary') { td.style.color = 'var(--green)'; td.style.fontWeight = '600'; }
-            tr.appendChild(td);
+
+          SIMPLE_USE_ORDER.forEach(function (role) {
+            tr.appendChild(renderRoleLabelCell(entry.roles[role]));
           });
+
           availTbody.appendChild(tr);
         });
-
-        var modelNames = Object.keys(modelMap);
-        if (!modelNames.length) {
-          // After KI-186 we always have static Tier 0 + Tier 2 rows, so a
-          // "no models" message would be misleading even if NIM has none.
-        } else {
-          // Sort: anyone's-primary first, then alphabetical by model name.
-          modelNames.sort(function (a, b) {
-            var aPrim = modelMap[a].roleEntries.some(function (e) { return e.isPrimary; });
-            var bPrim = modelMap[b].roleEntries.some(function (e) { return e.isPrimary; });
-            if (aPrim !== bPrim) return aPrim ? -1 : 1;
-            return a.localeCompare(b);
-          });
-          modelNames.forEach(function (model) {
-            var info = modelMap[model];
-            var tr = createEl('tr');
-            tr.appendChild(createEl('td', { className: 'model-name', text: model }));
-
-            // KI-187 — Provider badge (NIM-derived rows all come from NVIDIA NIM)
-            var provCell = createEl('td', { className: 'provider-cell' });
-            provCell.style.textAlign = 'center';
-            provCell.style.fontWeight = '600';
-            provCell.style.color = PROVIDER_COLORS['NVIDIA NIM'];
-            provCell.textContent = 'NVIDIA NIM';
-            tr.appendChild(provCell);
-
-            // KI-186 — Tier badge (NIM models are Tier 1)
-            var tierCell = createEl('td', { className: 'tier-cell' });
-            tierCell.style.textAlign = 'center';
-            tierCell.style.fontWeight = '600';
-            tierCell.style.color = 'var(--muted)';
-            tierCell.textContent = 'T1';
-            tr.appendChild(tierCell);
-
-            // Status cell: dot + word.
-            var statusCell = createEl('td', { className: 'status-cell' });
-            var hd = createEl('span', { className: 'health-dot ' + (info.healthy ? 'ok' : 'bad') });
-            statusCell.appendChild(hd);
-            statusCell.appendChild(document.createTextNode(info.healthy ? ' Healthy' : ' Down'));
-            tr.appendChild(statusCell);
-
-            // Group role entries by role for per-column lookup.
-            var entriesByRole = {};
-            info.roleEntries.forEach(function (e) {
-              if (!entriesByRole[e.role]) entriesByRole[e.role] = [];
-              entriesByRole[e.role].push(e);
-            });
-            // Per-role cell: (primary) / ✓ / —.
-            SIMPLE_USE_ORDER.forEach(function (role) {
-              var roleEntries = entriesByRole[role] || [];
-              var td = createEl('td', { className: 'role-cell' });
-              td.style.textAlign = 'center';
-              if (!roleEntries.length) {
-                td.textContent = '—';
-                td.style.color = 'var(--muted)';
-              } else if (roleEntries.some(function (e) { return e.isPrimary; })) {
-                td.textContent = 'primary';
-                td.style.color = 'var(--green)';
-                td.style.fontWeight = '600';
-              } else {
-                td.textContent = '✓';
-                td.style.color = 'var(--text)';
-                td.title = 'Backup in this chain';
-              }
-              tr.appendChild(td);
-            });
-
-            availTbody.appendChild(tr);
-          });
-        }
         availTable.appendChild(availTbody);
         availBlock.appendChild(availTable);
         host.appendChild(availBlock);
@@ -1810,7 +1845,8 @@
         }
 
         clearChildren(chainsHost);
-        renderLlmSimpleTables(chainsHost, STATE.llmHealth.chains || []);
+        // KI-200 — pass the full payload so renderer can read gemini_available
+        renderLlmSimpleTables(chainsHost, STATE.llmHealth);
 
         renderLlmHealthCandidates(STATE.llmHealth.candidates || []);
         renderLlmHealthRecent(STATE.llmHealth.recent_turns || []);

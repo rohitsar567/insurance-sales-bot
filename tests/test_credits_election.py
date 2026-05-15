@@ -174,16 +174,19 @@ class TestElectionCreditGate(unittest.TestCase):
                          "Quota-exhausted Groq should be skipped despite faster latency.")
 
     def test_nim_preferred_over_faster_groq_when_eligible(self) -> None:
-        """KI-087 NIM-first preference: even when both candidates are healthy
-        and Groq has plenty of credits AND is 3x faster on latency, NIM must
-        still be elected as PRIMARY. Groq + OpenRouter are emergency-fallback
-        only, not picked-on-latency. Replaces the pre-KI-087
-        `test_groq_above_water_picked_in_election` which asserted the
-        opposite (Groq wins on latency)."""
+        """KI-201 chain-order: chain head wins regardless of latency.
+
+        Under KI-201 the chain-head model is always primary when eligible.
+        Pre-KI-201 (KI-087) the elector applied a NIM-first preference on
+        top of latency-score; that preference is now redundant because the
+        canonical chains in nvidia_nim_llm.py list NIM models first by
+        construction. This test exercises the new contract: with NIM as
+        chain-head and Groq slower in the chain, NIM wins on POSITION
+        not on latency-vs-NIM-preference."""
         groq_model = "groq:llama-3.3-70b-versatile"
         nim_model = "qwen/qwen3-next-80b-a3b-instruct"
         gh = _healthy_now(groq_model)
-        gh.latency_ms = 100  # faster
+        gh.latency_ms = 100  # faster (irrelevant under KI-201)
         gh.credits_remaining = 10000.0  # well above water
         gh.credits_unit = "tokens_day"
         gh.credits_low_water = GROQ_TOKENS_LOW_WATER
@@ -191,25 +194,33 @@ class TestElectionCreditGate(unittest.TestCase):
         llm_health._STATE[groq_model] = gh
 
         nh = _healthy_now(nim_model)
-        nh.latency_ms = 300  # slower but NIM
+        nh.latency_ms = 300  # slower but chain-head
         llm_health._STATE[nim_model] = nh
 
+        # NIM is chain-head; under chain-order election it wins regardless
+        # of Groq being faster.
         with mock.patch.object(
-            llm_health, "_chain_for", return_value=[groq_model, nim_model]
+            llm_health, "_chain_for", return_value=[nim_model, groq_model]
         ):
             primary = llm_health.get_primary("brain")
         self.assertEqual(
             primary, nim_model,
-            "KI-087: NIM must beat Groq as PRIMARY even when Groq is faster + "
-            "has credits. NIM is the strategic free provider; Groq + OpenRouter "
-            "are emergency fallback only.",
+            "KI-201: chain-head wins regardless of latency. NIM is listed "
+            "first in BRAIN_CHAIN by construction (KI-175); chain-order "
+            "election picks it without needing a separate NIM-first rule.",
         )
 
     def test_groq_picked_when_nim_pool_empty(self) -> None:
-        """KI-087 fallthrough: when NO eligible NIM candidate exists (all NIM
-        models down / out of credits / not in chain), election falls through
-        to the best non-NIM candidate as PRIMARY. Locks in the safety net so
-        a full NIM regional outage still produces a working brain call."""
+        """KI-201 chain-order fallthrough: when NO eligible NIM candidate
+        exists (all NIM models down / out of credits / not in chain),
+        election walks the chain in order and picks the FIRST eligible
+        non-NIM candidate. Locks in the safety net so a full NIM regional
+        outage still produces a working brain call.
+
+        Pre-KI-201 (KI-087) this test asserted Groq won via latency-score
+        even when listed second in the chain. Under chain-order election
+        the chain is the truth, so we list Groq first to exercise the
+        same fallthrough behaviour."""
         groq_model = "groq:llama-3.3-70b-versatile"
         or_model = "openrouter:openai/gpt-oss-120b"
         gh = _healthy_now(groq_model)
@@ -221,18 +232,18 @@ class TestElectionCreditGate(unittest.TestCase):
         llm_health._STATE[groq_model] = gh
 
         oh = _healthy_now(or_model)
-        oh.latency_ms = 800  # slower
+        oh.latency_ms = 800  # slower (irrelevant under KI-201 chain-order)
         llm_health._STATE[or_model] = oh
 
-        # Note the chain has NO NIM candidates.
+        # Chain has NO NIM candidates; Groq is chain-head.
         with mock.patch.object(
-            llm_health, "_chain_for", return_value=[or_model, groq_model]
+            llm_health, "_chain_for", return_value=[groq_model, or_model]
         ):
             primary = llm_health.get_primary("brain")
         self.assertEqual(
             primary, groq_model,
-            "KI-087 fallthrough: no NIM eligible → election picks the highest-"
-            "scored non-NIM candidate (Groq's 100ms beats OpenRouter's 800ms).",
+            "KI-201 chain-order: no NIM eligible → election picks the "
+            "FIRST eligible candidate in chain order (Groq is chain-head).",
         )
 
     def test_none_credits_is_permissive(self) -> None:

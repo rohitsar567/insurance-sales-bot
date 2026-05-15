@@ -998,6 +998,37 @@ async def handle_turn(
         profile_name_slug=profile_slug_for_retrieve,
         session_id=session_id,
     )
+
+    # KI-205 (2026-05-15) — detect recommendation-shaped queries. The original
+    # KI-171 keyword list missed phrases like "show me three options side by
+    # side", which routed a recommendation turn through the faithfulness gate
+    # and into a generic refusal. Expanded to cover side-by-side/shortlist/
+    # options-comparison shapes. Computed BEFORE the regulatory filter below
+    # (KI-206) so both the post-retrieve filter and the judge-skip can reuse it.
+    _user_text_lc = (user_text or "").lower()
+    _is_recommendation = any(
+        kw in _user_text_lc for kw in (
+            "recommend", "suggest", "best polic", "top 3", "top three",
+            "top 5", "top five", "show me polic", "show me what", "fits me",
+            "right for me", "policies for me", "which polic", "good polic",
+            "what polic", "your suggestion", "your recommendation",
+            # KI-205 (2026-05-15) — user said "show me show me three options
+            # side by side" → wasn't matched → faithfulness gate misfired.
+            "show me", "show me three", "show me few", "show me options",
+            "show me a few", "show me some", "side by side", "side-by-side",
+            "three options", "few options", "some options", "compare options",
+            "shortlist", "give me options", "give me three",
+        )
+    )
+
+    # KI-206 (2026-05-15) — regulatory chunks (IRDAI consolidated, etc.) are
+    # master regulatory text, not actual policies. They shouldn't appear in
+    # user-facing recommendation citations. Drop them post-retrieve for
+    # recommendation/comparison intent. Non-recommendation queries (e.g. "what
+    # does IRDAI say about waiting periods") still see regulatory evidence.
+    if _is_recommendation or intent == "comparison":
+        chunks = [c for c in chunks if (c.insurer_slug or "").lower() != "regulatory"]
+
     context_str = format_for_llm_context(chunks)
 
     # 3. Pick brain
@@ -1099,15 +1130,9 @@ async def handle_turn(
     # answers stitch together evidence from many policies plus the user's
     # profile — the judge can't grade that fairly and currently blocks valid
     # recommendation flows after fact_find completes. Detect via query shape.
-    _user_text_lc = (user_text or "").lower()
-    _is_recommendation = any(
-        kw in _user_text_lc for kw in (
-            "recommend", "suggest", "best polic", "top 3", "top three",
-            "top 5", "top five", "show me polic", "show me what", "fits me",
-            "right for me", "policies for me", "which polic", "good polic",
-            "what polic", "your suggestion", "your recommendation",
-        )
-    )
+    # KI-205 (2026-05-15) — `_is_recommendation` is now computed once earlier
+    # (immediately after retrieve) so the same boolean drives both the
+    # regulatory-chunk post-filter (KI-206) and this judge-skip.
     _skip_judge = (intent == "fact_find") or bool(in_fact_find_continuation) or _is_recommendation
     if _skip_judge:
         skip_reason = "ki171_skip_on_recommendation" if _is_recommendation else "ki091_skip_on_fact_find"
@@ -1177,6 +1202,14 @@ async def handle_turn(
     # context about the user (age/dependents/income/etc.), but it is NOT a
     # "cited policy" and should not appear in the chat's "CITED POLICIES"
     # card. Filter by insurer_slug=='profile' (set by profile_rag.upsert).
+    # KI-206 (2026-05-15) — also exclude regulatory chunks (IRDAI consolidated,
+    # etc.). They're master regulatory text, not policies the user can buy, so
+    # showing them under "CITED POLICIES" misled users into thinking the bot
+    # had policy evidence when it had only regulator text. Non-recommendation
+    # queries that genuinely ask about regulations still surface regulatory
+    # chunks via context_str (the post-retrieve filter above only drops them
+    # for recommendation/comparison intent), but they never appear in the
+    # chat's policy-citation card.
     citations = [
         {
             "policy_id": c.policy_id,
@@ -1188,7 +1221,7 @@ async def handle_turn(
             "score": round(c.score, 3),
         }
         for c in chunks
-        if (c.insurer_slug or "").lower() != "profile"
+        if (c.insurer_slug or "").lower() not in ("profile", "regulatory")
     ]
 
     # 7. INDIC CASCADE — translate the English reply back into Hinglish/Hindi,
