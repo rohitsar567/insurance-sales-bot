@@ -181,6 +181,7 @@ async def retrieve_policies(
     policy_filter_ids: Optional[list[str]] = None,
     profile=None,
     intent: str = "recommendation",
+    session=None,
 ) -> dict:
     """Call the existing Chroma retriever and return policy chunks.
 
@@ -195,6 +196,28 @@ async def retrieve_policies(
     """
     if not isinstance(query, str) or not query.strip():
         return {"chunks": [], "count": 0, "error": "empty_query"}
+
+    # Profile-complete gate (skip if caller supplied policy_filter_ids — that
+    # branch is a known-policy follow-up). Defense-in-depth: even if the LLM
+    # ignores RULE 2 of the system prompt, this refuses to return chunks
+    # against an incomplete profile.
+    if profile is not None and not policy_filter_ids:
+        missing = [
+            slot for slot in _REQUIRED_FOR_READY
+            if getattr(profile, slot, None) in (None, "", [])
+        ]
+        if missing:
+            return {
+                "chunks": [],
+                "count": 0,
+                "error": "profile_incomplete",
+                "missing_slots": missing,
+                "instruction": (
+                    f"Profile is incomplete — missing: {', '.join(missing)}. "
+                    "Do NOT make a recommendation. Ask the user for the "
+                    "missing slot(s) before calling retrieve_policies again."
+                ),
+            }
 
     try:
         from rag.retrieve import retrieve as _retrieve
@@ -246,6 +269,25 @@ async def retrieve_policies(
         except Exception as e:  # noqa: BLE001 — pipeline must never break retrieval
             _log.warning("retrieval_filters.filter_pipeline failed: %s", e)
             filtered = raw
+
+    # X7 — cache slug→insurer lookups on session so a subsequent
+    # mark_recommendation call (same turn) can stamp the right insurer on the
+    # shown_policies event. Each retrieve_policies call MERGES into the cache
+    # rather than overwriting, so an LLM that hits multiple retrieves before
+    # marking still resolves every cited slug. Keep last_retrieved_chunks too
+    # for parity with future tools that need the full chunk objects.
+    if session is not None:
+        try:
+            slug_to_insurer = dict(getattr(session, "slug_to_insurer", {}) or {})
+            for c in filtered:
+                slug = (c.get("policy_id") or "").strip()
+                insurer = (c.get("insurer_slug") or "").strip()
+                if slug and insurer:
+                    slug_to_insurer[slug] = insurer
+            session.slug_to_insurer = slug_to_insurer
+            session.last_retrieved_chunks = list(filtered)
+        except Exception:  # noqa: BLE001 — bookkeeping must never fail retrieval
+            pass
 
     out = {
         "chunks": filtered,
@@ -299,6 +341,60 @@ def mark_recommendation(
             session.closed = True  # type: ignore[attr-defined]
         except Exception:  # noqa: BLE001
             pass
+
+    # X7 — write a shown_policies event per cited policy so the admin
+    # Recommendation History panel reflects single_brain turns the same way
+    # it does orchestrator turns. Orchestrator-side pattern lives at
+    # backend/orchestrator.py near line 1669 (_log_shown_policies, KI-063);
+    # we mirror it: dedupe by slug, resolve insurer via the slug→insurer
+    # cache `retrieve_policies` stashed on the session this turn, and stamp
+    # `turn_idx=session.turn_idx` so the frontend "Conversation turn" column
+    # has a real value instead of "—".
+    #
+    # No profile name → no JSON file to write to (anonymous session). No
+    # insurer resolution for a slug → skip that slug. All errors swallowed
+    # so a logging failure never breaks the tool reply back to Gemini.
+    try:
+        profile = getattr(session, "profile", None)
+        profile_name = getattr(profile, "name", None) if profile else None
+        if profile_name and cleaned:
+            from backend.profile_store import record_policy_event
+
+            slug_to_insurer = dict(getattr(session, "slug_to_insurer", {}) or {})
+            seen_slugs: set[str] = set()
+            turn_idx = int(getattr(session, "turn_idx", 0) or 0)
+            session_id = getattr(session, "session_id", None)
+            for slug in cleaned:
+                if not slug or slug in seen_slugs:
+                    continue
+                insurer = slug_to_insurer.get(slug)
+                if not insurer:
+                    # Couldn't resolve insurer this turn — skip rather than
+                    # write a malformed event.
+                    continue
+                seen_slugs.add(slug)
+                try:
+                    record_policy_event(
+                        persona_id_or_name=profile_name,
+                        profile=profile,
+                        event_type="shown",
+                        policy_slug=slug,
+                        insurer=insurer,
+                        session_id=session_id,
+                        reason="shown_in_recommendation",
+                        turn_idx=turn_idx,
+                    )
+                except Exception as inner:  # noqa: BLE001
+                    _log.warning(
+                        "X7 mark_recommendation record_policy_event "
+                        "failed (slug=%s): %s: %s",
+                        slug, type(inner).__name__, str(inner)[:200],
+                    )
+    except Exception as e:  # noqa: BLE001 — never break the tool reply
+        _log.warning(
+            "X7 mark_recommendation shown-event logging failed: %s: %s",
+            type(e).__name__, str(e)[:200],
+        )
 
     return {
         "recorded": True,

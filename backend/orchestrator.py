@@ -607,6 +607,11 @@ async def handle_turn(
     # fact-find phrase. This is what fixes "39 years old" being misrouted to RAG.
     from backend.session_state import get_session
     session = get_session(session_id or "anonymous")
+    # X7 — monotonic conversation-turn counter; admin Recommendation History
+    # renders this as the "Conversation turn" column. Increment BEFORE any
+    # policy-event write so the value stamped on a shown_policies event
+    # matches the user-visible turn that produced the recommendation.
+    session.turn_idx = int(getattr(session, "turn_idx", 0) or 0) + 1
 
     # KI-194 (2026-05-15) — CRITICAL FIX: KI-167 removed the `set_awaiting`
     # machinery when ripping out fact_find_brain, so `awaiting_question_id`
@@ -1495,6 +1500,106 @@ async def handle_turn(
             brain_model_used=brain_model_actual,
         )
 
+    # 5pre. SOFT-HINT RETRY (X5, 2026-05-15) — when the faithfulness gate
+    # surfaces a structured soft_hint, give the brain ONE targeted retry
+    # with the hint folded into the system prompt before we fall through
+    # to the heavier cross-check path. Two hint reasons are wired:
+    #   - "missing_citation"     → append a [Source:N] requirement
+    #   - "hallucinated_policy"  → constrain to the retrieved policy_ids
+    # Hard-capped at one retry per turn (no loop). The retry's reply is
+    # re-verified by check_faithfulness; if IT still fails we fall through
+    # to the existing cross-check retry below.
+    if (
+        not verdict.passed
+        and verdict.soft_hint
+        and isinstance(verdict.soft_hint, dict)
+    ):
+        hint_reason = verdict.soft_hint.get("reason")
+        addendum: Optional[str] = None
+        if hint_reason == "missing_citation":
+            expected = verdict.soft_hint.get("expected", "[Source:N]")
+            addendum = (
+                "\n\nSTRICT RETRY CONSTRAINT (faithfulness gate): your previous "
+                "reply made a numeric / monetary / percentage / duration claim "
+                "without a citation marker. Re-issue the reply and ensure every "
+                f"numeric claim carries a [Source:N] marker (e.g. {expected}) "
+                "pointing to the retrieved chunk it came from. Do not invent "
+                "numbers or sources."
+            )
+        elif hint_reason == "hallucinated_policy":
+            cited_policies = verdict.soft_hint.get("cited_policies") or []
+            instruction = verdict.soft_hint.get("instruction") or ""
+            addendum = (
+                "\n\nSTRICT RETRY CONSTRAINT (faithfulness gate): your previous "
+                "reply referenced a policy name that is NOT in the retrieved "
+                "evidence set. Re-issue the reply and only reference policies "
+                f"whose policy_id is in {cited_policies}. {instruction} "
+                "If the user's question cannot be answered from those policies, "
+                "say so explicitly — do not invent policy names."
+            )
+
+        if addendum:
+            logging.info(
+                "soft_hint retry firing (session=%s reason=%s) — re-calling brain with hint addendum",
+                session_id, hint_reason,
+            )
+            # Build retry messages: clone the original list and append the
+            # addendum onto the leading system message. If no system message
+            # exists (shouldn't happen given build_messages), prepend one.
+            retry_messages: list[ChatMessage] = list(messages)
+            if retry_messages and retry_messages[0].role == "system":
+                retry_messages[0] = ChatMessage(
+                    role="system",
+                    content=(retry_messages[0].content or "") + addendum,
+                )
+            else:
+                retry_messages.insert(0, ChatMessage(role="system", content=addendum))
+
+            try:
+                retry_result = await asyncio.wait_for(
+                    pick.provider.chat(
+                        messages=retry_messages,
+                        temperature=0.1,  # tighter — hint demands compliance
+                        max_tokens=1500,
+                    ),
+                    timeout=20.0,
+                )
+                retry_reply = strip_think_tags(retry_result.text)
+                retry_brain_model = (
+                    getattr(retry_result, "model", None)
+                    or getattr(pick.provider, "model", None)
+                )
+                retry_verdict = await check_faithfulness(
+                    reply=retry_reply,
+                    chunks=chunks,
+                    user_text=user_text,
+                    run_llm_judge=True,
+                    brain_model_used=retry_brain_model,
+                )
+                if retry_verdict.passed:
+                    logging.info(
+                        "soft_hint retry SUCCEEDED (session=%s reason=%s)",
+                        session_id, hint_reason,
+                    )
+                    reply = retry_reply
+                    verdict = retry_verdict
+                    brain_model_actual = retry_brain_model
+                else:
+                    logging.info(
+                        "soft_hint retry still blocked (session=%s reason=%s reasons=%s)",
+                        session_id, hint_reason, retry_verdict.reasons,
+                    )
+            except asyncio.TimeoutError:
+                logging.warning(
+                    "soft_hint retry timeout (session=%s reason=%s) — falling through",
+                    session_id, hint_reason,
+                )
+            except Exception as e:  # noqa: BLE001
+                logging.warning(
+                    "soft_hint retry raised %s (session=%s reason=%s): %s",
+                    type(e).__name__, session_id, hint_reason, str(e)[:200],
+                )
+
     # 5a. CROSS-CHECK RETRY — if faithfulness blocked AND the failure isn't
     # Gate 1 (no evidence at all), retry with a DIFFERENT-ARCHITECTURE NIM
     # model: Llama-4 Maverick (MoE, 400B/17B-active). The brain (Llama-3.3-70B,
@@ -1684,6 +1789,7 @@ async def handle_turn(
                             insurer=insurer,
                             session_id=session_id,
                             reason="shown_in_recommendation",
+                            turn_idx=int(getattr(session, "turn_idx", 0) or 0),
                         )
                 except Exception as inner:
                     logging.warning(

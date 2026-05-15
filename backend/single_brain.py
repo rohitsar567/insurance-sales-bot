@@ -488,6 +488,7 @@ async def _execute_tool(session, name: str, args: dict) -> dict:
                 policy_filter_ids=args.get("policy_filter_ids") or None,
                 profile=getattr(session, "profile", None),
                 intent="recommendation",
+                session=session,
             )
         if name == "mark_recommendation":
             return brain_tools.mark_recommendation(
@@ -520,6 +521,15 @@ async def handle_turn(
     caller falls through to the legacy orchestrator.
     """
     t0 = time.time()
+
+    # X7 — monotonic conversation-turn counter; admin Recommendation History
+    # renders this as the "Conversation turn" column. Increment BEFORE any
+    # tool call so brain_tools.mark_recommendation can stamp the resulting
+    # turn_idx onto each shown_policies event written this turn.
+    try:
+        session.turn_idx = int(getattr(session, "turn_idx", 0) or 0) + 1
+    except Exception:  # noqa: BLE001 — never break a chat turn for bookkeeping
+        pass
 
     api_key = os.environ.get("GOOGLE_API_KEY", "").strip()
     if not api_key:

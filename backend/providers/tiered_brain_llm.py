@@ -31,7 +31,7 @@ import logging
 from typing import Optional
 
 from backend.providers.base import ChatMessage, LLMProvider, LLMResult
-from backend.providers.google_gemini_llm import get_gemini_llm
+from backend.providers.google_gemini_llm import BrainProviderError, get_gemini_llm
 from backend.providers.nvidia_nim_llm import (
     get_brain_llm,
     get_fast_brain_llm,
@@ -136,7 +136,27 @@ class TieredBrainLLM(LLMProvider):
                 "TieredBrainLLM[%s]: Gemini timed out, falling to NIM",
                 self.role,
             )
-        except Exception as e:  # noqa: BLE001 — fall through on ANY provider error
+        except BrainProviderError as e:
+            # X6 (2026-05-15) — Gemini surfaces a normalized error envelope.
+            #   retryable=True  → quota/5xx/timeout — fall through to NIM.
+            #   retryable=False → auth (401/403) or content-block (safety) —
+            #     burning the NIM + OpenRouter budget on the same prompt
+            #     will hit the same outcome (or worse, leak a hard-block
+            #     content into a cheaper tier with weaker safety). Fail fast.
+            gemini_exc = e
+            if not e.retryable:
+                logging.warning(
+                    "TieredBrainLLM[%s]: Gemini non-retryable error "
+                    "(status=%s, provider=%s): %s — failing fast, skipping NIM/OR",
+                    self.role, e.status, e.provider, str(e)[:200],
+                )
+                raise
+            logging.info(
+                "TieredBrainLLM[%s]: Gemini retryable error "
+                "(status=%s): %s — falling to NIM",
+                self.role, e.status, str(e)[:200],
+            )
+        except Exception as e:  # noqa: BLE001 — trailing safety net for unknown shapes
             gemini_exc = e
             logging.info(
                 "TieredBrainLLM[%s]: Gemini raised %s, falling to NIM: %s",

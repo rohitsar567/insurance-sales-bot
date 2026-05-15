@@ -220,6 +220,15 @@ export default function Page() {
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [voiceListening, setVoiceListening] = useState(false);
   const [voicePermDenied, setVoicePermDenied] = useState(false);
+  // KI-223 (2026-05-15) — V1.1 / V1.2. Structured voice-error banner state.
+  // Populated by useStreamingVoice's onVoiceError callback when the hook hits
+  // a recoverable failure mode that the user can act on (tap to unlock audio,
+  // retry mic, reload page). Auto-dismissed after 8s via the useEffect below.
+  // The hook (Phase 2 voice agent) owns emission; page.tsx owns presentation.
+  const [voiceErrorBanner, setVoiceErrorBanner] = useState<
+    | { type: string; ts: number }
+    | null
+  >(null);
 
   // V4 FIX 1 — Live PTT interim transcript. Mirrors the running browser-SR
   // transcript so the user can see what's being captured BELOW the mic
@@ -278,7 +287,49 @@ export default function Page() {
       ]);
     },
     onListening: setVoiceListening,
+    // KI-223 (2026-05-15) — V1.1 / V1.2. Surface recoverable voice failures
+    // as a top-right banner. The hook emits one of three error strings; the
+    // banner state stamps a fresh `ts` so the auto-dismiss timer restarts on
+    // every new emission (useful when the same error fires twice in a row).
+    onVoiceError: (error) => {
+      setVoiceErrorBanner({ type: error, ts: Date.now() });
+    },
   });
+
+  // Auto-dismiss the voice error banner 8s after the latest emission. Keyed
+  // on `ts` so a fresh error mid-countdown resets the clock instead of
+  // dismissing early. Cleanup cancels stale timers on unmount / re-render.
+  useEffect(() => {
+    if (!voiceErrorBanner) return;
+    const handle = window.setTimeout(() => setVoiceErrorBanner(null), 8000);
+    return () => window.clearTimeout(handle);
+  }, [voiceErrorBanner?.ts]);
+
+  // Best-effort AudioContext unlock on user tap. The hook owns its own
+  // AudioContext (we can't reach into it), but Chrome's autoplay policy
+  // unlocks ALL contexts on the page once a user gesture creates+resumes
+  // one. So we spin up a throwaway context, resume it, then close it — the
+  // hook's next VAD attach will find its own context unsuspended.
+  const resumeAudio = async () => {
+    try {
+      const Ctor =
+        window.AudioContext
+        || (window as unknown as { webkitAudioContext?: typeof AudioContext })
+          .webkitAudioContext;
+      if (!Ctor) return;
+      const ctx = new Ctor();
+      try {
+        await ctx.resume();
+      } finally {
+        // Close async so we don't block the click handler.
+        void ctx.close().catch(() => { /* ignore */ });
+      }
+    } catch {
+      /* ignore — banner stays until 8s timeout */
+    } finally {
+      setVoiceErrorBanner(null);
+    }
+  };
   // Legacy-shape adapter so the rest of the file's `live.*` refs keep working.
   const live = {
     live: voiceEnabled,
@@ -982,6 +1033,53 @@ export default function Page() {
   // don't understand `dvh`.
   return (
     <div className="min-h-screen min-h-[100dvh] flex flex-col bg-[var(--background)] text-[var(--foreground)]">
+      {/* KI-223 (2026-05-15) — V1.1 / V1.2. Voice-error banner pinned to the
+          top-right. On mobile (<sm), the `left-4 right-4` + `max-w-[…]`
+          combination keeps the banner inside the viewport without overlapping
+          the chat composer (composer sits at the bottom). `pointer-events`
+          only active on the banner itself, so clicks elsewhere on the page
+          aren't blocked. */}
+      {voiceErrorBanner && (
+        <div
+          role="alert"
+          className={`fixed top-4 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-sm z-50 rounded-lg shadow-lg border px-4 py-3 text-sm flex items-start gap-3 ${
+            voiceErrorBanner.type === "audio_context_suspended"
+              ? "bg-yellow-50 border-yellow-300 text-yellow-900 cursor-pointer hover:bg-yellow-100"
+              : "bg-red-50 border-red-300 text-red-900"
+          }`}
+          onClick={
+            voiceErrorBanner.type === "audio_context_suspended"
+              ? () => { void resumeAudio(); }
+              : undefined
+          }
+        >
+          <div className="flex-1 leading-snug">
+            {voiceErrorBanner.type === "audio_context_suspended" && (
+              <span>Tap anywhere to enable audio</span>
+            )}
+            {voiceErrorBanner.type === "transcribe_failed" && (
+              <span>
+                Voice transcription failed — using text-only for now. Try the
+                mic again or type your message.
+              </span>
+            )}
+            {voiceErrorBanner.type === "worklet_failed" && (
+              <span>Audio capture failed — please reload the page.</span>
+            )}
+          </div>
+          <button
+            type="button"
+            aria-label="Dismiss"
+            className="shrink-0 -mr-1 -mt-1 px-1.5 py-0.5 rounded text-base leading-none opacity-60 hover:opacity-100"
+            onClick={(e) => {
+              e.stopPropagation();
+              setVoiceErrorBanner(null);
+            }}
+          >
+            ×
+          </button>
+        </div>
+      )}
       <header className="border-b border-[var(--border)] bg-[var(--card)]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">

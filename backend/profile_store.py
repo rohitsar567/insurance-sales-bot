@@ -237,6 +237,7 @@ def record_policy_event(
     insurer: str,
     session_id: Optional[str] = None,
     reason: Optional[str] = None,
+    turn_idx: Optional[int] = None,
 ) -> bool:
     """Append a single policy-interaction event to the profile and persist.
 
@@ -268,6 +269,12 @@ def record_policy_event(
         "session_id": session_id,
         "reason": reason or default_reason,
     }
+    # X7 — stamp the conversation_turn index when the caller knows it.
+    # Admin Recommendation History reads `conversation_turn` from the event
+    # and falls back to "—" when the field is missing/None. Optional so
+    # legacy callers (frontend /api/profile/select & /reject) stay valid.
+    if turn_idx is not None:
+        payload["turn_idx"] = int(turn_idx)
     # Dedup on policy_slug within this event-type list. Bump timestamp +
     # session_id; preserve original reason unless caller passed a new one.
     dedup_idx = next(
@@ -281,6 +288,8 @@ def record_policy_event(
             existing["session_id"] = session_id
         if reason:
             existing["reason"] = reason
+        if turn_idx is not None:
+            existing["turn_idx"] = int(turn_idx)
         entries[dedup_idx] = existing
     else:
         entries.append(payload)

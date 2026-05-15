@@ -67,6 +67,13 @@ class SessionState:
     # follow-ups like "tell me more about #2" without re-retrieving from
     # scratch. Empty list = no active shortlist on this session.
     last_recommendation_ids: list = field(default_factory=list)
+    # X7 (admin Recommendation History — conversation_turn column).
+    # Monotonically incremented at the START of every orchestrator.handle_turn
+    # and single_brain.handle_turn call so the policy-event writer can stamp
+    # `turn_idx` on each event dict. Frontend renders this as the
+    # "Conversation turn" column in the admin Recommendation History panel
+    # (previously showed "—" because no caller populated the field).
+    turn_idx: int = 0
 
     def _flush(self) -> None:
         """No-op since KI-118 (2026-05-15). Disk persistence was removed; the

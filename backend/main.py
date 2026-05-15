@@ -120,6 +120,7 @@ class ChatResponse(BaseModel):
     latency_ms: int
     session_id: str
     audio_base64: Optional[str] = None
+    audio_mime: Optional[str] = None  # X8 — "audio/wav" | "audio/mp4" | "audio/webm"
     faithfulness_passed: bool = True
     faithfulness_reasons: list[str] = Field(default_factory=list)
     blocked: bool = False
@@ -414,8 +415,18 @@ async def transcribe(
 
 
 @app.post("/api/chat", response_model=ChatResponse)
-async def chat(req: ChatRequest):
+async def chat(req: ChatRequest, request: Request):
     session_id = req.session_id or str(uuid.uuid4())
+    # X8 (2026-05-15) — frontend sends X-Preferred-Codec so the browser can
+    # decode the TTS payload natively (WebM/Opus on Chrome+Firefox, MP4/AAC on
+    # Safari, WAV as universal fallback). Default to WAV if the header is
+    # missing or invalid.
+    _allowed_codecs = {"audio/wav", "audio/mp4", "audio/webm"}
+    preferred_codec = (
+        request.headers.get("X-Preferred-Codec", "audio/wav") or "audio/wav"
+    ).lower()
+    if preferred_codec not in _allowed_codecs:
+        preferred_codec = "audio/wav"
     t_chat0 = time.time()
     # KI-106 — never let an inner TimeoutError / unhandled exception bubble out
     # of handle_turn as a 500. C4 NRI persona saw 5× HTTP 500s with
@@ -528,6 +539,7 @@ async def chat(req: ChatRequest):
         )
 
     audio_b64 = None
+    audio_mime: Optional[str] = None
     if req.return_audio and turn.reply_text:
         try:
             from backend.voice_format import tts_preprocess
@@ -539,11 +551,18 @@ async def chat(req: ChatRequest):
                 language="indic" if req.tts_language_code.startswith("hi") else "en",
                 max_words=55,
             )
-            audio = await get_tts().synthesize(spoken, language_code=req.tts_language_code)
+            # X8 — honor X-Preferred-Codec; on transcoding failure the provider
+            # falls back to raw WAV and reports audio_mime="audio/wav".
+            audio, audio_mime = await get_tts().synthesize_with_mime(
+                spoken,
+                language_code=req.tts_language_code,
+                preferred_codec=preferred_codec,
+            )
             audio_b64 = base64.b64encode(audio).decode("utf-8")
         except Exception as e:
             # Don't fail the whole turn if TTS hiccups — log + return text only
             log_turn({"session_id": session_id, "tts_error": f"{type(e).__name__}: {e}"})
+            audio_mime = None
 
     log_turn({
         "session_id": session_id,
@@ -569,6 +588,7 @@ async def chat(req: ChatRequest):
         latency_ms=turn.latency_ms,
         session_id=session_id,
         audio_base64=audio_b64,
+        audio_mime=audio_mime,
         faithfulness_passed=turn.faithfulness_passed,
         faithfulness_reasons=turn.faithfulness_reasons,
         blocked=turn.blocked,
