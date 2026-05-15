@@ -131,6 +131,14 @@ export function useStreamingVoice(
   const wantRunningRef = useRef(false); // mirrors `enabled` for handler closures
   const restartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const errorBackoffRef = useRef(0);
+  // KI-188 (2026-05-15) — TTS-playback gate. Web Speech API has its own
+  // internal mic pipeline that bypasses our getUserMedia AEC constraints,
+  // so SpeechRecognition transcribes the bot's TTS audio bleeding from
+  // speakers as user input ("echo loop"). The only reliable fix from JS
+  // is to abort recognition while ANY <audio> in the DOM is playing.
+  // Tracked via a MutationObserver + per-element play/pause/ended hooks.
+  const isTtsPlayingRef = useRef(false);
+  const ttsAudioElementsRef = useRef<Set<HTMLAudioElement>>(new Set());
 
   // ----------------------------------------------------------------------
   // KI-168 PHASE 2 — Sarvam authoritative-transcript layer.
@@ -544,12 +552,110 @@ export function useStreamingVoice(
       if (
         wantRunningRef.current
         && !isTextRequestPendingRef.current
+        && !isTtsPlayingRef.current  // KI-188 — block revival during TTS playback
         && restartTimerRef.current === null
       ) {
         safeStart();
       }
     }, 4000);
     return () => clearInterval(tick);
+  }, [enabled, isSupported, isTextRequestPendingRef, safeStart]);
+
+  // KI-188 (2026-05-15) — TTS playback gate. Browser Web Speech API has
+  // its own internal mic pipeline that bypasses our getUserMedia AEC
+  // constraints (KI-185), so SpeechRecognition transcribes the bot's TTS
+  // audio bleeding from speakers as if it were user input. The visible
+  // echo "perfect days to get started Rohit" was echo of bot's TTS
+  // "perfect age to get started, Rohit". The only reliable JS-level fix
+  // is to ABORT recognition while ANY <audio> element in the DOM is
+  // playing, then revive via the heartbeat (KI-173) the moment all
+  // audio ends.
+  //
+  // Trade-off: live "barge-in by just speaking" is disabled DURING TTS.
+  // Push-to-talk still works (it uses MediaRecorder, not SpeechRecognition).
+  useEffect(() => {
+    if (!enabled || !isSupported) return;
+    if (typeof document === "undefined") return;
+
+    const updateTtsState = () => {
+      let anyPlaying = false;
+      ttsAudioElementsRef.current.forEach((el) => {
+        if (!el.paused && !el.ended) anyPlaying = true;
+      });
+      const wasPlaying = isTtsPlayingRef.current;
+      isTtsPlayingRef.current = anyPlaying;
+      if (anyPlaying && !wasPlaying) {
+        // TTS just started — abort any in-flight recognition so it stops
+        // transcribing the bot voice.
+        console.debug("[useStreamingVoice] KI-188 TTS started — pausing recognition");
+        const rec = recognitionRef.current;
+        if (rec) {
+          try { rec.abort(); } catch { /* ignore */ }
+        }
+      } else if (!anyPlaying && wasPlaying) {
+        // TTS just ended — let the heartbeat/visibility listeners revive.
+        // Trigger immediately too so the user doesn't wait ~4s.
+        console.debug("[useStreamingVoice] KI-188 TTS ended — resuming recognition");
+        if (wantRunningRef.current && !isTextRequestPendingRef.current) {
+          safeStart();
+        }
+      }
+    };
+
+    const watchAudio = (el: HTMLAudioElement) => {
+      if (ttsAudioElementsRef.current.has(el)) return;
+      ttsAudioElementsRef.current.add(el);
+      el.addEventListener("play", updateTtsState);
+      el.addEventListener("playing", updateTtsState);
+      el.addEventListener("pause", updateTtsState);
+      el.addEventListener("ended", updateTtsState);
+      // Initial check (handles audio that was already playing on mount)
+      updateTtsState();
+    };
+
+    const unwatchAudio = (el: HTMLAudioElement) => {
+      if (!ttsAudioElementsRef.current.has(el)) return;
+      el.removeEventListener("play", updateTtsState);
+      el.removeEventListener("playing", updateTtsState);
+      el.removeEventListener("pause", updateTtsState);
+      el.removeEventListener("ended", updateTtsState);
+      ttsAudioElementsRef.current.delete(el);
+      updateTtsState();
+    };
+
+    // Initial scan
+    document.querySelectorAll("audio").forEach((el) => watchAudio(el as HTMLAudioElement));
+
+    // Watch the whole document for new <audio> elements
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((m) => {
+        m.addedNodes.forEach((n) => {
+          if (n instanceof HTMLElement) {
+            if (n.tagName === "AUDIO") watchAudio(n as HTMLAudioElement);
+            n.querySelectorAll?.("audio").forEach((el) => watchAudio(el as HTMLAudioElement));
+          }
+        });
+        m.removedNodes.forEach((n) => {
+          if (n instanceof HTMLElement) {
+            if (n.tagName === "AUDIO") unwatchAudio(n as HTMLAudioElement);
+            n.querySelectorAll?.("audio").forEach((el) => unwatchAudio(el as HTMLAudioElement));
+          }
+        });
+      });
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => {
+      observer.disconnect();
+      ttsAudioElementsRef.current.forEach((el) => {
+        el.removeEventListener("play", updateTtsState);
+        el.removeEventListener("playing", updateTtsState);
+        el.removeEventListener("pause", updateTtsState);
+        el.removeEventListener("ended", updateTtsState);
+      });
+      ttsAudioElementsRef.current.clear();
+      isTtsPlayingRef.current = false;
+    };
   }, [enabled, isSupported, isTextRequestPendingRef, safeStart]);
 
   // KI-174 (2026-05-15) — immediate-revival on visibility/focus changes.
@@ -571,6 +677,7 @@ export function useStreamingVoice(
       if (
         wantRunningRef.current
         && !isTextRequestPendingRef.current
+        && !isTtsPlayingRef.current  // KI-188 — block revival during TTS
         && document.visibilityState === "visible"
       ) {
         console.debug("[useStreamingVoice] revival trigger=" + trigger);
