@@ -145,6 +145,11 @@ class InsurerCoverage(BaseModel):
 class CoverageResponse(BaseModel):
     total_chunks: int
     total_policies: int
+    # KI-130 (2026-05-15) — totals reflect REAL insurers and their products
+    # ONLY. The 'regulatory' slug (18 IRDAI/NHA documents) is excluded from
+    # the marketplace surface entirely; those documents are still retrieved
+    # and cited inside chat answers, they just don't belong in a "policy
+    # marketplace" UI.
     total_insurers: int
     insurers: list[InsurerCoverage]
 
@@ -578,6 +583,11 @@ async def coverage():
     insurers_out = []
     total_policies = 0
     for slug, info in sorted(by_insurer.items()):
+        # KI-130 (2026-05-15) — regulatory is not an insurer; drop entirely
+        # from the marketplace response. IRDAI/NHA docs are still retrieved
+        # and cited in chat answers — they just don't show in the marketplace.
+        if slug == "regulatory":
+            continue
         policy_names = sorted(info["policies"])
         total_policies += len(policy_names)
         name, home_url = insurer_meta.get(slug, (slug, ""))
