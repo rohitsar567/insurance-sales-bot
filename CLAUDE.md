@@ -4,7 +4,7 @@ This file is read by Claude Code (and any compatible AI tool) at the start of a 
 
 ## Project at a glance
 
-- **What:** a voice-first AI advisor for Indian health insurance — RAG over a curated 224-document corpus (206 policies + 18 regulatory docs, 7,295 chunks), Sarvam STT/TTS, 4-gate faithfulness, 20-insurer scorecard.
+- **What:** a voice-first AI advisor for Indian health insurance — RAG over a curated 206-document corpus (188 product PDFs across 19 insurers + 18 regulatory IRDAI/NHA docs, 7,295 chunks), Sarvam STT/TTS, 4-gate faithfulness, 19-insurer scorecard (regulatory tracked separately).
 - **Live:** https://rohitsar567-insurancebot.hf.space (HF Space; rebuild triggered on every push to `origin main`).
 - **Repos:** `origin` is the HF Space at `huggingface.co/spaces/rohitsar567/InsuranceBot`. `github` is the mirror at `github.com/rohitsar567/insurance-sales-bot`. Data lives separately at `huggingface.co/datasets/rohitsar567/insurance-bot-data` (with a GitHub mirror that uses LFS).
 - **Local dev path:** `~/Developer/Insurance Sales Bot/` (NOT `~/Documents/Personal/AI Work/...` — the older path that occasionally shows up in stale scripts; iCloud-synced + TCC-restricted).
