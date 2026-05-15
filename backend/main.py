@@ -741,6 +741,52 @@ async def chat(req: ChatRequest, request: Request):
             session_id, type(_closer_err).__name__, _closer_err,
         )
 
+    # KI-254 — auto-mark_recommendation when single_brain emits a
+    # recommendation turn (retrieve_policies fired + citations non-empty)
+    # but Gemini skipped calling mark_recommendation. This populates
+    # session.last_recommendation_ids so the NEXT turn's ordinal follow-up
+    # ("tell me about #2", "the second one", "first option") can resolve.
+    # Without this, RULE 3 ("call mark_recommendation alongside retrieve")
+    # depends on Gemini remembering; smoke-3-personas showed it forgets
+    # on recommendation turns ~70% of the time, breaking T4 ordinal routing.
+    # Safety net mirrors the U1-T9 closer pattern: best-effort, never blocks.
+    try:
+        if (
+            USE_SINGLE_BRAIN
+            and turn is not None
+            and getattr(turn, "citations", None)
+            and "retrieve_policies" in (turn.brain_used or "")
+            and "mark_recommendation" not in (turn.brain_used or "")
+        ):
+            from backend.session_state import get_session as _get_session_r
+            from backend import brain_tools as _brain_tools_r
+
+            _rec_session = _get_session_r(session_id)
+            _cited_ids: list[str] = []
+            _seen: set[str] = set()
+            for _c in (turn.citations or []):
+                pid = _c.get("policy_id") if isinstance(_c, dict) else getattr(_c, "policy_id", None)
+                pid = (pid or "").strip()
+                if pid and pid not in _seen:
+                    _seen.add(pid)
+                    _cited_ids.append(pid)
+            if _cited_ids:
+                _result_r = _brain_tools_r.mark_recommendation(
+                    session=_rec_session,
+                    policy_ids=_cited_ids[:4],  # cap at 4 (typical shortlist)
+                    is_final=False,
+                )
+                logging.info(
+                    "KI-254 auto-mark on rec turn (session=%s) "
+                    "policy_ids=%s result=%s",
+                    session_id, _cited_ids[:4], _result_r,
+                )
+    except Exception as _rec_err:  # noqa: BLE001
+        logging.warning(
+            "KI-254 auto-mark on rec turn failed (session=%s): %s: %s",
+            session_id, type(_rec_err).__name__, _rec_err,
+        )
+
     audio_b64 = None
     audio_mime: Optional[str] = None
     if req.return_audio and turn.reply_text:
