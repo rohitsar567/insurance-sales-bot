@@ -569,16 +569,16 @@ async def handle_turn(
                     chat_history=chat_history[-10:],
                     session_id=session_id,
                 ),
-                timeout=25.0,
+                timeout=45.0,  # KI-170 — bumped from 25s; qwen3-next-80b + JSON mode regularly lands 15-25s
             )
         except asyncio.TimeoutError:
             # No scripted fallback. Fail loud — let the operator see it.
             sb_result = SalesBrainResult(
-                reply_text="Sorry, the system is taking too long. Try again in a moment.",
+                reply_text="Sorry, that took longer than expected — could you say that one more time?",
                 captured_updates={},
                 ready_for_recommendations=False,
-                brain_used="sales_brain::error:timeout_25s",
-                error_reason="outer_timeout_25s",
+                brain_used="sales_brain::error:timeout_45s",
+                error_reason="outer_timeout_45s",
             )
 
         # Apply captured updates to profile. captured_updates is already

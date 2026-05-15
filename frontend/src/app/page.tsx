@@ -30,7 +30,10 @@ import {
   UserProfile,
 } from "@/lib/api";
 import { translate, UILang, StringKey, GLOSSARY } from "@/lib/i18n";
-import { useLiveConversation } from "@/lib/useLiveConversation";
+// KI-168 (2026-05-15) — voice path migrated from custom-VAD `useLiveConversation`
+// to native browser SpeechRecognition via `useStreamingVoice`. The old hook
+// remains on disk as a graveyard reference until KI-168 is field-verified.
+import { useStreamingVoice } from "@/lib/useStreamingVoice";
 
 type DisplayMessage = ChatMessage & {
   id: string;
@@ -145,24 +148,65 @@ export default function Page() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Live-conversation mode (full-duplex VAD barge-in). Defined further down
-  // in the component body so it can reference `sessionId`, `messages`, etc.
-  // via closure when the onUtterance handler fires. See useLiveConversation.ts.
-  const liveOnUtteranceRef = useRef<((blob: Blob, abort: AbortController) => Promise<void>) | null>(null);
+  // KI-168 (2026-05-15) — streaming-voice path replaces the legacy
+  // useLiveConversation full-duplex VAD machinery. Interim transcript shows
+  // in the chat input as the user speaks; browser silence-detection auto-
+  // submits the final transcript through send().
+  //
   // KI-165 (2026-05-15) — typed-text request inflight flag, observed by the
-  // voice hook so background-noise-triggered captures during a typed-text
-  // turn are discarded silently instead of clobbering the text response.
+  // voice hook so a transcript that finalises while a typed-text turn is
+  // racing is dropped silently instead of clobbering the text response.
   // Set to true at the start of `send()`, reset to false in its finally.
   // Use a ref (not state) so the voice hook reads the latest value without
   // re-rendering / re-subscribing.
   const isTextRequestPendingRef = useRef(false);
-  const live = useLiveConversation({
-    onUtterance: async (blob, abort) => {
-      const fn = liveOnUtteranceRef.current;
-      if (fn) await fn(blob, abort);
-    },
+
+  // Compatibility surface: the rest of the component (PTT path, UI pill, mic
+  // blocked indicator) still references live.live / live.setLive /
+  // live.recording / live.micPermissionDenied — preserve that shape so the
+  // rename is contained.
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [voiceListening, setVoiceListening] = useState(false);
+  const [voicePermDenied, setVoicePermDenied] = useState(false);
+  // Submit handler — bound to the latest send() via a ref so the hook
+  // doesn't need to re-subscribe on every closure change.
+  const voiceSubmitRef = useRef<((text: string) => void) | null>(null);
+  const streamingVoice = useStreamingVoice({
+    enabled: voiceEnabled,
+    language: ttsLang,
     isTextRequestPendingRef,
+    onInterimTranscript: (text) => {
+      // Show the running transcript in the chat input area as the user speaks.
+      setInput(text);
+    },
+    onFinalTranscript: (text) => {
+      // Browser detected end-of-speech — auto-submit through the regular
+      // send() path (which clears the input).
+      const submit = voiceSubmitRef.current;
+      if (submit) submit(text);
+    },
+    onError: (msg) => {
+      // Surface as an inline assistant message + drop the pill into blocked
+      // state if it's a permission failure. Match the legacy
+      // micPermissionDenied UX so the existing "🔇 Mic blocked" branch fires.
+      if (/Mic permission denied|No microphone/i.test(msg)) {
+        setVoicePermDenied(true);
+        setVoiceEnabled(false);
+      }
+      setMessages((m) => [
+        ...m,
+        { id: `sys_${Date.now()}`, role: "assistant", content: msg },
+      ]);
+    },
+    onListening: setVoiceListening,
   });
+  // Legacy-shape adapter so the rest of the file's `live.*` refs keep working.
+  const live = {
+    live: voiceEnabled,
+    recording: voiceListening,
+    micPermissionDenied: voicePermDenied || !streamingVoice.isSupported,
+    setLive: setVoiceEnabled,
+  };
 
   useEffect(() => {
     getHealth()
@@ -394,59 +438,24 @@ export default function Page() {
     }
   }
 
-  // Live-conversation onUtterance binding. Rebinds when relevant state changes
-  // so the latest sessionId / history / view are captured in the closure.
+  // KI-168 (2026-05-15) — streaming-voice submit binding. The browser does
+  // the STT; we just route the finalised transcript through send() so it
+  // shares the typed-text code path (history, view_context, retries, TTS
+  // reply, profile completeness refresh, etc.). The input clears as part
+  // of send().
   useEffect(() => {
-    liveOnUtteranceRef.current = async (blob, abort) => {
-      try {
-        setVoicePhase("transcribing"); // KI-038 — show indicator while STT runs
-        const transcribed = await postTranscribe(blob, ttsLang, abort.signal);
-        const text = (transcribed.text || "").trim();
-        if (text.length < 2) { setVoicePhase(null); return; }
-
-        pushUser(text);
-        setVoicePhase("thinking"); // KI-038 — STT done; brain in flight now
-        const history: ChatMessage[] = messages.map((m) => ({ role: m.role, content: m.content }));
-        const active_view: "chat" | "marketplace" | "profile" | "premium" | "policy_detail" =
-          openPolicy ? "policy_detail" :
-          showMarketplace ? "marketplace" :
-          showProfile ? "profile" :
-          showPremium ? "premium" :
-          "chat";
-
-        const res = await postChat({
-          user_text: text,
-          session_id: sessionId,
-          chat_history: history,
-          return_audio: true,
-          tts_language_code: ttsLang,
-          view_context: { active_view, active_policy_id: openPolicy?.policy_id },
-          signal: abort.signal,
-        });
-        setSessionId(res.session_id);
-        getProfileCompleteness(res.session_id)
-          .then(setProfileCompleteness)
-          .catch(() => {});
-        const audioUrl = res.audio_base64 ? audioBlobURLFromBase64(res.audio_base64) : undefined;
-        pushAssistant(res.reply_text, {
-          citations: res.citations,
-          audioUrl,
-          brain: res.brain_used,
-          latencyMs: res.latency_ms,
-          blocked: res.blocked,
-        });
-        // KI-030 — playback handled by the in-DOM <audio> in Message component
-        // (autoplay-on-mount); needed so barge-in's querySelectorAll("audio")
-        // can pause it. See comment in the typed-send branch.
-      } catch (e: unknown) {
-        const name = (e as { name?: string })?.name;
-        if (name === "AbortError") { setVoicePhase(null); return; } // barge-in
-        // eslint-disable-next-line no-console
-        console.error("[live mode] turn failed:", e);
-      } finally {
-        setVoicePhase(null); // KI-038 — clear indicator once turn lands
-      }
+    voiceSubmitRef.current = (text: string) => {
+      const t = text.trim();
+      if (t.length < 2) return;
+      // Mirror the typed-input flow: drop transcript into the input
+      // (so the user sees their final words land in the box for a frame
+      // before send() clears it) then submit.
+      setInput(t);
+      void send(t);
     };
+    // send() reads `messages` / `sessionId` / `ttsLang` / view flags via
+    // closure; rebind whenever they change so the latest values are used.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages, sessionId, ttsLang, openPolicy, showMarketplace, showProfile, showPremium]);
 
   async function startRecording() {

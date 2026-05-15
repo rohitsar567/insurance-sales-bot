@@ -80,9 +80,15 @@ class SalesBrainResult:
 # 25s mirrors fact_find_brain's KI-075 setting — gives NIM cold-start headroom
 # + leaves room for one chain fallback. The fast-brain chain already has its
 # own per-link + total-chain budget; this wait_for is a belt-and-braces stop.
-_TIMEOUT_S: float = 25.0
+_TIMEOUT_S: float = 45.0         # KI-170 — qwen3-next-80b + JSON mode regularly lands 15-25s; 25s breached periodically
 _MAX_TOKENS: int = 700           # prose + structured JSON object with safety margin
 _TEMPERATURE: float = 0.6        # mirrors fact_find_brain — conversational warmth
+
+# KI-169 — strip <think>...</think> blocks the LLM may emit inside the JSON
+# reply value (vs. as a preamble before the JSON, which _parse_brain_json
+# already handles).
+import re as _re_for_think
+_REPLY_THINK_BLOCK = _re_for_think.compile(r"<think>.*?</think>", _re_for_think.DOTALL)
 
 
 # ----------------------------------------------------------------------------
@@ -139,6 +145,7 @@ CONVERSATION RULES:
 - Indian English is fine — "₹", "lakh", "metro/tier-2 city", "BP", "diabetes" all natural.
 - On health conditions, be straight: hiding a condition lowers premium today but turns into a denied claim later. Encourage honesty without lecturing.
 - Never use markdown bold/italics — your reply may be read aloud by TTS.
+- NEVER include <think> tags or chain-of-thought reasoning in the "reply" field. The "reply" field is the EXACT prose shown to the user. Any internal reasoning is forbidden in "reply" — keep it natural and conversational.
 
 OUTPUT FORMAT — STRICT:
 Return a SINGLE JSON object with exactly these three keys:
@@ -432,6 +439,13 @@ async def drive_sales_brain(
     if not isinstance(reply_text, str):
         reply_text = str(reply_text)
     reply_text = reply_text.strip()
+    # KI-169 — strip <think>...</think> blocks the LLM may have emitted INSIDE
+    # the reply field value (vs. as a preamble to the JSON, which
+    # _parse_brain_json handles separately). qwen3-next-80b occasionally emits
+    # all of its reasoning inside <think>...</think> in the reply string,
+    # leaving nothing user-facing after a strip downstream.
+    if reply_text and "<think>" in reply_text:
+        reply_text = _REPLY_THINK_BLOCK.sub("", reply_text).strip()
 
     captures_raw = parsed.get("captures") or parsed.get("captured") or {}
     if not isinstance(captures_raw, dict):
@@ -445,16 +459,74 @@ async def drive_sales_brain(
     # Normalize + validate captures via the deterministic post-processor.
     captured_updates = normalize_captures(captures_raw, profile)
 
-    # Empty reply text is a soft-fail — the brain produced JSON but no prose.
-    # Surface this to the caller so it can decide what to do.
+    # KI-169 — empty reply text after <think>-strip: retry ONCE with a
+    # stricter reminder before failing. The retry adds a system message
+    # forbidding <think> tags + reminds the LLM to put prose in "reply".
     if not reply_text:
+        logging.info(
+            "sales_brain empty reply after think-strip — retrying once (session=%s, model=%s)",
+            session_id, served_model,
+        )
+        retry_messages = list(messages) + [
+            ChatMessage(
+                role="system",
+                content=(
+                    "REMINDER: Your previous response had an empty or <think>-only reply. "
+                    "The 'reply' field MUST contain natural user-facing prose. "
+                    "Do NOT include any <think> blocks or internal reasoning in 'reply'. "
+                    "Try again with a clean conversational reply."
+                ),
+            ),
+        ]
+        try:
+            retry_result = await asyncio.wait_for(
+                llm.chat(
+                    messages=retry_messages,
+                    temperature=_TEMPERATURE,
+                    max_tokens=_MAX_TOKENS,
+                    response_format={"type": "json_object"},
+                ),
+                timeout=_TIMEOUT_S,
+            )
+            retry_parsed = _parse_brain_json((retry_result.text or "").strip())
+            if retry_parsed:
+                retry_reply = retry_parsed.get("reply") or ""
+                if isinstance(retry_reply, str):
+                    retry_reply = retry_reply.strip()
+                    if "<think>" in retry_reply:
+                        retry_reply = _REPLY_THINK_BLOCK.sub("", retry_reply).strip()
+                    if retry_reply:
+                        # Merge new captures from retry on top of first attempt
+                        retry_captures = retry_parsed.get("captures") or {}
+                        if isinstance(retry_captures, dict):
+                            merged = dict(captures_raw)
+                            merged.update(retry_captures)
+                            captured_updates = normalize_captures(merged, profile)
+                        retry_ready = retry_parsed.get("ready_for_recommendations")
+                        if retry_ready is not None:
+                            ready_for_recommendations = bool(retry_ready)
+                        retry_model = getattr(retry_result, "model", served_model) or served_model
+                        return SalesBrainResult(
+                            reply_text=retry_reply,
+                            captured_updates=captured_updates,
+                            ready_for_recommendations=ready_for_recommendations,
+                            brain_used=f"sales_brain::nim:{retry_model}::retry",
+                            raw_json=retry_parsed,
+                            error_reason=None,
+                        )
+        except (asyncio.TimeoutError, Exception) as retry_exc:  # noqa: BLE001
+            logging.warning(
+                "sales_brain retry also failed (session=%s): %s",
+                session_id, type(retry_exc).__name__,
+            )
+        # Retry failed — bubble up to orchestrator
         return SalesBrainResult(
             reply_text="",
             captured_updates=captured_updates,
             ready_for_recommendations=ready_for_recommendations,
             brain_used="sales_brain::error:empty_reply",
             raw_json=parsed,
-            error_reason=f"reply_field_empty from model={served_model}",
+            error_reason=f"reply_field_empty from model={served_model} (retry also empty)",
         )
 
     return SalesBrainResult(
