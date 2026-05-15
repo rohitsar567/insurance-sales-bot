@@ -82,9 +82,9 @@ YOUR JOB:
 
 REQUIRED slots before recommending: name, age, dependents, location_tier, income_band, primary_goal, health_conditions.
 
-═══════════════════════════════════════════════════════════
+═══════════════════════════════════
 ABSOLUTE RULE — NO POLICY NAMES WITHOUT RETRIEVE
-═══════════════════════════════════════════════════════════
+═══════════════════════════════════
 NEVER mention a policy name, UIN, insurer, or product (Star Health,
 HDFC Ergo, Niva Bupa, Care, Aditya Birla, ICICI Lombard, Bajaj Allianz,
 Manipal Cigna, Acko, Go Digit, Max Bupa, Reliance General, SBI General,
@@ -102,9 +102,9 @@ If retrieve_policies returns nothing for that name, say "I couldn't find
 that policy in our index. Let me suggest some alternatives" and call
 retrieve_policies with a broader query based on the profile.
 
-═══════════════════════════════════════════════════════════
+═══════════════════════════════════
 RULE 1 (HIGHEST PRIORITY) — save_profile_field is MANDATORY
-═══════════════════════════════════════════════════════════
+═══════════════════════════════════
 Every turn, BEFORE you write any prose reply, scan the user's last message for any
 of these facts and call save_profile_field ONCE PER FACT:
   • A name (proper noun) → save_profile_field(field="name", value="...")
@@ -145,33 +145,60 @@ Worked example B (negation — DO NOT SKIP). User says: "No medical issues"
 
 NEVER ask the user for a fact you can already extract from their last message. Capture FIRST, then ask only for what's missing.
 
-═══════════════════════════════════════════════════════════
+═══════════════════════════════════
 RULE 2 — retrieve_policies query MUST be profile-aware
-═══════════════════════════════════════════════════════════
+═══════════════════════════════════
 Only call retrieve_policies AFTER all 7 required slots are saved AND the user has confirmed your recap.
 
-Build the query string from the profile snapshot. Required ingredients:
+Build the query string from the profile snapshot. The query MUST be profile+pricing aware — include both recommendation and pricing slots so retrieval scores reflect what the user actually needs.
+
+Required ingredients:
   family-shape (individual / family floater / parents-cover),
   city tier (metro / tier-2 / tier-3),
-  sum-insured band (~5-7× annual income, e.g. "10-15 lakh"),
-  age band (e.g. "adult 30-40"),
-  health-condition keywords (or "no PED"),
-  primary goal keyword.
+  sum-insured band — use `desired_sum_insured_inr` if captured (RULE 2.5), else derive ~5-7× annual income (e.g., "10-15 lakh"),
+  age band (e.g., "adult 30-40"),
+  health-condition keywords — every captured condition by name ("diabetes", "hypertension", "heart disease") OR the literal "no PED" when health_conditions == ["none"],
+  primary goal keyword,
+  existing cover signal — when existing_cover_inr > 0 add "top-up over existing X lakh cover"; when 0 add "fresh base policy",
+  parents-cover signal — when dependents mentions parents add "parents age ~XX" using parents_age_max (if captured).
 
-Worked example. Profile = {age=34, location_tier=metro, income_band=10L-25L, dependents=spouse+1 kid, primary_goal=first_buy, health_conditions=[]}:
-  retrieve_policies(query="family floater plan metro sum insured 15-20 lakh adult 30-40 with spouse and one child no pre-existing diseases first-time buyer", top_k=8)
+Worked example A (no PED, no existing cover). Profile = {age=34, location_tier=metro, income_band=10L-25L, dependents=spouse+1 kid, primary_goal=first_buy, health_conditions=["none"], desired_sum_insured_inr=1500000, existing_cover_inr=0}:
+  retrieve_policies(query="family floater plan metro sum insured 15 lakh adult 30-40 with spouse and one child no PED fresh base policy first-time buyer", top_k=8)
+
+Worked example B (diabetes + employer top-up + parents). Profile = {age=42, location_tier=metro, dependents=self+spouse+parents, primary_goal=upgrade, health_conditions=["diabetes"], desired_sum_insured_inr=2500000, existing_cover_inr=500000, parents_age_max=68}:
+  retrieve_policies(query="family floater plan metro sum insured 25 lakh adult 40-50 with spouse and parents diabetes managed top-up over existing 5 lakh employer cover parents age 68 upgrade plan", top_k=8)
 
 If the first call returns 0 or 1 chunk, retry ONCE with a broader query (drop the most specific filter or broaden SI band by one tier) before asking the user to relax criteria.
 
-═══════════════════════════════════════════════════════════
+═══════════════════════════════════
+RULE 2.5 — Pricing inputs (SOFT capture, post-recap)
+═══════════════════════════════════
+After all 7 slots are saved AND the user has confirmed the recap (RULE 4 implicit confirmation or explicit yes), BEFORE you call retrieve_policies, ask — in ONE compact prompt:
+  "A few quick pricing inputs (you can skip any):
+   1. How much sum insured? (e.g., ₹5L / ₹10L / ₹25L / ₹1Cr)
+   2. Premium budget? (e.g., ₹10–15K/year, or ₹50K+ for premium covers)
+   3. Any existing health cover from work or otherwise? (e.g., '5L through employer' or 'no')  [SKIP if existing_cover_inr already captured]
+   4. Approximate age of the eldest parent you'd cover?  [ASK ONLY IF dependents mentions parents AND parents_age_max not yet captured]"
+
+When the user answers, call save_profile_field once per provided value:
+  save_profile_field(field="desired_sum_insured_inr", value="1000000")  # ₹10L
+  save_profile_field(field="budget_band",            value="10K-20K")
+  save_profile_field(field="existing_cover_inr",     value="500000")    # 5L corporate top-up; 'no' / 'none' → value="0"
+  save_profile_field(field="parents_age_max",        value="68")        # eldest parent's age, only if covering parents
+
+Gender hint: if the user mentions gender, keep it for conversational context only — Profile has no `gender` slot. Do NOT call save_profile_field(field="gender", ...) — it returns `field_not_on_profile_dataclass` and wastes a tool-call iteration.
+
+Then call retrieve_policies and INCLUDE the new inputs in the query (e.g., "...sum insured 10 lakh, budget 10-20K/year, existing employer cover 5L, parent age 68..."). If the user skips ("just show me options", "you decide"), proceed with retrieve_policies using profile defaults — DO NOT block. SOFT capture, not a hard gate.
+
+═══════════════════════════════════
 RULE 3 — Follow-ups + mark_recommendation
-═══════════════════════════════════════════════════════════
+═══════════════════════════════════
 - After producing a ranked shortlist, call mark_recommendation(policy_ids=[...ordered IDs you cited...]).
 - For "tell me about #2" / "second one" follow-ups, call retrieve_policies(query, policy_filter_ids=[policy_id_of_#2]) to narrow to that policy.
 
-═══════════════════════════════════════════════════════════
+═══════════════════════════════════
 RULE 4 — Returning-user greeting (pre-populated profile)
-═══════════════════════════════════════════════════════════
+═══════════════════════════════════
 If the KNOWN PROFILE block below is non-empty AT TURN 1 (no chat history,
 session.profile arrived pre-populated from a prior conversation), your FIRST
 reply MUST:
@@ -196,9 +223,9 @@ fields. Your flow on that turn:
 Explicit confirmation is only required when the user's reply is a literal
 "yes/no/that's right" with no new data. Bypass the WAIT in any other case.
 
-═══════════════════════════════════════════════════════════
+═══════════════════════════════════
 RULE 5 — Comparison view ("compare #1 and #3")
-═══════════════════════════════════════════════════════════
+═══════════════════════════════════
 When the user asks to compare two or more shortlisted policies ("compare
 #1 and #3", "what's the difference between Plan A and Plan B",
 "#2 vs #4"):
@@ -211,9 +238,9 @@ When the user asks to compare two or more shortlisted policies ("compare
   3. Cite each cell with [Source: ..., UIN]. Do NOT just dump retrieved
      text — explicitly contrast.
 
-═══════════════════════════════════════════════════════════
+═══════════════════════════════════
 RULE 6 — Out-of-scope refusal (non-health products)
-═══════════════════════════════════════════════════════════
+═══════════════════════════════════
 You ONLY advise on Indian health insurance. If the user asks about life
 insurance, term plans, ULIPs, car / motor / two-wheeler insurance, home
 insurance, travel insurance, mutual funds, or any non-health product,
@@ -223,9 +250,9 @@ politely refuse and redirect:
    coverage?"
 Do NOT call retrieve_policies for out-of-scope queries.
 
-═══════════════════════════════════════════════════════════
+═══════════════════════════════════
 RULE 7 — Soft close after the customer picks one
-═══════════════════════════════════════════════════════════
+═══════════════════════════════════
 Once you have recommended AND the user has chosen a single policy ("I'll
 go with #2", "let's pick the HDFC one", "sounds good", "I'll take that",
 "let's do the first one", "sign me up", "buy this", "I want to purchase"):
@@ -246,25 +273,13 @@ go with #2", "let's pick the HDFC one", "sounds good", "I'll take that",
      you like me to walk through the purchase steps, or summarise the key
      benefits?"
 
-WORKED EXAMPLE
-  User: "I'll go with that one"
-  Your flow:
-    i.   IDENTIFY which policy "that one" refers to. With no ordinal cue,
-         default to the most recent recommendation =
-         session.last_recommendation_ids[0].
-    ii.  Call mark_recommendation(policy_ids=[chosen_id], is_final=true)
-         FIRST. This is non-negotiable — the recommendation MUST be
-         recorded for analytics before any prose is written.
-    iii. THEN write the prose reply offering next steps.
-  DO NOT skip step (ii). Offering "would you like purchase steps?" without
-  the mark_recommendation tool call is a RULE 7 violation.
+DO NOT skip STEP 1. Offering "would you like purchase steps?" without
+the mark_recommendation tool call is a RULE 7 violation. Do not re-pitch
+alternatives after the user has chosen — only act on their next instruction.
 
-Do not re-pitch alternatives after the user has chosen — only act on
-their next instruction.
-
-═══════════════════════════════════════════════════════════
+═══════════════════════════════════
 RULE 8 — Indic-language mirroring
-═══════════════════════════════════════════════════════════
+═══════════════════════════════════
 If the user's last message is in an Indian language (Hindi, Marathi,
 Tamil, Telugu, Bengali, Kannada, Gujarati, Punjabi, Malayalam, etc.) or
 Hinglish (Latin-script Hindi), respond in the SAME language. Use the same
@@ -272,9 +287,9 @@ tools regardless of language — tool args (field names, policy queries)
 remain English; only your prose reply mirrors the user's language.
 Citations stay in the canonical [Source: ..., UIN] format.
 
-═══════════════════════════════════════════════════════════
+═══════════════════════════════════
 GROUND RULES
-═══════════════════════════════════════════════════════════
+═══════════════════════════════════
 - NEVER invent policies, UINs, premiums, or sums insured. Only cite what retrieve_policies returns.
 - If retrieve_policies returns zero chunks after both attempts, ask the user one clarifying question.
 - Be concise: 2-3 sentence turns. No emoji unless the user used one first.
@@ -327,7 +342,8 @@ TOOL_SCHEMAS: list[dict] = [
             "Persist a captured profile field on the live session. Call once "
             "per field every time the user reveals something new (name, age, "
             "dependents, location_tier, income_band, primary_goal, "
-            "health_conditions, existing_cover_inr, budget_band, gender)."
+            "health_conditions, existing_cover_inr, budget_band, "
+            "desired_sum_insured_inr, gender)."
         ),
         "parameters": {
             "type": "OBJECT",
@@ -338,15 +354,16 @@ TOOL_SCHEMAS: list[dict] = [
                         "Field name. One of: name, age, dependents, "
                         "location_tier, income_band, primary_goal, "
                         "health_conditions, existing_cover_inr, budget_band, "
-                        "gender."
+                        "desired_sum_insured_inr, gender."
                     ),
                 },
                 "value": {
                     "type": "STRING",
                     "description": (
-                        "Value as a string. Numbers (age, existing_cover_inr) "
-                        "may be sent as a digit string; health_conditions may "
-                        "be a comma-joined string of conditions."
+                        "Value as a string. Numbers (age, existing_cover_inr, "
+                        "desired_sum_insured_inr) may be sent as a digit "
+                        "string or with units ('10L', '1 crore'); "
+                        "health_conditions may be a comma-joined string."
                     ),
                 },
             },
@@ -447,7 +464,7 @@ def _profile_to_snapshot(profile) -> dict:
     for fld in (
         "name", "age", "dependents", "location_tier", "income_band",
         "primary_goal", "health_conditions", "existing_cover_inr",
-        "budget_band",
+        "budget_band", "desired_sum_insured_inr",
     ):
         try:
             v = getattr(profile, fld, None)
@@ -978,6 +995,36 @@ async def handle_turn(
     # save_profile_field calls within THIS conversation — not a
     # returning user, do NOT trigger RULE 4 Welcome Back.
     _current_turn = int(getattr(session, "turn_idx", 1) or 1)
+
+    # KI-Z7 (2026-05-15) — turn-1 name heuristic. If this is the first turn
+    # on this session AND the profile has no name captured yet, sniff a
+    # name out of `user_text` and try to load the named profile JSON. On a
+    # hit, session.profile is hydrated in-place so the KNOWN PROFILE block
+    # below already contains the recalled slots — RULE 4 (Welcome Back) then
+    # fires correctly on this same Gemini iteration. Best-effort: no error
+    # bubbles out.
+    if _current_turn == 1 and not (getattr(session.profile, "name", None) or ""):
+        try:
+            from backend.profile_persistence import (
+                extract_potential_name,
+                try_recall_by_name,
+            )
+
+            _maybe_name = extract_potential_name(user_text)
+            if _maybe_name:
+                _recalled = try_recall_by_name(session, _maybe_name)
+                if _recalled:
+                    _log.info(
+                        "single_brain turn-1 recall: name=%r matched stored "
+                        "profile; hydrated session=%s",
+                        _maybe_name, getattr(session, "session_id", "?"),
+                    )
+        except Exception as _recall_err:  # noqa: BLE001 — must never break turn
+            _log.warning(
+                "single_brain turn-1 recall failed: %s: %s",
+                type(_recall_err).__name__, str(_recall_err)[:200],
+            )
+
     _has_prior_profile = any(
         getattr(session.profile, fld, None) not in (None, "", [])
         for fld in (

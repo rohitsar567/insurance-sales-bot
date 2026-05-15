@@ -488,17 +488,33 @@ def _profile_tuned_weights(profile: Optional[dict]) -> dict[str, float]:
             w["Waiting-Period Friction"] -= 0.04
 
     # ---- DEPENDENTS ----
+    # Family signals push two specific dials per task spec:
+    #   maternity coverage  -> sits inside Coverage Breadth
+    #   room-rent capping   -> sits inside Cost Predictability
+    # Both go UP when a spouse / kid is on the policy because multi-occupant
+    # families absorb sub-limit pain harder than singles.
+    #
+    # We DON'T let dependents pull Renewal Protection or Claim Experience
+    # downward when the buyer is already in the senior bracket — for a 55+
+    # buyer with a family, both renewal lock-in and claim reliability matter
+    # MORE, not less. Earlier versions had the family penalty silently cancel
+    # the age boost, so senior+family ended up with renewal-weight BELOW
+    # default. Now the family discount applies only to younger buyers.
     deps = (profile.get("dependents") or "").lower()
+    is_senior = isinstance(age, int) and age >= 50
     if any(k in deps for k in ("kid", "child")):
         w["Coverage Breadth"] += 0.03              # paediatric + day-care + immunisation
-        w["Bonus & Loyalty"] += 0.01               # free checkups for family
-        w["Cost Predictability"] -= 0.02           # family floater premiums are higher
-        w["Renewal Protection"] -= 0.02
+        w["Cost Predictability"] += 0.02           # room-rent caps hurt families more
+        w["Bonus & Loyalty"] -= 0.03               # de-emphasise sweeteners
+        if not is_senior:
+            w["Renewal Protection"] -= 0.02
     if any(k in deps for k in ("spouse", "wife", "husband", "partner")):
-        w["Coverage Breadth"] += 0.02              # maternity becomes relevant
+        w["Coverage Breadth"] += 0.03              # maternity becomes relevant
+        w["Cost Predictability"] += 0.02           # room-rent cap matters when both hospitalise
         w["Waiting-Period Friction"] += 0.02       # maternity 36mo wait matters
-        w["Bonus & Loyalty"] -= 0.02
-        w["Renewal Protection"] -= 0.02
+        w["Bonus & Loyalty"] -= 0.04
+        if not is_senior:
+            w["Renewal Protection"] -= 0.03
 
     if profile.get("parents_to_insure") or "parent" in deps:
         w["Coverage Breadth"] += 0.04

@@ -161,6 +161,17 @@ class ChatResponse(BaseModel):
             "non-empty on the live session.profile at end-of-turn."
         ),
     )
+    # KI-Z7 (2026-05-15) — Feature B. True when single_brain.handle_turn's
+    # turn-1 name heuristic matched a stored profile and hydrated the
+    # session. Frontend renders a "Welcome back, <name>!" banner with the
+    # last predicted-premium band when this flips True on the first turn.
+    returning_user_recalled: bool = Field(
+        False,
+        description=(
+            "True iff a stored named-profile was matched + hydrated on the "
+            "current turn (typically only on turn 1)."
+        ),
+    )
 
 
 class TTSRequest(BaseModel):
@@ -213,6 +224,40 @@ class UploadResponse(BaseModel):
 # uses the same _REQUIRED_FOR_READY tuple; we mirror the call here instead of
 # duplicating the slot list so a future addition (e.g. risk_appetite) only
 # needs to be applied in brain_tools.
+# KI-Z7 (2026-05-15) — Feature B helper. Distinguishes "first-time capture
+# on turn 1" from "stored profile recalled on turn 1". Both end with a
+# non-empty Profile on the session; only the latter should flip
+# returning_user_recalled. Heuristic: if EVERY currently-filled slot was
+# written THIS turn (i.e. lives in `profile_updates`), the user just typed
+# their facts — NOT a recall. If at least one filled slot is NOT in
+# profile_updates, those slots came from the recall hydration.
+_FEATURE_B_SLOT_LIST: tuple[str, ...] = (
+    "name", "age", "dependents", "location_tier",
+    "income_band", "primary_goal", "health_conditions",
+)
+
+
+def _every_filled_slot_was_set_this_turn(profile, profile_updates: dict) -> bool:
+    """Return True iff every populated slot on `profile` was also set in
+    `profile_updates` this turn. Used by the recall detector to suppress
+    the banner when the user just freshly introduced themselves.
+    """
+    if not isinstance(profile_updates, dict):
+        profile_updates = {}
+    pu = set(profile_updates.keys())
+    any_filled = False
+    for fld in _FEATURE_B_SLOT_LIST:
+        v = getattr(profile, fld, None)
+        if v in (None, "", []):
+            continue
+        any_filled = True
+        if fld not in pu:
+            return False
+    # If nothing was filled at all, "every filled" is vacuously True →
+    # detector should NOT flip returning_user_recalled.
+    return True if any_filled else True
+
+
 def _compute_profile_complete(session_id: str) -> bool:
     """Read the live session profile and return True iff every required slot
     is populated. Tolerant of every failure mode (no session yet, session
@@ -545,6 +590,11 @@ async def chat(req: ChatRequest, request: Request):
     if preferred_codec not in _allowed_codecs:
         preferred_codec = "audio/wav"
     t_chat0 = time.time()
+    # KI-Z7 (2026-05-15) — pre-turn snapshot for the returning-user-recall
+    # detector below. Defaults match the "no session yet" case so the
+    # detector simply doesn't fire on the legacy orchestrator path.
+    _pre_turn_name: str = ""
+    _pre_turn_idx: int = 0
     # KI-106 — never let an inner TimeoutError / unhandled exception bubble out
     # of handle_turn as a 500. C4 NRI persona saw 5× HTTP 500s with
     # "Orchestrator failed: TimeoutError" because the outer non-fact-find
@@ -562,6 +612,13 @@ async def chat(req: ChatRequest, request: Request):
             from backend.session_state import get_session
 
             _sb_session = get_session(session_id)
+            # KI-Z7 — snapshot the pre-turn (name, turn_idx) so we can tell
+            # AFTER handle_turn whether the turn-1 name heuristic actually
+            # recalled a stored profile (and stamp ChatResponse accordingly).
+            _pre_turn_name = (
+                getattr(_sb_session.profile, "name", None) or ""
+            ).strip()
+            _pre_turn_idx = int(getattr(_sb_session, "turn_idx", 0) or 0)
             # Z2 fix — Issue 3 (brain election bouncing). Once a session
             # has had ANY successful single_brain turn, it must stay on
             # single_brain for the rest of its lifetime. Falling back to
@@ -831,6 +888,63 @@ async def chat(req: ChatRequest, request: Request):
     except Exception:  # noqa: BLE001 — log IO must never block a reply
         pass
 
+    # KI-Z7 (2026-05-15) — Feature A. Auto-persist the live profile to disk
+    # + Chroma AFTER handle_turn returns. brain_tools.save_profile_field
+    # only mutates the in-memory Profile; this flushes the union to the
+    # canonical name-keyed JSON and refreshes the user's profile chunk so a
+    # NEW session can recover the full profile via the turn-1 name recall.
+    # Wrapped in try/except — persistence failure NEVER breaks the reply.
+    _returning_user_recalled = False
+    try:
+        from backend.session_state import get_session as _get_session_p
+        from backend.profile_persistence import auto_persist_session
+
+        _persist_session = _get_session_p(session_id)
+        await auto_persist_session(_persist_session)
+
+        # KI-Z7 — Feature B detection. The pre-turn snapshot (captured before
+        # single_brain.handle_turn ran) lets us tell whether the turn-1 name
+        # heuristic actually hydrated a stored profile. Conditions:
+        #   (a) this WAS the first turn (pre_turn_idx == 0),
+        #   (b) no name on the profile BEFORE the turn ("" → recalled),
+        #   (c) a name AND at least one other slot are present AFTER the turn.
+        # Frontend uses this flag to render the "Welcome back" banner.
+        if USE_SINGLE_BRAIN:
+            try:
+                _post_name = (
+                    getattr(_persist_session.profile, "name", None) or ""
+                ).strip()
+                _post_has_other_slots = any(
+                    getattr(_persist_session.profile, fld, None) not in (None, "", [])
+                    for fld in (
+                        "age", "dependents", "location_tier",
+                        "income_band", "primary_goal", "health_conditions",
+                    )
+                )
+                if (
+                    _pre_turn_idx == 0
+                    and not _pre_turn_name
+                    and _post_name
+                    and _post_has_other_slots
+                    # save_profile_field captures a NEW name on turn 1 too —
+                    # only flag as returning when prior slots came from the
+                    # recall path, NOT from in-this-turn extraction. The
+                    # profile_updates dict carries fields written THIS turn;
+                    # if EVERY filled slot is in profile_updates, it's a
+                    # first-time capture, NOT a recall.
+                    and not _every_filled_slot_was_set_this_turn(
+                        _persist_session.profile, turn.profile_updates,
+                    )
+                ):
+                    _returning_user_recalled = True
+            except Exception:  # noqa: BLE001
+                pass
+    except Exception as _persist_err:  # noqa: BLE001
+        logging.warning(
+            "auto_persist_session failed (session=%s): %s: %s",
+            session_id, type(_persist_err).__name__, _persist_err,
+        )
+
     # Bug B defense — CitationOut requires page_start/page_end as ints, but
     # single_brain.TurnResult.citations dicts don't carry those fields (its
     # citation shape is {chunk_id, policy_id, policy_name, insurer_slug,
@@ -880,6 +994,7 @@ async def chat(req: ChatRequest, request: Request):
             blocked=turn.blocked,
             profile_updates=turn.profile_updates,
             profile_complete=_compute_profile_complete(session_id),
+            returning_user_recalled=_returning_user_recalled,
         )
     except Exception as _resp_err:  # noqa: BLE001
         # Anything else (TypeError/AttributeError/ValidationError) on the
@@ -2498,6 +2613,249 @@ async def policy_scorecard(
     )
 
 
+# ----------------------------------------------------------------------------
+# Bulk scorecard endpoint — powers the PolicyCompareModal scorecard widget.
+# ----------------------------------------------------------------------------
+# Why bulk: the compare modal renders 2-4 scorecards in parallel and each is
+# profile-tuned. Doing N sequential GETs from the client wastes the per-policy
+# JSON I/O cost (we re-load every reviews file even for the same insurer) and
+# fans out N renders. One POST with the full profile + id list lets us:
+#   - load each reviews file once per slug (memoized in the loop)
+#   - return missing policies as N/A so the client renders a clean placeholder
+#   - share one profile dict — no copy-paste of every field in N query strings
+class BulkScorecardRequest(BaseModel):
+    policy_ids: list[str]
+    profile: Optional[dict] = None
+
+
+class BulkScorecardEntry(BaseModel):
+    policy_id: str
+    policy_name: str
+    insurer_slug: str
+    overall_grade: str               # "A" / "B+" / etc — letter only for missing
+    overall_score: int               # 0-100
+    sub_scores: dict[str, int]       # {coverage_breadth: 82, cost_predictability: 64, ...}
+    profile_rationale: list[str]     # bullets explaining WHY this score for this user
+    data_completeness_pct: float
+    one_liner: str = ""
+    # raw signals per sub-score so the widget can pop-out a tooltip with detail
+    signals: dict[str, list[str]] = Field(default_factory=dict)
+
+
+class BulkScorecardResponse(BaseModel):
+    per_policy: dict[str, BulkScorecardEntry]
+
+
+def _slugify_subscore(name: str) -> str:
+    """'Coverage Breadth' -> 'coverage_breadth' (stable key for the widget)."""
+    return name.lower().replace("-", "_").replace("&", "and").replace(" ", "_").replace("__", "_")
+
+
+def _profile_rationale_for(policy: dict, profile: Optional[dict], sub_scores) -> list[str]:
+    """Turn raw signals + profile facts into 2-5 plain-English bullets.
+
+    Each bullet is shaped as 'Strong fit:' or 'Weak fit:' so the buyer can scan
+    pros and cons at a glance. We anchor each bullet to a concrete profile
+    attribute (you mentioned X) so the user trusts the personalization is real.
+    """
+    if not profile:
+        return []
+    bullets: list[str] = []
+    conditions = profile.get("health_conditions") or []
+    cond_str = " ".join(str(c).lower() for c in conditions) if isinstance(conditions, list) else ""
+    age = profile.get("age") if isinstance(profile.get("age"), int) else None
+    deps = (profile.get("dependents") or "").lower()
+    loc = profile.get("location_tier")
+    goal = (profile.get("primary_goal") or "").lower()
+    existing = profile.get("existing_cover_inr")
+
+    # Pre-existing disease handling
+    if cond_str and any(c in cond_str for c in ("diab", "bp", "hyper", "thyroid", "heart")):
+        ped = policy.get("pre_existing_disease_waiting_months")
+        try:
+            ped_n = int(ped) if ped is not None else None
+        except (TypeError, ValueError):
+            ped_n = None
+        if ped_n is not None:
+            if ped_n <= 24:
+                bullets.append(f"Strong fit: PED waiting is only {ped_n} months — short for your {cond_str.strip()}.")
+            elif ped_n >= 48:
+                bullets.append(f"Weak fit: {ped_n}-month PED waiting is long for your {cond_str.strip()} — alternatives offer 24-36 months.")
+            else:
+                bullets.append(f"Fair fit: {ped_n}-month PED waiting is standard for your {cond_str.strip()}.")
+
+    # Senior + claim reliability
+    if age and age >= 60:
+        nh = policy.get("network_hospital_count")
+        try:
+            nh_n = int(nh) if nh is not None else None
+        except (TypeError, ValueError):
+            nh_n = None
+        if nh_n is not None and nh_n >= 7000:
+            bullets.append(f"Strong fit: {nh_n:,}+ cashless hospitals matters at age {age} when access speed counts.")
+        elif nh_n is not None and nh_n < 3000:
+            bullets.append(f"Weak fit: only {nh_n} cashless hospitals — thin network for age {age}.")
+        maxr = policy.get("max_renewal_age")
+        if maxr and int(maxr) >= 99:
+            bullets.append(f"Strong fit: lifelong renewability — keeps protecting you past 70.")
+
+    # Family + room-rent / maternity
+    if any(k in deps for k in ("spouse", "wife", "husband", "partner", "kid", "child", "family")):
+        rrc = policy.get("room_rent_capping")
+        rrc_text = rrc if isinstance(rrc, str) else (rrc.get("limit_text") if isinstance(rrc, dict) else None)
+        if rrc_text and "no cap" in rrc_text.lower():
+            bullets.append("Strong fit: no room-rent cap — works for any hospital your family chooses.")
+        elif rrc_text and ("1%" in rrc_text or "%" in rrc_text):
+            metro_qual = " in a metro" if loc == "metro" else ""
+            bullets.append(f"Weak fit: room rent capped ({rrc_text[:40].strip()}) may be tight for hospitals{metro_qual}.")
+        if any(k in deps for k in ("spouse", "wife", "husband", "partner")):
+            mc = policy.get("maternity_coverage")
+            covered = mc.get("covered") if isinstance(mc, dict) else mc
+            if covered is True:
+                mw = policy.get("maternity_waiting_months")
+                bullets.append(
+                    f"Strong fit: maternity covered with {mw}-month wait — relevant to your spouse."
+                    if mw else
+                    "Strong fit: maternity covered — relevant to your spouse."
+                )
+            elif covered is False:
+                bullets.append("Weak fit: no maternity coverage — you'd need a separate rider.")
+
+    # First-time buyer — simplicity / premium predictability
+    if existing == 0:
+        copay = policy.get("copayment_pct")
+        try:
+            copay_n = float(copay) if copay is not None else None
+        except (TypeError, ValueError):
+            copay_n = None
+        if copay_n is not None and copay_n == 0:
+            bullets.append("Strong fit: zero co-pay — simpler to budget for as a first-time buyer.")
+        elif copay_n is not None and copay_n >= 20:
+            bullets.append(f"Weak fit: {copay_n:.0f}% co-pay adds a surprise out-of-pocket — hard to plan as a first-time buyer.")
+
+    # Tax-saving goal anchor
+    if "tax" in goal:
+        bullets.append("Note: premium qualifies for Section 80D deduction — aligned with your tax-saving goal.")
+
+    # If we still have <2 bullets, fall back to top sub-score deltas vs neutral
+    if len(bullets) < 2:
+        ranked = sorted(sub_scores, key=lambda s: s.score, reverse=True)
+        if ranked:
+            top = ranked[0]
+            bullets.append(f"Strongest area: {top.name} ({top.score}/100) — {top.summary.lower()}.")
+        if len(ranked) > 1:
+            bot = ranked[-1]
+            if bot.score < 60:
+                bullets.append(f"Watch out: {bot.name} ({bot.score}/100) — {bot.summary.lower()}.")
+
+    return bullets[:5]
+
+
+def _letter_grade_with_plus(score: int) -> str:
+    """Convert 0-100 to A / A- / B+ / B / B- / C+ / C / C- / D / F.
+
+    The base grade_for() returns flat letters (A/B/C/D/F). For the compare
+    widget the buyer wants finer distinction between e.g. an 84 (top of B) and
+    a 71 (bottom of B). Thresholds:
+        90+ A, 85-89 A-, 80-84 B+, 75-79 B, 70-74 B-,
+        65-69 C+, 60-64 C, 55-59 C-, 40-54 D, <40 F.
+    """
+    if score >= 90: return "A"
+    if score >= 85: return "A-"
+    if score >= 80: return "B+"
+    if score >= 75: return "B"
+    if score >= 70: return "B-"
+    if score >= 65: return "C+"
+    if score >= 60: return "C"
+    if score >= 55: return "C-"
+    if score >= 40: return "D"
+    return "F"
+
+
+@app.post("/api/scorecard/bulk", response_model=BulkScorecardResponse)
+async def scorecard_bulk(req: BulkScorecardRequest):
+    """Compute profile-tuned scorecards for N policies in one round-trip.
+
+    Body: { policy_ids: [...], profile: {...} }
+    Returns: { per_policy: { <policy_id>: { overall_grade, overall_score,
+                                            sub_scores, profile_rationale,
+                                            data_completeness_pct } } }
+
+    Missing policy_ids get overall_grade="N/A" + rationale=["Data not indexed"].
+    """
+    import json as _json
+    from backend.scorecard import build_scorecard
+
+    if not req.policy_ids:
+        raise HTTPException(400, "policy_ids must be a non-empty list")
+    if len(req.policy_ids) > 8:
+        raise HTTPException(400, "bulk scorecard caps at 8 policies per call")
+
+    profile = req.profile or None
+    insurer_cache: dict[str, Optional[dict]] = {}
+    out: dict[str, BulkScorecardEntry] = {}
+
+    for pid in req.policy_ids:
+        extracted_path = settings.EXTRACTED_DIR / f"{pid}.json"
+        if not extracted_path.exists():
+            out[pid] = BulkScorecardEntry(
+                policy_id=pid,
+                policy_name=pid,
+                insurer_slug="?",
+                overall_grade="N/A",
+                overall_score=0,
+                sub_scores={},
+                profile_rationale=["Data not indexed"],
+                data_completeness_pct=0.0,
+                one_liner="No extraction available for this policy.",
+                signals={},
+            )
+            continue
+        try:
+            policy = _json.loads(extracted_path.read_text())
+        except Exception as e:
+            out[pid] = BulkScorecardEntry(
+                policy_id=pid, policy_name=pid, insurer_slug="?",
+                overall_grade="N/A", overall_score=0, sub_scores={},
+                profile_rationale=[f"Data unreadable: {e}"],
+                data_completeness_pct=0.0,
+                one_liner="Extraction file is corrupted.",
+                signals={},
+            )
+            continue
+
+        slug = policy.get("insurer_slug") or "?"
+        if slug not in insurer_cache:
+            insurer_cache[slug] = None
+            rp = settings.CORPUS_DIR.parent.parent / "40-data" / "reviews" / f"{slug}.json"
+            if rp.exists():
+                try:
+                    insurer_cache[slug] = _json.loads(rp.read_text())
+                except Exception:
+                    insurer_cache[slug] = None
+
+        sc = build_scorecard(policy, insurer_reviews=insurer_cache[slug], profile=profile)
+
+        sub_map = {_slugify_subscore(s.name): s.score for s in sc.sub_scores}
+        signal_map = {_slugify_subscore(s.name): s.signals for s in sc.sub_scores}
+        rationale = _profile_rationale_for(policy, profile, sc.sub_scores)
+
+        out[pid] = BulkScorecardEntry(
+            policy_id=sc.policy_id or pid,
+            policy_name=sc.policy_name or pid,
+            insurer_slug=sc.insurer_slug or slug,
+            overall_grade=_letter_grade_with_plus(sc.overall_score),
+            overall_score=sc.overall_score,
+            sub_scores=sub_map,
+            profile_rationale=rationale,
+            data_completeness_pct=sc.data_completeness_pct,
+            one_liner=sc.one_liner,
+            signals=signal_map,
+        )
+
+    return BulkScorecardResponse(per_policy=out)
+
+
 class ReviewsResponse(BaseModel):
     insurer_slug: str
     insurer_name: str
@@ -2587,6 +2945,84 @@ async def premium_estimate(req: PremiumEstimateRequest):
     )
 
 
+# ---------------------------------------------------------------------------
+# /api/premium/bulk — multi-policy slider-driven premium calculator
+# Powers the PolicyPremiumWidget inside PolicyCompareModal.
+# ---------------------------------------------------------------------------
+
+class PremiumBulkProfile(BaseModel):
+    age: Optional[int] = Field(None, ge=0, le=120)
+    dependents: Optional[str] = None
+    location_tier: Optional[str] = None
+    family_size: Optional[int] = Field(None, ge=0, le=10)
+    smoker: Optional[bool] = False
+    pre_existing_conditions: Optional[str] = "none"
+
+
+class PremiumBulkOverride(BaseModel):
+    sum_insured_inr: Optional[int] = Field(None, ge=100_000, le=100_000_000)
+    tenure_years: Optional[int] = Field(None, ge=1, le=3)
+    deductible_inr: Optional[int] = Field(None, ge=0, le=200_000)
+
+
+class PremiumBulkRequest(BaseModel):
+    policy_ids: list[str] = Field(..., min_length=1, max_length=20)
+    profile: PremiumBulkProfile = Field(default_factory=PremiumBulkProfile)
+    overrides: Optional[dict[str, PremiumBulkOverride]] = None
+
+
+class PremiumBulkRow(BaseModel):
+    policy_id: str
+    premium_inr_annual: int
+    breakdown: dict
+    sum_insured_inr: int
+    tenure_years: int
+    deductible_inr: int
+    assumed: bool
+    notes: list[str] = []
+
+
+class PremiumBulkResponse(BaseModel):
+    per_policy: dict[str, PremiumBulkRow]
+    profile_used: PremiumBulkProfile
+    disclaimer: str = (
+        "Illustrative estimates only — actual premiums depend on underwriting, "
+        "medical history, and quote-time risk factors. Confirm with the insurer."
+    )
+
+
+@app.post("/api/premium/bulk", response_model=PremiumBulkResponse)
+async def premium_bulk(req: PremiumBulkRequest):
+    """Bulk slider-driven premium estimator for the PolicyCompareModal widget."""
+    from backend.premium_calculator import bulk_estimate as _bulk
+
+    overrides = {
+        pid: (ov.model_dump(exclude_none=True) if ov else {})
+        for pid, ov in (req.overrides or {}).items()
+    }
+    rows = _bulk(
+        policy_ids=req.policy_ids,
+        profile=req.profile.model_dump(exclude_none=True),
+        overrides=overrides,
+    )
+    return PremiumBulkResponse(
+        per_policy={
+            pid: PremiumBulkRow(
+                policy_id=r.policy_id,
+                premium_inr_annual=r.premium_inr_annual,
+                breakdown=r.breakdown,
+                sum_insured_inr=r.sum_insured_inr,
+                tenure_years=r.tenure_years,
+                deductible_inr=r.deductible_inr,
+                assumed=r.assumed,
+                notes=r.notes,
+            )
+            for pid, r in rows.items()
+        },
+        profile_used=req.profile,
+    )
+
+
 @app.post("/api/tts")
 async def tts(req: TTSRequest):
     """Standalone TTS endpoint — returns base64 WAV."""
@@ -2609,6 +3045,104 @@ async def api_root():
         "docs": "/docs",
         "health": "/api/health",
     }
+
+
+# ---------------------------------------------------------------------------
+# Profile-level predicted-premium BAND — feeds the chat-UI chip that sits
+# next to the "X% DONE" profile-completeness pill. Updates reactively as the
+# profile fills in (frontend refetches whenever completeness_pct changes).
+# ---------------------------------------------------------------------------
+class PredictedPremiumBandResponse(BaseModel):
+    min_inr: int
+    median_inr: int
+    max_inr: int
+    sample_size: int
+    assumed: bool
+
+
+@app.get(
+    "/api/profile/predicted-premium-band",
+    response_model=PredictedPremiumBandResponse,
+)
+async def predicted_premium_band(session_id: Optional[str] = None):
+    """Return the user's estimated premium band aggregated across a
+    representative basket of marketplace policies. Mirrors the slot-shape
+    used by /api/profile/completeness so the chip and the bar share triggers.
+    """
+    from backend.premium_calculator import estimate_premium_band
+    from backend.session_state import get_session
+
+    if not session_id:
+        return PredictedPremiumBandResponse(
+            min_inr=0, median_inr=0, max_inr=0, sample_size=0, assumed=True,
+        )
+
+    sess = get_session(session_id)
+    p = sess.profile
+    profile_dict = {
+        "name": p.name,
+        "age": p.age,
+        "dependents": p.dependents,
+        "income_band": p.income_band,
+        "existing_cover_inr": p.existing_cover_inr,
+        "primary_goal": p.primary_goal,
+        "location_tier": p.location_tier,
+        "parents_to_insure": p.parents_to_insure,
+        "parents_age_max": p.parents_age_max,
+        "parents_has_ped": p.parents_has_ped,
+        "health_conditions": p.health_conditions,
+        "budget_band": p.budget_band,
+    }
+    # Same answered-only gate as profile_completeness_view (KI-196 / ADR-041) —
+    # only feed slots the user has actually answered, not pre-populated
+    # defaults. Keeps the band stable until the user has actually said
+    # something meaningful.
+    answered = set(getattr(p, "asked", []) or [])
+    filtered_profile = {
+        k: (v if k in answered else None) for k, v in profile_dict.items()
+    }
+    band = estimate_premium_band(filtered_profile)
+    return PredictedPremiumBandResponse(**band)
+
+
+# ---------------------------------------------------------------------------
+# KI-Z7 (2026-05-15) — Feature B. POST /api/profile/recall-by-name.
+#
+# The chat hot path runs the same recall heuristic server-side inside
+# single_brain.handle_turn (turn-1 name sniff + try_recall_by_name) and
+# stamps `returning_user_recalled` on the ChatResponse, so the frontend
+# usually doesn't need this endpoint. It exists as an explicit, idempotent
+# escape hatch — e.g. the user types their name into the profile builder
+# AFTER turn 1 and we want to load their stored facts without sending a
+# chat turn. The hydration is server-side: the in-memory session_state for
+# `session_id` is mutated in place, so the next /api/chat turn already sees
+# the recalled slots.
+# ---------------------------------------------------------------------------
+class RecallByNameRequest(BaseModel):
+    name: str = Field(..., description="User-provided name (display form OK).")
+    session_id: str = Field(..., description="Session id to hydrate on a hit.")
+
+
+class RecallByNameResponse(BaseModel):
+    found: bool
+    profile: Optional[dict] = None
+    predicted_band: Optional[dict] = None
+    session_id: str
+
+
+@app.post("/api/profile/recall-by-name", response_model=RecallByNameResponse)
+async def recall_profile_by_name(req: RecallByNameRequest):
+    """Hydrate `session_id` from the stored named-profile JSON (if any).
+
+    Returns `found=False` when the slug doesn't resolve to a stored file.
+    On a hit, the live in-memory session is populated and the response
+    carries the full union dict + predicted premium band so the UI can
+    render the welcome-back banner without a second roundtrip.
+    """
+    from backend.profile_persistence import recall_by_name_payload
+
+    payload = await recall_by_name_payload(req.name, req.session_id)
+    return RecallByNameResponse(**payload)
 
 
 # ---- Static frontend (served alongside /api on the same port for HF Spaces) ----

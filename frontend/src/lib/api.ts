@@ -34,6 +34,11 @@ export type ChatResponse = {
   faithfulness_passed?: boolean;
   faithfulness_reasons?: string[];
   blocked?: boolean;
+  // KI-Z7 (2026-05-15) — Feature B. True when single_brain.handle_turn's
+  // turn-1 name heuristic matched a stored named-profile and hydrated the
+  // live session. Frontend renders a "Welcome back" banner when this is
+  // true on the assistant turn it arrives with.
+  returning_user_recalled?: boolean;
 };
 
 export type ChatMessage = {
@@ -243,6 +248,61 @@ export async function getScorecard(policy_id: string): Promise<ScorecardResponse
   return resp.json();
 }
 
+// ----------------------------------------------------------------------------
+// Bulk profile-tuned scorecards (powers PolicyCompareModal scorecard widget).
+// One POST returns N scorecards in parallel — each weighted by the same
+// profile so the widget can render comparable ranks at a glance.
+// ----------------------------------------------------------------------------
+export type BulkScorecardProfile = {
+  age?: number;
+  dependents?: string;
+  health_conditions?: string[];
+  primary_goal?: string;
+  location_tier?: string;
+  income_band?: string;
+  budget_band?: string;
+  existing_cover_inr?: number;
+  parents_to_insure?: boolean;
+  parents_age_max?: number;
+  parents_has_ped?: boolean;
+};
+
+export type BulkScorecardEntry = {
+  policy_id: string;
+  policy_name: string;
+  insurer_slug: string;
+  overall_grade: string;             // "A" | "A-" | "B+" | ... | "N/A"
+  overall_score: number;             // 0-100
+  sub_scores: Record<string, number>; // {coverage_breadth: 82, ...}
+  profile_rationale: string[];
+  data_completeness_pct: number;     // 0-100
+  one_liner?: string;
+  signals?: Record<string, string[]>;
+};
+
+export type BulkScorecardResponse = {
+  per_policy: Record<string, BulkScorecardEntry>;
+};
+
+export async function postScorecardBulk(args: {
+  policy_ids: string[];
+  profile?: BulkScorecardProfile;
+}): Promise<BulkScorecardResponse> {
+  const resp = await fetch(`${BACKEND_URL}/api/scorecard/bulk`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      policy_ids: args.policy_ids,
+      profile: args.profile ?? null,
+    }),
+  });
+  if (!resp.ok) {
+    const t = await resp.text();
+    throw new Error(`scorecard/bulk failed: ${resp.status} ${t}`);
+  }
+  return resp.json();
+}
+
 export type PreExistingCondition =
   | "none"
   | "diabetes_or_hypertension"
@@ -385,6 +445,50 @@ export async function getProfileCompleteness(session_id?: string): Promise<Profi
   return resp.json();
 }
 
+export type PredictedPremiumBandResponse = {
+  min_inr: number;
+  median_inr: number;
+  max_inr: number;
+  sample_size: number;
+  assumed: boolean;
+};
+
+export async function getPredictedPremiumBand(
+  sessionId: string,
+): Promise<PredictedPremiumBandResponse> {
+  const qs = `?session_id=${encodeURIComponent(sessionId)}`;
+  const resp = await fetch(`${BACKEND_URL}/api/profile/predicted-premium-band${qs}`);
+  if (!resp.ok) throw new Error(`predicted premium band failed: ${resp.status}`);
+  return resp.json();
+}
+
+// KI-Z7 (2026-05-15) — Feature B. POST /api/profile/recall-by-name.
+// Asks the backend to look up a stored named-profile and hydrate the live
+// session_id with it. The chat path runs the same recall server-side on
+// turn 1, so this client helper is only needed for non-chat triggers (e.g.
+// the user types their name into the profile builder AFTER turn 1).
+export type RecallByNameResponse = {
+  found: boolean;
+  profile: Record<string, unknown> | null;
+  predicted_band:
+    | { min_inr: number; median_inr: number; max_inr: number; sample_size: number; assumed: boolean }
+    | null;
+  session_id: string;
+};
+
+export async function postProfileRecallByName(args: {
+  name: string;
+  session_id: string;
+}): Promise<RecallByNameResponse> {
+  const resp = await fetch(`${BACKEND_URL}/api/profile/recall-by-name`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: args.name, session_id: args.session_id }),
+  });
+  if (!resp.ok) throw new Error(`profile recall failed: ${resp.status}`);
+  return resp.json();
+}
+
 export async function postProfileUpdate(req: UserProfile & { session_id: string }): Promise<ProfileCompletenessResponse> {
   const resp = await fetch(`${BACKEND_URL}/api/profile`, {
     method: "POST",
@@ -417,6 +521,67 @@ export async function postPremiumEstimate(req: PremiumEstimateRequest): Promise<
     }),
   });
   if (!resp.ok) throw new Error(`premium estimate failed: ${resp.status}`);
+  return resp.json();
+}
+
+
+// ---------------------------------------------------------------------------
+// /api/premium/bulk — multi-policy slider-driven calculator. Powers
+// PolicyPremiumWidget inside PolicyCompareModal.
+// ---------------------------------------------------------------------------
+
+export type PremiumBulkProfile = {
+  age?: number | null;
+  dependents?: string | null;
+  location_tier?: string | null;
+  family_size?: number | null;
+  smoker?: boolean | null;
+  pre_existing_conditions?: PreExistingCondition | null;
+};
+
+export type PremiumBulkOverride = {
+  sum_insured_inr?: number;
+  tenure_years?: number;
+  deductible_inr?: number;
+};
+
+export type PremiumBulkRequest = {
+  policy_ids: string[];
+  profile?: PremiumBulkProfile;
+  overrides?: Record<string, PremiumBulkOverride>;
+};
+
+export type PremiumBulkRow = {
+  policy_id: string;
+  premium_inr_annual: number;
+  breakdown: Record<string, number | string>;
+  sum_insured_inr: number;
+  tenure_years: number;
+  deductible_inr: number;
+  assumed: boolean;
+  notes: string[];
+};
+
+export type PremiumBulkResponse = {
+  per_policy: Record<string, PremiumBulkRow>;
+  profile_used: PremiumBulkProfile;
+  disclaimer: string;
+};
+
+export async function postPremiumBulk(req: PremiumBulkRequest): Promise<PremiumBulkResponse> {
+  const resp = await fetch(`${BACKEND_URL}/api/premium/bulk`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      policy_ids: req.policy_ids,
+      profile: req.profile ?? {},
+      overrides: req.overrides ?? {},
+    }),
+  });
+  if (!resp.ok) {
+    const t = await resp.text();
+    throw new Error(`premium bulk failed: ${resp.status} ${t}`);
+  }
   return resp.json();
 }
 

@@ -104,6 +104,16 @@ export default function Page() {
   // tighten as they fill in slots. Debounced 500ms to coalesce bursts.
   const [premiumBand, setPremiumBand] = useState<PredictedPremiumBandResponse | null>(null);
 
+  // KI-Z7 (2026-05-15) — Feature B. Welcome-back banner state. Populated
+  // when /api/chat returns `returning_user_recalled: true` on the
+  // assistant turn that hydrated the session from a stored named-profile.
+  // Cleared by either the "Use this profile" / "Update my info" actions
+  // OR by handleClearChat.
+  const [welcomeBack, setWelcomeBack] = useState<{
+    name: string;
+    bandText: string | null;
+  } | null>(null);
+
   // Re-fetch profile completeness whenever sessionId changes (after first chat
   // turn) — drives the score-gate on marketplace cards + detail modal.
   useEffect(() => {
@@ -604,6 +614,9 @@ export default function Page() {
     // Always wipe the visible chat + local storage.
     setMessages([]);
     setInput("");
+    // KI-Z7 — clear the welcome-back banner so a brand-new visitor doesn't
+    // see stale "Welcome back, …" copy after the session reset.
+    setWelcomeBack(null);
     // KI-073 (2026-05-15) — clear the profile-completeness chip immediately
     // so the header doesn't show stale "55% DONE" for a brand-new visitor
     // while the new session_id fetch is in flight.
@@ -752,6 +765,33 @@ export default function Page() {
         latencyMs: res.latency_ms,
         blocked: res.blocked,
       });
+      // KI-Z7 (2026-05-15) — Feature B. Surface the "Welcome back" banner
+      // when the backend recalled a stored named-profile on this turn.
+      // The predicted-premium band is fetched separately below by the
+      // usual completeness-pct effect, but we ALSO pre-load it eagerly
+      // here so the banner has a value to render on first paint.
+      if (res.returning_user_recalled && res.session_id) {
+        getPredictedPremiumBand(res.session_id)
+          .then((band) => {
+            let bandText: string | null = null;
+            if (band && band.min_inr && band.max_inr) {
+              const minK = Math.round(band.min_inr / 1000);
+              const maxK = Math.round(band.max_inr / 1000);
+              bandText = `₹${minK}k-₹${maxK}k/year`;
+            }
+            // Display name from the freshly-refreshed completeness fetch
+            // (it queries the same session.profile we just hydrated).
+            getProfileCompleteness(res.session_id)
+              .then((pc) => {
+                const display =
+                  (pc?.profile as { name?: string } | undefined)?.name ||
+                  "there";
+                setWelcomeBack({ name: display, bandText });
+              })
+              .catch(() => setWelcomeBack({ name: "there", bandText }));
+          })
+          .catch(() => setWelcomeBack({ name: "there", bandText: null }));
+      }
       // KI-030 (2026-05-14) — playback moved into the in-DOM <audio> element
       // owned by the Message component (autoplay on mount). Detached
       // `new Audio()` instances were invisible to
@@ -1462,6 +1502,51 @@ export default function Page() {
                 Clear chat
               </button>
             </div>
+            {/* KI-Z7 (2026-05-15) — Feature B. Welcome-back banner. Renders
+                when the backend matched + hydrated a stored named-profile on
+                this turn. "Use this profile" dismisses the banner (keeps the
+                hydrated profile in place); "Update my info" opens the profile
+                builder so the user can revise any fact before continuing. */}
+            {welcomeBack && (
+              <div className="mb-3 rounded-xl border border-[var(--primary)] bg-[var(--primary)]/10 px-3 py-2 text-sm flex items-center justify-between gap-2">
+                <div className="flex-1">
+                  <span className="font-semibold text-[var(--primary)]">
+                    Welcome back, {welcomeBack.name}!
+                  </span>{" "}
+                  <span className="text-[var(--muted-foreground)]">
+                    Your profile is loaded.
+                  </span>
+                  {welcomeBack.bandText && (
+                    <span className="text-[var(--muted-foreground)]">
+                      {" "}Last predicted premium:{" "}
+                      <strong className="text-[var(--foreground)]">
+                        {welcomeBack.bandText}
+                      </strong>
+                      .
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    onClick={() => setWelcomeBack(null)}
+                    className="px-2 py-1 rounded-md text-xs border border-[var(--primary)] text-[var(--primary)] hover:bg-[var(--primary)] hover:text-white transition"
+                    title="Continue with the loaded profile"
+                  >
+                    Use this profile
+                  </button>
+                  <button
+                    onClick={() => {
+                      setWelcomeBack(null);
+                      setShowProfile(true);
+                    }}
+                    className="px-2 py-1 rounded-md text-xs border border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--primary)] hover:text-[var(--foreground)] transition"
+                    title="Open the profile builder to revise"
+                  >
+                    Update my info
+                  </button>
+                </div>
+              </div>
+            )}
             <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-thin space-y-4 mb-4 pr-1">
               {messages.map((m) => <Message key={m.id} m={m} />)}
               {(busy || voicePhase) && <ThinkingDots phase={voicePhase} />}
