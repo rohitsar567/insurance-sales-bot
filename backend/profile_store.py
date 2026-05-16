@@ -119,34 +119,36 @@ def _load_from_path(p: Path) -> Optional[Profile]:
 def load_profile(name: str, *, persona_id: Optional[str] = None) -> Optional[Profile]:
     """Return the stored Profile for `name` (and optional `persona_id`).
 
-    KI-062 (2026-05-15) lookup order:
-      1. If `persona_id` given, try that file first.
+    Lookup order (KI-062, 2026-05-15; PRIVACY-HARDENED 2026-05-16):
+      1. If `persona_id` given, try that exact file.
       2. Try the name-slug file (legacy + first-visit path before
          identity fields are known).
-      3. If both miss but the name slug is set, scan the directory for
-         any persona-id-keyed file whose stored name matches — handles
-         the case where the user introduced themselves by name but no
-         persona ID is known yet client-side.
+
+    PRIVACY FIX (2026-05-16, audit). A former step 3 scanned the WHOLE
+    profiles directory and returned any persona-id-keyed file whose stored
+    `name_display` matched the requested name slug. That was a pure
+    cross-identity leak: a fresh, no-cookie visitor stating a common first
+    name ("I'm Rahul") pulled a *stranger's* persona-id profile (different
+    age / city / dependents) — exactly the audit's "Welcome back, Rahul"
+    finding. The scan has no legitimate use: `save_profile` already writes
+    a name-slug file on the first visit (before identity fields exist) and
+    only graduates to a persona-id file once enough disambiguating signal
+    exists, so a real returning user is resolved by step 1 (their own
+    persona_id, passed by the client) or step 2 (their own slug file).
+    Matching strangers by bare display name is removed entirely. Cross-name
+    recall, when intended, is now gated behind explicit user confirmation
+    at the session layer (`session_state.apply_pending_recall`).
     """
-    # 1. Direct persona-id hit
+    # 1. Direct persona-id hit (the caller's OWN id, never inferred here).
     if persona_id:
         p = _path_for(name, persona_id=persona_id)
         if p and p.exists():
             return _load_from_path(p)
-    # 2. Legacy / first-visit name-slug file
+    # 2. Legacy / first-visit name-slug file (this user's own slug file).
     p = _path_for(name)
     if p and p.exists():
         return _load_from_path(p)
-    # 3. Scan for any persona-id file whose stored display-name matches
-    slug = _normalise_name(name)
-    if slug and _PROFILES_DIR.exists():
-        for cand in _PROFILES_DIR.glob("*.json"):
-            try:
-                raw = json.loads(cand.read_text())
-                if _normalise_name(raw.get("name_display") or "") == slug:
-                    return _load_from_path(cand)
-            except Exception:
-                continue
+    # 3. (REMOVED) cross-identity display-name directory scan — leak vector.
     return None
 
 

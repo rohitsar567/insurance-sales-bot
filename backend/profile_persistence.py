@@ -22,16 +22,28 @@ Coupled features (KI-Z7, 2026-05-15):
     Gemini's first tool-call iteration.
 
   Feature B — try_recall_by_name(session, name)
-    Loads the named profile JSON via profile_store.load_profile and hydrates
-    every empty slot on session.profile. Returns True on a successful merge
-    so single_brain can stamp `is_returning_user=True` for the RULE 4
-    "welcome back" greeting.
+    PRIVACY FIX (2026-05-16, audit). Previously this hydrated every empty
+    slot on session.profile and returned True so single_brain stamped
+    `is_returning_user=True` / a "Welcome back" greeting — on a FRESH,
+    no-cookie session, keyed only on the user-stated name. A second user
+    on a shared browser/IP, or anyone stating a common first name, was
+    served a stranger's captured profile. Now it delegates to
+    session_state.rehydrate_by_name which STAGES the match on
+    `session.pending_profile_recall` (no merge, no greeting) and ALWAYS
+    returns False. The stored profile is applied ONLY after an explicit
+    user confirmation via session_state.apply_pending_recall(session,
+    confirmed=True). Same-session continuity is unaffected — slots captured
+    within the live conversation never travel this path.
 
   Feature B — recall_by_name_payload(name, session_id)
     Builds the response payload for the POST /api/profile/recall-by-name
-    endpoint: {found, profile, predicted_band, session_id}. predicted_band
-    is computed via premium_calculator.estimate_premium_band against the
-    just-hydrated profile.
+    endpoint. PRIVACY FIX (2026-05-16): this NO LONGER auto-hydrates the
+    live session. A name match is STAGED; the payload reports
+    {found, requires_confirmation, name, summary, session_id} so the UI
+    renders an explicit "are you <name>?" confirm rather than silently
+    adopting a stranger's stored profile. The stored fields are applied to
+    the session only after the user confirms (the chat affirmation path
+    calls session_state.apply_pending_recall).
 
 Design notes:
   - This module sits between profile_store + profile_rag and is the SINGLE
@@ -219,13 +231,21 @@ def extract_potential_name(text: str) -> Optional[str]:
 
 
 def try_recall_by_name(session, name: str) -> bool:
-    """Look up a stored profile by name and hydrate `session.profile`.
+    """Look up a stored profile by name and STAGE it for confirmation.
 
-    Wraps session_state.rehydrate_by_name so the call-site (single_brain
-    handle_turn entry) doesn't need to know which helper is canonical.
+    PRIVACY FIX (2026-05-16). Wraps session_state.rehydrate_by_name, which
+    now STAGES a name match on `session.pending_profile_recall` instead of
+    auto-merging it into `session.profile`. Nothing is applied to the live
+    session here.
 
-    Returns True iff a stored profile was found AND at least one slot was
-    merged into the live session. False on no-match or any error.
+    Returns:
+        Always False — the stored profile is NEVER auto-applied. The
+        single_brain caller therefore never stamps `is_returning_user` /
+        a "Welcome back" greeting off a bare name on a fresh session.
+        Whether a match was *staged* is observable on
+        `session.pending_profile_recall`; the brain surfaces an "are you
+        <name>?" confirm and calls session_state.apply_pending_recall on
+        the user's explicit answer.
     """
     if not name or not name.strip():
         return False
@@ -247,20 +267,32 @@ async def recall_by_name_payload(
 ) -> dict[str, Any]:
     """Build the response payload for POST /api/profile/recall-by-name.
 
+    PRIVACY FIX (2026-05-16, audit). This NO LONGER hydrates the live
+    session. A bare name is a weak, shared, guessable key; auto-applying a
+    stored profile to a fresh, no-cookie session leaked stranger PII. A
+    match is now STAGED on `session.pending_profile_recall`; the payload
+    asks the UI to confirm identity before anything is applied.
+
     Returns:
         {
-          "found": bool,
-          "profile": dict | None,         # the hydrated union dict
-          "predicted_band": dict | None,  # {min_inr, median_inr, max_inr, ...}
+          "found": bool,                  # True iff a stored match exists
+          "requires_confirmation": bool,  # True when found (never auto-apply)
+          "name": str | None,             # stored display name (for the prompt)
+          "summary": dict | None,         # non-PII identity hints for the prompt
+          "profile": None,                # NEVER returned pre-confirmation
+          "predicted_band": None,         # NEVER returned pre-confirmation
           "session_id": str,
         }
 
-    Side effect: when a match is found, the live in-memory session for
-    `session_id` is hydrated (so the next /api/chat turn sees the recalled
-    slots in session.profile WITHOUT requiring a separate /api/profile POST).
+    No side effect on `session.profile`. The staged match is applied only
+    after the user explicitly confirms, via the chat affirmation path
+    (session_state.apply_pending_recall).
     """
     out: dict[str, Any] = {
         "found": False,
+        "requires_confirmation": False,
+        "name": None,
+        "summary": None,
         "profile": None,
         "predicted_band": None,
         "session_id": session_id,
@@ -279,28 +311,16 @@ async def recall_by_name_payload(
         )
         return out
 
-    found = try_recall_by_name(sess, name)
-    if not found:
+    # Stages on sess.pending_profile_recall; ALWAYS returns False (no merge).
+    try_recall_by_name(sess, name)
+    pending = getattr(sess, "pending_profile_recall", None)
+    if not pending:
         return out
 
-    # Build the union dict snapshot post-hydration.
-    union = _build_union_dict(sess.profile)
     out["found"] = True
-    out["profile"] = union
-
-    # Predicted-premium band — same path /api/profile/predicted-premium-band
-    # uses, so the banner number matches the chip number exactly.
-    try:
-        from backend.premium_calculator import estimate_premium_band
-
-        out["predicted_band"] = estimate_premium_band(union)
-    except Exception as e:  # noqa: BLE001
-        _log.warning(
-            "recall_by_name_payload: estimate_premium_band failed (name=%r): %s: %s",
-            name, type(e).__name__, str(e)[:200],
-        )
-        out["predicted_band"] = None
-
+    out["requires_confirmation"] = True
+    out["name"] = pending.get("name")
+    out["summary"] = pending.get("summary")
     return out
 
 

@@ -470,6 +470,13 @@ export type UserProfile = {
   copay_pct?: number;
   // KI-269 (D2, 2026-05-15) — Family medical history (free-text tags).
   family_medical_history?: string[];
+  // KI-275 (2026-05-15) — Tobacco use; +30-50% premium loading in
+  // premium_calculator.estimate(). On the Profile dataclass + accepted by
+  // save_profile_field (chat path). NOTE: the HTTP POST /api/profile
+  // (ProfileUpdateRequest) does not yet whitelist smoker / copay_pct /
+  // family_medical_history / desired_sum_insured_inr — the profile-builder
+  // form sends them so they apply the instant that backend gap is closed.
+  smoker?: boolean | null;
 };
 
 export type ProfileCompletenessResponse = {

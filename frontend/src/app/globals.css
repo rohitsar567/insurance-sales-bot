@@ -24,7 +24,8 @@
   --color-card: var(--card);
   --color-accent: var(--accent);
   --color-error: var(--error);
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-sans: var(--font-body), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-serif: var(--font-display), ui-serif, Georgia, "Times New Roman", serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, monospace;
 }
 
@@ -82,13 +83,552 @@ body {
   outline-offset: 2px;
 }
 
+/* ────────────────────────────────────────────────────────────────────
+ * PREMIUM LANDING (EmptyState) — editorial-fintech redesign
+ * Design direction: warm, trustworthy, magazine-grade. Fraunces display
+ * serif + Plus Jakarta body, layered soft depth, a faint grain + grid
+ * hero texture, a numbered "journey" spine, and one orchestrated
+ * page-load reveal. No generic AI card-grid look.
+ * ──────────────────────────────────────────────────────────────────── */
+
+/* Display serif — applied to the hero headline + section titles. The
+ * optical-size + soft axes give large type a warm, set-by-hand feel. */
+.font-display {
+  font-family: var(--font-serif);
+  font-optical-sizing: auto;
+  font-variation-settings: "SOFT" 40, "WONK" 0;
+  letter-spacing: -0.012em;
+}
+
+/* The landing root sets the editorial body face + a calm vertical wash
+ * (deep at the very top behind the hero, fading to paper) and a barely
+ * perceptible film grain so flat fills never look plastic. */
+.landing-root {
+  font-family: var(--font-sans);
+  position: relative;
+  background:
+    radial-gradient(120% 60% at 50% -10%,
+      color-mix(in srgb, var(--primary) 11%, transparent) 0%,
+      transparent 60%),
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--primary) 4%, var(--background)) 0%,
+      var(--background) 40%);
+}
+.landing-root::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  mix-blend-mode: multiply;
+  /* tiny SVG fractal-noise grain, base64-free via data URI */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.32'/%3E%3C/svg%3E");
+}
+
+/* HERO — generous, asymmetric-feeling slab with a layered teal glow,
+ * an inner hairline, and a faint engineering grid that signals "built,
+ * not marketing fluff". */
+.hero-card {
+  position: relative;
+  isolation: isolate;
+  border-radius: 28px;
+  border: 1px solid color-mix(in srgb, var(--primary) 16%, var(--border));
+  background:
+    radial-gradient(90% 120% at 18% 0%,
+      color-mix(in srgb, var(--primary) 12%, var(--card)) 0%,
+      var(--card) 55%),
+    var(--card);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--primary) 14%, transparent) inset,
+    0 1px 2px color-mix(in srgb, var(--foreground) 5%, transparent),
+    0 24px 60px -30px color-mix(in srgb, var(--primary) 42%, transparent);
+}
+.hero-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0.5;
+  -webkit-mask-image: radial-gradient(70% 90% at 22% 8%, #000 0%, transparent 70%);
+          mask-image: radial-gradient(70% 90% at 22% 8%, #000 0%, transparent 70%);
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--primary) 12%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--primary) 12%, transparent) 1px, transparent 1px);
+  background-size: 30px 30px;
+}
+
+/* Eyebrow / kicker pill — small caps, brand-tinted, with a live dot. */
+.kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 13px 6px 11px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 9%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--primary) 22%, var(--border));
+  box-shadow: 0 1px 1px color-mix(in srgb, var(--foreground) 4%, transparent);
+}
+.kicker .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--primary);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 70%, transparent);
+  animation: kicker-pulse 2.6s ease-out infinite;
+}
+@keyframes kicker-pulse {
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 55%, transparent); }
+  70%  { box-shadow: 0 0 0 7px color-mix(in srgb, var(--primary) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 0%, transparent); }
+}
+
+/* SECTION SHELL — quieter than the hero: clean paper, hairline border,
+ * a soft long shadow so sections feel lifted off the page wash. */
+.section-card {
+  border-radius: 22px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--foreground) 4%, transparent),
+    0 18px 48px -34px color-mix(in srgb, var(--foreground) 30%, transparent);
+}
+
+/* Section header: a hairline rule grows from the icon so each section
+ * reads as a titled chapter rather than a stacked box. */
+.section-rule {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg,
+    color-mix(in srgb, var(--primary) 30%, var(--border)) 0%,
+    var(--border) 30%,
+    transparent 100%);
+}
+.section-num {
+  font-family: var(--font-serif);
+  font-size: 13px;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--primary) 70%, var(--muted-foreground));
+  letter-spacing: 0.02em;
+}
+
+/* STEP — the three "how it works" cards sit on a shared horizontal spine
+ * (a connecting line through the numbered medallions) so they read as one
+ * journey, not three disconnected tiles. */
+.step-grid { position: relative; }
+@media (min-width: 640px) {
+  .step-grid::before {
+    content: "";
+    position: absolute;
+    top: 50px;            /* aligns to the centre of the 36px medallion + pt */
+    left: 16%;
+    right: 16%;
+    height: 2px;
+    background: repeating-linear-gradient(90deg,
+      color-mix(in srgb, var(--primary) 34%, var(--border)) 0 7px,
+      transparent 7px 14px);
+    z-index: 0;
+  }
+}
+.step-card {
+  position: relative;
+  z-index: 1;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--primary) 5%, var(--card)) 0%,
+      var(--card) 42%);
+  transition: transform .22s cubic-bezier(.2,.7,.3,1),
+              box-shadow .22s ease, border-color .22s ease;
+}
+.step-card:hover {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--primary) 34%, var(--border));
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--foreground) 4%, transparent),
+    0 22px 44px -26px color-mix(in srgb, var(--primary) 46%, transparent);
+}
+.step-medallion {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--primary-foreground);
+  background: linear-gradient(150deg,
+    color-mix(in srgb, var(--primary) 92%, white) 0%,
+    var(--primary) 55%,
+    color-mix(in srgb, var(--primary) 78%, black) 100%);
+  box-shadow:
+    0 2px 6px color-mix(in srgb, var(--primary) 40%, transparent),
+    0 0 0 5px color-mix(in srgb, var(--primary) 10%, transparent);
+}
+
+/* Tight one-line fact bullets used inside step / callout bodies. */
+.fact-list { display: flex; flex-direction: column; gap: 9px; }
+.fact-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--muted-foreground);
+}
+.fact-list li .tick {
+  flex: none;
+  margin-top: 1px;
+  color: var(--primary);
+}
+.fact-list li strong {
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+/* INPUT-MODE rows — refined list with a left accent rail on hover. */
+.mode-row {
+  position: relative;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  overflow: hidden;
+  transition: transform .2s cubic-bezier(.2,.7,.3,1),
+              box-shadow .2s ease, border-color .2s ease;
+}
+.mode-row::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--primary);
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform .22s ease;
+}
+.mode-row:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--primary) 30%, var(--border));
+  box-shadow: 0 16px 34px -24px color-mix(in srgb, var(--primary) 40%, transparent);
+}
+.mode-row:hover::before { transform: scaleY(1); }
+.mode-glyph {
+  background: linear-gradient(150deg,
+    color-mix(in srgb, var(--primary) 14%, var(--card)) 0%,
+    color-mix(in srgb, var(--primary) 6%, var(--card)) 100%);
+  border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--border));
+  color: var(--primary);
+}
+
+/* CALLOUT cards — keep the amber trust card distinct, lift both. */
+.callout-card {
+  border-radius: 18px;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.callout-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 40px -28px color-mix(in srgb, var(--foreground) 40%, transparent);
+}
+
+/* Orchestrated page-load reveal — staggered, calm, runs once. */
+@keyframes reveal-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.reveal {
+  opacity: 0;
+  animation: reveal-up .6s cubic-bezier(.2,.7,.3,1) forwards;
+}
+.reveal-1 { animation-delay: .02s; }
+.reveal-2 { animation-delay: .12s; }
+.reveal-3 { animation-delay: .22s; }
+.reveal-4 { animation-delay: .32s; }
+
+/* ────────────────────────────────────────────────────────────────────
+ * PREMIUM APP SURFACES — profile builder · chat · cited cards ·
+ * marketplace. Same editorial-fintech system as the landing: Fraunces
+ * display serif for section titles, Plus Jakarta body, hairline
+ * borders, soft long shadows, brand-teal accents, one calm reveal.
+ * ──────────────────────────────────────────────────────────────────── */
+
+/* Slide-over panel shell (profile / marketplace). Quiet paper, a faint
+ * top teal wash so it reads as a lifted "sheet", not a flat overlay. */
+.app-panel {
+  position: relative;
+  font-family: var(--font-sans);
+  background:
+    radial-gradient(110% 50% at 50% -8%,
+      color-mix(in srgb, var(--primary) 7%, transparent) 0%,
+      transparent 55%),
+    var(--background);
+}
+
+/* Chaptered panel header — kicker + serif title, mirrors .section-num. */
+.panel-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--primary) 78%, var(--muted-foreground));
+}
+.panel-kicker .dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--primary);
+}
+.panel-title {
+  font-family: var(--font-serif);
+  font-optical-sizing: auto;
+  font-variation-settings: "SOFT" 40, "WONK" 0;
+  letter-spacing: -0.012em;
+  font-weight: 600;
+}
+
+/* A profile "fieldset" — one numbered chapter of the form. Hairline
+ * card, soft long shadow, a serif step index in a tinted medallion so
+ * the form reads as a guided journey, not a wall of inputs. */
+.field-group {
+  position: relative;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--primary) 4%, var(--card)) 0%,
+      var(--card) 38%);
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--foreground) 4%, transparent),
+    0 16px 40px -32px color-mix(in srgb, var(--foreground) 28%, transparent);
+  transition: border-color .22s ease, box-shadow .22s ease;
+}
+.field-group:focus-within {
+  border-color: color-mix(in srgb, var(--primary) 32%, var(--border));
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--foreground) 4%, transparent),
+    0 18px 44px -28px color-mix(in srgb, var(--primary) 36%, transparent);
+}
+.field-medallion {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-serif);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary-foreground);
+  background: linear-gradient(150deg,
+    color-mix(in srgb, var(--primary) 92%, white) 0%,
+    var(--primary) 55%,
+    color-mix(in srgb, var(--primary) 80%, black) 100%);
+  box-shadow:
+    0 2px 5px color-mix(in srgb, var(--primary) 36%, transparent),
+    0 0 0 4px color-mix(in srgb, var(--primary) 9%, transparent);
+}
+
+/* Selectable option pill — replaces the ad-hoc chip classes. Crisp
+ * hairline, brand fill on select, a soft press feel. */
+.opt-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--foreground);
+  cursor: pointer;
+  transition: transform .15s cubic-bezier(.2,.7,.3,1),
+              border-color .15s ease, background .15s ease, color .15s ease,
+              box-shadow .15s ease;
+}
+.opt-pill:hover {
+  border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
+}
+.opt-pill:active { transform: scale(.97); }
+.opt-pill[data-on="true"] {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: 0 6px 16px -8px color-mix(in srgb, var(--primary) 60%, transparent);
+}
+.opt-pill:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Text / number field — single shared input look. */
+.app-input {
+  width: 100%;
+  font-size: 14px;
+  padding: 9px 12px;
+  border-radius: 11px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+  transition: border-color .18s ease, box-shadow .18s ease;
+}
+.app-input::placeholder { color: var(--muted-foreground); }
+.app-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 14%, transparent);
+}
+
+/* Brand range slider — themed track + thumb so it stops looking like a
+ * raw OS control next to the editorial type. */
+.app-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary) 16%, var(--border));
+  outline: none;
+}
+.app-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--primary);
+  border: 3px solid var(--card);
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--primary) 50%, transparent);
+  cursor: pointer;
+}
+.app-range::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: var(--primary);
+  border: 3px solid var(--card);
+  cursor: pointer;
+}
+
+/* Conditional sub-block (parents detail) — a tinted inset rail. */
+.subfield {
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--primary) 20%, var(--border));
+  background: color-mix(in srgb, var(--primary) 5%, var(--card));
+}
+
+/* Sticky save bar — frosted, lifted off the form. */
+.save-bar {
+  background: color-mix(in srgb, var(--card) 86%, transparent);
+  -webkit-backdrop-filter: saturate(180%) blur(10px);
+          backdrop-filter: saturate(180%) blur(10px);
+  border-top: 1px solid var(--border);
+}
+.btn-primary {
+  font-weight: 600;
+  border-radius: 12px;
+  color: var(--primary-foreground);
+  background: linear-gradient(150deg,
+    color-mix(in srgb, var(--primary) 94%, white) 0%,
+    var(--primary) 60%);
+  box-shadow: 0 8px 20px -10px color-mix(in srgb, var(--primary) 60%, transparent);
+  transition: transform .15s ease, box-shadow .15s ease, opacity .15s ease;
+}
+.btn-primary:hover:not(:disabled) { transform: translateY(-1px); }
+.btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+
+/* CHAT bubbles — the assistant reads as a calm "letter" on paper, the
+ * user as a brand slab. Both lifted, both with a soft tail-less radius. */
+.bubble-assistant {
+  border-radius: 18px 18px 18px 6px;
+  border: 1px solid var(--border);
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--primary) 3.5%, var(--card)) 0%,
+      var(--card) 36%);
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--foreground) 4%, transparent),
+    0 14px 36px -30px color-mix(in srgb, var(--foreground) 26%, transparent);
+}
+.bubble-user {
+  border-radius: 18px 18px 6px 18px;
+  color: var(--primary-foreground);
+  background: linear-gradient(150deg,
+    color-mix(in srgb, var(--primary) 92%, white) 0%,
+    var(--primary) 62%);
+  box-shadow: 0 10px 26px -14px color-mix(in srgb, var(--primary) 55%, transparent);
+}
+
+/* Cited-policy card — hairline, lifts to a teal-tinted long shadow. */
+.cited-card {
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  transition: transform .2s cubic-bezier(.2,.7,.3,1),
+              border-color .2s ease, box-shadow .2s ease;
+}
+.cited-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--primary) 32%, var(--border));
+  box-shadow: 0 16px 34px -24px color-mix(in srgb, var(--primary) 42%, transparent);
+}
+
+/* Marketplace policy card — same lift language as the step cards. */
+.policy-card {
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--primary) 3.5%, var(--card)) 0%,
+      var(--card) 40%);
+  transition: transform .2s cubic-bezier(.2,.7,.3,1),
+              border-color .2s ease, box-shadow .2s ease;
+}
+.policy-card:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--primary) 34%, var(--border));
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--foreground) 4%, transparent),
+    0 22px 44px -26px color-mix(in srgb, var(--primary) 44%, transparent);
+}
+.policy-card[data-selected="true"] {
+  border-color: var(--primary);
+  box-shadow: 0 18px 40px -22px color-mix(in srgb, var(--primary) 50%, transparent);
+}
+
+/* Filter shell + sticky compare bar share the frosted treatment. */
+.filter-shell {
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--foreground) 4%, transparent);
+}
+
 /* Honour reduced-motion preference: drop the hover-lift transition on the
  * landing step / mode / callout cards for vestibular-sensitive users. */
 @media (prefers-reduced-motion: reduce) {
-  .step-card, .mode-row, .callout-card, .chip-tile {
+  .step-card, .mode-row, .callout-card, .chip-tile,
+  .field-group, .opt-pill, .cited-card, .policy-card, .btn-primary {
     transition: none !important;
   }
-  .step-card:hover, .mode-row:hover {
+  .step-card:hover, .mode-row:hover, .callout-card:hover,
+  .cited-card:hover, .policy-card:hover, .btn-primary:hover {
     transform: none !important;
   }
+  .reveal {
+    opacity: 1 !important;
+    animation: none !important;
+  }
+  .kicker .dot { animation: none !important; }
 }

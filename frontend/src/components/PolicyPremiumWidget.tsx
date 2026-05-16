@@ -16,6 +16,14 @@
  * producing wildly low numbers (~₹6K) versus the panel's curated number
  * (~₹18-25K) for the same profile. Tenure + deductible are still honoured —
  * the estimate endpoint now applies the bulk multipliers post-anchor.
+ *
+ * ── Visual system ─────────────────────────────────────────────────────
+ * Re-grounded on the premium editorial-fintech landing (app/globals.css):
+ * Fraunces display serif for the headline premium numeral, Plus Jakarta for
+ * UI chrome, the teal --primary token for the active pills + slider track,
+ * color-mix soft depth, and tight one-line fact bullets. All chrome reads
+ * from CSS variables so the widget tracks the page's light/dark scheme.
+ * Reduced-motion is honoured via a local media query.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -57,6 +65,11 @@ const SUM_INSURED_MAX = 10_000_000;
 const SUM_INSURED_STEP = 500_000;
 const TENURE_CHOICES = [1, 2, 3] as const;
 const DEDUCTIBLE_CHOICES = [0, 25_000, 50_000, 100_000] as const;
+
+// Display serif + sans UI face, pulled from the landing's CSS vars so the
+// widget shares the exact type system as the rest of the app.
+const SERIF = "var(--font-serif)";
+const SANS = "var(--font-sans)";
 
 function formatInr(value: number): string {
   // Indian-style 1,23,456 grouping.
@@ -216,7 +229,7 @@ export default function PolicyPremiumWidget({
   const bullets: string[] = [];
   if (resp) {
     bullets.push(
-      `Range: ₹${formatInr(resp.low_inr)} – ₹${formatInr(resp.high_inr)}/year (±15% band)`,
+      `Range ₹${formatInr(resp.low_inr)} – ₹${formatInr(resp.high_inr)}/year (±15% band)`,
     );
     if (resp.tenure_years && resp.tenure_years !== 1) {
       bullets.push(`Multi-year discount applied (${resp.tenure_years}-year policy)`);
@@ -230,8 +243,22 @@ export default function PolicyPremiumWidget({
 
   return (
     <div className="policy-premium-widget" style={widgetStyle}>
+      {/* Local accent-color + reduced-motion scoping for the native range
+          input. Scoped to .policy-premium-widget so it never leaks. */}
+      <style>{PREMIUM_WIDGET_CSS}</style>
+
       <header style={headerStyle}>
-        <div style={{ fontWeight: 600, fontSize: 14 }}>{policyName}</div>
+        <div
+          style={{
+            fontWeight: 600,
+            fontSize: 13.5,
+            color: "var(--foreground)",
+            lineHeight: 1.35,
+            letterSpacing: "-0.005em",
+          }}
+        >
+          {policyName}
+        </div>
         {/* Curated-only branch: by the time we render this widget,
             base_sample_used is guaranteed not false (the !== false branch
             short-circuits to NonCuratedPricingNotice above). No "Estimate"
@@ -240,15 +267,15 @@ export default function PolicyPremiumWidget({
 
       {profileSummary && (
         <div style={profileLineStyle}>
-          Your profile defaults: {profileSummary}
+          Your profile defaults · {profileSummary}
         </div>
       )}
 
       <div style={sliderGroupStyle}>
         <label style={labelStyle}>
           <span style={labelHeadStyle}>
-            Sum insured
-            <strong>₹{formatSiLabel(sumInsured)}</strong>
+            <span style={labelTextStyle}>Sum insured</span>
+            <strong style={labelValueStyle}>₹{formatSiLabel(sumInsured)}</strong>
           </span>
           <input
             type="range"
@@ -268,8 +295,10 @@ export default function PolicyPremiumWidget({
 
         <label style={labelStyle}>
           <span style={labelHeadStyle}>
-            Tenure
-            <strong>{tenureYears} {tenureYears === 1 ? "year" : "years"}</strong>
+            <span style={labelTextStyle}>Tenure</span>
+            <strong style={labelValueStyle}>
+              {tenureYears} {tenureYears === 1 ? "year" : "years"}
+            </strong>
           </span>
           <div role="radiogroup" aria-label="Tenure" style={pillRowStyle}>
             {TENURE_CHOICES.map((y) => (
@@ -289,8 +318,10 @@ export default function PolicyPremiumWidget({
 
         <label style={labelStyle}>
           <span style={labelHeadStyle}>
-            Deductible
-            <strong>{formatDeductibleLabel(deductibleInr)}</strong>
+            <span style={labelTextStyle}>Deductible</span>
+            <strong style={labelValueStyle}>
+              {formatDeductibleLabel(deductibleInr)}
+            </strong>
           </span>
           <div role="radiogroup" aria-label="Deductible" style={pillRowStyle}>
             {DEDUCTIBLE_CHOICES.map((d) => (
@@ -311,21 +342,33 @@ export default function PolicyPremiumWidget({
 
       <div style={resultBoxStyle} aria-live="polite">
         {error ? (
-          <div style={{ color: "#b00020" }}>Failed: {error}</div>
+          <div style={errorTextStyle}>Failed: {error}</div>
         ) : loading && !resp ? (
-          <div style={{ color: "#666" }}>Calculating estimate…</div>
+          <div style={calculatingStyle}>
+            <span aria-hidden style={dotPulseStyle} />
+            Calculating estimate…
+          </div>
         ) : resp ? (
           <>
-            <div style={resultHeadlineStyle}>
-              Estimated premium:&nbsp;
-              <strong>₹{formatInr(resp.point_estimate_inr)}</strong>
-              <span style={resultSuffixStyle}>/year</span>
-              {loading && <span style={spinnerHintStyle}> updating…</span>}
+            <div style={resultHeadlineRowStyle}>
+              <span style={resultLabelStyle}>Estimated premium</span>
+              <span style={resultValueWrapStyle}>
+                <strong style={resultValueStyle}>
+                  ₹{formatInr(resp.point_estimate_inr)}
+                </strong>
+                <span style={resultSuffixStyle}>/year</span>
+                {loading && (
+                  <span style={spinnerHintStyle}>updating…</span>
+                )}
+              </span>
             </div>
             {bullets.length > 0 && (
               <ul style={breakdownListStyle}>
                 {bullets.map((b) => (
-                  <li key={b}>{b}</li>
+                  <li key={b} style={breakdownItemStyle}>
+                    <span aria-hidden style={breakdownTickStyle} />
+                    <span>{b}</span>
+                  </li>
                 ))}
               </ul>
             )}
@@ -366,7 +409,7 @@ function NonCuratedPricingNotice({
       <header style={noticeHeaderStyle}>
         <span style={noticeIconStyle} aria-hidden="true">
           {/* info icon — pure SVG so we don't pull a new dependency */}
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="10" />
             <line x1="12" y1="8" x2="12" y2="8" />
             <line x1="12" y1="12" x2="12" y2="16" />
@@ -416,18 +459,55 @@ function NonCuratedPricingNotice({
 
 /* ------------------------------------------------------------------ */
 /* Inline styles — kept local so the widget drops into any modal      */
-/* without a CSS-module dependency.                                   */
+/* without a CSS-module dependency. All colors read from the landing's */
+/* CSS variables (--primary teal, --card, --border, --muted, etc.) so  */
+/* the widget belongs to the premium editorial-fintech design system   */
+/* and tracks the page's light/dark scheme automatically.              */
 /* ------------------------------------------------------------------ */
 
+// Scoped native-range-input theming + reduced-motion guard. Kept as a tiny
+// string so the file stays CSS-module-free and self-contained.
+const PREMIUM_WIDGET_CSS = `
+.policy-premium-widget input[type="range"]{
+  -webkit-appearance:none;appearance:none;height:6px;border-radius:999px;
+  background:linear-gradient(90deg,
+    color-mix(in srgb, var(--primary) 55%, var(--border)) 0%,
+    var(--muted) 100%);
+  outline:none;cursor:pointer;margin:2px 0;
+}
+.policy-premium-widget input[type="range"]:focus-visible{
+  outline:2px solid var(--primary);outline-offset:3px;
+}
+.policy-premium-widget input[type="range"]::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;width:17px;height:17px;border-radius:999px;
+  background:var(--card);border:2px solid var(--primary);cursor:pointer;
+  box-shadow:0 1px 3px color-mix(in srgb, var(--foreground) 22%, transparent);
+  transition:transform .15s ease;
+}
+.policy-premium-widget input[type="range"]::-webkit-slider-thumb:hover{transform:scale(1.12);}
+.policy-premium-widget input[type="range"]::-moz-range-thumb{
+  width:17px;height:17px;border-radius:999px;background:var(--card);
+  border:2px solid var(--primary);cursor:pointer;
+  box-shadow:0 1px 3px color-mix(in srgb, var(--foreground) 22%, transparent);
+}
+@keyframes ppw-dot{0%,100%{opacity:.35}50%{opacity:1}}
+@media (prefers-reduced-motion: reduce){
+  .policy-premium-widget input[type="range"]::-webkit-slider-thumb{transition:none!important}
+  .policy-premium-widget *{animation:none!important}
+}
+`;
+
 const widgetStyle: React.CSSProperties = {
-  border: "1px solid #e5e7eb",
-  borderRadius: 12,
-  padding: 16,
-  background: "#fff",
+  border: "1px solid var(--border)",
+  borderRadius: 18,
+  padding: 18,
+  background: "var(--card)",
   display: "flex",
   flexDirection: "column",
-  gap: 12,
-  fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
+  gap: 14,
+  fontFamily: SANS,
+  boxShadow:
+    "0 1px 2px color-mix(in srgb, var(--foreground) 4%, transparent), 0 16px 40px -32px color-mix(in srgb, var(--foreground) 28%, transparent)",
 };
 
 const headerStyle: React.CSSProperties = {
@@ -438,178 +518,286 @@ const headerStyle: React.CSSProperties = {
 };
 
 const profileLineStyle: React.CSSProperties = {
-  fontSize: 12,
-  color: "#666",
+  fontSize: 11.5,
+  color: "var(--muted-foreground)",
+  letterSpacing: "0.005em",
 };
 
 const sliderGroupStyle: React.CSSProperties = {
   display: "flex",
   flexDirection: "column",
-  gap: 14,
+  gap: 16,
 };
 
 const labelStyle: React.CSSProperties = {
   display: "flex",
   flexDirection: "column",
-  gap: 6,
+  gap: 8,
   fontSize: 12,
-  color: "#374151",
+  color: "var(--foreground)",
 };
 
 const labelHeadStyle: React.CSSProperties = {
   display: "flex",
-  alignItems: "center",
+  alignItems: "baseline",
   justifyContent: "space-between",
-  gap: 8,
+  gap: 10,
+};
+
+const labelTextStyle: React.CSSProperties = {
   fontWeight: 500,
+  color: "var(--muted-foreground)",
+  textTransform: "uppercase",
+  letterSpacing: "0.07em",
+  fontSize: 10.5,
+};
+
+const labelValueStyle: React.CSSProperties = {
+  fontWeight: 700,
+  color: "var(--foreground)",
+  fontSize: 13,
+  fontVariantNumeric: "tabular-nums",
 };
 
 const tickRowStyle: React.CSSProperties = {
   display: "flex",
   justifyContent: "space-between",
-  fontSize: 11,
-  color: "#9ca3af",
+  fontSize: 10.5,
+  color: "var(--muted-foreground)",
+  fontVariantNumeric: "tabular-nums",
 };
 
 const pillRowStyle: React.CSSProperties = {
   display: "flex",
-  gap: 6,
+  gap: 7,
   flexWrap: "wrap",
 };
 
 const pillStyle = (active: boolean): React.CSSProperties => ({
-  border: `1px solid ${active ? "#2563eb" : "#d1d5db"}`,
-  background: active ? "#2563eb" : "#fff",
-  color: active ? "#fff" : "#374151",
-  padding: "4px 10px",
+  border: active
+    ? "1px solid var(--primary)"
+    : "1px solid var(--border)",
+  background: active
+    ? "var(--primary)"
+    : "var(--card)",
+  color: active ? "var(--primary-foreground)" : "var(--muted-foreground)",
+  padding: "5px 13px",
   borderRadius: 999,
   fontSize: 12,
+  fontWeight: 600,
   cursor: "pointer",
+  fontVariantNumeric: "tabular-nums",
+  transition: "background .16s ease, color .16s ease, border-color .16s ease",
+  boxShadow: active
+    ? "0 2px 8px -2px color-mix(in srgb, var(--primary) 45%, transparent)"
+    : "none",
 });
 
 const resultBoxStyle: React.CSSProperties = {
-  borderTop: "1px solid #f1f5f9",
-  paddingTop: 12,
+  borderTop: "1px solid var(--border)",
+  paddingTop: 14,
   display: "flex",
   flexDirection: "column",
-  gap: 8,
+  gap: 10,
 };
 
-const resultHeadlineStyle: React.CSSProperties = {
-  fontSize: 14,
+const resultHeadlineRowStyle: React.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 4,
+};
+
+const resultLabelStyle: React.CSSProperties = {
+  fontSize: 10.5,
+  textTransform: "uppercase",
+  letterSpacing: "0.1em",
+  fontWeight: 700,
+  color: "color-mix(in srgb, var(--primary) 70%, var(--muted-foreground))",
+};
+
+const resultValueWrapStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "baseline",
+  gap: 6,
+  flexWrap: "wrap",
+};
+
+const resultValueStyle: React.CSSProperties = {
+  fontFamily: SERIF,
+  fontOpticalSizing: "auto",
+  fontSize: 28,
+  fontWeight: 600,
+  color: "var(--foreground)",
+  letterSpacing: "-0.02em",
+  fontVariantNumeric: "tabular-nums",
 };
 
 const resultSuffixStyle: React.CSSProperties = {
-  color: "#6b7280",
-  fontWeight: 400,
+  color: "var(--muted-foreground)",
+  fontWeight: 500,
+  fontSize: 12.5,
 };
 
 const spinnerHintStyle: React.CSSProperties = {
-  marginLeft: 8,
+  marginLeft: 4,
   fontSize: 11,
-  color: "#9ca3af",
+  color: "var(--muted-foreground)",
   fontStyle: "italic",
+};
+
+const errorTextStyle: React.CSSProperties = {
+  color: "color-mix(in srgb, var(--error) 78%, var(--foreground))",
+  fontSize: 12.5,
+  fontWeight: 500,
+};
+
+const calculatingStyle: React.CSSProperties = {
+  color: "var(--muted-foreground)",
+  fontSize: 12.5,
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+};
+
+const dotPulseStyle: React.CSSProperties = {
+  width: 7,
+  height: 7,
+  borderRadius: 999,
+  background: "var(--primary)",
+  animation: "ppw-dot 1.2s ease-in-out infinite",
 };
 
 const breakdownListStyle: React.CSSProperties = {
   margin: 0,
-  paddingLeft: 18,
-  color: "#4b5563",
+  padding: 0,
+  listStyle: "none",
+  display: "flex",
+  flexDirection: "column",
+  gap: 6,
+};
+
+const breakdownItemStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "flex-start",
+  gap: 8,
+  color: "var(--muted-foreground)",
   fontSize: 12,
-  lineHeight: 1.5,
+  lineHeight: 1.45,
+};
+
+const breakdownTickStyle: React.CSSProperties = {
+  flex: "none",
+  marginTop: 6,
+  width: 5,
+  height: 5,
+  borderRadius: 999,
+  background: "color-mix(in srgb, var(--primary) 70%, transparent)",
 };
 
 const noteStyle: React.CSSProperties = {
   fontSize: 11,
-  color: "#6b7280",
+  color: "var(--muted-foreground)",
   fontStyle: "italic",
+  lineHeight: 1.5,
+  paddingTop: 2,
 };
 
 /* ---------------- NonCuratedPricingNotice styles ------------------- */
 /* Same outer card framing as the slider widget (border + radius + bg) */
-/* but with an amber/blue informational accent so users immediately    */
-/* distinguish "indicative range" from "calculated estimate".          */
+/* but with a brand-teal informational accent rail so users instantly  */
+/* distinguish "indicative range" from a "calculated estimate".        */
 
 const noticeWidgetStyle: React.CSSProperties = {
-  border: "1px solid #bfdbfe", // soft blue
-  borderLeft: "4px solid #2563eb", // strong blue accent strip
-  borderRadius: 12,
-  padding: 16,
-  background: "#f8fbff",
+  border: "1px solid color-mix(in srgb, var(--primary) 22%, var(--border))",
+  borderLeft: "3px solid var(--primary)",
+  borderRadius: 18,
+  padding: 18,
+  background: "color-mix(in srgb, var(--primary) 4%, var(--card))",
   display: "flex",
   flexDirection: "column",
-  gap: 10,
-  fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
+  gap: 11,
+  fontFamily: SANS,
+  boxShadow:
+    "0 1px 2px color-mix(in srgb, var(--foreground) 4%, transparent), 0 16px 40px -32px color-mix(in srgb, var(--foreground) 28%, transparent)",
 };
 
 const noticeHeaderStyle: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
-  gap: 6,
+  gap: 8,
 };
 
 const noticeIconStyle: React.CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
-  width: 20,
-  height: 20,
+  width: 22,
+  height: 22,
   borderRadius: 999,
-  color: "#2563eb",
+  color: "var(--primary)",
+  background: "color-mix(in srgb, var(--primary) 12%, var(--card))",
+  border: "1px solid color-mix(in srgb, var(--primary) 22%, var(--border))",
 };
 
 const noticeBadgeStyle: React.CSSProperties = {
   fontSize: 10,
   fontWeight: 700,
-  letterSpacing: "0.06em",
+  letterSpacing: "0.12em",
   textTransform: "uppercase",
-  color: "#1d4ed8",
+  color: "color-mix(in srgb, var(--primary) 78%, var(--foreground))",
 };
 
 const noticeBodyStyle: React.CSSProperties = {
   margin: 0,
   fontSize: 12.5,
   lineHeight: 1.55,
-  color: "#374151",
+  color: "var(--foreground)",
 };
 
 const noticeBandBoxStyle: React.CSSProperties = {
-  background: "#fff",
-  border: "1px solid #dbeafe",
-  borderRadius: 10,
-  padding: "10px 12px",
+  background: "var(--card)",
+  border: "1px solid color-mix(in srgb, var(--primary) 16%, var(--border))",
+  borderRadius: 12,
+  padding: "12px 14px",
   display: "flex",
   flexDirection: "column",
-  gap: 2,
+  gap: 3,
 };
 
 const noticeBandHeadlineStyle: React.CSSProperties = {
-  fontSize: 16,
-  fontWeight: 700,
-  color: "#0f172a",
+  fontFamily: SERIF,
+  fontOpticalSizing: "auto",
+  fontSize: 21,
+  fontWeight: 600,
+  color: "var(--foreground)",
+  letterSpacing: "-0.02em",
+  fontVariantNumeric: "tabular-nums",
 };
 
 const noticeBandSuffixStyle: React.CSSProperties = {
+  fontFamily: SANS,
   fontSize: 12,
-  fontWeight: 400,
-  color: "#6b7280",
+  fontWeight: 500,
+  color: "var(--muted-foreground)",
 };
 
 const noticeBandMedianStyle: React.CSSProperties = {
   fontSize: 11.5,
-  color: "#475569",
+  color: "var(--muted-foreground)",
+  fontVariantNumeric: "tabular-nums",
 };
 
 const noticeBandFallbackStyle: React.CSSProperties = {
   fontSize: 12,
-  color: "#92400e",
+  color: "#855316",
   fontStyle: "italic",
+  lineHeight: 1.5,
 };
 
 const noticeFootnoteStyle: React.CSSProperties = {
   margin: 0,
   fontSize: 11,
   lineHeight: 1.5,
-  color: "#6b7280",
+  color: "var(--muted-foreground)",
   fontStyle: "italic",
 };

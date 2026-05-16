@@ -545,16 +545,27 @@ def _read_usage_24h() -> Optional[dict]:
     Note: "24h" in the field name is conventional — the actual window is the
     last USAGE_TAIL_LINES rows (typically covers ≈24h of activity at current
     traffic). Keeping the name aligns with the admin UI label.
+
+    ADR-039/040 + Path B (2026-05-15): the multi-brain split (fast_brain /
+    judge) and the standalone profile_extractor / paraphraser passes were
+    DELETED. The only role the live stack now emits is `brain` (see
+    providers.nvidia_nim_llm.get_brain_llm + llm_health.ROLES). The append-
+    only llm_usage.jsonl still contains pre-rewrite legacy rows tagged with
+    the retired roles, so we filter to the canonical role set — exactly as
+    /api/admin/usage already does via its `chains` dict — instead of blindly
+    surfacing every historical role value. llm_health.ROLES is the single
+    source of truth (also used as _LLM_HEALTH_CHAIN_ROLES below).
     """
     usage_path = _REPO_ROOT / "40-data" / "llm_usage.jsonl"
     rows = _tail_jsonl(usage_path, USAGE_TAIL_LINES)
     if not rows:
         return None
 
+    canonical_roles = set(llm_health.ROLES)
     agg: dict[str, dict] = {}
     for r in rows:
         role = r.get("role")
-        if not role:
+        if not role or role not in canonical_roles:
             continue
         bucket = agg.setdefault(role, {"count": 0, "success_count": 0, "latency_sum": 0,
                                        "latency_n": 0})
@@ -969,18 +980,21 @@ async def admin_llm_health(
 
 # ---------------------------------------------------------------------------
 # A5 — Audit fix #4: /api/admin/persona-drift — slot-capture completeness
-# for the last 20 personas. Six canonical slots: name, age, income_band,
-# location_tier, primary_goal, health_conditions. <50% capture is flagged
-# red on the frontend.
+# for the last 20 personas. Seven canonical required slots: name, age,
+# dependents, location_tier, income_band, primary_goal, health_conditions.
+# <50% capture is flagged red on the frontend.
 # ---------------------------------------------------------------------------
 
-# Six canonical fact-find slots. Match the orchestrator's profile_extractor
-# targets — adding/removing a slot here must mirror the next_question
-# routing logic. Health is captured as a list (empty list counts as
-# "asked but no conditions" → still a valid captured signal once the
-# `asked` array contains the field name).
-_PERSONA_DRIFT_SLOTS = ("name", "age", "income_band", "location_tier",
-                        "primary_goal", "health_conditions")
+# The seven canonical "ready-to-recommend" fact-find slots. Mirrors
+# single_brain._FALLBACK_REQUIRED_SLOTS (the live single-brain stack's
+# required set after the ADR-039/040 Path B rewrite) and needs_finder.
+# Profile's persisted fields. `dependents` was previously missing here even
+# though it is a required slot and is persisted on every profile JSON —
+# adding/removing a slot must stay in sync with that required set. Health is
+# captured as a list (empty list counts as "asked but no conditions" → still
+# a valid captured signal once the `asked` array contains the field name).
+_PERSONA_DRIFT_SLOTS = ("name", "age", "dependents", "location_tier",
+                        "income_band", "primary_goal", "health_conditions")
 
 
 def _slot_captured(profile: dict, slot: str, asked: list[str]) -> bool:

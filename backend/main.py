@@ -1751,6 +1751,13 @@ class ProfileUpdateRequest(BaseModel):
     parents_has_ped: Optional[bool] = None
     health_conditions: Optional[list[str]] = None
     budget_band: Optional[str] = None
+    # KI — profile-builder UI now collects these 4; they exist on the Profile
+    # dataclass + chat-path save_profile_field but were being silently dropped
+    # from POST /api/profile because they weren't whitelisted here.
+    desired_sum_insured_inr: Optional[int] = None
+    copay_pct: Optional[int] = None
+    family_medical_history: Optional[list[str]] = None
+    smoker: Optional[bool] = None
 
 
 class SessionResetRequest(BaseModel):
@@ -1845,6 +1852,7 @@ async def profile_update(req: ProfileUpdateRequest):
         "age", "dependents", "income_band", "existing_cover_inr", "primary_goal",
         "location_tier", "parents_to_insure", "parents_age_max", "parents_has_ped",
         "health_conditions", "budget_band",
+        "desired_sum_insured_inr", "copay_pct", "family_medical_history", "smoker",
     ):
         v = getattr(req, field_name, None)
         if v in (None, "", []):
@@ -3481,19 +3489,32 @@ class RecallByNameRequest(BaseModel):
 
 class RecallByNameResponse(BaseModel):
     found: bool
-    profile: Optional[dict] = None
-    predicted_band: Optional[dict] = None
+    # PRIVACY FIX (2026-05-16, audit). The endpoint no longer hydrates the
+    # session off a bare name (weak/shared key → stranger-PII leak). When a
+    # stored profile matches, the response asks the UI to confirm identity
+    # FIRST. `profile`/`predicted_band` are never returned pre-confirmation.
+    requires_confirmation: bool = False
+    name: Optional[str] = None          # stored display name, for the prompt
+    summary: Optional[dict] = None      # non-PII identity hints, for the prompt
+    profile: Optional[dict] = None      # always None until user confirms
+    predicted_band: Optional[dict] = None  # always None until user confirms
     session_id: str
 
 
 @app.post("/api/profile/recall-by-name", response_model=RecallByNameResponse)
 async def recall_profile_by_name(req: RecallByNameRequest):
-    """Hydrate `session_id` from the stored named-profile JSON (if any).
+    """Stage a stored named-profile match for `session_id` (if any).
 
-    Returns `found=False` when the slug doesn't resolve to a stored file.
-    On a hit, the live in-memory session is populated and the response
-    carries the full union dict + predicted premium band so the UI can
-    render the welcome-back banner without a second roundtrip.
+    PRIVACY FIX (2026-05-16, audit). A bare name is a weak, shared,
+    guessable key. This endpoint NO LONGER auto-hydrates the session — a
+    second user on a shared browser/IP, or anyone stating a common first
+    name, must not be silently served a stranger's stored profile. When a
+    match exists the response carries `found=True, requires_confirmation=
+    True, name, summary` so the UI renders an explicit "are you <name>?"
+    prompt. The stored fields are applied to the session only after the
+    user confirms (handled on the chat affirmation path via
+    session_state.apply_pending_recall). Returns `found=False` when the
+    slug doesn't resolve to a stored file.
     """
     from backend.profile_persistence import recall_by_name_payload
 

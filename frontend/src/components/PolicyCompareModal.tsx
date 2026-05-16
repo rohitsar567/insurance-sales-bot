@@ -6,8 +6,14 @@
 //   2. Premium — pluggable widget (B2) via props.renderPremiumFor(policyId)
 //   3. Scorecard — pluggable widget (B3) via props.renderScorecardFor(policyId)
 //   4. Policy details — expandable section with source URL
-// Visual style copied from MarketplacePanel's PolicyCard so the chat-side
-// compare matches the marketplace-side compare (same fonts, borders, radii).
+//
+// ── Visual system ─────────────────────────────────────────────────────
+// Re-grounded on the premium editorial-fintech landing (app/globals.css):
+// Fraunces display serif via `.font-display` for the modal title, the teal
+// --primary token, color-mix soft depth shadows, the kicker-pill pattern
+// for section eyebrows, and tight one-line fact bullets. Everything reads
+// from CSS variables so the modal tracks the page's light/dark scheme. The
+// grade chip uses the same calm A→F ramp as PolicyScorecardWidget.
 
 import { useEffect, useState, type ReactNode } from "react";
 import {
@@ -57,7 +63,7 @@ function InsurerLogo({ slug, name, size = 40 }: { slug: string; name: string; si
   if (!url || failed) {
     return (
       <div
-        className={`rounded-lg ${color} text-white flex items-center justify-center font-bold shrink-0`}
+        className={`rounded-xl ${color} text-white flex items-center justify-center font-bold shrink-0`}
         style={{ width: size, height: size, fontSize: size * 0.32 }}
       >
         {insurerInitials(name)}
@@ -66,8 +72,13 @@ function InsurerLogo({ slug, name, size = 40 }: { slug: string; name: string; si
   }
   return (
     <div
-      className="rounded-lg bg-white border border-[var(--border)] flex items-center justify-center shrink-0 overflow-hidden p-1"
-      style={{ width: size, height: size }}
+      className="rounded-xl bg-white border border-[var(--border)] flex items-center justify-center shrink-0 overflow-hidden p-1.5"
+      style={{
+        width: size,
+        height: size,
+        boxShadow:
+          "0 1px 2px color-mix(in srgb, var(--foreground) 6%, transparent)",
+      }}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
@@ -80,15 +91,33 @@ function InsurerLogo({ slug, name, size = 40 }: { slug: string; name: string; si
   );
 }
 
-function gradeColor(grade: string): string {
-  const map: Record<string, string> = {
-    A: "bg-emerald-500 text-white",
-    B: "bg-teal-500 text-white",
-    C: "bg-amber-500 text-white",
-    D: "bg-orange-500 text-white",
-    F: "bg-red-500 text-white",
-  };
-  return map[grade] || "bg-stone-400 text-white";
+// Calm A→F ramp — the same tonal family as PolicyScorecardWidget so the
+// chip in the column header matches the full scorecard below it. "A" is the
+// brand teal; the rest walk a quiet green→amber→red gradient.
+function gradeChip(grade: string): { fg: string; bg: string; ring: string } {
+  const head = (grade || "").charAt(0).toUpperCase();
+  switch (head) {
+    case "A":
+      return {
+        fg: "color-mix(in srgb, var(--primary) 82%, #042f2a)",
+        bg: "color-mix(in srgb, var(--primary) 14%, var(--card))",
+        ring: "color-mix(in srgb, var(--primary) 55%, var(--border))",
+      };
+    case "B":
+      return { fg: "#155e63", bg: "#e3f4f3", ring: "#3d9c98" };
+    case "C":
+      return { fg: "#855316", bg: "#fbeed2", ring: "#cf9b3f" };
+    case "D":
+      return { fg: "#8a3c12", bg: "#fae0cd", ring: "#d4793b" };
+    case "F":
+      return { fg: "#8a2020", bg: "#f8d9d9", ring: "#cf4b4b" };
+    default:
+      return {
+        fg: "var(--muted-foreground)",
+        bg: "var(--muted)",
+        ring: "var(--border)",
+      };
+  }
 }
 
 // Dedupe citations by policy_id, preserving order.
@@ -151,31 +180,116 @@ export default function PolicyCompareModal({
   const uniq = uniquePolicies(policies).slice(0, 4);
   const n = uniq.length;
 
+  // Close on Escape — keyboard parity with the click-outside backdrop.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   return (
     <div
-      className="fixed inset-0 z-[70] bg-black/50 flex items-stretch sm:items-center justify-center p-0 sm:p-3 animate-fade-up"
+      className="fixed inset-0 z-[70] flex items-stretch sm:items-center justify-center p-0 sm:p-4 animate-fade-up"
+      style={{
+        background:
+          "color-mix(in srgb, var(--foreground) 48%, transparent)",
+        backdropFilter: "blur(3px)",
+        WebkitBackdropFilter: "blur(3px)",
+      }}
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-label={`Compare ${n} polic${n === 1 ? "y" : "ies"}`}
     >
       <div
-        className="bg-[var(--card)] sm:rounded-2xl shadow-xl w-full sm:max-w-7xl sm:w-[92vw] max-h-screen sm:max-h-[92vh] overflow-y-auto scrollbar-thin"
+        className="bg-[var(--card)] sm:rounded-3xl w-full sm:max-w-7xl sm:w-[92vw] max-h-screen sm:max-h-[92vh] overflow-y-auto scrollbar-thin"
+        style={{
+          border: "1px solid var(--border)",
+          boxShadow:
+            "0 1px 2px color-mix(in srgb, var(--foreground) 6%, transparent), 0 40px 90px -40px color-mix(in srgb, var(--foreground) 55%, transparent)",
+        }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="sticky top-0 z-10 bg-[var(--card)] border-b border-[var(--border)] px-5 py-4 flex items-center justify-between">
-          <div>
-            <h3 className="text-base font-bold">
+        {/* Header — Fraunces display title + brand-tinted eyebrow */}
+        <div
+          className="sticky top-0 z-10 px-5 sm:px-6 py-4 flex items-start justify-between gap-4"
+          style={{
+            background:
+              "linear-gradient(180deg, color-mix(in srgb, var(--primary) 6%, var(--card)) 0%, var(--card) 100%)",
+            borderBottom: "1px solid var(--border)",
+          }}
+        >
+          <div className="min-w-0">
+            <div
+              className="inline-flex items-center gap-2 mb-2"
+              style={{
+                padding: "4px 10px 4px 9px",
+                borderRadius: 999,
+                fontSize: 10,
+                fontWeight: 600,
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                color: "var(--primary)",
+                background:
+                  "color-mix(in srgb, var(--primary) 9%, var(--card))",
+                border:
+                  "1px solid color-mix(in srgb, var(--primary) 22%, var(--border))",
+              }}
+            >
+              <span
+                aria-hidden
+                style={{
+                  width: 5,
+                  height: 5,
+                  borderRadius: 999,
+                  background: "var(--primary)",
+                }}
+              />
+              Side-by-side
+            </div>
+            <h3
+              className="font-display"
+              style={{
+                fontSize: 22,
+                fontWeight: 600,
+                color: "var(--foreground)",
+                lineHeight: 1.15,
+                letterSpacing: "-0.012em",
+              }}
+            >
               Compare {n} polic{n === 1 ? "y" : "ies"}
             </h3>
-            <p className="text-[11px] text-[var(--muted-foreground)] mt-0.5">
-              Premiums, fit scores and policy details — side-by-side.
+            <p
+              style={{
+                fontSize: 12,
+                color: "var(--muted-foreground)",
+                marginTop: 4,
+                lineHeight: 1.4,
+              }}
+            >
+              Premiums, fit scores and policy details — aligned side-by-side.
             </p>
           </div>
           <button
             onClick={onClose}
-            className="text-[var(--muted-foreground)] hover:text-[var(--foreground)] text-2xl leading-none ml-2"
+            className="shrink-0"
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: 999,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 20,
+              lineHeight: 1,
+              color: "var(--muted-foreground)",
+              background: "var(--card)",
+              border: "1px solid var(--border)",
+              cursor: "pointer",
+              transition: "color .15s ease, border-color .15s ease",
+            }}
             aria-label="Close comparison"
           >
             ×
@@ -183,9 +297,9 @@ export default function PolicyCompareModal({
         </div>
 
         {/* Body: 1 col on mobile, n cols on desktop */}
-        <div className="p-4 sm:p-5">
+        <div className="p-4 sm:p-6">
           <div
-            className="grid gap-4 grid-cols-1"
+            className="grid gap-4 sm:gap-5 grid-cols-1"
             style={{
               gridTemplateColumns:
                 n > 1 ? `repeat(${n}, minmax(0, 1fr))` : undefined,
@@ -204,8 +318,21 @@ export default function PolicyCompareModal({
         </div>
 
         {/* Footer */}
-        <div className="sticky bottom-0 bg-[var(--card)] border-t border-[var(--border)] px-5 py-3 flex items-center justify-between text-xs">
-          <span className="text-[var(--muted-foreground)]">
+        <div
+          className="sticky bottom-0 px-5 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-2"
+          style={{
+            background:
+              "linear-gradient(0deg, color-mix(in srgb, var(--primary) 5%, var(--card)) 0%, var(--card) 100%)",
+            borderTop: "1px solid var(--border)",
+          }}
+        >
+          <span
+            style={{
+              fontSize: 11.5,
+              color: "var(--muted-foreground)",
+              lineHeight: 1.4,
+            }}
+          >
             Comparing the policies cited in this reply. Open the full
             marketplace for filters and 30+ more options.
           </span>
@@ -214,7 +341,13 @@ export default function PolicyCompareModal({
               onOpenMarketplace?.();
               onClose();
             }}
-            className="font-semibold text-[var(--primary)] hover:underline"
+            className="hover:underline"
+            style={{
+              fontSize: 12.5,
+              fontWeight: 600,
+              color: "var(--primary)",
+              cursor: "pointer",
+            }}
           >
             Open in full marketplace →
           </button>
@@ -242,19 +375,59 @@ function CompareColumn({
   const insurerName =
     marketplacePolicy?.insurer_name ?? citation.insurer_slug.replace(/-/g, " ");
   return (
-    <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 flex flex-col gap-4 min-w-0">
+    <div
+      className="flex flex-col gap-4 min-w-0"
+      style={{
+        background: "var(--card)",
+        border: "1px solid var(--border)",
+        borderRadius: 18,
+        padding: 18,
+        boxShadow:
+          "0 1px 2px color-mix(in srgb, var(--foreground) 4%, transparent), 0 18px 44px -34px color-mix(in srgb, var(--foreground) 30%, transparent)",
+      }}
+    >
       {/* Header — logo + insurer + policy name */}
-      <div className="flex items-start gap-3">
-        <InsurerLogo slug={citation.insurer_slug} name={insurerName} size={40} />
+      <div className="flex items-start gap-3 pb-4" style={{ borderBottom: "1px solid var(--border)" }}>
+        <InsurerLogo slug={citation.insurer_slug} name={insurerName} size={44} />
         <div className="flex-1 min-w-0">
-          <div className="text-[10px] uppercase tracking-wider text-[var(--muted-foreground)] truncate">
+          <div
+            className="truncate"
+            style={{
+              fontSize: 10,
+              textTransform: "uppercase",
+              letterSpacing: "0.1em",
+              color: "var(--muted-foreground)",
+              fontWeight: 600,
+            }}
+          >
             {insurerName}
           </div>
-          <div className="font-semibold text-sm leading-tight break-words">
+          <div
+            className="break-words"
+            style={{
+              fontFamily: "var(--font-serif)",
+              fontOpticalSizing: "auto",
+              fontSize: 16,
+              fontWeight: 600,
+              color: "var(--foreground)",
+              lineHeight: 1.25,
+              letterSpacing: "-0.01em",
+              marginTop: 3,
+            }}
+          >
             {citation.policy_name}
           </div>
           {marketplacePolicy?.aliases && marketplacePolicy.aliases.length > 0 && (
-            <div className="text-[11px] text-slate-500 italic mt-0.5 break-words">
+            <div
+              className="break-words"
+              style={{
+                fontSize: 11,
+                color: "var(--muted-foreground)",
+                fontStyle: "italic",
+                marginTop: 4,
+                lineHeight: 1.4,
+              }}
+            >
               Also marketed as: {marketplacePolicy.aliases.join(", ")}
             </div>
           )}
@@ -296,7 +469,7 @@ function PolicyHighlights({ policy }: { policy: MarketplacePolicy }) {
     : null;
   const siDisplay = maxSI
     ? maxSI >= 10_000_000
-      ? `${maxSI / 10_000_000} cr`
+      ? `${maxSI / 10_000_000} Cr`
       : `${maxSI / 100_000} L`
     : "—";
   const network = policy.network_hospital_count
@@ -335,17 +508,47 @@ function PolicyHighlights({ policy }: { policy: MarketplacePolicy }) {
 
   return (
     <Section title="Policy highlights">
-      <div className="grid grid-cols-2 gap-2 text-xs">
+      <div className="grid grid-cols-2 gap-2.5">
         <MiniStat label="Sum insured" value={siDisplay} />
         <MiniStat label="PED waiting" value={pedWait} />
         <MiniStat label="Network" value={network} />
         <MiniStat label="Cashless" value={cashless} />
       </div>
       {bullets.length > 0 && (
-        <ul className="mt-2.5 space-y-1 text-[11px] text-[var(--foreground)] leading-snug">
+        <ul
+          className="mt-3"
+          style={{
+            margin: "12px 0 0",
+            padding: 0,
+            listStyle: "none",
+            display: "flex",
+            flexDirection: "column",
+            gap: 7,
+          }}
+        >
           {bullets.slice(0, 4).map((b, i) => (
-            <li key={i} className="flex items-start gap-1.5">
-              <span className="text-[var(--primary)] mt-[1px]">•</span>
+            <li
+              key={i}
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 8,
+                fontSize: 11.5,
+                color: "var(--foreground)",
+                lineHeight: 1.4,
+              }}
+            >
+              <span
+                aria-hidden
+                style={{
+                  flex: "none",
+                  marginTop: 6,
+                  width: 5,
+                  height: 5,
+                  borderRadius: 999,
+                  background: "var(--primary)",
+                }}
+              />
               <span>{b}</span>
             </li>
           ))}
@@ -357,20 +560,75 @@ function PolicyHighlights({ policy }: { policy: MarketplacePolicy }) {
 
 function MiniStat({ label, value }: { label: string; value: string }) {
   return (
-    <div>
-      <div className="text-[10px] text-[var(--muted-foreground)] uppercase tracking-wide">
+    <div
+      style={{
+        background: "color-mix(in srgb, var(--primary) 4%, var(--muted))",
+        border: "1px solid var(--border)",
+        borderRadius: 12,
+        padding: "9px 11px",
+      }}
+    >
+      <div
+        style={{
+          fontSize: 9.5,
+          color: "var(--muted-foreground)",
+          textTransform: "uppercase",
+          letterSpacing: "0.08em",
+          fontWeight: 600,
+        }}
+      >
         {label}
       </div>
-      <div className="text-xs font-semibold">{value}</div>
+      <div
+        style={{
+          fontSize: 14,
+          fontWeight: 700,
+          color: "var(--foreground)",
+          marginTop: 3,
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
+        {value}
+      </div>
     </div>
   );
 }
 
+// Section header — a brand-tinted eyebrow with a hairline rule that grows
+// from the label, echoing the landing's "titled chapter" section pattern.
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div>
-      <div className="text-[10px] uppercase tracking-wider text-[var(--muted-foreground)] font-semibold mb-1.5">
-        {title}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          marginBottom: 10,
+        }}
+      >
+        <span
+          style={{
+            fontSize: 10,
+            textTransform: "uppercase",
+            letterSpacing: "0.12em",
+            color:
+              "color-mix(in srgb, var(--primary) 70%, var(--muted-foreground))",
+            fontWeight: 700,
+            whiteSpace: "nowrap",
+          }}
+        >
+          {title}
+        </span>
+        <span
+          aria-hidden
+          style={{
+            flex: 1,
+            height: 1,
+            background:
+              "linear-gradient(90deg, color-mix(in srgb, var(--primary) 28%, var(--border)) 0%, var(--border) 35%, transparent 100%)",
+          }}
+        />
       </div>
       {children}
     </div>
@@ -379,7 +637,17 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 
 function PlaceholderWidget({ label }: { label: string }) {
   return (
-    <div className="bg-[var(--muted)] border border-dashed border-[var(--border)] rounded-lg px-3 py-4 text-center text-[11px] text-[var(--muted-foreground)]">
+    <div
+      style={{
+        background: "var(--muted)",
+        border: "1px dashed var(--border)",
+        borderRadius: 12,
+        padding: "16px 12px",
+        textAlign: "center",
+        fontSize: 11.5,
+        color: "var(--muted-foreground)",
+      }}
+    >
       {label}
     </div>
   );
@@ -416,24 +684,68 @@ function ScorecardFallback({ policyId }: { policyId: string }) {
   if (error || !sc) {
     return <PlaceholderWidget label="Scorecard unavailable" />;
   }
+  const chip = gradeChip(sc.grade);
   return (
-    <div className="bg-[var(--muted)] border border-[var(--border)] rounded-lg p-3">
-      <div className="flex items-center gap-2">
+    <div
+      style={{
+        background: "color-mix(in srgb, var(--primary) 3%, var(--muted))",
+        border: "1px solid var(--border)",
+        borderRadius: 14,
+        padding: 14,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
         <span
-          className={`inline-flex items-center justify-center w-9 h-9 rounded-md font-bold text-sm ${gradeColor(
-            sc.grade,
-          )}`}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 42,
+            height: 42,
+            borderRadius: 12,
+            fontFamily: "var(--font-serif)",
+            fontOpticalSizing: "auto",
+            fontSize: sc.grade.length > 1 ? 17 : 21,
+            fontWeight: 600,
+            letterSpacing: "-0.02em",
+            color: chip.fg,
+            background: chip.bg,
+            border: `1px solid ${chip.ring}`,
+            flexShrink: 0,
+          }}
         >
           {sc.grade}
         </span>
-        <div className="min-w-0">
-          <div className="text-sm font-semibold leading-tight">
+        <div style={{ minWidth: 0 }}>
+          <div
+            style={{
+              fontSize: 15,
+              fontWeight: 700,
+              color: "var(--foreground)",
+              lineHeight: 1.2,
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
             {sc.overall_score}
-            <span className="text-[var(--muted-foreground)] text-[10px] font-normal">
-              /100
+            <span
+              style={{
+                color: "var(--muted-foreground)",
+                fontSize: 10,
+                fontWeight: 500,
+              }}
+            >
+              {" "}
+              / 100
             </span>
           </div>
-          <div className="text-[10px] text-[var(--muted-foreground)] truncate">
+          <div
+            className="truncate"
+            style={{
+              fontSize: 10.5,
+              color: "var(--muted-foreground)",
+              marginTop: 2,
+            }}
+          >
             {sc.one_liner}
           </div>
         </div>
@@ -452,33 +764,97 @@ function PolicyDetails({ citation }: { citation: Citation }) {
         : `pp. ${citation.page_start}–${citation.page_end}`
       : null;
   return (
-    <div className="border border-[var(--border)] rounded-lg bg-[var(--card)]">
+    <div
+      style={{
+        border: "1px solid var(--border)",
+        borderRadius: 14,
+        background: "var(--card)",
+        overflow: "hidden",
+      }}
+    >
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full text-left px-3 py-2 text-[11px] font-semibold flex items-center justify-between hover:bg-[var(--muted)] rounded-lg"
+        className="w-full text-left"
+        style={{
+          padding: "11px 13px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 8,
+          background: open
+            ? "color-mix(in srgb, var(--primary) 5%, var(--card))"
+            : "var(--card)",
+          cursor: "pointer",
+          transition: "background .15s ease",
+        }}
         aria-expanded={open}
       >
-        <span className="uppercase tracking-wider text-[var(--muted-foreground)]">
+        <span
+          style={{
+            fontSize: 10,
+            textTransform: "uppercase",
+            letterSpacing: "0.12em",
+            color:
+              "color-mix(in srgb, var(--primary) 70%, var(--muted-foreground))",
+            fontWeight: 700,
+          }}
+        >
           Policy details
         </span>
-        <span className="text-[var(--muted-foreground)]">{open ? "−" : "+"}</span>
+        <span
+          aria-hidden
+          style={{
+            fontSize: 16,
+            lineHeight: 1,
+            color: "var(--primary)",
+            fontWeight: 500,
+          }}
+        >
+          {open ? "−" : "+"}
+        </span>
       </button>
       {open && (
-        <div className="px-3 pb-3 pt-1 border-t border-[var(--border)] space-y-2 text-[11px]">
+        <div
+          style={{
+            padding: "12px 13px 13px",
+            borderTop: "1px solid var(--border)",
+            display: "flex",
+            flexDirection: "column",
+            gap: 9,
+          }}
+        >
           <DetailRow label="Policy" value={citation.policy_name} />
-          <DetailRow label="Insurer" value={citation.insurer_slug.replace(/-/g, " ")} />
+          <DetailRow
+            label="Insurer"
+            value={citation.insurer_slug.replace(/-/g, " ")}
+          />
           {pageRange && <DetailRow label="Cited" value={pageRange} />}
           {hasSource ? (
             <a
               href={citation.source_url}
               target="_blank"
               rel="noopener"
-              className="inline-flex items-center gap-1 text-[var(--primary)] hover:underline font-semibold"
+              className="hover:underline"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 5,
+                fontSize: 11.5,
+                fontWeight: 600,
+                color: "var(--primary)",
+                marginTop: 2,
+              }}
             >
               Open policy PDF →
             </a>
           ) : (
-            <span className="text-[var(--muted-foreground)] italic">
+            <span
+              style={{
+                fontSize: 11,
+                color: "var(--muted-foreground)",
+                fontStyle: "italic",
+              }}
+            >
               No source PDF link available
             </span>
           )}
@@ -490,11 +866,30 @@ function PolicyDetails({ citation }: { citation: Citation }) {
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex gap-2">
-      <span className="text-[var(--muted-foreground)] uppercase tracking-wide text-[10px] w-16 shrink-0">
+    <div style={{ display: "flex", gap: 10 }}>
+      <span
+        style={{
+          fontSize: 9.5,
+          textTransform: "uppercase",
+          letterSpacing: "0.07em",
+          color: "var(--muted-foreground)",
+          fontWeight: 600,
+          width: 60,
+          flexShrink: 0,
+          paddingTop: 1,
+        }}
+      >
         {label}
       </span>
-      <span className="text-[var(--foreground)] break-words">{value}</span>
+      <span
+        className="break-words"
+        style={{
+          fontSize: 12,
+          color: "var(--foreground)",
+        }}
+      >
+        {value}
+      </span>
     </div>
   );
 }

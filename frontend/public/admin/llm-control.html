@@ -54,8 +54,11 @@
       color: var(--text);
     }
     .container {
-      max-width: 1100px;
+      max-width: 1500px;
       margin: 0 auto;
+    }
+    @media (max-width: 1540px) {
+      .container { max-width: 100%; }
     }
     .card {
       background: var(--card);
@@ -512,6 +515,13 @@
       border-top: 1px solid var(--border);
     }
     .perf-sub:first-of-type { margin-top: 0; padding-top: 0; border-top: none; }
+    /* Performance tab tables (gold by_brain / by_type breakdown + the
+       Last-24h LLM-usage role table). Constrain width so they read well
+       in the widened container and let the role-name column wrap rather
+       than stretch the whole row. */
+    #performance-body table { max-width: 920px; }
+    #performance-body td { overflow-wrap: anywhere; }
+    #performance-body .metric-grid { max-width: 920px; }
     .empty-state {
       padding: 24px;
       text-align: center;
@@ -665,6 +675,24 @@
       padding: 0 16px 16px;
     }
     .drift-row-bad td { background: rgba(248, 81, 73, 0.08); }
+    /* Persona Drift table — give every column a sensible share of the
+       (now wider) container and let the comma-joined CAPTURED / MISSING
+       slot lists WRAP instead of clipping off the right edge. The orange
+       MISSING column was previously cut off because the .mono small cells
+       had no width budget and never wrapped. */
+    #drift-body table { table-layout: fixed; }
+    #drift-body th:nth-child(1), #drift-body td:nth-child(1) { width: 22%; }
+    #drift-body th:nth-child(2), #drift-body td:nth-child(2) { width: 14%; }
+    #drift-body th:nth-child(3), #drift-body td:nth-child(3) { width: 27%; }
+    #drift-body th:nth-child(4), #drift-body td:nth-child(4) { width: 27%; }
+    #drift-body th:nth-child(5), #drift-body td:nth-child(5) { width: 10%; }
+    #drift-body td.mono {
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      line-height: 1.6;
+    }
+    #drift-body td.time-cell { white-space: normal; }
     .drift-pct {
       display: inline-block;
       min-width: 48px;
@@ -2332,26 +2360,34 @@
         }
         var p = STATE.performance;
 
-        // (a) Latest 96-Q gold eval
+        // (a) Latest gold eval. The backend (/api/admin/performance →
+        // _read_eval_summary) emits the `eval` block with fields
+        // ran_at / n_questions / factual_accuracy / citation_accuracy /
+        // refusal_precision / by_brain / by_type. The question count is
+        // whatever the last run covered (gold set = eval/gold_qa.json);
+        // we derive the heading from n_questions instead of hard-coding a
+        // stale "96-Q" — the gold set is no longer 96 questions.
         var goldSection = createEl('div', { className: 'perf-sub' });
-        goldSection.appendChild(createEl('h3', { text: 'Latest 96-Q gold eval' }));
-        var gold = p.gold_eval || p.eval || null;
+        var gold = p.eval || p.gold_eval || null;
+        var goldN = gold ? (gold.n_questions != null ? gold.n_questions
+                            : (gold.total_questions != null ? gold.total_questions : gold.n)) : null;
+        goldSection.appendChild(createEl('h3', {
+          text: 'Latest gold eval' + (goldN != null ? ' (' + goldN + '-Q)' : '')
+        }));
         if (!gold || isEmptyObj(gold)) {
           goldSection.appendChild(createEl('div', { className: 'empty-state', text: 'No gold eval run yet.' }));
         } else {
           var caption = createEl('div', { className: 'perf-caption' });
-          var runAt = gold.run_at || gold.timestamp || gold.created_at;
+          var runAt = gold.ran_at || gold.run_at || gold.timestamp || gold.created_at;
           if (runAt) caption.textContent = 'Run at ' + fmtIST(runAt);
           if (caption.textContent) goldSection.appendChild(caption);
 
           var tiles = createEl('div', { className: 'metric-grid' });
-          tiles.appendChild(metricTile('Factual', fmtPctMaybe(pickPct(gold, ['factual_pct', 'factual', 'factual_correct_pct']))));
-          tiles.appendChild(metricTile('Citation', fmtPctMaybe(pickPct(gold, ['citation_pct', 'citation', 'citation_correct_pct']))));
-          tiles.appendChild(metricTile('Refusal', fmtPctMaybe(pickPct(gold, ['refusal_pct', 'refusal', 'refusal_rate']))));
-          if (gold.total_questions != null) {
-            tiles.appendChild(metricTile('Questions', String(gold.total_questions)));
-          } else if (gold.n != null) {
-            tiles.appendChild(metricTile('Questions', String(gold.n)));
+          tiles.appendChild(metricTile('Factual', fmtPctMaybe(pickPct(gold, ['factual_accuracy', 'factual_pct', 'factual', 'factual_correct_pct']))));
+          tiles.appendChild(metricTile('Citation', fmtPctMaybe(pickPct(gold, ['citation_accuracy', 'citation_pct', 'citation', 'citation_correct_pct']))));
+          tiles.appendChild(metricTile('Refusal', fmtPctMaybe(pickPct(gold, ['refusal_precision', 'refusal_pct', 'refusal', 'refusal_rate']))));
+          if (goldN != null) {
+            tiles.appendChild(metricTile('Questions', String(goldN)));
           }
           goldSection.appendChild(tiles);
 
@@ -2371,21 +2407,33 @@
         }
         body.appendChild(goldSection);
 
-        // (b) Latest persona audit
+        // (b) Latest persona audit. The backend (/api/admin/performance →
+        // _read_audit_summary) emits the `audit` block parsed from the most
+        // recent 80-audit/full_* run: run_id / personas_requested /
+        // personas_completed / elapsed_seconds / turns_total / errors /
+        // refusals / p50_ms / p95_ms / p99_ms / brain_routing. There is no
+        // run_at field — the run is identified by run_id.
         var personaSection = createEl('div', { className: 'perf-sub' });
         personaSection.appendChild(createEl('h3', { text: 'Latest persona audit' }));
-        var persona = p.persona_audit || p.persona || null;
+        var persona = p.audit || p.persona_audit || p.persona || null;
         if (!persona || isEmptyObj(persona)) {
           personaSection.appendChild(createEl('div', { className: 'empty-state', text: 'No persona audit run yet.' }));
         } else {
           var pCaption = createEl('div', { className: 'perf-caption' });
-          var pRunAt = persona.run_at || persona.timestamp || persona.created_at;
-          if (pRunAt) pCaption.textContent = 'Run at ' + fmtIST(pRunAt);
+          if (persona.run_id) {
+            pCaption.textContent = 'Run ' + persona.run_id
+              + (persona.elapsed_seconds != null ? ' · ' + persona.elapsed_seconds + 's' : '');
+          }
           if (pCaption.textContent) personaSection.appendChild(pCaption);
 
           var pTiles = createEl('div', { className: 'metric-grid' });
           if (persona.personas_completed != null) {
-            pTiles.appendChild(metricTile('Personas completed', String(persona.personas_completed)));
+            pTiles.appendChild(metricTile('Personas completed',
+              String(persona.personas_completed)
+              + (persona.personas_requested != null ? ' / ' + persona.personas_requested : '')));
+          }
+          if (persona.turns_total != null) {
+            pTiles.appendChild(metricTile('Turns', String(persona.turns_total)));
           }
           pTiles.appendChild(metricTile('p50 latency', fmtLatency(persona.p50_ms != null ? persona.p50_ms : persona.p50)));
           pTiles.appendChild(metricTile('p95 latency', fmtLatency(persona.p95_ms != null ? persona.p95_ms : persona.p95)));
@@ -2627,7 +2675,7 @@
         var personas = STATE.drift.personas || [];
         if (summary) {
           summary.textContent = personas.length + ' persona' + (personas.length === 1 ? '' : 's')
-            + ' · ' + ((STATE.drift.slots || []).length || 6) + ' slots';
+            + ' · ' + ((STATE.drift.slots || []).length || 7) + ' slots';
         }
         if (!personas.length) {
           body.appendChild(createEl('div', { className: 'empty-state',

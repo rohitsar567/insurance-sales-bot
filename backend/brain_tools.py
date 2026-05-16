@@ -88,9 +88,37 @@ _FACTS_DIR = Path(__file__).resolve().parent.parent / "40-data" / "policy_facts"
 _DOCTYPE_SUFFIXES = ("__wordings", "__brochure", "__cis", "__prospectus")
 _FACT_KEYS = (
     "policy_type_indemnity_or_fixed",
+    # KI-279 (2026-05-16) — the raw catalog type key. Some curated files
+    # (e.g. star-health__star-hospital-cash__brochure.json) carry the
+    # product type ONLY under `policy_type` ("hospital_cash") and have NO
+    # `policy_type_indemnity_or_fixed` key. Without surfacing this, the
+    # retrieval_filters fixed-benefit gate is blind and a daily-cash plan
+    # ranks #1 for a comprehensive-indemnity buyer. Read-only; STABLE key.
+    "policy_type",
     "deductible_amount",
     "co_payment_pct",
     "sum_insured_options",
+    # KI-280 (2026-05-16) — UNIFIED recommendation-fit gate. The eligibility
+    # gate needs these STABLE policy_facts keys (read-only):
+    #   uin_code            → canonical dedup identity (1 UIN = 1 product;
+    #                          collapses marketing-rename / doctype-sibling
+    #                          duplicate CITED cards — audit P2/P4/P7).
+    #   max_entry_age       → hard eligibility for the INSURED person. When
+    #                          the profile insures parents (~70), a plan
+    #                          whose max entry age is 65 cannot accept them
+    #                          (audit P7). The chunk already carries
+    #                          max_entry_age from Chroma metadata, but the
+    #                          curated facts file is the authoritative value
+    #                          and overrides a missing/None chunk field.
+    #   maternity_coverage  → required-feature gate: an explicit maternity /
+    #   newborn_coverage      newborn need must rank confirmed plans above
+    #                          unconfirmed ones (audit P3).
+    # max_renewal_age is intentionally NOT read — it was removed from the
+    # scorecard (lifelong renewal is the IRDAI norm; scorecard.py:606).
+    "uin_code",
+    "max_entry_age",
+    "maternity_coverage",
+    "newborn_coverage",
 )
 _facts_cache: dict[str, dict] = {}
 
@@ -145,9 +173,25 @@ def _load_policy_facts(policy_id: str) -> dict:
             for k in _FACT_KEYS:
                 if k in d and k not in out:
                     out[k] = _unwrap(d[k])
-            # Stop once we have the decision-critical signals.
-            if "policy_type_indemnity_or_fixed" in out and (
-                "sum_insured_options" in out
+            # Stop once we have the decision-critical signals. KI-279: a
+            # type signal is "have it" if EITHER the canonical key OR the
+            # raw `policy_type` key is present (some files only carry the
+            # latter), so the fixed-benefit gate is never starved.
+            # KI-280: also require the unified-gate signals (uin_code +
+            # max_entry_age) before breaking so the eligibility/dedup rules
+            # are not starved when a sibling doctype file carries them. The
+            # candidate-stem list is short (≤5) so iterating it fully is
+            # cheap; this just stops us breaking after stem #1 when the UIN
+            # / entry-age lives in stem #2.
+            _have_type = (
+                "policy_type_indemnity_or_fixed" in out
+                or "policy_type" in out
+            )
+            if (
+                _have_type
+                and "sum_insured_options" in out
+                and "uin_code" in out
+                and "max_entry_age" in out
             ):
                 break
     except Exception as e:  # noqa: BLE001 — enrichment must never break retrieval
@@ -180,9 +224,21 @@ def _scorecard_signal(policy_id: str, profile=None) -> dict:
                 )
             }
         sc = build_scorecard(facts or {"policy_id": policy_id}, profile=prof)
+        # KI-280 (2026-05-16) — the Scorecard dataclass field is
+        # `overall_score` (scorecard.py:95), NOT `overall`. The previous
+        # getattr(sc, "overall", ...) ALWAYS returned None, so every
+        # enriched chunk reached retrieval_filters with _overall_score=None
+        # and _fit_score fell back to the coarse letter-grade table where
+        # every "B" == 70.0 exactly. Within-grade order then collapsed to
+        # raw cosine — the live audit's grade/rank inversion (P1 C/65 above
+        # B/75, P2 A/77 ranked LAST). Read the real numeric field; keep a
+        # belt-and-braces `overall` alias for forward-compat.
+        _overall = getattr(sc, "overall_score", None)
+        if _overall is None:
+            _overall = getattr(sc, "overall", None)
         return {
             "_grade": getattr(sc, "grade", None),
-            "_overall_score": getattr(sc, "overall", None),
+            "_overall_score": _overall,
         }
     except Exception:  # noqa: BLE001 — scorecard optional; ranking degrades gracefully
         return {}

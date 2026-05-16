@@ -35,6 +35,7 @@ from typing import Any, Optional
 import httpx
 
 from backend import brain_tools
+from backend.policy_identity import canonical_key
 
 _log = logging.getLogger(__name__)
 
@@ -588,6 +589,83 @@ def _detect_language(user_text: str) -> str:
     return "en"
 
 
+# --- confirmation-gated cross-session recall (privacy fix, 2026-05-16) ------
+# When session_state.rehydrate_by_name STAGES a name match on
+# `session.pending_profile_recall`, single_brain asks the user a one-line
+# "are you the same <name>?" confirmation BEFORE any stored field is merged
+# (session_state.apply_pending_recall). These coarse yes/no detectors classify
+# the user's NEXT message. Anything that is not a clear affirmation is treated
+# as "not me / decline" (fail closed — never leak a stranger's profile).
+# Strong single-token affirmations only. Weak first-person tokens ("i'm",
+# "i am", "im") are deliberately EXCLUDED — they appear in denials too
+# ("I'm new", "I'm someone else") and would mis-classify a decline as a
+# yes (privacy: that would leak a stranger's profile).
+_RECALL_AFFIRM = (
+    "yes", "yep", "yeah", "yup", "ya", "yess", "haan", "haa",
+    "correct", "right", "indeed", "sure", "ok", "okay",
+    "affirmative", "true", "yedha",
+)
+# Multi-word affirmation phrases (checked as substrings).
+_RECALL_AFFIRM_PHRASES = (
+    "that's me", "thats me", "that is me", "it's me", "its me",
+    "that's right", "thats right", "that's correct", "thats correct",
+    "yes that's me", "same person", "the same",
+)
+_RECALL_DENY = (
+    "no", "nope", "nah", "nahi", "na", "wrong", "incorrect", "different",
+)
+_RECALL_DENY_PHRASES = (
+    "not me", "someone else", "different person", "first time",
+    "i'm new", "im new", "i am new", "new user", "not the same",
+    "not that", "wrong person",
+)
+
+
+def _classify_recall_answer(user_text: str) -> bool:
+    """Coarse yes/no for the staged-recall confirm prompt.
+
+    Returns True ONLY for a clear affirmation that the user is the same
+    returning person. Explicit denials and anything ambiguous return False
+    so the staged stranger profile is DISCARDED (fail closed — privacy).
+    """
+    t = (user_text or "").strip().lower()
+    if not t:
+        return False
+    stripped = t.strip(" \t\r\n.,!?\"'()[]")
+    if not stripped:
+        return False
+
+    # 1) Explicit DENIAL anywhere wins — fail closed. Checked FIRST so
+    #    "no, that's me" / "I'm new" never get read as a yes.
+    if any(p in stripped for p in _RECALL_DENY_PHRASES):
+        return False
+    padded = f" {stripped} "
+    if any(f" {d} " in padded for d in _RECALL_DENY):
+        return False
+    # A leading deny token survives trailing punctuation ("no, that's me").
+    _toks = stripped.replace(",", " ").split()
+    if _toks and _toks[0] in _RECALL_DENY:
+        return False
+
+    # 2) Explicit AFFIRMATION phrase ("that's me", "it's me", "same person").
+    if any(p in stripped for p in _RECALL_AFFIRM_PHRASES):
+        return True
+
+    # 3) Exact / leading strong affirmation token ("yes", "yep, ...").
+    if stripped in _RECALL_AFFIRM:
+        return True
+    first = stripped.split()[0] if stripped.split() else ""
+    if first in _RECALL_AFFIRM:
+        return True
+
+    # 4) A strong affirmation token elsewhere ("oh yes please").
+    if any(f" {a} " in padded for a in _RECALL_AFFIRM):
+        return True
+
+    # 5) Anything else (questions, new facts, gibberish) → discard.
+    return False
+
+
 _FALLBACK_SLOT_QUESTIONS = {
     "name": "What's your name?",
     "age": "How old are you?",
@@ -972,14 +1050,33 @@ def _build_recommendation_citations(
     and dropped ones it did.
 
     This builds the citation set as EXACTLY the policies the assistant
-    actually recommended, in the order it presented them:
+    actually recommended:
 
       1. If the LLM called `mark_recommendation(policy_ids=[...])`, those
-         ordered ids ARE the recommendation set (the system prompt defines
-         this as "ordered IDs you cited").
+         ids are the SELECTION (which policies the assistant chose).
       2. Otherwise (Gemini skips mark_recommendation on ~70% of rec turns
-         per KI-254), parse the reply prose: for every retrieved policy
-         whose name appears in `reply_text`, order by first appearance.
+         per KI-254), parse the reply prose: every retrieved policy whose
+         name appears in `reply_text` is selected.
+
+    KI-280 — the cited-card list and the advisory prose must be gated by
+    the SAME fitness logic. Two refinements over the KI-278 builder so the
+    cards ARE the gated, fit-ranked set:
+
+      • CANONICAL DEDUP: `retrieved_chunks_all` is the union of every
+        retrieve_policies result this turn. Each result is already gated +
+        deduped by retrieval_filters, but across multiple retrieve calls
+        the same product can reappear under a doctype-sibling / marketing-
+        variant id. We collapse by the shared canonical identity
+        (policy_identity.canonical_key) — the SAME rule the marketplace and
+        retrieval_filters.dedup_by_policy use — so a product is cited once
+        (audit P2/P4/P7).
+      • GATE-RANK ORDER: the cards are ordered by the gate's profile-fit
+        rank (first appearance in the gated chunk stream = the pipeline's
+        fit order), NOT the LLM's free mark_recommendation / prose order.
+        The LLM decides WHICH policies it recommends; the GATE decides the
+        order so #1 cited = best fit for THIS profile (fixes the audit
+        grade/rank inversion: P1 C/65-above-B/75, P2 A/77-ranked-last,
+        P5 non-cheapest-first).
 
     Each recommended policy is hydrated from its BEST (highest-score)
     retrieved chunk so source_url / policy_name / insurer_slug are real
@@ -993,26 +1090,39 @@ def _build_recommendation_citations(
         chit-chat); caller uses the legacy per-chunk recall list so QA
         answers still get their supporting source chips.
     """
-    # policy_id -> best chunk (highest score) for hydration; also collect
-    # the per-policy display name + a normalised alias for prose matching.
-    best_by_pid: dict[str, dict] = {}
-    for c in retrieved_chunks_all:
+    # KI-280 — collapse the turn's gated chunk stream by CANONICAL identity
+    # (UIN-primary, product_key fallback — the shared marketplace/
+    # retrieval_filters rule). For each canonical product keep:
+    #   • the best (highest-score) chunk for hydration, and
+    #   • `gate_rank` = the index of its FIRST appearance in the gated
+    #     stream. `retrieved_chunks_all` preserves filter_pipeline's
+    #     profile-fit order per retrieve call, so first-appearance order IS
+    #     the gate's fit ranking. We order the final cards by this, not by
+    #     the LLM's mark_recommendation / prose order.
+    best_by_canon: dict[str, dict] = {}
+    gate_rank: dict[str, int] = {}
+    pid_to_canon: dict[str, str] = {}
+    for idx, c in enumerate(retrieved_chunks_all):
         pid = (c.get("policy_id") or "").strip()
         if not pid:
             continue
-        cur = best_by_pid.get(pid)
+        canon = canonical_key(c)
+        pid_to_canon.setdefault(pid, canon)
+        if canon not in gate_rank:
+            gate_rank[canon] = idx
+        cur = best_by_canon.get(canon)
         if cur is None or float(c.get("score", 0.0) or 0.0) > float(
             cur.get("score", 0.0) or 0.0
         ):
-            best_by_pid[pid] = c
+            best_by_canon[canon] = c
 
-    def _cite(pid: str) -> Optional[dict]:
-        c = best_by_pid.get(pid)
+    def _cite_canon(canon: str) -> Optional[dict]:
+        c = best_by_canon.get(canon)
         if c is None:
             return None
         return {
             "chunk_id": c.get("chunk_id", ""),
-            "policy_id": pid,
+            "policy_id": (c.get("policy_id") or "").strip(),
             "policy_name": c.get("policy_name", ""),
             "insurer_slug": c.get("insurer_slug", ""),
             "doc_type": c.get("doc_type", ""),
@@ -1020,18 +1130,31 @@ def _build_recommendation_citations(
             "score": c.get("score", 0.0),
         }
 
-    # ---- Path 1: explicit mark_recommendation ordering --------------------
-    if marked_policy_ids:
-        out: list[dict] = []
+    def _order_by_gate(canons: list[str]) -> list[dict]:
+        """De-dup the selected canonicals and emit them in the GATE's
+        profile-fit order (not the order the LLM listed them)."""
         seen: set[str] = set()
-        for pid in marked_policy_ids:
-            pid = (pid or "").strip()
-            if not pid or pid in seen:
-                continue
-            seen.add(pid)
-            cite = _cite(pid)
+        uniq: list[str] = []
+        for k in canons:
+            if k and k not in seen:
+                seen.add(k)
+                uniq.append(k)
+        uniq.sort(key=lambda k: gate_rank.get(k, 1_000_000))
+        out: list[dict] = []
+        for k in uniq:
+            cite = _cite_canon(k)
             if cite is not None:
                 out.append(cite)
+        return out
+
+    # ---- Path 1: explicit mark_recommendation selection -------------------
+    if marked_policy_ids:
+        # The LLM's ids are the SELECTION; the GATE decides the order.
+        selected = [
+            pid_to_canon.get((pid or "").strip())
+            for pid in marked_policy_ids
+        ]
+        out = _order_by_gate([k for k in selected if k])
         # mark_recommendation fired ⇒ this is unambiguously a recommendation
         # turn even if id↔chunk hydration matched nothing.
         return out, True
@@ -1041,35 +1164,28 @@ def _build_recommendation_citations(
     if not haystack:
         return [], False
 
-    # Score earliest prose offset per policy; only policies whose name is
-    # actually written into the answer become cards. Longest names first so
-    # "my health suraksha" wins over a bare "suraksha" substring.
-    matched: list[tuple[int, str]] = []
-    for pid, c in best_by_pid.items():
+    # A canonical product is SELECTED when its best chunk's policy_name is
+    # written into the reply prose (longest names matched implicitly via
+    # the >=4 char guard so a bare token can't false-match). KI-280: the
+    # selection is by prose presence, but the final ORDER is the gate's
+    # fit rank (_order_by_gate), not the prose offset — same principle as
+    # Path 1, so a forgotten mark_recommendation still yields fit-ordered,
+    # canonically-deduped cards.
+    selected2: list[str] = []
+    for canon, c in best_by_canon.items():
         norm = _norm_policy_name(c.get("policy_name", ""))
         if len(norm) < 4:  # too short to match safely
             continue
-        idx = haystack.find(norm)
-        if idx != -1:
-            matched.append((idx, pid))
+        if haystack.find(norm) != -1:
+            selected2.append(canon)
 
-    if not matched:
+    if not selected2:
         # No retrieved policy was named in the prose. If chunks WERE
         # retrieved this is a QA turn that quoted a policy generically →
         # let the caller keep the legacy recall chips for source grounding.
         return [], False
 
-    matched.sort(key=lambda t: t[0])
-    out2: list[dict] = []
-    seen2: set[str] = set()
-    for _idx, pid in matched:
-        if pid in seen2:
-            continue
-        seen2.add(pid)
-        cite = _cite(pid)
-        if cite is not None:
-            out2.append(cite)
-    return out2, True
+    return _order_by_gate(selected2), True
 
 
 def _parts_function_calls(parts: list[dict]) -> list[dict]:
@@ -1151,10 +1267,13 @@ async def handle_turn(
     except Exception:  # noqa: BLE001 — never break a chat turn for bookkeeping
         pass
 
-    api_key = os.environ.get("GOOGLE_API_KEY", "").strip()
-    if not api_key:
-        raise SingleBrainError("GOOGLE_API_KEY not set")
-
+    # NOTE (recall-confirm, 2026-05-16): the GOOGLE_API_KEY gate was moved
+    # BELOW the confirmation-gated recall block. STEP 1 emits a deterministic
+    # one-line "are you <name>?" prompt and short-circuits with NO Gemini
+    # call (it must not require an API key), and STEP 2 must resolve a staged
+    # recall (apply / discard) BEFORE the brain runs. The key is still
+    # asserted before any Gemini request is made (just before _build_contents
+    # / the iteration loop below).
     model = _resolve_model()
     language = _detect_language(user_text)
 
@@ -1174,6 +1293,38 @@ async def handle_turn(
     # below already contains the recalled slots — RULE 4 (Welcome Back) then
     # fires correctly on this same Gemini iteration. Best-effort: no error
     # bubbles out.
+    # CONFIRMATION-GATED RECALL — STEP 2 (resolve a prior confirm prompt).
+    # If a cross-session match was STAGED and we already ASKED the user
+    # "are you the same <name>?" on a prior turn, this message is the
+    # answer. Affirm → apply_pending_recall(confirmed=True) (fills empty
+    # slots; live-conversation slots win). Anything else → discard
+    # (confirmed=False, fail closed). Either way the staging is cleared so
+    # we ask only ONCE, then the turn proceeds normally with the resolved
+    # profile so the user's actual message still gets answered.
+    _pending = getattr(session, "pending_profile_recall", None)
+    if isinstance(_pending, dict) and _pending.get("prompted"):
+        try:
+            from backend.session_state import apply_pending_recall
+
+            _affirmed = _classify_recall_answer(user_text)
+            _applied = apply_pending_recall(session, confirmed=_affirmed)
+            _log.info(
+                "single_brain recall-confirm resolved: affirmed=%s "
+                "applied=%s session=%s",
+                _affirmed, _applied, getattr(session, "session_id", "?"),
+            )
+        except Exception as _confirm_err:  # noqa: BLE001 — never break turn
+            # On any failure, fail closed: discard the staging.
+            try:
+                session.pending_profile_recall = None
+            except Exception:  # noqa: BLE001
+                pass
+            _log.warning(
+                "single_brain recall-confirm failed (discarding): %s: %s",
+                type(_confirm_err).__name__, str(_confirm_err)[:200],
+            )
+
+    # CONFIRMATION-GATED RECALL — STEP 1 (stage + ask, turn 1 only).
     if _current_turn == 1 and not (getattr(session.profile, "name", None) or ""):
         try:
             from backend.profile_persistence import (
@@ -1183,12 +1334,40 @@ async def handle_turn(
 
             _maybe_name = extract_potential_name(user_text)
             if _maybe_name:
-                _recalled = try_recall_by_name(session, _maybe_name)
-                if _recalled:
+                # STAGES a match on session.pending_profile_recall (never
+                # auto-merges — privacy fix 2026-05-16); always returns False.
+                try_recall_by_name(session, _maybe_name)
+                _staged = getattr(session, "pending_profile_recall", None)
+                if isinstance(_staged, dict) and not _staged.get("prompted"):
+                    # Ask ONE explicit confirmation and short-circuit the
+                    # turn. Do NOT apply the stored profile yet, and NEVER
+                    # surface the staged stranger PII — only the name, which
+                    # the user themselves just stated.
+                    _staged["prompted"] = True
+                    _recall_name = (_staged.get("name") or _maybe_name).strip()
+                    _confirm_text = (
+                        f"Welcome back — are you the same {_recall_name} "
+                        f"from before? (yes/no)"
+                    )
                     _log.info(
-                        "single_brain turn-1 recall: name=%r matched stored "
-                        "profile; hydrated session=%s",
-                        _maybe_name, getattr(session, "session_id", "?"),
+                        "single_brain recall-confirm prompt: name=%r "
+                        "staged; awaiting yes/no session=%s",
+                        _recall_name, getattr(session, "session_id", "?"),
+                    )
+                    return TurnResult(
+                        reply_text=_confirm_text,
+                        citations=[],
+                        retrieved_chunk_ids=[],
+                        brain_used=f"single_brain::{model}::recall_confirm",
+                        intent="recall_confirm",
+                        language=language,
+                        latency_ms=int((time.time() - t0) * 1000),
+                        raw_reply=_confirm_text,
+                        faithfulness_passed=True,
+                        faithfulness_reasons=[],
+                        blocked=False,
+                        profile_updates={},
+                        followup_policy_id=None,
                     )
         except Exception as _recall_err:  # noqa: BLE001 — must never break turn
             _log.warning(
@@ -1204,6 +1383,14 @@ async def handle_turn(
         )
     )
     is_returning_user = (_current_turn == 1) and _has_prior_profile
+
+    # GOOGLE_API_KEY gate — asserted here (after the no-LLM recall-confirm
+    # block above, before anything that talks to Gemini). Moved down from the
+    # top of handle_turn so STEP 1's deterministic confirm prompt can
+    # short-circuit and STEP 2's apply/discard can resolve without a key.
+    api_key = os.environ.get("GOOGLE_API_KEY", "").strip()
+    if not api_key:
+        raise SingleBrainError("GOOGLE_API_KEY not set")
 
     system_instruction = _system_instruction(
         session.profile, is_returning_user=is_returning_user,

@@ -82,6 +82,14 @@ export default function Page() {
   // KI-257 — true while the user is holding SPACE (drives the visual
   // "ready to take audio" indicator near the PTT button).
   const [spaceHoldActive, setSpaceHoldActive] = useState(false);
+  // Live (BETA) risk-confirmation gate. Opening Live always-on must surface
+  // a clear, styled WARNING modal listing the real failure modes EVERY time
+  // (no localStorage "seen once" bypass — the old window.confirm gate let
+  // production users skip the warning entirely after one ack, or whenever
+  // the browser suppressed the native dialog). The live session only starts
+  // on explicit Confirm; Cancel reverts the toggle. PTT / Hold-SPACE are
+  // never gated.
+  const [showLiveGate, setShowLiveGate] = useState(false);
   // Visual UI language — same source as ttsLang so the toggle controls both
   const uiLang: UILang = ttsLang === "hi-IN" ? "hi" : "en";
   const t = (key: StringKey, vars?: Record<string, string | number>) => translate(uiLang, key, vars);
@@ -1613,8 +1621,12 @@ export default function Page() {
             min-h-0 wrapper above, the chat scroll container hands the
             keyboard its space instead of getting hidden behind it. */}
         <div
-          className="border border-[var(--border)] rounded-2xl bg-[var(--card)] p-3 shadow-sm"
-          style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+          className="border border-[var(--border)] rounded-2xl bg-[var(--card)] p-3 transition-shadow focus-within:border-[color-mix(in_srgb,var(--primary)_36%,var(--border))]"
+          style={{
+            paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))",
+            boxShadow:
+              "0 1px 2px color-mix(in srgb, var(--foreground) 4%, transparent), 0 16px 40px -34px color-mix(in srgb, var(--foreground) 30%, transparent)",
+          }}
         >
           <div className="flex items-end gap-2">
             <textarea
@@ -1672,7 +1684,7 @@ export default function Page() {
               type="button"
               onClick={() => send(input)}
               disabled={busy || !input.trim()}
-              className="shrink-0 h-11 px-4 rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)] text-sm font-medium hover:opacity-90 disabled:opacity-40"
+              className="btn-primary shrink-0 h-11 px-5 text-sm"
             >
               Send
             </button>
@@ -1706,24 +1718,15 @@ export default function Page() {
                 <button
                   type="button"
                   onClick={() => {
-                    if (!userPrefersLive) {
-                      const seen = (typeof window !== "undefined")
-                        ? window.localStorage.getItem("insurance_live_beta_ack") === "1"
-                        : true;
-                      if (!seen) {
-                        const ok = window.confirm(
-                          "Always-on voice is BETA and currently unstable:\n\n" +
-                          "• May cut you off mid-sentence\n" +
-                          "• May echo the bot's own voice\n" +
-                          "• May pick up later utterances incorrectly\n\n" +
-                          "Push-to-talk (🎤 button) is fully stable and uses Sarvam STT (handles Hindi/Indic correctly).\n\n" +
-                          "Enable always-on anyway?"
-                        );
-                        if (!ok) return;
-                        try { window.localStorage.setItem("insurance_live_beta_ack", "1"); } catch { /* ignore */ }
-                      }
+                    // Turning Live OFF is immediate (nothing to warn about).
+                    if (userPrefersLive) {
+                      setUserPrefersLive(false);
+                      return;
                     }
-                    setUserPrefersLive((p) => !p);
+                    // Turning Live ON ALWAYS opens the styled risk modal —
+                    // the live session begins only on explicit Confirm
+                    // (handled in the modal's onConfirm). No bypass.
+                    setShowLiveGate(true);
                   }}
                   className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-medium transition cursor-pointer ${
                     userPrefersLive
@@ -1857,6 +1860,28 @@ export default function Page() {
       <footer className="border-t border-[var(--border)] py-3 px-6 text-center text-xs text-[var(--muted-foreground)]">
         Advisory only. Information based on policy documents; verify with the insurer before purchase. All policy ratings are illustrative and based on publicly disclosed data.
       </footer>
+
+      {/* Live (BETA) risk-confirmation gate. Confirm starts the live
+          always-on session (setUserPrefersLive(true) → the existing
+          useEffect calls live.setLive(true)); Cancel just closes and the
+          toggle stays OFF. Shown EVERY time Live is enabled — no bypass. */}
+      {showLiveGate && (
+        <LiveBetaGateModal
+          hindi={uiLang === "hi"}
+          onConfirm={() => {
+            setShowLiveGate(false);
+            // This is the ONLY place the live session is armed: flipping
+            // userPrefersLive → true triggers the existing effect that
+            // calls live.setLive(true) (start of the useLiveConversation
+            // flow / live.recording). Untouched machinery downstream.
+            setUserPrefersLive(true);
+          }}
+          onCancel={() => {
+            // Revert: toggle stays OFF, live session never starts.
+            setShowLiveGate(false);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -1890,6 +1915,17 @@ function ProfileBuilderPanel({
   const [primaryGoal, setPrimaryGoal] = useState<string>(initialProfile.primary_goal ?? "");
   const [parentsHasPed, setParentsHasPed] = useState<boolean | null>(initialProfile.parents_has_ped ?? null);
   const [parentsAgeMax, setParentsAgeMax] = useState<number | null>(initialProfile.parents_age_max ?? null);
+  // New pricing/scoring slots — backend consumes these (see save report).
+  // desired_sum_insured_inr → premium_calculator.estimate() sum_insured_inr
+  //   + retrieval query band (single_brain.py RULE 2.5).
+  const [desiredSI, setDesiredSI] = useState<number | null>(initialProfile.desired_sum_insured_inr ?? null);
+  // smoker → premium_calculator smoker_multiplier (+30-50%).
+  const [smoker, setSmoker] = useState<boolean | null>(initialProfile.smoker ?? null);
+  // copay_pct → premium_calculator _copay_discount; 0/10/20/30 tiers.
+  const [copay, setCopay] = useState<number | null>(initialProfile.copay_pct ?? null);
+  // family_medical_history → premium_calculator _family_history_loading
+  //   + retrieval rider-boost keywords.
+  const [familyHistory, setFamilyHistory] = useState<string[]>(initialProfile.family_medical_history ?? []);
   const [busy, setBusy] = useState(false);
 
   // KI-077 — keep panel in sync if the chat captures new fields while the
@@ -1906,6 +1942,10 @@ function ProfileBuilderPanel({
     if (initialProfile.primary_goal && !primaryGoal) setPrimaryGoal(initialProfile.primary_goal);
     if (initialProfile.parents_age_max != null && parentsAgeMax == null) setParentsAgeMax(initialProfile.parents_age_max);
     if (initialProfile.parents_has_ped != null && parentsHasPed == null) setParentsHasPed(initialProfile.parents_has_ped);
+    if (initialProfile.desired_sum_insured_inr != null && desiredSI == null) setDesiredSI(initialProfile.desired_sum_insured_inr);
+    if (initialProfile.smoker != null && smoker == null) setSmoker(initialProfile.smoker);
+    if (initialProfile.copay_pct != null && copay == null) setCopay(initialProfile.copay_pct);
+    if (initialProfile.family_medical_history?.length && !familyHistory.length) setFamilyHistory(initialProfile.family_medical_history);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialProfile]);
 
@@ -1913,6 +1953,9 @@ function ProfileBuilderPanel({
 
   const toggleCondition = (c: string) => {
     setConditions((prev) => prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]);
+  };
+  const toggleFamilyHistory = (c: string) => {
+    setFamilyHistory((prev) => prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]);
   };
 
   const handleSave = async () => {
@@ -1939,6 +1982,16 @@ function ProfileBuilderPanel({
         parents_to_insure: dependents.includes("parent") ? true : null,
         parents_has_ped: parentsHasPed,
         parents_age_max: parentsAgeMax ?? undefined,
+        // Pricing/scoring slots. The backend Profile dataclass + chat-path
+        // save_profile_field consume all four; the HTTP /api/profile
+        // ProfileUpdateRequest currently whitelists only the fields above,
+        // so Pydantic drops these server-side until that gap is closed.
+        // Sent anyway so they take effect with zero frontend change once it
+        // is. (See returned report — flagged, backend left untouched.)
+        desired_sum_insured_inr: desiredSI ?? undefined,
+        smoker: smoker,
+        copay_pct: copay ?? undefined,
+        family_medical_history: familyHistory.length ? familyHistory : undefined,
       });
       onSaved(resp);
     } catch (e) {
@@ -1948,177 +2001,310 @@ function ProfileBuilderPanel({
     }
   };
 
-  // chip helper styles
-  const chipBase = "px-2.5 py-1 rounded-full border text-[11px] cursor-pointer transition";
-  const chipOn = "border-[var(--primary)] bg-[var(--primary)] text-white";
-  const chipOff = "border-[var(--border)] hover:border-[var(--primary)]";
-
   const conditionOptions = hindi
     ? [["diabetes", "मधुमेह"], ["hypertension", "BP"], ["thyroid", "थायरॉइड"], ["heart", "हृदय रोग"], ["asthma", "अस्थमा"], ["cancer", "कैंसर इतिहास"]]
     : [["diabetes", "Diabetes"], ["hypertension", "BP / Hypertension"], ["thyroid", "Thyroid"], ["heart", "Heart"], ["asthma", "Asthma"], ["cancer", "Cancer history"]];
+  const familyHistoryOptions = hindi
+    ? [["diabetes", "मधुमेह"], ["heart_disease", "हृदय रोग"], ["cancer", "कैंसर"], ["hypertension", "BP"], ["stroke", "स्ट्रोक"], ["kidney", "किडनी"]]
+    : [["diabetes", "Diabetes"], ["heart_disease", "Heart disease"], ["cancer", "Cancer"], ["hypertension", "Hypertension"], ["stroke", "Stroke"], ["kidney", "Kidney disease"]];
+
+  // Live progress — the 7 slots scorecard.profile_completeness weights
+  // (name, age, dependents, income_band, primary_goal, location_tier,
+  // health_conditions). `conditions` counts as answered once the user
+  // picks "None" or any condition (i.e. the field is non-empty OR they
+  // explicitly cleared it via the None pill, which we treat as answered
+  // only when something else signals intent — here, any other filled slot
+  // plus an explicit conditions interaction). We keep it simple: a slot
+  // counts when it holds a value; conditions counts when it has entries.
+  const requiredFilled = [
+    !!name.trim(),
+    age != null,
+    !!dependents,
+    !!income,
+    !!primaryGoal,
+    !!city,
+    conditions.length > 0,
+  ].filter(Boolean).length;
+  const progressPct = Math.round((requiredFilled / 7) * 100);
+
+  // Reusable group header — serif index medallion + title + one-line hint.
+  const Group = ({
+    n, title, hint, children,
+  }: { n: number; title: string; hint?: string; children: React.ReactNode }) => (
+    <section className="field-group p-4 sm:p-5 reveal reveal-1">
+      <div className="flex items-start gap-3 mb-4">
+        <div className="field-medallion shrink-0">{n}</div>
+        <div className="min-w-0">
+          <h3 className="panel-title text-[15px] leading-tight">{title}</h3>
+          {hint && (
+            <p className="text-[11.5px] text-[var(--muted-foreground)] leading-snug mt-0.5">{hint}</p>
+          )}
+        </div>
+      </div>
+      <div className="space-y-4">{children}</div>
+    </section>
+  );
 
   return (
-    <div className="border-t border-[var(--border)] bg-[var(--muted)] animate-fade-up max-h-[80vh] overflow-y-auto scrollbar-thin">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5">
-        <div className="flex items-baseline justify-between mb-4">
-          <div>
-            <h2 className="text-lg font-semibold">{hindi ? "आपकी profile बनाएं" : "Build your profile"}</h2>
-            <p className="text-xs text-[var(--muted-foreground)] mt-1 max-w-2xl">
+    <div className="app-panel border-t border-[var(--border)] animate-fade-up max-h-[80vh] overflow-y-auto scrollbar-thin">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
+        {/* Chaptered header — kicker + serif title, live completeness rail */}
+        <div className="flex items-start justify-between gap-4 mb-5 reveal reveal-1">
+          <div className="min-w-0">
+            <div className="panel-kicker mb-1.5">
+              <span className="dot" />
+              {hindi ? "आपकी प्रोफ़ाइल" : "Your profile"}
+            </div>
+            <h2 className="panel-title text-2xl sm:text-[28px] leading-[1.1]">
+              {hindi ? "हर policy को आपके लिए score करें" : "Score every policy for you"}
+            </h2>
+            <p className="text-[13px] text-[var(--muted-foreground)] mt-2 max-w-xl leading-relaxed">
               {hindi
-                ? "ये जवाब इसी chat में रहते हैं। ईमानदारी से बताइए — आपकी सेहत का सच बताना आपकी claim बचाता है, premium बढ़ाने का बहाना नहीं।"
-                : "Your answers stay in this chat. Be honest — the truth protects your claim later, not just my recommendation. We don't share with any insurer until you choose to buy."}
+                ? "ये जवाब इसी chat में रहते हैं। सच बताना आपकी claim बचाता है — premium बढ़ाने का बहाना नहीं। आप जब तक खुद न चाहें, किसी बीमाकर्ता से साझा नहीं होता।"
+                : "Your answers stay in this chat. The truth protects your claim later, not just my ranking. Nothing is shared with any insurer until you choose to buy."}
             </p>
           </div>
-          <button onClick={onClose} className="text-xs text-[var(--muted-foreground)] hover:underline">{hindi ? "बंद करें" : "close"}</button>
+          <button onClick={onClose} className="shrink-0 text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition">{hindi ? "बंद करें" : "Close"}</button>
         </div>
 
-        <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 space-y-5">
-          {/* KI-077 — Name (free text). Captured from chat if user introduced
-              themselves; saved to the named-profile store so returning visits
-              auto-load. */}
-          <div>
-            <label className="flex items-baseline justify-between text-xs mb-1.5">
-              <span className="font-semibold">{hindi ? "आपका नाम" : "Your name"}</span>
-              {initialProfile.name && (
-                <span className="text-[10px] text-[var(--primary)]">
-                  {hindi ? "chat से लिया गया" : "captured from chat"}
-                </span>
-              )}
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={hindi ? "जैसे, रोहित" : "e.g., Rohit Sar"}
-              maxLength={50}
-              className="w-full text-sm px-3 py-1.5 rounded-md border border-[var(--border)] bg-[var(--card)] focus:outline-none focus:border-[var(--primary)]"
+        {/* Live progress rail */}
+        <div className="mb-5 reveal reveal-2">
+          <div className="flex items-center justify-between text-[11px] mb-1.5">
+            <span className="text-[var(--muted-foreground)] uppercase tracking-wider font-semibold">
+              {hindi ? "स्कोरिंग के लिए ज़रूरी फ़ील्ड" : "Fields the score uses"}
+            </span>
+            <span className="font-mono text-[var(--primary)] font-semibold">{progressPct}%</span>
+          </div>
+          <div className="h-1.5 rounded-full bg-[color-mix(in_srgb,var(--primary)_14%,var(--border))] overflow-hidden">
+            <div
+              className="h-full rounded-full bg-[var(--primary)] transition-[width] duration-500"
+              style={{ width: `${progressPct}%` }}
             />
-            <p className="text-[10px] text-[var(--muted-foreground)] mt-0.5">
-              {hindi
-                ? "अगली बार आने पर मैं आपकी profile पहचान लूंगा।"
-                : "I'll recognise you on your next visit so you don't repeat this."}
-            </p>
           </div>
+        </div>
 
-          {/* Age */}
-          <div>
-            <label className="flex items-baseline justify-between text-xs mb-1.5">
-              <span className="font-semibold">{hindi ? "आपकी उम्र" : "Your age"}</span>
-              <span className="font-mono text-sm">{age ?? (hindi ? "—" : "—")}</span>
-            </label>
-            <input type="range" min={18} max={80} value={age ?? 35} onChange={(e) => setAge(parseInt(e.target.value))} className="w-full accent-[var(--primary)]" />
-            <p className="text-[10px] text-[var(--muted-foreground)] mt-0.5">{hindi ? "Premium + eligibility + renewal age इसी पर निर्भर।" : "Premium, eligibility, and how long you can renew all hinge on this."}</p>
-          </div>
-
-          {/* Dependents */}
-          <div>
-            <label className="block text-xs font-semibold mb-1.5">{hindi ? "किसको cover करना है" : "Who needs cover"}</label>
-            <div className="flex flex-wrap gap-2">
-              {[
-                ["self", hindi ? "सिर्फ मैं" : "Just me"],
-                ["self+spouse", hindi ? "मैं + पति/पत्नी" : "Self + spouse"],
-                ["self+spouse+kids", hindi ? "मैं + पति/पत्नी + बच्चे" : "Self + spouse + kids"],
-                ["self+parents", hindi ? "मैं + माता-पिता" : "Self + parents"],
-                ["self+spouse+kids+parents", hindi ? "पूरा परिवार" : "Whole family"],
-              ].map(([key, label]) => (
-                <button key={key} onClick={() => setDependents(key)} className={`${chipBase} ${dependents === key ? chipOn : chipOff}`}>{label}</button>
-              ))}
+        <div className="space-y-4">
+          {/* ── Group 1 · About you ───────────────────────────── */}
+          <Group
+            n={1}
+            title={hindi ? "आपके बारे में" : "About you"}
+            hint={hindi ? "उम्र + परिवार premium, eligibility और renewal-age तय करते हैं।" : "Age and family shape premium, eligibility, and renewal age."}
+          >
+            <div>
+              <label className="flex items-baseline justify-between text-xs mb-1.5">
+                <span className="font-semibold">{hindi ? "आपका नाम" : "Your name"}</span>
+                {initialProfile.name && (
+                  <span className="text-[10px] text-[var(--primary)] font-semibold">{hindi ? "chat से लिया गया" : "from chat"}</span>
+                )}
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={hindi ? "जैसे, रोहित" : "e.g., Rohit Sar"}
+                maxLength={50}
+                className="app-input"
+              />
+              <p className="text-[10.5px] text-[var(--muted-foreground)] mt-1">
+                {hindi ? "अगली बार आने पर मैं आपकी profile पहचान लूंगा।" : "I'll recognise you next visit so you never repeat this."}
+              </p>
             </div>
-          </div>
 
-          {/* Parents detail — conditional */}
-          {dependents.includes("parent") && (
-            <div className="border-l-2 border-[var(--primary)] pl-3 space-y-3">
-              <div>
-                <label className="flex items-baseline justify-between text-xs mb-1.5">
-                  <span className="font-semibold">{hindi ? "सबसे बड़े parent की उम्र" : "Older parent's age"}</span>
-                  <span className="font-mono text-sm">{parentsAgeMax ?? "—"}</span>
-                </label>
-                <input type="range" min={45} max={85} value={parentsAgeMax ?? 65} onChange={(e) => setParentsAgeMax(parseInt(e.target.value))} className="w-full accent-[var(--primary)]" />
+            <div>
+              <label className="flex items-baseline justify-between text-xs mb-2">
+                <span className="font-semibold">{hindi ? "आपकी उम्र" : "Your age"}</span>
+                <span className="font-mono text-sm text-[var(--primary)] font-semibold">{age ?? "—"}</span>
+              </label>
+              <input type="range" min={18} max={80} value={age ?? 35} onChange={(e) => setAge(parseInt(e.target.value))} className="app-range" />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold mb-2">{hindi ? "किसको cover करना है" : "Who needs cover"}</label>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  ["self", hindi ? "सिर्फ मैं" : "Just me"],
+                  ["self+spouse", hindi ? "मैं + पति/पत्नी" : "Self + spouse"],
+                  ["self+spouse+kids", hindi ? "मैं + पति/पत्नी + बच्चे" : "Self + spouse + kids"],
+                  ["self+parents", hindi ? "मैं + माता-पिता" : "Self + parents"],
+                  ["self+spouse+kids+parents", hindi ? "पूरा परिवार" : "Whole family"],
+                ].map(([key, label]) => (
+                  <button key={key} type="button" onClick={() => setDependents(key)} className="opt-pill" data-on={dependents === key}>{label}</button>
+                ))}
               </div>
-              <div>
-                <label className="block text-xs font-semibold mb-1.5">{hindi ? "क्या उन्हें diabetes / BP / heart है?" : "Any pre-existing conditions (diabetes / BP / heart)?"}</label>
-                <div className="flex gap-2">
-                  <button onClick={() => setParentsHasPed(true)} className={`${chipBase} ${parentsHasPed === true ? chipOn : chipOff}`}>{hindi ? "हाँ" : "Yes"}</button>
-                  <button onClick={() => setParentsHasPed(false)} className={`${chipBase} ${parentsHasPed === false ? chipOn : chipOff}`}>{hindi ? "नहीं" : "No"}</button>
+            </div>
+
+            {dependents.includes("parent") && (
+              <div className="subfield p-4 space-y-4 animate-fade-up">
+                <div className="text-[11px] uppercase tracking-wider font-semibold text-[var(--primary)]">
+                  {hindi ? "माता-पिता का विवरण" : "Parents detail"}
+                </div>
+                <div>
+                  <label className="flex items-baseline justify-between text-xs mb-2">
+                    <span className="font-semibold">{hindi ? "सबसे बड़े parent की उम्र" : "Eldest parent's age"}</span>
+                    <span className="font-mono text-sm text-[var(--primary)] font-semibold">{parentsAgeMax ?? "—"}</span>
+                  </label>
+                  <input type="range" min={45} max={85} value={parentsAgeMax ?? 65} onChange={(e) => setParentsAgeMax(parseInt(e.target.value))} className="app-range" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold mb-2">{hindi ? "क्या उन्हें diabetes / BP / heart है?" : "Any pre-existing conditions (diabetes / BP / heart)?"}</label>
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => setParentsHasPed(true)} className="opt-pill" data-on={parentsHasPed === true}>{hindi ? "हाँ" : "Yes"}</button>
+                    <button type="button" onClick={() => setParentsHasPed(false)} className="opt-pill" data-on={parentsHasPed === false}>{hindi ? "नहीं" : "No"}</button>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </Group>
 
-          {/* Your conditions */}
-          <div>
-            <label className="block text-xs font-semibold mb-1.5">{hindi ? "आपकी pre-existing conditions" : "Your pre-existing conditions"}</label>
-            <p className="text-[10px] text-amber-700 dark:text-amber-400 mb-2">{hindi ? "सच बताइए। बीमाकर्ता claim time पर hospital records check करते हैं। आज की बचत बाद में ₹8L का denied claim बन जाती है।" : "Be honest. Insurers cross-check at claim time. ₹500 saved today = ₹8L denied claim tomorrow."}</p>
-            <div className="flex flex-wrap gap-2">
-              <button onClick={() => setConditions([])} className={`${chipBase} ${conditions.length === 0 ? chipOn : chipOff}`}>{hindi ? "कुछ नहीं" : "None"}</button>
-              {conditionOptions.map(([key, label]) => (
-                <button key={key} onClick={() => toggleCondition(key)} className={`${chipBase} ${conditions.includes(key) ? chipOn : chipOff}`}>{label}</button>
-              ))}
+          {/* ── Group 2 · Health ──────────────────────────────── */}
+          <Group
+            n={2}
+            title={hindi ? "सेहत" : "Health"}
+            hint={hindi ? "सच बताइए — बीमाकर्ता claim time पर records मिलाते हैं।" : "Be honest — insurers cross-check records at claim time."}
+          >
+            <div>
+              <label className="block text-xs font-semibold mb-1.5">{hindi ? "आपकी pre-existing conditions" : "Your pre-existing conditions"}</label>
+              <p className="text-[10.5px] text-amber-700 dark:text-amber-400 mb-2 leading-snug">
+                {hindi ? "₹500 की आज की बचत = बाद में ₹8L का denied claim।" : "₹500 saved today turns into an ₹8L denied claim tomorrow."}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <button type="button" onClick={() => setConditions([])} className="opt-pill" data-on={conditions.length === 0}>{hindi ? "कुछ नहीं" : "None"}</button>
+                {conditionOptions.map(([key, label]) => (
+                  <button key={key} type="button" onClick={() => toggleCondition(key)} className="opt-pill" data-on={conditions.includes(key)}>{label}</button>
+                ))}
+              </div>
             </div>
-          </div>
 
-          {/* Existing cover */}
-          <div>
-            <label className="block text-xs font-semibold mb-1.5">{hindi ? "पहले से कोई health insurance?" : "Already have any health insurance?"}</label>
-            <div className="flex flex-wrap gap-2">
-              {[[0, hindi ? "नहीं" : "None"], [300000, "₹3L"], [500000, "₹5L"], [1000000, "₹10L"], [2500000, "₹25L+"]].map(([v, label]) => (
-                <button key={String(v)} onClick={() => setExistingCover(v as number)} className={`${chipBase} ${existingCover === v ? chipOn : chipOff}`}>{label}</button>
-              ))}
+            <div>
+              <label className="block text-xs font-semibold mb-1.5">{hindi ? "क्या आप तंबाकू/धूम्रपान करते हैं?" : "Do you use tobacco or smoke?"}</label>
+              <p className="text-[10.5px] text-[var(--muted-foreground)] mb-2">{hindi ? "Premium पर +30-50% — पर सच बताना claim बचाता है।" : "Loads premium +30–50% — but disclosing it protects your claim."}</p>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setSmoker(false)} className="opt-pill" data-on={smoker === false}>{hindi ? "नहीं" : "Non-smoker"}</button>
+                <button type="button" onClick={() => setSmoker(true)} className="opt-pill" data-on={smoker === true}>{hindi ? "हाँ" : "Smoker / tobacco"}</button>
+              </div>
             </div>
-          </div>
 
-          {/* City tier */}
-          <div>
-            <label className="block text-xs font-semibold mb-1.5">{hindi ? "आपका शहर" : "Your city"}</label>
-            <div className="flex gap-2">
-              {[["metro", hindi ? "Metro (Mumbai/Delhi/Bangalore/...)" : "Metro"], ["tier1", hindi ? "Tier 1" : "Tier 1"], ["tier2", hindi ? "छोटा शहर" : "Tier 2 / smaller"]].map(([key, label]) => (
-                <button key={key} onClick={() => setCity(key)} className={`${chipBase} ${city === key ? chipOn : chipOff}`}>{label}</button>
-              ))}
+            <div>
+              <label className="block text-xs font-semibold mb-1.5">{hindi ? "खून के रिश्ते में कोई बड़ी बीमारी?" : "Family medical history (blood relatives)"}</label>
+              <p className="text-[10.5px] text-[var(--muted-foreground)] mb-2">{hindi ? "केवल माता-पिता/भाई-बहन। यह उन riders की ओर खोज झुकाता है।" : "Parents / siblings only. Biases the search toward relevant riders."}</p>
+              <div className="flex flex-wrap gap-2">
+                <button type="button" onClick={() => setFamilyHistory([])} className="opt-pill" data-on={familyHistory.length === 0}>{hindi ? "कुछ नहीं" : "None"}</button>
+                {familyHistoryOptions.map(([key, label]) => (
+                  <button key={key} type="button" onClick={() => toggleFamilyHistory(key)} className="opt-pill" data-on={familyHistory.includes(key)}>{label}</button>
+                ))}
+              </div>
             </div>
-            <p className="text-[10px] text-[var(--muted-foreground)] mt-0.5">{hindi ? "Cashless network आपके शहर में कितना deep है — यह बड़ा फर्क डालता है।" : "How many cashless hospitals exist in your city makes a huge difference."}</p>
-          </div>
+          </Group>
 
-          {/* Budget */}
-          <div>
-            <label className="block text-xs font-semibold mb-1.5">{hindi ? "सालाना premium budget" : "Annual premium budget"}</label>
-            <div className="flex flex-wrap gap-2">
-              {[["under_15k", hindi ? "₹15k से कम" : "Under ₹15k"], ["15k_30k", "₹15-30k"], ["30k_60k", "₹30-60k"], ["60k+", "₹60k+"]].map(([key, label]) => (
-                <button key={key} onClick={() => setBudget(key)} className={`${chipBase} ${budget === key ? chipOn : chipOff}`}>{label}</button>
-              ))}
+          {/* ── Group 3 · Cover & cost ────────────────────────── */}
+          <Group
+            n={3}
+            title={hindi ? "कवर और लागत" : "Cover & cost"}
+            hint={hindi ? "ये premium अनुमान और cover-band की खोज तय करते हैं।" : "These drive the premium estimate and the cover band we search."}
+          >
+            <div>
+              <label className="flex items-baseline justify-between text-xs mb-2">
+                <span className="font-semibold">{hindi ? "आप कितना cover चाहते हैं" : "Sum insured you want"}</span>
+                <span className="font-mono text-sm text-[var(--primary)] font-semibold">
+                  {desiredSI ? (desiredSI >= 10000000 ? `₹${desiredSI / 10000000} cr` : `₹${desiredSI / 100000}L`) : "—"}
+                </span>
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {[[500000, "₹5L"], [1000000, "₹10L"], [1500000, "₹15L"], [2500000, "₹25L"], [5000000, "₹50L"], [10000000, "₹1 cr"]].map(([v, label]) => (
+                  <button key={String(v)} type="button" onClick={() => setDesiredSI(v as number)} className="opt-pill" data-on={desiredSI === v}>{label}</button>
+                ))}
+              </div>
+              <p className="text-[10.5px] text-[var(--muted-foreground)] mt-1.5">{hindi ? "खाली छोड़ें तो आय से ~5-7× अनुमान लगाते हैं।" : "Leave blank and we estimate ~5–7× your income."}</p>
             </div>
-          </div>
 
-          {/* Income */}
-          <div>
-            <label className="block text-xs font-semibold mb-1.5">{hindi ? "सालाना आय" : "Annual income"}</label>
-            <div className="flex flex-wrap gap-2">
-              {[["under_5L", hindi ? "₹5L से कम" : "Under ₹5L"], ["5L-10L", "₹5-10L"], ["10L-25L", "₹10-25L"], ["25L+", "₹25L+"]].map(([key, label]) => (
-                <button key={key} onClick={() => setIncome(key)} className={`${chipBase} ${income === key ? chipOn : chipOff}`}>{label}</button>
-              ))}
+            <div>
+              <label className="block text-xs font-semibold mb-2">{hindi ? "पहले से कोई health insurance?" : "Already have any health insurance?"}</label>
+              <div className="flex flex-wrap gap-2">
+                {[[0, hindi ? "नहीं" : "None"], [300000, "₹3L"], [500000, "₹5L"], [1000000, "₹10L"], [2500000, "₹25L+"]].map(([v, label]) => (
+                  <button key={String(v)} type="button" onClick={() => setExistingCover(v as number)} className="opt-pill" data-on={existingCover === v}>{label}</button>
+                ))}
+              </div>
+              <p className="text-[10.5px] text-[var(--muted-foreground)] mt-1.5">{hindi ? "है तो हम top-up की ओर देखते हैं, नई base policy की नहीं।" : "If you have cover, we look at top-ups, not a fresh base policy."}</p>
             </div>
-          </div>
 
-          {/* Primary goal */}
-          <div>
-            <label className="block text-xs font-semibold mb-1.5">{hindi ? "आज यहाँ क्यों?" : "What brought you here today?"}</label>
-            <div className="flex flex-wrap gap-2">
-              {[["first_buy", hindi ? "पहली policy" : "First policy"], ["upgrade", hindi ? "Cover बढ़ानी है" : "Upgrade"], ["compare_specific", hindi ? "Specific policies compare करनी हैं" : "Compare specific policies"], ["tax_planning", "Tax 80D"]].map(([key, label]) => (
-                <button key={key} onClick={() => setPrimaryGoal(key)} className={`${chipBase} ${primaryGoal === key ? chipOn : chipOff}`}>{label}</button>
-              ))}
+            <div>
+              <label className="block text-xs font-semibold mb-2">
+                {hindi ? "हर claim में आपका हिस्सा (co-pay)" : "Your share per claim (co-pay)"}
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {[[0, hindi ? "कोई co-pay नहीं" : "No co-pay"], [10, "10%"], [20, "20%"], [30, "30%"]].map(([v, label]) => (
+                  <button key={String(v)} type="button" onClick={() => setCopay(v as number)} className="opt-pill" data-on={copay === v}>{label}</button>
+                ))}
+              </div>
+              <p className="text-[10.5px] text-[var(--muted-foreground)] mt-1.5">
+                {copay && copay > 0
+                  ? (hindi
+                      ? `Premium ~${Math.round(copay * 0.7)}% घटता है, पर हर अस्पताल बिल का ${copay}% आप भरते हैं।`
+                      : `Premium drops ~${Math.round(copay * 0.7)}%, but you pay ${copay}% of every hospital bill.`)
+                  : (hindi ? "0% = बीमाकर्ता पूरा भरता है (premium ज़्यादा)।" : "0% = insurer pays it all (higher premium).")}
+              </p>
             </div>
-          </div>
+
+            <div>
+              <label className="block text-xs font-semibold mb-2">{hindi ? "सालाना premium budget" : "Annual premium budget"}</label>
+              <div className="flex flex-wrap gap-2">
+                {[["under_15k", hindi ? "₹15k से कम" : "Under ₹15k"], ["15k_30k", "₹15–30k"], ["30k_60k", "₹30–60k"], ["60k+", "₹60k+"]].map(([key, label]) => (
+                  <button key={key} type="button" onClick={() => setBudget(key)} className="opt-pill" data-on={budget === key}>{label}</button>
+                ))}
+              </div>
+            </div>
+          </Group>
+
+          {/* ── Group 4 · Context ─────────────────────────────── */}
+          <Group
+            n={4}
+            title={hindi ? "संदर्भ" : "Context"}
+            hint={hindi ? "शहर cashless network तय करता है; आय + लक्ष्य scoring weight घुमाते हैं।" : "City sets cashless depth; income and goal tune the scoring weights."}
+          >
+            <div>
+              <label className="block text-xs font-semibold mb-2">{hindi ? "आपका शहर" : "Your city"}</label>
+              <div className="flex flex-wrap gap-2">
+                {[["metro", hindi ? "Metro (Mumbai/Delhi/...)" : "Metro"], ["tier1", "Tier 1"], ["tier2", hindi ? "Tier 2 / छोटा शहर" : "Tier 2 / smaller"], ["tier3", "Tier 3"]].map(([key, label]) => (
+                  <button key={key} type="button" onClick={() => setCity(key)} className="opt-pill" data-on={city === key}>{label}</button>
+                ))}
+              </div>
+              <p className="text-[10.5px] text-[var(--muted-foreground)] mt-1.5">{hindi ? "आपके शहर में कितने cashless अस्पताल हैं — बड़ा फर्क।" : "How many cashless hospitals exist in your city makes a huge difference."}</p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold mb-2">{hindi ? "सालाना आय" : "Annual income"}</label>
+              <div className="flex flex-wrap gap-2">
+                {[["under_5L", hindi ? "₹5L से कम" : "Under ₹5L"], ["5L-10L", "₹5–10L"], ["10L-25L", "₹10–25L"], ["25L+", "₹25L+"]].map(([key, label]) => (
+                  <button key={key} type="button" onClick={() => setIncome(key)} className="opt-pill" data-on={income === key}>{label}</button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold mb-2">{hindi ? "आज यहाँ क्यों?" : "What brought you here today?"}</label>
+              <div className="flex flex-wrap gap-2">
+                {[["first_buy", hindi ? "पहली policy" : "First policy"], ["upgrade", hindi ? "Cover बढ़ानी है" : "Upgrade cover"], ["compare_specific", hindi ? "Specific policies compare" : "Compare specific policies"], ["tax_planning", hindi ? "Tax (80D)" : "Tax planning (80D)"]].map(([key, label]) => (
+                  <button key={key} type="button" onClick={() => setPrimaryGoal(key)} className="opt-pill" data-on={primaryGoal === key}>{label}</button>
+                ))}
+              </div>
+            </div>
+          </Group>
         </div>
 
-        <div className="sticky bottom-0 mt-4 pb-2 bg-[var(--muted)] flex items-center justify-end gap-2">
-          <button onClick={onClose} className="text-xs text-[var(--muted-foreground)] hover:underline">{hindi ? "रद्द करें" : "Cancel"}</button>
-          <button
-            onClick={handleSave}
-            disabled={busy}
-            className={`text-sm font-semibold rounded-md px-4 py-2 ${busy ? "bg-[var(--muted)] text-[var(--muted-foreground)]" : "bg-[var(--primary)] text-white hover:opacity-90"}`}
-          >
-            {busy ? (hindi ? "Save हो रहा है…" : "Saving…") : (hindi ? "Save & Score करें" : "Save & Score")}
-          </button>
+        <div className="save-bar sticky bottom-0 mt-5 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
+          <span className="text-[11px] text-[var(--muted-foreground)] hidden sm:block">
+            {hindi ? "Save करते ही हर policy आपके लिए re-score होती है।" : "Saving instantly re-scores every policy for you."}
+          </span>
+          <div className="flex items-center gap-3 ml-auto">
+            <button onClick={onClose} className="text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition">{hindi ? "रद्द करें" : "Cancel"}</button>
+            <button
+              onClick={handleSave}
+              disabled={busy}
+              className="btn-primary text-sm px-5 py-2.5"
+            >
+              {busy ? (hindi ? "Save हो रहा है…" : "Saving…") : (hindi ? "Save & Score" : "Save & Score")}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -2456,14 +2642,17 @@ function HealthBadge({ health }: { health: { status: string; missing: string[] }
 }
 
 // EmptyState — landing page shown before the user's first message.
-// Redesigned 2026-05-15: removed the four hard-coded example chips
-// (unused conversational starters) and the standalone yellow "tell me the
-// truth" callout. Replaced with three structured cards: (1) how the bot
-// works, (2) the four input modes, (3) two "before we begin" callouts
-// (honesty + voice tips). Localized headings switch to Hindi when the UI
-// language toggle is on; long body copy reuses the existing welcome.*
-// translation keys (already bilingual) and supplements them with English
-// step / mode copy that mirrors the chat composer the user is about to use.
+// Premium editorial-fintech redesign (2026-05-16). Direction: warm,
+// trustworthy, magazine-grade — Fraunces display serif over Plus Jakarta
+// body, a textured hero slab, a numbered "journey" spine for the 3 steps,
+// crisp one-line fact bullets (no prose blobs, no dangling lines), refined
+// input-mode list, and one orchestrated staggered page-load reveal.
+// The narrative reads top-to-bottom: what this is -> how it works ->
+// how you talk to it -> what to know before you start -> (the composer).
+// All copy is bilingual; long honesty/voice copy still reuses the existing
+// welcome.* i18n keys so Hindi comes through untouched. Functionality
+// (chat, voice, header chips, composer) lives entirely outside this
+// component and is not touched.
 function EmptyState({
   coverage,
   t,
@@ -2474,213 +2663,267 @@ function EmptyState({
   uiLang: UILang;
 }) {
   const isHi = uiLang === "hi";
-  const sectionHeading = (en: string, hi: string) => (isHi ? hi : en);
+  const L = (en: string, hi: string) => (isHi ? hi : en);
+
+  // Coverage facts, rendered as one-line bullets (never a wrapping blob).
+  const policyCount = coverage ? coverage.total_policies : 169;
+  const insurerCount = coverage ? coverage.total_insurers : 20;
 
   return (
-    <div
-      className="flex-1 flex flex-col items-center px-4 py-6 sm:py-10"
-      style={{
-        background:
-          "linear-gradient(180deg, color-mix(in srgb, var(--primary) 6%, transparent) 0%, transparent 28%, transparent 72%, color-mix(in srgb, var(--primary) 4%, transparent) 100%)",
-      }}
-    >
-      <div className="w-full max-w-3xl flex flex-col gap-7 sm:gap-12">
-        {/* Hero band — subtle teal-to-white gradient, IA logo, headline. */}
-        <section
-          className="relative overflow-hidden rounded-2xl border border-[var(--border)] px-5 sm:px-7 py-6 sm:py-8 text-center"
-          style={{
-            background:
-              "linear-gradient(180deg, color-mix(in srgb, var(--primary) 8%, var(--card)) 0%, var(--card) 100%)",
-          }}
-        >
-          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center text-xl sm:text-2xl font-bold mb-4 mx-auto shadow-sm">
-            IA
+    <div className="landing-root flex-1 flex flex-col items-center px-4 py-7 sm:py-12">
+      <div className="w-full max-w-3xl flex flex-col gap-6 sm:gap-9">
+        {/* HERO — eyebrow kicker -> serif headline -> one-line value
+            sub-line -> inline trust strip. The headline phrase is kept
+            whole and balanced (text-wrap: balance) so it never produces an
+            ugly single-word orphan; the emphasised word stays glued to its
+            punctuation in a nowrap span. */}
+        <section className="hero-card reveal reveal-1 px-6 sm:px-12 py-9 sm:py-14 text-center">
+          <div className="flex flex-col items-center">
+            <span className="kicker mb-6">
+              <span className="dot" aria-hidden="true" />
+              {L("AI advisor · Indian health cover", "AI सलाहकार · भारतीय स्वास्थ्य बीमा")}
+            </span>
+
+            <div className="w-14 h-14 sm:w-[60px] sm:h-[60px] rounded-2xl bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center text-2xl font-semibold mb-6 shadow-[0_8px_24px_-8px_color-mix(in_srgb,var(--primary)_60%,transparent)]">
+              IA
+            </div>
+
+            {(() => {
+              const headA = t("welcome.heading_a"); // "Find a health policy that genuinely fits "
+              const headB = t("welcome.heading_b"); // "you"
+              const headC = t("welcome.heading_c"); // "."
+              return (
+                <h1
+                  className="font-display text-[2rem] leading-[1.12] sm:text-[3.1rem] sm:leading-[1.08] font-semibold text-[var(--foreground)] mb-4 max-w-[18ch] mx-auto"
+                  style={{ textWrap: "balance" }}
+                >
+                  {headA.replace(/\s+$/, "")}{" "}
+                  <em className="not-italic text-[var(--primary)] whitespace-nowrap">
+                    {headB}{headC}
+                  </em>
+                </h1>
+              );
+            })()}
+
+            <p className="text-[15px] sm:text-[16.5px] text-[var(--muted-foreground)] leading-relaxed max-w-[44ch] mx-auto">
+              {L(
+                "A few short questions. Then policies ranked by fit — never commission — plus the premium you'd actually pay.",
+                "कुछ छोटे सवाल। फिर आपके लिए सही पॉलिसियाँ — कमीशन से नहीं — और जो premium आप असल में देंगे।"
+              )}
+            </p>
+
+            <div className="mt-7 flex flex-wrap items-center justify-center gap-x-6 gap-y-2.5 text-[13px] font-medium text-[var(--muted-foreground)]">
+              <span className="inline-flex items-center gap-2">
+                <TrustTick />
+                {L(`${policyCount} policies · ${insurerCount} insurers`, `${policyCount} पॉलिसियाँ · ${insurerCount} बीमाकर्ता`)}
+              </span>
+              <span className="inline-flex items-center gap-2">
+                <TrustTick />
+                {L("Ranked by fit, not commission", "fit के हिसाब से, कमीशन से नहीं")}
+              </span>
+              <span className="inline-flex items-center gap-2">
+                <TrustTick />
+                {L("Every fact has a source", "हर तथ्य का source")}
+              </span>
+            </div>
           </div>
-          {/* Orphan-proof hero: pull the last word of heading_a out so it can
-              be wrapped together with the emphasised word + trailing punctuation
-              in a single non-breaking span. Prevents the "you." orphan that
-              broke the visual rhythm at narrow viewport widths. Works for HI
-              too — the splitter just keeps the em-dash glued to the em block. */}
-          {(() => {
-            const headA = t("welcome.heading_a");
-            const trimmedRight = headA.replace(/\s+$/, "");
-            const lastSpace = trimmedRight.lastIndexOf(" ");
-            const leading = lastSpace >= 0 ? trimmedRight.slice(0, lastSpace + 1) : "";
-            const lastTok = lastSpace >= 0 ? trimmedRight.slice(lastSpace + 1) : trimmedRight;
-            const headB = t("welcome.heading_b");
-            const headC = t("welcome.heading_c");
-            return (
-              <h1 className="text-[1.65rem] sm:text-[2.5rem] leading-snug sm:leading-tight font-semibold tracking-tight mb-3 max-w-2xl mx-auto">
-                {leading}
-                <span className="whitespace-nowrap">
-                  {lastTok}{lastTok ? " " : ""}
-                  <em className="not-italic text-[var(--primary)]">{headB}</em>
-                  {headC}
-                </span>
-              </h1>
-            );
-          })()}
-          {/* KI-276 — removed the welcome.subtitle / no_commissions / source_link
-              triplet. Section 1 below already explains what the bot does in a
-              cleaner, numbered-step format. */}
         </section>
 
-        {/* Section 1 — How this works. Three numbered step cards. The
-            coverage line ("X policies across Y insurers") is folded into
-            step 2 here so it doesn't float as a standalone caption. */}
-        <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-sm px-5 sm:px-7 py-6 sm:py-7">
-          <div className="flex items-center gap-2.5 mb-5">
-            <SectionIcon kind="lightbulb" />
-            <h2 className="text-lg sm:text-xl font-semibold text-[var(--foreground)] tracking-tight">
-              {sectionHeading("How this works", "यह कैसे काम करता है")}
-            </h2>
-          </div>
-          <ol className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+        {/* SECTION 01 - How it works. Three steps on a shared dashed
+            spine; each body is two crisp one-line fact bullets. */}
+        <section className="section-card reveal reveal-2 px-6 sm:px-10 py-8 sm:py-10">
+          <SectionHead
+            num="01"
+            kind="lightbulb"
+            title={L("How it works", "यह कैसे काम करता है")}
+          />
+          <ol className="step-grid grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5 mt-7">
             <StepCard
               n={1}
-              title={sectionHeading(
-                "I'll ask you a few questions",
-                "मैं आपसे कुछ सवाल पूछूंगा"
-              )}
-              body={sectionHeading(
-                "We'll build your profile — age, family, location, budget, conditions — one short answer at a time.",
-                "हम आपकी प्रोफ़ाइल बनाएंगे — उम्र, परिवार, location, budget, conditions — एक-एक करके।"
-              )}
+              title={L("A few quick questions", "कुछ छोटे सवाल")}
+              points={[
+                L("Age, family, location, budget", "उम्र, परिवार, location, budget"),
+                L("One short answer at a time", "एक-एक करके, एक उत्तर"),
+              ]}
             />
             <StepCard
               n={2}
-              title={sectionHeading(
-                "I'll match you with the right policies",
-                "सही policies match करूंगा"
-              )}
-              body={
-                coverage
-                  ? sectionHeading(
-                      `Ranked by fit-to-you, not by commission. ${coverage.total_policies} policies across ${coverage.total_insurers} Indian insurers are indexed — you can also upload your own policy PDF.`,
-                      `कमीशन से नहीं, आपके लिए fit के हिसाब से। ${coverage.total_policies} policies, ${coverage.total_insurers} बीमाकर्ताओं से indexed हैं — अपनी policy PDF भी upload कर सकते हैं।`
-                    )
-                  : sectionHeading(
-                      "Ranked by fit-to-you, not by commission. 150+ Indian health policies are indexed — you can also upload your own policy PDF.",
-                      "कमीशन से नहीं, आपके लिए fit के हिसाब से। 150+ Indian health policies indexed हैं — अपनी policy PDF भी upload कर सकते हैं।"
-                    )
-              }
+              title={L("Matched to you", "आपके लिए match")}
+              points={[
+                L(`${policyCount} policies · ${insurerCount} Indian insurers`, `${policyCount} पॉलिसियाँ · ${insurerCount} बीमाकर्ता`),
+                L("Ranked by fit, not commission", "fit के हिसाब से, कमीशन से नहीं"),
+              ]}
             />
             <StepCard
               n={3}
-              title={sectionHeading(
-                "I'll give you a premium estimate",
-                "Premium अनुमान दूंगा"
-              )}
-              body={sectionHeading(
-                "An illustrative annual premium band, tuned to your profile — so you know what you're walking into before you talk to any insurer.",
-                "आपकी profile पर आधारित illustrative वार्षिक premium band — ताकि किसी insurer से बात करने से पहले आपको पता हो क्या उम्मीद रखें।"
-              )}
+              title={L("Your premium band", "आपका premium")}
+              points={[
+                L("Illustrative annual figure", "अनुमानित वार्षिक premium"),
+                L("Tuned to your exact profile", "आपकी profile के अनुसार"),
+              ]}
             />
           </ol>
-        </section>
-
-        {/* Section 2 — Using the bot. Four input-mode rows with mini icons.
-            Mirrors the composer pill below (mic / spacebar / Live BETA). */}
-        <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-sm px-5 sm:px-7 py-6 sm:py-7">
-          <div className="flex items-center gap-2.5 mb-5">
-            <SectionIcon kind="mic" />
-            <h2 className="text-lg sm:text-xl font-semibold text-[var(--foreground)] tracking-tight">
-              {sectionHeading("Using the bot", "Bot का इस्तेमाल कैसे करें")}
-            </h2>
-          </div>
-          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-            <ModeRow
-              icon="keyboard"
-              title={sectionHeading("Type your message", "Message type करें")}
-              body={sectionHeading(
-                "Write in the chat box below and press Enter to send.",
-                "नीचे के chat box में लिखें और Enter दबाएं।"
-              )}
-            />
-            <ModeRow
-              icon="mic"
-              title={sectionHeading("Push-to-talk", "Push-to-talk")}
-              body={sectionHeading(
-                "Click the green mic button to dictate one voice turn.",
-                "हरे mic बटन पर click करके एक voice turn बोलें।"
-              )}
-            />
-            <ModeRow
-              icon="space"
-              title={sectionHeading("Hold SPACE to talk", "SPACE दबाकर बोलें")}
-              body={sectionHeading(
-                "Hold the space bar to talk hands-free; release to submit.",
-                "बिना हाथ लगाए बोलने के लिए spacebar दबाए रखें; छोड़ने पर submit हो जाएगा।"
-              )}
-            />
-            <ModeRow
-              icon="wave"
-              title={sectionHeading("Live (BETA)", "Live (BETA)")}
-              body={sectionHeading(
-                "Toggle on for always-on listening with barge-in. Experimental — may hear background noise.",
-                "हमेशा सुनने और बीच में रोकने (barge-in) के लिए toggle on करें। Experimental — background noise सुन सकता है।"
-              )}
-            />
-          </ul>
-          <p className="mt-4 text-xs text-[var(--muted-foreground)] leading-relaxed">
-            {sectionHeading(
-              "The bot speaks back automatically (Sarvam TTS, Hindi-capable).",
-              "Bot आवाज़ में जवाब देता है (Sarvam TTS, हिन्दी में भी)।"
+          <p className="mt-6 text-[13px] text-[var(--muted-foreground)] flex items-center gap-2">
+            <UploadGlyph />
+            {L(
+              "Already have a policy? Upload the PDF — it's analysed the same way.",
+              "पहले से policy है? PDF upload करें — उसी तरह analyse होगी।"
             )}
           </p>
         </section>
 
-        {/* Section 3 — Before we begin. Two side-by-side callouts:
-            (a) the honesty callout that previously lived as a standalone
-            yellow box; (b) voice-tips so the user knows how to speak. */}
-        <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-sm px-5 sm:px-7 py-6 sm:py-7">
-          <div className="flex items-center gap-2.5 mb-5">
-            <SectionIcon kind="shield" />
-            <h2 className="text-lg sm:text-xl font-semibold text-[var(--foreground)] tracking-tight">
-              {sectionHeading("Two things before we start", "शुरू करने से पहले दो बातें")}
-            </h2>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 items-stretch">
-            {/* Left — honesty callout. Uses the existing welcome.trust_* keys
-                so the Hindi copy comes through untouched. */}
-            <div className="callout-card callout-amber rounded-xl border border-amber-300 bg-gradient-to-br from-amber-50 to-amber-100/40 dark:from-amber-900/20 dark:to-amber-800/10 px-5 py-5 text-left shadow-sm flex flex-col">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="inline-flex w-7 h-7 rounded-lg bg-amber-200/60 dark:bg-amber-800/40 items-center justify-center text-amber-700 dark:text-amber-300">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        {/* SECTION 02 - How to talk to it. Four input modes, each a
+            single-line description; mirrors the composer + voice
+            controls the user is about to use below. */}
+        <section className="section-card reveal reveal-3 px-6 sm:px-10 py-8 sm:py-10">
+          <SectionHead
+            num="02"
+            kind="mic"
+            title={L("Talk to it your way", "अपने तरीके से बात करें")}
+          />
+          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4 mt-7">
+            <ModeRow
+              icon="keyboard"
+              title={L("Type", "टाइप करें")}
+              body={L("Write below, press Enter to send", "नीचे लिखें, Enter दबाएं")}
+            />
+            <ModeRow
+              icon="mic"
+              title={L("Push-to-talk", "Push-to-talk")}
+              body={L("Tap the green mic for one turn", "हरे mic पर tap करें")}
+            />
+            <ModeRow
+              icon="space"
+              title={L("Hold SPACE", "SPACE दबाएं")}
+              body={L("Hold to talk, release to send", "दबाकर बोलें, छोड़ने पर send")}
+            />
+            <ModeRow
+              icon="wave"
+              title={L("Live (BETA)", "Live (BETA)")}
+              body={L("Always-on with barge-in", "हमेशा सुनना · barge-in")}
+            />
+          </ul>
+          <p className="mt-6 text-[13px] text-[var(--muted-foreground)] flex items-center gap-2">
+            <SpeakerGlyph />
+            {L(
+              "The bot speaks back automatically — English or Hindi, your call.",
+              "Bot आवाज़ में जवाब देता है — English या हिन्दी, आपकी पसंद।"
+            )}
+          </p>
+        </section>
+
+        {/* SECTION 03 - Before you start. Two callouts: honesty (amber,
+            distinct) + how to speak. Honesty reuses welcome.trust_* i18n
+            keys so Hindi is untouched. */}
+        <section className="section-card reveal reveal-4 px-6 sm:px-10 py-8 sm:py-10">
+          <SectionHead
+            num="03"
+            kind="shield"
+            title={L("Before you start", "शुरू करने से पहले")}
+          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 items-stretch mt-7">
+            {/* Honesty — kept visually distinct in warm amber. */}
+            <div className="callout-card callout-amber border border-amber-300/80 bg-gradient-to-br from-amber-50 to-amber-100/40 dark:from-amber-900/20 dark:to-amber-800/10 px-6 py-6 text-left shadow-sm flex flex-col">
+              <div className="flex items-center gap-2.5 mb-3">
+                <span className="inline-flex w-8 h-8 rounded-xl bg-amber-200/70 dark:bg-amber-800/40 items-center justify-center text-amber-700 dark:text-amber-300">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 9v4" />
                     <path d="M12 17h.01" />
                     <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
                   </svg>
                 </span>
-                <div className="text-[15px] font-semibold text-amber-800 dark:text-amber-300 leading-tight">
+                <div className="font-display text-[16px] font-semibold text-amber-800 dark:text-amber-300 leading-tight">
                   {t("welcome.trust_title")}
                 </div>
               </div>
-              <p className="text-[14px] text-amber-900/80 dark:text-amber-200/80 leading-relaxed">
-                {t("welcome.trust_body")}
-              </p>
+              {/* Was a 7-line prose blob (welcome.trust_body). Converted
+                  to crisp one-line bullets to match the rest of the
+                  landing; every fact preserved, EN/HI parity via L(). */}
+              <ul className="flex flex-col gap-2">
+                {[
+                  L(
+                    "Don't hide a condition to lower your premium.",
+                    "premium कम करने के लिए कोई condition मत छिपाइए।"
+                  ),
+                  L(
+                    "Insurers cross-check disclosed history against hospital records at claim time.",
+                    "बीमाकर्ता claim time पर बताया गया इतिहास hospital records से मिलाते हैं।"
+                  ),
+                  L(
+                    "₹500/month saved today turns into an ₹8 lakh denied claim later.",
+                    "आज के ₹500/महीने की बचत बाद में ₹8 लाख का denied claim बन जाती है।"
+                  ),
+                  L(
+                    "Your honest answers stay in this chat.",
+                    "आपके ईमानदार जवाब इसी chat में रहते हैं।"
+                  ),
+                  L(
+                    "Not shared with any insurer until you choose to buy.",
+                    "जब तक आप खरीदना न चाहें, किसी insurer के साथ शेयर नहीं।"
+                  ),
+                ].map((line, i) => (
+                  <li
+                    key={i}
+                    className="flex items-start gap-2.5 text-[13px] leading-snug text-amber-900/85 dark:text-amber-200/80"
+                  >
+                    <svg
+                      width="15"
+                      height="15"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="shrink-0 mt-[3px] text-amber-700 dark:text-amber-400"
+                      aria-hidden="true"
+                    >
+                      <path d="M20 6 9 17l-5-5" />
+                    </svg>
+                    <span>{line}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
-            {/* Right — voice tips. */}
-            <div className="callout-card rounded-xl border border-[var(--border)] bg-gradient-to-br from-[var(--muted)] to-[var(--card)] px-5 py-5 text-left shadow-sm flex flex-col">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="inline-flex w-7 h-7 rounded-lg bg-teal-100/60 dark:bg-teal-900/40 items-center justify-center text-[var(--primary)]">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+
+            {/* How to speak. */}
+            <div className="callout-card border border-[color-mix(in_srgb,var(--primary)_18%,var(--border))] bg-gradient-to-br from-[color-mix(in_srgb,var(--primary)_5%,var(--card))] to-[var(--card)] px-6 py-6 text-left shadow-sm flex flex-col">
+              <div className="flex items-center gap-2.5 mb-3">
+                <span className="inline-flex w-8 h-8 rounded-xl bg-teal-100/70 dark:bg-teal-900/40 items-center justify-center text-[var(--primary)]">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="9" y="2" width="6" height="12" rx="3" />
                     <path d="M5 10a7 7 0 0 0 14 0" />
                     <path d="M12 17v4" />
                   </svg>
                 </span>
-                <div className="text-[15px] font-semibold text-[var(--foreground)] leading-tight">
-                  {sectionHeading("Speaking to the bot", "Bot से बात करना")}
+                <div className="font-display text-[16px] font-semibold text-[var(--foreground)] leading-tight">
+                  {L("Speaking to the bot", "Bot से बात करना")}
                 </div>
               </div>
-              <p className="text-[14px] text-[var(--muted-foreground)] leading-relaxed">
-                {sectionHeading(
-                  "Please speak slowly and clearly so the voice AI can understand you. You can speak in English OR Hindi — I'll respond in whichever language you used. If you say something unclear, just repeat or rephrase — no penalties.",
-                  "धीरे और साफ़ बोलिए ताकि voice AI समझ सके। आप English या हिन्दी, किसी भी भाषा में बोल सकते हैं — मैं उसी भाषा में जवाब दूंगा। अगर कुछ अस्पष्ट हो, तो दोबारा या अलग शब्दों में बोलिए — कोई penalty नहीं।"
-                )}
-              </p>
+              <ul className="fact-list">
+                <li>
+                  <TickIcon />
+                  <span>{L("Speak slowly and clearly for the voice AI.", "voice AI के लिए धीरे और साफ़ बोलिए।")}</span>
+                </li>
+                <li>
+                  <TickIcon />
+                  <span>{L("English or Hindi — I reply in your language.", "English या हिन्दी — मैं उसी भाषा में जवाब दूंगा।")}</span>
+                </li>
+                <li>
+                  <TickIcon />
+                  <span>{L("Unclear? Just repeat or rephrase — no penalty.", "अस्पष्ट? दोबारा बोलिए — कोई penalty नहीं।")}</span>
+                </li>
+              </ul>
             </div>
+          </div>
+
+          {/* Closing nudge that hands the user to the composer below. */}
+          <div className="mt-7 flex items-center justify-center gap-2.5 text-[13.5px] font-medium text-[var(--primary)]">
+            <span>{L("Ready when you are — send your first message below", "तैयार हों तो — नीचे अपना पहला message भेजें")}</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="animate-bounce" style={{ animationDuration: "1.6s" }} aria-hidden="true">
+              <path d="M12 5v14" />
+              <path d="m19 12-7 7-7-7" />
+            </svg>
           </div>
         </section>
       </div>
@@ -2688,31 +2931,65 @@ function EmptyState({
   );
 }
 
-// StepCard — one of the three numbered cards in Section 1.
-// Polished pass (2026-05-15): larger circular numbered badge in primary
-// teal, soft teal-tinted background, hover lift + shadow transition for a
-// tactile feel without distracting from the body copy.
-function StepCard({ n, title, body }: { n: number; title: string; body: string }) {
+// SectionHead — chaptered section title: serif title + index number +
+// brand icon + a hairline rule that grows toward the right edge so every
+// section reads as a numbered chapter rather than a stacked box.
+function SectionHead({
+  num,
+  kind,
+  title,
+}: {
+  num: string;
+  kind: "lightbulb" | "mic" | "shield";
+  title: string;
+}) {
   return (
-    <li className="step-card group rounded-xl border border-[var(--border)] bg-gradient-to-br from-teal-50/60 to-[var(--card)] dark:from-teal-900/15 dark:to-[var(--card)] px-5 py-6 flex flex-col transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-[color-mix(in_srgb,var(--primary)_30%,var(--border))]">
-      <div
-        className="w-10 h-10 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] text-[15px] font-semibold flex items-center justify-center mb-4 shadow-sm ring-4 ring-[color-mix(in_srgb,var(--primary)_12%,transparent)]"
-        aria-hidden="true"
-      >
+    <div className="flex items-center gap-3.5">
+      <span className="inline-flex w-9 h-9 rounded-xl items-center justify-center bg-[color-mix(in_srgb,var(--primary)_10%,var(--card))] border border-[color-mix(in_srgb,var(--primary)_20%,var(--border))]">
+        <SectionIcon kind={kind} />
+      </span>
+      <span className="section-num">{num}</span>
+      <h2 className="font-display text-[20px] sm:text-[23px] font-semibold text-[var(--foreground)] leading-tight whitespace-nowrap">
+        {title}
+      </h2>
+      <span className="section-rule" aria-hidden="true" />
+    </div>
+  );
+}
+
+// StepCard — one step on the shared journey spine. Body is two crisp
+// one-line fact bullets; the serif numbered medallion anchors the spine.
+function StepCard({
+  n,
+  title,
+  points,
+}: {
+  n: number;
+  title: string;
+  points: string[];
+}) {
+  return (
+    <li className="step-card group px-5 py-6 flex flex-col">
+      <div className="step-medallion mb-5" aria-hidden="true">
         {n}
       </div>
-      <div className="text-[15px] font-semibold text-[var(--foreground)] mb-2 leading-snug tracking-tight">
+      <div className="font-display text-[17px] font-semibold text-[var(--foreground)] mb-3 leading-tight whitespace-nowrap">
         {title}
       </div>
-      <p className="text-[13.5px] text-[var(--muted-foreground)] leading-relaxed">{body}</p>
+      <ul className="fact-list">
+        {points.map((p, i) => (
+          <li key={i}>
+            <TickIcon />
+            <span>{p}</span>
+          </li>
+        ))}
+      </ul>
     </li>
   );
 }
 
-// ModeRow — one of the four input-mode rows in Section 2.
-// Polished pass (2026-05-15): icon now sits in a 40px gradient-tinted
-// square with brand-teal stroke, body copy bumped to 13.5px for parity with
-// step cards, and a subtle hover lift mirrors the step grid above.
+// ModeRow — one input mode. Title + a single-line description; a left
+// accent rail wipes in on hover.
 function ModeRow({
   icon,
   title,
@@ -2723,25 +3000,77 @@ function ModeRow({
   body: string;
 }) {
   return (
-    <li className="mode-row group flex items-start gap-3.5 rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-[color-mix(in_srgb,var(--primary)_30%,var(--border))]">
-      <div className="shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-teal-50 to-teal-100/50 dark:from-teal-900/30 dark:to-teal-800/15 text-[var(--primary)] flex items-center justify-center ring-1 ring-teal-100 dark:ring-teal-900/40">
+    <li className="mode-row group flex items-center gap-3.5 px-4 py-3.5">
+      <div className="mode-glyph shrink-0 w-10 h-10 rounded-xl flex items-center justify-center">
         <ModeIcon kind={icon} />
       </div>
-      <div className="min-w-0 pt-0.5">
-        <div className="text-[15px] font-semibold text-[var(--foreground)] leading-snug tracking-tight">{title}</div>
-        <p className="text-[13.5px] text-[var(--muted-foreground)] leading-relaxed mt-1">{body}</p>
+      <div className="min-w-0">
+        <div className="text-[14.5px] font-semibold text-[var(--foreground)] leading-tight">
+          {title}
+        </div>
+        <p className="text-[12.5px] text-[var(--muted-foreground)] leading-snug mt-0.5 truncate">
+          {body}
+        </p>
       </div>
     </li>
   );
 }
 
+// TickIcon — small brand-teal check used on every one-line fact bullet.
+function TickIcon() {
+  return (
+    <svg
+      className="tick"
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="m5 13 4 4L19 7" />
+    </svg>
+  );
+}
+
+// TrustTick — filled-circle check for the hero trust strip.
+function TrustTick() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" fill="color-mix(in srgb, var(--primary) 14%, transparent)" />
+      <path d="m8 12 2.5 2.5L16 9" stroke="var(--primary)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function UploadGlyph() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <path d="M12 3v13" />
+      <path d="m7 8 5-5 5 5" />
+    </svg>
+  );
+}
+
+function SpeakerGlyph() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M11 5 6 9H2v6h4l5 4z" />
+      <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+      <path d="M18.5 6a9 9 0 0 1 0 12" />
+    </svg>
+  );
+}
+
 // SectionIcon — leading icon for each section heading.
-// Polished pass (2026-05-15): 22px size with a 2.2 stroke so it reads as a
-// distinct section anchor at a glance, not as inline body weight.
 function SectionIcon({ kind }: { kind: "lightbulb" | "mic" | "shield" }) {
   const common = {
-    width: 22,
-    height: 22,
+    width: 19,
+    height: 19,
     viewBox: "0 0 24 24",
     fill: "none",
     stroke: "currentColor",
@@ -2895,13 +3224,19 @@ function Message({
 
   return (
     <div className={`flex animate-fade-up ${isUser ? "justify-end" : "justify-start"}`}>
-      <div className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-3 ${
-        isUser ? "bg-[var(--primary)] text-[var(--primary-foreground)]" : "bg-[var(--card)] border border-[var(--border)]"
+      <div className={`max-w-[85%] sm:max-w-[75%] px-4 py-3 ${
+        isUser ? "bubble-user" : "bubble-assistant"
       }`}>
-        <div className="text-sm sm:text-base whitespace-pre-wrap leading-relaxed">
+        {!isUser && (
+          <div className="flex items-center gap-1.5 mb-1.5 text-[10px] uppercase tracking-[0.14em] font-semibold text-[color-mix(in_srgb,var(--primary)_72%,var(--muted-foreground))]">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--primary)]" />
+            Advisor
+          </div>
+        )}
+        <div className={`text-sm sm:text-[15px] whitespace-pre-wrap leading-relaxed ${isUser ? "" : "text-[var(--foreground)]"}`}>
           {displayContent}
           {isPaused && (
-            <span className="ml-1 italic text-[var(--muted-foreground)] opacity-80">
+            <span className="ml-1 italic opacity-70">
               ⏸ paused
             </span>
           )}
@@ -3055,72 +3390,73 @@ function CitedPolicyCards({
   if (topPolicies.length === 0) return null;
 
   return (
-    <div className="mt-3 pt-3 border-t border-[var(--border)] space-y-2">
+    <div className="mt-3 pt-3 border-t border-[var(--border)] space-y-2.5">
       <div className="flex items-center justify-between gap-2">
-        <div className="text-[10px] uppercase tracking-wide text-[var(--muted-foreground)] font-semibold">
+        <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.14em] text-[color-mix(in_srgb,var(--primary)_72%,var(--muted-foreground))] font-semibold">
+          <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--primary)]" />
           Cited policies
         </div>
         {topPolicies.length >= 2 && (
           <button
             onClick={() => setCompareOpen(true)}
-            className="text-[10px] uppercase tracking-wide font-semibold px-2 py-1 rounded-md border border-[var(--primary)] text-[var(--primary)] hover:bg-[var(--accent)] transition"
+            className="text-[10px] uppercase tracking-wide font-semibold px-2.5 py-1 rounded-full border border-[var(--primary)] text-[var(--primary)] hover:bg-[var(--primary)] hover:text-[var(--primary-foreground)] transition"
           >
             Compare all
           </button>
         )}
       </div>
-      <div className="grid grid-cols-1 gap-2">
+      <div className="grid grid-cols-1 gap-2.5">
         {topPolicies.map((c) => {
           const sc = cards[c.policy_id];
           const insurerName = c.insurer_slug.replace(/-/g, " ");
           return (
             <div
               key={c.policy_id}
-              className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-3 hover:border-[var(--primary)] hover:shadow-sm transition"
+              className="cited-card p-3.5"
             >
               <div className="flex items-start gap-3">
-                <InsurerLogo slug={c.insurer_slug} name={insurerName} size={36} />
+                <InsurerLogo slug={c.insurer_slug} name={insurerName} size={38} />
                 <div className="flex-1 min-w-0">
-                  <div className="text-[10px] uppercase tracking-wider text-[var(--muted-foreground)] truncate">
+                  <div className="text-[10px] uppercase tracking-[0.12em] text-[var(--muted-foreground)] truncate">
                     {insurerName}
                   </div>
-                  <div className="font-semibold text-sm truncate">{c.policy_name}</div>
+                  <div className="font-semibold text-sm truncate leading-tight mt-0.5">{c.policy_name}</div>
                   {sc ? (
-                    <div className="text-[11px] text-[var(--muted-foreground)] leading-snug line-clamp-2 mt-0.5">
+                    <div className="text-[11.5px] text-[var(--muted-foreground)] leading-snug line-clamp-2 mt-1">
                       {sc.one_liner}
                     </div>
                   ) : sc === null ? (
-                    <div className="text-[11px] text-[var(--muted-foreground)] italic mt-0.5">
+                    <div className="text-[11px] text-[var(--muted-foreground)] italic mt-1">
                       Rating unavailable
                     </div>
                   ) : (
-                    <div className="text-[11px] text-[var(--muted-foreground)] italic mt-0.5">
+                    <div className="text-[11px] text-[var(--muted-foreground)] italic mt-1">
                       Loading rating…
                     </div>
                   )}
                 </div>
                 {sc && (
                   <div
-                    className={`shrink-0 flex flex-col items-center rounded-md overflow-hidden ${gradeColor(sc.grade)}`}
+                    className={`shrink-0 flex flex-col items-center rounded-lg overflow-hidden ${gradeColor(sc.grade)}`}
                     title={`Grade ${sc.grade} · ${sc.overall_score}/100`}
                   >
-                    <div className="px-1.5 pt-0.5 text-[9px] font-semibold opacity-90 uppercase tracking-wide">
+                    <div className="px-2 pt-0.5 text-[9px] font-semibold opacity-90 uppercase tracking-wide">
                       {sc.grade}
                     </div>
-                    <div className="px-1.5 pb-0.5 text-xs font-bold leading-none">
+                    <div className="px-2 pb-0.5 text-sm font-bold leading-none">
                       {sc.overall_score}
                       <span className="text-[8px] font-normal opacity-80">/100</span>
                     </div>
                   </div>
                 )}
               </div>
-              <div className="mt-2 flex items-center justify-end gap-2">
+              <div className="mt-2.5 flex items-center justify-end gap-2">
                 {c.source_url && (
                   <a
                     href={c.source_url}
                     target="_blank"
                     rel="noopener"
-                    className="inline-flex items-center gap-1 text-[10px] font-semibold text-[var(--muted-foreground)] hover:text-[var(--primary)] px-2 py-1 rounded border border-[var(--border)] hover:border-[var(--primary)]"
+                    className="inline-flex items-center gap-1 text-[10px] font-semibold text-[var(--muted-foreground)] hover:text-[var(--primary)] px-2.5 py-1 rounded-full border border-[var(--border)] hover:border-[var(--primary)] transition"
                     title="Open policy PDF"
                   >
                     <PdfIcon /> PDF
@@ -3128,7 +3464,7 @@ function CitedPolicyCards({
                 )}
                 <button
                   onClick={() => setCompareOpen(true)}
-                  className="text-[10px] uppercase tracking-wide font-semibold px-2 py-1 rounded-md bg-[var(--primary)] text-white hover:opacity-90"
+                  className="text-[10px] uppercase tracking-wide font-semibold px-3 py-1 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition"
                 >
                   View details
                 </button>
@@ -3554,32 +3890,36 @@ function MarketplacePanel({
   });
 
   return (
-    <div className="border-t border-[var(--border)] bg-[var(--muted)] animate-fade-up max-h-[80vh] overflow-y-auto scrollbar-thin">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5">
-        <div className="flex items-baseline justify-between mb-4">
-          <div>
-            <h2 className="text-lg font-semibold">{t("mp.heading")}</h2>
-            <p className="text-xs text-[var(--muted-foreground)]">
+    <div className="app-panel border-t border-[var(--border)] animate-fade-up max-h-[80vh] overflow-y-auto scrollbar-thin">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+        <div className="flex items-start justify-between gap-4 mb-5 reveal reveal-1">
+          <div className="min-w-0">
+            <div className="panel-kicker mb-1.5">
+              <span className="dot" />
+              {t("header.policy_library")}
+            </div>
+            <h2 className="panel-title text-2xl sm:text-[28px] leading-[1.1]">{t("mp.heading")}</h2>
+            <p className="text-[13px] text-[var(--muted-foreground)] mt-2 max-w-2xl leading-relaxed">
               {t("mp.summary", { total: data.total, insurers: data.insurers_indexed })}
             </p>
           </div>
-          <button onClick={onClose} className="text-xs text-[var(--muted-foreground)] hover:underline">{t("mp.close")}</button>
+          <button onClick={onClose} className="shrink-0 text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition">{t("mp.close")}</button>
         </div>
 
         {/* Filter bar */}
-        <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 mb-4">
+        <div className="filter-shell p-4 mb-5 reveal reveal-2">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
             <div>
               <label className="block text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wide mb-1">{t("mp.search")}</label>
               <input
                 type="text" value={search} onChange={(e) => setSearch(e.target.value)}
                 placeholder={t("mp.search_placeholder")}
-                className="w-full text-sm bg-transparent border border-[var(--border)] rounded-md px-2 py-1.5 outline-none focus:border-[var(--primary)]"
+                className="app-input text-sm py-1.5"
               />
             </div>
             <div>
               <label className="block text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wide mb-1">{t("mp.insurer")}</label>
-              <select value={insurerFilter} onChange={(e) => setInsurerFilter(e.target.value)} className="w-full text-sm bg-transparent border border-[var(--border)] rounded-md px-2 py-1.5">
+              <select value={insurerFilter} onChange={(e) => setInsurerFilter(e.target.value)} className="app-input text-sm py-1.5">
                 <option value="all">{t("mp.all_insurers")} ({data.insurers_indexed})</option>
                 {insurers.map((s) => {
                   const name = data.policies.find((p) => p.insurer_slug === s)?.insurer_name || s;
@@ -3590,7 +3930,7 @@ function MarketplacePanel({
             </div>
             <div>
               <label className="block text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wide mb-1">{t("mp.min_rating")}</label>
-              <select value={grade} onChange={(e) => setGrade(e.target.value)} className="w-full text-sm bg-transparent border border-[var(--border)] rounded-md px-2 py-1.5">
+              <select value={grade} onChange={(e) => setGrade(e.target.value)} className="app-input text-sm py-1.5">
                 <option value="all">{t("mp.all_grades")}</option>
                 <option value="A">{t("mp.a_only")}</option>
                 <option value="B">{t("mp.b_or_better")}</option>
@@ -3599,19 +3939,19 @@ function MarketplacePanel({
             </div>
             <div>
               <label className="block text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wide mb-1">{t("mp.sort_by")}</label>
-              <select value={sortBy} onChange={(e) => setSortBy(e.target.value as "score" | "name" | "insurer")} className="w-full text-sm bg-transparent border border-[var(--border)] rounded-md px-2 py-1.5">
+              <select value={sortBy} onChange={(e) => setSortBy(e.target.value as "score" | "name" | "insurer")} className="app-input text-sm py-1.5">
                 <option value="score">{t("mp.sort_score")}</option>
                 <option value="name">{t("mp.sort_name")}</option>
                 <option value="insurer">{t("mp.sort_insurer")}</option>
               </select>
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wide mb-1">{t("mp.max_ped_wait")} <span className="font-mono">{maxPED} mo</span></label>
-              <input type="range" min={12} max={48} step={6} value={maxPED} onChange={(e) => setMaxPED(parseInt(e.target.value))} className="w-full accent-[var(--primary)]" />
+              <label className="block text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wide mb-2">{t("mp.max_ped_wait")} <span className="font-mono text-[var(--primary)]">{maxPED} mo</span></label>
+              <input type="range" min={12} max={48} step={6} value={maxPED} onChange={(e) => setMaxPED(parseInt(e.target.value))} className="app-range" />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wide mb-1">{t("mp.min_sum_insured")} <span className="font-mono">{minSI >= 10000000 ? (minSI/10000000) + " cr" : (minSI/100000) + " L"}</span></label>
-              <input type="range" min={500000} max={10000000} step={500000} value={minSI} onChange={(e) => setMinSI(parseInt(e.target.value))} className="w-full accent-[var(--primary)]" />
+              <label className="block text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wide mb-2">{t("mp.min_sum_insured")} <span className="font-mono text-[var(--primary)]">{minSI >= 10000000 ? (minSI/10000000) + " cr" : (minSI/100000) + " L"}</span></label>
+              <input type="range" min={500000} max={10000000} step={500000} value={minSI} onChange={(e) => setMinSI(parseInt(e.target.value))} className="app-range" />
             </div>
             <label className="flex items-center gap-2 text-xs">
               <input type="checkbox" checked={requireAyush} onChange={(e) => setRequireAyush(e.target.checked)} className="accent-[var(--primary)]" /> {t("mp.ayush_covered")}
@@ -3626,7 +3966,7 @@ function MarketplacePanel({
         </div>
 
         {/* Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pb-20">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pb-20 reveal reveal-3">
           {sorted.map((p) => (
             <PolicyCard
               key={p.policy_id}
@@ -3877,9 +4217,9 @@ function PolicyCard({
   const oneLinerKey = ({ A: "grade.a", B: "grade.b", C: "grade.c", D: "grade.d", F: "grade.f" } as Record<string, StringKey>)[policy.grade] || "grade.c";
   const oneLiner = t(oneLinerKey);
   return (
-    <div className={`relative text-left bg-[var(--card)] border ${selected ? "border-[var(--primary)] shadow-md" : "border-[var(--border)]"} rounded-xl p-4 hover:border-[var(--primary)] hover:shadow-md transition group`}>
+    <div className="policy-card relative text-left p-4 group" data-selected={selected}>
       <label
-        className={`absolute top-2 right-2 z-10 flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-md border ${selected ? "border-[var(--primary)] bg-[var(--accent)] text-[var(--primary)]" : "border-[var(--border)] bg-[var(--card)] text-[var(--muted-foreground)]"} ${selectionDisabled && !selected ? "opacity-40 cursor-not-allowed" : "cursor-pointer hover:border-[var(--primary)]"}`}
+        className={`absolute top-2 right-2 z-10 flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${selected ? "border-[var(--primary)] bg-[var(--accent)] text-[var(--primary)]" : "border-[var(--border)] bg-[var(--card)] text-[var(--muted-foreground)]"} ${selectionDisabled && !selected ? "opacity-40 cursor-not-allowed" : "cursor-pointer hover:border-[var(--primary)]"} transition`}
         onClick={(e) => e.stopPropagation()}
       >
         <input
@@ -4106,6 +4446,203 @@ function renderFieldValue(value: unknown, field: string): string {
     return String(value);
   }
   return String(value);
+}
+
+// LiveBetaGateModal — the styled risk-confirmation gate for Live (BETA)
+// always-on voice. Editorial-fintech system: Fraunces serif title, a
+// brand kicker pill, hairline border + soft long shadow, an amber WARNING
+// rail for the real failure modes, explicit Confirm / Cancel. Shown every
+// time the user enables Live; the live session starts only on Confirm.
+// EN/HI parity via an inline `hindi ?` ternary, matching the app pattern.
+function LiveBetaGateModal({
+  hindi,
+  onConfirm,
+  onCancel,
+}: {
+  hindi: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const L = (en: string, hi: string) => (hindi ? hi : en);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+
+  // Escape cancels (treated as "did not confirm"); move focus into the
+  // dialog on open so keyboard users land on the safe default (Cancel).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onCancel();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    const tid = window.setTimeout(() => {
+      dialogRef.current
+        ?.querySelector<HTMLButtonElement>("[data-autofocus]")
+        ?.focus();
+    }, 0);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.clearTimeout(tid);
+    };
+  }, [onCancel]);
+
+  // Each risk: a one-line headline + a short clause. Real failure modes,
+  // not marketing softening (mirrors lib/useLiveConversation realities).
+  const risks: { head: string; body: string }[] = [
+    {
+      head: L("BETA & unstable", "BETA · अस्थिर"),
+      body: L(
+        "Still experimental — behaviour can change or break without notice.",
+        "अभी प्रयोगात्मक — व्यवहार बिना सूचना बदल या टूट सकता है।"
+      ),
+    },
+    {
+      head: L("May cut you off or echo", "बीच में काट सकता है / echo"),
+      body: L(
+        "Can clip you mid-sentence or hear the bot's own voice and reply to itself.",
+        "आपको बीच वाक्य में काट सकता है, या bot की अपनी आवाज़ सुनकर खुद को जवाब दे सकता है।"
+      ),
+    },
+    {
+      head: L("Mic capture can silently fail", "Mic चुपचाप fail हो सकता है"),
+      body: L(
+        "AudioWorklet / AudioContext / VAD / codec issues may leave it listening but capturing nothing.",
+        "AudioWorklet / AudioContext / VAD / codec की दिक्कत से यह सुनता दिखे पर कुछ रिकॉर्ड न हो।"
+      ),
+    },
+    {
+      head: L("Speech is streamed continuously", "आपकी आवाज़ लगातार stream होती है"),
+      body: L(
+        "Your microphone stays open and audio is sent continuously while Live is on.",
+        "Live चालू रहते आपका माइक खुला रहता है और audio लगातार भेजा जाता है।"
+      ),
+    },
+  ];
+
+  return (
+    <div
+      className="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center p-4 animate-fade-up"
+      onClick={onCancel}
+    >
+      <div
+        ref={dialogRef}
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="live-gate-title"
+        aria-describedby="live-gate-desc"
+        onClick={(e) => e.stopPropagation()}
+        className="section-card w-full max-w-md max-h-[92vh] overflow-y-auto scrollbar-thin"
+      >
+        <div className="px-6 sm:px-7 py-7">
+          {/* Kicker — reuses the landing's brand pill, recoloured amber to
+              read as a warning rather than a feature badge. */}
+          <span
+            className="kicker mb-5"
+            style={{
+              color: "var(--error)",
+              background:
+                "color-mix(in srgb, var(--error) 9%, var(--card))",
+              borderColor:
+                "color-mix(in srgb, var(--error) 26%, var(--border))",
+            }}
+          >
+            <span
+              className="dot"
+              aria-hidden="true"
+              style={{ background: "var(--error)" }}
+            />
+            {L("Heads up · BETA", "ध्यान दें · BETA")}
+          </span>
+
+          <h2
+            id="live-gate-title"
+            className="font-display text-[1.55rem] sm:text-[1.75rem] leading-[1.12] font-semibold text-[var(--foreground)]"
+          >
+            {L(
+              "Turn on Live always-on voice?",
+              "Live always-on आवाज़ चालू करें?"
+            )}
+          </h2>
+
+          <p
+            id="live-gate-desc"
+            className="mt-2.5 text-[13.5px] leading-relaxed text-[var(--muted-foreground)]"
+          >
+            {L(
+              "Live keeps your mic open and listens continuously. It is genuinely useful, but it is unstable — please read these before continuing.",
+              "Live आपका माइक खुला रखता है और लगातार सुनता है। यह सच में उपयोगी है, पर अस्थिर — आगे बढ़ने से पहले ये ज़रूर पढ़ें।"
+            )}
+          </p>
+
+          {/* WARNING rail — amber-tinted card, same callout language as the
+              landing's amber trust card; one-line risk per row. */}
+          <ul className="mt-5 flex flex-col gap-px rounded-2xl border border-[color-mix(in_srgb,var(--error)_28%,var(--border))] bg-[color-mix(in_srgb,var(--error)_5%,var(--card))] overflow-hidden">
+            {risks.map((r, i) => (
+              <li
+                key={i}
+                className="flex items-start gap-3 px-4 py-3.5 bg-[var(--card)]/40"
+              >
+                <span
+                  className="shrink-0 mt-0.5 text-[var(--error)]"
+                  aria-hidden="true"
+                >
+                  <svg
+                    width="17"
+                    height="17"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+                    <path d="M12 9v4" />
+                    <path d="M12 17h.01" />
+                  </svg>
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[13px] font-semibold text-[var(--foreground)] leading-tight">
+                    {r.head}
+                  </span>
+                  <span className="block text-[12.5px] text-[var(--muted-foreground)] leading-snug mt-0.5">
+                    {r.body}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+
+          <p className="mt-4 text-[12.5px] leading-relaxed text-[var(--muted-foreground)]">
+            {L(
+              "Prefer Push-to-talk or hold-SPACE — both are stable and use Sarvam STT (handles Hindi / Indic correctly).",
+              "Push-to-talk या SPACE दबाकर बोलना बेहतर है — दोनों स्थिर हैं और Sarvam STT वापरते हैं (हिन्दी / Indic सही संभालता है)।"
+            )}
+          </p>
+
+          {/* Confirm / Cancel. Cancel is the safe default (autofocused). */}
+          <div className="mt-7 flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5">
+            <button
+              type="button"
+              data-autofocus
+              onClick={onCancel}
+              className="px-5 py-2.5 rounded-xl text-[13.5px] font-semibold border border-[var(--border)] text-[var(--foreground)] bg-[var(--card)] hover:border-[var(--primary)] hover:text-[var(--primary)] transition cursor-pointer"
+            >
+              {L("Cancel", "रद्द करें")}
+            </button>
+            <button
+              type="button"
+              onClick={onConfirm}
+              className="btn-primary px-5 py-2.5 text-[13.5px] cursor-pointer"
+            >
+              {L("Confirm — turn on Live", "पुष्टि करें — Live चालू करें")}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function ComparisonModal({ policyIds, onClose }: { policyIds: string[]; onClose: () => void }) {

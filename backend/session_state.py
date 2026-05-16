@@ -135,19 +135,42 @@ def get_session(session_id: str) -> SessionState:
         return _sessions[session_id]
 
 
+# Identity-summary fields surfaced in the "are you <name>?" confirm prompt.
+# Enough to let the real owner recognise their own profile, but it is NOT
+# applied to the live session until the user explicitly confirms.
+_RECALL_SUMMARY_FIELDS: tuple[str, ...] = (
+    "age", "dependents", "income_band", "location_tier",
+    "primary_goal", "parents_age_max",
+)
+
+
 def rehydrate_by_name(session: SessionState, name: str) -> bool:
-    """KI-118 (2026-05-15) — cross-session re-entry point.
+    """Cross-session re-entry point — STAGE a name match for confirmation.
 
-    When a user provides their name (captured in the fact_find brain), look
-    up the named profile via `backend.profile_store.load_profile(name)` and
-    populate the in-memory session with the stored profile data.
+    PRIVACY FIX (2026-05-16, audit). Previously this AUTO-MERGED the stored
+    named profile into the live session on the very first turn. Because the
+    lookup key was the user-stated NAME (not the session / no cookie), a
+    second real user on a shared browser/IP — or anyone who simply states a
+    common first name — was silently served a stranger's captured profile
+    and greeted "Welcome back, <name>!". A fresh, no-cookie session must
+    NEVER inherit another session's profile from a weak/shared key.
 
-    Returns True if a stored profile was found and merged; False otherwise.
+    Safe design (KI-196 / ADR-041, specced via `pending_profile_recall` but
+    previously never wired): a name match is STAGED on
+    `session.pending_profile_recall`, NOT merged. `session.profile` is left
+    untouched, so `is_returning_user` / RULE-4 "Welcome back" does NOT fire
+    on a fresh session. The brain asks the user to confirm ("are you
+    <name>?"); only an explicit affirmation calls `apply_pending_recall(
+    session, confirmed=True)` to merge the stored fields. An explicit deny
+    discards the staged profile.
+
+    Returns:
+        False  — always. The stored profile is NEVER auto-applied here, so
+                 callers must treat False as "do not flag a returning user
+                 / do not greet Welcome back". Whether a match was *staged*
+                 is observable via `session.pending_profile_recall`.
+
     Failures are logged but never raise — a fresh chat must always proceed.
-
-    Merge semantics: stored fields override current session-state fields IF
-    the current field is empty. Already-captured fields on the live session
-    win (the user may have corrected themselves mid-conversation).
     """
     if not name or not name.strip():
         return False
@@ -156,24 +179,79 @@ def rehydrate_by_name(session: SessionState, name: str) -> bool:
         stored = load_profile(name)
         if stored is None:
             return False
-        # Merge: stored value fills any empty slot on the live profile.
+
+        # Build a non-PII-leaking identity summary so the brain can ask
+        # "are you <name>?" without putting anything on the live profile.
+        summary: Dict[str, Any] = {}
+        for fld in _RECALL_SUMMARY_FIELDS:
+            v = getattr(stored, fld, None)
+            if v not in (None, "", []):
+                summary[fld] = v
+
+        # Snapshot the full stored union so apply_pending_recall can merge
+        # WITHOUT a second disk read (and without the staged copy being
+        # mutated by anything between stage and confirm).
+        staged_fields: Dict[str, Any] = {}
         for fld in Profile.__dataclass_fields__.keys():
-            try:
-                cur = getattr(session.profile, fld, None)
-                if cur in (None, "", []):
-                    new = getattr(stored, fld, None)
-                    if new not in (None, "", []):
-                        setattr(session.profile, fld, new)
-            except Exception:
-                continue
+            v = getattr(stored, fld, None)
+            if v not in (None, "", []):
+                staged_fields[fld] = v
+
+        session.pending_profile_recall = {
+            "name": (getattr(stored, "name", None) or name).strip(),
+            "summary": summary,
+            "stored_fields": staged_fields,
+            "staged_at": time.time(),
+        }
         session.last_touched = time.time()
-        return True
+        # Deliberately False: nothing merged, no Welcome-back greeting.
+        return False
     except Exception as e:
         _log.warning(
             "rehydrate_by_name failed (name=%r): %s: %s",
             name, type(e).__name__, str(e)[:200],
         )
         return False
+
+
+def apply_pending_recall(session: SessionState, *, confirmed: bool) -> bool:
+    """Resolve a staged cross-session profile recall.
+
+    PRIVACY FIX (2026-05-16). The ONLY path that merges a stored, name-keyed
+    profile into a live session. Called after the user explicitly answers
+    the "are you <name>?" confirm prompt.
+
+    confirmed=True  — the user affirmed it's them. Stored fields fill any
+                      EMPTY slot on the live profile (already-captured slots
+                      from THIS conversation win — the user may have given
+                      fresher facts). Returns True iff a profile was applied.
+    confirmed=False — the user denied / it isn't them. The staged recall is
+                      discarded. The live session stays blank. Returns False.
+
+    Idempotent: clears `pending_profile_recall` either way. A no-op (returns
+    False) when there is nothing staged.
+    """
+    pending = getattr(session, "pending_profile_recall", None)
+    if not pending:
+        return False
+    # Resolve the staging regardless of outcome.
+    session.pending_profile_recall = None
+    if not confirmed:
+        return False
+    stored_fields = pending.get("stored_fields") or {}
+    if not stored_fields:
+        return False
+    for fld, new in stored_fields.items():
+        try:
+            if fld not in Profile.__dataclass_fields__:
+                continue
+            cur = getattr(session.profile, fld, None)
+            if cur in (None, "", []) and new not in (None, "", []):
+                setattr(session.profile, fld, new)
+        except Exception:
+            continue
+    session.last_touched = time.time()
+    return True
 
 
 def set_free_form(session_id: str, free_form: bool = True) -> None:
