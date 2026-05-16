@@ -4413,19 +4413,18 @@ function InsurerLogo({ slug, name, homeUrl, size = 44 }: { slug: string; name: s
     );
   }
   return (
-    // #103 — logo sits directly on the card (no white box / border / inner
-    // padding that shrank it to ~36px and looked pasted-on). Fills the full
-    // box, object-contain so the brand mark stays legible.
-    <div
-      className="flex items-center justify-center shrink-0"
-      style={{ width: size, height: size }}
-    >
+    // #logo-fix — logos span 1:1 … 4.9:1 aspect ratios and the baked-white
+    // backgrounds were flood-filled to transparent. Render at a FIXED HEIGHT
+    // with AUTO width (aspect-preserving — never distorted), capped so a
+    // very wide mark can't blow out the card header. No box, no background:
+    // the transparent logo sits directly on the card.
+    <div className="flex items-center shrink-0" style={{ height: size }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={sources[stage]}
         alt={name}
         onError={() => setStage((s) => s + 1)}
-        className="w-full h-full object-contain"
+        style={{ height: size, width: "auto", maxWidth: size * 2.8, objectFit: "contain" }}
       />
     </div>
   );
