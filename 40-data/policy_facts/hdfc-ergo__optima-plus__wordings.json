@@ -7,132 +7,234 @@
     "value": "HDHHLIP21336V022021",
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "UIN: Optima Plus- HDHHLIP21336V022021",
+    "_confidence": "high"
   },
   "min_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in hdfc-ergo__optima-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": 65,
     "unit": "years",
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "The parent was below 65 years at his initial participation in the Optima Plus Policy",
+    "_confidence": "medium"
   },
   "min_child_entry_age": {
     "value": 91,
     "unit": "days",
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "ii) Your children Aged between 91 days and 21 years if they are unmarried.",
+    "_confidence": "high"
   },
   "sum_insured_options": {
-    "value": null,
+    "value": [
+      500000
+    ],
     "unit": "INR",
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Sum Insured per Insured Person per Policy Year Rs 500, 000",
+    "_confidence": "high"
   },
   "grace_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "The grace period for payment of the premium for all types of insurance policies shall be: fifteen days where premium payment mode is monthly and thirty days in all other cases.",
+    "_confidence": "high"
   },
   "free_look_period": {
-    "value": 15,
+    "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "The insured person shall be allowed free look period of thirtydays from date of receipt of the policy document to review the terms and conditions of the policy, and to re",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "30-day Waiting Period: Code – Excl03 I. Expenses related to the treatment of any illness within 30 days from the first policy commencement date shall be excluded except claims arising due to an accident, provided the same are covered.",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 36,
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Expenses related to the treatment of a pre-existing disease (PED) and its direct complications shall be excluded until the expiry of 36 months of continuous coverage after the date of inception of the first policy with insurer.",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Specified disease/procedure waiting period: Code – Excl02 I. Expenses related to the treatment of the listed Conditions, surgeries/treatments as mentioned in the table below shall be excluded until the expiry of 24 months of continuous coverage after the date of inception of the first Policy with us.",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in hdfc-ergo__optima-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": 60,
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "1 b) Pre-hospitalization Covered, maximum upto 60 days",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
     "value": 90,
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "1 c) Post-hospitalization Covered, maximum upto 90 days",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 144,
+    "source_url": "https://www.hdfcergo.com/health-insurance/day-care-treatment",
+    "source_note": "Per insurer baseline (HDFC Ergo day-care treatment page lists 144 procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 16000,
+    "source_url": "https://www.hdfcergo.com/",
+    "source_note": "16000+ Cashless Healthcare providers (homepage 'Why Choose HDFC ERGO' / 'Cashless Network' section, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in hdfc-ergo__optima-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "room_rent_capped_at_pct_of_si": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in hdfc-ergo__optima-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "policy_term_options_years": {
-    "value": null,
+    "value": [
+      1
+    ],
     "unit": "years",
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Def. 14. Policy Year means a year following the Commencement Date and its subsequent annual anniversary.",
+    "_confidence": "medium"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in hdfc-ergo__optima-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in hdfc-ergo__optima-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in hdfc-ergo__optima-plus__wordings.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
+    "source_quote": "xxi. Any non-allopathic treatment except to the extent of coverage provided for under 'In-patient treatment' cover.",
+    "_confidence": "high"
+  },
+  "maternity_coverage": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
+    "source_quote": "urred during hospitalization) except ectopic pregnancy; b. E",
+    "_confidence": "high"
+  },
+  "newborn_coverage": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
+    "source_quote": "not stated in hdfc-ergo__optima-plus__wordings.pdf",
+    "_confidence": "low"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
+    "source_quote": "e) Organ Donor The Medical Expenses for an organ donor’s treatment for the harvesting of the organ donated, provided that:",
+    "_confidence": "high"
+  },
+  "restoration_benefit": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
+    "source_quote": "not stated in hdfc-ergo__optima-plus__wordings.pdf",
+    "_confidence": "low"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
+    "source_quote": "Domiciliary Treatment Covered",
+    "_confidence": "high"
+  },
+  "preventive_health_checkup": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
+    "source_quote": "Preventive care, and other nutritional and electrolyte supplements, unless certified to be required by the attending Medical Practitioner as a direct consequence of an ot",
+    "_confidence": "high"
+  },
+  "critical_illness_cover": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
+    "source_quote": "not stated in hdfc-ergo__optima-plus__wordings.pdf",
+    "_confidence": "low"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
+    "source_quote": "Cashless service: Treatment, Consultation or Procedure: Trea",
+    "_confidence": "high"
+  },
+  "geographic_coverage": {
+    "value": "pan_india",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
+    "source_quote": "This Policy only covers medical treatment taken within India, and payments under this Policy shall only be made in Indian Rupees within India.",
+    "_confidence": "high"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "super_top_up",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
+    "source_quote": "Deductible (Rs. In Lacs) (As mentioned in Policy Schedule) Rs 100,000; 200,000; 300,000; 400,000; 500,000",
+    "_confidence": "medium"
+  },
+  "deductible_amount": {
+    "value": null,
+    "unit": "INR",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
+    "source_quote": "not stated in hdfc-ergo__optima-plus__wordings.pdf",
+    "_confidence": "low"
   }
 }

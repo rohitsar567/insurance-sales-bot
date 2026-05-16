@@ -3,24 +3,22 @@
   "policy_name": "Star Hospital Cash",
   "insurer_slug": "star-health",
   "uin_code": {
-    "value": null,
+    "value": "SHAHLIP20046V011920",
     "source_pdf_path": "rag/corpus/star-health/star-hospital-cash__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "Star Hospital Cash Insurance Policy Unique Identiﬁcation No.: SHAHLIP20046V011920",
+    "_confidence": "high"
   },
   "min_entry_age": {
-    "value": null,
+    "value": 18,
     "source_pdf_path": "rag/corpus/star-health/star-hospital-cash__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "Adults between 18 years and 65 years · Dependent children: 91 days to 25 years(who are economically dependent on their parents).",
+    "_confidence": "high"
   },
   "max_entry_age": {
-    "value": null,
+    "value": 65,
     "source_pdf_path": "rag/corpus/star-health/star-hospital-cash__brochure.pdf",
-    "source_quote": ""
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/star-health/star-hospital-cash__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "Adults between 18 years and 65 years · Dependent children: 91 days to 25 years(who are economically dependent on their parents).",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 24,
@@ -30,22 +28,27 @@
   "initial_waiting_period_days": {
     "value": null,
     "source_pdf_path": "rag/corpus/star-health/star-hospital-cash__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in star-health__star-hospital-cash__brochure.pdf",
+    "_confidence": "low"
   },
   "maternity_coverage": {
-    "value": null,
+    "value": true,
+    "unit": "boolean",
     "source_pdf_path": "rag/corpus/star-health/star-hospital-cash__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "05 Child Birth Hospital Cash Not Available Available. Note: This beneﬁt is subject to a waiting period of 2 years from the ﬁrst commencement of this Star Hospital Cash Insurance Policy. Only female insured persons are eligible for this beneﬁt",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/star-health/star-hospital-cash__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in star-health__star-hospital-cash__brochure.pdf",
+    "_confidence": "low"
   },
   "ayush_coverage": {
     "value": null,
     "source_pdf_path": "rag/corpus/star-health/star-hospital-cash__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in star-health__star-hospital-cash__brochure.pdf",
+    "_confidence": "low"
   },
   "cashless_treatment_supported": {
     "value": true,
@@ -55,67 +58,81 @@
   "copayment_pct": {
     "value": null,
     "source_pdf_path": "rag/corpus/star-health/star-hospital-cash__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in star-health__star-hospital-cash__brochure.pdf",
+    "_confidence": "low"
   },
   "no_claim_bonus_pct": {
     "value": null,
     "source_pdf_path": "rag/corpus/star-health/star-hospital-cash__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in star-health__star-hospital-cash__brochure.pdf",
+    "_confidence": "low"
   },
   "restoration_benefit": {
     "value": null,
     "source_pdf_path": "rag/corpus/star-health/star-hospital-cash__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in star-health__star-hospital-cash__brochure.pdf",
+    "_confidence": "low"
   },
   "room_rent_capping": {
     "value": null,
     "source_pdf_path": "rag/corpus/star-health/star-hospital-cash__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in star-health__star-hospital-cash__brochure.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": null,
     "source_pdf_path": "rag/corpus/star-health/star-hospital-cash__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in star-health__star-hospital-cash__brochure.pdf",
+    "_confidence": "low"
   },
   "post_hospitalization_days": {
     "value": null,
     "source_pdf_path": "rag/corpus/star-health/star-hospital-cash__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in star-health__star-hospital-cash__brochure.pdf",
+    "_confidence": "low"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/star-health/star-hospital-cash__brochure.pdf",
-    "source_quote": ""
+    "value": 540,
+    "source_url": "https://www.starhealth.in/health-insurance/daycare-treatment-and-procedures/",
+    "source_note": "Per insurer baseline (Star Health day-care procedures page; 540+ procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/star-health/star-hospital-cash__brochure.pdf"
   },
   "network_hospital_count": {
     "value": null,
-    "source_pdf_path": "rag/corpus/star-health/star-hospital-cash__brochure.pdf",
-    "source_quote": ""
+    "unit": "hospitals",
+    "source_pdf_path": null,
+    "source_quote": "not stated in star-health__star-hospital-cash__brochure.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
     "value": null,
     "source_pdf_path": "rag/corpus/star-health/star-hospital-cash__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in star-health__star-hospital-cash__brochure.pdf",
+    "_confidence": "low"
   },
   "claim_settlement_ratio": {
     "value": null,
     "source_pdf_path": "rag/corpus/star-health/star-hospital-cash__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in star-health__star-hospital-cash__brochure.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
     "value": null,
     "source_pdf_path": "rag/corpus/star-health/star-hospital-cash__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in star-health__star-hospital-cash__brochure.pdf",
+    "_confidence": "low"
   },
   "policy_type": {
     "value": "hospital_cash",
     "source_pdf_path": "rag/corpus/star-health/star-hospital-cash__brochure.pdf",
-    "source_quote": "classified as hospital_cash from PDF heuristics"
+    "source_quote": "STAR HOSPITAL CASH INSURANCE POLICY Star Hospital Cash Insurance Policy provides additional protection & takes care of your incidental expenses",
+    "_confidence": "high"
   },
   "_meta": {
     "curated_at": "2026-05-14",
     "primary_source_pdf": "rag/corpus/star-health/star-hospital-cash__brochure.pdf",
     "completeness_pct": 14,
-    "notes": "Curated by tools/curate_remaining.py \u2014 pattern-based extraction from local PDF"
+    "notes": "Curated by tools/curate_remaining.py — pattern-based extraction from local PDF"
   }
 }

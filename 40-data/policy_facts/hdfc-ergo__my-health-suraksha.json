@@ -5,24 +5,22 @@
   "uin_code": {
     "value": "HDFHLIP24079V072324",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "le. UIN: my:health Suraksha - HDFHLIP24079V072324 | my:Health Hospital Cash Benefit (Add-on) - 1 HDFHLIA21271V022021 | my: health Critical Illness - HDFHLIA22141V032122. HDFC ERGO General Insurance Co"
+    "source_quote": "UIN: my:health Suraksha - HDFHLIP24079V072324 | my:Health Hospital Cash Ben",
+    "_confidence": "high"
   },
   "min_entry_age": {
-    "value": null,
+    "value": 18,
     "unit": "days",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "Min entry age not found"
+    "source_quote": "Entry Age: Base Cover Proposer Adult Dependent Child/Children • Minimum Entry Age – 18 Years • Minimum Entry Age – 18 Years • Minimum Entry Age – 91 days • Maximum Entry Age – Lifetime Entry • Maximum Entry Age - Lifetime Entry • Maximum Entry Age - 25 years",
+    "_confidence": "high"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "Max entry age not explicitly stated; check Policy Schedule"
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "Max renewal age not specified; check Policy Schedule"
+    "source_quote": "Entry Age: Base Cover Proposer Adult Dependent Child/Children • Minimum Entry Age – 18 Years • Minimum Entry Age – 18 Years • Minimum Entry Age – 91 days • Maximum Entry Age – Lifetime Entry • Maximum Entry Age - Lifetime Entry • Maximum Entry Age - 25 years",
+    "_confidence": "high"
   },
   "sum_insured_options": {
     "value": [
@@ -31,67 +29,81 @@
     ],
     "unit": "INR",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "Practitioner and 1. Multiple sum insured options ranging from 1 Lac to Rs. 5 Cr available ii. the condition the Insured Person is such that he/she could not under this policy. be removed to a Hospital"
+    "source_quote": "sum insured options ranging from 1 Lac to Rs",
+    "_confidence": "medium"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "after the expiry of 48 months 30 days from the first Policy commencement date shall for any pre-existing disease is subject to the same being be excluded except claims arising due to an Accident, decl"
+    "source_quote": "30-day waiting period – Code – Excl03 a) Expenses related to the treatment of any illness within 30 days from the first Policy commencement date shall be excluded except claims arising due to an Accident, provided the same are covered",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
-    "value": null,
+    "value": 48,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "PED waiting period not extracted; check Section 5 / Excl01"
+    "source_quote": "pre-existing disease (PED) and its direct complications shall be excluded until the expiry of 48 months of continuous coverage after the date of inception of the first policy with",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "Default IRDAI 24-month specific-disease waiting (not explicitly quoted)"
+    "source_quote": "pplication and accepted by Insurer. ii) Specified Disease/Procedure waiting period - Code – Excl02 a) Expenses related to the treatment of the listed Conditions, surgeries/treatments shall be excluded until the expiry of 24 months of continuous coverage after the date of inception of the first Policy with us. This exc",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "Maternity waiting not specified or maternity excluded"
+    "source_quote": "not stated in hdfc-ergo__my-health-suraksha.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
-    "value": 30,
+    "value": 60,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "ration of the policy at least 30 days before the policy renewal Person opts for Hospitalization with Room Rent up to Rs 2,500 date as per IRDAI guidelines on Migration. If such person is presently per"
+    "source_quote": "We will pay for the Pre-Hospitalization Medical Expenses incurred during the 60 days immediately before Hospitalization of an Insured Person, pr",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
-    "value": null,
+    "value": 180,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "Post-hospitalization days not extracted"
+    "source_quote": "Post-Hospitalization cover We will pay for the Post-Hospitalization Medical Expenses incurred upto 180 days from the day Insured Person is discharged from Hospital provided that Claim under Section A1",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "Day-care count not enumerated; covered per policy definition"
+    "value": 144,
+    "source_url": "https://www.hdfcergo.com/health-insurance/my-health-suraksha-plan",
+    "source_note": "HDFC Ergo My:health Suraksha; 144 day-care procedures per insurer baseline",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf"
   },
   "ayush_coverage": {
     "value": true,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "tment of Insured Person in an AYUSH Hospital for the below Alternative Treatments prescribed by the Medical OR Practitioner • burning total of 900 calories upto maximum of 300 calories • Ayurvedic in "
+    "source_quote": "only Inpatient care treatment of Insured Person in an AYUSH Hospital for the below Alternative Treatments prescribed by the Medical Practitioner • Ayurvedic • Unani • Siddha • Homeopathy • Yoga & Naturopathy provided that; i",
+    "_confidence": "high"
   },
   "maternity_coverage": {
     "value": false,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "doctor xv. Maternity: Code – Excl18 b. The surgery/procedure conducted should be supported by a. Medical treatment expenses traceable to childbirth clinical protocols (including complicated deliv"
+    "source_quote": "Maternity: Code – Excl18 a.",
+    "_confidence": "high"
   },
   "newborn_coverage": {
     "value": true,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "New Born baby cover: We will pay/cover following expenses towards Chil"
+    "source_quote": "New Born Baby Cover – We will cover New Born Baby from 91st day after the birth as per original terms of the Policy on receipt of completed proposal form and P",
+    "_confidence": "high"
   },
   "organ_donor_expenses": {
     "value": true,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "Organ Donor Expenses Healthcare for Medically Necessary Treatment of Illnesses, if We will pay Medical Expenses as listed under Section A1 towards prescribed by treating Medical Practitioner. We will "
+    "source_quote": "8. Organ Donor Expenses We will pay Medical Expenses as listed under Section A1 towards organ donor’s Hospitalization for harvesting of the donated organ where an Insured Person is the recipient, provided that; • The organ",
+    "_confidence": "high"
   },
   "no_claim_bonus_pct": {
-    "value": 50,
+    "value": 5,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "Cumulative Bonus can be accumulated upto 50% of Basic Sum Insured. • For Policies covering mor"
+    "source_quote": "f the Policy with Us, We will apply 5% of Basic Sum Insured under expiring Policy as Cumulative Bonus in the Policy provided that; 1. There has been no",
+    "_confidence": "high"
   },
   "restoration_benefit": {
     "value": "Restore (Add-",
@@ -104,39 +116,47 @@
     "source_quote": "Room Rent, boarding & Nursing – limit of 1% of the Basic Sum"
   },
   "copayment_pct": {
-    "value": 0,
+    "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "No mandatory copay extracted; product may have age-based or zone-based optional copay"
+    "source_quote": "not stated in my-health-suraksha__brochure.pdf",
+    "_confidence": "low"
   },
   "deductible_amount": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "No base deductible (or only optional voluntary deductible add-on)"
+    "source_quote": "not stated in hdfc-ergo__my-health-suraksha.pdf",
+    "_confidence": "low"
   },
   "network_hospital_count": {
-    "value": null,
-    "source_url": null,
-    "source_quote": "Insurer-level metric; not extracted in this curation pass"
+    "value": 16000,
+    "source_url": "https://www.hdfcergo.com/",
+    "source_note": "16000+ Cashless Healthcare providers (homepage 'Why Choose HDFC ERGO' / 'Cashless Network' section, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "cashless_treatment_supported": {
     "value": true,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "Cover can be availed through Cashless Facility only as procedure • The organ donor is any person whose organ has been given under Claims Procedure. made available in accordance and in compliance with "
+    "source_quote": "This Cover can be availed through Cashless Facility only as procedure given under Claims Procedure",
+    "_confidence": "high"
   },
   "claim_settlement_ratio": {
     "value": null,
     "source_url": null,
-    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted"
+    "source_quote": "not stated in hdfc-ergo__my-health-suraksha.pdf",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
     "value": null,
-    "source_pdf_path": null,
-    "source_quote": "TAT not specified in policy wording; governed by IRDAI Master Circular"
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
+    "source_quote": "not stated in hdfc-ergo__my-health-suraksha.pdf",
+    "_confidence": "low"
   },
   "policy_type": {
     "value": "hospital-cash",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "Hospital cash / daily benefit policy"
+    "source_quote": "Hospital Cash Benefit (Add-on) - HDFHLIA21271V022021 | my: health Critica",
+    "_confidence": "low"
   },
   "_meta": {
     "curated_at": "2026-05-14",

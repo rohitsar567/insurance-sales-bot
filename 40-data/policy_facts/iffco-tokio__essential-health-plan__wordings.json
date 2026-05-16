@@ -7,143 +7,241 @@
     "value": "IFFHLIP25040V022425",
     "unit": null,
     "source_pdf_path": "rag/corpus/iffco-tokio/essential-health-plan__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "UIN: IFFHLIP25040V022425 ; Code:",
+    "_confidence": "high"
   },
   "min_entry_age": {
-    "value": 18,
+    "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/iffco-tokio/essential-health-plan__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in iffco-tokio__essential-health-plan__wordings.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/iffco-tokio/essential-health-plan__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/iffco-tokio/essential-health-plan__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in iffco-tokio__essential-health-plan__wordings.pdf",
+    "_confidence": "low"
   },
   "min_child_entry_age": {
-    "value": 91,
+    "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/iffco-tokio/essential-health-plan__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in iffco-tokio__essential-health-plan__wordings.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
-    "value": [
-      200000,
-      300000,
-      400000,
-      500000,
-      750000,
-      1000000,
-      1500000,
-      2000000,
-      2500000,
-      5000000
-    ],
+    "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/iffco-tokio/essential-health-plan__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in iffco-tokio__essential-health-plan__wordings.pdf",
+    "_confidence": "low"
   },
   "grace_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/iffco-tokio/essential-health-plan__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "i.Grace Period of 15 days would be available for monthly installment mode. \nii.Grace Period of 30 days would be available for all other installment mode.",
+    "_confidence": "high"
   },
   "free_look_period": {
-    "value": 15,
+    "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/iffco-tokio/essential-health-plan__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "You/the Insured Person shall be allowed a period of thirty days from date of receipt of the Policy document to \nreview the terms and conditions of the Policy",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/iffco-tokio/essential-health-plan__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Expenses related to the treatment of any illness within 30 days from the first policy commencement date shall \nbe excluded",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 36,
     "unit": null,
     "source_pdf_path": "rag/corpus/iffco-tokio/essential-health-plan__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "of a pre-existing Disease (PED) and its direct complications shall be \nexcluded until the expiry of 36 months of continuous coverage after the date of inception of the first policy",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
-    "value": 24,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/iffco-tokio/essential-health-plan__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in iffco-tokio__essential-health-plan__wordings.pdf",
+    "_confidence": "low"
   },
   "maternity_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/iffco-tokio/essential-health-plan__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in iffco-tokio__essential-health-plan__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
-    "value": 30,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/iffco-tokio/essential-health-plan__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
-  },
-  "post_hospitalization_days": {
     "value": 60,
     "unit": null,
     "source_pdf_path": "rag/corpus/iffco-tokio/essential-health-plan__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Pre-Hospitalization Medical Expenses incurred up to 60 days prior to Hospitalization",
+    "_confidence": "high"
+  },
+  "post_hospitalization_days": {
+    "value": 90,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/iffco-tokio/essential-health-plan__wordings.pdf",
+    "source_quote": "Post Hospitalization Medical Expenses incurred during a period up to 90 days after Hospitalization",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/iffco-tokio/essential-health-plan__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 380,
+    "source_url": "https://www.iffcotokio.co.in/health-insurance/family-health-insurance",
+    "source_note": "Per insurer baseline (IFFCO Tokio family health insurance covers 380+ day care surgeries)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/iffco-tokio/essential-health-plan__wordings.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/iffco-tokio/essential-health-plan__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 8000,
+    "source_url": "https://www.iffcotokio.co.in/",
+    "source_note": "8,000+ Network Hospitals ('Why Choose IFFCO-TOKIO' section, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
-    "value": null,
-    "unit": "percent",
+    "value": 0,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/iffco-tokio/essential-health-plan__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "The following Co-pay options are available under the product:  \n10%, 20% or 25% .",
+    "_confidence": "medium"
   },
   "room_rent_capped_at_pct_of_si": {
-    "value": null,
-    "unit": "percent",
+    "value": 2.0,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/iffco-tokio/essential-health-plan__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "a limit of \n2%of the sum insured on per day basis or actual, \nwhichever is less;",
+    "_confidence": "medium"
   },
   "policy_term_options_years": {
-    "value": null,
+    "value": [
+      1,
+      2,
+      3
+    ],
     "unit": "years",
     "source_pdf_path": "rag/corpus/iffco-tokio/essential-health-plan__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "The policy period shall be upto a maximum of 3 years (1 year/ 2 years/ 3 years) as specified in the \npolicy schedule.",
+    "_confidence": "high"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/iffco-tokio/essential-health-plan__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in iffco-tokio__essential-health-plan__wordings.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/iffco-tokio/essential-health-plan__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in iffco-tokio__essential-health-plan__wordings.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/iffco-tokio/essential-health-plan__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in iffco-tokio__essential-health-plan__wordings.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/iffco-tokio/essential-health-plan__wordings.pdf",
+    "source_quote": "AYUSH hospitalization expenses Incurred in AYUSH Hospitals or AYUSH Day Care Centres. Coverage also includes \npre- hospitalization and post hospitalization expenses.",
+    "_confidence": "high"
+  },
+  "maternity_coverage": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/iffco-tokio/essential-health-plan__wordings.pdf",
+    "source_quote": "Maternity Expenses (Code - Excl18): \ni. Medical treatment expenses traceable to childbirth",
+    "_confidence": "high"
+  },
+  "newborn_coverage": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/iffco-tokio/essential-health-plan__wordings.pdf",
+    "source_quote": "not stated in iffco-tokio__essential-health-plan__wordings.pdf",
+    "_confidence": "low"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/iffco-tokio/essential-health-plan__wordings.pdf",
+    "source_quote": "Hospitalization expenses of person donating an organ during the course of organ transplant subject to the above sub-limits applicable to the Insured Person and within the sum insured.",
+    "_confidence": "high"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/iffco-tokio/essential-health-plan__wordings.pdf",
+    "source_quote": "Domiciliary Hospitalization means medical treatment for an illness/disease/injury which in the normal course would require care and treatment at a hospital but is actually taken while confined at home under any of the following circumstances: i.",
+    "_confidence": "high"
+  },
+  "worldwide_emergency_cover": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/iffco-tokio/essential-health-plan__wordings.pdf",
+    "source_quote": "All medical treatment for the purpose of this insurance will have to be taken in India only and all claims shall be  \npayable in Indian currency.",
+    "_confidence": "medium"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/iffco-tokio/essential-health-plan__wordings.pdf",
+    "source_quote": "Health check-up: Insured Person(s) shall be entitled to undergo a periodic medical checkup upon renewal of the policy. This benefit is dependent on the Basic sum insured of the policy.",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/iffco-tokio/essential-health-plan__wordings.pdf",
+    "source_quote": "Cashless facility means a facility extended by Us to the Insured Person where the payments, of the costs of \ntreatment",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_cap_pct": {
+    "value": 100,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/iffco-tokio/essential-health-plan__wordings.pdf",
+    "source_quote": "subject to a maximum of 100% (of basic sum insured of the expiring policy",
+    "_confidence": "high"
+  },
+  "geographic_coverage": {
+    "value": "pan_india",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/iffco-tokio/essential-health-plan__wordings.pdf",
+    "source_quote": "All medical treatment for the purpose of this insurance will have to be taken in India only and all claims shall be  \npayable in Indian currency.",
+    "_confidence": "high"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "family_floater",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/iffco-tokio/essential-health-plan__wordings.pdf",
+    "source_quote": " Family Floater Policy:",
+    "_confidence": "medium"
+  },
+  "room_rent_capping": {
+    "value": "2% of SI per day or single private AC room (default); variant plans cap to 1.5%/1.25% per day in metro/non-metro cities",
+    "unit": "text",
+    "source_pdf_path": "rag/corpus/iffco-tokio/essential-health-plan__wordings.pdf",
+    "source_quote": "Room Rent expenses A limit of 2% of the sum insured on per day basis or charges of a Single Standard Air-Conditioned Room, whichever is less I. In respect of class “A” cities, a limit of 1.50% of the sum insured on per day basis or actual, whichever is less. II.",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_pct": {
+    "value": 25,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/iffco-tokio/essential-health-plan__wordings.pdf",
+    "source_quote": "The Cumulative Bonus shall be increased by 25% of the basic sum insured for the first claim-free Policy Year",
+    "_confidence": "high"
   }
 }

@@ -7,132 +7,248 @@
     "value": "HDFHLIP21005V022122",
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-sampoorna-suraksha__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "UIN: my:Sampoorna Suraksha - HDFHLIP21005V022122.",
+    "_confidence": "high"
   },
   "min_entry_age": {
-    "value": null,
+    "value": 18,
     "unit": "years",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-sampoorna-suraksha__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Entry Age Base Cover: Proposer Adult Dependent Child/Children Minimum Entry Age – 18 Years Minimum Entry Age – 18 Years Minimum Entry Age – 91 days Maximum Entry Age – Lifetime Entry Maximum Entry Age – Lifetime Entry Maximum Entry Age - 25 years",
+    "_confidence": "high"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-sampoorna-suraksha__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-sampoorna-suraksha__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Entry Age Base Cover: Proposer Adult Dependent Child/Children Minimum Entry Age – 18 Years Minimum Entry Age – 18 Years Minimum Entry Age – 91 days Maximum Entry Age – Lifetime Entry Maximum Entry Age – Lifetime Entry Maximum Entry Age - 25 years",
+    "_confidence": "high"
   },
   "min_child_entry_age": {
-    "value": null,
+    "value": 91,
     "unit": "days",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-sampoorna-suraksha__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Entry Age Base Cover: Proposer Adult Dependent Child/Children Minimum Entry Age – 18 Years Minimum Entry Age – 18 Years Minimum Entry Age – 91 days Maximum Entry Age – Lifetime Entry Maximum Entry Age – Lifetime Entry Maximum Entry Age - 25 years",
+    "_confidence": "medium"
   },
   "sum_insured_options": {
     "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-sampoorna-suraksha__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in hdfc-ergo__my-health-sampoorna-suraksha__brochure.pdf",
+    "_confidence": "low"
   },
   "grace_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-sampoorna-suraksha__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "12. Grace Period i. A Grace Period of 30 days is available for Renewal of the Policy. Any Illness, disease or condition contracted during Grace Period will not be covered and will be treated as Pre-existing diseases.",
+    "_confidence": "high"
   },
   "free_look_period": {
-    "value": 30,
+    "value": 15,
     "unit": "days",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-sampoorna-suraksha__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "The Insured Person shall be allowed free look period of fifteen days from date of receipt of the policy document to review the terms and conditions of the policy, and to ",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-sampoorna-suraksha__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "iii) 30-day waiting period – Code – Excl03 a) Expenses related to the treatment of any illness within 30 days from the first Policy commencement date shall be excluded except claims arising due to an Accident, provided the same are covered.",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 36,
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-sampoorna-suraksha__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Option 1 General Waiting Period 30 Days Waiting Period for listed illnesses and Procedures 24 Months Waiting Period for Preexisting conditions 36 Months",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-sampoorna-suraksha__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "ii) Specified Disease/Procedure waiting period- Code – Excl02 a) Expenses related to the treatment of the listed Conditions, surgeries/ treatments shall be excluded until the expiry of 24 months of continuous coverage after the date of inception of the first Policy with us.",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
-    "value": 24,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-sampoorna-suraksha__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in hdfc-ergo__my-health-sampoorna-suraksha__brochure.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": 60,
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-sampoorna-suraksha__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "4. Pre-Hospitalization cover We will pay for the Pre-hospitalization Medical Expenses incurred during the 60 days immediately before Hospitalization of an Insured Person",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
     "value": 180,
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-sampoorna-suraksha__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "5. Post-Hospitalization cover We will pay for the Post-Hospitalization Medical Expenses incurred upto180 days from the date Insured Person is discharged from Hospital",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-sampoorna-suraksha__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 144,
+    "source_url": "https://www.hdfcergo.com/health-insurance/day-care-treatment",
+    "source_note": "Per insurer baseline (HDFC Ergo day-care treatment page lists 144 procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-sampoorna-suraksha__brochure.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-sampoorna-suraksha__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 16000,
+    "source_url": "https://www.hdfcergo.com/",
+    "source_note": "16000+ Cashless Healthcare providers (homepage 'Why Choose HDFC ERGO' / 'Cashless Network' section, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-sampoorna-suraksha__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in hdfc-ergo__my-health-sampoorna-suraksha__brochure.pdf",
+    "_confidence": "low"
   },
   "room_rent_capped_at_pct_of_si": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-sampoorna-suraksha__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in hdfc-ergo__my-health-sampoorna-suraksha__brochure.pdf",
+    "_confidence": "low"
   },
   "policy_term_options_years": {
-    "value": null,
+    "value": [
+      1,
+      2,
+      3
+    ],
     "unit": "years",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-sampoorna-suraksha__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Month Policy Tenure 1 Year Policy Tenure 2 Year Policy Tenure 3 Year",
+    "_confidence": "high"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-sampoorna-suraksha__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in hdfc-ergo__my-health-sampoorna-suraksha__brochure.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-sampoorna-suraksha__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in hdfc-ergo__my-health-sampoorna-suraksha__brochure.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-sampoorna-suraksha__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in hdfc-ergo__my-health-sampoorna-suraksha__brochure.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-sampoorna-suraksha__brochure.pdf",
+    "source_quote": "Medical expenses pertaining only to In-patient care AYUSH treatment are also covered under ‘In-patient Hospitalization expenses’ cover if undertaken in an AYUSH Hospital.",
+    "_confidence": "high"
+  },
+  "maternity_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-sampoorna-suraksha__brochure.pdf",
+    "source_quote": "Medical Expenses under Section I.1.A1 for Maternity Expenses limited up to 2 deliveries or 1 delivery and 1 termination or 2 terminations during the lifetime of the Insured Person",
+    "_confidence": "high"
+  },
+  "newborn_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-sampoorna-suraksha__brochure.pdf",
+    "source_quote": "New Born Baby Cover–We will cover New Born Baby immediately after the birth as per original terms of the Policy on receipt of completed proposal form and Premi",
+    "_confidence": "high"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-sampoorna-suraksha__brochure.pdf",
+    "source_quote": "8. Organ Donor Expenses We will pay Medical Expenses as listed under Section I",
+    "_confidence": "high"
+  },
+  "restoration_benefit": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-sampoorna-suraksha__brochure.pdf",
+    "source_quote": "Sum Insured Rebound We will add to the Sum Insured, an amount equivalent to the Claim amount paid under Basic Sum Insured, subject to maximum of Basic Sum Insu",
+    "_confidence": "medium"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-sampoorna-suraksha__brochure.pdf",
+    "source_quote": "Domiciliary Hospitalization We will pay the Medical Expenses incurred on Domiciliary Hospitalization of the Insured Person provided that: i",
+    "_confidence": "high"
+  },
+  "worldwide_emergency_cover": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-sampoorna-suraksha__brochure.pdf",
+    "source_quote": "anywhere in the world",
+    "_confidence": "medium"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-sampoorna-suraksha__brochure.pdf",
+    "source_quote": "Health Check-Up After every block of every four consecutive, continuous and Claim free Policy Years with Us, We will pay towards cost of Preventive Health Check-upto specified",
+    "_confidence": "high"
+  },
+  "critical_illness_cover": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-sampoorna-suraksha__brochure.pdf",
+    "source_quote": "Critical Illnesses Cover 1",
+    "_confidence": "medium"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-sampoorna-suraksha__brochure.pdf",
+    "source_quote": "This Cover can be availed through Cashless Facility only as procedure given under Claims Procedure - Section IV.",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_cap_pct": {
+    "value": 50,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-sampoorna-suraksha__brochure.pdf",
+    "source_quote": "Cumulative Bonus can be accumulated upto 50% of Basic Sum Insured.",
+    "_confidence": "high"
+  },
+  "geographic_coverage": {
+    "value": "pan_india",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-sampoorna-suraksha__brochure.pdf",
+    "source_quote": " as mentioned in the Schedule of Coverage on the Policy Schedule, subject to Co- Payment, Deductible and Sub-limit as applicable and within India only. Medical ",
+    "_confidence": "medium"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "family_floater",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-sampoorna-suraksha__brochure.pdf",
+    "source_quote": "loading where ever applicable will be applied on individual Renewal Premium for both Individual and Floater Sum Insured basis Policie",
+    "_confidence": "medium"
+  },
+  "no_claim_bonus_pct": {
+    "value": 5,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-sampoorna-suraksha__brochure.pdf",
+    "source_quote": "2. Cumulative Bonus On each Renewal of the Policy with Us, We will apply 5% of Basic Sum Insured under expiring Policy as Cumulative Bonus in the Policy",
+    "_confidence": "high"
   }
 }

@@ -7,141 +7,237 @@
     "value": "MAXHLIP21509V042021",
     "unit": null,
     "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "lth Companion | Product UIN: MAXHLIP21509V042021",
+    "_confidence": "high"
   },
   "min_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in niva-bupa__health-companion__wordings.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in niva-bupa__health-companion__wordings.pdf",
+    "_confidence": "low"
   },
   "min_child_entry_age": {
-    "value": 90,
+    "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in niva-bupa__health-companion__wordings.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
-    "value": [
-      300000,
-      500000,
-      750000,
-      1000000,
-      1500000,
-      2500000,
-      5000000,
-      10000000
-    ],
+    "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in niva-bupa__health-companion__wordings.pdf",
+    "_confidence": "low"
   },
   "grace_period": {
-    "value": 30,
+    "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in niva-bupa__health-companion__wordings.pdf",
+    "_confidence": "low"
   },
   "free_look_period": {
-    "value": 30,
+    "value": 15,
     "unit": "days",
     "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "The Insured Person shall be allowed free look period of ﬁfteen days (thirty days for policies with a term of 3 years, if sold through distance marketing) from date of receipt of the Policy document",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "within 30 days from the ﬁrst Policy commencement date shall be excluded except claims arising due to an Accident, provided the same are covered.",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
-    "value": 48,
-    "unit": null,
+    "value": 36,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Pre-existing Diseases (Code-Excl01): a. Expenses related to the treatment of a Pre-existing Disease (PED) and its direct complications shall be excluded until the expiry of 36 months (under Variant 2, Variant 3 Plans and Family First Policy)/ 48 months",
+    "_confidence": "medium"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "the treatment of the listed conditions, surgeries/treatments shall be excluded until the expiry of 24 months of continuous coverage after the date",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in niva-bupa__health-companion__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
-    "value": 60,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in niva-bupa__health-companion__wordings.pdf",
+    "_confidence": "low"
   },
   "post_hospitalization_days": {
-    "value": 180,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in niva-bupa__health-companion__wordings.pdf",
+    "_confidence": "low"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 586,
+    "source_url": "https://www.nivabupa.com/family-health-insurance-plans/reassurev2-insurance.html",
+    "source_note": "Per insurer baseline (Niva Bupa ReAssure 2.0 covers ~586 day care procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 10400,
+    "source_url": "https://www.nivabupa.com/health-insurance-plans.html",
+    "source_note": "10,400+ cashless hospitals spanning 450+ cities across India (health-insurance-plans page, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
     "value": null,
-    "unit": "percent",
+    "unit": "%",
     "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in niva-bupa__health-companion__wordings.pdf",
+    "_confidence": "low"
   },
   "room_rent_capped_at_pct_of_si": {
     "value": null,
-    "unit": "percent",
+    "unit": null,
     "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in niva-bupa__health-companion__wordings.pdf",
+    "_confidence": "low"
   },
   "policy_term_options_years": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in niva-bupa__health-companion__wordings.pdf",
+    "_confidence": "low"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in niva-bupa__health-companion__wordings.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in niva-bupa__health-companion__wordings.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in niva-bupa__health-companion__wordings.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
+    "source_quote": "Any form of AYUSH Treatments, except as mentioned under Section 3.4.",
+    "_confidence": "medium"
+  },
+  "maternity_coverage": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
+    "source_quote": "not stated in niva-bupa__health-companion__wordings.pdf",
+    "_confidence": "low"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
+    "source_quote": "Living Organ Donor Transplant We will indemnify the Medical Expenses incurred for a living organ donor's Inpatient treatment for the harvesting of the organ donated provided that: a. The donation conforms to The Transplantation of Human Organs Act 1994",
+    "_confidence": "high"
+  },
+  "restoration_benefit": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
+    "source_quote": "re-ﬁll amountas per Section 3.12 and No Claim Bonus as per Section 3.11 which is Our maximum, total and cumulative liability for any and all claims during the Policy Year in respect of the Insured Person.",
+    "_confidence": "medium"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
+    "source_quote": "Domiciliary Hospitalization We will indemnify on a Reimbursement basis the Medical Expenses incurred for Domiciliary Hospitalization during the Policy Period following an Illness or Injury that occurs during the Policy Period",
+    "_confidence": "high"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
+    "source_quote": "X. Health Checkup If the Policy is Renewed with Us without a break or if the Policy continues to be in force for the 2ndPolicy Year in the 2 year Policy Period (if applicable), then the Insured Person may avail a health check-up a",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
+    "source_quote": "Cashless Facility means a facility extended by the insurer to the insured where the payments, of the costs of treatment undergone by the insured in accordance with the policy terms and conditions, are directly made to the",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_cap_pct": {
+    "value": null,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
+    "source_quote": "not stated in niva-bupa__health-companion__wordings.pdf",
+    "_confidence": "low"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "unit": "hours",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
+    "source_quote": "not stated in niva-bupa__health-companion__wordings.pdf",
+    "_confidence": "low"
+  },
+  "geographic_coverage": {
+    "value": "pan_india",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
+    "source_quote": "All benefits are available in India only and all claims shall be payable in India in Indian Rupees only",
+    "_confidence": "high"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": null,
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
+    "source_quote": "not stated in niva-bupa__health-companion__wordings.pdf",
+    "_confidence": "low"
+  },
+  "room_rent_capping": {
+    "value": "As per Product Benefits Table; proportionate deduction for higher room category",
+    "unit": "text",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
+    "source_quote": "e Insured Person is admitted in the Hospital in a room category higher than the eligibility as specified in the Product Benefits Table, then We shall be liable to pay only a pro-rated proportion of the total Associated Medical Expenses",
+    "_confidence": "medium"
+  },
+  "no_claim_bonus_pct": {
+    "value": null,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion__wordings.pdf",
+    "source_quote": "not stated in niva-bupa__health-companion__wordings.pdf",
+    "_confidence": "low"
   }
 }

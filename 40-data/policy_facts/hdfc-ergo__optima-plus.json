@@ -5,7 +5,8 @@
   "uin_code": {
     "value": "HDHHLIP21336V022021",
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
-    "source_quote": "400 059. UIN: Optima Plus- 1 HDHHLIP21336V022021 HDFC ERGO General Insurance Company Limited Policy Wording Optima Plus Preamble HDFC ERGO General Insurance Company Limited will provide the insurance "
+    "source_quote": "UIN: Optima Plus- HDHHLIP21336V022021 1 Table of Contents Sr. No. P",
+    "_confidence": "high"
   },
   "min_entry_age": {
     "value": 91,
@@ -17,18 +18,15 @@
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
-    "source_quote": "Max entry age not explicitly stated; check Policy Schedule"
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
-    "source_quote": "Lifelong renewability: s an Insured Person. There is no maximum cover ceasing age under this Policy. We may apply a risk loading on the premium payable (based upon the declarations made in the proposal form and the health s"
+    "source_quote": "not stated in hdfc-ergo__optima-plus.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
     "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
-    "source_quote": "Sum Insured options not enumerated in extracted text; check Policy Schedule"
+    "source_quote": "not stated in hdfc-ergo__optima-plus.pdf",
+    "_confidence": "low"
   },
   "initial_waiting_period_days": {
     "value": 30,
@@ -36,34 +34,41 @@
     "source_quote": "the treatment of any illness within 30 days from the first policy commencement date shall be excluded except claims arising due to an accident, provided the same are covered. II. This exclusion shall "
   },
   "pre_existing_disease_waiting_months": {
-    "value": null,
+    "value": 36,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
-    "source_quote": "PED waiting period not extracted; check Section 5 / Excl01"
+    "source_quote": "Pre-existing Condition means any condition, ailment, injury, or disease: (a) that is/are diagnosed by a physician not more than 36 months prior to the date of commencement of the policy issued by the insurer",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
-    "source_quote": "Default IRDAI 24-month specific-disease waiting (not explicitly quoted)"
+    "source_quote": "table below shall be excluded until the expiry of 24 months of continuous coverage after the date of inception of the first Policy with us. This exc",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
-    "source_quote": "Maternity waiting not specified or maternity excluded"
+    "source_quote": "not stated in hdfc-ergo__optima-plus.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
-    "value": null,
+    "value": 60,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
-    "source_quote": "Pre-hospitalization days not extracted"
+    "source_quote": "Pre-Hospitalisation Medical Expenses The Medical Expenses incurred in the 60 days immediately before the Insured Person was Hospitalised",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
-    "value": null,
+    "value": 90,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
-    "source_quote": "Post-hospitalization days not extracted"
+    "source_quote": "Post-hospitalisation Medical Expenses The Medical Expenses incurred in the 90 days immediately after the Insured Person was discharged post Hospitalisation",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
-    "source_quote": "Day-care count not enumerated; covered per policy definition"
+    "value": 144,
+    "source_url": "https://www.hdfcergo.com/health-insurance/day-care-treatment",
+    "source_note": "Per insurer baseline (HDFC Ergo day-care treatment page lists 144 procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf"
   },
   "ayush_coverage": {
     "value": true,
@@ -76,9 +81,10 @@
     "source_quote": "ization xv. Maternity: Code – Excl18 a. Medical treatment expenses traceable to childbirth (including complicated deliveries and caesarean sections incurred during hospitalization) except ectopic"
   },
   "newborn_coverage": {
-    "value": false,
+    "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
-    "source_quote": "Newborn cover not found; typically tied to maternity option"
+    "source_quote": "not stated in optima-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "organ_donor_expenses": {
     "value": true,
@@ -88,32 +94,38 @@
   "no_claim_bonus_pct": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
-    "source_quote": "NCB % not extracted; product may use booster/recharge structure"
+    "source_quote": "not stated in hdfc-ergo__optima-plus.pdf",
+    "_confidence": "low"
   },
   "restoration_benefit": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
-    "source_quote": "Restoration benefit not found in extracted text"
+    "source_quote": "not stated in hdfc-ergo__optima-plus.pdf",
+    "_confidence": "low"
   },
   "room_rent_capping": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
-    "source_quote": "Room rent capping not extracted (only definition found, no explicit cap)"
+    "source_quote": "not stated in hdfc-ergo__optima-plus.pdf",
+    "_confidence": "low"
   },
   "copayment_pct": {
-    "value": 0,
+    "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
-    "source_quote": "No mandatory copay extracted; product may have age-based or zone-based optional copay"
+    "source_quote": "not stated in optima-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "deductible_amount": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
-    "source_quote": "No base deductible (or only optional voluntary deductible add-on)"
+    "source_quote": "not stated in hdfc-ergo__optima-plus.pdf",
+    "_confidence": "low"
   },
   "network_hospital_count": {
-    "value": null,
-    "source_url": null,
-    "source_quote": "Insurer-level metric; not extracted in this curation pass"
+    "value": 16000,
+    "source_url": "https://www.hdfcergo.com/",
+    "source_note": "16000+ Cashless Healthcare providers (homepage 'Why Choose HDFC ERGO' / 'Cashless Network' section, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "cashless_treatment_supported": {
     "value": true,
@@ -123,12 +135,15 @@
   "claim_settlement_ratio": {
     "value": null,
     "source_url": null,
-    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted"
+    "source_quote": "not stated in hdfc-ergo__optima-plus.pdf",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
     "value": null,
-    "source_pdf_path": null,
-    "source_quote": "TAT not specified in policy wording; governed by IRDAI Master Circular"
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
+    "source_quote": "not stated in hdfc-ergo__optima-plus.pdf",
+    "_confidence": "low"
   },
   "policy_type": {
     "value": "indemnity",
@@ -140,6 +155,15 @@
     "primary_source_pdf": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
     "supporting_source_pdfs": [],
     "completeness_pct": 55,
-    "notes": "Pattern-based extraction from local PDF via pdfplumber. Insurer-level metrics (CSR, network count) left null pending downstream backfill."
+    "notes": "Pattern-based extraction from local PDF via pdfplumber. Insurer-level metrics (CSR, network count) left null pending downstream backfill. | Batch 3 (2026-05-15): coverage breadth fields backfilled.",
+    "batch3_added_fields": [
+      "ambulance_cover"
+    ]
+  },
+  "ambulance_cover": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-plus__wordings.pdf",
+    "source_quote": "Emergency Ambulance We will reimburse the expenses incurred on an ambulance offered by a healthcare or ambulance service provider used to transfer the",
+    "extraction_method": "tools/curate_batch3.py — pattern-grep over pdfplumber text"
   }
 }

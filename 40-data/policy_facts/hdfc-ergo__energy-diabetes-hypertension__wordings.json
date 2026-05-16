@@ -3,59 +3,68 @@
   "policy_name": "Energy Diabetes Hypertension",
   "insurer_slug": "hdfc-ergo",
   "uin_code": {
-    "value": null,
+    "value": "HDFHLIP26048V052526",
     "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "UIN: Energy - HDFHLIP26048V052526",
+    "_confidence": "high"
   },
   "min_entry_age": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in hdfc-ergo__energy-diabetes-hypertension__wordings.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
-    "source_quote": ""
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in hdfc-ergo__energy-diabetes-hypertension__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_existing_disease_waiting_months": {
-    "value": null,
+    "value": 24,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "Expenses related to the treatment of a pre-existing disease (PED) and its direct complications shall be excluded until the expiry of 24 months of continuous coverage after the date of inception of the first policy with insurer.",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in hdfc-ergo__energy-diabetes-hypertension__wordings.pdf",
+    "_confidence": "low"
   },
   "maternity_coverage": {
-    "value": null,
+    "value": false,
+    "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "xiv) Maternity: Code – Excl18: i. Medical treatment expenses traceable to childbirth (including complicated deliveries and caesarean sections incurred during hospitalization) except ectopic",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in hdfc-ergo__energy-diabetes-hypertension__wordings.pdf",
+    "_confidence": "low"
   },
   "ayush_coverage": {
-    "value": false,
+    "value": true,
+    "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
-    "source_quote": "AYUSH treatment (i) undertaken under General or Local\nexpenses are not covered"
+    "source_quote": "Note pertaining specifically to AYUSH Treatments only: Medical expenses pertaining only to In-patient care AYUSH treatment are also covered under 'In-patient treatment' cover if undertaken in an AYUSH Hospital.",
+    "_confidence": "high"
   },
   "cashless_treatment_supported": {
     "value": true,
+    "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
-    "source_quote": "Cashless facility"
+    "source_quote": "Cashless facility means a facility extended by the insurer to the insured where the payments, of the costs of treatment undergone by the insured in accordance with the policy terms and conditions, are directly made to the network provider by the insurer",
+    "_confidence": "high"
   },
   "copayment_pct": {
-    "value": null,
+    "value": 20,
     "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "If opted and mentioned on the Policy Schedule that a Co-payment is effective, and a claim has been admitted under Section 1 then, the insured person shall bear 20% of the eligible claim amount payable under the Policy",
+    "_confidence": "high"
   },
   "no_claim_bonus_pct": {
     "value": 10,
@@ -63,59 +72,78 @@
     "source_quote": "Cumulative Bonus\nOn Renewal of this Policy with the Company without a break, a sum equal to 10%"
   },
   "restoration_benefit": {
-    "value": null,
+    "value": true,
     "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "Instant addition of 100% Basic Sum Insured on complete or partial utilization of Your existing Policy Sum Insured and cumulative Bonus (if applicable) during the Policy Year.",
+    "_confidence": "high"
   },
   "room_rent_capping": {
-    "value": null,
+    "value": "No cap",
     "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "Def. 41 Room Rent means the amount charged by a Hospital towards Room and Boarding expenses and shall include the associated medical expenses.",
+    "_confidence": "medium"
   },
   "pre_hospitalization_days": {
-    "value": null,
+    "value": 30,
     "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "Pre-Hospitalization Medical expenses for consultations, investigations and medicines incurred upto 30 days before Hospitalisation.",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
-    "value": null,
+    "value": 60,
     "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "Post-Hospitalization Medical expenses for consultations, investigations and medicines incurred upto 60 days after discharge from Hospitalisation.",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
-    "source_quote": ""
+    "value": 144,
+    "source_url": "https://www.hdfcergo.com/health-insurance/day-care-treatment",
+    "source_note": "Per insurer baseline (HDFC Ergo day-care treatment page lists 144 procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
-    "source_quote": ""
+    "value": 16000,
+    "source_url": "https://www.hdfcergo.com/",
+    "source_note": "16000+ Cashless Healthcare providers (homepage 'Why Choose HDFC ERGO' / 'Cashless Network' section, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "sum_insured_options": {
-    "value": null,
+    "value": [
+      200000,
+      300000,
+      500000,
+      1000000,
+      2000000,
+      2500000,
+      5000000
+    ],
     "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "Sum Insured – (Rs. In Lakhs) 2.00, 3.00, 5.00, 10.00, 20.00, 25.00, 50.00",
+    "_confidence": "high"
   },
   "claim_settlement_ratio": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in hdfc-ergo__energy-diabetes-hypertension__wordings.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in hdfc-ergo__energy-diabetes-hypertension__wordings.pdf",
+    "_confidence": "low"
   },
   "policy_type": {
     "value": "critical_illness",
     "source_pdf_path": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
-    "source_quote": "classified as critical_illness from PDF heuristics"
+    "source_quote": "critical illness policies",
+    "_confidence": "low"
   },
   "_meta": {
     "curated_at": "2026-05-14",
     "primary_source_pdf": "rag/corpus/hdfc-ergo/energy-diabetes-hypertension__wordings.pdf",
     "completeness_pct": 18,
-    "notes": "Curated by tools/curate_remaining.py \u2014 pattern-based extraction from local PDF"
+    "notes": "Curated by tools/curate_remaining.py — pattern-based extraction from local PDF"
   }
 }

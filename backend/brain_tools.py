@@ -60,10 +60,132 @@ SLOT_UNION because no consumer reads it.
 
 from __future__ import annotations
 
+import json as _json
 import logging
+from pathlib import Path
 from typing import Any, Optional
 
 _log = logging.getLogger(__name__)
+
+
+# ───────────────────────────────────────────────────────────────────────────
+# KI-278 (2026-05-16) — policy-fact enrichment for the eligibility/ranking
+# filter. The Chroma chunk only carries citation metadata; the structural
+# facts the eligibility filter needs (top-up signal, sum-insured options,
+# mandatory co-pay) live in 40-data/policy_facts/*.json.
+#
+# IMPORTANT: this code only READS those JSON files and only reads STABLE
+# SCHEMA KEYS (policy_type_indemnity_or_fixed / deductible_amount /
+# co_payment_pct / sum_insured_options). The concurrent scorecard-repair
+# process rewrites the *values*; the *field names* are the contract and do
+# not change. We never write to policy_facts/*.json.
+#
+# A short in-process cache keeps this off the hot path (the catalog is ~250
+# files; we only ever touch the ≤8 retrieved per turn, and memoise stems).
+# ───────────────────────────────────────────────────────────────────────────
+
+_FACTS_DIR = Path(__file__).resolve().parent.parent / "40-data" / "policy_facts"
+_DOCTYPE_SUFFIXES = ("__wordings", "__brochure", "__cis", "__prospectus")
+_FACT_KEYS = (
+    "policy_type_indemnity_or_fixed",
+    "deductible_amount",
+    "co_payment_pct",
+    "sum_insured_options",
+)
+_facts_cache: dict[str, dict] = {}
+
+
+def _unwrap(v: Any) -> Any:
+    """policy_facts values are `{value, source_pdf_path, source_quote}`
+    wrappers OR bare scalars. Return the underlying value either way."""
+    if isinstance(v, dict) and "value" in v:
+        return v["value"]
+    return v
+
+
+def _candidate_stems(policy_id: str) -> list[str]:
+    """A retrieved chunk's policy_id may be the canonical stem
+    (`insurer__product`) OR a doctype-suffixed stem
+    (`insurer__product__cis`). Try the exact id first, then the canonical
+    form, then every doctype sibling — first existing file wins.
+    """
+    pid = (policy_id or "").strip()
+    if not pid:
+        return []
+    stems = [pid]
+    base = pid
+    for suf in _DOCTYPE_SUFFIXES:
+        if base.endswith(suf):
+            base = base[: -len(suf)]
+            break
+    if base != pid:
+        stems.append(base)
+    for suf in _DOCTYPE_SUFFIXES:
+        cand = base + suf
+        if cand not in stems:
+            stems.append(cand)
+    return stems
+
+
+def _load_policy_facts(policy_id: str) -> dict:
+    """Return {fact_key: value} for a policy_id, or {} when no facts file
+    exists / is unreadable. Cached per policy_id (incl. negative cache)."""
+    if policy_id in _facts_cache:
+        return _facts_cache[policy_id]
+    out: dict = {}
+    try:
+        for stem in _candidate_stems(policy_id):
+            fp = _FACTS_DIR / f"{stem}.json"
+            if not fp.exists():
+                continue
+            try:
+                d = _json.loads(fp.read_text())
+            except Exception:  # noqa: BLE001 — corrupt mid-repair → skip
+                continue
+            for k in _FACT_KEYS:
+                if k in d and k not in out:
+                    out[k] = _unwrap(d[k])
+            # Stop once we have the decision-critical signals.
+            if "policy_type_indemnity_or_fixed" in out and (
+                "sum_insured_options" in out
+            ):
+                break
+    except Exception as e:  # noqa: BLE001 — enrichment must never break retrieval
+        _log.warning("KI-278 _load_policy_facts(%s) failed: %s", policy_id, e)
+        out = {}
+    _facts_cache[policy_id] = out
+    return out
+
+
+def _scorecard_signal(policy_id: str, profile=None) -> dict:
+    """Best-effort {_grade, _overall_score} from backend.scorecard. The
+    scorecard module's scoring math is being repaired concurrently — we
+    call it READ-ONLY and degrade silently (the ranking still works off
+    co-pay + SI headroom + cosine without it)."""
+    try:
+        facts = _load_policy_facts(policy_id)
+        if not facts:
+            # Need the full curated dict for a real grade; fall back to a
+            # minimal dict so build_scorecard at least sees co-pay/SI.
+            facts = {}
+        from backend.scorecard import build_scorecard
+
+        prof = None
+        if profile is not None:
+            prof = {
+                s: getattr(profile, s, None)
+                for s in (
+                    "age", "income_band", "primary_goal",
+                    "existing_cover_inr", "copay_pct",
+                )
+            }
+        sc = build_scorecard(facts or {"policy_id": policy_id}, profile=prof)
+        return {
+            "_grade": getattr(sc, "grade", None),
+            "_overall_score": getattr(sc, "overall", None),
+        }
+    except Exception:  # noqa: BLE001 — scorecard optional; ranking degrades gracefully
+        return {}
 
 
 # ---- accepted fields for save_profile_field --------------------------------
@@ -407,20 +529,34 @@ async def retrieve_policies(
 
     raw: list[dict] = []
     for c in chunks or []:
-        raw.append(
-            {
-                "chunk_id": getattr(c, "chunk_id", ""),
-                "policy_id": getattr(c, "policy_id", ""),
-                "policy_name": getattr(c, "policy_name", ""),
-                "insurer_slug": getattr(c, "insurer_slug", ""),
-                "doc_type": getattr(c, "doc_type", ""),
-                "source_url": getattr(c, "source_url", ""),
-                "chunk_text": (getattr(c, "text", "") or "")[:1200],
-                "score": float(getattr(c, "score", 0.0) or 0.0),
-                "min_entry_age": getattr(c, "min_entry_age", None),
-                "max_entry_age": getattr(c, "max_entry_age", None),
-            }
-        )
+        pid = getattr(c, "policy_id", "")
+        doc_type = getattr(c, "doc_type", "")
+        chunk_dict = {
+            "chunk_id": getattr(c, "chunk_id", ""),
+            "policy_id": pid,
+            "policy_name": getattr(c, "policy_name", ""),
+            "insurer_slug": getattr(c, "insurer_slug", ""),
+            "doc_type": doc_type,
+            "source_url": getattr(c, "source_url", ""),
+            "chunk_text": (getattr(c, "text", "") or "")[:1200],
+            "score": float(getattr(c, "score", 0.0) or 0.0),
+            "min_entry_age": getattr(c, "min_entry_age", None),
+            "max_entry_age": getattr(c, "max_entry_age", None),
+        }
+        # KI-278 — enrich policy chunks with the structural facts the
+        # eligibility/profile-fit filter needs (top-up signal, SI options,
+        # mandatory co-pay, scorecard grade). Skip non-policy chunks
+        # (profile/regulatory/review) — they're never recommendable policies
+        # and the eligibility rules don't apply to them.
+        if pid and (doc_type or "").lower() not in (
+            "profile", "regulatory", "review"
+        ):
+            try:
+                chunk_dict.update(_load_policy_facts(pid))
+                chunk_dict.update(_scorecard_signal(pid, profile=profile))
+            except Exception as e:  # noqa: BLE001 — never break retrieval
+                _log.warning("KI-278 enrich(%s) failed: %s", pid, e)
+        raw.append(chunk_dict)
 
     # X5 sidecar: apply profile-fit + citation-grounding + dedup. Skip when
     # caller supplied an explicit policy_filter_ids (we already know which

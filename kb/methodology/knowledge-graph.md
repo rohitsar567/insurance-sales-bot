@@ -69,15 +69,17 @@ Each row: "if the policy has this value, the listed sub-score moves by this delt
 | `tat_cashless_authorization_hours` | ≤2 | +4 |
 | `tat_cashless_authorization_hours` | ≥24 | −4 |
 
-### Renewal Protection (base 65, weight 12%)
+### Renewal Protection (base 50, weight 12%)
+
+> Renewal Protection now = `max_entry_age` only. Lifelong renewability is the IRDAI universal norm for every health-indemnity product (mandated since 2020), so it is constant across the market and is **not scored** — `max_renewal_age` was removed entirely as a scored field.
 
 | Attribute | Value condition | Sub-score delta |
 |---|---|---|
-| `max_renewal_age` | "Lifelong" or ≥99 | +12 |
-| `max_renewal_age` | 80 | +6 |
-| `max_renewal_age` | ≤70 | −5 |
-| `max_entry_age` | ≥65 | +4 |
-| `guaranteed_renewability` | true (stated) | +4 |
+| `max_entry_age` | ≥65 | +25 |
+| `max_entry_age` | ≥55 | +12 |
+| `max_entry_age` | ≥50 | +0 |
+| `max_entry_age` | <50 | −20 |
+| (lifelong renewability) | IRDAI-universal | not scored — shown for transparency only |
 
 ### Bonus & Loyalty (base 60, weight 8%)
 

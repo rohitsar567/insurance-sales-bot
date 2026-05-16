@@ -5,135 +5,159 @@
   "uin_code": {
     "value": "BAJHLIP23213V052223",
     "source_pdf_path": "rag/corpus/bajaj-allianz/silver-health__cis.pdf",
-    "source_quote": "U66010PN2000PLC015329 • UIN: BAJHLIP23213V052223 1 Bajaj Allianz General Insurance Co. Ltd. Bajaj Allianz House, Airport Road, Yerawada, Pune - 411 006. Reg. No.: 113 For more details, log on to: www."
+    "source_quote": "U66010PN2000PLC015329 • UIN: BAJHLIP23213V052223 1 CUSTOMER INFORMATION SHEET This document provides key information about your policy. You are also advised to go through your"
   },
   "min_entry_age": {
     "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/bajaj-allianz/silver-health__cis.pdf",
-    "source_quote": "Min entry age not found"
+    "source_quote": "not stated in bajaj-allianz__silver-health.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/bajaj-allianz/silver-health__cis.pdf",
-    "source_quote": "Max entry age not explicitly stated; check Policy Schedule"
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/bajaj-allianz/silver-health__cis.pdf",
-    "source_quote": "Max renewal age not specified; check Policy Schedule"
+    "source_quote": "not stated in bajaj-allianz__silver-health.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
     "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/bajaj-allianz/silver-health__cis.pdf",
-    "source_quote": "Sum Insured options not enumerated in extracted text; check Policy Schedule"
+    "source_quote": "not stated in bajaj-allianz__silver-health.pdf",
+    "_confidence": "low"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "source_pdf_path": "rag/corpus/bajaj-allianz/silver-health__cis.pdf",
-    "source_quote": "Default IRDAI 30-day waiting period applies (not explicitly quoted in extracted snippet)"
+    "source_quote": "Initial Waiting period: 30 days for all illnesses Specific Waiting period: 12 months for below listed procedures 1. Surgery for gastric or duodenal ulcers, 14. Fissure in ano 2. Benign prostatic hypertrophy 15. Fibromyoma 3. Hydrocele 16. Hysterectomy 4. Haemorrhoids 17. Surgery",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 12,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/bajaj-allianz/silver-health__cis.pdf",
-    "source_quote": "ariatric Surgery 13. Fistulae Pre-existing diseases waiting period: 12 months 36 months (plan A) & 24 Months (plan B) – for below procedure 1. Joint replacement surgery unless necessitated by accident"
+    "source_quote": "Pre-existing diseases waiting period: 12 months 36 months (plan A) & 24 Months (plan B) – for below procedure 1. Joint replacement surgery unless necessitated by accidental Bodily Injury",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
-    "value": 24,
+    "value": 12,
     "source_pdf_path": "rag/corpus/bajaj-allianz/silver-health__cis.pdf",
-    "source_quote": "Default IRDAI 24-month specific-disease waiting (not explicitly quoted)"
+    "source_quote": "Specific Waiting period: 12 months for below listed procedures 1. Surgery for gastric or duodenal ulcers, 14. Fissure in ano 2. Benign prostatic hypertrophy 15. Fibromyoma 3. Hydrocele 16. Hysterectomy 4. Haemorrhoids 17. Surgery on skin/ all internal or external tumours/cysts/ n",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/silver-health__cis.pdf",
-    "source_quote": "Maternity waiting not specified or maternity excluded"
+    "source_quote": "not stated in bajaj-allianz__silver-health.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": 30,
     "source_pdf_path": "rag/corpus/bajaj-allianz/silver-health__cis.pdf",
-    "source_quote": ". Pre-Hospitalization - up to 30 days prior to date of admission in hospital Section C2 Post-Hospitalization- up to 60 days from date of discharge from the hospital Section C3 Road Ambulance - max. up"
+    "source_quote": "Pre-Hospitalization - up to 30 days prior to date of admission in hospital Post-Hospitalization- up to 60 days from date of discharge from the hospital Section C2 Road Ambulance - max. up to ₹ 1,000/- per claim Section C3 Day Care Procedures - Medical Expenses incurred due to adm",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
-    "value": null,
+    "value": 60,
     "source_pdf_path": "rag/corpus/bajaj-allianz/silver-health__cis.pdf",
-    "source_quote": "Post-hospitalization days not extracted"
+    "source_quote": "prior to date of admission in hospital Post-Hospitalization- up to 60 days from date of discharge from the hospital Section C2 Roa",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/bajaj-allianz/silver-health__cis.pdf",
-    "source_quote": "Day-care count not enumerated; covered per policy definition"
+    "value": 130,
+    "source_url": "https://www.bajajgeneralinsurance.com/health-insurance-plans/health-guard.html",
+    "source_note": "Per insurer baseline (Bajaj Allianz Health Guard covers ~130 day care procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/bajaj-allianz/silver-health__cis.pdf"
   },
   "ayush_coverage": {
-    "value": false,
-    "source_pdf_path": "rag/corpus/bajaj-allianz/silver-health__cis.pdf",
-    "source_quote": "AYUSH coverage not found in extracted text"
-  },
-  "maternity_coverage": {
-    "value": false,
-    "source_pdf_path": "rag/corpus/bajaj-allianz/silver-health__cis.pdf",
-    "source_quote": "Maternity not explicitly mentioned; presumed excluded in base"
-  },
-  "newborn_coverage": {
-    "value": false,
-    "source_pdf_path": "rag/corpus/bajaj-allianz/silver-health__cis.pdf",
-    "source_quote": "Newborn cover not found; typically tied to maternity option"
-  },
-  "organ_donor_expenses": {
-    "value": false,
-    "source_pdf_path": "rag/corpus/bajaj-allianz/silver-health__cis.pdf",
-    "source_quote": "Organ donor cover not extracted"
-  },
-  "no_claim_bonus_pct": {
     "value": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/silver-health__cis.pdf",
-    "source_quote": "NCB % not extracted; product may use booster/recharge structure"
+    "source_quote": "not stated in bajaj-allianz__silver-health__cis.pdf",
+    "_confidence": "low"
+  },
+  "maternity_coverage": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/bajaj-allianz/silver-health__cis.pdf",
+    "source_quote": "not stated in bajaj-allianz__silver-health__cis.pdf",
+    "_confidence": "low"
+  },
+  "newborn_coverage": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/bajaj-allianz/silver-health__cis.pdf",
+    "source_quote": "not stated in bajaj-allianz__silver-health__cis.pdf",
+    "_confidence": "low"
+  },
+  "organ_donor_expenses": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/bajaj-allianz/silver-health__cis.pdf",
+    "source_quote": "not stated in bajaj-allianz__silver-health__cis.pdf",
+    "_confidence": "low"
+  },
+  "no_claim_bonus_pct": {
+    "value": 10,
+    "source_pdf_path": "rag/corpus/bajaj-allianz/silver-health__cis.pdf",
+    "source_quote": "nd above = 5% discount on premium. 6 Cumulative Bonus 10% increase in base sum insured per claim free policy Year Max",
+    "_confidence": "high"
   },
   "restoration_benefit": {
     "value": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/silver-health__cis.pdf",
-    "source_quote": "Restoration benefit not found in extracted text"
+    "source_quote": "not stated in bajaj-allianz__silver-health.pdf",
+    "_confidence": "low"
   },
   "room_rent_capping": {
-    "value": "room rent limit of 1%",
+    "value": "1% of Sum Insured",
+    "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/silver-health__cis.pdf",
-    "source_quote": "room rent limit of 1%"
+    "source_quote": "Room Rent Capping (Applicable for Plan A & Plan B) If You opt for this cover You will be entitled for a per day room rent limit of 1% of hospitalization Sum Insured up to maximum Rs. 7,500 per day",
+    "_confidence": "high"
   },
   "copayment_pct": {
     "value": 10,
     "source_pdf_path": "rag/corpus/bajaj-allianz/silver-health__cis.pdf",
-    "source_quote": "l Plan B Which will be claims 10% co-payment deducted from (Each and every admissible claim) total claim amount Co-payment on Non- 20% on each and every admissi"
+    "source_quote": "10% co-payment (Each and every admissible claim) Co-payment on Non- Network hospital 20% on each and every admissible claim if treatment availed in non-network hospital This co-payment can be waived subject to payment of extra premium. Other Limits: The limits against the covers",
+    "_confidence": "high"
   },
   "deductible_amount": {
     "value": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/silver-health__cis.pdf",
-    "source_quote": "No base deductible (or only optional voluntary deductible add-on)"
+    "source_quote": "not stated in bajaj-allianz__silver-health.pdf",
+    "_confidence": "low"
   },
   "network_hospital_count": {
-    "value": null,
-    "source_url": null,
-    "source_quote": "Insurer-level metric; not extracted in this curation pass"
+    "value": 18400,
+    "source_url": "https://www.bajajgeneralinsurance.com/",
+    "source_note": "18,400+ Cashless Hospitals (homepage, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "cashless_treatment_supported": {
     "value": true,
+    "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/silver-health__cis.pdf",
-    "source_quote": "ver is lower 10 Claims/claims Cashless Claim processCashless treatment is only available at Network Section E 21 procedure Hospitals A & B  You or Your representative must intimate Us 48 hours before"
+    "source_quote": "Cashless Claim processCashless treatment is only available at Network Hospitals You or Your representative must intimate Us 48 hours before the planned Hospitalization and within 24 hours of emergency hospitalization and request pre-authorization by way of the written form We wil",
+    "_confidence": "high"
   },
   "claim_settlement_ratio": {
     "value": null,
     "source_url": null,
-    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted"
+    "source_quote": "not stated in bajaj-allianz__silver-health.pdf",
+    "source_pdf_path": "rag/corpus/bajaj-allianz/silver-health__cis.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
     "value": null,
-    "source_pdf_path": null,
-    "source_quote": "TAT not specified in policy wording; governed by IRDAI Master Circular"
+    "source_pdf_path": "rag/corpus/bajaj-allianz/silver-health__cis.pdf",
+    "source_quote": "not stated in bajaj-allianz__silver-health.pdf",
+    "_confidence": "low"
   },
   "policy_type": {
-    "value": "indemnity",
+    "value": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/silver-health__cis.pdf",
-    "source_quote": "Default indemnity (no explicit alternate type detected)"
+    "source_quote": "not stated in bajaj-allianz__silver-health__cis.pdf",
+    "_confidence": "low"
   },
   "_meta": {
     "curated_at": "2026-05-14",

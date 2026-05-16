@@ -8,34 +8,36 @@
     "source_quote": "UIN: ADIHLGP26041V052526"
   },
   "min_entry_age": {
-    "value": null,
+    "value": 1,
     "source_pdf_path": "rag/corpus/aditya-birla/group-activ-health__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "18. Eligibility Minimum Entry Age 1 day Maximum Entry Age No Limit",
+    "_confidence": "high"
   },
   "max_entry_age": {
     "value": null,
     "source_pdf_path": "rag/corpus/aditya-birla/group-activ-health__wordings.pdf",
-    "source_quote": ""
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/aditya-birla/group-activ-health__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in aditya-birla__group-activ-health__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_existing_disease_waiting_months": {
     "value": null,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/aditya-birla/group-activ-health__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in group-activ-health__wordings.pdf",
+    "_confidence": "low"
   },
   "initial_waiting_period_days": {
-    "value": null,
+    "value": 30,
     "source_pdf_path": "rag/corpus/aditya-birla/group-activ-health__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "30-day waiting period (Code- Excl03) a) Expenses related to the treatment of any illness within 30 days from the first policy commencement date shall be excluded except claims arising due to an accident, provided the same are covered.",
+    "_confidence": "high"
   },
   "maternity_coverage": {
     "value": true,
+    "unit": null,
     "source_pdf_path": "rag/corpus/aditya-birla/group-activ-health__wordings.pdf",
-    "source_quote": "maternity\n(including but not limited to medical complications arising out of such delivery).\n(iii) Claim in respect of a"
+    "source_quote": "Maternity Benefit – Comprehensive (Over and above Base Cover In-patient Hospitalisation Sum Insured) i. We shall cover below benefits under this section without any selection upto Maternity Benefit limit chosen",
+    "_confidence": "medium"
   },
   "maternity_waiting_months": {
     "value": 18,
@@ -43,79 +45,97 @@
     "source_quote": "maternity\n(including but not limited to medical complications arising out of such delivery).\n(iii) Claim in respect of a"
   },
   "ayush_coverage": {
-    "value": null,
+    "value": true,
+    "unit": null,
     "source_pdf_path": "rag/corpus/aditya-birla/group-activ-health__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "AYUSH Treatment We will cover the Medical Expenses for medically required AYUSH Treatments undergone as an In-patient Treatment",
+    "_confidence": "high"
   },
   "cashless_treatment_supported": {
     "value": true,
+    "unit": null,
     "source_pdf_path": "rag/corpus/aditya-birla/group-activ-health__wordings.pdf",
-    "source_quote": "Cashless Facility"
+    "source_quote": "Cashless Facility means a facility extended by the Insurer to the Insured Person where the payments, of the costs of treatment undergone by the Insured Person",
+    "_confidence": "high"
   },
   "copayment_pct": {
     "value": null,
     "source_pdf_path": "rag/corpus/aditya-birla/group-activ-health__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in aditya-birla__group-activ-health__wordings.pdf",
+    "_confidence": "low"
   },
   "no_claim_bonus_pct": {
     "value": null,
     "source_pdf_path": "rag/corpus/aditya-birla/group-activ-health__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in aditya-birla__group-activ-health__wordings.pdf",
+    "_confidence": "low"
   },
   "restoration_benefit": {
-    "value": null,
+    "value": true,
     "source_pdf_path": "rag/corpus/aditya-birla/group-activ-health__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "27. Reload of Sum Insured We shall provide for a Reload of the Sum Insured, unlimited times during the Policy Year up to the limits as specified in the Policy Schedule/ Certificate of Insurance / Product Benefit Table of this Policy, in case the available Sum Insured, is insufficient for covering a claim under the Policy as a result of previous claims in that Policy Year.",
+    "_confidence": "high"
   },
   "room_rent_capping": {
-    "value": "Room Rent means the amount charged by a Hospital towards room and boarding expen",
+    "value": null,
+    "unit": null,
     "source_pdf_path": "rag/corpus/aditya-birla/group-activ-health__wordings.pdf",
-    "source_quote": "Room Rent means the amount charged by a Hospital towards room and boarding expenses and shall include\nthe Associated Med"
+    "source_quote": "not stated in group-activ-health__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": null,
     "source_pdf_path": "rag/corpus/aditya-birla/group-activ-health__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in aditya-birla__group-activ-health__wordings.pdf",
+    "_confidence": "low"
   },
   "post_hospitalization_days": {
     "value": null,
     "source_pdf_path": "rag/corpus/aditya-birla/group-activ-health__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in aditya-birla__group-activ-health__wordings.pdf",
+    "_confidence": "low"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/aditya-birla/group-activ-health__wordings.pdf",
-    "source_quote": ""
+    "value": 586,
+    "source_url": "https://www.adityabirlacapital.com/healthinsurance/activ-one-plan",
+    "source_note": "Per insurer baseline (Aditya Birla Activ One MAX / Activ Care: 586 day care procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/aditya-birla/group-activ-health__wordings.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/aditya-birla/group-activ-health__wordings.pdf",
-    "source_quote": ""
+    "value": 10051,
+    "source_url": "https://www.adityabirlacapital.com/healthinsurance/health-insurance-plans",
+    "source_note": "Cashless facility available at 10051+ network hospitals (health-insurance-plans page, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "sum_insured_options": {
     "value": null,
     "source_pdf_path": "rag/corpus/aditya-birla/group-activ-health__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in aditya-birla__group-activ-health__wordings.pdf",
+    "_confidence": "low"
   },
   "claim_settlement_ratio": {
     "value": null,
     "source_pdf_path": "rag/corpus/aditya-birla/group-activ-health__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in aditya-birla__group-activ-health__wordings.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
     "value": null,
     "source_pdf_path": "rag/corpus/aditya-birla/group-activ-health__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in aditya-birla__group-activ-health__wordings.pdf",
+    "_confidence": "low"
   },
   "policy_type": {
     "value": "group",
     "source_pdf_path": "rag/corpus/aditya-birla/group-activ-health__wordings.pdf",
-    "source_quote": "classified as group from PDF heuristics"
+    "source_quote": "Group Activ Health Policy Wording This detailed document, read with the Policy Schedule, outlines the full terms and conditions of the coverage offered under your health insurance policy",
+    "_confidence": "high"
   },
   "_meta": {
     "curated_at": "2026-05-14",
     "primary_source_pdf": "rag/corpus/aditya-birla/group-activ-health__wordings.pdf",
     "completeness_pct": 27,
-    "notes": "Curated by tools/curate_remaining.py \u2014 pattern-based extraction from local PDF"
+    "notes": "Curated by tools/curate_remaining.py — pattern-based extraction from local PDF"
   }
 }

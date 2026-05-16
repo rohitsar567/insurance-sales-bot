@@ -10,67 +10,80 @@
   "min_entry_age": {
     "value": null,
     "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in niva-bupa__health-companion-v2022__brochure.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
-    "source_quote": ""
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in niva-bupa__health-companion-v2022__brochure.pdf",
+    "_confidence": "low"
   },
   "pre_existing_disease_waiting_months": {
-    "value": 24,
+    "value": 36,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
-    "source_quote": "pre-existing diseases | 24 months"
+    "source_quote": "pre-existing diseases | 24 months",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
-    "value": null,
+    "value": 30,
     "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "Investigation & Evaluation | OPD Treatment | 30-day initial waiting period | 36 months waiting period on pre-existing diseases | 24 months waiting period on specific diseases.",
+    "_confidence": "high"
   },
   "maternity_coverage": {
     "value": null,
+    "unit": "boolean",
     "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in niva-bupa__health-companion-v2022__brochure.pdf",
+    "_confidence": "low"
   },
   "maternity_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in niva-bupa__health-companion-v2022__brochure.pdf",
+    "_confidence": "low"
   },
   "ayush_coverage": {
     "value": true,
+    "unit": "boolean",
     "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
-    "source_quote": "AYUSH Treatment(2) Covered"
+    "source_quote": "AYUSH Treatment(2) Covered",
+    "_confidence": "high"
   },
   "cashless_treatment_supported": {
     "value": true,
+    "unit": "boolean",
     "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
-    "source_quote": "CASHLESS HASSLE FREE\nhospital"
+    "source_quote": "Avail 30 minutes$ cashless claims processing at 10,000 + Network Hospitals$$ across India",
+    "_confidence": "high"
   },
   "copayment_pct": {
     "value": null,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in niva-bupa__health-companion-v2022__brochure.pdf",
+    "_confidence": "low"
   },
   "no_claim_bonus_pct": {
     "value": 100,
     "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
-    "source_quote": "No Claim Bonus Year; maximum up to 100%"
+    "source_quote": "every claim free year. Maximum 100% of Base Sum Insured.",
+    "_confidence": "high"
   },
   "restoration_benefit": {
-    "value": null,
+    "value": true,
     "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "Refill Benefit – Reinstatement of an amount equal to base sum insured.",
+    "_confidence": "high"
   },
   "room_rent_capping": {
-    "value": "Room Rent)\nalcoholism, drug or substance abuse or any addictive\ncondition and co",
+    "value": "No cap",
+    "unit": null,
     "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
-    "source_quote": "Room Rent)\nalcoholism, drug or substance abuse or any addictive\ncondition and consequences thereof. Refer to the\nDay Car"
+    "source_quote": "Room Rent)\nalcoholism, drug or substance abuse or any addictive\ncondition and consequences thereof. Refer to the\nDay Car",
+    "_confidence": "medium"
   },
   "pre_hospitalization_days": {
     "value": 60,
@@ -83,39 +96,60 @@
     "source_quote": "Post Hospitalisation 180 Days"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
-    "source_quote": ""
+    "value": 586,
+    "source_url": "https://www.nivabupa.com/family-health-insurance-plans/reassurev2-insurance.html",
+    "source_note": "Per insurer baseline (Niva Bupa ReAssure 2.0 covers ~586 day care procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf"
   },
   "network_hospital_count": {
     "value": null,
+    "unit": "hospitals",
     "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in niva-bupa__health-companion-v2022__brochure.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
-    "value": null,
+    "value": [
+      300000,
+      400000,
+      500000,
+      750000,
+      1000000,
+      1250000,
+      1500000,
+      2000000,
+      3000000,
+      5000000,
+      10000000
+    ],
     "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "Floater Base Sum Insured (INR) 3 Lakhs 4 Lakhs 5 Lakhs 7.5 Lakhs 10 Lakhs 12.5 Lakhs 15 Lakhs 20 Lakhs 30 Lakhs 50 Lakhs 1 Crore",
+    "_confidence": "high",
+    "unit": "INR"
   },
   "claim_settlement_ratio": {
     "value": null,
     "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in niva-bupa__health-companion-v2022__brochure.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
-    "value": null,
+    "value": 0.5,
     "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "Niva Bupa pre-authorisation requests within 30 minutes for all active policies, subject to receiving all documents and information(s) up to Niva Bupa’s satisfaction.",
+    "_confidence": "high"
   },
   "policy_type": {
-    "value": "hospital_cash",
+    "value": "indemnity",
     "source_pdf_path": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
-    "source_quote": "classified as hospital_cash from PDF heuristics"
+    "source_quote": "Beneﬁts Inpatient Care Covered up to Sum Insured (No Capping on Room Rent) Day Care Treatment All procedures Covered up to Sum Insured",
+    "_confidence": "high"
   },
   "_meta": {
     "curated_at": "2026-05-14",
     "primary_source_pdf": "rag/corpus/niva-bupa/health-companion-v2022__brochure.pdf",
     "completeness_pct": 41,
-    "notes": "Curated by tools/curate_remaining.py \u2014 pattern-based extraction from local PDF"
+    "notes": "Curated by tools/curate_remaining.py — pattern-based extraction from local PDF"
   }
 }

@@ -1,0 +1,18 @@
+{
+  "insurer_slug": "go-digit",
+  "insurer_name": "Go Digit General Insurance",
+  "last_updated": "2026-05-15",
+  "claim_metrics": {
+    "claim_settlement_ratio_pct": 90.69,
+    "claim_settlement_ratio_year": "FY 2023-24",
+    "complaints_per_10k_policies": 19,
+    "complaints_year": "FY 2024-25",
+    "incurred_claim_ratio_pct": 93.87,
+    "three_year_avg_csr_pct": null,
+    "source_irdai_url": "https://irdai.gov.in/document-detail",
+    "source_secondary_url": "http://web.archive.org/web/20260122094704/https://www.policybazaar.com/insurance-companies/digit-health-insurance/claim-settlement-ratio/",
+    "source_complaints_url": "https://algatesinsurance.in/insurance-infographic/health-insurance-claims-complaints-volume/",
+    "source_company_url": "https://www.godigit.com/digest/reports/transparency-report-10",
+    "notes": "Go Digit was the highest payer among private GI insurers with ICR 93.87% (Rs 4.69 of every Rs 5 claimed) in FY 2023-24. CSR 90.69% per IRDAI public disclosure March 2024."
+  }
+}

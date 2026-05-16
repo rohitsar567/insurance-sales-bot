@@ -5,30 +5,28 @@
   "uin_code": {
     "value": "BAJHLIP23209V022223",
     "source_pdf_path": "rag/corpus/bajaj-allianz/global-health-care__wordings.pdf",
-    "source_quote": "U66010PN2000PLC015329, UIN - BAJHLIP23209V022223 1 Global Health Bajaj Allianz General Insurance Co. Ltd. Bajaj Allianz House, Airport Road, Yerawada, Pune - 411 006. Reg. No.: 113 For more details, l"
+    "source_quote": "U66010PN2000PLC015329, UIN - BAJHLIP23209V022223 1 SECTION A) PREAMBLE Whereas"
   },
   "min_entry_age": {
     "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/bajaj-allianz/global-health-care__wordings.pdf",
-    "source_quote": "Min entry age not found"
+    "source_quote": "not stated in bajaj-allianz__global-health-care.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/bajaj-allianz/global-health-care__wordings.pdf",
-    "source_quote": "Max entry age not explicitly stated; check Policy Schedule"
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/bajaj-allianz/global-health-care__wordings.pdf",
-    "source_quote": "Max renewal age not specified; check Policy Schedule"
+    "source_quote": "not stated in bajaj-allianz__global-health-care.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
     "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/bajaj-allianz/global-health-care__wordings.pdf",
-    "source_quote": "Sum Insured options not enumerated in extracted text; check Policy Schedule"
+    "source_quote": "not stated in bajaj-allianz__global-health-care.pdf",
+    "_confidence": "low"
   },
   "initial_waiting_period_days": {
     "value": 30,
@@ -37,8 +35,10 @@
   },
   "pre_existing_disease_waiting_months": {
     "value": null,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/bajaj-allianz/global-health-care__wordings.pdf",
-    "source_quote": "PED waiting period not extracted; check Section 5 / Excl01"
+    "source_quote": "not stated in bajaj-allianz__global-health-care__wordings.pdf",
+    "_confidence": "low"
   },
   "specific_disease_waiting_months": {
     "value": 24,
@@ -48,12 +48,14 @@
   "maternity_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/global-health-care__wordings.pdf",
-    "source_quote": "Maternity waiting not specified or maternity excluded"
+    "source_quote": "not stated in bajaj-allianz__global-health-care.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
-    "value": null,
+    "value": 60,
     "source_pdf_path": "rag/corpus/bajaj-allianz/global-health-care__wordings.pdf",
-    "source_quote": "Pre-hospitalization days not extracted"
+    "source_quote": "atment arising from an Accident 2. Pre-Hospitalization The Medical Expenses incurred during the 60 days immediately before You were Hospitalized, provided that: Su",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
     "value": 30,
@@ -61,19 +63,25 @@
     "source_quote": "bmit all claims no later than 30 days after the date of discharge from the Hospital. Claim Submission: You must submit a separate claim for each person claiming and for each medical condition being cl"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/bajaj-allianz/global-health-care__wordings.pdf",
-    "source_quote": "Day-care count not enumerated; covered per policy definition"
+    "value": 130,
+    "source_url": "https://www.bajajgeneralinsurance.com/health-insurance-plans/health-guard.html",
+    "source_note": "Per insurer baseline (Bajaj Allianz Health Guard covers ~130 day care procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/bajaj-allianz/global-health-care__wordings.pdf"
   },
   "ayush_coverage": {
     "value": true,
+    "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/global-health-care__wordings.pdf",
-    "source_quote": "where treatment was taken. 3. AYUSH Hospital An AYUSH Hospital is a healthcare facility wherein medical/surgical/para-surgical treatment procedures and interventions are carried out by AYUSH Medical P"
+    "source_quote": "AYUSH Treatment refers to hospitalization treatments given under Ayurveda, Yoga and Naturopathy, Unani, Siddha and Homeopathy systems.",
+    "_confidence": "high"
   },
   "maternity_coverage": {
-    "value": false,
+    "value": true,
+    "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/global-health-care__wordings.pdf",
-    "source_quote": "lization 18) Maternity (Code -Excl18): a. Medical Treatment Expenses traceable to childbirth (including complicated deliveries and caesarean sections incurred during Hospitalization) except ectopic"
+    "source_quote": "Maternity expenses Maternity expenses means; a. medical treatment expenses traceable to childbirth (including complicated deliveries and caesarean sections incurred during hospitalization)",
+    "_confidence": "high"
   },
   "newborn_coverage": {
     "value": true,
@@ -88,7 +96,8 @@
   "no_claim_bonus_pct": {
     "value": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/global-health-care__wordings.pdf",
-    "source_quote": "NCB % not extracted; product may use booster/recharge structure"
+    "source_quote": "not stated in bajaj-allianz__global-health-care.pdf",
+    "_confidence": "low"
   },
   "restoration_benefit": {
     "value": "restorations, bridges, dentures and implants as well as",
@@ -101,39 +110,48 @@
     "source_quote": "Single Private room"
   },
   "copayment_pct": {
-    "value": 0,
+    "value": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/global-health-care__wordings.pdf",
-    "source_quote": "No mandatory copay extracted; product may have age-based or zone-based optional copay"
+    "source_quote": "not stated in bajaj-allianz__global-health-care__wordings.pdf",
+    "_confidence": "low"
   },
   "deductible_amount": {
     "value": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/global-health-care__wordings.pdf",
-    "source_quote": "aggregate Deductible as specified in the Policy Schedule will apply for expenses under Inpatient plan benefits outside"
+    "source_quote": "not stated in bajaj-allianz__global-health-care.pdf",
+    "_confidence": "low"
   },
   "network_hospital_count": {
-    "value": null,
-    "source_url": null,
-    "source_quote": "Insurer-level metric; not extracted in this curation pass"
+    "value": 18400,
+    "source_url": "https://www.bajajgeneralinsurance.com/",
+    "source_note": "18,400+ Cashless Hospitals (homepage, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "cashless_treatment_supported": {
     "value": true,
+    "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/global-health-care__wordings.pdf",
-    "source_quote": "authorized representative 5. Cashless Facility Cashless Facility means a facility extended by the Insurer to the Insured where the payments, of the costs of treatment undergone by the Insured in accor"
+    "source_quote": "an Insured by a Cashless Facility.",
+    "_confidence": "medium"
   },
   "claim_settlement_ratio": {
     "value": null,
     "source_url": null,
-    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted"
+    "source_quote": "not stated in bajaj-allianz__global-health-care.pdf",
+    "source_pdf_path": "rag/corpus/bajaj-allianz/global-health-care__wordings.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
     "value": null,
-    "source_pdf_path": null,
-    "source_quote": "TAT not specified in policy wording; governed by IRDAI Master Circular"
+    "source_pdf_path": "rag/corpus/bajaj-allianz/global-health-care__wordings.pdf",
+    "source_quote": "not stated in bajaj-allianz__global-health-care.pdf",
+    "_confidence": "low"
   },
   "policy_type": {
-    "value": "hospital-cash",
+    "value": "family_floater",
     "source_pdf_path": "rag/corpus/bajaj-allianz/global-health-care__wordings.pdf",
-    "source_quote": "Hospital cash / daily benefit policy"
+    "source_quote": "If You are advised Hospitalization within India by a Medical Practitioner as defined under Policy because of Illness or Accidental Bodily Injury sustained or contracted during the Policy Period, then We will pay You, Reasonable and Customar",
+    "_confidence": "medium"
   },
   "_meta": {
     "curated_at": "2026-05-14",
@@ -141,5 +159,12 @@
     "supporting_source_pdfs": [],
     "completeness_pct": 65,
     "notes": "Pattern-based extraction from local PDF via pdfplumber. Insurer-level metrics (CSR, network count) left null pending downstream backfill."
+  },
+  "co_payment_pct": {
+    "value": null,
+    "unit": "percent",
+    "source_pdf_path": "rag/corpus/bajaj-allianz/global-health-care__wordings.pdf",
+    "source_quote": "not stated in bajaj-allianz__global-health-care__wordings.pdf",
+    "_confidence": "low"
   }
 }

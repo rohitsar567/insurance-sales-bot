@@ -10,112 +10,137 @@
   "min_entry_age": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/universal-health-insurance__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in universal-health-insurance__wordings.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/universal-health-insurance__wordings.pdf",
-    "source_quote": ""
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/new-india/universal-health-insurance__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in universal-health-insurance__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_existing_disease_waiting_months": {
-    "value": null,
+    "value": 36,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/new-india/universal-health-insurance__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "of a pre-existing Disease (PED) and its direct \ncomplications shall be excluded until the expiry of 36 months of continuous coverage after \nthe date of inception of the first policy with us.",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
-    "value": null,
+    "value": 30,
     "source_pdf_path": "rag/corpus/new-india/universal-health-insurance__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "a. Expenses related to the treatment of any illness within 30 days from the first policy\ncommencement date shall be excluded except claims arising due to an accident",
+    "_confidence": "high"
   },
   "maternity_coverage": {
-    "value": null,
+    "value": false,
+    "unit": "boolean",
     "source_pdf_path": "rag/corpus/new-india/universal-health-insurance__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "4.18 MATERNITY EXPENSES (Code - Excl18) \na. Medical treatment expenses traceable to childbirth",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/universal-health-insurance__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in universal-health-insurance__wordings.pdf",
+    "_confidence": "low"
   },
   "ayush_coverage": {
     "value": true,
+    "unit": "boolean",
     "source_pdf_path": "rag/corpus/new-india/universal-health-insurance__wordings.pdf",
-    "source_quote": "AYUSH TREATMENT\nExpenses incurred for Ayurveda, Yoga and Naturopathy, Unani, Siddha and Homeopathy system\nof medicines i"
+    "source_quote": "AYUSH TREATMENT\nExpenses incurred for Ayurveda, Yoga and Naturopathy, Unani, Siddha and Homeopathy system\nof medicines i",
+    "_confidence": "high"
   },
   "cashless_treatment_supported": {
     "value": true,
+    "unit": "boolean",
     "source_pdf_path": "rag/corpus/new-india/universal-health-insurance__wordings.pdf",
-    "source_quote": "CASHLESS FACILITY"
+    "source_quote": "CASHLESS FACILITY",
+    "_confidence": "high"
   },
   "copayment_pct": {
     "value": null,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/new-india/universal-health-insurance__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in universal-health-insurance__wordings.pdf",
+    "_confidence": "low"
   },
   "no_claim_bonus_pct": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/universal-health-insurance__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in universal-health-insurance__wordings.pdf",
+    "_confidence": "low"
   },
   "restoration_benefit": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/universal-health-insurance__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in universal-health-insurance__wordings.pdf",
+    "_confidence": "low"
   },
   "room_rent_capping": {
-    "value": null,
+    "value": "0.5% of Sum Insured per day",
+    "unit": null,
     "source_pdf_path": "rag/corpus/new-india/universal-health-insurance__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "Room, Boarding expenses as provided by the \nHospital / Nursing Home \n(ii) If admitted in IC Unit \n(i) Upto to 0.5% of Sum \nInsured per day",
+    "_confidence": "medium"
   },
   "pre_hospitalization_days": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/universal-health-insurance__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in universal-health-insurance__wordings.pdf",
+    "_confidence": "low"
   },
   "post_hospitalization_days": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/universal-health-insurance__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in universal-health-insurance__wordings.pdf",
+    "_confidence": "low"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/new-india/universal-health-insurance__wordings.pdf",
-    "source_quote": ""
+    "value": 139,
+    "source_url": "https://www.newindia.co.in/health-insurance/health-insurance-policy",
+    "source_note": "Per insurer baseline (New India Assurance Mediclaim covers ~139 day care procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/new-india/universal-health-insurance__wordings.pdf"
   },
   "network_hospital_count": {
-    "value": null,
+    "value": 20855,
+    "source_url": "https://www.newindia.co.in/hospitals-list",
+    "source_note": "New India Assurance: 20,855 empanelled hospitals as of 11.02.2025 (direct quote from insurer Hospitals List page, scraped 2026-05-15). Counts all GIPSA PPN-empaneled hospitals so larger than aggregator counts that filter for active cashless.",
+    "_confidence": "high",
     "source_pdf_path": "rag/corpus/new-india/universal-health-insurance__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "Insurer-level metric backfilled from public-web source — see source_url"
   },
   "sum_insured_options": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/universal-health-insurance__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in universal-health-insurance__wordings.pdf",
+    "_confidence": "low"
   },
   "claim_settlement_ratio": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/universal-health-insurance__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in universal-health-insurance__wordings.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/universal-health-insurance__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in universal-health-insurance__wordings.pdf",
+    "_confidence": "low"
   },
   "policy_type": {
-    "value": "group",
+    "value": "indemnity",
     "source_pdf_path": "rag/corpus/new-india/universal-health-insurance__wordings.pdf",
-    "source_quote": "classified as group from PDF heuristics"
+    "source_quote": "the Company will pay through TPA to the Hospital or Insured person the amount of such expenses subject to limits as are Reasonably and Customarily and Medically necessarily incurred in respect thereof by or on behalf of such Insured Person",
+    "_confidence": "high"
   },
   "_meta": {
     "curated_at": "2026-05-14",
     "primary_source_pdf": "rag/corpus/new-india/universal-health-insurance__wordings.pdf",
     "completeness_pct": 18,
-    "notes": "Curated by tools/curate_remaining.py \u2014 pattern-based extraction from local PDF"
+    "notes": "Curated by tools/curate_remaining.py — pattern-based extraction from local PDF",
+    "network_hospital_backfill_2026-05-15": "new-india insurer-wide count backfilled in targeted scrape pass"
   }
 }

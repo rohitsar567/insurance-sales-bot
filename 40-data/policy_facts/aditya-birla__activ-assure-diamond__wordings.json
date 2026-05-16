@@ -7,132 +7,251 @@
     "value": "ADIHLIP18077V011718",
     "unit": null,
     "source_pdf_path": "rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Product UIN: ADIHLIP18077V011718",
+    "_confidence": "high"
   },
   "min_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in aditya-birla__activ-assure-diamond__wordings.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in aditya-birla__activ-assure-diamond__wordings.pdf",
+    "_confidence": "low"
   },
   "min_child_entry_age": {
     "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in aditya-birla__activ-assure-diamond__wordings.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
     "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in aditya-birla__activ-assure-diamond__wordings.pdf",
+    "_confidence": "low"
   },
   "grace_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "in no case later than the Grace Period of 30 days from the expiry date.",
+    "_confidence": "high"
   },
   "free_look_period": {
     "value": 15,
     "unit": "days",
     "source_pdf_path": "rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "We shall provide You a period of 15 days (30 days in case of contracts with a term of 3 years, offered over distance marketing mode) from the date of receipt of the Policy document",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "First 30 days waiting period We shall not be liable for any claim arising due to any condition for which appearance of signs/symptoms, consultation, investigation, treatment or admission commencing within 30 days from Policy Commencement Date",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
-    "value": 48,
-    "unit": null,
+    "value": null,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in activ-assure-diamond__wordings.pdf",
+    "_confidence": "low"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Two Year waiting periods The conditions listed below, whether medical or surgical and of the Illness/conditions and their complications mentioned below, will be subject to a waiting period of 24 months from the commencement of the 1st Policy Year",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in aditya-birla__activ-assure-diamond__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
-    "value": 60,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in activ-assure-diamond__wordings.pdf",
+    "_confidence": "low"
   },
   "post_hospitalization_days": {
-    "value": 180,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in activ-assure-diamond__wordings.pdf",
+    "_confidence": "low"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
+    "value": 586,
+    "unit": "count",
     "source_pdf_path": "rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "585 Chalazion Surgery 586 Circumcision Surgery",
+    "_confidence": "high"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 10051,
+    "source_url": "https://www.adityabirlacapital.com/healthinsurance/health-insurance-plans",
+    "source_note": "Cashless facility available at 10051+ network hospitals (health-insurance-plans page, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in aditya-birla__activ-assure-diamond__wordings.pdf",
+    "_confidence": "low"
   },
   "room_rent_capped_at_pct_of_si": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in aditya-birla__activ-assure-diamond__wordings.pdf",
+    "_confidence": "low"
   },
   "policy_term_options_years": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in aditya-birla__activ-assure-diamond__wordings.pdf",
+    "_confidence": "low"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in aditya-birla__activ-assure-diamond__wordings.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in aditya-birla__activ-assure-diamond__wordings.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in aditya-birla__activ-assure-diamond__wordings.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf",
+    "source_quote": "given under ‘Ayurveda, Yoga and Naturopathy, Unani, Siddha and Homeopathy systems.",
+    "_confidence": "high"
+  },
+  "newborn_coverage": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf",
+    "source_quote": "not stated in aditya-birla__activ-assure-diamond.pdf",
+    "_confidence": "low"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf",
+    "source_quote": "(g) Organ Donor Expenses: What is covered We shall cover the Medical Expenses, up to the limits as specified in the Policy Schedule / Product Benefit Table of this Policy, incurred in respect of the organ donor, for organ transplant Surgery towards the harvesting of the organ donated.",
+    "_confidence": "high"
+  },
+  "restoration_benefit": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf",
+    "source_quote": "(h) Reload of Sum Insured: What is covered Once in the Policy Year, We shall provide for a reload of the Sum Insured up to the limits as specified in the Policy Schedule / Product Benefit Table of this Policy",
+    "_confidence": "high"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf",
+    "source_quote": "(e) Domiciliary Hospitalization (Home Care): What is covered We shall cover the Medical Expenses incurred for the Insured Person’s Domiciliary Hospitalization, up to the limits as specified in the Policy Schedule / Product Benefit Table of this Policy, during the Policy Period following an Illness or Injury that occurs during the Policy Period.",
+    "_confidence": "high"
+  },
+  "worldwide_emergency_cover": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf",
+    "source_quote": "(p) International Emergency Assistance Services (including Air Ambulance) What is covered We will provide the Emergency medical assistance outside India as described below when an Insured Person is travelling 150 (one hundred and fifty) kilometres or more away from his/her residential address as mentioned in the Policy Schedule for a period of less than 90(ninety) days.",
+    "_confidence": "high"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf",
+    "source_quote": "(m) Health Check-up Program What is covered All Insured Persons in the Policy may avail a comprehensive health check-up once in a Policy Year in accordance with the table below:",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf",
+    "source_quote": "Cashless Facilities can be availed only at Our Network Providers / Empanelled Service Providers.",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_cap_pct": {
+    "value": 50,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf",
+    "source_quote": "The accumulated No Claim Bonus shall not exceed 50% of the Sum Insured on the Renewed Policy.",
+    "_confidence": "high"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": 24,
+    "unit": "hours",
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf",
+    "source_quote": "pre-authorise Cashless Facility within 24 hours of the Insured Person’s Hospitalization if the Insured Person has been Hospitalized in an Emergency.",
+    "_confidence": "high"
+  },
+  "geographic_coverage": {
+    "value": "pan_india",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf",
+    "source_quote": "All benefits are available in India only (except section B.II.p), and all claims shall be payable in India in Indian Rupees only.",
+    "_confidence": "high"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "family_floater",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf",
+    "source_quote": "In case of a Family Floater Policy, the reload of Sum Insured shall be available on a floater basis",
+    "_confidence": "medium"
+  },
+  "modern_treatments_covered": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf",
+    "source_quote": "45. Robotic surgery (whether invasive or non-invasive) unless specifically approved by Us. 46. All forms of Bariatric surgery. 47. Use of Radio Frequency (RF) probe for",
+    "_confidence": "high"
+  },
+  "room_rent_capping": {
+    "value": "Single Private A/C Room",
+    "unit": null,
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf",
+    "source_quote": "the room type is “Single Private A/C Room (upgradable to next level, only if Single Private A/C Room is not available)”",
+    "_confidence": "medium"
+  },
+  "no_claim_bonus_pct": {
+    "value": null,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf",
+    "source_quote": "not stated in activ-assure-diamond__wordings.pdf",
+    "_confidence": "low"
   }
 }

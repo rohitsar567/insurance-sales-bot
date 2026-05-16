@@ -8,21 +8,18 @@
     "source_quote": "N: my:health Women Suraksha - HDFHLIP22142V032122. UID: 17332."
   },
   "min_entry_age": {
-    "value": null,
+    "value": 18,
     "unit": "days",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
-    "source_quote": "Min entry age not found"
+    "source_quote": "18 Years 65 Years (for optional pregnancy cover 18 to 40 years)",
+    "_confidence": "high"
   },
   "max_entry_age": {
-    "value": null,
+    "value": 65,
     "unit": "years",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
-    "source_quote": "Max entry age not explicitly stated; check Policy Schedule"
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
-    "source_quote": "Max renewal age not specified; check Policy Schedule"
+    "source_quote": "18 Years 65 Years (for optional pregnancy cover 18 to 40 years)",
+    "_confidence": "high"
   },
   "sum_insured_options": {
     "value": [
@@ -31,112 +28,136 @@
     ],
     "unit": "INR",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
-    "source_quote": "**As per filed document, the sum insured option available is from ` 1 lakh to ` 5 crores my:health Women Suraksha Sum Insured ` ` 1 1 to Lakh Crore (Multiples of 1 lakh) Plans Women Cancer Plus Plan -"
+    "source_quote": "sum insured options ranging from `1 lakh to `1 crore available under this policy** Coverage for all the women in the family under single po",
+    "_confidence": "medium"
   },
   "initial_waiting_period_days": {
-    "value": 30,
+    "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
-    "source_quote": "Default IRDAI 30-day waiting period applies (not explicitly quoted in extracted snippet)"
+    "source_quote": "not stated in my-health-women-suraksha__brochure.pdf",
+    "_confidence": "low"
   },
   "pre_existing_disease_waiting_months": {
-    "value": null,
+    "value": 36,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
-    "source_quote": "PED waiting period not extracted; check Section 5 / Excl01"
+    "source_quote": "3 years for all pre-existing conditions declared and/or accepted at the time of applying ﬁrst policy with us",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
-    "value": 24,
-    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
-    "source_quote": "Default IRDAI 24-month specific-disease waiting (not explicitly quoted)"
-  },
-  "maternity_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
-    "source_quote": "Maternity waiting not specified or maternity excluded"
+    "source_quote": "not stated in my-health-women-suraksha__brochure.pdf",
+    "_confidence": "low"
+  },
+  "maternity_waiting_months": {
+    "value": 12,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
+    "source_quote": "1 year for pregnancy complications and newborn complications 3 years for all pre-existing conditions declared and/or accepted at the time of applying ﬁrst policy with us",
+    "_confidence": "high"
   },
   "pre_hospitalization_days": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
-    "source_quote": "Pre-hospitalization days not extracted"
+    "source_quote": "not stated in hdfc-ergo__my-health-women-suraksha.pdf",
+    "_confidence": "low"
   },
   "post_hospitalization_days": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
-    "source_quote": "Post-hospitalization days not extracted"
+    "source_quote": "not stated in hdfc-ergo__my-health-women-suraksha.pdf",
+    "_confidence": "low"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
-    "source_quote": "Day-care count not enumerated; covered per policy definition"
+    "value": 144,
+    "source_url": "https://www.hdfcergo.com/health-insurance/day-care-treatment",
+    "source_note": "Per insurer baseline (HDFC Ergo day-care treatment page lists 144 procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf"
   },
   "ayush_coverage": {
-    "value": false,
+    "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
-    "source_quote": "AYUSH coverage not found in extracted text"
+    "source_quote": "not stated in my-health-women-suraksha__brochure.pdf",
+    "_confidence": "low"
   },
   "maternity_coverage": {
-    "value": false,
+    "value": true,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
-    "source_quote": "Maternity not explicitly mentioned; presumed excluded in base"
+    "source_quote": "Coverage for pregnancy complications and newborn baby complications",
+    "_confidence": "high"
   },
   "newborn_coverage": {
     "value": true,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
-    "source_quote": "newborn baby coach, etc. for maintenance complications of good"
+    "source_quote": "Coverage for pregnancy complications and newborn baby complications",
+    "_confidence": "high"
   },
   "organ_donor_expenses": {
-    "value": false,
+    "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
-    "source_quote": "Organ donor cover not extracted"
+    "source_quote": "not stated in my-health-women-suraksha__brochure.pdf",
+    "_confidence": "low"
   },
   "no_claim_bonus_pct": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
-    "source_quote": "NCB % not extracted; product may use booster/recharge structure"
+    "source_quote": "not stated in hdfc-ergo__my-health-women-suraksha.pdf",
+    "_confidence": "low"
   },
   "restoration_benefit": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
-    "source_quote": "Restoration benefit not found in extracted text"
+    "source_quote": "not stated in hdfc-ergo__my-health-women-suraksha.pdf",
+    "_confidence": "low"
   },
   "room_rent_capping": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
-    "source_quote": "Room rent capping not extracted (only definition found, no explicit cap)"
+    "source_quote": "not stated in hdfc-ergo__my-health-women-suraksha.pdf",
+    "_confidence": "low"
   },
   "copayment_pct": {
-    "value": 0,
+    "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
-    "source_quote": "No mandatory copay extracted; product may have age-based or zone-based optional copay"
+    "source_quote": "not stated in my-health-women-suraksha__brochure.pdf",
+    "_confidence": "low"
   },
   "deductible_amount": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
-    "source_quote": "No base deductible (or only optional voluntary deductible add-on)"
+    "source_quote": "not stated in hdfc-ergo__my-health-women-suraksha.pdf",
+    "_confidence": "low"
   },
   "network_hospital_count": {
-    "value": null,
-    "source_url": null,
-    "source_quote": "Insurer-level metric; not extracted in this curation pass"
+    "value": 16000,
+    "source_url": "https://www.hdfcergo.com/",
+    "source_note": "16000+ Cashless Healthcare providers (homepage 'Why Choose HDFC ERGO' / 'Cashless Network' section, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "cashless_treatment_supported": {
-    "value": true,
+    "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
-    "source_quote": "Cashless mention not found"
+    "source_quote": "not stated in my-health-women-suraksha__brochure.pdf",
+    "_confidence": "low"
   },
   "claim_settlement_ratio": {
     "value": null,
     "source_url": null,
-    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted"
+    "source_quote": "not stated in hdfc-ergo__my-health-women-suraksha.pdf",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
     "value": null,
-    "source_pdf_path": null,
-    "source_quote": "TAT not specified in policy wording; governed by IRDAI Master Circular"
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
+    "source_quote": "not stated in hdfc-ergo__my-health-women-suraksha.pdf",
+    "_confidence": "low"
   },
   "policy_type": {
     "value": "indemnity",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-women-suraksha__brochure.pdf",
-    "source_quote": "Default indemnity (no explicit alternate type detected)"
+    "source_quote": "critical illness cover (41 Illness covered) Women Cardiac Plan - Cardiac ail",
+    "_confidence": "low"
   },
   "_meta": {
     "curated_at": "2026-05-14",

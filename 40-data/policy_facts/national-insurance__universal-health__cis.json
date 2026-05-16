@@ -7,135 +7,209 @@
     "value": "NICHLIP21593V042021",
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/universal-health__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "UIN: NICHLIP21593V042021",
+    "_confidence": "high"
   },
   "min_entry_age": {
-    "value": 18,
+    "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/national-insurance/universal-health__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in universal-health__cis.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
-    "value": 70,
+    "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/national-insurance/universal-health__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/national-insurance/universal-health__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in universal-health__cis.pdf",
+    "_confidence": "low"
   },
   "min_child_entry_age": {
-    "value": 90,
+    "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/national-insurance/universal-health__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in universal-health__cis.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
-    "value": [
-      30000,
-      50000
-    ],
+    "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/national-insurance/universal-health__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in universal-health__cis.pdf",
+    "_confidence": "low"
   },
   "grace_period": {
-    "value": 30,
+    "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/national-insurance/universal-health__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in universal-health__cis.pdf",
+    "_confidence": "low"
   },
   "free_look_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/national-insurance/universal-health__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "within 30 days from the beginning of the policy",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
-    "value": 30,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/universal-health__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in universal-health__cis.pdf",
+    "_confidence": "low"
   },
   "pre_existing_disease_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/universal-health__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in universal-health__cis.pdf",
+    "_confidence": "low"
   },
   "specific_disease_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/universal-health__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in universal-health__cis.pdf",
+    "_confidence": "low"
   },
   "maternity_waiting_months": {
     "value": 12,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/universal-health__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Maternity Benefit - Payable after waiting period of 12 months  Hospital Cash for Earning Head of the",
+    "_confidence": "medium"
   },
   "pre_hospitalization_days": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/universal-health__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in universal-health__cis.pdf",
+    "_confidence": "low"
   },
   "post_hospitalization_days": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/universal-health__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in universal-health__cis.pdf",
+    "_confidence": "low"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
+    "value": 12,
+    "unit": "procedures",
     "source_pdf_path": "rag/corpus/national-insurance/universal-health__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "12 nos",
+    "_confidence": "medium"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/national-insurance/universal-health__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 5322,
+    "source_url": "https://nationalinsurance.nic.co.in/",
+    "source_note": "5322 Network Hospitals ('Why Choose NICL' section, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
     "value": null,
-    "unit": "percent",
+    "unit": "%",
     "source_pdf_path": "rag/corpus/national-insurance/universal-health__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in universal-health__cis.pdf",
+    "_confidence": "low"
   },
   "room_rent_capped_at_pct_of_si": {
-    "value": null,
-    "unit": "percent",
+    "value": 0.5,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/national-insurance/universal-health__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "a. Room Rent - Up to 0.5% of SI per day b. ICU charges - Up to 1% of SI per day",
+    "_confidence": "high"
   },
   "policy_term_options_years": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/national-insurance/universal-health__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in universal-health__cis.pdf",
+    "_confidence": "low"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/national-insurance/universal-health__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in universal-health__cis.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/national-insurance/universal-health__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in universal-health__cis.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/universal-health__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in universal-health__cis.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/universal-health__cis.pdf",
+    "source_quote": "not stated in universal-health__cis.pdf",
+    "_confidence": "low"
+  },
+  "maternity_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/universal-health__cis.pdf",
+    "source_quote": "iv.Maternity Benefit (inclusive of above sub limits) - Up to ₹ 2,500/- for normal delivery and ₹ 5,000/- for caesarean/extra uterine delivery",
+    "_confidence": "high"
+  },
+  "newborn_coverage": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/universal-health__cis.pdf",
+    "source_quote": "not stated in universal-health__cis.pdf",
+    "_confidence": "low"
+  },
+  "cashless_treatment_supported": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/universal-health__cis.pdf",
+    "source_quote": "not stated in universal-health__cis.pdf",
+    "_confidence": "low"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "unit": "hours",
+    "source_pdf_path": "rag/corpus/national-insurance/universal-health__cis.pdf",
+    "source_quote": "not stated in universal-health__cis.pdf",
+    "_confidence": "low"
+  },
+  "geographic_coverage": {
+    "value": "pan_india",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/national-insurance/universal-health__cis.pdf",
+    "source_quote": "geographical limits of India",
+    "_confidence": "medium"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "family_floater",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/national-insurance/universal-health__cis.pdf",
+    "source_quote": "Universal Health Insurance Policy",
+    "_confidence": "medium"
+  },
+  "room_rent_capping": {
+    "value": "0.5% of Sum Insured per day",
+    "unit": "text",
+    "source_pdf_path": "rag/corpus/national-insurance/universal-health__cis.pdf",
+    "source_quote": "a. Room Rent - Up to 0.5% of SI per day b. ICU charges - Up to 1% of SI per day",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_pct": {
+    "value": null,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/national-insurance/universal-health__cis.pdf",
+    "source_quote": "not stated in universal-health__cis.pdf",
+    "_confidence": "low"
   }
 }

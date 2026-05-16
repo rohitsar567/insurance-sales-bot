@@ -11,79 +11,85 @@
     "value": 91,
     "unit": "days",
     "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "Newborn baby ... Period and is aged up to 90 days. (Standard Care Classic entry: 91 days for dependent children)"
+    "source_quote": "Newborn baby means baby born during the Policy Period and is aged up to 90 days. 2.1.33. Non - Network Provider: Non-Network means any hospital, day care"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "Adult entry per Policy Schedule (Care Classic per CHI brochure: 5 years onwards / parents up to 99 years)"
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "Lifelong renewability per Renewal clause"
+    "source_quote": "not stated in care-health__care-classic.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
     "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "Sum Insured options per Policy Schedule (Annual Health Check-up table references SI buckets <5L / 5-10L / >10L)"
+    "source_quote": "not stated in care-health__care-classic.pdf",
+    "_confidence": "low"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "30-day waiting period - Code- Excl03 ... any illness within 30 days from the first policy commencement date"
+    "source_quote": "30-day waiting period- Code- Excl03 a. Expenses related to the treatment of any illness within 30 days from the first policy commencement date shall be excluded except claims arising due to an accident, provided the same are covered. b."
   },
   "pre_existing_disease_waiting_months": {
     "value": 36,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "Pre-Existing Disease ... complications shall be excluded until the expiry of 36 months of continuous coverage"
+    "source_quote": "Pre-Existing Diseases: Code- Excl01 a. Expenses related to the treatment of a pre- existing Disease (PED) and its direct complications shall be excluded until the expiry of 36 months of contin",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "Specific Waiting Period: Code- Excl02 ... shall be excluded until the expiry of 24 months of continuous coverage"
+    "source_quote": "Specific Waiting Period: Code- Excl02 a. Expenses related to the treatment of the listed Conditions, surgeries/treatments shall be excluded until the expiry of 24 months of continuous coverage, as may be the case after the date of inception of the first policy with the Company. This"
   },
   "maternity_waiting_months": {
     "value": 24,
     "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "Maternity & New Born Cover (Optional Benefit): ... Claims will not be admissible ... related to any Maternity & New Born Expenses until 24 months of continuous coverage has elapsed"
+    "source_quote": "Maternity & New Born Expenses until 24 months of continuous coverage has elapsed, under this Benefit. b. In case of enhancement of sum insured the exclusion shall apply afresh to the extent of sum"
   },
   "pre_hospitalization_days": {
     "value": 60,
     "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "period of 60 days immediately prior to the [in-patient admission]"
+    "source_quote": "60 days immediately prior to the Insured Person's date of admission to the Hospital, subject to the conditions specified below: i. Provided that the Company shall not be liable to make payment for any Pre-"
   },
   "post_hospitalization_days": {
     "value": 90,
     "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "period of 90 days immediately after the [discharge from Hospital]"
+    "source_quote": "90 days immediately after the Insured Person's date of discharge from the Hospital, subject to the conditions specified below: i. Provided that the Medical Expenses so incurred are related to the same"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "Day Care Treatment ... all Day Care Treatments (no fixed count enumerated in wording)"
+    "value": 541,
+    "source_url": "https://www.careinsurance.com/product/care-senior",
+    "source_note": "Per insurer baseline (Care Health publishes 541+ day care treatments across plans)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf"
   },
   "ayush_coverage": {
     "value": true,
+    "unit": null,
     "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "AYUSH Day Care Centre means and includes Community Health Centre (CHC), Primary Health Centre (PHC) ... (AYUSH Treatment is a covered benefit)"
+    "source_quote": "AYUSH Hospital is a healthcare facility wherein medical/surgical/para-surgical treatment procedures and interventions are carried out by AYUSH Medical Practitioner",
+    "_confidence": "high"
   },
   "maternity_coverage": {
-    "value": false,
+    "value": true,
+    "unit": null,
     "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "Maternity & New Born Cover (Optional Benefit) — not part of base; available with 24-month waiting if opted"
+    "source_quote": "Maternity expenses shall include- a. Medical treatment expenses traceable to childbirth (including complicated deliveries and caesarean sections incurred during hospitalization)",
+    "_confidence": "medium"
   },
   "newborn_coverage": {
     "value": false,
     "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "Maternity & New Born Cover is Optional Benefit; newborn covered only if maternity option opted"
+    "source_quote": "Maternity & New Born Cover (Optional Benefit) : a. Claims will not be admissible for any expenses incurred for diagnosis / treatment related to any Maternity & New Born Expenses until 24 months of continuous coverage has elapsed, under this"
   },
   "organ_donor_expenses": {
-    "value": true,
+    "value": null,
     "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "Organ Donor Cover listed under utilizable benefits for accrued NCB (covered for organ harvesting)"
+    "source_quote": "not stated in care-health__care-classic.pdf",
+    "_confidence": "low"
   },
   "no_claim_bonus_pct": {
     "value": 25,
@@ -93,52 +99,94 @@
   "restoration_benefit": {
     "value": "Unlimited Automatic Recharge of base Sum Insured for same/different illnesses",
     "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "3.1.5 Benefit : Unlimited Automatic Recharge ... Recharge shall be utilized only after the base [SI exhausted]"
+    "source_quote": "Automatic Recharge can only be utilized for Benefit 'In-patient Care' 'Day Care Treatment' (except Advance Technology Methods), 'Pre Hospitalization Medical Expenses and Post Hospitalization Medical Expenses', 'Ambulance Cover', 'Domiciliary Hospitalization' Optional"
   },
   "room_rent_capping": {
-    "value": "Per Policy Schedule (commonly Single Private AC room; subject to plan variant)",
+    "value": null,
+    "unit": null,
     "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "Room Rent ... as specified in the Policy Schedule (Care Classic plan grid)"
+    "source_quote": "not stated in care-health__care-classic.pdf",
+    "_confidence": "low"
   },
   "copayment_pct": {
-    "value": null,
+    "value": 20,
     "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "Co-payment defined; applicability per Policy Schedule (typically 20% for entrants ≥61 years in Care Classic)"
+    "source_quote": "(in case of Floater) shall bear a Co-payment of 20% per Claim (over & above any other co- payment, if any)",
+    "_confidence": "high"
   },
   "deductible_amount": {
     "value": null,
-    "source_pdf_path": null,
-    "source_quote": "No base deductible in Care Classic"
+    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
+    "source_quote": "not stated in care-health__care-classic.pdf",
+    "_confidence": "low"
   },
   "network_hospital_count": {
-    "value": null,
-    "source_url": null,
-    "source_quote": "Insurer-level metric; Care Health Insurance advertises 21,100+ network hospitals"
+    "value": 11600,
+    "source_url": "https://www.careinsurance.com/health-plan-network-hospitals.html",
+    "source_note": "Care Health Insurance: 22,100+ healthcare providers including 11,600+ network hospitals (insurer network-hospitals page; corroborated by Google snippet of careinsurance.com, scraped 2026-05-15). Conservative count uses hospital-specific subset, not the wider healthcare-provider count.",
+    "_confidence": "medium"
   },
   "cashless_treatment_supported": {
     "value": true,
+    "unit": null,
     "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "Cashless facility through Network Provider (defined)"
+    "source_quote": "Cashless Facility means a facility extended by the insurer to the Insured where the payments, of the costs of treatment undergone by the insured in accordance with the Policy terms and conditions, are directly made to the",
+    "_confidence": "high"
   },
   "claim_settlement_ratio": {
     "value": null,
     "source_url": null,
-    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted"
+    "source_quote": "not stated in care-health__care-classic.pdf",
+    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
     "value": null,
-    "source_pdf_path": null,
-    "source_quote": "TAT governed by IRDAI Master Circular"
+    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
+    "source_quote": "not stated in care-health__care-classic.pdf",
+    "_confidence": "low"
   },
   "policy_type": {
     "value": "indemnity",
     "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "Hospitalization Expenses ... indemnify the Insured Person ... (indemnity-based)"
+    "source_quote": "Company will indemnify the Insured Person for Medical Expenses incurred towards Hospitalization through Cashless or Reimbursement Facility, maximum up to the Sum Insured, as specified in the Policy Schedule, provided that the Hospitalization is for"
   },
   "_meta": {
     "curated_at": "2026-05-13",
     "primary_source_pdf": "rag/corpus/care-health/care-classic__wordings.pdf",
     "completeness_pct": 82,
-    "notes": "Care Classic mid-tier indemnity. Maternity is optional add-on (24-month waiting). SI options + entry age caps per Policy Schedule."
+    "notes": "Care Classic mid-tier indemnity. Maternity is optional add-on (24-month waiting). SI options + entry age caps per Policy Schedule. | Batch 3 (2026-05-15): coverage breadth fields backfilled.",
+    "batch3_added_fields": [
+      "ambulance_cover",
+      "domiciliary_treatment",
+      "preventive_health_checkup"
+    ],
+    "network_hospital_backfill_2026-05-15": "care-health insurer-wide count backfilled in targeted scrape pass"
+  },
+  "ambulance_cover": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
+    "source_quote": "not stated in care-health__care-classic.pdf",
+    "extraction_method": "tools/curate_batch3.py — pattern-grep over pdfplumber text",
+    "_confidence": "low"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
+    "source_quote": "Domiciliary Hospitalization means medical treatment for an illness/disease/injury which in the normal course would require care and treatment at a Hospital but is actually taken while confined at home under any of the following circumstances: a.",
+    "extraction_method": "tools/curate_batch3.py — pattern-grep over pdfplumber text"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
+    "source_quote": "Annual Health Check-up",
+    "extraction_method": "tools/curate_batch3.py — pattern-grep over pdfplumber text"
+  },
+  "co_payment_pct": {
+    "value": 20,
+    "unit": "percent",
+    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
+    "source_quote": "List of Hospitals where Co-Payment of 20% is not applicable under Optional Cover \"Smart Select",
+    "_confidence": "medium"
   }
 }

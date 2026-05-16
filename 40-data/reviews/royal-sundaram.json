@@ -1,0 +1,18 @@
+{
+  "insurer_slug": "royal-sundaram",
+  "insurer_name": "Royal Sundaram General Insurance",
+  "last_updated": "2026-05-15",
+  "claim_metrics": {
+    "claim_settlement_ratio_pct": 95.95,
+    "claim_settlement_ratio_year": "FY 2023-24",
+    "complaints_per_10k_policies": 18,
+    "complaints_year": "FY 2024-25",
+    "incurred_claim_ratio_pct": 77.62,
+    "three_year_avg_csr_pct": null,
+    "source_irdai_url": "https://irdai.gov.in/document-detail",
+    "source_secondary_url": "https://www.policyx.com/health-insurance/royal-sundaram-health-insurance/claim-settlement-ratio/",
+    "source_complaints_url": "https://algatesinsurance.in/insurance-infographic/health-insurance-claims-complaints-volume/",
+    "source_company_url": "http://web.archive.org/web/20260504142913/https://www.royalsundaram.in/",
+    "notes": "Royal Sundaram CSR 95.95% (industry avg 94.21%). Complaints per 10K claims = 18 (just below 20-benchmark). ICR 77.62% per PolicyX FY24."
+  }
+}

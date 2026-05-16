@@ -7,142 +7,231 @@
     "value": "IFFHLIP26042V062526",
     "unit": null,
     "source_pdf_path": "rag/corpus/iffco-tokio/family-health-protector__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "UIN: IFFHLIP26042V062526 \n \nPOLICY WORDING",
+    "_confidence": "high"
   },
   "min_entry_age": {
-    "value": 18,
+    "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/iffco-tokio/family-health-protector__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in iffco-tokio__family-health-protector__wordings.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/iffco-tokio/family-health-protector__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/iffco-tokio/family-health-protector__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in iffco-tokio__family-health-protector__wordings.pdf",
+    "_confidence": "low"
   },
   "min_child_entry_age": {
-    "value": 91,
+    "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/iffco-tokio/family-health-protector__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in iffco-tokio__family-health-protector__wordings.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
-    "value": [
-      300000,
-      500000,
-      750000,
-      1000000,
-      1500000,
-      2000000,
-      2500000,
-      5000000,
-      10000000
-    ],
+    "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/iffco-tokio/family-health-protector__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in iffco-tokio__family-health-protector__wordings.pdf",
+    "_confidence": "low"
   },
   "grace_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/iffco-tokio/family-health-protector__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "b) thirty days for any other installment modes (wherever applicable) \nc) thirty days for renewal.",
+    "_confidence": "high"
   },
   "free_look_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/iffco-tokio/family-health-protector__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "You/the insured shall be allowed a period of thirty days from date of receipt of the Policy document to review the \nterms and conditions of the Policy",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/iffco-tokio/family-health-protector__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Expenses related to the treatment of any illness within 30 days from the first policy commencement date shall \nbe excluded except claims arising due to an accident",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 36,
     "unit": null,
     "source_pdf_path": "rag/corpus/iffco-tokio/family-health-protector__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "of a pre-existing Disease (PED) and its direct complications shall be \nexcluded until the expiry of 36 months of continuous coverage after the date of inception of the first policy with \nus.",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/iffco-tokio/family-health-protector__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "3. Specific Waiting Period: (Code- Excl02) \na) Expenses related to the treatment of the following listed conditions, surgeries/treatments shall be excluded \nuntil the expiry of 12/24 months of continuous coverage",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/iffco-tokio/family-health-protector__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in iffco-tokio__family-health-protector__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
-    "value": 30,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/iffco-tokio/family-health-protector__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
-  },
-  "post_hospitalization_days": {
     "value": 60,
     "unit": null,
     "source_pdf_path": "rag/corpus/iffco-tokio/family-health-protector__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Pre-Hospitalization Medical Expenses incurred up to 60 (Sixty) days prior to Hospitalization",
+    "_confidence": "high"
+  },
+  "post_hospitalization_days": {
+    "value": 90,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/iffco-tokio/family-health-protector__wordings.pdf",
+    "source_quote": "Post Hospitalization Medical Expenses incurred during a period up to 90(Ninety) days after \nHospitalization",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/iffco-tokio/family-health-protector__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 380,
+    "source_url": "https://www.iffcotokio.co.in/health-insurance/family-health-insurance",
+    "source_note": "Per insurer baseline (IFFCO Tokio family health insurance covers 380+ day care surgeries)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/iffco-tokio/family-health-protector__wordings.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/iffco-tokio/family-health-protector__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 8000,
+    "source_url": "https://www.iffcotokio.co.in/",
+    "source_note": "8,000+ Network Hospitals ('Why Choose IFFCO-TOKIO' section, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
-    "value": null,
-    "unit": "percent",
+    "value": 0,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/iffco-tokio/family-health-protector__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "The following Co-pay options are available: 10%, 20% or 25% under the product.",
+    "_confidence": "medium"
   },
   "room_rent_capped_at_pct_of_si": {
-    "value": null,
-    "unit": "percent",
+    "value": 2.0,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/iffco-tokio/family-health-protector__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "In respect of other than class “A” cities, a limit of 2% (two percent) of the sum insured on per day basis or \nactual, whichever is less;",
+    "_confidence": "medium"
   },
   "policy_term_options_years": {
-    "value": null,
+    "value": [
+      1
+    ],
     "unit": "years",
     "source_pdf_path": "rag/corpus/iffco-tokio/family-health-protector__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "refund proportionate premium for unexpired policy period, if the term of policy upto one year",
+    "_confidence": "medium"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/iffco-tokio/family-health-protector__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in iffco-tokio__family-health-protector__wordings.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/iffco-tokio/family-health-protector__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in iffco-tokio__family-health-protector__wordings.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/iffco-tokio/family-health-protector__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in iffco-tokio__family-health-protector__wordings.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/iffco-tokio/family-health-protector__wordings.pdf",
+    "source_quote": "AYUSH hospitalization expenses including pre-hospitalization and post hospitalization expenses upto the limit of \nthe Sum Insured of the insured person per policy period.",
+    "_confidence": "high"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/iffco-tokio/family-health-protector__wordings.pdf",
+    "source_quote": "Hospitalization expenses of person donating an organ during the course of organ transplant subject to the above sub-limits applicable to the insured person and within the sum insured/extended sum insured (if applicable).",
+    "_confidence": "high"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/iffco-tokio/family-health-protector__wordings.pdf",
+    "source_quote": "Domiciliary Hospitalization if medically necessary Upto a maximum aggregate sub-limit of 20% (twenty percent) of the Sum Insured. Note 1: i.",
+    "_confidence": "high"
+  },
+  "worldwide_emergency_cover": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/iffco-tokio/family-health-protector__wordings.pdf",
+    "source_quote": "All medical treatment for the purpose of this insurance will have to be taken in India only and all claims shall be \npayable in Indian currency.",
+    "_confidence": "medium"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/iffco-tokio/family-health-protector__wordings.pdf",
+    "source_quote": "health check-up: Insured person(s) shall be entitled to undergo a periodic medical checkup upon renewal of the policy. This benefit is dependent on the sum insured of the policy.",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/iffco-tokio/family-health-protector__wordings.pdf",
+    "source_quote": "Cashless facility \nIt means a facility extended by us to Insured person where the payments, of the costs of treatment undergone by \ninsured person(s)",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_cap_pct": {
+    "value": 100,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/iffco-tokio/family-health-protector__wordings.pdf",
+    "source_quote": "subject to a maximum of 100% (one hundred percent) of basic sum \ninsured of the expiring policy.",
+    "_confidence": "high"
+  },
+  "geographic_coverage": {
+    "value": "pan_india",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/iffco-tokio/family-health-protector__wordings.pdf",
+    "source_quote": "All medical treatment for the purpose of this insurance will have to be taken in India only and all claims shall be \npayable in Indian currency.",
+    "_confidence": "high"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "family_floater",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/iffco-tokio/family-health-protector__wordings.pdf",
+    "source_quote": "FAMILY HEALTH PROTECTOR (FHP) \nUIN: IFFHLIP26042V062526",
+    "_confidence": "medium"
+  },
+  "maternity_coverage": {
+    "value": false,
+    "_confidence": "high",
+    "source_quote": "8.Maternity Expenses (Code - Excl 18): \ni) \nMedical treatment expenses traceable to childbirth",
+    "source_pdf_path": "rag/corpus/iffco-tokio/family-health-protector__wordings.pdf"
+  },
+  "room_rent_capping": {
+    "value": "2% of SI per day or single private AC room; 1.5% / 1.25% per day variants by city tier",
+    "unit": "text",
+    "source_pdf_path": "rag/corpus/iffco-tokio/family-health-protector__wordings.pdf",
+    "source_quote": "For Normal Room Rent Expenses: - I. In respect of class “A” cities, a limit of 1.50% (one and half of a percent) of the sum insured on per day basis or actual, whichever is less. II.",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_pct": {
+    "value": 25,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/iffco-tokio/family-health-protector__wordings.pdf",
+    "source_quote": "The Cumulative Bonus shall accrue at 25% (twenty-five percent) of the basic sum insured for the first claim-free \nrenewal",
+    "_confidence": "high"
   }
 }

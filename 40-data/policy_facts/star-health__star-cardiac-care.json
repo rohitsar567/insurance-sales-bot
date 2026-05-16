@@ -5,95 +5,108 @@
   "uin_code": {
     "value": "SHAHLIP22032V052122",
     "source_pdf_path": "rag/corpus/star-health/star-cardiac-care__wordings.pdf",
-    "source_quote": "CY Unique Identification No.: SHAHLIP22032V052122 PREAMBLE policy that provides that the policyholder/insured will bear a specified percentage of the The proposal and declaration given by the proposer"
+    "source_quote": "1 of 9 Unique Identiﬁcation No.: SHAHLIP22032V052122 Star Cardiac Care Insurance Policy POL",
+    "_confidence": "high"
   },
   "min_entry_age": {
     "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/star-health/star-cardiac-care__wordings.pdf",
-    "source_quote": "Min entry age not found"
+    "source_quote": "not stated in star-health__star-cardiac-care.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/star-health/star-cardiac-care__wordings.pdf",
-    "source_quote": "Max entry age not explicitly stated; check Policy Schedule"
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/star-health/star-cardiac-care__wordings.pdf",
-    "source_quote": "Max renewal age not specified; check Policy Schedule"
+    "source_quote": "not stated in star-health__star-cardiac-care.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
     "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/star-health/star-cardiac-care__wordings.pdf",
-    "source_quote": "Sum Insured options not enumerated in extracted text; check Policy Schedule"
+    "source_quote": "not stated in star-health__star-cardiac-care.pdf",
+    "_confidence": "low"
   },
   "initial_waiting_period_days": {
-    "value": 30,
-    "source_pdf_path": "rag/corpus/star-health/star-cardiac-care__wordings.pdf",
-    "source_quote": "the treatment of any illness within 30 days from the first d. Reversal of sterilization policy commencement date shall be excluded except claims arising due to an accident, provided the same are cover"
-  },
-  "pre_existing_disease_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/star-health/star-cardiac-care__wordings.pdf",
-    "source_quote": "PED waiting period not extracted; check Section 5 / Excl01"
+    "source_quote": "not stated in star-cardiac-care__wordings.pdf",
+    "_confidence": "low"
+  },
+  "pre_existing_disease_waiting_months": {
+    "value": 36,
+    "source_pdf_path": "rag/corpus/star-health/star-cardiac-care__wordings.pdf",
+    "source_quote": "\"Pre-existing disease (PED)\" means any condition, ailment, injury or disease: a) that is/are diagnosed by a physician not more than 36 mon",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "source_pdf_path": "rag/corpus/star-health/star-cardiac-care__wordings.pdf",
-    "source_quote": "Default IRDAI 24-month specific-disease waiting (not explicitly quoted)"
+    "source_quote": "treatments shall be excluded until the expiry of 24 months of continuous coverage after the date of inception of the first policy with us. This exc",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/star-health/star-cardiac-care__wordings.pdf",
-    "source_quote": "Maternity waiting not specified or maternity excluded"
+    "source_quote": "not stated in star-health__star-cardiac-care.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": 30,
     "source_pdf_path": "rag/corpus/star-health/star-cardiac-care__wordings.pdf",
-    "source_quote": "tion 3 - Out-Patient Expenses 30 days prior to the date of hospitalization, for the disease/illness, injury sustained Expenses reasonably and necessarily incurred at any Networked Facility in India he"
+    "source_quote": "on medical expenses incurred for a period not exceeding 30 days prior to the date of hospitalization, for the disease/illness, in",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
-    "value": 60,
+    "value": 30,
     "source_pdf_path": "rag/corpus/star-health/star-cardiac-care__wordings.pdf",
-    "source_quote": "ation expenses incurred up to 60 days after discharge from the The limit of benefit under this Section is Rs.500/- per event subject to a maximum of hospital. The amount payable shall not exceed the s"
+    "source_quote": "on medical expenses incurred for a period not exceeding 30 days prior to the date of hospitalization, for the disease/illness, in",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/star-health/star-cardiac-care__wordings.pdf",
-    "source_quote": "Day-care count not enumerated; covered per policy definition"
+    "value": 540,
+    "source_url": "https://www.starhealth.in/health-insurance/daycare-treatment-and-procedures/",
+    "source_note": "Per insurer baseline (Star Health day-care procedures page; 540+ procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/star-health/star-cardiac-care__wordings.pdf"
   },
   "ayush_coverage": {
     "value": true,
     "source_pdf_path": "rag/corpus/star-health/star-cardiac-care__wordings.pdf",
-    "source_quote": "e accessible to the insurance AYUSH Day Care Centre: AYUSH Day Care Centre means and includes Community company's authorized personnel. Health Centre (CHC), Primary Health Centre (PHC), Dispensary, Cl"
+    "source_quote": "AYUSH Treatment: Medical expenses for Inpatient Hospitalization incurred on treatment under Ayurveda, Unani, Sidha and Homeopathy systems of medicines in a AYUSH Hospital is payable up to the sum insured.",
+    "_confidence": "high"
   },
   "maternity_coverage": {
     "value": false,
     "source_pdf_path": "rag/corpus/star-health/star-cardiac-care__wordings.pdf",
-    "source_quote": "Maternity not explicitly mentioned; presumed excluded in base"
+    "source_quote": "Maternity - Code Excl 18 a.",
+    "_confidence": "high"
   },
   "newborn_coverage": {
-    "value": false,
+    "value": null,
     "source_pdf_path": "rag/corpus/star-health/star-cardiac-care__wordings.pdf",
-    "source_quote": "Newborn cover not found; typically tied to maternity option"
+    "source_quote": "not stated in star-cardiac-care__wordings.pdf",
+    "_confidence": "low"
   },
   "organ_donor_expenses": {
-    "value": false,
+    "value": null,
     "source_pdf_path": "rag/corpus/star-health/star-cardiac-care__wordings.pdf",
-    "source_quote": "Organ donor cover not extracted"
+    "source_quote": "not stated in star-cardiac-care__wordings.pdf",
+    "_confidence": "low"
   },
   "no_claim_bonus_pct": {
     "value": null,
     "source_pdf_path": "rag/corpus/star-health/star-cardiac-care__wordings.pdf",
-    "source_quote": "NCB % not extracted; product may use booster/recharge structure"
+    "source_quote": "not stated in star-health__star-cardiac-care.pdf",
+    "_confidence": "low"
   },
   "restoration_benefit": {
     "value": null,
     "source_pdf_path": "rag/corpus/star-health/star-cardiac-care__wordings.pdf",
-    "source_quote": "Restoration benefit not found in extracted text"
+    "source_quote": "not stated in star-health__star-cardiac-care.pdf",
+    "_confidence": "low"
   },
   "room_rent_capping": {
     "value": "room category occupied by the insured person whilst undergoing treatment in some of the",
@@ -103,37 +116,45 @@
   "copayment_pct": {
     "value": 10,
     "source_pdf_path": "rag/corpus/star-health/star-cardiac-care__wordings.pdf",
-    "source_quote": "3. This policy is subject to Co-payment of 10% of each and every claim amount for fresh the same would be reduced to the extent of prior coverage as well as renewal p"
+    "source_quote": "Co-payment of 10% of each and every claim amount for fresh as well as renewal policies for insured persons whose age at the time of entry is 61years and abov",
+    "_confidence": "high"
   },
   "deductible_amount": {
     "value": null,
     "source_pdf_path": "rag/corpus/star-health/star-cardiac-care__wordings.pdf",
-    "source_quote": "No base deductible (or only optional voluntary deductible add-on)"
+    "source_quote": "not stated in star-health__star-cardiac-care.pdf",
+    "_confidence": "low"
   },
   "network_hospital_count": {
-    "value": null,
-    "source_url": null,
-    "source_quote": "Insurer-level metric; not extracted in this curation pass"
+    "value": 14000,
+    "source_url": "https://www.starhealth.in/",
+    "source_note": "14,000+ network hospitals across India (per official Star Health communications, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "cashless_treatment_supported": {
     "value": true,
     "source_pdf_path": "rag/corpus/star-health/star-cardiac-care__wordings.pdf",
-    "source_quote": "ical condition leading to the Cashless facility: Cashless facility means a facility extended by the insurer to the insured impairment of normal physiological function and requires medical treatment; w"
+    "source_quote": "Cashless facility: Cashless facility means a facility extended by the insurer to the insured where the payments, of the costs of treatment undergone by the insured in accordance with the policy terms and conditions, are directly made to the network provider by the insurer to t",
+    "_confidence": "high"
   },
   "claim_settlement_ratio": {
     "value": null,
     "source_url": null,
-    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted"
+    "source_quote": "not stated in star-health__star-cardiac-care.pdf",
+    "source_pdf_path": "rag/corpus/star-health/star-cardiac-care__wordings.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
     "value": null,
-    "source_pdf_path": null,
-    "source_quote": "TAT not specified in policy wording; governed by IRDAI Master Circular"
+    "source_pdf_path": "rag/corpus/star-health/star-cardiac-care__wordings.pdf",
+    "source_quote": "not stated in star-health__star-cardiac-care.pdf",
+    "_confidence": "low"
   },
   "policy_type": {
     "value": "benefit",
     "source_pdf_path": "rag/corpus/star-health/star-cardiac-care__wordings.pdf",
-    "source_quote": "Specialty cardiac/critical illness — benefit-based lump-sum on diagnosis"
+    "source_quote": "Cardiac Care Insurance Policy POL / CAR / V",
+    "_confidence": "low"
   },
   "_meta": {
     "curated_at": "2026-05-14",

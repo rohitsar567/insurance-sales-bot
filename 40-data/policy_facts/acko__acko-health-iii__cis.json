@@ -7,132 +7,235 @@
     "value": "ACKHLIP27040V012627",
     "unit": null,
     "source_pdf_path": "rag/corpus/acko/acko-health-iii__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "UIN: ACKHLIP27040V012627| Mail: hello@acko.com Page 1 of 7 CUSTOMER INFORMATION SHEET",
+    "_confidence": "high"
   },
   "min_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/acko/acko-health-iii__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in acko__acko-health-iii__cis.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/acko/acko-health-iii__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
-  },
-  "max_renewal_age": {
-    "value": null,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/acko/acko-health-iii__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in acko__acko-health-iii__cis.pdf",
+    "_confidence": "low"
   },
   "min_child_entry_age": {
     "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/acko/acko-health-iii__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in acko__acko-health-iii__cis.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
     "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/acko/acko-health-iii__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in acko__acko-health-iii__cis.pdf",
+    "_confidence": "low"
   },
   "grace_period": {
-    "value": 30,
+    "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/acko/acko-health-iii__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in acko__acko-health-iii__cis.pdf",
+    "_confidence": "low"
   },
   "free_look_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/acko/acko-health-iii__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Free Look cancellation: You may cancel the insurance policy if you do not want it, within 30 days from the receipt of the policy.",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
-    "value": 30,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/acko/acko-health-iii__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in acko__acko-health-iii__cis.pdf",
+    "_confidence": "low"
   },
   "pre_existing_disease_waiting_months": {
     "value": null,
-    "unit": null,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/acko/acko-health-iii__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in acko__acko-health-iii__cis.pdf",
+    "_confidence": "low"
   },
   "specific_disease_waiting_months": {
     "value": null,
-    "unit": null,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/acko/acko-health-iii__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in acko__acko-health-iii__cis.pdf",
+    "_confidence": "low"
   },
   "maternity_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/acko/acko-health-iii__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in acko__acko-health-iii__cis.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/acko/acko-health-iii__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in acko__acko-health-iii__cis.pdf",
+    "_confidence": "low"
   },
   "post_hospitalization_days": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/acko/acko-health-iii__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in acko__acko-health-iii__cis.pdf",
+    "_confidence": "low"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/acko/acko-health-iii__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 500,
+    "source_url": "https://www.acko.com/health-insurance/daycare-treatment-and-procedures/",
+    "source_note": "Per insurer baseline (Acko covers all day-care procedures up to SI; 500+ procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/acko/acko-health-iii__cis.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
+    "value": 11500,
+    "source_url": "https://www.acko.com/health-insurance/cashless/",
+    "source_note": "ACKO has 11,500+ cashless hospitals across India (insurer's cashless landing page, scraped 2026-05-15)",
+    "_confidence": "high",
     "source_pdf_path": "rag/corpus/acko/acko-health-iii__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Insurer-level metric backfilled from public-web source — see source_url"
   },
   "co_payment_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/acko/acko-health-iii__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in acko__acko-health-iii__cis.pdf",
+    "_confidence": "low"
   },
   "room_rent_capped_at_pct_of_si": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/acko/acko-health-iii__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in acko__acko-health-iii__cis.pdf",
+    "_confidence": "low"
   },
   "policy_term_options_years": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/acko/acko-health-iii__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in acko__acko-health-iii__cis.pdf",
+    "_confidence": "low"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/acko/acko-health-iii__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in acko__acko-health-iii__cis.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/acko/acko-health-iii__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in acko__acko-health-iii__cis.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/acko/acko-health-iii__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in acko__acko-health-iii__cis.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/acko/acko-health-iii__cis.pdf",
+    "source_quote": "2.8 Second Opinion for alternate evaluation 2.9 Ayush Treatment 2.10 Modern Treatment 2.11 Basic Benefit Options",
+    "_confidence": "medium"
+  },
+  "maternity_coverage": {
+    "value": false,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/acko/acko-health-iii__cis.pdf",
+    "source_quote": "Medical treatment expenses related to Maternity 31.16 Expenses for Non-Payable Medical for any hospitalization, day care or domiciliary treatment Permanent Exclusions",
+    "_confidence": "high"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/acko/acko-health-iii__cis.pdf",
+    "source_quote": "2.7 Organ Donor expenses 2.8 Second Opinion for alternate evaluation 2.9 Ayush Treatment 2.10 Modern Treatment",
+    "_confidence": "medium"
+  },
+  "restoration_benefit": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/acko/acko-health-iii__cis.pdf",
+    "source_quote": "Restore Sum Insured 2.12.11 First Notification of Claim 2.12.12 Preferred Providers Network 2.12.13 Co-Pay 2.12.14 Floater Deductible 2.12.15 Individual Deductible 2.12.16 All medically necessary hospitalization 2.12.17 Add-on Benefits: 2.13 Access to a doctor or a general medica",
+    "_confidence": "high"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/acko/acko-health-iii__cis.pdf",
+    "source_quote": "domiciliary treatment Permanent Exclusions 3.2.1 Named Ailment waiting period or exclusion 3.2.2 Medical Practitioner Exclusion 3.2.3 For detailed exclusions please refer the policy wordings 7 Waiting Period Initial waiting Period: As per Policy Schedule 3.1.3 Specific Illness (S",
+    "_confidence": "high"
+  },
+  "worldwide_emergency_cover": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/acko/acko-health-iii__cis.pdf",
+    "source_quote": "Worldwide In-Patient Hospitalization 2.12.7 Cumulative Bonus 2.12.8 No Claim Bonus Sum Insured 2.12.9 No Claim Discount 2.12.10 Restore Sum Insured 2.12.11 First Notification of Claim 2.12.12 Preferred Providers Network 2.12.13 Co-Pay 2.12.14 Floater Deductible 2.12.15 Individual",
+    "_confidence": "high"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/acko/acko-health-iii__cis.pdf",
+    "source_quote": "2.12.3 Preventive Health Check-up 2.12.4 Inflation Protect Sum Insured 2.12.5 Initial 30 Days Waiting Period Waiver",
+    "_confidence": "medium"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/acko/acko-health-iii__cis.pdf",
+    "source_quote": "Cashless claim facility can be availed in all network hospitals. The list of network hospitals are available on our website or can be checked at the customer care center.",
+    "_confidence": "high"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": 1,
+    "unit": "hours",
+    "source_pdf_path": "rag/corpus/acko/acko-health-iii__cis.pdf",
+    "source_quote": "TAT for preauthorization of cashless facility: 1 hour ii. TAT for cashless final bill authorization: 3 hours",
+    "_confidence": "high"
+  },
+  "geographic_coverage": {
+    "value": null,
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/acko/acko-health-iii__cis.pdf",
+    "source_quote": "not stated in acko__acko-health-iii__cis.pdf",
+    "_confidence": "low"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "family_floater",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/acko/acko-health-iii__cis.pdf",
+    "source_quote": "Type of Insurance Product Indemnity and Benefit 4 Sum Insured (Basis) Individual / Floater (Amount will be mentioned here)",
+    "_confidence": "medium"
+  },
+  "modern_treatments_covered": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/acko/acko-health-iii__cis.pdf",
+    "source_quote": "2.9 Ayush Treatment 2.10 Modern Treatment 2.11 Basic Benefit Options 2.12 Waiver of non-payable medical expenses",
+    "_confidence": "medium"
+  },
+  "_meta": {
+    "network_hospital_backfill_2026-05-15": "acko insurer-wide count backfilled in targeted scrape pass"
   }
 }

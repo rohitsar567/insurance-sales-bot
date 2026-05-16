@@ -7,144 +7,207 @@
     "value": "OICHLIP23084V042223",
     "unit": null,
     "source_pdf_path": "rag/corpus/oriental-insurance/oriental-mediclaim-individual__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "ORIENTAL MEDICLAIM INSURANCE POLICY (INDIVIDUAL) UIN: OICHLIP23084V042223 Page1",
+    "_confidence": "high"
   },
   "min_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/oriental-insurance/oriental-mediclaim-individual__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in oriental-insurance__oriental-mediclaim-individual__cis.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/oriental-insurance/oriental-mediclaim-individual__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/oriental-insurance/oriental-mediclaim-individual__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in oriental-insurance__oriental-mediclaim-individual__cis.pdf",
+    "_confidence": "low"
   },
   "min_child_entry_age": {
     "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/oriental-insurance/oriental-mediclaim-individual__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in oriental-insurance__oriental-mediclaim-individual__cis.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
-    "value": [
-      100000,
-      200000,
-      300000,
-      500000,
-      1000000,
-      1500000,
-      2000000,
-      2500000,
-      3000000,
-      4000000,
-      5000000
-    ],
+    "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/oriental-insurance/oriental-mediclaim-individual__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in oriental-insurance__oriental-mediclaim-individual__cis.pdf",
+    "_confidence": "low"
   },
   "grace_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/oriental-insurance/oriental-mediclaim-individual__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Grace period of 30 days",
+    "_confidence": "high"
   },
   "free_look_period": {
-    "value": null,
+    "value": 15,
     "unit": "days",
-    "source_pdf_path": "rag/corpus/oriental-insurance/oriental-mediclaim-individual__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_pdf_path": "rag/corpus/oriental-insurance/oriental-mediclaim-individual__wordings.pdf",
+    "source_quote": "y. The insured person shall be allowed free look period of 15 days from the date of receipt of the Policy document to review t",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/oriental-insurance/oriental-mediclaim-individual__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Initial waiting period: 30 days for all illnesses (not applicable on renewal or for accidents)",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 48,
     "unit": null,
     "source_pdf_path": "rag/corpus/oriental-insurance/oriental-mediclaim-individual__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Pre-existing diseases: Covered after 48 months",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/oriental-insurance/oriental-mediclaim-individual__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Specific waiting periods: 1. 90 days for named diseases 2. 12 months for named diseases(clauses 4.3 (i & ii)) 3. 24 months for disease at (clauses 4.3 (iii to xxii)) 4. 48 months for diseases (clauses 4.3 (xxiii & xxiv)",
+    "_confidence": "medium"
   },
   "maternity_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/oriental-insurance/oriental-mediclaim-individual__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in oriental-insurance__oriental-mediclaim-individual__cis.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/oriental-insurance/oriental-mediclaim-individual__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Related medical expenses incurred 30 days prior to hospitalization & 60 days from date of discharge.",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
     "value": 60,
     "unit": null,
     "source_pdf_path": "rag/corpus/oriental-insurance/oriental-mediclaim-individual__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Related medical expenses incurred 30 days prior to hospitalization & 60 days from date of discharge.",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/oriental-insurance/oriental-mediclaim-individual__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 140,
+    "source_url": "https://orientalinsurance.org.in/",
+    "source_note": "Per insurer baseline (Oriental Insurance health plans cover 140+ day care treatments)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/oriental-insurance/oriental-mediclaim-individual__cis.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
+    "value": 4300,
+    "source_url": "https://www.coverfox.com/health-insurance/oriental-health-insurance/network-hospitals/",
+    "source_note": "Oriental Insurance: 4,300+ network hospitals via GIPSA PPN (Coverfox aggregator; insurer site timed out). Alternate aggregator counts range 4,000-5,116 across the four PSU general insurers (GIPSA shared network). Scraped 2026-05-15.",
+    "_confidence": "medium",
     "source_pdf_path": "rag/corpus/oriental-insurance/oriental-mediclaim-individual__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Insurer-level metric backfilled from public-web source — see source_url"
   },
   "co_payment_pct": {
-    "value": null,
-    "unit": "percent",
+    "value": 10,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/oriental-insurance/oriental-mediclaim-individual__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Option of voluntary co-payment of 10% and 20% with corresponding premium discount of 10% and 20% respectively on SI of Rs. 2.0 lacs and above.",
+    "_confidence": "medium"
   },
   "room_rent_capped_at_pct_of_si": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/oriental-insurance/oriental-mediclaim-individual__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in oriental-insurance__oriental-mediclaim-individual__cis.pdf",
+    "_confidence": "low"
   },
   "policy_term_options_years": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/oriental-insurance/oriental-mediclaim-individual__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in oriental-insurance__oriental-mediclaim-individual__cis.pdf",
+    "_confidence": "low"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/oriental-insurance/oriental-mediclaim-individual__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in oriental-insurance__oriental-mediclaim-individual__cis.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/oriental-insurance/oriental-mediclaim-individual__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in oriental-insurance__oriental-mediclaim-individual__cis.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/oriental-insurance/oriental-mediclaim-individual__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in oriental-insurance__oriental-mediclaim-individual__cis.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/oriental-insurance/oriental-mediclaim-individual__cis.pdf",
+    "source_quote": "Ayurveda, Yoga,Siddha, Unani and Homeopathic treatment.",
+    "_confidence": "high"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/oriental-insurance/oriental-mediclaim-individual__cis.pdf",
+    "source_quote": "Donor Expenses",
+    "_confidence": "high"
+  },
+  "worldwide_emergency_cover": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/oriental-insurance/oriental-mediclaim-individual__cis.pdf",
+    "source_quote": "Treatment outside India",
+    "_confidence": "high"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/oriental-insurance/oriental-mediclaim-individual__cis.pdf",
+    "source_quote": "Health check up benefit for every block of 3 claim free policy years for the insured persons up to 1% of average sum insured subject to maximum Rs. 5000/- per insured person",
+    "_confidence": "high"
+  },
+  "critical_illness_cover": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/oriental-insurance/oriental-mediclaim-individual__cis.pdf",
+    "source_quote": "Cover for 22 critical illnesses.",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/oriental-insurance/oriental-mediclaim-individual__cis.pdf",
+    "source_quote": "Cashless services for covered expenses in Network hospitals",
+    "_confidence": "high"
+  },
+  "geographic_coverage": {
+    "value": "pan_india",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/oriental-insurance/oriental-mediclaim-individual__cis.pdf",
+    "source_quote": "Treatment outside India",
+    "_confidence": "medium"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "individual",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/oriental-insurance/oriental-mediclaim-individual__cis.pdf",
+    "source_quote": "1 Product Name Oriental Mediclaim Insurance Policy (Individual)",
+    "_confidence": "high"
+  },
+  "_meta": {
+    "network_hospital_backfill_2026-05-15": "oriental-insurance insurer-wide count backfilled in targeted scrape pass"
   }
 }

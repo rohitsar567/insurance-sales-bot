@@ -7,132 +7,237 @@
     "value": "SBIHLIP24141V022324",
     "unit": null,
     "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "| Super Health Insurance UIN: SBIHLIP24141V022324 | Add O",
+    "_confidence": "high"
   },
   "min_entry_age": {
-    "value": 18,
+    "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in sbi-general__super-health-insurance__cis.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
-    "value": 65,
+    "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in sbi-general__super-health-insurance__cis.pdf",
+    "_confidence": "low"
   },
   "min_child_entry_age": {
-    "value": 91,
+    "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in sbi-general__super-health-insurance__cis.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
     "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in sbi-general__super-health-insurance__cis.pdf",
+    "_confidence": "low"
   },
   "grace_period": {
-    "value": 30,
+    "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in sbi-general__super-health-insurance__cis.pdf",
+    "_confidence": "low"
   },
   "free_look_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "lation: The insured will be allowed a period of at least 30 days from the date of receipt of the policy to review",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "RIOD Initial Waiting Period: 30 days for all illnesses (not applicable in case of continuou",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
-    "value": 36,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
-  },
-  "specific_disease_waiting_months": {
     "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "ion. Pre-Existing diseases: Covered after 24 months. Exclusions (Wh",
+    "_confidence": "high"
+  },
+  "specific_disease_waiting_months": {
+    "value": null,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__cis.pdf",
+    "source_quote": "not stated in sbi-general__super-health-insurance__cis.pdf",
+    "_confidence": "low"
   },
   "maternity_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in sbi-general__super-health-insurance__cis.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": 60,
     "unit": null,
     "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Pre-Hospitalisation Medical Expenses- covered prior to 60 days of hosp",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
     "value": 180,
     "unit": null,
     "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Post-Hospitalisation Medical Expenses- covered post 90/180 days of hosp",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 142,
+    "source_url": "https://www.sbigeneral.in/health-insurance",
+    "source_note": "Per insurer baseline (SBI General health plans cover ~142 day care procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__cis.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 18324,
+    "source_url": "https://www.sbigeneral.in/",
+    "source_note": "18,324 network hospitals (homepage service-infrastructure stat, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
-    "value": null,
-    "unit": "percent",
+    "value": 10,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "3. Co-payment- 10% or 20% Co-Payment as speciĤed in the Policy Schedule, shall be applied on each and every admissible claim 4. Aggregate Deductible- The Insured Person shall bear on his/her own accou",
+    "_confidence": "medium"
   },
   "room_rent_capped_at_pct_of_si": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in sbi-general__super-health-insurance__cis.pdf",
+    "_confidence": "low"
   },
   "policy_term_options_years": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in sbi-general__super-health-insurance__cis.pdf",
+    "_confidence": "low"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in sbi-general__super-health-insurance__cis.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in sbi-general__super-health-insurance__cis.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in sbi-general__super-health-insurance__cis.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__cis.pdf",
+    "source_quote": "15. AYUSH Treatment– Covers Medical Expenses up to the Sum Insured towards Inpatient hospitalization under AYUSH Hospital.",
+    "_confidence": "high"
+  },
+  "maternity_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__cis.pdf",
+    "source_quote": "20. Maternity Expenses (including Pre and Post Natal check-ups) - Medical Expenses incurred towards Maternity Expenses including Pre-natal Medical Expenses & Post-natal check-ups incurred in respect o",
+    "_confidence": "high"
+  },
+  "newborn_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__cis.pdf",
+    "source_quote": "21. New Born Baby Cover- Up to the amount speciĤed for the Medical Expenses incurred in respect of a New Born Baby. 22. Child Vaccination Cover The expenses towards vaccination of child till he/she co",
+    "_confidence": "high"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__cis.pdf",
+    "source_quote": "11. Organ Donor Expenses- Medical Expenses towards organ donor’s Hospitalization for harvesting of the donated organ.",
+    "_confidence": "high"
+  },
+  "restoration_benefit": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__cis.pdf",
+    "source_quote": "12. ReInsure BeneĤt (Related and Unrelated illness both)- Sum insured will get reinstated unlimited times upto 100%/200% of Sum Insured for subsequent claims in a Policy Year.",
+    "_confidence": "high"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__cis.pdf",
+    "source_quote": "7. Domiciliary Hospitalization- Medical Expenses incurred for the Insured Person’s Domiciliary Hospitalization during the Policy Period following an Illness or Injury.",
+    "_confidence": "high"
+  },
+  "worldwide_emergency_cover": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__cis.pdf",
+    "source_quote": "25. Medical Treatment abroad (Listed Major illness, Diagnosis in India) - Medical Expenses incurred towards the Insured Person’s Inpatient Care outside India caused solely and directly due to any of the listed Illness/Procedures.",
+    "_confidence": "high"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__cis.pdf",
+    "source_quote": "19. Annual Health Check-up -Avail a health check-up for listed Preventive purposes.",
+    "_confidence": "high"
+  },
+  "critical_illness_cover": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__cis.pdf",
+    "source_quote": "3. Health Multiplier (Listed 37 Serious Illness)- Sum Insured for serious Illness (listed in Policy wordings) would be enhanced by a multiplier as mentioned in the Policy Schedule.",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__cis.pdf",
+    "source_quote": "-authorization of cashless facility - within 1 hour from receipt of complete documents. ii. TAT for cashless Ĥnal bill sett",
+    "_confidence": "high"
+  },
+  "geographic_coverage": {
+    "value": null,
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__cis.pdf",
+    "source_quote": "not stated in sbi-general__super-health-insurance__cis.pdf",
+    "_confidence": "low"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "family_floater",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__cis.pdf",
+    "source_quote": "Both Indemnity and BeneĤt Family Floater Sum Insured Sr. No. Insured Name Base Sum Insured Individual Sum Insured Sr. No",
+    "_confidence": "medium"
+  },
+  "no_claim_bonus_pct": {
+    "value": 50,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__cis.pdf",
+    "source_quote": "Cumulative Bonus- We will increase 50% of the",
+    "_confidence": "medium"
   }
 }

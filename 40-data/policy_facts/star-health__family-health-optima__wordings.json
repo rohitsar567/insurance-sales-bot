@@ -7,35 +7,36 @@
     "value": "SHAHLIP26046V092526",
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Family Health Optima Insurance Plan | UIN : SHAHLIP26046V092526 | POL / FHO / V.26 / 2026",
+    "_confidence": "high"
   },
   "min_entry_age": {
-    "value": 18,
+    "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in star-health__family-health-optima__wordings.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
-    "value": 65,
+    "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in star-health__family-health-optima__wordings.pdf",
+    "_confidence": "low"
   },
   "min_child_entry_age": {
     "value": 16,
     "unit": "days",
     "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "dependent children between 16 days and 25 years of age not exceeding 3 in number.",
+    "_confidence": "high"
   },
   "sum_insured_options": {
     "value": [
+      100000,
+      200000,
       300000,
+      400000,
       500000,
       1000000,
       1500000,
@@ -44,102 +45,212 @@
     ],
     "unit": "INR",
     "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Sum Insured (Rs.) Limit (Rs.) 1,00,000/- Up to 2,000/- per day 2,00,000/- 3,00,000/- Up to 5,000/- per day 4,00,000/- 5,00,000/- Single Standard A/C Room 10,00,000/- 15,00,000/- 20,00,000/- 25,00,000/-",
+    "_confidence": "medium"
   },
   "grace_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "the policy shall terminate and can be renewed within the Grace Period of 30 days.",
+    "_confidence": "high"
   },
   "free_look_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "The Policyholder shall be allowed free look period of thirty days from date of receipt of the policy document whether electronically or otherwise to review the terms and conditions of the policy.",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Expenses related to the treatment of any illness within 30 days from the ﬁrst policy commencement date shall be excluded except claims arising due to an accident, provided the same are covered",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 36,
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Expenses related to the treatment of a Pre-Existing Disease (PED) and its direct complications shall be excluded until the expiry of 36 months of continuous coverage after the date of inception of the ﬁrst policy with insurer",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "following listed Conditions, surgeries/ treatments shall be excluded until the expiry of 24 months of continuous coverage after the date of inception of the ﬁrst policy with us. This exclusion shall not be applicable for claims arising due to an accident",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in star-health__family-health-optima__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": 60,
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "expenses incurred for a period not exceeding 60 days prior to the date of hospitalization, for the disease/illness, injury sustained following an admissible claim for hospitalization under the policy.",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
     "value": 90,
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Post-Hospitalization medical expenses incurred for a period of 90 days from the date of discharge from the hospital towards Consultant fees, Diagnostic charges, Medicines and Drugs",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 540,
+    "source_url": "https://www.starhealth.in/health-insurance/daycare-treatment-and-procedures/",
+    "source_note": "Per insurer baseline (Star Health day-care procedures page; 540+ procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf"
   },
   "network_hospital_count": {
     "value": 14000,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_url": "https://www.starhealth.in/",
+    "source_note": "14,000+ network hospitals across India (per official Star Health communications, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
-    "value": null,
-    "unit": "percent",
+    "value": 20,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "This policy is subject to co-payment of 20% of each and every claim amount for fresh as well as renewal policies for Insured Persons whose age at the time of entry is 61 years and above.",
+    "_confidence": "high"
   },
   "room_rent_capped_at_pct_of_si": {
-    "value": null,
-    "unit": "percent",
+    "value": "single_private_ac_room",
+    "unit": null,
     "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Single Standard A/C Room",
+    "_confidence": "medium"
   },
   "policy_term_options_years": {
-    "value": null,
+    "value": [
+      1,
+      2
+    ],
     "unit": "years",
     "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Note: In case of two-year policy, total number of wellness points earned in two-year period will be divided by two.",
+    "_confidence": "medium"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in star-health__family-health-optima__wordings.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in star-health__family-health-optima__wordings.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in star-health__family-health-optima__wordings.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
+    "source_quote": "AYUSH Treatment: Inpatient Hospitalizations Expenses incurred on treatment under Ayurveda, Unani, Siddha and Homeopathy systems of medicines in a AYUSH Hospital is payable up to the Sum Insured.",
+    "_confidence": "high"
+  },
+  "newborn_coverage": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
+    "source_quote": "not stated in family-health-optima__wordings.pdf",
+    "_confidence": "low"
+  },
+  "organ_donor_expenses": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
+    "source_quote": "not stated in family-health-optima__wordings.pdf",
+    "_confidence": "low"
+  },
+  "restoration_benefit": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
+    "source_quote": "Automatic Restoration is available 3 times at 100% each time, during the Policy Period",
+    "_confidence": "medium"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
+    "source_quote": "Domiciliary Hospitalization: Domiciliary hospitalization means medical treatment for an illness/disease/injury which in the normal course would require care and treatment at a hospital but is actually taken while conﬁned at home und",
+    "_confidence": "high"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
+    "source_quote": "Health Check-up: We will arrange for a Preventive Health Check-up at Our Network Providers for the applicable package as specified below as per opted Sum Insured and subject t",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
+    "source_quote": "Cashless facility means a facility extended by the insurer to the insured where the payments, of the costs of treatment undergone by the insured in accordance with the Policy Terms and conditions, are directly made to the network provider by the insurer",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_cap_pct": {
+    "value": 100,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
+    "source_quote": "For the Sum Insured options Rs.3,00,000/- and above, the Insured Person shall be eligible for a Loyalty Bonus of 10% of the expiring Sum Insured subject to a maximum accumulation of 100% of the Sum Insured.",
+    "_confidence": "high"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "unit": "hours",
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
+    "source_quote": "not stated in star-health__family-health-optima__wordings.pdf",
+    "_confidence": "low"
+  },
+  "geographic_coverage": {
+    "value": "pan_india",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
+    "source_quote": "All claims under this policy shall be payable in Indian currency.",
+    "_confidence": "medium"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "family_floater",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
+    "source_quote": "dependent children between 16 days and 25 years of age not exceeding 3 in number. Dependent Parent / Parents in law.",
+    "_confidence": "medium"
+  },
+  "room_rent_capping": {
+    "value": "Single Private A/C Room",
+    "unit": "text",
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
+    "source_quote": "Single Standard A/C Room",
+    "_confidence": "medium"
+  },
+  "no_claim_bonus_pct": {
+    "value": 10,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__wordings.pdf",
+    "source_quote": "For the Sum Insured options Rs.3,00,000/- and above, the Insured Person shall be eligible for a Loyalty Bonus of 10% of the expiring Sum Insured subject to a maximum accumulation of 100% of the Sum Insured.",
+    "_confidence": "high"
   }
 }

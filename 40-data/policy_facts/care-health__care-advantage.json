@@ -5,40 +5,40 @@
   "uin_code": {
     "value": "CHIHLIP26049V042526",
     "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "007PLC161503 UAN:25076804 UIN:CHIHLIP26049V042526 IRDAI Registration Number - 148 www.careinsurance.com Quick quote & buy Online renewals Customer support Claim centre PA/52/raM:reV REACH US @ WhatsAp"
+    "source_quote": "CHIHLIP26049V042526 IRDAI Registration Number - 148 www.careinsurance.com REACH US @"
   },
   "min_entry_age": {
-    "value": null,
+    "value": 91,
     "unit": "days",
     "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "Min entry age not found"
+    "source_quote": "Floater : 91 Days with at least 1 Insured Person of age 18 years or above Entry Age – Maximum Lifelong Age of Proposer",
+    "_confidence": "high"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "Max entry age not explicitly stated; check Policy Schedule"
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "Lifelong renewability"
+    "source_quote": "not stated in care-health__care-advantage.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
-    "value": null,
+    "value": "25 Lacs, 50 Lacs and 1 Crore",
     "unit": "INR",
     "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "Sum Insured options not enumerated in extracted text; check Policy Schedule"
+    "source_quote": "Sum Insured* `25 Lacs, `50 Lacs and `1 Crore",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "Default IRDAI 30-day waiting period applies (not explicitly quoted in extracted snippet)"
+    "source_quote": "Initial Wait Period 30 Days Named Ailment wait Period 24 Months Pre-Existing Disease Wait Period 36 Months POLICY BENEFITS: Sum"
   },
   "pre_existing_disease_waiting_months": {
     "value": 36,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "Ailment wait Period 24 Months Pre-Existing Disease 36 Months Wait Period Pricing Zones Zone 1 - Delhi NCR, Surat, Mathura, Aligarh Zone 2 - Mumbai (incl. MMR), Telangana, Indore, Nashik Zone 3 - Pune,"
+    "source_quote": "Initial Wait Period 30 Days Named Ailment wait Period 24 Months Pre-Existing Disease Wait Period 36 Months",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
@@ -48,12 +48,13 @@
   "maternity_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "Maternity waiting not specified or maternity excluded"
+    "source_quote": "not stated in care-health__care-advantage.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": 30,
     "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "um Insured Treatment Expenses Pre Hospitalisation/ 30 days pre hospitalization Post Hospitalisation and 60 days post hospitalization Automatic Recharge Yes, once in a Policy Year Ambulance Cover Up to"
+    "source_quote": "Pre Hospitalisation/ Post Hospitalisation 30 days pre hospitalization and 60 days post hospitalization Automatic Recharge Yes, once in a Policy Year Ambulance Cover Up to Sum Insured Organ Donor Expenses Up"
   },
   "post_hospitalization_days": {
     "value": 60,
@@ -61,29 +62,34 @@
     "source_quote": "/ 30 days pre hospitalization Post Hospitalisation and 60 days post hospitalization Automatic Recharge Yes, once in a Policy Year Ambulance Cover Up to Sum Insured Organ Donor Expenses Up to Sum Insur"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "Day-care count not enumerated; covered per policy definition"
+    "value": 541,
+    "source_url": "https://www.careinsurance.com/product/care-senior",
+    "source_note": "Per insurer baseline (Care Health publishes 541+ day care treatments across plans)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf"
   },
   "ayush_coverage": {
-    "value": false,
+    "value": null,
     "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "AYUSH coverage not found in extracted text"
+    "source_quote": "not stated in care-health__care-advantage.pdf",
+    "_confidence": "low"
   },
   "maternity_coverage": {
-    "value": false,
+    "value": null,
     "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "Maternity not explicitly mentioned; presumed excluded in base"
+    "source_quote": "not stated in care-health__care-advantage.pdf",
+    "_confidence": "low"
   },
   "newborn_coverage": {
-    "value": false,
+    "value": null,
     "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "Newborn cover not found; typically tied to maternity option"
+    "source_quote": "not stated in care-health__care-advantage.pdf",
+    "_confidence": "low"
   },
   "organ_donor_expenses": {
     "value": true,
     "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "Organ Donor Expenses Up to Sum Insured 10% increase in SI per Policy Year in No Claim Bonus (NCB) case of claim-free year; Max up to 50% of SI OPTIONAL BENEFITS: 50% increase in SI per Policy Year in "
+    "source_quote": "Organ Donor Expenses Up to Sum Insured No Claim Bonus (NCB) 10% increase in SI per Policy Year in case of claim-free year; Max up to 50% of SI OPTIONAL BENEFITS: No Claims Bonus Super (NCBS) Air Ambulance"
   },
   "no_claim_bonus_pct": {
     "value": 50,
@@ -96,9 +102,11 @@
     "source_quote": "recharge of Sum Insured"
   },
   "room_rent_capping": {
-    "value": "Room Rent No Sub-Limit",
+    "value": "No Sub-Limit",
+    "unit": null,
     "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "Room Rent No Sub-Limit"
+    "source_quote": "POLICY BENEFITS: Room Rent No Sub-Limit ICU charges No Sub-Limit",
+    "_confidence": "high"
   },
   "copayment_pct": {
     "value": 20,
@@ -108,38 +116,56 @@
   "deductible_amount": {
     "value": null,
     "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "No base deductible (or only optional voluntary deductible add-on)"
+    "source_quote": "not stated in care-health__care-advantage.pdf",
+    "_confidence": "low"
   },
   "network_hospital_count": {
-    "value": null,
-    "source_url": null,
-    "source_quote": "Insurer-level metric; not extracted in this curation pass"
+    "value": 11600,
+    "source_url": "https://www.careinsurance.com/health-plan-network-hospitals.html",
+    "source_note": "Care Health Insurance: 22,100+ healthcare providers including 11,600+ network hospitals (insurer network-hospitals page; corroborated by Google snippet of careinsurance.com, scraped 2026-05-15). Conservative count uses hospital-specific subset, not the wider healthcare-provider count.",
+    "_confidence": "medium"
   },
   "cashless_treatment_supported": {
     "value": true,
+    "unit": null,
     "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "at a very affordable premium. CASHLESS MEDICAL SERVICES AT NETWORK OF 24000+ HEALTHCARE PROVIDERS Care Advantage gives you the advantage of cashless treatment which ensures you concentrate only on you"
+    "source_quote": "CASHLESS MEDICAL SERVICES AT NETWORK OF 24000+ HEALTHCARE PROVIDERS Care Advantage gives you the advantage of cashless treatmen",
+    "_confidence": "high"
   },
   "claim_settlement_ratio": {
     "value": null,
     "source_url": null,
-    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted"
+    "source_quote": "not stated in care-health__care-advantage.pdf",
+    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
     "value": null,
-    "source_pdf_path": null,
-    "source_quote": "TAT not specified in policy wording; governed by IRDAI Master Circular"
+    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
+    "source_quote": "not stated in care-health__care-advantage.pdf",
+    "_confidence": "low"
   },
   "policy_type": {
-    "value": "indemnity",
+    "value": null,
     "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "Default indemnity (no explicit alternate type detected)"
+    "source_quote": "not stated in care-health__care-advantage.pdf",
+    "_confidence": "low"
   },
   "_meta": {
     "curated_at": "2026-05-14",
     "primary_source_pdf": "rag/corpus/care-health/care-advantage__brochure.pdf",
     "supporting_source_pdfs": [],
     "completeness_pct": 80,
-    "notes": "Pattern-based extraction from local PDF via pdfplumber. Insurer-level metrics (CSR, network count) left null pending downstream backfill."
+    "notes": "Pattern-based extraction from local PDF via pdfplumber. Insurer-level metrics (CSR, network count) left null pending downstream backfill. | Batch 3 (2026-05-15): coverage breadth fields backfilled.",
+    "batch3_added_fields": [
+      "preventive_health_checkup"
+    ],
+    "network_hospital_backfill_2026-05-15": "care-health insurer-wide count backfilled in targeted scrape pass"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
+    "source_quote": "Annual Health Check-up",
+    "extraction_method": "tools/curate_batch3.py — pattern-grep over pdfplumber text"
   }
 }

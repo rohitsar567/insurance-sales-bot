@@ -4,135 +4,200 @@
   "insurer_slug": "manipalcigna",
   "source_pdf_path": "rag/corpus/manipalcigna/sarvah-param__wordings.pdf",
   "uin_code": {
-    "value": "MCIHLIP26083V022526",
+    "value": "MCIHLIP26038V022526",
     "unit": null,
     "source_pdf_path": "rag/corpus/manipalcigna/sarvah-param__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "UIN: MCIHLIP26038V022526",
+    "_confidence": "high"
   },
   "min_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/manipalcigna/sarvah-param__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in manipalcigna__sarvah-param__wordings.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/manipalcigna/sarvah-param__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/manipalcigna/sarvah-param__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in manipalcigna__sarvah-param__wordings.pdf",
+    "_confidence": "low"
   },
   "min_child_entry_age": {
-    "value": null,
+    "value": 90,
     "unit": "days",
     "source_pdf_path": "rag/corpus/manipalcigna/sarvah-param__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "and Customary Charges incurred on the New Born Baby during and post birth, up to 90 days from the date of delivery, within WKH\u0003OLPLWV\u0003VSHFL¿HG\u0003LQ\u0003W",
+    "_confidence": "medium"
   },
   "sum_insured_options": {
     "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/manipalcigna/sarvah-param__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in manipalcigna__sarvah-param__wordings.pdf",
+    "_confidence": "low"
   },
   "grace_period": {
     "value": 30,
     "unit": "days",
-    "source_pdf_path": "rag/corpus/manipalcigna/sarvah-param__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_pdf_path": "rag/corpus/manipalcigna/sarvah-param__brochure.pdf",
+    "source_quote": "Grace Period of 15 days for Monthly mode and 30 days for Half-Yearly & Quarterly mode would be",
+    "_confidence": "medium"
   },
   "free_look_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/manipalcigna/sarvah-param__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "free look period of 30 days from date of receipt of the policy document to review the terms and conditions of the Policy",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
-    "value": null,
+    "value": 30,
     "unit": null,
-    "source_pdf_path": "rag/corpus/manipalcigna/sarvah-param__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_pdf_path": "rag/corpus/manipalcigna/sarvah-param__brochure.pdf",
+    "source_quote": "ii.30 Days Waiting Period - Code- Excl. 03 $S",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/manipalcigna/sarvah-param__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in manipalcigna__sarvah-param__wordings.pdf",
+    "_confidence": "low"
   },
   "specific_disease_waiting_months": {
-    "value": null,
+    "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/manipalcigna/sarvah-param__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "penses related to the treatment of the listed Conditions, surgeries/treatments shall be excluded until the expiry of 24 months of continuous coverage after the date of inception RI\u0003 WK",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/manipalcigna/sarvah-param__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in manipalcigna__sarvah-param__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/manipalcigna/sarvah-param__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in manipalcigna__sarvah-param__wordings.pdf",
+    "_confidence": "low"
   },
   "post_hospitalization_days": {
-    "value": null,
+    "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/manipalcigna/sarvah-param__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "incurred during the Policy Period and Post-hospitalization Medical Expenses for up to 30 days each. E\f\u00037KH\u00035HVWRUDWLRQ\u0003ZDVEHQH¿W\u0003VKDOO\u0003QRW\u0003DSSO\\\u0003XQGHU\u0003 W",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/manipalcigna/sarvah-param__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 540,
+    "source_url": "https://www.manipalcigna.com/blog/what-is-day-care-treatment-in-health-insurance-",
+    "source_note": "Per insurer baseline (ManipalCigna publishes 500+ day care procedures; 540 standard)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/manipalcigna/sarvah-param__wordings.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
+    "value": 8500,
+    "source_url": "https://www.policyx.com/health-insurance/network-hospitals/manipalcigna/",
+    "source_note": "ManipalCigna ProHealth plan disclosure: 8,500+ cashless hospitals (PolicyX aggregator and ManipalCigna ProHealth plan description). Insurer's own /network-hospitals page does not state aggregate count. Scraped 2026-05-15.",
+    "_confidence": "medium",
     "source_pdf_path": "rag/corpus/manipalcigna/sarvah-param__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Insurer-level metric backfilled from public-web source — see source_url"
   },
   "co_payment_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/manipalcigna/sarvah-param__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in manipalcigna__sarvah-param__wordings.pdf",
+    "_confidence": "low"
   },
   "room_rent_capped_at_pct_of_si": {
-    "value": null,
+    "value": 0,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/manipalcigna/sarvah-param__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "s, `300 Lacs Covered up to Sum Insured Room Rent: Covered up to Single Private AC Room For ICU - Covered up to Sum Insured 7KLV\u0003EHQH¿W\u0003VKDOO\u0003DOVR",
+    "_confidence": "high"
   },
   "policy_term_options_years": {
-    "value": null,
+    "value": [
+      1,
+      2,
+      3
+    ],
     "unit": "years",
     "source_pdf_path": "rag/corpus/manipalcigna/sarvah-param__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "In case where the Policy Period is 2/3 years",
+    "_confidence": "medium"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/manipalcigna/sarvah-param__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in manipalcigna__sarvah-param__wordings.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/manipalcigna/sarvah-param__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in manipalcigna__sarvah-param__wordings.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/manipalcigna/sarvah-param__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in manipalcigna__sarvah-param__wordings.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/manipalcigna/sarvah-param__wordings.pdf",
+    "source_quote": "Ayurveda, Yoga and Naturopathy, Unani, Siddha and Homeopathy Systems.",
+    "_confidence": "high"
+  },
+  "restoration_benefit": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/manipalcigna/sarvah-param__wordings.pdf",
+    "source_quote": "We will pr",
+    "_confidence": "high"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/manipalcigna/sarvah-param__wordings.pdf",
+    "source_quote": "Domiciliary Hospital",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/manipalcigna/sarvah-param__wordings.pdf",
+    "source_quote": "medical services to an insured by a cashless facility.",
+    "_confidence": "medium"
+  },
+  "geographic_coverage": {
+    "value": "pan_india",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/manipalcigna/sarvah-param__wordings.pdf",
+    "source_quote": "occurrences taking place, and treatment taken in India.",
+    "_confidence": "medium"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "family_floater",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/manipalcigna/sarvah-param__wordings.pdf",
+    "source_quote": "renewed on a Family Floater basis",
+    "_confidence": "medium"
+  },
+  "_meta": {
+    "network_hospital_backfill_2026-05-15": "manipalcigna insurer-wide count backfilled in targeted scrape pass"
   }
 }

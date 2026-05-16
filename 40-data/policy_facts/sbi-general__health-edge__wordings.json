@@ -7,132 +7,232 @@
     "value": "SBIHLIP23173V012223",
     "unit": null,
     "source_pdf_path": "rag/corpus/sbi-general/health-edge__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "| Health Edge Insurance, UIN: SBIHLIP23173V012223 | SBI G",
+    "_confidence": "high"
   },
   "min_entry_age": {
     "value": 18,
     "unit": "years",
     "source_pdf_path": "rag/corpus/sbi-general/health-edge__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "days Min – 18 years and Max -65 years Entry",
+    "_confidence": "high"
   },
   "max_entry_age": {
     "value": 65,
     "unit": "years",
     "source_pdf_path": "rag/corpus/sbi-general/health-edge__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/sbi-general/health-edge__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "00/Hospitalization] [Min - 18 years/Max - 65 years] INR 50K",
+    "_confidence": "high"
   },
   "min_child_entry_age": {
     "value": 91,
     "unit": "days",
     "source_pdf_path": "rag/corpus/sbi-general/health-edge__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "ly adopted) between the Age 91 days to Age 30 years. If the chil",
+    "_confidence": "high"
   },
   "sum_insured_options": {
     "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/sbi-general/health-edge__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in sbi-general__health-edge__wordings.pdf",
+    "_confidence": "low"
   },
   "grace_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/sbi-general/health-edge__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "rly instalment options, a Grace Period of 30 days is applicable. ii. During",
+    "_confidence": "high"
   },
   "free_look_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/sbi-general/health-edge__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "free look period of 30 days beginning from the date of",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/sbi-general/health-edge__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Period 30 Days Initial Waiting Period (Excluding Accidental Hospita",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
-    "value": 36,
+    "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/sbi-general/health-edge__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "re diagnosed by a physician not more than 24 months prior to the date of commencement of the policy issued by the i",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/sbi-general/health-edge__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Specific waiting period means a period up to 24 months from",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": 48,
     "unit": null,
     "source_pdf_path": "rag/corpus/sbi-general/health-edge__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Maternity Expenses: 48 months, Assisted",
+    "_confidence": "high"
   },
   "pre_hospitalization_days": {
-    "value": 30,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/sbi-general/health-edge__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in sbi-general__health-edge__wordings.pdf",
+    "_confidence": "low"
   },
   "post_hospitalization_days": {
-    "value": 60,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/sbi-general/health-edge__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in sbi-general__health-edge__wordings.pdf",
+    "_confidence": "low"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/sbi-general/health-edge__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 142,
+    "source_url": "https://www.sbigeneral.in/health-insurance",
+    "source_note": "Per insurer baseline (SBI General health plans cover ~142 day care procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/sbi-general/health-edge__wordings.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/sbi-general/health-edge__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 18324,
+    "source_url": "https://www.sbigeneral.in/",
+    "source_note": "18,324 network hospitals (homepage service-infrastructure stat, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
-    "value": null,
-    "unit": "percent",
+    "value": 10,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/sbi-general/health-edge__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "D.15 Co-payment On availing this option, 10% or 20% Co-Payment as specified in the Policy Schedule, shall be applied on each and every admissible claim wherever applicable under this Policy, once the Co-Payment",
+    "_confidence": "medium"
   },
   "room_rent_capped_at_pct_of_si": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/sbi-general/health-edge__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in sbi-general__health-edge__wordings.pdf",
+    "_confidence": "low"
   },
   "policy_term_options_years": {
-    "value": null,
+    "value": [
+      1
+    ],
     "unit": "years",
     "source_pdf_path": "rag/corpus/sbi-general/health-edge__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "pired Policy Period, if the term of Policy upto one year and there is no C",
+    "_confidence": "medium"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/sbi-general/health-edge__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in sbi-general__health-edge__wordings.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/sbi-general/health-edge__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in sbi-general__health-edge__wordings.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/sbi-general/health-edge__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in sbi-general__health-edge__wordings.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/sbi-general/health-edge__wordings.pdf",
+    "source_quote": "C.8 AYUSH Treatment The Company shall indemnify the Medical Expenses incurred by the Insured Person for Inpatient Care under Ayurveda, Yoga and Naturopathy, Unani, Siddha and Homeopathy systems of medicines during each Policy Year",
+    "_confidence": "high"
+  },
+  "maternity_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/sbi-general/health-edge__wordings.pdf",
+    "source_quote": "D.12 Women Care Benefit D.12.1 Maternity Expenses On availing this option, We will indemnify the Medical Expenses incurred up to the amount specified against this Benefit in the Policy Schedule for the",
+    "_confidence": "high"
+  },
+  "newborn_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/sbi-general/health-edge__wordings.pdf",
+    "source_quote": "D.12.2 New Born Baby Cover On availing this option, the Company will indemnify up to the Sum Insured specified against this Benefit in the Policy Schedule for the Medical Expenses incurred in respect of a New B",
+    "_confidence": "high"
+  },
+  "restoration_benefit": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/sbi-general/health-edge__wordings.pdf",
+    "source_quote": "D.5 Unlimited Refill (Related and Unrelated Illness both) On availing this option, this benefit is triggered and becomes payable for each and every claim from the first claim itself in a policy year.",
+    "_confidence": "high"
+  },
+  "worldwide_emergency_cover": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/sbi-general/health-edge__wordings.pdf",
+    "source_quote": "Global Treatment We will pay the Medical Expenses incurred towards the Insured Person’s Inpatient Care outside India during the Policy Period caused solely and directly due to any of the below listed Illness or",
+    "_confidence": "high"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/sbi-general/health-edge__wordings.pdf",
+    "source_quote": "C.9 Stay Fit Health Check-Up The Insured Person may avail a health check-up, only for Preventive Test, up to a sub-limit as specified in Your Policy Schedule.",
+    "_confidence": "high"
+  },
+  "critical_illness_cover": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/sbi-general/health-edge__wordings.pdf",
+    "source_quote": "Irrespective of the type of Policy the benefits under this Section shall be available on an individual basis to each Insured Person whose age is between 18 to 45 years, up to the limits specified in the Policy Schedule.",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/sbi-general/health-edge__wordings.pdf",
+    "source_quote": "epresentative. 5. Cashless Facility means a facility extended by the insurer to the insured where the payments, of the cost",
+    "_confidence": "high"
+  },
+  "geographic_coverage": {
+    "value": null,
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/sbi-general/health-edge__wordings.pdf",
+    "source_quote": "not stated in sbi-general__health-edge__wordings.pdf",
+    "_confidence": "low"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "family_floater",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/sbi-general/health-edge__wordings.pdf",
+    "source_quote": ") or all Insured Persons (on Floater basis) during the Policy Year basis, for the following covers and in this",
+    "_confidence": "medium"
+  },
+  "room_rent_capping": {
+    "value": "Room Rent ICU Charges Basis of Payment - Indemnity Actuals up to Sum Insured",
+    "unit": "text",
+    "source_pdf_path": "rag/corpus/sbi-general/health-edge__wordings.pdf",
+    "source_quote": "Room Rent ICU Charges Basis of Payment - Indemnity Actuals up to Sum Insured Basis of Payment - Indemnity Pre-hospitalization Medical Expenses (up to Sum Insured)",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_pct": {
+    "value": 50,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/sbi-general/health-edge__wordings.pdf",
+    "source_quote": "pplied, Sum Insured is increased by 50% (as specified in the Policy Schedule) of the Base Sum Insured of immediate preceding Policy Year in r",
+    "_confidence": "medium"
   }
 }

@@ -5,27 +5,26 @@
   "uin_code": {
     "value": null,
     "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__cis.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in icici-lombard__health-shield-360-retail__cis.pdf",
+    "_confidence": "low"
   },
   "min_entry_age": {
     "value": null,
     "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__cis.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in icici-lombard__health-shield-360-retail__cis.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__cis.pdf",
-    "source_quote": ""
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__cis.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in icici-lombard__health-shield-360-retail__cis.pdf",
+    "_confidence": "low"
   },
   "pre_existing_disease_waiting_months": {
-    "value": null,
+    "value": 24,
     "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__cis.pdf",
-    "source_quote": ""
+    "source_quote": "Pre-Existing Diseases: Declared & accepted Pre-existing diseases will be covered after 12/24 months (as per the plan opted) of continuous coverage.",
+    "_confidence": "medium"
   },
   "initial_waiting_period_days": {
     "value": 30,
@@ -35,47 +34,54 @@
   "maternity_coverage": {
     "value": true,
     "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__cis.pdf",
-    "source_quote": "Maternity Cover and New Born Baby Cover: d.B. 7\n24/36 months"
+    "source_quote": "Maternity Cover and New Born Baby Cover– I. Maternity Cover - Section d.B.1 Section d.B.2 Section d.B.3 Section d. B. 4 Section d. B. 5 Section d. B.6 Section d. B. 7",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": 36,
     "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__cis.pdf",
-    "source_quote": "Maternity Cover and New Born Baby Cover: d.B. 7\n24/36 months"
+    "source_quote": "Maternity Cover and New Born Baby Cover: 24/36 months (as per the plan opted), provided both Insured Person and Spouse are covered under the same Policy. 5. Payment basis  In the event that a claim"
   },
   "ayush_coverage": {
-    "value": null,
+    "value": true,
     "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__cis.pdf",
-    "source_quote": ""
+    "source_quote": "In Patient AYUSH Hospitalization- Covers Medical Expenses incurred for AYUSH treatment in an AYUSH Hospital or AYUSH day care center.",
+    "_confidence": "high"
   },
   "cashless_treatment_supported": {
     "value": true,
     "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__cis.pdf",
-    "source_quote": "Cashless facility"
+    "source_quote": "In the event that a claim becomes payable under the terms of the Policy, We shall make such payment in a lump sum through Cashless facility or provide Reimbursement of benefits",
+    "_confidence": "high"
   },
   "copayment_pct": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__cis.pdf",
-    "source_quote": ""
+    "value": 10,
+    "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__wordings.pdf",
+    "source_quote": "and lead to Policy Cancellation ii. A Co-payment of 10% will be applied to every admissible claim iii. The coverag",
+    "_confidence": "high"
   },
   "no_claim_bonus_pct": {
     "value": 20,
     "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__cis.pdf",
-    "source_quote": "Cumulative bonus - A\nA. 14\nCumulative Bonus of 20%"
+    "source_quote": "A Cumulative Bonus of 20% of the Annual Sum Insured will be provided at the end of each claim free Policy Year subject to a maximum of 100% of annual sum insured Year if the Policy is continuously renewed with Us. Even in the"
   },
   "restoration_benefit": {
     "value": null,
     "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__cis.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in icici-lombard__health-shield-360-retail__cis.pdf",
+    "_confidence": "low"
   },
   "room_rent_capping": {
     "value": null,
     "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__cis.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in icici-lombard__health-shield-360-retail__cis.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": null,
     "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__cis.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in icici-lombard__health-shield-360-retail__cis.pdf",
+    "_confidence": "low"
   },
   "post_hospitalization_days": {
     "value": 30,
@@ -83,39 +89,45 @@
     "source_quote": "Post-hospitalization Medical\nExpenses documents may be provided within\n30 days"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__cis.pdf",
-    "source_quote": ""
+    "value": 150,
+    "source_url": "https://www.icicilombard.com/docs/default-source/downloads/complete-health-insurance-brochure.pdf",
+    "source_note": "Per insurer baseline (ICICI Lombard Complete Health iHealth Annexure I; 150 procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__cis.pdf"
   },
   "network_hospital_count": {
     "value": 6000,
     "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__cis.pdf",
-    "source_quote": "6000+\nnetwork hospitals"
+    "source_quote": "available at over 6000+ network hospitals. For updated list of network providers kindly visit our website. (Note: The above list of Policy exclusions is indicative only. Please refer to",
+    "_confidence": "high"
   },
   "sum_insured_options": {
     "value": null,
     "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__cis.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in icici-lombard__health-shield-360-retail__cis.pdf",
+    "_confidence": "low"
   },
   "claim_settlement_ratio": {
     "value": null,
     "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__cis.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in icici-lombard__health-shield-360-retail__cis.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
-    "value": null,
+    "value": 4,
     "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__cis.pdf",
-    "source_quote": ""
+    "source_quote": "ation  For Cashless facility claims we will respond within 4 hours (subject to receiving complete set of documents)of the act",
+    "_confidence": "high"
   },
   "policy_type": {
     "value": "hospital_cash",
     "source_pdf_path": "rag/corpus/icici-lombard/health-shield-360-retail__cis.pdf",
-    "source_quote": "classified as hospital_cash from PDF heuristics"
+    "source_quote": "Daily Cash- A daily cash allowance will be provided for each completed day of Hospitalization for 3 consecutive days up to a maximum of 10 days in a policy year.  Nursing at Home Post Hospitalization - Expenses incurred for the medical services of"
   },
   "_meta": {
     "curated_at": "2026-05-14",
     "primary_source_pdf": "rag/corpus/icici-lombard/health-shield-360-retail__cis.pdf",
     "completeness_pct": 36,
-    "notes": "Curated by tools/curate_remaining.py \u2014 pattern-based extraction from local PDF"
+    "notes": "Curated by tools/curate_remaining.py — pattern-based extraction from local PDF"
   }
 }

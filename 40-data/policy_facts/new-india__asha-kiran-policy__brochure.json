@@ -3,64 +3,75 @@
   "policy_name": "Asha Kiran Policy",
   "insurer_slug": "new-india",
   "uin_code": {
-    "value": null,
+    "value": "NIAHLIP21233V022021",
     "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "NIAHLIP21233V022021 Page 1 of 21",
+    "_confidence": "high"
   },
   "min_entry_age": {
-    "value": null,
+    "value": 18,
     "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "This insurance is\navailable to persons between the age of 18 years and 65 years.",
+    "_confidence": "high"
   },
   "max_entry_age": {
-    "value": null,
+    "value": 65,
     "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__brochure.pdf",
-    "source_quote": ""
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "This insurance is\navailable to persons between the age of 18 years and 65 years.",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
-    "value": null,
+    "value": 48,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "of a pre-existing Disease (PED) and its direct complications \nshall be excluded until the expiry of 48 months of continuous coverage after the date of \ninception of the first policy with us.",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in asha-kiran-policy__brochure.pdf",
+    "_confidence": "low"
   },
   "maternity_coverage": {
-    "value": null,
+    "value": false,
+    "unit": "boolean",
     "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "4.15 MATERNITY EXPENSES (Code - Excl18) \na. Medical treatment expenses traceable to childbirth",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in asha-kiran-policy__brochure.pdf",
+    "_confidence": "low"
   },
   "ayush_coverage": {
     "value": null,
+    "unit": "boolean",
     "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in asha-kiran-policy__brochure.pdf",
+    "_confidence": "low"
   },
   "cashless_treatment_supported": {
     "value": true,
+    "unit": "boolean",
     "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__brochure.pdf",
-    "source_quote": "Cashless facility"
+    "source_quote": "Cashless facility",
+    "_confidence": "high"
   },
   "copayment_pct": {
-    "value": null,
+    "value": 20.0,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "our liability towards any claim will be  \na) 80% of admissible claim amount",
+    "_confidence": "medium"
   },
   "no_claim_bonus_pct": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in asha-kiran-policy__brochure.pdf",
+    "_confidence": "low"
   },
   "restoration_benefit": {
     "value": "restoration of the previous state of Health\nunder any circumstances unless in a",
@@ -68,54 +79,73 @@
     "source_quote": "restoration of the previous state of Health\nunder any circumstances unless in a vegetative state as certified by the tre"
   },
   "room_rent_capping": {
-    "value": "Room rent, Boarding, DMO / RMO / CMO / RMP Charges, Nursing (Including Injection",
+    "value": "1% of Sum Insured per day",
+    "unit": null,
     "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__brochure.pdf",
-    "source_quote": "Room rent, Boarding, DMO / RMO / CMO / RMP Charges, Nursing (Including Injection\n/ Drugs and Intra venous fluid administ"
+    "source_quote": "Room rent, Boarding, DMO / RMO / CMO / RMP Charges, Nursing (Including Injection\n/ Drugs and Intra venous fluid administ",
+    "_confidence": "medium"
   },
   "pre_hospitalization_days": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in asha-kiran-policy__brochure.pdf",
+    "_confidence": "low"
   },
   "post_hospitalization_days": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in asha-kiran-policy__brochure.pdf",
+    "_confidence": "low"
   },
   "day_care_treatments_count": {
     "value": null,
+    "unit": "procedures",
     "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in asha-kiran-policy__brochure.pdf",
+    "_confidence": "low"
   },
   "network_hospital_count": {
-    "value": null,
+    "value": 20855,
+    "source_url": "https://www.newindia.co.in/hospitals-list",
+    "source_note": "New India Assurance: 20,855 empanelled hospitals as of 11.02.2025 (direct quote from insurer Hospitals List page, scraped 2026-05-15). Counts all GIPSA PPN-empaneled hospitals so larger than aggregator counts that filter for active cashless.",
+    "_confidence": "high",
     "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "Insurer-level metric backfilled from public-web source — see source_url"
   },
   "sum_insured_options": {
-    "value": null,
+    "value": [
+      200000,
+      300000,
+      500000,
+      800000
+    ],
     "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "You are free to choose any Sum Insured from Rs. 2 lakhs, 3 lakhs, 5 lakhs, and8 Lakhs.",
+    "_confidence": "high"
   },
   "claim_settlement_ratio": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in asha-kiran-policy__brochure.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in asha-kiran-policy__brochure.pdf",
+    "_confidence": "low"
   },
   "policy_type": {
-    "value": "hospital_cash",
+    "value": "indemnity",
     "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__brochure.pdf",
-    "source_quote": "classified as hospital_cash from PDF heuristics"
+    "source_quote": "New India Asha Kiran is a Policy designed to cover Hospitalisation expenses of the family and Personal Accident for Parents.",
+    "_confidence": "high"
   },
   "_meta": {
     "curated_at": "2026-05-14",
     "primary_source_pdf": "rag/corpus/new-india/asha-kiran-policy__brochure.pdf",
     "completeness_pct": 18,
-    "notes": "Curated by tools/curate_remaining.py \u2014 pattern-based extraction from local PDF"
+    "notes": "Curated by tools/curate_remaining.py — pattern-based extraction from local PDF",
+    "network_hospital_backfill_2026-05-15": "new-india insurer-wide count backfilled in targeted scrape pass"
   }
 }

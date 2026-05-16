@@ -1,0 +1,46 @@
+{
+  "name_display": "X7 Smoke User",
+  "name_slug": "x7-smoke-user",
+  "persona_id": "c7b4ef2af903",
+  "profile": {
+    "name": "X7 Smoke User",
+    "age": null,
+    "dependents": null,
+    "income_band": null,
+    "existing_cover_inr": null,
+    "primary_goal": null,
+    "location_tier": null,
+    "parents_to_insure": null,
+    "parents_age_max": null,
+    "parents_has_ped": null,
+    "budget_band": null,
+    "health_conditions": [],
+    "asked": [],
+    "free_form_session": false,
+    "shown_policies": [
+      {
+        "policy_slug": "care-supreme",
+        "insurer": "care_health",
+        "event_at": "2026-05-15T08:13:05Z",
+        "session_id": "x7-smoke-25746",
+        "reason": "shown_in_recommendation",
+        "turn_idx": 4
+      },
+      {
+        "policy_slug": "star-comprehensive",
+        "insurer": "star_health",
+        "event_at": "2026-05-15T08:13:05Z",
+        "session_id": "x7-smoke-25746",
+        "reason": "shown_in_recommendation",
+        "turn_idx": 4
+      }
+    ],
+    "selected_policies": [],
+    "rejected_policies": []
+  },
+  "first_seen": "2026-05-15T08:13:05Z",
+  "last_seen": "2026-05-15T08:13:05Z",
+  "sessions": [
+    "x7-smoke-25746"
+  ]
+}

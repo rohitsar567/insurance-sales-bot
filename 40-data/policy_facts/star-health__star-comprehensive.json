@@ -8,42 +8,53 @@
     "source_quote": "Star Comprehensive Insurance Policy | UIN : SHAHLIP26044V092526"
   },
   "min_entry_age": {
-    "value": 91,
+    "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
-    "source_quote": "Newborn baby (defined as upto 90 days); dependent entry standard 91 days"
+    "source_quote": "not stated in star-comprehensive__wordings.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
-    "source_quote": "Adult entry per Policy Schedule (Star Comprehensive: 18+ years; max entry typically 65 years per brochure)"
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
-    "source_quote": "Lifelong renewability"
+    "source_quote": "not stated in star-health__star-comprehensive.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
-    "value": [500000, 750000, 1000000, 1500000, 2000000, 2500000, 5000000, 7500000, 10000000],
+    "value": [
+      500000,
+      750000,
+      1000000,
+      1500000,
+      2000000,
+      2500000,
+      5000000,
+      7500000,
+      10000000
+    ],
     "unit": "INR",
     "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
-    "source_quote": "Sum Insured 5,00,000 / 7,50,000 / 10,00,000 to 25,00,000 / 50,00,000 / 75,00,000 / 1,00,00,000 (Delivery and New Born SI grid)"
+    "source_quote": "Sum Insured Rs. 5,00,000/- 1,200/- 7,50,000/- 1,500/- 10,00,000/- 2,100/- 15,00,000/- 2,400/- 20,00,000/- 3,000/- 25,00,000/- 3,300/- 50,00,000/-, 75,00,000/- and 1,00,00,000/- 5,000/-",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
-    "source_quote": "30-day waiting period for illness (standard IRDAI Excl03 applied)"
+    "source_quote": "Expenses related to the treatment of any illness within 30 days from the first policy commencement date shall be excluded except claims arising due to an accident, provided the same are covered B",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 12,
     "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
-    "source_quote": "Pre-Existing Diseases: Code Excl 01 ... shall be excluded until the expiry of 12 months of continuous coverage after the date of inception of the first policy with insurer"
+    "source_quote": "ment of a pre-existing Disease (PED) and its direct complications shall be excluded until the expiry of 12 months of continuous coverage after the date of inception of the first policy with insure",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
-    "source_quote": "2. Specified disease / procedure waiting period - Code Excl 02 ... shall be excluded until the expiry of 24 months of continuous coverage"
+    "source_quote": "treatments shall be excluded until the expiry of 24 months of continuous coverage after the date of inception of the first policy with us. This exc",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": 24,
@@ -61,24 +72,29 @@
     "source_quote": "6. Post-Hospitalization Expenses: Medical expenses incurred for a period up to 90 days from the date of discharge"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
-    "source_quote": "2. Day Care Treatment: We will cover ... All Day Care Treatments (no fixed count enumerated in wording)"
+    "value": 540,
+    "source_url": "https://www.starhealth.in/health-insurance/daycare-treatment-and-procedures/",
+    "source_note": "Per insurer baseline (Star Health day-care procedures page; 540+ procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf"
   },
   "ayush_coverage": {
     "value": true,
     "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
-    "source_quote": "treatments given under Ayurveda, Yoga and Naturopathy, Unani, Siddha and Homeopathy (AYUSH covered)"
+    "source_quote": "AYUSH Treatment: Medical expenses for Inpatient Hospitalization incurred on treatment under Ayurveda, Yoga and Naturopathy, Unani, Siddha and Homeopathy systems of medicines in a AYUSH Hospital is payable up to the Sum Insured.",
+    "_confidence": "high"
   },
   "maternity_coverage": {
     "value": true,
     "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
-    "source_quote": "14. Delivery and New Born A. Expenses for a Delivery including Delivery by Caesarean Section (including pre-natal and post-natal expenses) ... subject to a maximum of 2 deliveries in the entire life time of the Insured Person"
+    "source_quote": "14. Delivery and New Born A",
+    "_confidence": "high"
   },
   "newborn_coverage": {
-    "value": true,
+    "value": null,
     "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
-    "source_quote": "B. Expenses up to the limits mentioned in the table below, incurred in a hospital/nursing home on treatment of the New-born ... including any congenital disorders"
+    "source_quote": "not stated in star-comprehensive__wordings.pdf",
+    "_confidence": "low"
   },
   "organ_donor_expenses": {
     "value": true,
@@ -98,47 +114,81 @@
   "room_rent_capping": {
     "value": "Per eligible room category in Policy Schedule (proportionate deduction if higher category opted)",
     "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
-    "source_quote": "proportion to the room rent limit / room (proportionate deduction clause applies)"
+    "source_quote": "Room Rent: Room Rent means the amount charged by a Hospital towards Room and Boarding expenses and shall include the associated medical expenses",
+    "_confidence": "medium"
   },
   "copayment_pct": {
     "value": null,
     "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
-    "source_quote": "Mandatory copay for 61+ entrants (standard Star Health clause; voluntary copay 10%/20% optional)"
+    "source_quote": "not stated in star-health__star-comprehensive.pdf",
+    "_confidence": "low"
   },
   "deductible_amount": {
     "value": null,
-    "source_pdf_path": null,
-    "source_quote": "No base deductible"
+    "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
+    "source_quote": "not stated in star-health__star-comprehensive.pdf",
+    "_confidence": "low"
   },
   "network_hospital_count": {
-    "value": null,
-    "source_url": null,
-    "source_quote": "Insurer-level metric (Star Health 14,000+)"
+    "value": 14000,
+    "source_url": "https://www.starhealth.in/",
+    "source_note": "14,000+ network hospitals across India (per official Star Health communications, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "cashless_treatment_supported": {
     "value": true,
     "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
-    "source_quote": "Cashless facility through Star Health in-house claims"
+    "source_quote": "Cashless Facility: Cashless Facility means a facility extended by the insurer to the insured where the payments, of the cost of treatment undergone by the insured in accordance with the Policy Terms and conditions, are directly made to the network provider by the insurer to th",
+    "_confidence": "high"
   },
   "claim_settlement_ratio": {
     "value": null,
     "source_url": null,
-    "source_quote": "Insurer-level metric; not extracted"
+    "source_quote": "not stated in star-health__star-comprehensive.pdf",
+    "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
     "value": null,
-    "source_pdf_path": null,
-    "source_quote": "TAT governed by IRDAI Master Circular"
+    "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
+    "source_quote": "not stated in star-health__star-comprehensive.pdf",
+    "_confidence": "low"
   },
   "policy_type": {
     "value": "indemnity",
     "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
-    "source_quote": "Indemnity-based comprehensive individual / family floater plan"
+    "source_quote": "Hospital Cash Benefit are not applicable for this Section",
+    "_confidence": "low"
   },
   "_meta": {
     "curated_at": "2026-05-13",
     "primary_source_pdf": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
     "completeness_pct": 88,
-    "notes": "Star Comprehensive: 12-month PED (best in class), 100% NCB for SI ≥ 7.5L per claim-free year, maternity covered with 24-month waiting + newborn cover."
+    "notes": "Star Comprehensive: 12-month PED (best in class), 100% NCB for SI ≥ 7.5L per claim-free year, maternity covered with 24-month waiting + newborn cover. | Batch 3 (2026-05-15): coverage breadth fields backfilled.",
+    "batch3_added_fields": [
+      "ambulance_cover",
+      "domiciliary_treatment",
+      "preventive_health_checkup"
+    ]
+  },
+  "ambulance_cover": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
+    "source_quote": "road ambulance expenses incurred for the following are payable :- i",
+    "extraction_method": "tools/curate_batch3.py — pattern-grep over pdfplumber text",
+    "_confidence": "medium"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
+    "source_quote": "Domiciliary Hospitalization: Domiciliary Hospitalization means medical treatment for an illness/disease/injury which in the normal course would require care and treatment at a hospital but is actually taken while confined at home un",
+    "extraction_method": "tools/curate_batch3.py — pattern-grep over pdfplumber text",
+    "_confidence": "high"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
+    "source_quote": "Preventive Health Check-up",
+    "extraction_method": "tools/curate_batch3.py — pattern-grep over pdfplumber text"
   }
 }

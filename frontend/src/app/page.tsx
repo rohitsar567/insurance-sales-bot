@@ -48,6 +48,11 @@ type DisplayMessage = ChatMessage & {
   brain?: string;
   latencyMs?: number;
   blocked?: boolean;
+  // KI-278 (2026-05-16) — when the backend couldn't synthesize voice for
+  // this reply (e.g. Sarvam 429 / out of credits), it ships a friendly
+  // explanation here. Rendered as a small inline notice under the bubble
+  // so a voice-less reply never looks broken/unexplained.
+  ttsNotice?: string;
 };
 
 export default function Page() {
@@ -760,6 +765,10 @@ export default function Page() {
         brain: res.brain_used,
         latencyMs: res.latency_ms,
         blocked: res.blocked,
+        // KI-278 — surface the structured voice-output failure (if any) so
+        // the reply doesn't look silently broken. Only set when the backend
+        // actually attempted + failed TTS (returnAudio path).
+        ttsNotice: res.tts_user_message ?? undefined,
       });
       // KI-Z7 (2026-05-15) — Feature B. Surface the "Welcome back" banner
       // when the backend recalled a stored named-profile on this turn.
@@ -1341,18 +1350,21 @@ export default function Page() {
         </div>
       )}
       <header className="border-b border-[var(--border)] bg-[var(--card)]">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center font-bold text-sm">IA</div>
-            <div>
-              <h1 className="font-semibold text-base sm:text-lg leading-tight">{t("header.title")}</h1>
-              <p className="text-xs text-[var(--muted-foreground)]">{t("header.subtitle")}</p>
-            </div>
+        {/* Polish pass (2026-05-15): tagline + subtitle removed from this
+            row — the landing hero already carries the brand voice. The h1
+            is now a compact, single-line brand mark so the chip row never
+            wraps mid-text and each chip can lay out as a clean tile. */}
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-3 sm:gap-4 flex-wrap">
+          <div className="flex items-center gap-2.5 shrink-0">
+            <div className="w-9 h-9 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center font-bold text-sm shadow-sm">IA</div>
+            <h1 className="font-semibold text-sm sm:text-base leading-tight tracking-tight whitespace-nowrap">
+              {uiLang === "hi" ? "बीमा सलाहकार" : "Insurance Advisor"}
+            </h1>
           </div>
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap ml-auto">
             <button
               onClick={() => { setShowMarketplace(!showMarketplace); setShowPremium(false); setShowCoverage(false); setShowAdmin(false); }}
-              className={`group relative overflow-hidden rounded-xl transition-all shadow-sm hover:shadow-md ${
+              className={`chip-tile group relative overflow-hidden rounded-xl transition-all shadow-sm hover:shadow-md ${
                 showMarketplace
                   ? "ring-2 ring-[var(--primary)]"
                   : ""
@@ -1365,21 +1377,17 @@ export default function Page() {
                   <LibraryIcon />
                 </div>
                 <div className="px-3 py-2 text-left">
-                  <div className="text-[10px] uppercase tracking-wider opacity-85 leading-none">{t("header.policy_library_kicker")}</div>
-                  <div className="text-xs font-bold leading-tight whitespace-nowrap">{t("header.policy_library")}</div>
+                  <div className="text-[11px] uppercase tracking-wider font-semibold leading-none whitespace-nowrap">
+                    {uiLang === "hi" ? "पॉलिसी लाइब्रेरी" : "Policy Library"}
+                  </div>
+                  <div className="text-[12px] leading-tight whitespace-nowrap opacity-90 mt-1">
+                    {coverage
+                      ? (uiLang === "hi"
+                          ? `${coverage.total_policies} plans · ${coverage.total_insurers} insurers`
+                          : `${coverage.total_policies} plans · ${coverage.total_insurers} insurers`)
+                      : (uiLang === "hi" ? "Loading…" : "Loading…")}
+                  </div>
                 </div>
-                {coverage && (
-                  <div className="flex flex-col items-center justify-center px-3 py-1 bg-white/15 border-l border-white/20">
-                    <div className="text-sm font-bold leading-none">{coverage.total_policies}</div>
-                    <div className="text-[9px] uppercase tracking-wider opacity-90 leading-none mt-0.5">{t("header.policies_label")}</div>
-                  </div>
-                )}
-                {coverage && (
-                  <div className="hidden sm:flex flex-col items-center justify-center px-3 py-1 bg-black/10">
-                    <div className="text-sm font-bold leading-none">{coverage.total_insurers}</div>
-                    <div className="text-[9px] uppercase tracking-wider opacity-90 leading-none mt-0.5">{t("header.insurers_label")}</div>
-                  </div>
-                )}
               </div>
             </button>
             {/* KI (2026-05-15) — old "ESTIMATE Annual premium" CTA chip
@@ -1388,7 +1396,7 @@ export default function Page() {
                 two redundant premium UI elements collapsed into one. */}
             <button
               onClick={() => { setShowProfile(!showProfile); setShowMarketplace(false); setShowPremium(false); setShowCoverage(false); setShowAdmin(false); }}
-              className={`group relative overflow-hidden rounded-xl transition-all shadow-sm hover:shadow-md ${
+              className={`chip-tile group relative overflow-hidden rounded-xl transition-all shadow-sm hover:shadow-md ${
                 showProfile ? "ring-2 ring-[var(--primary)]" : ""
               }`}
               title={uiLang === "hi" ? "अपनी profile बनाएं — हर policy को आपके लिए score करेंगे" : "Build your profile — every policy gets a personal score"}
@@ -1399,15 +1407,17 @@ export default function Page() {
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="8" r="4" /><path d="M4 21v-2a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v2" /></svg>
                 </div>
                 <div className="px-3 py-2 text-left">
-                  <div className="text-[10px] uppercase tracking-wider opacity-85 leading-none">{uiLang === "hi" ? "आप" : "You"}</div>
-                  <div className="text-xs font-bold leading-tight whitespace-nowrap">{uiLang === "hi" ? "आपकी profile" : "Your profile"}</div>
-                </div>
-                {profileCompleteness && (
-                  <div className="flex flex-col items-center justify-center px-3 py-1 bg-white/15 border-l border-white/20">
-                    <div className="text-sm font-bold leading-none">{profileCompleteness.completeness_pct}%</div>
-                    <div className="text-[9px] uppercase tracking-wider opacity-90 leading-none mt-0.5">{uiLang === "hi" ? "पूर्ण" : "DONE"}</div>
+                  <div className="text-[11px] uppercase tracking-wider font-semibold leading-none whitespace-nowrap">
+                    {uiLang === "hi" ? "आपकी profile" : "Your profile"}
                   </div>
-                )}
+                  <div className="text-[12px] leading-tight whitespace-nowrap opacity-90 mt-1">
+                    {profileCompleteness
+                      ? (uiLang === "hi"
+                          ? `${profileCompleteness.completeness_pct}% पूर्ण`
+                          : `${profileCompleteness.completeness_pct}% complete`)
+                      : (uiLang === "hi" ? "शुरू करें" : "Tap to build")}
+                  </div>
+                </div>
               </div>
             </button>
             {/* KI-273 — Premium chip is now ALWAYS visible (the entry point
@@ -1426,7 +1436,7 @@ export default function Page() {
               <button
                 type="button"
                 onClick={() => { setShowPremium(!showPremium); setShowMarketplace(false); setShowCoverage(false); setShowProfile(false); setShowAdmin(false); }}
-                className={`group relative overflow-hidden rounded-xl shadow-sm transition-all hover:shadow-md hover:brightness-110 cursor-pointer ${
+                className={`chip-tile group relative overflow-hidden rounded-xl shadow-sm transition-all hover:shadow-md hover:brightness-110 cursor-pointer ${
                   showPremium ? "ring-2 ring-[var(--primary)]" : ""
                 }`}
                 title={uiLang === "hi" ? "आपकी profile के सभी eligible plans का अनुमानित premium range. किसी एक plan के लिए estimate देखने के लिए tap करें." : "Estimated premium range across all eligible plans for your profile. Tap to estimate for a specific plan."}
@@ -1437,13 +1447,13 @@ export default function Page() {
                     <RupeeIcon />
                   </div>
                   <div className="px-3 py-2 text-left">
-                    <div className="text-[10px] uppercase tracking-wider opacity-85 leading-none">
-                      {uiLang === "hi" ? "अनुमानित premium · सभी plans में" : "Est. range · across plans"}
+                    <div className="text-[11px] uppercase tracking-wider font-semibold leading-none whitespace-nowrap">
+                      {uiLang === "hi" ? "प्रीमियम रेंज" : "Premium range"}
                     </div>
-                    <div className="text-xs font-bold leading-tight whitespace-nowrap">
+                    <div className="text-[12px] leading-tight whitespace-nowrap opacity-90 mt-1">
                       {hasMeaningfulBand
                         ? `₹${premiumBand!.min_inr.toLocaleString("en-IN")}–₹${premiumBand!.max_inr.toLocaleString("en-IN")}/yr`
-                        : (uiLang === "hi" ? "Tap करें" : "Tap to estimate")}
+                        : (uiLang === "hi" ? "अनुमान देखें" : "Tap to estimate")}
                     </div>
                   </div>
                   <div className="flex items-center justify-center px-2 py-2 bg-white/15 border-l border-white/20 transition-transform group-hover:translate-x-0.5">
@@ -1461,7 +1471,7 @@ export default function Page() {
                 password in the embedded dashboard to unlock the live data. */}
             <button
               onClick={() => { setShowAdmin(!showAdmin); setShowMarketplace(false); setShowPremium(false); setShowProfile(false); setShowCoverage(false); }}
-              className={`group relative overflow-hidden rounded-xl transition-all shadow-sm hover:shadow-md ${
+              className={`chip-tile group relative overflow-hidden rounded-xl transition-all shadow-sm hover:shadow-md ${
                 showAdmin ? "ring-2 ring-[var(--primary)]" : ""
               }`}
               title="LLM control panel — health, chain order, usage (admin-only, password-gated)"
@@ -1472,8 +1482,8 @@ export default function Page() {
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2 4 6v6c0 5 3.5 9 8 10 4.5-1 8-5 8-10V6l-8-4z" /><path d="M9 12l2 2 4-4" /></svg>
                 </div>
                 <div className="px-3 py-2 text-left">
-                  <div className="text-[10px] uppercase tracking-wider opacity-85 leading-none">Admin</div>
-                  <div className="text-xs font-bold leading-tight whitespace-nowrap">Access panel</div>
+                  <div className="text-[11px] uppercase tracking-wider font-semibold leading-none whitespace-nowrap">Admin</div>
+                  <div className="text-[12px] leading-tight whitespace-nowrap opacity-90 mt-1">Access panel</div>
                 </div>
               </div>
             </button>
@@ -2467,8 +2477,14 @@ function EmptyState({
   const sectionHeading = (en: string, hi: string) => (isHi ? hi : en);
 
   return (
-    <div className="flex-1 flex flex-col items-center px-4 py-6 sm:py-8">
-      <div className="w-full max-w-3xl flex flex-col gap-8 sm:gap-10">
+    <div
+      className="flex-1 flex flex-col items-center px-4 py-6 sm:py-10"
+      style={{
+        background:
+          "linear-gradient(180deg, color-mix(in srgb, var(--primary) 6%, transparent) 0%, transparent 28%, transparent 72%, color-mix(in srgb, var(--primary) 4%, transparent) 100%)",
+      }}
+    >
+      <div className="w-full max-w-3xl flex flex-col gap-7 sm:gap-12">
         {/* Hero band — subtle teal-to-white gradient, IA logo, headline. */}
         <section
           className="relative overflow-hidden rounded-2xl border border-[var(--border)] px-5 sm:px-7 py-6 sm:py-8 text-center"
@@ -2480,11 +2496,30 @@ function EmptyState({
           <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center text-xl sm:text-2xl font-bold mb-4 mx-auto shadow-sm">
             IA
           </div>
-          <h1 className="text-2xl sm:text-[2.5rem] sm:leading-tight font-semibold tracking-tight mb-3">
-            {t("welcome.heading_a")}
-            <em className="not-italic text-[var(--primary)]">{t("welcome.heading_b")}</em>
-            {t("welcome.heading_c")}
-          </h1>
+          {/* Orphan-proof hero: pull the last word of heading_a out so it can
+              be wrapped together with the emphasised word + trailing punctuation
+              in a single non-breaking span. Prevents the "you." orphan that
+              broke the visual rhythm at narrow viewport widths. Works for HI
+              too — the splitter just keeps the em-dash glued to the em block. */}
+          {(() => {
+            const headA = t("welcome.heading_a");
+            const trimmedRight = headA.replace(/\s+$/, "");
+            const lastSpace = trimmedRight.lastIndexOf(" ");
+            const leading = lastSpace >= 0 ? trimmedRight.slice(0, lastSpace + 1) : "";
+            const lastTok = lastSpace >= 0 ? trimmedRight.slice(lastSpace + 1) : trimmedRight;
+            const headB = t("welcome.heading_b");
+            const headC = t("welcome.heading_c");
+            return (
+              <h1 className="text-[1.65rem] sm:text-[2.5rem] leading-snug sm:leading-tight font-semibold tracking-tight mb-3 max-w-2xl mx-auto">
+                {leading}
+                <span className="whitespace-nowrap">
+                  {lastTok}{lastTok ? " " : ""}
+                  <em className="not-italic text-[var(--primary)]">{headB}</em>
+                  {headC}
+                </span>
+              </h1>
+            );
+          })()}
           {/* KI-276 — removed the welcome.subtitle / no_commissions / source_link
               triplet. Section 1 below already explains what the bot does in a
               cleaner, numbered-step format. */}
@@ -2493,10 +2528,10 @@ function EmptyState({
         {/* Section 1 — How this works. Three numbered step cards. The
             coverage line ("X policies across Y insurers") is folded into
             step 2 here so it doesn't float as a standalone caption. */}
-        <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-sm px-5 sm:px-6 py-5 sm:py-6">
-          <div className="flex items-center gap-2 mb-4">
+        <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-sm px-5 sm:px-7 py-6 sm:py-7">
+          <div className="flex items-center gap-2.5 mb-5">
             <SectionIcon kind="lightbulb" />
-            <h2 className="text-lg sm:text-xl font-semibold text-[var(--foreground)]">
+            <h2 className="text-lg sm:text-xl font-semibold text-[var(--foreground)] tracking-tight">
               {sectionHeading("How this works", "यह कैसे काम करता है")}
             </h2>
           </div>
@@ -2546,14 +2581,14 @@ function EmptyState({
 
         {/* Section 2 — Using the bot. Four input-mode rows with mini icons.
             Mirrors the composer pill below (mic / spacebar / Live BETA). */}
-        <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-sm px-5 sm:px-6 py-5 sm:py-6">
-          <div className="flex items-center gap-2 mb-4">
+        <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-sm px-5 sm:px-7 py-6 sm:py-7">
+          <div className="flex items-center gap-2.5 mb-5">
             <SectionIcon kind="mic" />
-            <h2 className="text-lg sm:text-xl font-semibold text-[var(--foreground)]">
+            <h2 className="text-lg sm:text-xl font-semibold text-[var(--foreground)] tracking-tight">
               {sectionHeading("Using the bot", "Bot का इस्तेमाल कैसे करें")}
             </h2>
           </div>
-          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <ModeRow
               icon="keyboard"
               title={sectionHeading("Type your message", "Message type करें")}
@@ -2598,30 +2633,48 @@ function EmptyState({
         {/* Section 3 — Before we begin. Two side-by-side callouts:
             (a) the honesty callout that previously lived as a standalone
             yellow box; (b) voice-tips so the user knows how to speak. */}
-        <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-sm px-5 sm:px-6 py-5 sm:py-6">
-          <div className="flex items-center gap-2 mb-4">
+        <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-sm px-5 sm:px-7 py-6 sm:py-7">
+          <div className="flex items-center gap-2.5 mb-5">
             <SectionIcon kind="shield" />
-            <h2 className="text-lg sm:text-xl font-semibold text-[var(--foreground)]">
+            <h2 className="text-lg sm:text-xl font-semibold text-[var(--foreground)] tracking-tight">
               {sectionHeading("Two things before we start", "शुरू करने से पहले दो बातें")}
             </h2>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 items-stretch">
             {/* Left — honesty callout. Uses the existing welcome.trust_* keys
                 so the Hindi copy comes through untouched. */}
-            <div className="rounded-xl border border-[var(--primary)] bg-[var(--accent)] px-4 py-4 text-left">
-              <div className="text-sm font-semibold text-[var(--primary)] mb-1.5">
-                {t("welcome.trust_title")}
+            <div className="callout-card callout-amber rounded-xl border border-amber-300 bg-gradient-to-br from-amber-50 to-amber-100/40 dark:from-amber-900/20 dark:to-amber-800/10 px-5 py-5 text-left shadow-sm flex flex-col">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="inline-flex w-7 h-7 rounded-lg bg-amber-200/60 dark:bg-amber-800/40 items-center justify-center text-amber-700 dark:text-amber-300">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 9v4" />
+                    <path d="M12 17h.01" />
+                    <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+                  </svg>
+                </span>
+                <div className="text-[15px] font-semibold text-amber-800 dark:text-amber-300 leading-tight">
+                  {t("welcome.trust_title")}
+                </div>
               </div>
-              <p className="text-[13px] text-[var(--muted-foreground)] leading-relaxed">
+              <p className="text-[14px] text-amber-900/80 dark:text-amber-200/80 leading-relaxed">
                 {t("welcome.trust_body")}
               </p>
             </div>
             {/* Right — voice tips. */}
-            <div className="rounded-xl border border-[var(--border)] bg-[var(--muted)] px-4 py-4 text-left">
-              <div className="text-sm font-semibold text-[var(--foreground)] mb-1.5">
-                {sectionHeading("Speaking to the bot", "Bot से बात करना")}
+            <div className="callout-card rounded-xl border border-[var(--border)] bg-gradient-to-br from-[var(--muted)] to-[var(--card)] px-5 py-5 text-left shadow-sm flex flex-col">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="inline-flex w-7 h-7 rounded-lg bg-teal-100/60 dark:bg-teal-900/40 items-center justify-center text-[var(--primary)]">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="9" y="2" width="6" height="12" rx="3" />
+                    <path d="M5 10a7 7 0 0 0 14 0" />
+                    <path d="M12 17v4" />
+                  </svg>
+                </span>
+                <div className="text-[15px] font-semibold text-[var(--foreground)] leading-tight">
+                  {sectionHeading("Speaking to the bot", "Bot से बात करना")}
+                </div>
               </div>
-              <p className="text-[13px] text-[var(--muted-foreground)] leading-relaxed">
+              <p className="text-[14px] text-[var(--muted-foreground)] leading-relaxed">
                 {sectionHeading(
                   "Please speak slowly and clearly so the voice AI can understand you. You can speak in English OR Hindi — I'll respond in whichever language you used. If you say something unclear, just repeat or rephrase — no penalties.",
                   "धीरे और साफ़ बोलिए ताकि voice AI समझ सके। आप English या हिन्दी, किसी भी भाषा में बोल सकते हैं — मैं उसी भाषा में जवाब दूंगा। अगर कुछ अस्पष्ट हो, तो दोबारा या अलग शब्दों में बोलिए — कोई penalty नहीं।"
@@ -2636,21 +2689,30 @@ function EmptyState({
 }
 
 // StepCard — one of the three numbered cards in Section 1.
+// Polished pass (2026-05-15): larger circular numbered badge in primary
+// teal, soft teal-tinted background, hover lift + shadow transition for a
+// tactile feel without distracting from the body copy.
 function StepCard({ n, title, body }: { n: number; title: string; body: string }) {
   return (
-    <li className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-4 py-4 flex flex-col">
-      <div className="w-7 h-7 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] text-sm font-semibold flex items-center justify-center mb-3">
+    <li className="step-card group rounded-xl border border-[var(--border)] bg-gradient-to-br from-teal-50/60 to-[var(--card)] dark:from-teal-900/15 dark:to-[var(--card)] px-5 py-6 flex flex-col transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-[color-mix(in_srgb,var(--primary)_30%,var(--border))]">
+      <div
+        className="w-10 h-10 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] text-[15px] font-semibold flex items-center justify-center mb-4 shadow-sm ring-4 ring-[color-mix(in_srgb,var(--primary)_12%,transparent)]"
+        aria-hidden="true"
+      >
         {n}
       </div>
-      <div className="text-sm font-semibold text-[var(--foreground)] mb-1.5 leading-snug">
+      <div className="text-[15px] font-semibold text-[var(--foreground)] mb-2 leading-snug tracking-tight">
         {title}
       </div>
-      <p className="text-[13px] text-[var(--muted-foreground)] leading-relaxed">{body}</p>
+      <p className="text-[13.5px] text-[var(--muted-foreground)] leading-relaxed">{body}</p>
     </li>
   );
 }
 
 // ModeRow — one of the four input-mode rows in Section 2.
+// Polished pass (2026-05-15): icon now sits in a 40px gradient-tinted
+// square with brand-teal stroke, body copy bumped to 13.5px for parity with
+// step cards, and a subtle hover lift mirrors the step grid above.
 function ModeRow({
   icon,
   title,
@@ -2661,27 +2723,29 @@ function ModeRow({
   body: string;
 }) {
   return (
-    <li className="flex items-start gap-3 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3.5 py-3">
-      <div className="shrink-0 w-9 h-9 rounded-lg bg-[var(--muted)] text-[var(--primary)] flex items-center justify-center">
+    <li className="mode-row group flex items-start gap-3.5 rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-[color-mix(in_srgb,var(--primary)_30%,var(--border))]">
+      <div className="shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-teal-50 to-teal-100/50 dark:from-teal-900/30 dark:to-teal-800/15 text-[var(--primary)] flex items-center justify-center ring-1 ring-teal-100 dark:ring-teal-900/40">
         <ModeIcon kind={icon} />
       </div>
-      <div className="min-w-0">
-        <div className="text-sm font-semibold text-[var(--foreground)] leading-snug">{title}</div>
-        <p className="text-[13px] text-[var(--muted-foreground)] leading-relaxed mt-0.5">{body}</p>
+      <div className="min-w-0 pt-0.5">
+        <div className="text-[15px] font-semibold text-[var(--foreground)] leading-snug tracking-tight">{title}</div>
+        <p className="text-[13.5px] text-[var(--muted-foreground)] leading-relaxed mt-1">{body}</p>
       </div>
     </li>
   );
 }
 
 // SectionIcon — leading icon for each section heading.
+// Polished pass (2026-05-15): 22px size with a 2.2 stroke so it reads as a
+// distinct section anchor at a glance, not as inline body weight.
 function SectionIcon({ kind }: { kind: "lightbulb" | "mic" | "shield" }) {
   const common = {
-    width: 20,
-    height: 20,
+    width: 22,
+    height: 22,
     viewBox: "0 0 24 24",
     fill: "none",
     stroke: "currentColor",
-    strokeWidth: 2,
+    strokeWidth: 2.2,
     strokeLinecap: "round" as const,
     strokeLinejoin: "round" as const,
     className: "text-[var(--primary)]",
@@ -2851,6 +2915,21 @@ function Message({
             style={{ height: 32 }}
           />
         )}
+        {/* KI-278 (2026-05-16) — voice-output failure notice. The bug:
+            Sarvam ran out of TTS credits → backend returned a text reply
+            with no audio and NO explanation, so the user saw a voice-less
+            answer and asked "no voice in reply. wtf?". The failure is now
+            LOUD: a small inline line under the bubble that tells the user
+            the written answer is complete and why voice is unavailable. */}
+        {!isUser && !m.audioUrl && m.ttsNotice && (
+          <div
+            className="mt-2 flex items-start gap-1.5 text-xs text-[var(--muted-foreground)]"
+            role="status"
+          >
+            <span aria-hidden className="mt-px">🔇</span>
+            <span>{m.ttsNotice}</span>
+          </div>
+        )}
         {!isUser && m.citations && m.citations.length > 0 && (
           <CitedPolicyCards
             citations={m.citations}
@@ -2951,14 +3030,17 @@ function CitedPolicyCards({
       }
     : undefined;
 
-  // Dedupe citations by policy_id (the LLM often cites the same policy from
-  // multiple chunks). Top 3 for chat-message density.
+  // KI-278 — the backend now sends EXACTLY the policies the assistant named
+  // in its prose, in the order it presented them (single source of truth).
+  // Dedupe by policy_id only as a belt-and-braces guard; do NOT cap the
+  // count — capping is what made "4 named, 3 cards". One card per
+  // recommended policy so the panel mirrors the answer 1:1.
   const seen = new Set<string>();
   const topPolicies = citations.filter((c) => {
     if (seen.has(c.policy_id)) return false;
     seen.add(c.policy_id);
     return true;
-  }).slice(0, 3);
+  });
 
   useEffect(() => {
     for (const c of topPolicies) {
@@ -3978,7 +4060,6 @@ function FIELD_LABEL(field: string): string {
     uin_code: "UIN code",
     min_entry_age: "Min entry age",
     max_entry_age: "Max entry age",
-    max_renewal_age: "Max renewal age",
     sum_insured_options: "Sum insured options",
     initial_waiting_period_days: "Initial waiting period",
     pre_existing_disease_waiting_months: "Pre-existing waiting",
@@ -4223,12 +4304,10 @@ function PolicyDetailModal({ policy, onClose }: { policy: MarketplacePolicy; onC
               <Stat label="Who can buy + renew" value={(() => {
                 const min = policy.min_entry_age;
                 const max = policy.max_entry_age;
-                const renew = policy.max_renewal_age;
                 const minStr = min ? (min >= 30 && min <= 365 ? `${min} days` : `${min} yrs`) : null;
                 const maxStr = max ? `${max} yrs` : null;
                 const range = minStr && maxStr ? `${minStr} – ${maxStr}` : (minStr || maxStr || "Not stated");
-                const renewStr = renew ? (renew >= 99 ? " · lifelong renewal" : ` · renews up to ${renew}`) : "";
-                return range + renewStr;
+                return `${range} · lifelong renewal`;
               })()} />
               <Stat label="Wait before any claim" value={policy.initial_waiting_period_days ? `${policy.initial_waiting_period_days} days from start` : "Not stated"} />
               <Stat label={<Jargon term="PED" uiLang="en">Wait if you already had a condition</Jargon>} value={policy.pre_existing_disease_waiting_months ? `${policy.pre_existing_disease_waiting_months} months` : "Not stated"} />

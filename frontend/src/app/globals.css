@@ -68,3 +68,27 @@ body {
   50%      { box-shadow: 0 0 0 12px rgba(220, 38, 38, 0); }
 }
 .animate-record-pulse { animation: record-pulse 1.4s infinite; }
+
+/* Header chip-tile: locks every chip on a uniform min height + clean
+ * focus ring + keyboard accessibility. Two-line layout (kicker + sub) is
+ * guaranteed to align across chips even when one chip has more text. */
+.chip-tile {
+  min-height: 52px;
+  display: inline-flex;
+  align-items: stretch;
+}
+.chip-tile:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Honour reduced-motion preference: drop the hover-lift transition on the
+ * landing step / mode / callout cards for vestibular-sensitive users. */
+@media (prefers-reduced-motion: reduce) {
+  .step-card, .mode-row, .callout-card, .chip-tile {
+    transition: none !important;
+  }
+  .step-card:hover, .mode-row:hover {
+    transform: none !important;
+  }
+}

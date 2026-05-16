@@ -1,0 +1,18 @@
+{
+  "insurer_slug": "acko",
+  "insurer_name": "Acko General Insurance",
+  "last_updated": "2026-05-15",
+  "claim_metrics": {
+    "claim_settlement_ratio_pct": 96.31,
+    "claim_settlement_ratio_year": "FY 2023-24",
+    "complaints_per_10k_policies": 16,
+    "complaints_year": "FY 2024-25",
+    "incurred_claim_ratio_pct": null,
+    "three_year_avg_csr_pct": 96.5,
+    "source_irdai_url": "https://irdai.gov.in/document-detail",
+    "source_secondary_url": "https://joinditto.in/articles/health-insurance/acko-health-insurance-claim-settlement-ratio/",
+    "source_complaints_url": "https://algatesinsurance.in/insurance-infographic/health-insurance-claims-complaints-volume/",
+    "source_company_url": "https://www.acko.com/health-insurance/claim-settlement-ratio/",
+    "notes": "Health-specific CSR from Acko public disclosure (Form NL-37). Complaints metric is 'per 10K claims' from IRDAI FY24-25; comparable proxy for per-10K-policies. Acko also led private GI insurers with 99.91% of claims paid within 3 months in 2023-24."
+  }
+}

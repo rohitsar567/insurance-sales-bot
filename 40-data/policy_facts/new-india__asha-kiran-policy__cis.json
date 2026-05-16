@@ -10,22 +10,21 @@
   "min_entry_age": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in asha-kiran-policy__cis.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
-    "source_quote": ""
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in asha-kiran-policy__cis.pdf",
+    "_confidence": "low"
   },
   "pre_existing_disease_waiting_months": {
     "value": 36,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
-    "source_quote": "Pre-existing Diseases (Code- Excl01)-36 Months"
+    "source_quote": "Pre-existing Diseases (Code- Excl01)-36 Months",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
@@ -34,43 +33,56 @@
   },
   "maternity_coverage": {
     "value": null,
+    "unit": "boolean",
     "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in asha-kiran-policy__cis.pdf",
+    "_confidence": "low"
   },
   "maternity_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in asha-kiran-policy__cis.pdf",
+    "_confidence": "low"
   },
   "ayush_coverage": {
-    "value": null,
+    "value": true,
+    "unit": "boolean",
     "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
-    "source_quote": ""
+    "source_quote": "Coverage for AYUSH Treatment is up to 100% of the Sum \nInsured.",
+    "_confidence": "high"
   },
   "cashless_treatment_supported": {
     "value": true,
+    "unit": "boolean",
     "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
-    "source_quote": "Cashless Service and Reimbursement-Available\nProcedure i. Network"
+    "source_quote": "9 Claims/Claim Procedure Cashless Service and Reimbursement-Available i. Network hospital details -Available on website and on policy schedule ii. Helpline number: 1800-209-1415",
+    "_confidence": "high"
   },
   "copayment_pct": {
-    "value": null,
+    "value": 20.0,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
-    "source_quote": ""
+    "source_quote": "Co-Payment \nWhere the Insured Person is treated in a Hospital situated outside \nthe Area of Coverage (Zone) as stated in the Schedule, our liability \nwill be:",
+    "_confidence": "medium"
   },
   "no_claim_bonus_pct": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in asha-kiran-policy__cis.pdf",
+    "_confidence": "low"
   },
   "restoration_benefit": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in asha-kiran-policy__cis.pdf",
+    "_confidence": "low"
   },
   "room_rent_capping": {
-    "value": "Room rent and ICU 3.1(a)\nrespectively & (b)\nLIMIT ON PAYMENT FOR CATARACT\nUp to",
+    "value": "1% of Sum Insured per day",
+    "unit": null,
     "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
-    "source_quote": "Room rent and ICU 3.1(a)\nrespectively & (b)\nLIMIT ON PAYMENT FOR CATARACT\nUp to"
+    "source_quote": "Sub-limit Up to 1 % & 2% of the Sum Insured per day for Room rent and ICU respectively 3.1(a) & (b) LIMIT ON PAYMENT FOR CATARACT Up to 10% of the Sum Insured or Rs. 50,000, whichever is less",
+    "_confidence": "medium"
   },
   "pre_hospitalization_days": {
     "value": 30,
@@ -80,42 +92,52 @@
   "post_hospitalization_days": {
     "value": 60,
     "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
-    "source_quote": "Post-Hospitalisation \u2013Treatment within 60 days"
+    "source_quote": "Post-Hospitalisation –Treatment within 60 days"
   },
   "day_care_treatments_count": {
     "value": null,
+    "unit": "procedures",
     "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in asha-kiran-policy__cis.pdf",
+    "_confidence": "low"
   },
   "network_hospital_count": {
-    "value": null,
+    "value": 20855,
+    "source_url": "https://www.newindia.co.in/hospitals-list",
+    "source_note": "New India Assurance: 20,855 empanelled hospitals as of 11.02.2025 (direct quote from insurer Hospitals List page, scraped 2026-05-15). Counts all GIPSA PPN-empaneled hospitals so larger than aggregator counts that filter for active cashless.",
+    "_confidence": "high",
     "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
-    "source_quote": ""
+    "source_quote": "Insurer-level metric backfilled from public-web source — see source_url"
   },
   "sum_insured_options": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in asha-kiran-policy__cis.pdf",
+    "_confidence": "low"
   },
   "claim_settlement_ratio": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in asha-kiran-policy__cis.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
-    "value": null,
+    "value": 1,
     "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
-    "source_quote": ""
+    "source_quote": "iv. Pre-authorisation -Within 1 hour of request",
+    "_confidence": "high"
   },
   "policy_type": {
-    "value": "hospital_cash",
+    "value": "indemnity",
     "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
-    "source_quote": "classified as hospital_cash from PDF heuristics"
+    "source_quote": "3 Type of Insurance Product/Policy Indemnity Section 3 4 Sum Insured Basis Floater Sum insured.",
+    "_confidence": "high"
   },
   "_meta": {
     "curated_at": "2026-05-14",
     "primary_source_pdf": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
     "completeness_pct": 36,
-    "notes": "Curated by tools/curate_remaining.py \u2014 pattern-based extraction from local PDF"
+    "notes": "Curated by tools/curate_remaining.py — pattern-based extraction from local PDF",
+    "network_hospital_backfill_2026-05-15": "new-india insurer-wide count backfilled in targeted scrape pass"
   }
 }

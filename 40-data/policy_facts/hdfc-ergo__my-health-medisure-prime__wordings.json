@@ -7,132 +7,232 @@
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-medisure-prime__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in hdfc-ergo__my-health-medisure-prime__wordings.pdf",
+    "_confidence": "low"
   },
   "min_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-medisure-prime__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in hdfc-ergo__my-health-medisure-prime__wordings.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-medisure-prime__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-medisure-prime__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in hdfc-ergo__my-health-medisure-prime__wordings.pdf",
+    "_confidence": "low"
   },
   "min_child_entry_age": {
     "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-medisure-prime__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in hdfc-ergo__my-health-medisure-prime__wordings.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
     "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-medisure-prime__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in hdfc-ergo__my-health-medisure-prime__wordings.pdf",
+    "_confidence": "low"
   },
   "grace_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-medisure-prime__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Renewals are deemed to be continuous when received within a period of 30 days from the date of expiry of last policy subject however to the effective policy inception date being reckoned from such period when the renewal premium is received",
+    "_confidence": "high"
   },
   "free_look_period": {
-    "value": 30,
+    "value": 15,
     "unit": "days",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-medisure-prime__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "A period of 15 days from the date of receipt of the Policy document is available to review the terms and conditions of this Policy.",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-medisure-prime__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Any disease contracted and/or medical expenses incurred in respect of any disease/illness by the Insured/Insured Person during the first 30 days from the commencement date of the Policy except in case of accidental injuries.",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
-    "value": 48,
+    "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-medisure-prime__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "All pre-existing diseases / illness / injury / conditions as defined in the Policy, until 24 months of continuous covers have elapsed since inception of the first Policy with us.",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-medisure-prime__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "any type of Breast lumps, Hypertension and Diabetes and related complications during the first two years(24 months) of continuous operation of this insurance cover. Diabe",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-medisure-prime__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in hdfc-ergo__my-health-medisure-prime__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": 60,
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-medisure-prime__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Pre-Hospitalisation Expenses Company will pay the Medical Expenses incurred in the 60 days immediately before Insured is Hospitalized",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
     "value": 90,
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-medisure-prime__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Post-Hospitalisation Expenses Company will pay the Medical Expenses incurred in the 90 days immediately after Insured is discharged",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-medisure-prime__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 144,
+    "source_url": "https://www.hdfcergo.com/health-insurance/day-care-treatment",
+    "source_note": "Per insurer baseline (HDFC Ergo day-care treatment page lists 144 procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-medisure-prime__wordings.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-medisure-prime__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 16000,
+    "source_url": "https://www.hdfcergo.com/",
+    "source_note": "16000+ Cashless Healthcare providers (homepage 'Why Choose HDFC ERGO' / 'Cashless Network' section, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
-    "value": null,
+    "value": 25,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-medisure-prime__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "additional co-payment of 25% of the admissible claim is to be borne by any Insured/Insured Person above 70 years irrespective of the Zone of treatment",
+    "_confidence": "medium"
   },
   "room_rent_capped_at_pct_of_si": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-medisure-prime__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in hdfc-ergo__my-health-medisure-prime__wordings.pdf",
+    "_confidence": "low"
   },
   "policy_term_options_years": {
-    "value": null,
+    "value": [
+      1
+    ],
     "unit": "years",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-medisure-prime__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Policy Period option Policy can be issued or renewed for one year",
+    "_confidence": "high"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-medisure-prime__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in hdfc-ergo__my-health-medisure-prime__wordings.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-medisure-prime__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in hdfc-ergo__my-health-medisure-prime__wordings.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-medisure-prime__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in hdfc-ergo__my-health-medisure-prime__wordings.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-medisure-prime__wordings.pdf",
+    "source_quote": "27. Any form of Non-Allopathic treatment, Naturopathy, hydrotherapy, Ayurvedic, Homeopathy, Acupuncture, Reflexology, Chiropractic treatment or any other form of indigenous system of medicine.",
+    "_confidence": "high"
+  },
+  "maternity_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-medisure-prime__wordings.pdf",
+    "source_quote": "8. Maternity Cover Medical Expenses for the delivery of a child (including pre-post natal expenses) and/or Expenses related to a Medically Necessary and lawful ",
+    "_confidence": "high"
+  },
+  "newborn_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-medisure-prime__wordings.pdf",
+    "source_quote": "New Born Baby Cover Coverage for a New Born Baby shall be allowed subject to a valid claim being accepted under Maternity Cover 8 above",
+    "_confidence": "high"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-medisure-prime__wordings.pdf",
+    "source_quote": "Donor Expenses This Policy provides for reimbursement of expenses incurred towards donor in case of major organ transplant, for the harvesting of the organ provided that:",
+    "_confidence": "high"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-medisure-prime__wordings.pdf",
+    "source_quote": "Domiciliary hospitalization” means medical treatment actually taken at home for a period exceeding 3 days, for an illness/disease/injury which in the normal course would require care and treatment at a Ho",
+    "_confidence": "high"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-medisure-prime__wordings.pdf",
+    "source_quote": "This Policy provides for an all paid Comprehensive Health Check-Up (designed by the Company) for Insured Persons above the age of 45 years at the end of every t",
+    "_confidence": "high"
+  },
+  "critical_illness_cover": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-medisure-prime__wordings.pdf",
+    "source_quote": "Critical Illness (Additional Coverage on Reimbursement) The Policy provides for an additional amount equivalent to the Sum Insured opted under Hospitalisa",
+    "_confidence": "medium"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-medisure-prime__wordings.pdf",
+    "source_quote": "“Cashless Service” means a facility extended by the insurer to the insured where the payments, of the costs of treatment undergone by the insured in accordance with the Policy terms and conditions, are directly",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_cap_pct": {
+    "value": 50,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-medisure-prime__wordings.pdf",
+    "source_quote": "A 5% increase in Sum Insured will be allowed at the time of renewal, where the Policy is claim free in the expiring year. This cumulative bonus can be accumulated up to a maximum of 50%",
+    "_confidence": "high"
+  },
+  "geographic_coverage": {
+    "value": "pan_india",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-medisure-prime__wordings.pdf",
+    "source_quote": "Hospitalisation in any Hospital/Nursing Home in India (hereinafter called \"Hospital\") upon the advice of a duly qualified Medical Practitioner",
+    "_confidence": "medium"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "family_floater",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-medisure-prime__wordings.pdf",
+    "source_quote": "“Family Floater” means a Policy described as such in the Schedule whereunder You and Your Dependents named in the Schedule are insured under this Policy from date of inception.",
+    "_confidence": "medium"
+  },
+  "no_claim_bonus_pct": {
+    "value": 5,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-medisure-prime__wordings.pdf",
+    "source_quote": "A 5% increase in Sum Insured will be allowed at the time of renewal, where the Policy is claim free in the expiring year. This cumulative bonus can be accumulated up to a maximum of 50%",
+    "_confidence": "high"
   }
 }

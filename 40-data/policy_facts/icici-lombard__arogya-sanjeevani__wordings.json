@@ -7,142 +7,242 @@
     "value": "ICIHLIP20178V011920",
     "unit": null,
     "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Arogya Sanjeevani Policy UIN : ICIHLIP20178V011920",
+    "_confidence": "high"
   },
   "min_entry_age": {
     "value": 18,
     "unit": "years",
     "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Eligibility Policy can be availed by persons between the age of 18 years and 65years, as Proposer.",
+    "_confidence": "high"
   },
   "max_entry_age": {
     "value": 65,
     "unit": "years",
     "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Eligibility Policy can be availed by persons between the age of 18 years and 65years, as Proposer.",
+    "_confidence": "high"
   },
   "min_child_entry_age": {
     "value": 91,
     "unit": "days",
     "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "dependent Children (i.e. natural or legally adopted) between the age 3 months to 25 years.",
+    "_confidence": "medium"
   },
   "sum_insured_options": {
-    "value": [
-      100000,
-      150000,
-      200000,
-      250000,
-      300000,
-      350000,
-      400000,
-      450000,
-      500000
-    ],
+    "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in icici-lombard__arogya-sanjeevani__wordings.pdf",
+    "_confidence": "low"
   },
   "grace_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "a fixed period of 30 days is to be allowed as Grace Period and for all other modes of payment a fixed period of 15 days be allowed as grace period.",
+    "_confidence": "high"
   },
   "free_look_period": {
     "value": 15,
     "unit": "days",
     "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "The insured person shall be allowed free look period of fifteen days from date of receipt of the Policy document to review the terms and conditions of the Policy",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "First Thirty Days Waiting Period (Code- Excl03) i. Expenses related to the treatment of any illness within 30 days from the first policy commencement date shall be excluded except claims arising due to an accident",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 48,
     "unit": null,
     "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Expenses related to the treatment of a pre-existing Disease (PED) and its direct complications shall be excluded until the expiry of 48 months of continuous coverage after the date of inception of the first policy with us.",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Expenses related to the treatment of the following listed conditions, surgeries/treatments shall be excluded until the expiry of 24/48 months of continuous coverage",
+    "_confidence": "medium"
   },
   "maternity_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in icici-lombard__arogya-sanjeevani__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Pre Hospitalisation For 30 days prior to the date of hospitalization Post Hospitalisation For 60 days from the date of discharge from the hospital",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
     "value": 60,
     "unit": null,
     "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Pre Hospitalisation For 30 days prior to the date of hospitalization Post Hospitalisation For 60 days from the date of discharge from the hospital",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 150,
+    "source_url": "https://www.icicilombard.com/docs/default-source/downloads/complete-health-insurance-brochure.pdf",
+    "source_note": "Per insurer baseline (ICICI Lombard Complete Health iHealth Annexure I; 150 procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
+    "value": 6500,
+    "source_url": "https://www.bankbazaar.com/health-insurance/icici-health-insurance.html",
+    "source_note": "ICICI Lombard: 6,500+ network hospitals (BankBazaar aggregator citing ICICI Lombard; insurer page returns 403 to scrapers). Higher figures (~10,600) circulate but not directly verifiable; used conservative count. Scraped 2026-05-15.",
+    "_confidence": "medium",
     "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Insurer-level metric backfilled from public-web source — see source_url"
   },
   "co_payment_pct": {
-    "value": null,
-    "unit": "percent",
+    "value": 5,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "9.3. Co-payment Each and every claim under the Policy shall be subject to a Copayment of 5% applicable to claim amount admissible and payable as per the terms and conditions of the Policy.",
+    "_confidence": "high"
   },
   "room_rent_capped_at_pct_of_si": {
     "value": null,
-    "unit": "percent",
+    "unit": "%",
     "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in icici-lombard__arogya-sanjeevani__wordings.pdf",
+    "_confidence": "low"
   },
   "policy_term_options_years": {
-    "value": null,
+    "value": [
+      1
+    ],
     "unit": "years",
     "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "3.41.Policy period means period of one policy year as mentioned in the schedule for which the Policy IS issued",
+    "_confidence": "medium"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in icici-lombard__arogya-sanjeevani__wordings.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in icici-lombard__arogya-sanjeevani__wordings.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in icici-lombard__arogya-sanjeevani__wordings.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "4.2. AYUSH Treatment The Company shall indemnify medical expenses incurred for inpatient care treatment under Ayurveda, Yoga and Naturopathy, Unani, Siddha and Homeopathy systems of medicines during each Policy Year up to the limit of sum insured",
+    "_confidence": "high"
+  },
+  "maternity_coverage": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "7.15. Maternity Expenses (Code- Excl18): i) Medical treatment expenses traceable to childbirth (including complicated deliveries and caesarean sections incurred during hospitalization) except ectopic pregnancy;",
+    "_confidence": "high"
+  },
+  "newborn_coverage": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "not stated in icici-lombard__arogya-sanjeevani__wordings.pdf",
+    "_confidence": "low"
+  },
+  "restoration_benefit": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "not stated in icici-lombard__arogya-sanjeevani__wordings.pdf",
+    "_confidence": "low"
+  },
+  "domiciliary_treatment": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "not stated in icici-lombard__arogya-sanjeevani__wordings.pdf",
+    "_confidence": "low"
+  },
+  "worldwide_emergency_cover": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "not stated in icici-lombard__arogya-sanjeevani__wordings.pdf",
+    "_confidence": "low"
+  },
+  "critical_illness_cover": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "not stated in icici-lombard__arogya-sanjeevani__wordings.pdf",
+    "_confidence": "low"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "3.8. Cashless Facility means a facility extended by the insurer to the insured where the payments, of the costs of treatment undergone by the insured person in accordance with the Policy terms and conditions, are directly made to the network provider by the insurer",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_cap_pct": {
+    "value": 50,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "Cumulative Bonus will be increased by 5% in respect of each claim free policy year (where no claims are reported), provided the policy is renewed with the company without a break subject to maximum of 50% of the sum insured under the current policy year.",
+    "_confidence": "high"
+  },
+  "geographic_coverage": {
+    "value": "pan_india",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "7.19. Treatment taken outside the geographical limits of India",
+    "_confidence": "medium"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "family_floater",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "the maximum, total and cumulative liability for any and all claims made under the Policy, in respect of that Insured Person (on Individual basis) or all Insured Persons (on Floater basis) during the Policy Year.",
+    "_confidence": "medium"
+  },
+  "room_rent_capping": {
+    "value": null,
+    "_confidence": "low",
+    "source_quote": "not stated in icici-lombard__arogya-sanjeevani__wordings.pdf"
+  },
+  "no_claim_bonus_pct": {
+    "value": 5,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/icici-lombard/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "Cumulative Bonus will be increased by 5% in respect of each claim free policy year (where no claims are reported), provided the policy is renewed with the company without a break",
+    "_confidence": "high"
+  },
+  "_meta": {
+    "network_hospital_backfill_2026-05-15": "icici-lombard insurer-wide count backfilled in targeted scrape pass"
   }
 }

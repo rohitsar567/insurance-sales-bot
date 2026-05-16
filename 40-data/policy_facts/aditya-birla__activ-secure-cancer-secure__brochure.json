@@ -8,24 +8,23 @@
     "source_quote": "UIN: ADIHLIP18076V011718"
   },
   "min_entry_age": {
-    "value": null,
+    "value": 18,
     "source_pdf_path": "rag/corpus/aditya-birla/activ-secure-cancer-secure__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "Eligibility Criteria Minimum entry age - 18 years i. Age Maximum entry age - 65 years ii. 1,2,3 years Tenure",
+    "_confidence": "high"
   },
   "max_entry_age": {
-    "value": null,
+    "value": 65,
     "source_pdf_path": "rag/corpus/aditya-birla/activ-secure-cancer-secure__brochure.pdf",
-    "source_quote": ""
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/aditya-birla/activ-secure-cancer-secure__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "Eligibility Criteria Minimum entry age - 18 years i. Age Maximum entry age - 65 years ii. 1,2,3 years Tenure",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": null,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/aditya-birla/activ-secure-cancer-secure__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in activ-secure-cancer-secure__brochure.pdf",
+    "_confidence": "low"
   },
   "initial_waiting_period_days": {
     "value": 90,
@@ -34,28 +33,36 @@
   },
   "maternity_coverage": {
     "value": null,
+    "unit": null,
     "source_pdf_path": "rag/corpus/aditya-birla/activ-secure-cancer-secure__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in activ-secure-cancer-secure__brochure.pdf",
+    "_confidence": "low"
   },
   "maternity_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/aditya-birla/activ-secure-cancer-secure__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in aditya-birla__activ-secure-cancer-secure__brochure.pdf",
+    "_confidence": "low"
   },
   "ayush_coverage": {
     "value": null,
+    "unit": null,
     "source_pdf_path": "rag/corpus/aditya-birla/activ-secure-cancer-secure__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in activ-secure-cancer-secure__brochure.pdf",
+    "_confidence": "low"
   },
   "cashless_treatment_supported": {
-    "value": null,
+    "value": false,
+    "unit": null,
     "source_pdf_path": "rag/corpus/aditya-birla/activ-secure-cancer-secure__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "Payout Option: Lump sum payout",
+    "_confidence": "high"
   },
   "copayment_pct": {
     "value": null,
     "source_pdf_path": "rag/corpus/aditya-birla/activ-secure-cancer-secure__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in aditya-birla__activ-secure-cancer-secure__brochure.pdf",
+    "_confidence": "low"
   },
   "no_claim_bonus_pct": {
     "value": 10,
@@ -65,57 +72,69 @@
   "restoration_benefit": {
     "value": null,
     "source_pdf_path": "rag/corpus/aditya-birla/activ-secure-cancer-secure__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in aditya-birla__activ-secure-cancer-secure__brochure.pdf",
+    "_confidence": "low"
   },
   "room_rent_capping": {
     "value": null,
+    "unit": null,
     "source_pdf_path": "rag/corpus/aditya-birla/activ-secure-cancer-secure__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in activ-secure-cancer-secure__brochure.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": null,
     "source_pdf_path": "rag/corpus/aditya-birla/activ-secure-cancer-secure__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in aditya-birla__activ-secure-cancer-secure__brochure.pdf",
+    "_confidence": "low"
   },
   "post_hospitalization_days": {
     "value": null,
     "source_pdf_path": "rag/corpus/aditya-birla/activ-secure-cancer-secure__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in aditya-birla__activ-secure-cancer-secure__brochure.pdf",
+    "_confidence": "low"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/aditya-birla/activ-secure-cancer-secure__brochure.pdf",
-    "source_quote": ""
+    "value": 586,
+    "source_url": "https://www.adityabirlacapital.com/healthinsurance/activ-one-plan",
+    "source_note": "Per insurer baseline (Aditya Birla Activ One MAX / Activ Care: 586 day care procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-secure-cancer-secure__brochure.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/aditya-birla/activ-secure-cancer-secure__brochure.pdf",
-    "source_quote": ""
+    "value": 10051,
+    "source_url": "https://www.adityabirlacapital.com/healthinsurance/health-insurance-plans",
+    "source_note": "Cashless facility available at 10051+ network hospitals (health-insurance-plans page, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "sum_insured_options": {
     "value": null,
     "source_pdf_path": "rag/corpus/aditya-birla/activ-secure-cancer-secure__brochure.pdf",
-    "source_quote": "Sum Insured Options "
+    "source_quote": "not stated in aditya-birla__activ-secure-cancer-secure__brochure.pdf",
+    "_confidence": "low"
   },
   "claim_settlement_ratio": {
     "value": null,
     "source_pdf_path": "rag/corpus/aditya-birla/activ-secure-cancer-secure__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in aditya-birla__activ-secure-cancer-secure__brochure.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
     "value": null,
     "source_pdf_path": "rag/corpus/aditya-birla/activ-secure-cancer-secure__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in aditya-birla__activ-secure-cancer-secure__brochure.pdf",
+    "_confidence": "low"
   },
   "policy_type": {
-    "value": "hospital_cash",
+    "value": null,
     "source_pdf_path": "rag/corpus/aditya-birla/activ-secure-cancer-secure__brochure.pdf",
-    "source_quote": "classified as hospital_cash from PDF heuristics"
+    "source_quote": "not stated in aditya-birla__activ-secure-cancer-secure.pdf",
+    "_confidence": "low"
   },
   "_meta": {
     "curated_at": "2026-05-14",
     "primary_source_pdf": "rag/corpus/aditya-birla/activ-secure-cancer-secure__brochure.pdf",
     "completeness_pct": 18,
-    "notes": "Curated by tools/curate_remaining.py \u2014 pattern-based extraction from local PDF"
+    "notes": "Curated by tools/curate_remaining.py — pattern-based extraction from local PDF"
   }
 }

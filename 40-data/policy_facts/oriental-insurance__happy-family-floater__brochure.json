@@ -7,31 +7,29 @@
     "value": "OICHLIP22010V042223",
     "unit": null,
     "source_pdf_path": "rag/corpus/oriental-insurance/happy-family-floater__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "OICL HAPPY FAMILY FLOATER POLICY-2021 UIN: OICHLIP22010V042223 Page1",
+    "_confidence": "high"
   },
   "min_entry_age": {
     "value": 18,
     "unit": "years",
     "source_pdf_path": "rag/corpus/oriental-insurance/happy-family-floater__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "1. ELIGIBILITY Any person of 18 years or more can take this Policy covering self and /or anyone or more of the family members as mentioned below:",
+    "_confidence": "high"
   },
   "max_entry_age": {
     "value": 65,
     "unit": "years",
     "source_pdf_path": "rag/corpus/oriental-insurance/happy-family-floater__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/oriental-insurance/happy-family-floater__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Maximum Entry Age is 65 years for all members. However, this can be extended to 70 years subject to certain conditions.",
+    "_confidence": "high"
   },
   "min_child_entry_age": {
     "value": 91,
     "unit": "days",
     "source_pdf_path": "rag/corpus/oriental-insurance/happy-family-floater__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Dependent Children (i.e. natural or legally adopted) between the ages 91daysto 18 years. However male child can be covered up to the age of 25 years if he is a bonafide re",
+    "_confidence": "high"
   },
   "sum_insured_options": {
     "value": [
@@ -40,9 +38,14 @@
       300000,
       400000,
       500000,
-      750000,
+      600000,
+      700000,
+      800000,
+      900000,
       1000000,
+      1200000,
       1500000,
+      1800000,
       2000000,
       2500000,
       3000000,
@@ -51,102 +54,181 @@
     ],
     "unit": "INR",
     "source_pdf_path": "rag/corpus/oriental-insurance/happy-family-floater__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "i. Sum Insured Available Rs.1, 2,3,4 & 5 lakh Rs.6,7,8,9 & 10 lakh Rs.12, 15, 18 and 20 lacs Rs.,25,30, 40 and 50 lacs",
+    "_confidence": "medium"
   },
   "grace_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/oriental-insurance/happy-family-floater__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "At the end of the policy period, the policy shall terminate and can be renewed within the Grace Period of 30 days to maintain continuity of benefits without break in policy.",
+    "_confidence": "high"
   },
   "free_look_period": {
     "value": 15,
     "unit": "days",
     "source_pdf_path": "rag/corpus/oriental-insurance/happy-family-floater__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "the insured person shall be allowed free look period of 15 days from the date of receipt of the Policy document to review the terms and conditions of the Policy, and to return the same if not acceptable.",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/oriental-insurance/happy-family-floater__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "5.3 30 day waiting period- code – ExcI03 a. Expenses related to the treatment of any illness within 30 days from the first policy commencement date shall be excluded except claims arising due to an accident, provided the same are covered.",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 48,
     "unit": null,
     "source_pdf_path": "rag/corpus/oriental-insurance/happy-family-floater__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "existing Diseases - code -ExcI0 1 A. Expenses related to the treatment of a pre-existing Disease (PED) and its direct complications shall be excluded until the expiry of 48 months of continuous coverage after the date of inception of the first policy with the insurer.",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
-    "value": 24,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/oriental-insurance/happy-family-floater__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
-  },
-  "maternity_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/oriental-insurance/happy-family-floater__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in oriental-insurance__happy-family-floater__brochure.pdf",
+    "_confidence": "low"
+  },
+  "maternity_waiting_months": {
+    "value": 24,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/oriental-insurance/happy-family-floater__brochure.pdf",
+    "source_quote": "i. Diamond / Platinum Plan has been continuously in force for a period of minimum 24 months in respect",
+    "_confidence": "high"
   },
   "pre_hospitalization_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/oriental-insurance/happy-family-floater__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "PRE-HOSPITALISATION MEDICALEXPENSES means medical expenses incurred during the period up to 30 days prior to the date of admission in the Hospital, provided that:",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
     "value": 60,
     "unit": null,
     "source_pdf_path": "rag/corpus/oriental-insurance/happy-family-floater__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "POST-HOSPITALISATION EXPENSES means medical expenses incurred for a period up to 60 days from the date of discharge from the Hospital, provided that:",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/oriental-insurance/happy-family-floater__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 140,
+    "source_url": "https://orientalinsurance.org.in/",
+    "source_note": "Per insurer baseline (Oriental Insurance health plans cover 140+ day care treatments)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/oriental-insurance/happy-family-floater__brochure.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
+    "value": 4300,
+    "source_url": "https://www.coverfox.com/health-insurance/oriental-health-insurance/network-hospitals/",
+    "source_note": "Oriental Insurance: 4,300+ network hospitals via GIPSA PPN (Coverfox aggregator; insurer site timed out). Alternate aggregator counts range 4,000-5,116 across the four PSU general insurers (GIPSA shared network). Scraped 2026-05-15.",
+    "_confidence": "medium",
     "source_pdf_path": "rag/corpus/oriental-insurance/happy-family-floater__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Insurer-level metric backfilled from public-web source — see source_url"
   },
   "co_payment_pct": {
-    "value": null,
+    "value": 10,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/oriental-insurance/happy-family-floater__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "5.39 Compulsory Co-Payment: Under the SILVER plan the insured has to bear 10% of admissible claim",
+    "_confidence": "high"
   },
   "room_rent_capped_at_pct_of_si": {
-    "value": null,
+    "value": 1,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/oriental-insurance/happy-family-floater__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "ii. Room, Boarding and Nursing Expenses as provided by the Hospital /Nursing Home. 1 % of the Sum Insured per day 1 % of the Sum Insured per day 1% of the Sum Insured per day 1% of the Sum Insured per day",
+    "_confidence": "high"
   },
   "policy_term_options_years": {
-    "value": null,
+    "value": [
+      1
+    ],
     "unit": "years",
     "source_pdf_path": "rag/corpus/oriental-insurance/happy-family-floater__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "vi. Term of the Policy is one year and is renewable lifelong.",
+    "_confidence": "medium"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/oriental-insurance/happy-family-floater__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in oriental-insurance__happy-family-floater__brochure.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/oriental-insurance/happy-family-floater__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in oriental-insurance__happy-family-floater__brochure.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/oriental-insurance/happy-family-floater__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in oriental-insurance__happy-family-floater__brochure.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/oriental-insurance/happy-family-floater__brochure.pdf",
+    "source_quote": "The Company shall indemnify medical expenses incurred for inpatient care treatment under Ayurveda, Yoga and Naturopathy, Unani, Siddha and Homeopathy systems of medicines during each Policy Year up to the limit of sum insured as specified in the policy schedul",
+    "_confidence": "high"
+  },
+  "maternity_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/oriental-insurance/happy-family-floater__brochure.pdf",
+    "source_quote": "A. MATERNITY EXPENSES: The Company shall pay the Medical Expenses incurred as an In-patient for a delivery (including caesarean section) or lawful medical termination of pregnancy during the Policy Period limited to two deliveries",
+    "_confidence": "high"
+  },
+  "newborn_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/oriental-insurance/happy-family-floater__brochure.pdf",
+    "source_quote": "B. NEW BORN BABY COVER: New born Baby shall be covered from day one up to the age of 90 days and expenses incurred for treatment taken in Hospital as in patient shall only be payable, provided that:",
+    "_confidence": "high"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/oriental-insurance/happy-family-floater__brochure.pdf",
+    "source_quote": "The Policy covers reasonable and customary charges in respect of Hospitalization and / or Domiciliary Hospitalization for medically necessary treatment only for Illnesses / diseases contracted / suffered or Injury sustained by the Insured Person(s) during the",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/oriental-insurance/happy-family-floater__brochure.pdf",
+    "source_quote": "CASHLESS FACILITY Cashless facility means a facility extended by the insurer to the insured where the payments, of the costs of treatment undergone by the insured in accordance with the policy terms and conditions, are di",
+    "_confidence": "high"
+  },
+  "geographic_coverage": {
+    "value": "pan_india",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/oriental-insurance/happy-family-floater__brochure.pdf",
+    "source_quote": "Treatment taken outside the geographical limits of India",
+    "_confidence": "medium"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "family_floater",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/oriental-insurance/happy-family-floater__brochure.pdf",
+    "source_quote": "iii. A floater policy covering the proposer and his / her family under single Sum insured under one Policy.",
+    "_confidence": "high"
+  },
+  "room_rent_capping": {
+    "value": "ii. Room, Boarding and Nursing Expenses as provided by the Hospital /Nursing Home. 1 % of the Sum Insured per day 1 % of the Sum Insured per day 1% of the Sum Insured per day 1% of the Sum Insured per day",
+    "unit": "text",
+    "source_pdf_path": "rag/corpus/oriental-insurance/happy-family-floater__brochure.pdf",
+    "source_quote": "ii. Room, Boarding and Nursing Expenses as provided by the Hospital /Nursing Home. 1 % of the Sum Insured per day 1 % of the Sum Insured per day 1% of the Sum Insured per day 1% of the Sum Insured per day",
+    "_confidence": "high"
+  },
+  "_meta": {
+    "network_hospital_backfill_2026-05-15": "oriental-insurance insurer-wide count backfilled in targeted scrape pass"
   }
 }

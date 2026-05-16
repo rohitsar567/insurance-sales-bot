@@ -10,52 +10,59 @@
   "min_entry_age": {
     "value": null,
     "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in niva-bupa__saral-suraksha-bima__wordings.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
-    "source_quote": ""
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in niva-bupa__saral-suraksha-bima__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_existing_disease_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in niva-bupa__saral-suraksha-bima__wordings.pdf",
+    "_confidence": "low"
   },
   "initial_waiting_period_days": {
     "value": null,
     "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in niva-bupa__saral-suraksha-bima__wordings.pdf",
+    "_confidence": "low"
   },
   "maternity_coverage": {
     "value": null,
     "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in niva-bupa__saral-suraksha-bima__wordings.pdf",
+    "_confidence": "low"
   },
   "maternity_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in niva-bupa__saral-suraksha-bima__wordings.pdf",
+    "_confidence": "low"
   },
   "ayush_coverage": {
     "value": true,
+    "unit": "boolean",
     "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
-    "source_quote": "AYUSH (as defined in IRDAI\n(Health Insurance) Regulations, 2016) systems of medicine shall be covered"
+    "source_quote": "AYUSH (as defined in IRDAI\n(Health Insurance) Regulations, 2016) systems of medicine shall be covered",
+    "_confidence": "high"
   },
   "cashless_treatment_supported": {
     "value": true,
+    "unit": "boolean",
     "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
-    "source_quote": "Cashless Facility"
+    "source_quote": "Cashless Facility",
+    "_confidence": "high"
   },
   "copayment_pct": {
     "value": null,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in niva-bupa__saral-suraksha-bima__wordings.pdf",
+    "_confidence": "low"
   },
   "no_claim_bonus_pct": {
     "value": 5,
@@ -65,57 +72,68 @@
   "restoration_benefit": {
     "value": null,
     "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in niva-bupa__saral-suraksha-bima__wordings.pdf",
+    "_confidence": "low"
   },
   "room_rent_capping": {
     "value": null,
     "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in niva-bupa__saral-suraksha-bima__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": null,
     "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in niva-bupa__saral-suraksha-bima__wordings.pdf",
+    "_confidence": "low"
   },
   "post_hospitalization_days": {
     "value": null,
     "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in niva-bupa__saral-suraksha-bima__wordings.pdf",
+    "_confidence": "low"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
-    "source_quote": ""
+    "value": 586,
+    "source_url": "https://www.nivabupa.com/family-health-insurance-plans/reassurev2-insurance.html",
+    "source_note": "Per insurer baseline (Niva Bupa ReAssure 2.0 covers ~586 day care procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
-    "source_quote": ""
+    "value": 10400,
+    "source_url": "https://www.nivabupa.com/health-insurance-plans.html",
+    "source_note": "10,400+ cashless hospitals spanning 450+ cities across India (health-insurance-plans page, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "sum_insured_options": {
     "value": null,
     "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in niva-bupa__saral-suraksha-bima__wordings.pdf",
+    "_confidence": "low"
   },
   "claim_settlement_ratio": {
     "value": null,
     "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in niva-bupa__saral-suraksha-bima__wordings.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
     "value": null,
     "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in niva-bupa__saral-suraksha-bima__wordings.pdf",
+    "_confidence": "low"
   },
   "policy_type": {
-    "value": "group",
+    "value": "personal-accident",
     "source_pdf_path": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
-    "source_quote": "classified as group from PDF heuristics"
+    "source_quote": "a) Death: The Compan",
+    "_confidence": "high"
   },
   "_meta": {
     "curated_at": "2026-05-14",
     "primary_source_pdf": "rag/corpus/niva-bupa/saral-suraksha-bima__wordings.pdf",
     "completeness_pct": 23,
-    "notes": "Curated by tools/curate_remaining.py \u2014 pattern-based extraction from local PDF"
+    "notes": "Curated by tools/curate_remaining.py — pattern-based extraction from local PDF"
   }
 }

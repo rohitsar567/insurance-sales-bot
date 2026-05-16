@@ -7,132 +7,228 @@
     "value": "ACKHLIP27040V012627",
     "unit": null,
     "source_pdf_path": "rag/corpus/acko/acko-health-iii-platinum-super-top-up__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "UIN: ACKHLIP27040V012627 Web: www.acko.com/gi | Toll Free: 1800 266 2256",
+    "_confidence": "high"
   },
   "min_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/acko/acko-health-iii-platinum-super-top-up__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in acko__acko-health-iii-platinum-super-top-up__wordings.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/acko/acko-health-iii-platinum-super-top-up__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
-  },
-  "max_renewal_age": {
-    "value": null,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/acko/acko-health-iii-platinum-super-top-up__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in acko__acko-health-iii-platinum-super-top-up__wordings.pdf",
+    "_confidence": "low"
   },
   "min_child_entry_age": {
     "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/acko/acko-health-iii-platinum-super-top-up__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in acko__acko-health-iii-platinum-super-top-up__wordings.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
     "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/acko/acko-health-iii-platinum-super-top-up__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in acko__acko-health-iii-platinum-super-top-up__wordings.pdf",
+    "_confidence": "low"
   },
   "grace_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/acko/acko-health-iii-platinum-super-top-up__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Grace period (renewal + instalments) • For instalment premium: ▪ 15 days grace for monthly instalments ▪ 30 days grace for quarterly/half-yearly/annual instalments ▪ Coverage continues during the grace",
+    "_confidence": "high"
   },
   "free_look_period": {
-    "value": null,
+    "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/acko/acko-health-iii-platinum-super-top-up__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Free look period • 30 days from date of receipt of policy to review the terms and conditions of the Policy, and to return the same if not acceptable (only at inception, not renewals/porting).",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 0,
     "unit": null,
     "source_pdf_path": "rag/corpus/acko/acko-health-iii-platinum-super-top-up__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "3.1.3. 30-day waiting period (Not applicable for this plan) • Expenses for treatment of any illness within 30 days from first policy commencement excluded, except accidents.",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": null,
-    "unit": null,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/acko/acko-health-iii-platinum-super-top-up__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in acko__acko-health-iii-platinum-super-top-up__wordings.pdf",
+    "_confidence": "low"
   },
   "specific_disease_waiting_months": {
     "value": null,
-    "unit": null,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/acko/acko-health-iii-platinum-super-top-up__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in acko__acko-health-iii-platinum-super-top-up__wordings.pdf",
+    "_confidence": "low"
   },
   "maternity_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/acko/acko-health-iii-platinum-super-top-up__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in acko__acko-health-iii-platinum-super-top-up__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": 60,
     "unit": null,
     "source_pdf_path": "rag/corpus/acko/acko-health-iii-platinum-super-top-up__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "In the pre-hospitalization period up to 60 days, and • In the post-hospitalization period up to 180 days, only if the related hospitalization/day care claim is admissible.",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
     "value": 180,
     "unit": null,
     "source_pdf_path": "rag/corpus/acko/acko-health-iii-platinum-super-top-up__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "In the pre-hospitalization period up to 60 days, and • In the post-hospitalization period up to 180 days, only if the related hospitalization/day care claim is admissible.",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/acko/acko-health-iii-platinum-super-top-up__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 500,
+    "source_url": "https://www.acko.com/health-insurance/daycare-treatment-and-procedures/",
+    "source_note": "Per insurer baseline (Acko covers all day-care procedures up to SI; 500+ procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/acko/acko-health-iii-platinum-super-top-up__wordings.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
+    "value": 11500,
+    "source_url": "https://www.acko.com/health-insurance/cashless/",
+    "source_note": "ACKO has 11,500+ cashless hospitals across India (insurer's cashless landing page, scraped 2026-05-15)",
+    "_confidence": "high",
     "source_pdf_path": "rag/corpus/acko/acko-health-iii-platinum-super-top-up__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Insurer-level metric backfilled from public-web source — see source_url"
   },
   "co_payment_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/acko/acko-health-iii-platinum-super-top-up__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in acko__acko-health-iii-platinum-super-top-up__wordings.pdf",
+    "_confidence": "low"
   },
   "room_rent_capped_at_pct_of_si": {
-    "value": null,
+    "value": 0,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/acko/acko-health-iii-platinum-super-top-up__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Rent / ICU- Part of base SI We cover actual room rent and ICU charges without any capping. 2.3. Day Care Treatment- Part of base SI If any insured under this policy undergoes Day Care Treatment (including AYUSH treatment) in a Hospital/Nursing Home/Day Care Centre, we cove",
+    "_confidence": "high"
   },
   "policy_term_options_years": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/acko/acko-health-iii-platinum-super-top-up__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in acko__acko-health-iii-platinum-super-top-up__wordings.pdf",
+    "_confidence": "low"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/acko/acko-health-iii-platinum-super-top-up__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in acko__acko-health-iii-platinum-super-top-up__wordings.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/acko/acko-health-iii-platinum-super-top-up__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in acko__acko-health-iii-platinum-super-top-up__wordings.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/acko/acko-health-iii-platinum-super-top-up__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in acko__acko-health-iii-platinum-super-top-up__wordings.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/acko/acko-health-iii-platinum-super-top-up__wordings.pdf",
+    "source_quote": "If any insured under this policy undergoes Day Care Treatment (including AYUSH treatment) in a Hospital/Nursing Home/Day Care Centre, we cover the expenses.",
+    "_confidence": "high"
+  },
+  "maternity_coverage": {
+    "value": false,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/acko/acko-health-iii-platinum-super-top-up__wordings.pdf",
+    "source_quote": "Maternity Excluded: • childbirth (incl. complicated delivery/C-section) and pre/post hospitalization • miscarriage (unless due to accident) • lawful medical termination",
+    "_confidence": "high"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/acko/acko-health-iii-platinum-super-top-up__wordings.pdf",
+    "source_quote": "Organ Donor Expenses- Part of base SI If anyone insured requires organ transplant, we cover the organ donor's in-patient hospitalization expenses for harvesting the organ within the sum insured of the insured. Payable only if all the following conditions are met: We admit the ins",
+    "_confidence": "high"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/acko/acko-health-iii-platinum-super-top-up__wordings.pdf",
+    "source_quote": "Domiciliary Treatment (Domiciliary Hospitalization)- Part of base SI We cover costs of such domiciliary hospitalization if anyone insured takes treatment at home (instead of a hospital) due to: Inability to be moved, OR Non-availability of hospital beds. Conditions: Must continue",
+    "_confidence": "high"
+  },
+  "worldwide_emergency_cover": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/acko/acko-health-iii-platinum-super-top-up__wordings.pdf",
+    "source_quote": "if Worldwide In-Patient Hospitalization cover is available in your policy schedule, this exclusion shall be waived off. OPD consultations/diagnostics/pharmacy/procedure, unless covered by OPD add-on cover opted or as part of Pre/Post hospitalization of admitted in-patient/day car",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/acko/acko-health-iii-platinum-super-top-up__wordings.pdf",
+    "source_quote": "You can submit claims as Cashless (network provider) or Reimbursement (you pay first, we reimburse if the claim is admissible).",
+    "_confidence": "high"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "unit": "hours",
+    "source_pdf_path": "rag/corpus/acko/acko-health-iii-platinum-super-top-up__wordings.pdf",
+    "source_quote": "not stated in acko__acko-health-iii-platinum-super-top-up__wordings.pdf",
+    "_confidence": "low"
+  },
+  "geographic_coverage": {
+    "value": "pan_india",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/acko/acko-health-iii-platinum-super-top-up__wordings.pdf",
+    "source_quote": "if Worldwide In-Patient Hospitalization cover is available in your policy schedule, this exclusion shall be waived off.",
+    "_confidence": "medium"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "super_top_up",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/acko/acko-health-iii-platinum-super-top-up__wordings.pdf",
+    "source_quote": "ACKO Health III (Platinum Super Top-up) – Policy Wordings 1. Introduction & How the Policy Works",
+    "_confidence": "high"
+  },
+  "modern_treatments_covered": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/acko/acko-health-iii-platinum-super-top-up__wordings.pdf",
+    "source_quote": "Modern Treatment- Part of base SI If anyone insured undergoes in-patient or day care treatment for the following procedures, we indemnify medical expenses related to the procedures: Uterine Artery Embolization and HIFU Balloon Sinuplasty Deep Brain Stimulation Oral chemotherapy I",
+    "_confidence": "high"
+  },
+  "room_rent_capping": {
+    "value": "No cap",
+    "unit": null,
+    "source_pdf_path": "rag/corpus/acko/acko-health-iii-platinum-super-top-up__wordings.pdf",
+    "source_quote": "We cover actual room rent and ICU charges without any capping. 2.3. Day Care Treatment- Part of base SI",
+    "_confidence": "high"
+  },
+  "_meta": {
+    "network_hospital_backfill_2026-05-15": "acko insurer-wide count backfilled in targeted scrape pass"
   }
 }

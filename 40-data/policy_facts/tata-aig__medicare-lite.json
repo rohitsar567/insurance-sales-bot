@@ -5,90 +5,102 @@
   "uin_code": {
     "value": "TATHLIP24132V012324",
     "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "• TATA AIG MediCare LITE UIN: TATHLIP24132V012324 Page 1 of 7 TATA AIG MediCare LITE Sr. No. Title Description Policy Clause No. 6. Exclusions Standard Exclusion: V. Any existing disease mentioned as "
+    "source_quote": "TATA AIG MediCare LITE UIN: TATHLIP24132V012324",
+    "_confidence": "high"
   },
   "min_entry_age": {
     "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "Min entry age not found"
+    "source_quote": "not stated in tata-aig__medicare-lite.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "Max entry age not explicitly stated; check Policy Schedule"
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "Max renewal age not specified; check Policy Schedule"
+    "source_quote": "not stated in tata-aig__medicare-lite.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
     "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "Sum Insured options not enumerated in extracted text; check Policy Schedule"
+    "source_quote": "not stated in tata-aig__medicare-lite.pdf",
+    "_confidence": "low"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "Default IRDAI 30-day waiting period applies (not explicitly quoted in extracted snippet)"
+    "source_quote": "7. Waiting Period I. Initial Waiting Period of 30 days. 8. i. Financial limits of coverage",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "PED waiting period not extracted; check Section 5 / Excl01"
-  },
-  "specific_disease_waiting_months": {
     "value": 36,
     "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "ection (3) Period of 30 days. Specified Disease/Procedure Period 36 months 8. i. Financial limits of The Policy will pay only up to the limits specified hereunder for the following diseases/procedures"
+    "source_quote": "Periods of 24 months for Specified Disease/Procedure III. Pre-existing disease Waiting Section (3) Period 36 months The Policy will pay only up to the limits specified hereunder",
+    "_confidence": "high"
+  },
+  "specific_disease_waiting_months": {
+    "value": 24,
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
+    "source_quote": "Periods of 24 months for Specified Disease/Procedure III. Pre-existing disease Waiting Section (3) Period 36 months The Policy will pay only up to the limits specified hereunder",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "Maternity waiting not specified or maternity excluded"
+    "source_quote": "not stated in tata-aig__medicare-lite.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": 60,
     "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "24 hrs. B15. Hearing Aid B2. Pre-Hospitalisation Expenses - 60 days B16. Daily Cash for choosing Shared B3. Post-Hospitalisation Expenses - 180 days Accommodation B4. Day Care Treatment B17. Daily Cas"
+    "source_quote": "B2. Pre-Hospitalisation Expenses - 60 days",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
     "value": 180,
     "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "Cash for choosing Shared B3. Post-Hospitalisation Expenses - 180 days Accommodation B4. Day Care Treatment B17. Daily Cash for Accompanying an Insured Child B5. Organ Donor B18. Second Opinion B6. Dom"
+    "source_quote": "B3. Post-Hospitalisation Expenses - 180 days",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "Day-care count not enumerated; covered per policy definition"
+    "value": 540,
+    "source_url": "https://www.tataaig.com/health-insurance/medicare",
+    "source_note": "Per insurer baseline (Tata AIG product pages state 540+ day care procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf"
   },
   "ayush_coverage": {
     "value": true,
     "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "mum up to 100% of the Sum B8. AYUSH Benefit - In-Patient or Day Care Insured. Alternatively a no claim discount of 1% can be opted. Treatment B9. Ambulance Cover B21. Wellness Services B10. Health Che"
+    "source_quote": "B8. AYUSH Benefit - In-Patient or Day Care Treatment",
+    "_confidence": "high"
   },
   "maternity_coverage": {
     "value": false,
     "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "elative. XII. Maternity (Code-Excl18) VII. Provision or fitting of hearing aids, spectacles or contact lenses. Non-Medical Exclusions: VIII. Alopecia, baldness, wigs or toupees, medical supplies. I. H"
+    "source_quote": "XII. Maternity (Code-Excl18)",
+    "_confidence": "high"
   },
   "newborn_coverage": {
-    "value": false,
+    "value": null,
     "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "Newborn cover not found; typically tied to maternity option"
+    "source_quote": "not stated in tata-aig__medicare-lite.pdf",
+    "_confidence": "low"
   },
   "organ_donor_expenses": {
     "value": true,
     "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "Organ Donor B18. Second Opinion B6. Domiciliary Treatment B20. Cumulative Bonus/No Claim Discount - 50% B7. Restore Benefit - Once during the Policy increase in Cumulative Bonus for every claim Year f"
+    "source_quote": "B5. Organ Donor",
+    "_confidence": "high"
   },
   "no_claim_bonus_pct": {
     "value": 50,
     "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "Cumulative Bonus/No Claim Discount - 50% B7. Restore Benefit - Once during the Policy incr"
+    "source_quote": "B20. Cumulative Bonus/No Claim Discount - 50%",
+    "_confidence": "high"
   },
   "restoration_benefit": {
     "value": "Restore Benefit - Once during the Policy",
@@ -101,19 +113,22 @@
     "source_quote": "Single private room"
   },
   "copayment_pct": {
-    "value": 0,
+    "value": null,
     "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "No mandatory copay extracted; product may have age-based or zone-based optional copay"
+    "source_quote": "not stated in tata-aig__medicare-lite.pdf",
+    "_confidence": "low"
   },
   "deductible_amount": {
     "value": null,
     "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "No base deductible (or only optional voluntary deductible add-on)"
+    "source_quote": "not stated in tata-aig__medicare-lite.pdf",
+    "_confidence": "low"
   },
   "network_hospital_count": {
-    "value": null,
-    "source_url": null,
-    "source_quote": "Insurer-level metric; not extracted in this curation pass"
+    "value": 12000,
+    "source_url": "https://www.tataaig.com/",
+    "source_note": "12,000+ Network Hospitals (homepage 'Why TATA AIG' section, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "cashless_treatment_supported": {
     "value": true,
@@ -123,17 +138,21 @@
   "claim_settlement_ratio": {
     "value": null,
     "source_url": null,
-    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted"
+    "source_quote": "not stated in tata-aig__medicare-lite.pdf",
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
     "value": null,
-    "source_pdf_path": null,
-    "source_quote": "TAT not specified in policy wording; governed by IRDAI Master Circular"
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
+    "source_quote": "not stated in tata-aig__medicare-lite.pdf",
+    "_confidence": "low"
   },
   "policy_type": {
-    "value": "indemnity",
+    "value": "both_indemnity_and_benefit",
     "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "r>> 3. Type of Insurance Both indemnity & benefit 4. Sum Insured (Basis) <<Sum Insured Amount>> As per Sum Insured mentioned in Policy Schedule . (Along with amount) 5. Policy Coverage B1. In-Patient"
+    "source_quote": "3. Type of Insurance Both indemnity & benefit",
+    "_confidence": "high"
   },
   "_meta": {
     "curated_at": "2026-05-14",

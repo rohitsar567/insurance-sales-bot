@@ -10,47 +10,53 @@
   "min_entry_age": {
     "value": null,
     "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in care-health__care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
-    "source_quote": ""
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in care-health__care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
+    "_confidence": "low"
   },
   "pre_existing_disease_waiting_months": {
-    "value": null,
+    "value": 36,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "months specific diseases waiting period 36 months pre-existing diseases waiting period Yes Yes Yes",
+    "_confidence": "medium"
   },
   "initial_waiting_period_days": {
     "value": null,
     "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in care-health__care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
+    "_confidence": "low"
   },
   "maternity_coverage": {
     "value": null,
     "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in care-health__care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
+    "_confidence": "low"
   },
   "maternity_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in care-health__care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
+    "_confidence": "low"
   },
   "ayush_coverage": {
-    "value": null,
+    "value": true,
+    "unit": null,
     "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "r Up to SI Up to SI AYUSH treatment Up to SI Up to SI Up to SI Up to SI",
+    "_confidence": "high"
   },
   "cashless_treatment_supported": {
     "value": null,
+    "unit": null,
     "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in care-health__care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
+    "_confidence": "low"
   },
   "copayment_pct": {
     "value": 20,
@@ -60,62 +66,82 @@
   "no_claim_bonus_pct": {
     "value": 50,
     "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
-    "source_quote": "NCBS)\n(50%"
+    "source_quote": "max up to 50% of SI (10% decrease in SI per policy year in case a claim has been paid; such decrease is only in SI accrued as NCB) No claims bonus (NCB) AYUSH treatment Up to SI Up to SI Health portal -"
   },
   "restoration_benefit": {
-    "value": null,
+    "value": true,
     "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "eck-up Annual Room rent modification Unlimited automatic recharge Unlimited e-consultations Pre-hospitalization medical expenses and p",
+    "_confidence": "high"
   },
   "room_rent_capping": {
-    "value": "Room rent/ room category No sub-limit No sub-limit\nICU charges No sub-limit No s",
+    "value": "No limit",
+    "unit": null,
     "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
-    "source_quote": "Room rent/ room category No sub-limit No sub-limit\nICU charges No sub-limit No sub-limit\nIn-patient care Up to"
+    "source_quote": "Room rent/ room category ICU charges In-patient care Day care treatment 25L/ 50L/ 100L 200L/ 300L/ 600L No sub-limit No sub-limit No sub-limit",
+    "_confidence": "medium"
   },
   "pre_hospitalization_days": {
     "value": 30,
     "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
-    "source_quote": "Pre-hospitalization medical Pre-hospitalization for 30 days"
+    "source_quote": "Pre-hospitalization for 30 days & post-hospitalization for 60 days; Maximum up to SI Automatic recharge Up to SI and available for unrelated or same illness Up to SI and available for unrelated or same"
   },
   "post_hospitalization_days": {
     "value": 60,
     "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
-    "source_quote": "post-hospitalization post-hospitalization for 60 days"
+    "source_quote": "post-hospitalization medical expenses Pre-hospitalization for 30 days & post-hospitalization for 60 days; Maximum up to SI Automatic recharge Up to SI and available for unrelated or same illness Up to SI and"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
-    "source_quote": ""
+    "value": 541,
+    "source_url": "https://www.careinsurance.com/product/care-senior",
+    "source_note": "Per insurer baseline (Care Health publishes 541+ day care treatments across plans)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf"
   },
   "network_hospital_count": {
-    "value": null,
+    "value": 11600,
+    "source_url": "https://www.careinsurance.com/health-plan-network-hospitals.html",
+    "source_note": "Care Health Insurance: 22,100+ healthcare providers including 11,600+ network hospitals (insurer network-hospitals page; corroborated by Google snippet of careinsurance.com, scraped 2026-05-15). Conservative count uses hospital-specific subset, not the wider healthcare-provider count.",
+    "_confidence": "medium",
     "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "Insurer-level metric backfilled from public-web source — see source_url"
   },
   "sum_insured_options": {
     "value": null,
     "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in care-health__care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
+    "_confidence": "low"
   },
   "claim_settlement_ratio": {
     "value": null,
     "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in care-health__care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
     "value": null,
     "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in care-health__care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
+    "_confidence": "low"
   },
   "policy_type": {
-    "value": "group",
+    "value": null,
     "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
-    "source_quote": "classified as group from PDF heuristics"
+    "source_quote": "not stated in care-health__care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
+    "_confidence": "low"
   },
   "_meta": {
     "curated_at": "2026-05-14",
     "primary_source_pdf": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
     "completeness_pct": 32,
-    "notes": "Curated by tools/curate_remaining.py \u2014 pattern-based extraction from local PDF"
+    "notes": "Curated by tools/curate_remaining.py — pattern-based extraction from local PDF",
+    "network_hospital_backfill_2026-05-15": "care-health insurer-wide count backfilled in targeted scrape pass"
+  },
+  "co_payment_pct": {
+    "value": 20,
+    "unit": "percent",
+    "source_pdf_path": "rag/corpus/care-health/care-advantage-add-ons-protect-plus-care-shield__brochure.pdf",
+    "source_quote": "Co-payment** 20% co-payment per claim For liste",
+    "_confidence": "medium"
   }
 }

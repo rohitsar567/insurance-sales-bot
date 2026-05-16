@@ -7,132 +7,244 @@
     "value": "NICHLIP25040V042425",
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/national-senior-citizen__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "UIN: NICHLIP25040V042425",
+    "_confidence": "high"
   },
   "min_entry_age": {
-    "value": 60,
+    "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/national-insurance/national-senior-citizen__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in national-senior-citizen__cis.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
-    "value": 80,
+    "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/national-insurance/national-senior-citizen__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/national-insurance/national-senior-citizen__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in national-senior-citizen__cis.pdf",
+    "_confidence": "low"
   },
   "min_child_entry_age": {
     "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/national-insurance/national-senior-citizen__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in national-senior-citizen__cis.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
     "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/national-insurance/national-senior-citizen__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in national-senior-citizen__cis.pdf",
+    "_confidence": "low"
   },
   "grace_period": {
-    "value": 30,
+    "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/national-insurance/national-senior-citizen__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in national-senior-citizen__cis.pdf",
+    "_confidence": "low"
   },
   "free_look_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/national-insurance/national-senior-citizen__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "within 30 days from the beginning of the policy",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
-    "value": 30,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/national-senior-citizen__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in national-senior-citizen__cis.pdf",
+    "_confidence": "low"
   },
   "pre_existing_disease_waiting_months": {
-    "value": 24,
-    "unit": null,
+    "value": null,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/national-insurance/national-senior-citizen__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in national-senior-citizen__cis.pdf",
+    "_confidence": "low"
   },
   "specific_disease_waiting_months": {
-    "value": 24,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/national-senior-citizen__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in national-senior-citizen__cis.pdf",
+    "_confidence": "low"
   },
   "maternity_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/national-senior-citizen__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in national-senior-citizen__cis.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/national-senior-citizen__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Pre-hospitalisation (treatment prior to admission in hospital) of 30 days c",
+    "_confidence": "medium"
   },
   "post_hospitalization_days": {
     "value": 60,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/national-senior-citizen__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Post-hospitalisation (treatment after discharge from hospital) within 60 days from date of discharge d",
+    "_confidence": "medium"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/national-insurance/national-senior-citizen__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 140,
+    "source_url": "https://nationalinsurance.nic.co.in/en/health-insurance/new-national-parivar-mediclaim-policy",
+    "source_note": "Per insurer baseline (National Parivar Mediclaim covers 140+ day care procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/national-insurance/national-senior-citizen__cis.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/national-insurance/national-senior-citizen__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 5322,
+    "source_url": "https://nationalinsurance.nic.co.in/",
+    "source_note": "5322 Network Hospitals ('Why Choose NICL' section, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
-    "value": null,
-    "unit": "percent",
+    "value": 18.5,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/national-insurance/national-senior-citizen__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Copayment of 18.50% if insured paying premium as per Zone II but availing treatment in Zone I",
+    "_confidence": "medium"
   },
   "room_rent_capped_at_pct_of_si": {
-    "value": null,
-    "unit": "percent",
+    "value": 1.0,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/national-insurance/national-senior-citizen__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Room - 1% of SI per day subject to maximum of INR 5,000 per day",
+    "_confidence": "high"
   },
   "policy_term_options_years": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/national-insurance/national-senior-citizen__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in national-senior-citizen__cis.pdf",
+    "_confidence": "low"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/national-insurance/national-senior-citizen__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in national-senior-citizen__cis.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/national-insurance/national-senior-citizen__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in national-senior-citizen__cis.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/national-senior-citizen__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in national-senior-citizen__cis.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/national-senior-citizen__cis.pdf",
+    "source_quote": "f. AYUSH Treatment g. HIV/ AIDS h. Mental Illness i. Organ donor's medical expenses",
+    "_confidence": "high"
+  },
+  "maternity_coverage": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/national-senior-citizen__cis.pdf",
+    "source_quote": "o. Maternity (Excl 18)",
+    "_confidence": "high"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/national-senior-citizen__cis.pdf",
+    "source_quote": "f. AYUSH Treatment g. HIV/ AIDS h. Mental Illness i. Organ donor's medical expenses",
+    "_confidence": "high"
+  },
+  "restoration_benefit": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/national-senior-citizen__cis.pdf",
+    "source_quote": "Reinstatement of Sum Insured if exhausted due to Road Traffic Accident",
+    "_confidence": "high"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/national-senior-citizen__cis.pdf",
+    "source_quote": "c. Domiciliary Hospitalisation e. Procedures requiring less than 24 hours of hospitalization (day care). f. AYUSH Treatment",
+    "_confidence": "high"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/national-senior-citizen__cis.pdf",
+    "source_quote": "Good Health Incentives: a. Cumulative Bonus (CB) b. Preventive Health Check Up",
+    "_confidence": "high"
+  },
+  "critical_illness_cover": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/national-senior-citizen__cis.pdf",
+    "source_quote": "Optional Covers: a. Pre-existing Diabetes and/or Hypertension b. Out-patient treatment c. Critical illness d. Personal Accident",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/national-senior-citizen__cis.pdf",
+    "source_quote": "Cashless Facility can be availed, if TPA service is opted",
+    "_confidence": "medium"
+  },
+  "no_claim_bonus_cap_pct": {
+    "value": null,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/national-insurance/national-senior-citizen__cis.pdf",
+    "source_quote": "not stated in national-senior-citizen__cis.pdf",
+    "_confidence": "low"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": 1,
+    "unit": "hours",
+    "source_pdf_path": "rag/corpus/national-insurance/national-senior-citizen__cis.pdf",
+    "source_quote": "pre-authorization letter within an hour to the Hospital after verification",
+    "_confidence": "medium"
+  },
+  "geographic_coverage": {
+    "value": "pan_india",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/national-insurance/national-senior-citizen__cis.pdf",
+    "source_quote": "geographical limits of India",
+    "_confidence": "medium"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "senior_citizen",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/national-insurance/national-senior-citizen__cis.pdf",
+    "source_quote": "Senior Citizen Mediclaim Policy",
+    "_confidence": "medium"
+  },
+  "room_rent_capping": {
+    "value": "Plan A: 1% of SI per day subject to max INR 5,000. Plan B: 2% of SI per day subject to max INR 10,000. No overall limit for Plan B.",
+    "unit": "text",
+    "source_pdf_path": "rag/corpus/national-insurance/national-senior-citizen__cis.pdf",
+    "source_quote": "Room - 1% of SI per day subject to maximum of INR 5,000 per day",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_pct": {
+    "value": null,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/national-insurance/national-senior-citizen__cis.pdf",
+    "source_quote": "not stated in national-senior-citizen__cis.pdf",
+    "_confidence": "low"
   }
 }

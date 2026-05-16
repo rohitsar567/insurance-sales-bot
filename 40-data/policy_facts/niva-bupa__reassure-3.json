@@ -11,18 +11,15 @@
     "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/niva-bupa/reassure-3-0__wordings.pdf",
-    "source_quote": "Min entry age not found"
+    "source_quote": "not stated in niva-bupa__reassure-3.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/niva-bupa/reassure-3-0__wordings.pdf",
-    "source_quote": "Max entry age not explicitly stated; check Policy Schedule"
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/niva-bupa/reassure-3-0__wordings.pdf",
-    "source_quote": "Max renewal age not specified; check Policy Schedule"
+    "source_quote": "not stated in niva-bupa__reassure-3.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
     "value": [
@@ -37,22 +34,26 @@
   "initial_waiting_period_days": {
     "value": 30,
     "source_pdf_path": "rag/corpus/niva-bupa/reassure-3-0__wordings.pdf",
-    "source_quote": "Default IRDAI 30-day waiting period applies (not explicitly quoted in extracted snippet)"
+    "source_quote": "treatment of any Ill",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
-    "value": null,
+    "value": 36,
     "source_pdf_path": "rag/corpus/niva-bupa/reassure-3-0__wordings.pdf",
-    "source_quote": "PED waiting period not extracted; check Section 5 / Excl01"
+    "source_quote": "be excluded until the expiry of 36 months of continuous coverage after the date of inception of the",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "source_pdf_path": "rag/corpus/niva-bupa/reassure-3-0__wordings.pdf",
-    "source_quote": "Default IRDAI 24-month specific-disease waiting (not explicitly quoted)"
+    "source_quote": "expiry of 24 months of continuous coverage after the date of",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/niva-bupa/reassure-3-0__wordings.pdf",
-    "source_quote": "Maternity waiting not specified or maternity excluded"
+    "source_quote": "not stated in niva-bupa__reassure-3.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": 60,
@@ -65,9 +66,11 @@
     "source_quote": "ore the date of admission and 180 days after date of discharge IF these are related to the condition for which hospitalization claim is paid. 4.4. Home Care / Domiciliary Treatment Home Care Treatment"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/niva-bupa/reassure-3-0__wordings.pdf",
-    "source_quote": "Day-care count not enumerated; covered per policy definition"
+    "value": 586,
+    "source_url": "https://www.nivabupa.com/family-health-insurance-plans/reassurev2-insurance.html",
+    "source_note": "Per insurer baseline (Niva Bupa ReAssure 2.0 covers ~586 day care procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/niva-bupa/reassure-3-0__wordings.pdf"
   },
   "ayush_coverage": {
     "value": true,
@@ -77,7 +80,8 @@
   "maternity_coverage": {
     "value": false,
     "source_pdf_path": "rag/corpus/niva-bupa/reassure-3-0__wordings.pdf",
-    "source_quote": "Maternity not explicitly mentioned; presumed excluded in base"
+    "source_quote": "Maternity Expenses (Code-Excl18) a. Medi",
+    "_confidence": "high"
   },
   "newborn_coverage": {
     "value": true,
@@ -92,12 +96,14 @@
   "no_claim_bonus_pct": {
     "value": null,
     "source_pdf_path": "rag/corpus/niva-bupa/reassure-3-0__wordings.pdf",
-    "source_quote": "NCB % not extracted; product may use booster/recharge structure"
+    "source_quote": "not stated in niva-bupa__reassure-3.pdf",
+    "_confidence": "low"
   },
   "restoration_benefit": {
-    "value": null,
+    "value": true,
     "source_pdf_path": "rag/corpus/niva-bupa/reassure-3-0__wordings.pdf",
-    "source_quote": "Restoration benefit not found in extracted text"
+    "source_quote": "The first paid claim in the life of the policy triggers ReAssure “Forever”. Once Triggered it stays for life,",
+    "_confidence": "high"
   },
   "room_rent_capping": {
     "value": "single private room, general ward, twin sharing) you are eligible for will get fixed",
@@ -112,12 +118,14 @@
   "deductible_amount": {
     "value": null,
     "source_pdf_path": "rag/corpus/niva-bupa/reassure-3-0__wordings.pdf",
-    "source_quote": "Aggregate Deductible"
+    "source_quote": "not stated in niva-bupa__reassure-3.pdf",
+    "_confidence": "low"
   },
   "network_hospital_count": {
-    "value": null,
-    "source_url": null,
-    "source_quote": "Insurer-level metric; not extracted in this curation pass"
+    "value": 10400,
+    "source_url": "https://www.nivabupa.com/health-insurance-plans.html",
+    "source_note": "10,400+ cashless hospitals spanning 450+ cities across India (health-insurance-plans page, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "cashless_treatment_supported": {
     "value": true,
@@ -127,23 +135,50 @@
   "claim_settlement_ratio": {
     "value": null,
     "source_url": null,
-    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted"
+    "source_quote": "not stated in niva-bupa__reassure-3.pdf",
+    "source_pdf_path": "rag/corpus/niva-bupa/reassure-3-0__wordings.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
     "value": null,
-    "source_pdf_path": null,
-    "source_quote": "TAT not specified in policy wording; governed by IRDAI Master Circular"
+    "source_pdf_path": "rag/corpus/niva-bupa/reassure-3-0__wordings.pdf",
+    "source_quote": "not stated in niva-bupa__reassure-3.pdf",
+    "_confidence": "low"
   },
   "policy_type": {
-    "value": "hospital-cash",
+    "value": "indemnity",
     "source_pdf_path": "rag/corpus/niva-bupa/reassure-3-0__wordings.pdf",
-    "source_quote": "Hospital cash / daily benefit policy"
+    "source_quote": "We will pay the expenses incurred by you on treatment (Naturally this excludes expenses not linked to treatment like food, beverage, toiletries and cosmetics).",
+    "_confidence": "high"
   },
   "_meta": {
     "curated_at": "2026-05-14",
     "primary_source_pdf": "rag/corpus/niva-bupa/reassure-3-0__wordings.pdf",
     "supporting_source_pdfs": [],
     "completeness_pct": 70,
-    "notes": "Pattern-based extraction from local PDF via pdfplumber. Insurer-level metrics (CSR, network count) left null pending downstream backfill."
+    "notes": "Pattern-based extraction from local PDF via pdfplumber. Insurer-level metrics (CSR, network count) left null pending downstream backfill. | Batch 3 (2026-05-15): coverage breadth fields backfilled.",
+    "batch3_added_fields": [
+      "ambulance_cover",
+      "domiciliary_treatment",
+      "preventive_health_checkup"
+    ]
+  },
+  "ambulance_cover": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/niva-bupa/reassure-3-0__wordings.pdf",
+    "source_quote": "Road Ambulance: We will pay you up to the mentioned limit in your policy",
+    "extraction_method": "tools/curate_batch3.py — pattern-grep over pdfplumber text"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/niva-bupa/reassure-3-0__wordings.pdf",
+    "source_quote": "Domiciliary Hospitalization means medical treatment for an Illness/disease/Injury which in the normal course would requi",
+    "extraction_method": "tools/curate_batch3.py — pattern-grep over pdfplumber text"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/niva-bupa/reassure-3-0__wordings.pdf",
+    "source_quote": "Annual Health Check-up",
+    "extraction_method": "tools/curate_batch3.py — pattern-grep over pdfplumber text"
   }
 }

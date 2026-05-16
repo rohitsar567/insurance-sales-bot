@@ -7,136 +7,237 @@
     "value": "NICHLIP24005V022324",
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/national-young-india__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "UIN: NICHLIP24005V022324",
+    "_confidence": "high"
   },
   "min_entry_age": {
-    "value": 18,
+    "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/national-insurance/national-young-india__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in national-young-india__cis.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
-    "value": 45,
+    "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/national-insurance/national-young-india__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/national-insurance/national-young-india__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in national-young-india__cis.pdf",
+    "_confidence": "low"
   },
   "min_child_entry_age": {
-    "value": 91,
+    "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/national-insurance/national-young-india__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in national-young-india__cis.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
-    "value": [
-      300000,
-      500000,
-      1000000
-    ],
+    "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/national-insurance/national-young-india__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in national-young-india__cis.pdf",
+    "_confidence": "low"
   },
   "grace_period": {
-    "value": 30,
+    "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/national-insurance/national-young-india__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in national-young-india__cis.pdf",
+    "_confidence": "low"
   },
   "free_look_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/national-insurance/national-young-india__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "within 30 days from the beginning of the policy",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
-    "value": 30,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/national-young-india__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in national-young-india__cis.pdf",
+    "_confidence": "low"
   },
   "pre_existing_disease_waiting_months": {
-    "value": 36,
-    "unit": null,
+    "value": null,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/national-insurance/national-young-india__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in national-young-india__cis.pdf",
+    "_confidence": "low"
   },
   "specific_disease_waiting_months": {
-    "value": 24,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/national-young-india__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in national-young-india__cis.pdf",
+    "_confidence": "low"
   },
   "maternity_waiting_months": {
-    "value": 24,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/national-young-india__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in national-young-india__cis.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": 45,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/national-young-india__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Pre-hospitalisation (treatment prior to admission in hospital) of 45 days",
+    "_confidence": "medium"
   },
   "post_hospitalization_days": {
     "value": 60,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/national-young-india__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Post-hospitalisation (treatment after discharge from hospital) within 60 days from date of discharge",
+    "_confidence": "medium"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/national-insurance/national-young-india__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 140,
+    "source_url": "https://nationalinsurance.nic.co.in/en/health-insurance/new-national-parivar-mediclaim-policy",
+    "source_note": "Per insurer baseline (National Parivar Mediclaim covers 140+ day care procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/national-insurance/national-young-india__cis.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/national-insurance/national-young-india__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 5322,
+    "source_url": "https://nationalinsurance.nic.co.in/",
+    "source_note": "5322 Network Hospitals ('Why Choose NICL' section, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/national-insurance/national-young-india__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in national-young-india__cis.pdf",
+    "_confidence": "low"
   },
   "room_rent_capped_at_pct_of_si": {
-    "value": null,
-    "unit": "percent",
+    "value": "INR 5,000/day (SI 3L/5L) or INR 10,000/day (SI 10L). No cap in PPN.",
+    "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/national-young-india__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Room Rent - Upto INR 5,000 per day for Basic SI 3Lacs, 5Lacs and upto INR 10,000 per day for Basic SI 10Lacs Proportionate Deduction shall apply if opted for Room of higher category.",
+    "_confidence": "high"
   },
   "policy_term_options_years": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/national-insurance/national-young-india__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in national-young-india__cis.pdf",
+    "_confidence": "low"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/national-insurance/national-young-india__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in national-young-india__cis.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/national-insurance/national-young-india__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in national-young-india__cis.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/national-young-india__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in national-young-india__cis.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/national-young-india__cis.pdf",
+    "source_quote": "e. AYUSH treatment f. Ambulance Charges g. Maternity h. HIV / AIDS Treatment i. Mental Illness Cover",
+    "_confidence": "high"
+  },
+  "maternity_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/national-young-india__cis.pdf",
+    "source_quote": "g. Maternity h. HIV / AIDS Treatment i. Mental Illness Cover j. Modern Treatment (12 in Number)",
+    "_confidence": "high"
+  },
+  "newborn_coverage": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/national-young-india__cis.pdf",
+    "source_quote": "not stated in national-young-india__cis.pdf",
+    "_confidence": "low"
+  },
+  "restoration_benefit": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/national-young-india__cis.pdf",
+    "source_quote": "Other Benefits: a. Reinstatement of Basic SI (available to Basic SI of ₹ 5L and above) b. Personal Accident Cover",
+    "_confidence": "high"
+  },
+  "domiciliary_treatment": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/national-young-india__cis.pdf",
+    "source_quote": "w. Domiciliary Hospitalization & Out Patient Department (OPD) treatment",
+    "_confidence": "high"
+  },
+  "critical_illness_cover": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/national-young-india__cis.pdf",
+    "source_quote": "Double SI for 11 Critical Illnesses Note: The optional covers shall be available to the Insured Persons during the Policy Period, provided the same is mentioned in the Policy Schedule.",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/national-young-india__cis.pdf",
+    "source_quote": "not stated in national-young-india__cis.pdf",
+    "_confidence": "low"
+  },
+  "no_claim_bonus_cap_pct": {
+    "value": null,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/national-insurance/national-young-india__cis.pdf",
+    "source_quote": "not stated in national-young-india__cis.pdf",
+    "_confidence": "low"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": 1,
+    "unit": "hours",
+    "source_pdf_path": "rag/corpus/national-insurance/national-young-india__cis.pdf",
+    "source_quote": "pre-authorization letter within an hour to the Hospital after verification",
+    "_confidence": "medium"
+  },
+  "geographic_coverage": {
+    "value": "pan_india",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/national-insurance/national-young-india__cis.pdf",
+    "source_quote": "geographical limits of India",
+    "_confidence": "medium"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "individual",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/national-insurance/national-young-india__cis.pdf",
+    "source_quote": "Individual Sum Insured (SI)",
+    "_confidence": "medium"
+  },
+  "room_rent_capping": {
+    "value": "INR 5,000/day (SI 3L/5L) or INR 10,000/day (SI 10L). No cap in PPN.",
+    "unit": "text",
+    "source_pdf_path": "rag/corpus/national-insurance/national-young-india__cis.pdf",
+    "source_quote": "Room Rent - Upto INR 5,000 per day for Basic SI 3Lacs, 5Lacs and upto INR 10,000 per day for Basic SI 10Lacs Proportionate Deduction shall apply if opted for Room of higher category.",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_pct": {
+    "value": null,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/national-insurance/national-young-india__cis.pdf",
+    "source_quote": "not stated in national-young-india__cis.pdf",
+    "_confidence": "low"
   }
 }

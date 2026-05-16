@@ -10,57 +10,67 @@
   "min_entry_age": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/yuva-bharat-health-policy__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in yuva-bharat-health-policy__wordings.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/yuva-bharat-health-policy__wordings.pdf",
-    "source_quote": ""
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/new-india/yuva-bharat-health-policy__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in yuva-bharat-health-policy__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_existing_disease_waiting_months": {
-    "value": null,
+    "value": 24,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/new-india/yuva-bharat-health-policy__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "of a pre-existing Disease (PED) and its direct \ncomplications shall be excluded until the expiry of 24 months of continuous coverage \nafter the date of inception of the first policy",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
-    "value": null,
+    "value": 30,
     "source_pdf_path": "rag/corpus/new-india/yuva-bharat-health-policy__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "a. Expenses related to the treatment of any illness within 30 days from the first policy\ncommencement date shall be excluded except claims arising due to an accident",
+    "_confidence": "high"
   },
   "maternity_coverage": {
-    "value": false,
+    "value": true,
+    "unit": "boolean",
     "source_pdf_path": "rag/corpus/new-india/yuva-bharat-health-policy__wordings.pdf",
-    "source_quote": "Maternity Coverage\n4.3 FIRST THIRTY DAYS WAITING PERIOD (Code- Excl03)\na. Expenses related to the treatment of any illne"
+    "source_quote": "Maternity Coverage\n4.3 FIRST THIRTY DAYS WAITING PERIOD (Code- Excl03)\na. Expenses related to the treatment of any illne",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/yuva-bharat-health-policy__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in yuva-bharat-health-policy__wordings.pdf",
+    "_confidence": "low"
   },
   "ayush_coverage": {
     "value": true,
+    "unit": "boolean",
     "source_pdf_path": "rag/corpus/new-india/yuva-bharat-health-policy__wordings.pdf",
-    "source_quote": "AYUSH TREATMENT\nExpenses incurred for Ayurveda, Yoga and Naturopathy, Unani, Siddha and Homeopathy\nsystem of medicines i"
+    "source_quote": "AYUSH TREATMENT\nExpenses incurred for Ayurveda, Yoga and Naturopathy, Unani, Siddha and Homeopathy\nsystem of medicines i",
+    "_confidence": "high"
   },
   "cashless_treatment_supported": {
     "value": true,
+    "unit": "boolean",
     "source_pdf_path": "rag/corpus/new-india/yuva-bharat-health-policy__wordings.pdf",
-    "source_quote": "CASHLESS FACILITY"
+    "source_quote": "CASHLESS FACILITY",
+    "_confidence": "high"
   },
   "copayment_pct": {
-    "value": null,
+    "value": 0.0,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/new-india/yuva-bharat-health-policy__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "Insured Person opting for Zone I can avail treatment anywhere in India and No Co-pay \nshall be applicable.",
+    "_confidence": "medium"
   },
   "no_claim_bonus_pct": {
-    "value": null,
+    "value": 10,
     "source_pdf_path": "rag/corpus/new-india/yuva-bharat-health-policy__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "Insured Person will be entitled for cumulative bonus of 10% at each claim free year Renewal,",
+    "_confidence": "high"
   },
   "restoration_benefit": {
     "value": "restoration of normal state of Health under any\ncircumstances. We cover the expe",
@@ -68,9 +78,11 @@
     "source_quote": "restoration of normal state of Health under any\ncircumstances. We cover the expenses up to 25%"
   },
   "room_rent_capping": {
-    "value": null,
+    "value": "Single AC room (Sum Insured Rs 5/10/15 lakh); Deluxe AC room (Sum Insured Rs 25/50 lakh)",
+    "unit": null,
     "source_pdf_path": "rag/corpus/new-india/yuva-bharat-health-policy__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "Room Rent including Boarding, DMO / RMO / CMO / RMP Charges, Nursing \n(Including Injection / Drugs and Intra venous fluid administration expenses) as \nprovided by the hospital \nSum insured of Rs. 5,00,000 /10,00,000/15,00,000 \nSingle AC room",
+    "_confidence": "medium"
   },
   "pre_hospitalization_days": {
     "value": 60,
@@ -84,38 +96,48 @@
   },
   "day_care_treatments_count": {
     "value": null,
+    "unit": "procedures",
     "source_pdf_path": "rag/corpus/new-india/yuva-bharat-health-policy__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in yuva-bharat-health-policy__wordings.pdf",
+    "_confidence": "low"
   },
   "network_hospital_count": {
-    "value": null,
+    "value": 20855,
+    "source_url": "https://www.newindia.co.in/hospitals-list",
+    "source_note": "New India Assurance: 20,855 empanelled hospitals as of 11.02.2025 (direct quote from insurer Hospitals List page, scraped 2026-05-15). Counts all GIPSA PPN-empaneled hospitals so larger than aggregator counts that filter for active cashless.",
+    "_confidence": "high",
     "source_pdf_path": "rag/corpus/new-india/yuva-bharat-health-policy__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "Insurer-level metric backfilled from public-web source — see source_url"
   },
   "sum_insured_options": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/yuva-bharat-health-policy__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in yuva-bharat-health-policy__wordings.pdf",
+    "_confidence": "low"
   },
   "claim_settlement_ratio": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/yuva-bharat-health-policy__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in yuva-bharat-health-policy__wordings.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/yuva-bharat-health-policy__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in yuva-bharat-health-policy__wordings.pdf",
+    "_confidence": "low"
   },
   "policy_type": {
-    "value": "group",
+    "value": "indemnity",
     "source_pdf_path": "rag/corpus/new-india/yuva-bharat-health-policy__wordings.pdf",
-    "source_quote": "classified as group from PDF heuristics"
+    "source_quote": "we will reimburse such expense through the Third-Party Administrator incurred by You in the manner stated herein.",
+    "_confidence": "high"
   },
   "_meta": {
     "curated_at": "2026-05-14",
     "primary_source_pdf": "rag/corpus/new-india/yuva-bharat-health-policy__wordings.pdf",
     "completeness_pct": 36,
-    "notes": "Curated by tools/curate_remaining.py \u2014 pattern-based extraction from local PDF"
+    "notes": "Curated by tools/curate_remaining.py — pattern-based extraction from local PDF",
+    "network_hospital_backfill_2026-05-15": "new-india insurer-wide count backfilled in targeted scrape pass"
   }
 }

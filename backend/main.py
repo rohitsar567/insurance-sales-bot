@@ -143,6 +143,22 @@ class ChatResponse(BaseModel):
     session_id: str
     audio_base64: Optional[str] = None
     audio_mime: Optional[str] = None  # X8 — "audio/wav" | "audio/mp4" | "audio/webm"
+    # KI-278 (2026-05-16) — TTS voice-output failures used to be SWALLOWED
+    # silently: the chat endpoint caught the Sarvam exception, logged it to
+    # turns.jsonl, and returned audio_base64=None with NO signal to the
+    # client. The user saw a text reply with no voice and no explanation
+    # ("no voice in reply. wtf?"). These two fields make the failure LOUD:
+    # the frontend renders a small inline "voice unavailable" notice under
+    # the bot bubble (text reply is unaffected). tts_error_code is a closed
+    # enum mirroring the STT path's contract so the client never parses raw
+    # httpx text:
+    #   rate_limit          — Sarvam 429 / insufficient_quota / no credits
+    #   service_unavailable  — Sarvam 5xx / 503
+    #   auth                 — Sarvam 401/403 / missing SARVAM_API_KEY
+    #   network              — connect/read timeout, DNS, conn reset
+    #   unknown              — anything else
+    tts_error_code: Optional[str] = None
+    tts_user_message: Optional[str] = None
     faithfulness_passed: bool = True
     faithfulness_reasons: list[str] = Field(default_factory=list)
     blocked: bool = False
@@ -657,9 +673,15 @@ async def chat(req: ChatRequest, request: Request):
     # Safari, WAV as universal fallback). Default to WAV if the header is
     # missing or invalid.
     _allowed_codecs = {"audio/wav", "audio/mp4", "audio/webm"}
+    # KI-278 (2026-05-16) — the frontend sends a full MediaSource codec
+    # string, e.g. "audio/webm; codecs=opus". The previous exact-match
+    # against _allowed_codecs NEVER matched that (the "; codecs=opus"
+    # suffix), so webm/opus-capable browsers were ALWAYS silently
+    # downgraded to wav. Strip the codec parameter + whitespace before
+    # the membership test so the negotiated container is honoured.
     preferred_codec = (
         request.headers.get("X-Preferred-Codec", "audio/wav") or "audio/wav"
-    ).lower()
+    ).split(";")[0].strip().lower()
     if preferred_codec not in _allowed_codecs:
         preferred_codec = "audio/wav"
     t_chat0 = time.time()
@@ -899,15 +921,22 @@ async def chat(req: ChatRequest, request: Request):
                     _seen.add(pid)
                     _cited_ids.append(pid)
             if _cited_ids:
+                # KI-278 — turn.citations is now the prose-aligned
+                # recommendation set (single source of truth), so it equals
+                # exactly the cards the user sees. Back-fill the FULL set so
+                # ordinal follow-ups ("the 4th one") resolve against the same
+                # list. The old [:4] cap existed only because citations used
+                # to be the raw recall dump; it would now wrongly truncate a
+                # legitimate 5-policy shortlist.
                 _result_r = _brain_tools_r.mark_recommendation(
                     session=_rec_session,
-                    policy_ids=_cited_ids[:4],  # cap at 4 (typical shortlist)
+                    policy_ids=_cited_ids,
                     is_final=False,
                 )
                 logging.info(
                     "KI-254 auto-mark on rec turn (session=%s) "
                     "policy_ids=%s result=%s",
-                    session_id, _cited_ids[:4], _result_r,
+                    session_id, _cited_ids, _result_r,
                 )
     except Exception as _rec_err:  # noqa: BLE001
         logging.warning(
@@ -1031,6 +1060,13 @@ async def chat(req: ChatRequest, request: Request):
 
     audio_b64 = None
     audio_mime: Optional[str] = None
+    # KI-278 (2026-05-16) — when TTS fails we now propagate a STRUCTURED,
+    # user-facing notice instead of silently dropping the audio. The text
+    # reply is still returned in full; the frontend renders a small inline
+    # "voice unavailable" line under the bot bubble so the user understands
+    # WHY there's no voice (root cause this fixed: Sarvam 429 / no credits).
+    tts_error_code: Optional[str] = None
+    tts_user_message: Optional[str] = None
     if req.return_audio and turn.reply_text:
         try:
             from backend.voice_format import tts_preprocess
@@ -1051,9 +1087,32 @@ async def chat(req: ChatRequest, request: Request):
             )
             audio_b64 = base64.b64encode(audio).decode("utf-8")
         except Exception as e:
-            # Don't fail the whole turn if TTS hiccups — log + return text only
-            log_turn({"session_id": session_id, "tts_error": f"{type(e).__name__}: {e}"})
+            # Don't fail the whole turn if TTS hiccups — but make the failure
+            # LOUD: classify it once at the boundary (closed enum, same
+            # contract as STT) so the client can render a friendly notice
+            # instead of showing a voice-less reply with no explanation.
+            from backend.providers.sarvam_tts import (
+                classify_tts_exception,
+                TTS_ERROR_USER_MESSAGES,
+                TTS_ERROR_UNKNOWN,
+            )
+            tts_error_code = classify_tts_exception(e)
+            tts_user_message = TTS_ERROR_USER_MESSAGES.get(
+                tts_error_code, TTS_ERROR_USER_MESSAGES[TTS_ERROR_UNKNOWN]
+            )
+            audio_b64 = None
             audio_mime = None
+            # Server-side diagnostics keep the raw error; the client never
+            # sees the raw httpx string.
+            logging.warning(
+                "TTS failed (session=%s): error_code=%s exc=%s: %s",
+                session_id, tts_error_code, type(e).__name__, e,
+            )
+            log_turn({
+                "session_id": session_id,
+                "tts_error": f"{type(e).__name__}: {e}",
+                "tts_error_code": tts_error_code,
+            })
 
     try:
         log_turn({
@@ -1174,6 +1233,8 @@ async def chat(req: ChatRequest, request: Request):
             session_id=session_id,
             audio_base64=audio_b64,
             audio_mime=audio_mime,
+            tts_error_code=tts_error_code,
+            tts_user_message=tts_user_message,
             faithfulness_passed=turn.faithfulness_passed,
             faithfulness_reasons=turn.faithfulness_reasons,
             blocked=turn.blocked,
@@ -1943,7 +2004,6 @@ class MarketplacePolicy(BaseModel):
     # Headline filterable fields
     min_entry_age: Optional[int] = None
     max_entry_age: Optional[int] = None
-    max_renewal_age: Optional[int] = None
     sum_insured_options: list[int] = Field(default_factory=list)
     pre_existing_disease_waiting_months: Optional[int] = None
     initial_waiting_period_days: Optional[int] = None
@@ -2044,6 +2104,18 @@ def _load_curated_facts() -> dict[str, dict]:
     `source_pdf_path` across this curated entry's fields. Used by both
     /api/policies/all and /api/coverage to alias-merge marketing-rename
     curated entries into their extracted-JSON parent card.
+
+    KI-219 (2026-05-15) — CANONICAL PRECEDENCE. When the curated dir has BOTH
+    a canonical (`<insurer>__<product>.json`) and one or more doctype-suffixed
+    siblings (`<insurer>__<product>__wordings.json`, `__brochure.json`,
+    `__cis.json`, `__prospectus.json`) for the same product, the canonical
+    file's content is the source of truth. The suffixed-sibling keys point
+    AT the canonical entry so any downstream lookup by either form resolves
+    to the richer canonical data. Previously the order of `glob('*.json')`
+    + `setdefault` made the loser non-deterministic; the more complete
+    canonical entry (e.g. `hdfc-ergo__optima-secure.json` says "No room rent
+    cap") was getting shadowed by the suffixed sibling (`...__wordings.json`
+    says "Room rent capped at 1%"), collapsing scorecards to 72/100.
     """
     import json as _json
     from collections import Counter
@@ -2051,12 +2123,11 @@ def _load_curated_facts() -> dict[str, dict]:
     facts_dir = settings.CORPUS_DIR.parent.parent / "40-data" / "policy_facts"
     if not facts_dir.exists():
         return facts
-    for f in facts_dir.glob("*.json"):
-        try:
-            d = _json.loads(f.read_text())
-        except Exception:
-            continue
-        policy_id = d.get("policy_id") or f.stem
+
+    _DOCTYPE_SUFFIXES = ("__wordings", "__brochure", "__cis", "__prospectus")
+
+    def _flatten(d: dict, fallback_id: str) -> dict:
+        policy_id = d.get("policy_id") or fallback_id
         flat: dict = {}
         provenance: dict = {}
         all_source_pdfs: list[str] = []
@@ -2076,21 +2147,72 @@ def _load_curated_facts() -> dict[str, dict]:
                     all_source_pdfs.append(v["source_pdf_path"])
             else:
                 flat[k] = v
+        flat.setdefault("policy_id", policy_id)
         flat["_facts_provenance"] = provenance
-        # KI-141 — pick the most-common source PDF path as this curated
-        # entry's "primary source". When this path's extracted-JSON parent
-        # already exists, the marketplace collapses this curated entry into
-        # the parent's aliases list instead of emitting a separate card.
         flat["_primary_source_pdf"] = (
             Counter(all_source_pdfs).most_common(1)[0][0]
             if all_source_pdfs else None
         )
-        # Try a couple of policy_id permutations to maximise lookup hit rate
-        facts[policy_id] = flat
-        # Some extracted JSONs use `_wordings` suffix; the curated files don't
-        facts.setdefault(f"{policy_id}__wordings", flat)
-        facts.setdefault(f"{policy_id}__brochure", flat)
-        facts.setdefault(f"{policy_id}__cis", flat)
+        return flat
+
+    # Pass 1 — load every curated JSON, indexed by its on-disk stem, AND
+    # group siblings by their canonical product_key (stem with any trailing
+    # __doctype suffix stripped).
+    by_stem: dict[str, dict] = {}
+    siblings: dict[str, list[tuple[str, bool]]] = {}  # product_key → [(stem, is_canonical), ...]
+    for f in sorted(facts_dir.glob("*.json")):
+        try:
+            d = _json.loads(f.read_text())
+        except Exception:
+            continue
+        stem = f.stem
+        flat = _flatten(d, stem)
+        by_stem[stem] = flat
+        # Determine canonical-ness by FILE STEM (not by policy_id field).
+        # A stem ending in one of the four doctype tokens is a non-canonical
+        # sibling; everything else is canonical.
+        is_canonical = not any(stem.endswith(suf) for suf in _DOCTYPE_SUFFIXES)
+        if is_canonical:
+            product_key = stem
+        else:
+            # Strip the matching suffix to find the canonical sibling.
+            for suf in _DOCTYPE_SUFFIXES:
+                if stem.endswith(suf):
+                    product_key = stem[: -len(suf)]
+                    break
+            else:
+                product_key = stem
+        siblings.setdefault(product_key, []).append((stem, is_canonical))
+
+    # Pass 2 — for each product_key, pick the canonical entry's flat dict if
+    # present; otherwise fall back to the first suffixed sibling (sorted to
+    # be deterministic). Then make every sibling key (canonical stem + each
+    # __doctype variant + each sibling's own stem + each sibling's
+    # policy_id) point at the chosen flat dict so the source-of-truth wins
+    # regardless of which key the caller looked up by.
+    for product_key, entries in siblings.items():
+        canonical_entries = [s for s, c in entries if c]
+        if canonical_entries:
+            chosen_stem = canonical_entries[0]
+        else:
+            chosen_stem = sorted(s for s, _ in entries)[0]
+        chosen = by_stem[chosen_stem]
+
+        # Register the canonical product_key.
+        facts[product_key] = chosen
+        # Register every doctype-suffix permutation pointing at the chosen
+        # flat (back-compat with code that looks up by the suffixed name).
+        for suf in _DOCTYPE_SUFFIXES:
+            facts.setdefault(f"{product_key}{suf}", chosen)
+        # Register every sibling's actual on-disk stem AND policy_id field
+        # so callers that already hold a stem-like ID still resolve to the
+        # canonical content.
+        for sib_stem, _is_can in entries:
+            facts[sib_stem] = chosen
+            sib_pid = by_stem[sib_stem].get("policy_id")
+            if isinstance(sib_pid, str) and sib_pid:
+                facts[sib_pid] = chosen
+
     return facts
 
 
@@ -2560,7 +2682,6 @@ async def policies_all(session_id: Optional[str] = None):
                 data_completeness_pct=sc.data_completeness_pct,
                 min_entry_age=data.get("min_entry_age"),
                 max_entry_age=data.get("max_entry_age"),
-                max_renewal_age=data.get("max_renewal_age"),
                 sum_insured_options=si,
                 pre_existing_disease_waiting_months=data.get("pre_existing_disease_waiting_months"),
                 initial_waiting_period_days=data.get("initial_waiting_period_days"),
@@ -2649,7 +2770,6 @@ async def policies_all(session_id: Optional[str] = None):
                 data_completeness_pct=sc.data_completeness_pct,
                 min_entry_age=data.get("min_entry_age"),
                 max_entry_age=data.get("max_entry_age"),
-                max_renewal_age=data.get("max_renewal_age"),
                 sum_insured_options=si,
                 pre_existing_disease_waiting_months=data.get("pre_existing_disease_waiting_months"),
                 initial_waiting_period_days=data.get("initial_waiting_period_days"),
@@ -2690,11 +2810,15 @@ async def compare_policies(policy_ids: list[str] = None):
         raise HTTPException(400, "compare requires 2 to 4 policy_ids")
 
     entries = []
+    # KI: apply the SAME curated-override as /api/policies/all so COMPARE ALL
+    # reflects the corrected/verbatim 40-data/policy_facts, not stale extract.
+    _curated = _load_curated_facts()
     for pid in policy_ids:
         p = settings.EXTRACTED_DIR / f"{pid}.json"
         if not p.exists():
             raise HTTPException(404, f"No extraction for {pid}")
         data = _json.loads(p.read_text())
+        data = _merge_curated(data, _curated.get(data.get("policy_id", pid)) or _curated.get(pid))
         # Insurer reviews for scorecard
         slug = data.get("insurer_slug")
         ir = None
@@ -2721,7 +2845,7 @@ async def compare_policies(policy_ids: list[str] = None):
     # Comparison-critical fields, in order
     field_order = [
         "policy_type", "uin_code",
-        "min_entry_age", "max_entry_age", "max_renewal_age",
+        "min_entry_age", "max_entry_age",
         "sum_insured_options",
         "initial_waiting_period_days", "pre_existing_disease_waiting_months",
         "maternity_waiting_months",
@@ -2760,6 +2884,11 @@ async def policy_scorecard(
         policy = _json.loads(extracted_path.read_text())
     except Exception as e:
         raise HTTPException(500, f"Could not load extracted policy: {e}")
+
+    # KI: same curated-override as /api/policies/all so the standalone
+    # scorecard reflects the corrected/verbatim 40-data/policy_facts.
+    _curated = _load_curated_facts()
+    policy = _merge_curated(policy, _curated.get(policy.get("policy_id", policy_id)) or _curated.get(policy_id))
 
     # Load insurer reviews if present so the Claim Experience sub-score
     # uses authoritative IRDAI data, not just the (mostly-null) per-policy fields.
@@ -2874,9 +3003,9 @@ def _profile_rationale_for(policy: dict, profile: Optional[dict], sub_scores) ->
             bullets.append(f"Strong fit: {nh_n:,}+ cashless hospitals matters at age {age} when access speed counts.")
         elif nh_n is not None and nh_n < 3000:
             bullets.append(f"Weak fit: only {nh_n} cashless hospitals — thin network for age {age}.")
-        maxr = policy.get("max_renewal_age")
-        if maxr and int(maxr) >= 99:
-            bullets.append(f"Strong fit: lifelong renewability — keeps protecting you past 70.")
+        # max_renewal_age removed: lifelong renewability is the IRDAI norm for
+        # every health-indemnity policy (universal → not a differentiator, and
+        # the old `>= 99` check fired on the fabricated 999 sentinel).
 
     # Family + room-rent / maternity
     if any(k in deps for k in ("spouse", "wife", "husband", "partner", "kid", "child", "family")):
@@ -2973,6 +3102,9 @@ async def scorecard_bulk(req: BulkScorecardRequest):
     profile = req.profile or None
     insurer_cache: dict[str, Optional[dict]] = {}
     out: dict[str, BulkScorecardEntry] = {}
+    # KI: same curated-override as /api/policies/all so the bulk scorecard
+    # badges reflect the corrected/verbatim 40-data/policy_facts.
+    _curated = _load_curated_facts()
 
     for pid in req.policy_ids:
         extracted_path = settings.EXTRACTED_DIR / f"{pid}.json"
@@ -3002,6 +3134,7 @@ async def scorecard_bulk(req: BulkScorecardRequest):
                 signals={},
             )
             continue
+        policy = _merge_curated(policy, _curated.get(policy.get("policy_id", pid)) or _curated.get(pid))
 
         slug = policy.get("insurer_slug") or "?"
         if slug not in insurer_cache:

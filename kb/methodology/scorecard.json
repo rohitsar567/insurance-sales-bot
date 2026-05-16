@@ -28,7 +28,6 @@
     "network_hospital_count",
     "claim_settlement_ratio",
     "tat_cashless_authorization_hours",
-    "max_renewal_age",
     "max_entry_age",
     "no_claim_bonus_pct",
     "restoration_benefit"
@@ -181,20 +180,16 @@
     {
       "name": "Renewal Protection",
       "weight_pct": 12,
-      "consumer_question": "Can I keep this policy when I'm 70 and need it most?",
-      "why_it_matters": "Health insurance only works if you can keep renewing. Lifelong renewability is the IRDAI default since 2020, but entry-age caps and porting friction still matter. Buyers who don't check this often lose cover when claims rise.",
+      "consumer_question": "Can I still take this policy if I'm buying late in life?",
+      "why_it_matters": "Lifelong renewability is mandated by IRDAI for every health-indemnity product (since 2020), so it is the universal norm across the market and is intentionally NOT scored — scoring a constant only adds noise. What still genuinely varies between products is the maximum ENTRY age: a policy that stops accepting new buyers at 50 is useless to a 55-year-old first-timer, while one open to 65+ keeps more buyers eligible.",
       "fields_driving_score": [
         {
-          "field": "max_renewal_age",
-          "rule": "Lifelong → +12, 80 → +6, ≤70 → −5"
-        },
-        {
           "field": "max_entry_age",
-          "rule": "≥65 → +4 (more buyers eligible)"
+          "rule": "≥65 → +25, ≥55 → +12, ≥50 → +0, <50 → −20 (base 50)"
         },
         {
-          "field": "guaranteed_renewability",
-          "rule": "Stated explicitly → +4"
+          "field": "(lifelong renewability)",
+          "rule": "IRDAI universal norm — shown for transparency, not scored"
         }
       ],
       "anchors": [

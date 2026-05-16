@@ -11,24 +11,22 @@
     "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/niva-bupa/rise__wordings.pdf",
-    "source_quote": "Min entry age not found"
+    "source_quote": "not stated in niva-bupa__rise.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/niva-bupa/rise__wordings.pdf",
-    "source_quote": "Max entry age not explicitly stated; check Policy Schedule"
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/niva-bupa/rise__wordings.pdf",
-    "source_quote": "Max renewal age not specified; check Policy Schedule"
+    "source_quote": "not stated in niva-bupa__rise.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
     "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/niva-bupa/rise__wordings.pdf",
-    "source_quote": "Sum Insured options not enumerated in extracted text; check Policy Schedule"
+    "source_quote": "not stated in niva-bupa__rise.pdf",
+    "_confidence": "low"
   },
   "initial_waiting_period_days": {
     "value": 30,
@@ -36,9 +34,10 @@
     "source_quote": "the treatment of any Illness within 30 days from the first Policy commencement date shall be excluded except claims arising due to an Accident, provided the same are covered. b. This exclusion shall n"
   },
   "pre_existing_disease_waiting_months": {
-    "value": null,
+    "value": 36,
     "source_pdf_path": "rag/corpus/niva-bupa/rise__wordings.pdf",
-    "source_quote": "PED waiting period not extracted; check Section 5 / Excl01"
+    "source_quote": "expiry of 36 months of continuous coverage after the date of inception of the first Policy.",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
@@ -48,12 +47,14 @@
   "maternity_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/niva-bupa/rise__wordings.pdf",
-    "source_quote": "Maternity waiting not specified or maternity excluded"
+    "source_quote": "not stated in niva-bupa__rise.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
-    "value": null,
+    "value": 60,
     "source_pdf_path": "rag/corpus/niva-bupa/rise__wordings.pdf",
-    "source_quote": "Pre-hospitalization days not extracted"
+    "source_quote": "We will pay expenses incurred on consultations, medicines, physiotherapy, diagnostic tests for 60 days before the date of",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
     "value": 180,
@@ -61,9 +62,11 @@
     "source_quote": "ore the date of admission and 180 days after date of discharge IF these are related to the condition for which hospitalization claim is paid. 4.1.4. Home Care / Domiciliary Treatment Home Care Treatme"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/niva-bupa/rise__wordings.pdf",
-    "source_quote": "Day-care count not enumerated; covered per policy definition"
+    "value": 586,
+    "source_url": "https://www.nivabupa.com/family-health-insurance-plans/reassurev2-insurance.html",
+    "source_note": "Per insurer baseline (Niva Bupa ReAssure 2.0 covers ~586 day care procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/niva-bupa/rise__wordings.pdf"
   },
   "ayush_coverage": {
     "value": true,
@@ -76,9 +79,10 @@
     "source_quote": ".16. Maternity Expenses (Code-Excl18) a. Medical treatment expenses traceable to childbirth (including complicated deliveries and caesarean sections incurred during Hospitalization) except ectopic"
   },
   "newborn_coverage": {
-    "value": false,
+    "value": null,
     "source_pdf_path": "rag/corpus/niva-bupa/rise__wordings.pdf",
-    "source_quote": "Newborn cover not found; typically tied to maternity option"
+    "source_quote": "not stated in niva-bupa__rise.pdf",
+    "_confidence": "low"
   },
   "organ_donor_expenses": {
     "value": true,
@@ -88,12 +92,14 @@
   "no_claim_bonus_pct": {
     "value": null,
     "source_pdf_path": "rag/corpus/niva-bupa/rise__wordings.pdf",
-    "source_quote": "NCB % not extracted; product may use booster/recharge structure"
+    "source_quote": "not stated in niva-bupa__rise.pdf",
+    "_confidence": "low"
   },
   "restoration_benefit": {
-    "value": null,
+    "value": true,
     "source_pdf_path": "rag/corpus/niva-bupa/rise__wordings.pdf",
-    "source_quote": "Restoration benefit not found in extracted text"
+    "source_quote": "4.1.7. Re-fill\nOnce in a policy year, we will add an amount equal to the base sum insured. This amount will be added at complete or partial",
+    "_confidence": "high"
   },
   "room_rent_capping": {
     "value": "Single Private Room or All Room Category",
@@ -108,12 +114,14 @@
   "deductible_amount": {
     "value": null,
     "source_pdf_path": "rag/corpus/niva-bupa/rise__wordings.pdf",
-    "source_quote": "Aggregate Deductible cannot be opted together"
+    "source_quote": "not stated in niva-bupa__rise.pdf",
+    "_confidence": "low"
   },
   "network_hospital_count": {
-    "value": null,
-    "source_url": null,
-    "source_quote": "Insurer-level metric; not extracted in this curation pass"
+    "value": 10400,
+    "source_url": "https://www.nivabupa.com/health-insurance-plans.html",
+    "source_note": "10,400+ cashless hospitals spanning 450+ cities across India (health-insurance-plans page, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "cashless_treatment_supported": {
     "value": true,
@@ -123,17 +131,21 @@
   "claim_settlement_ratio": {
     "value": null,
     "source_url": null,
-    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted"
+    "source_quote": "not stated in niva-bupa__rise.pdf",
+    "source_pdf_path": "rag/corpus/niva-bupa/rise__wordings.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
     "value": null,
-    "source_pdf_path": null,
-    "source_quote": "TAT not specified in policy wording; governed by IRDAI Master Circular"
+    "source_pdf_path": "rag/corpus/niva-bupa/rise__wordings.pdf",
+    "source_quote": "not stated in niva-bupa__rise.pdf",
+    "_confidence": "low"
   },
   "policy_type": {
-    "value": "hospital-cash",
+    "value": "indemnity",
     "source_pdf_path": "rag/corpus/niva-bupa/rise__wordings.pdf",
-    "source_quote": "Hospital cash / daily benefit policy"
+    "source_quote": "We will pay the expenses incurred by you on treatment (Naturally this excludes expenses not linked to treatment like food, beverage, toiletries and cosmetics).",
+    "_confidence": "high"
   },
   "_meta": {
     "curated_at": "2026-05-14",

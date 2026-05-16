@@ -7,31 +7,29 @@
     "value": "HDFHLIP24079V072324",
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "UIN: my:health Suraksha - HDFHLIP24079V072324",
+    "_confidence": "high"
   },
   "min_entry_age": {
-    "value": null,
+    "value": 18,
     "unit": "years",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Minimum Entry Age – 18 Years • Minimum Entry Age – 18 Years • Minimum Entry Age –",
+    "_confidence": "medium"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Entry Age: Base Cover Proposer Adult Dependent Child/Children • Minimum Entry Age – 18 Years • Minimum Entry Age – 18 Years • Minimum Entry Age – 91 days • Maximum Entry Age – Lifetime Entry • Maximum Entry Age - Lifetime Entry • Maximum Entry Age - 25 years",
+    "_confidence": "high"
   },
   "min_child_entry_age": {
-    "value": null,
+    "value": 91,
     "unit": "days",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Minimum Entry Age – 18 Years • Minimum Entry Age – 18 Years • Minimum Entry Age –",
+    "_confidence": "medium"
   },
   "sum_insured_options": {
     "value": [
@@ -68,102 +66,220 @@
     ],
     "unit": "INR",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Multiple sum insured options ranging from 1 Lac to Rs. 5 Cr available under this policy.",
+    "_confidence": "medium"
   },
   "grace_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "16. Grace Period i. A Grace Period of 30 days is available for Renewal of the Policy. Any Illness, disease or condition contracted during Grace Period will not be covered and will be treated as Pre- existing diseases.",
+    "_confidence": "high"
   },
   "free_look_period": {
-    "value": 30,
+    "value": 15,
     "unit": "days",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "The Insured Person shall be allowed free look period of fifteen days from date of receipt of the policy document to review the terms and conditions of the policy, and to return the same if not acceptable.",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Expenses related to the treatment of any illness within 30 days from the first Policy commencement date shall be excluded except claims arising due to an Accident, provided the same are covered.",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 36,
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Waiting Period for listed illnesses and Procedures 24 Months Waiting Period for Preexisting conditions 36 Months Option 2 General Waiting Period 30 Days",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "surgeries/treatments shall be excluded until the expiry of 24 months of continuous coverage after the date of inception of the first Policy with us. This exclusion shall not be applicable for claims arising due to an Accident.",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
-    "value": 24,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in hdfc-ergo__my-health-suraksha__brochure.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": 60,
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Hospitalization Medical Expenses incurred during the 60 days immediately before Hospitalization of an Insured Person, provided that Claim under Section A1 is admissible under the Policy.",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
     "value": 180,
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "5. Post-Hospitalization cover We will pay for the Post-Hospitalization Medical Expenses incurred upto 180 days from the day Insured Person is discharged from Hospital",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 144,
+    "source_url": "https://www.hdfcergo.com/health-insurance/my-health-suraksha-plan",
+    "source_note": "HDFC Ergo My:health Suraksha; 144 day-care procedures per insurer baseline",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 16000,
+    "source_url": "https://www.hdfcergo.com/",
+    "source_note": "16000+ Cashless Healthcare providers (homepage 'Why Choose HDFC ERGO' / 'Cashless Network' section, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in hdfc-ergo__my-health-suraksha__brochure.pdf",
+    "_confidence": "low"
   },
   "room_rent_capped_at_pct_of_si": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in hdfc-ergo__my-health-suraksha__brochure.pdf",
+    "_confidence": "low"
   },
   "policy_term_options_years": {
-    "value": null,
+    "value": [
+      1,
+      2,
+      3
+    ],
     "unit": "years",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "This policy can be issued for 1 year/ 2 years/ 3 years.",
+    "_confidence": "high"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in hdfc-ergo__my-health-suraksha__brochure.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in hdfc-ergo__my-health-suraksha__brochure.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in hdfc-ergo__my-health-suraksha__brochure.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
+    "source_quote": "only Inpatient care treatment of Insured Person in an AYUSH Hospital for the below Alternative Treatments prescribed by the Medical Practitioner • Ayurvedic • Unani • Siddha • Homeopathy • Yoga & Naturopathy",
+    "_confidence": "high"
+  },
+  "maternity_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
+    "source_quote": "Medical Expenses under Section A1 for Maternity Expenses limited up to 2 deliveries or 1 delivery and 1 termination or 2 terminations during the lifetime of the Insured Person",
+    "_confidence": "high"
+  },
+  "newborn_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
+    "source_quote": "New Born Baby Cover – We will cover New Born Baby from 91st day after the birth as per original terms of the Policy on receipt of completed proposal form and P",
+    "_confidence": "high"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
+    "source_quote": "8. Organ Donor Expenses We will pay Medical Expenses as listed under Section A1 towards organ donor’s Hospitalization for harvesting of the donated organ where an Insured Person is the recipient, provided that; • The organ",
+    "_confidence": "high"
+  },
+  "restoration_benefit": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
+    "source_quote": "Sum Insured Rebound We will add to the Sum Insured, an amount equivalent to the Claim amount paid under Basic Sum Insured, subject to maximum of Basic Sum Insu",
+    "_confidence": "medium"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
+    "source_quote": "Domiciliary Hospitalization We will pay the Medical Expenses incurred on Domiciliary Hospitalization of the Insured Person provided that: i",
+    "_confidence": "high"
+  },
+  "worldwide_emergency_cover": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
+    "source_quote": "anywhere in the world 5",
+    "_confidence": "medium"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
+    "source_quote": "Health Check-Up After the completion of every block of four consecutive, continuous and Claim free Policy Years with Us, We will pay towards cost of Preventive Health Check- u",
+    "_confidence": "high"
+  },
+  "critical_illness_cover": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
+    "source_quote": "Critical Illness cover for which maximum Entry Age is restricted to 65 years",
+    "_confidence": "medium"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
+    "source_quote": "This Cover can be availed through Cashless Facility only as procedure given under Claims Procedure.",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_cap_pct": {
+    "value": 50,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
+    "source_quote": "3. Cumulative Bonus can be accumulated upto 50% of Basic Sum Insured.",
+    "_confidence": "high"
+  },
+  "geographic_coverage": {
+    "value": "worldwide",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
+    "source_quote": "Unique plan with coverage for hospitalization expenses anywhere in the world",
+    "_confidence": "high"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "family_floater",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
+    "source_quote": "ccrued. Such discount will be applicable on individual Renewal Premium for both Individual and Floater Su",
+    "_confidence": "medium"
+  },
+  "no_claim_bonus_pct": {
+    "value": 5,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
+    "source_quote": "On each Renewal of the Policy with Us, We will apply 5% of Basic Sum Insured under expiring Policy as Cumulative Bonus in the Policy",
+    "_confidence": "high"
   }
 }

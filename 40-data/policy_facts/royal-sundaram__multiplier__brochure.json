@@ -7,139 +7,255 @@
     "value": "RSAHLIP23030V012223",
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/multiplier__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "ier Health Insurance Plan UIN: RSAHLIP23030V012223 03 UIN:",
+    "_confidence": "high"
   },
   "min_entry_age": {
     "value": 18,
     "unit": "years",
     "source_pdf_path": "rag/corpus/royal-sundaram/multiplier__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "For Adults: 18 years to 65 years (Lif",
+    "_confidence": "high"
   },
   "max_entry_age": {
     "value": 65,
     "unit": "years",
     "source_pdf_path": "rag/corpus/royal-sundaram/multiplier__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/royal-sundaram/multiplier__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "For Adults: 18 years to 65 years (Lif",
+    "_confidence": "high"
   },
   "min_child_entry_age": {
     "value": 91,
     "unit": "days",
     "source_pdf_path": "rag/corpus/royal-sundaram/multiplier__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "ren: Dependent Children 91 days to 25 years 1/2/3 years 1- 24 months w",
+    "_confidence": "high"
   },
   "sum_insured_options": {
-    "value": [
-      500000,
-      750000,
-      1000000,
-      1500000,
-      2000000,
-      2500000
-    ],
+    "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/royal-sundaram/multiplier__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in royal-sundaram__multiplier__brochure.pdf",
+    "_confidence": "low"
   },
   "grace_period": {
-    "value": 30,
+    "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/royal-sundaram/multiplier__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in royal-sundaram__multiplier__brochure.pdf",
+    "_confidence": "low"
   },
   "free_look_period": {
-    "value": 30,
+    "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/royal-sundaram/multiplier__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in royal-sundaram__multiplier__brochure.pdf",
+    "_confidence": "low"
   },
   "initial_waiting_period_days": {
-    "value": 30,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/multiplier__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in royal-sundaram__multiplier__brochure.pdf",
+    "_confidence": "low"
   },
   "pre_existing_disease_waiting_months": {
     "value": 36,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/multiplier__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "xcluded until the expiry of 36 months of continuous coverage afte",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/multiplier__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "l be excluded until the expiry of 24 months of continuous coverage, as may",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/multiplier__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in royal-sundaram__multiplier__brochure.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
-    "value": 60,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/multiplier__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in royal-sundaram__multiplier__brochure.pdf",
+    "_confidence": "low"
   },
   "post_hospitalization_days": {
     "value": 90,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/multiplier__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "are, for a ﬁxed period of 90 days from the date of discharge from the",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/royal-sundaram/multiplier__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 200,
+    "source_url": "https://www.royalsundaram.in/health-insurance/lifeline/",
+    "source_note": "Per insurer baseline (Royal Sundaram Lifeline lists ~200 day care procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/royal-sundaram/multiplier__brochure.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/royal-sundaram/multiplier__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 12500,
+    "source_url": "https://www.royalsundaram.in/",
+    "source_note": "12500+ Cashless hospitals (homepage, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
-    "value": null,
-    "unit": "percent",
+    "value": 5,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/royal-sundaram/multiplier__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Co-payment Options - 5%, 10%, 15%, 20% Monthly, Quarterly, Half Yearly, Annual",
+    "_confidence": "medium"
   },
   "room_rent_capped_at_pct_of_si": {
-    "value": null,
+    "value": 0,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/royal-sundaram/multiplier__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "atient Care Covered up to Sum Insured Room Rent No Room Rent Capping Modern Treatments Covered up to Sum Insured Pre and Post",
+    "_confidence": "high"
   },
   "policy_term_options_years": {
-    "value": null,
+    "value": [
+      1,
+      2,
+      3
+    ],
     "unit": "years",
     "source_pdf_path": "rag/corpus/royal-sundaram/multiplier__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "ren 91 days to 25 years 1/2/3 years 1- 24 months wait",
+    "_confidence": "medium"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/royal-sundaram/multiplier__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in royal-sundaram__multiplier__brochure.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/royal-sundaram/multiplier__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in royal-sundaram__multiplier__brochure.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/multiplier__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in royal-sundaram__multiplier__brochure.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/multiplier__brochure.pdf",
+    "source_quote": "Ayush Treatment The company shall indemnify medical expenses incurred for inpatient care treatment under Ayurveda, Yoga and Naturopathy, Unani, Siddha and Homeopathy system of medicines during each policy year up to sum",
+    "_confidence": "high"
+  },
+  "maternity_coverage": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/multiplier__brochure.pdf",
+    "source_quote": "Maternity Expenses: (Code - Excl 18) The above is an indicative list. For the complete list of exclusions, please refer to the detailed policy terms and conditions.",
+    "_confidence": "high"
+  },
+  "newborn_coverage": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/multiplier__brochure.pdf",
+    "source_quote": "not stated in royal-sundaram__multiplier__brochure.pdf",
+    "_confidence": "low"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/multiplier__brochure.pdf",
+    "source_quote": "Organ Donor Expenses We will cover inpatient care medical expenses towards the donor for the harvesting of the organ donated provided that: a) the organ donor is any person in accordance with the Transplantation of Human",
+    "_confidence": "high"
+  },
+  "restoration_benefit": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/multiplier__brochure.pdf",
+    "source_quote": "Flexi Reload Beneﬁt 1. Available upto 100% of Base Sum Insured. 2. This beneﬁt is available even for same illness for same Insured Person in the same Policy year. This beneﬁt will be available after exhaustion of Base Su",
+    "_confidence": "high"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/multiplier__brochure.pdf",
+    "source_quote": "Domiciliary Hospitalisation We will cover medical expenses up to sum insured for medical treatment taken at home if this continues for an uninterrupted period of 3 days and the condition for which treatment is taken would",
+    "_confidence": "high"
+  },
+  "worldwide_emergency_cover": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/multiplier__brochure.pdf",
+    "source_quote": "not stated in multiplier__brochure.pdf",
+    "_confidence": "low"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/multiplier__brochure.pdf",
+    "source_quote": "Disease Management, Preventive Healthcare & Wellness Beneﬁt to oﬀer various health related articles via email, videos on speciﬁc health topics etc.",
+    "_confidence": "high"
+  },
+  "critical_illness_cover": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/multiplier__brochure.pdf",
+    "source_quote": "4X Multiplier Beneﬁt In Life Threatening Conditions, an additional amount equivalent to 4 (Four) times of Sum Insured and No Claim Bonus will be available to the Insured Persons for all claims admissible during the Polic",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/multiplier__brochure.pdf",
+    "source_quote": "not stated in royal-sundaram__multiplier__brochure.pdf",
+    "_confidence": "low"
+  },
+  "no_claim_bonus_cap_pct": {
+    "value": 100,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/royal-sundaram/multiplier__brochure.pdf",
+    "source_quote": "up to a maximum of 100% of base sum insured of r",
+    "_confidence": "medium"
+  },
+  "geographic_coverage": {
+    "value": null,
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/royal-sundaram/multiplier__brochure.pdf",
+    "source_quote": "not stated in royal-sundaram__multiplier__brochure.pdf",
+    "_confidence": "low"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "family_floater",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/royal-sundaram/multiplier__brochure.pdf",
+    "source_quote": "Individual basis or on a Family Floater basis. In case of a family ﬂoater policy, one family will share a single",
+    "_confidence": "medium"
+  },
+  "room_rent_capping": {
+    "value": "No Room Rent Capping",
+    "unit": "text",
+    "source_pdf_path": "rag/corpus/royal-sundaram/multiplier__brochure.pdf",
+    "source_quote": "Covered up to Sum Insured No Room Rent Capping Covered up to Sum Insured 60/90 days, Covered upto Sum Insured",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_pct": {
+    "value": 20,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/royal-sundaram/multiplier__brochure.pdf",
+    "source_quote": "No Claim Bonus We will increase your sum insured by 20% of base",
+    "_confidence": "medium"
   }
 }

@@ -48,6 +48,79 @@ except Exception:  # pragma: no cover — pydub missing in dev shell
 _SUPPORTED_CODECS = {"audio/wav", "audio/mp4", "audio/webm"}
 
 
+# KI-278 (2026-05-16) — voice-OUTPUT error vocabulary. Mirrors the STT
+# closed-enum contract (sarvam_stt.STT_ERROR_*) so the chat endpoint can
+# surface a structured tts_error_code instead of swallowing the exception
+# and returning audio_base64=None with zero signal to the client. Bug
+# origin: Sarvam account ran out of credits → /text-to-speech returned
+# HTTP 429 {"code":"insufficient_quota_error"} → resp.raise_for_status()
+# raised → chat endpoint logged it to turns.jsonl and returned a text-only
+# reply with NO voice and NO explanation ("no voice in reply. wtf?").
+TTS_ERROR_RATE_LIMIT = "rate_limit"
+TTS_ERROR_SERVICE = "service_unavailable"
+TTS_ERROR_NETWORK = "network"
+TTS_ERROR_AUTH = "auth"
+TTS_ERROR_UNKNOWN = "unknown"
+
+TTS_ERROR_USER_MESSAGES = {
+    # The 429 here is specifically Sarvam's `insufficient_quota_error`
+    # ("No credits available") in practice — distinct from a transient
+    # rate-limit. Phrase it so the user knows the TEXT answer is complete
+    # and only the spoken playback is unavailable.
+    TTS_ERROR_RATE_LIMIT: (
+        "Voice playback is unavailable right now (speech quota exhausted) — "
+        "the written answer above is complete. You can keep chatting in text."
+    ),
+    TTS_ERROR_SERVICE: (
+        "Voice playback is temporarily unavailable — the written answer "
+        "above is complete."
+    ),
+    TTS_ERROR_NETWORK: (
+        "Couldn't load the spoken reply (network hiccup) — the written "
+        "answer above is complete."
+    ),
+    TTS_ERROR_AUTH: (
+        "Voice playback is unavailable right now — the written answer "
+        "above is complete."
+    ),
+    TTS_ERROR_UNKNOWN: (
+        "Couldn't play the spoken reply — the written answer above is "
+        "complete."
+    ),
+}
+
+
+def classify_tts_exception(exc: BaseException) -> str:
+    """Map an httpx / network exception to a TTS_ERROR_* code.
+
+    Same boundary-classification pattern as classify_stt_exception — the
+    frontend never parses raw httpx text; it switches on this closed enum.
+    """
+    if isinstance(exc, httpx.HTTPStatusError):
+        status = exc.response.status_code if exc.response is not None else 0
+        if status == 429:
+            return TTS_ERROR_RATE_LIMIT
+        if status in (401, 403):
+            return TTS_ERROR_AUTH
+        if 500 <= status < 600:
+            return TTS_ERROR_SERVICE
+        return TTS_ERROR_UNKNOWN
+    if isinstance(exc, httpx.TimeoutException):
+        return TTS_ERROR_NETWORK
+    if isinstance(exc, httpx.NetworkError):
+        return TTS_ERROR_NETWORK
+    if isinstance(exc, httpx.HTTPError):
+        return TTS_ERROR_UNKNOWN
+    # RuntimeError("SARVAM_API_KEY not set") / RuntimeError("returned no
+    # audio") — treat missing-key as auth, empty-audio as service.
+    if isinstance(exc, RuntimeError):
+        msg = str(exc).lower()
+        if "api_key" in msg or "api key" in msg or "subscription" in msg:
+            return TTS_ERROR_AUTH
+        return TTS_ERROR_SERVICE
+    return TTS_ERROR_UNKNOWN
+
+
 def _transcode_wav(wav_bytes: bytes, preferred_codec: str) -> Tuple[bytes, str]:
     """Convert raw WAV bytes to the preferred codec.
 

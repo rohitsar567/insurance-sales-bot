@@ -10,52 +10,59 @@
   "min_entry_age": {
     "value": null,
     "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in care-health__supreme-enhance__brochure.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
-    "source_quote": ""
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in care-health__supreme-enhance__brochure.pdf",
+    "_confidence": "low"
   },
   "pre_existing_disease_waiting_months": {
     "value": 36,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
-    "source_quote": "Pre-existing disease wait 36 Months"
+    "source_quote": "36 Months Pre-existing disease wait period 24 Months Name Ailment Wait Period",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
-    "value": null,
+    "value": 30,
     "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "Initial Wait Period 30 Days on all claims except on Accidental Claims",
+    "_confidence": "high"
   },
   "maternity_coverage": {
     "value": null,
     "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in care-health__supreme-enhance__brochure.pdf",
+    "_confidence": "low"
   },
   "maternity_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in care-health__supreme-enhance__brochure.pdf",
+    "_confidence": "low"
   },
   "ayush_coverage": {
-    "value": null,
+    "value": true,
+    "unit": null,
     "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "Organ donor cover AYUSH treatment cover",
+    "_confidence": "high"
   },
   "cashless_treatment_supported": {
     "value": true,
+    "unit": null,
     "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
-    "source_quote": "Cashless Treatment"
+    "source_quote": "Cashless Treatment With cashless hospitalisation, you no longer need to run around paying off hospital bills",
+    "_confidence": "high"
   },
   "copayment_pct": {
     "value": null,
     "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in care-health__supreme-enhance__brochure.pdf",
+    "_confidence": "low"
   },
   "no_claim_bonus_pct": {
     "value": 100,
@@ -63,14 +70,17 @@
     "source_quote": "cumulative bonus upto 100%"
   },
   "restoration_benefit": {
-    "value": null,
+    "value": true,
     "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "insured options max upto `95 lacs** Unlimited Automatic recharge - Unlimited times in a Policy Year for unrelated or same illness Cu",
+    "_confidence": "high"
   },
   "room_rent_capping": {
-    "value": "Room Rent Most Economical Single Pvt Room Most Economical Single Pvt Room\nRoom R",
+    "value": "No limit",
+    "unit": null,
     "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
-    "source_quote": "Room Rent Most Economical Single Pvt Room Most Economical Single Pvt Room\nRoom Rent Modification** No Limit"
+    "source_quote": "No limit on ICU charges No sub-limits on modern or conventional treatments",
+    "_confidence": "medium"
   },
   "pre_hospitalization_days": {
     "value": 60,
@@ -80,42 +90,53 @@
   "post_hospitalization_days": {
     "value": 90,
     "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
-    "source_quote": "Post-Hospitalization Medical\n90 Days"
+    "source_quote": "herapy, medication etc. incurred by you up to 90 days after your hospitalisation",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
-    "source_quote": ""
+    "value": 541,
+    "source_url": "https://www.careinsurance.com/product/care-senior",
+    "source_note": "Per insurer baseline (Care Health publishes 541+ day care treatments across plans)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf"
   },
   "network_hospital_count": {
-    "value": null,
+    "value": 11600,
+    "source_url": "https://www.careinsurance.com/health-plan-network-hospitals.html",
+    "source_note": "Care Health Insurance: 22,100+ healthcare providers including 11,600+ network hospitals (insurer network-hospitals page; corroborated by Google snippet of careinsurance.com, scraped 2026-05-15). Conservative count uses hospital-specific subset, not the wider healthcare-provider count.",
+    "_confidence": "medium",
     "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "Insurer-level metric backfilled from public-web source — see source_url"
   },
   "sum_insured_options": {
     "value": null,
     "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
-    "source_quote": "Sum Insured options ar"
+    "source_quote": "not stated in care-health__supreme-enhance__brochure.pdf",
+    "_confidence": "low"
   },
   "claim_settlement_ratio": {
     "value": null,
     "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in care-health__supreme-enhance__brochure.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
     "value": null,
     "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in care-health__supreme-enhance__brochure.pdf",
+    "_confidence": "low"
   },
   "policy_type": {
-    "value": "group",
+    "value": null,
     "source_pdf_path": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
-    "source_quote": "classified as group from PDF heuristics"
+    "source_quote": "not stated in care-health__supreme-enhance__brochure.pdf",
+    "_confidence": "low"
   },
   "_meta": {
     "curated_at": "2026-05-14",
     "primary_source_pdf": "rag/corpus/care-health/supreme-enhance__brochure.pdf",
     "completeness_pct": 36,
-    "notes": "Curated by tools/curate_remaining.py \u2014 pattern-based extraction from local PDF"
+    "notes": "Curated by tools/curate_remaining.py — pattern-based extraction from local PDF",
+    "network_hospital_backfill_2026-05-15": "care-health insurer-wide count backfilled in targeted scrape pass"
   }
 }

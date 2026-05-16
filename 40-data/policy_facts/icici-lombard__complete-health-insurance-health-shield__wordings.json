@@ -3,29 +3,28 @@
   "policy_name": "Complete Health Insurance Health Shield",
   "insurer_slug": "icici-lombard",
   "uin_code": {
-    "value": null,
+    "value": "ICIHLIP22096V062122",
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "UIN - ICIHLIP22096V062122 1",
+    "_confidence": "high"
   },
   "min_entry_age": {
     "value": null,
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in icici-lombard__complete-health-insurance-health-shield__wordings.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
-    "source_quote": ""
-  },
-  "max_renewal_age": {
-    "value": 99,
-    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
-    "source_quote": "life-long renew"
+    "source_quote": "not stated in icici-lombard__complete-health-insurance-health-shield__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_existing_disease_waiting_months": {
     "value": 24,
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
-    "source_quote": "Pre-existing diseases: Declared and accepted PED will be covered after 24 months"
+    "source_quote": "Code- Excl01: Pre-Existing Diseases a) Expenses related to the treatment of a pre-existing Disease (PED) and its direct complications shall be excluded until the expiry of 24 months of continuous coverage after the date of inception of th",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
@@ -33,24 +32,28 @@
     "source_quote": "Initial waiting period: 30 days"
   },
   "maternity_coverage": {
-    "value": null,
+    "value": false,
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "xv. Code- Excl18: Maternity: Medical treatment expenses traceable to childbirth (including complicated deliveries and caesarean sections incurred during hospitalization) except ectopic pregnancy.",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in icici-lombard__complete-health-insurance-health-shield__wordings.pdf",
+    "_confidence": "low"
   },
   "ayush_coverage": {
     "value": true,
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
-    "source_quote": "AYUSH therapy sections as required\nand/or has equipped operation theatre where surgical Treatment normally taken on an o"
+    "source_quote": "Reimbursement of expenses for AYUSH treatment In Patient AYUSH Hospitalization Medical expenses for day care procedures where such procedures are undertaken by an Insured Person as an In-patient in a Hospital",
+    "_confidence": "high"
   },
   "cashless_treatment_supported": {
     "value": true,
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
-    "source_quote": "Cashless Facility"
+    "source_quote": "Cashless Facility means a facility extended by the insurer to the insured where the payments, of the costs of treatment undergone by the insured in accordance w",
+    "_confidence": "high"
   },
   "copayment_pct": {
     "value": 10,
@@ -63,59 +66,80 @@
     "source_quote": "no claim bonus of 50%"
   },
   "restoration_benefit": {
-    "value": null,
+    "value": "Reset Benefit: up to 100% of Sum Insured once per policy year (plans with SI Rs.3 lacs and above)",
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "For plans with Sum Insured ₹ 3lacs and above, We will reset up to",
+    "_confidence": "high"
   },
   "room_rent_capping": {
     "value": null,
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in icici-lombard__complete-health-insurance-health-shield__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
-    "value": null,
+    "value": 30,
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "Pre & Post Medical Expenses incurred due to Illness up to 30 days period immediately before and 60",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
-    "value": null,
+    "value": 60,
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "Pre & Post Medical Expenses incurred due to Illness up to 30 days period immediately before and 60",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
-    "source_quote": ""
+    "value": 150,
+    "source_url": "https://www.icicilombard.com/docs/default-source/downloads/complete-health-insurance-brochure.pdf",
+    "source_note": "Per insurer baseline (ICICI Lombard Complete Health iHealth Annexure I; 150 procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf"
   },
   "network_hospital_count": {
     "value": 6500,
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
-    "source_quote": "6500+ network hospitals"
+    "source_quote": "available at over 6500+ network hospitals. 8 Sub Limit (a) Cataract, where sub-limit of Rs. 20,000/- is applicable per eye per Policy year for Plans with Sum Insured 9 Renewal Condition",
+    "_confidence": "high"
   },
   "sum_insured_options": {
-    "value": null,
+    "value": [
+      300000,
+      400000,
+      500000,
+      700000,
+      1000000,
+      1500000,
+      2000000,
+      2500000,
+      5000000
+    ],
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "3 lacs/ 4 lacs/ 5 lacs Sum Insured (Rs.) 7 lacs/ 10 lacs 15lacs / 20lacs / 25Lacs / 50lacs d. Benefits covered Medical Expenses incurred due to Illness up to 30 days period immediately before and 60 days immediately after an",
+    "_confidence": "high"
   },
   "claim_settlement_ratio": {
     "value": null,
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in icici-lombard__complete-health-insurance-health-shield__wordings.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
-    "value": null,
+    "value": 4,
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "mplete set of documents & information, We will respond within 4 hours of the actual receipt of such pre authorization request wi",
+    "_confidence": "high"
   },
   "policy_type": {
-    "value": "group",
+    "value": null,
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
-    "source_quote": "classified as group from PDF heuristics"
+    "source_quote": "not stated in icici-lombard__complete-health-insurance-health-shield__wordings.pdf",
+    "_confidence": "low"
   },
   "_meta": {
     "curated_at": "2026-05-14",
     "primary_source_pdf": "rag/corpus/icici-lombard/complete-health-insurance-health-shield__wordings.pdf",
     "completeness_pct": 41,
-    "notes": "Curated by tools/curate_remaining.py \u2014 pattern-based extraction from local PDF"
+    "notes": "Curated by tools/curate_remaining.py — pattern-based extraction from local PDF"
   }
 }

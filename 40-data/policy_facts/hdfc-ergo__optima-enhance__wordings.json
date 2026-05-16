@@ -7,132 +7,225 @@
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in hdfc-ergo__optima-enhance__wordings.pdf",
+    "_confidence": "low"
   },
   "min_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in hdfc-ergo__optima-enhance__wordings.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in hdfc-ergo__optima-enhance__wordings.pdf",
+    "_confidence": "low"
   },
   "min_child_entry_age": {
-    "value": null,
+    "value": 91,
     "unit": "days",
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Your children Aged between 91 days and 25 years if they are unmarried",
+    "_confidence": "high"
   },
   "sum_insured_options": {
     "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in hdfc-ergo__optima-enhance__wordings.pdf",
+    "_confidence": "low"
   },
   "grace_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "A Grace Period of 30 days for renewing the Policy is available under this Policy. Any disease/ condition contracted during the Grace Period will not be covered and will be treated as a Pre- existing Condition.",
+    "_confidence": "high"
   },
   "free_look_period": {
-    "value": 15,
+    "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in hdfc-ergo__optima-enhance__wordings.pdf",
+    "_confidence": "low"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "investigation, treatment or admission started within 30 days from Policy Commencement Date, except for the claims arising due to an Accident. However if the condition is ",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 48,
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "iii) 48 months waiting period from Policy Commencement Date for all Pre-existing Conditions declared and/or accepted at the time of application",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "ii) A waiting period of 24 months from the first Policy Commencement Date will be applicable to the medical and surgical treatment of illnesses / diagnoses or surgical procedures mentioned in the following table.",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in hdfc-ergo__optima-enhance__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": 60,
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "b. Pre-Hospitalisation Medical Expenses incurred upto 60 days before the date of admission to the Hospital",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
     "value": 90,
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "c. Post-Hospitalisation Medical Expenses incurred upto 90 days after discharge from the Hospital. This is applicable both for In patient and Day Care treatment.",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 144,
+    "source_url": "https://www.hdfcergo.com/health-insurance/day-care-treatment",
+    "source_note": "Per insurer baseline (HDFC Ergo day-care treatment page lists 144 procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 16000,
+    "source_url": "https://www.hdfcergo.com/",
+    "source_note": "16000+ Cashless Healthcare providers (homepage 'Why Choose HDFC ERGO' / 'Cashless Network' section, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in hdfc-ergo__optima-enhance__wordings.pdf",
+    "_confidence": "low"
   },
   "room_rent_capped_at_pct_of_si": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in hdfc-ergo__optima-enhance__wordings.pdf",
+    "_confidence": "low"
   },
   "policy_term_options_years": {
-    "value": null,
+    "value": [
+      1
+    ],
     "unit": "years",
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Def. 48. Policy Year means a year following the Commencement Date and its subsequent annual anniversary.",
+    "_confidence": "medium"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in hdfc-ergo__optima-enhance__wordings.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in hdfc-ergo__optima-enhance__wordings.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in hdfc-ergo__optima-enhance__wordings.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
+    "source_quote": "xii) Types of treatment, defined Illnesses/ conditions/ supplies: a. Non allopathic treatment.",
+    "_confidence": "high"
+  },
+  "maternity_coverage": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
+    "source_quote": "pregnancy (including voluntary termination), miscarriage (except as a result of an Accident or Illness), maternity or child birth (including caesarean section), except in the case of ectopic pregnancy in relati",
+    "_confidence": "high"
+  },
+  "newborn_coverage": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
+    "source_quote": "not stated in hdfc-ergo__optima-enhance__wordings.pdf",
+    "_confidence": "low"
+  },
+  "organ_donor_expenses": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
+    "source_quote": "not stated in optima-enhance__wordings.pdf",
+    "_confidence": "low"
+  },
+  "restoration_benefit": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
+    "source_quote": "not stated in hdfc-ergo__optima-enhance__wordings.pdf",
+    "_confidence": "low"
+  },
+  "preventive_health_checkup": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
+    "source_quote": "Preventive care, vaccination including inoculation and immunisations (except in case of post-bite treatment)",
+    "_confidence": "high"
+  },
+  "critical_illness_cover": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
+    "source_quote": "not stated in hdfc-ergo__optima-enhance__wordings.pdf",
+    "_confidence": "low"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
+    "source_quote": "Cashless facility means a facility extended by the insurer to the insured where the payments, of the costs of treatment undergone by the insured in accordance with the Policy terms and conditions, are directly made to the network provider by the insurer",
+    "_confidence": "high"
+  },
+  "geographic_coverage": {
+    "value": "pan_india",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
+    "source_quote": "This Policy only covers medical treatment taken within India. All payments under this Policy will only be made in Indian Rupees within India.",
+    "_confidence": "high"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "super_top_up",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
+    "source_quote": "eligible Medical Expenses incurred less the Deductible amount. A. Waiting Period All Illne",
+    "_confidence": "medium"
+  },
+  "deductible_amount": {
+    "value": null,
+    "unit": "INR",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
+    "source_quote": "not stated in hdfc-ergo__optima-enhance__wordings.pdf",
+    "_confidence": "low"
   }
 }

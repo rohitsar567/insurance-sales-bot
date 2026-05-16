@@ -7,132 +7,189 @@
     "value": "CHIHLIP25044V012425",
     "unit": null,
     "source_pdf_path": "rag/corpus/care-health/ultimate-care__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Ultimate Care - UIN : CHIHLIP25044V012425 ^The Comp",
+    "_confidence": "high"
   },
   "min_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/care-health/ultimate-care__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in care-health__ultimate-care__wordings.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/care-health/ultimate-care__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
-  },
-  "max_renewal_age": {
-    "value": null,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/care-health/ultimate-care__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in care-health__ultimate-care__wordings.pdf",
+    "_confidence": "low"
   },
   "min_child_entry_age": {
     "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/care-health/ultimate-care__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in care-health__ultimate-care__wordings.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
     "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/care-health/ultimate-care__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in care-health__ultimate-care__wordings.pdf",
+    "_confidence": "low"
   },
   "grace_period": {
-    "value": null,
+    "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/care-health/ultimate-care__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "te and can be renewed within the Grace Period of 30 days to maintain continuity of benefits without break in",
+    "_confidence": "high"
   },
   "free_look_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/care-health/ultimate-care__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "sured Person shall be allowed free look period of thirty days from date of receipt of the policy document",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
-    "value": null,
+    "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/care-health/ultimate-care__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "mer's disease or Dementia (iii) 30-day waiting period- Code- Excl03 a. Expenses related to the treatmen",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
-    "value": null,
-    "unit": null,
+    "value": 36,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/care-health/ultimate-care__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Pre-Existing Diseases: Code- Excl01 a. Expenses related to the treatment of a pre-existing Disease (PED) and its direct complications shall be excluded until the expiry of 36 months of contin",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
-    "value": null,
+    "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/care-health/ultimate-care__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "xpenses related to the treatment of the listed Conditions, surgeries/treatments shall be excluded until the expiry of 24 months of continuous coverage, as may be the case after",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/care-health/ultimate-care__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in care-health__ultimate-care__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/care-health/ultimate-care__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in care-health__ultimate-care__wordings.pdf",
+    "_confidence": "low"
   },
   "post_hospitalization_days": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/care-health/ultimate-care__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in care-health__ultimate-care__wordings.pdf",
+    "_confidence": "low"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/care-health/ultimate-care__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 541,
+    "source_url": "https://www.careinsurance.com/product/care-senior",
+    "source_note": "Per insurer baseline (Care Health publishes 541+ day care treatments across plans)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/care-health/ultimate-care__wordings.pdf"
   },
   "network_hospital_count": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/care-health/ultimate-care__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in care-health__ultimate-care__wordings.pdf",
+    "_confidence": "low"
   },
   "co_payment_pct": {
-    "value": null,
+    "value": 20,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/care-health/ultimate-care__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "The Co-payment shall be applicable to each and every claim for each Insured member as defined in the Policy",
+    "_confidence": "medium"
   },
   "room_rent_capped_at_pct_of_si": {
-    "value": null,
+    "value": 0,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/care-health/ultimate-care__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "’, which means that there is no separate restriction on Room Charges incurred towards stay during Hospitalization",
+    "_confidence": "high"
   },
   "policy_term_options_years": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/care-health/ultimate-care__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in care-health__ultimate-care__wordings.pdf",
+    "_confidence": "low"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/care-health/ultimate-care__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in care-health__ultimate-care__wordings.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/care-health/ultimate-care__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in care-health__ultimate-care__wordings.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/care-health/ultimate-care__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in care-health__ultimate-care__wordings.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/care-health/ultimate-care__wordings.pdf",
+    "source_quote": "AYUSH Hospital is a healthcare facility wherein medical/ surgical/ para-surgical treatment procedures and interventions are carried out by AYUSH Medical Practitioner",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/care-health/ultimate-care__wordings.pdf",
+    "source_quote": "Cashless Facility means a facility extended by the insurer to the Insured where the payments, of the costs of treatment undergone by the insured in accordance with the Policy terms and conditions, are directly made to the",
+    "_confidence": "high"
+  },
+  "geographic_coverage": {
+    "value": "pan_india",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/care-health/ultimate-care__wordings.pdf",
+    "source_quote": "This Benefit shall be applicable in India only",
+    "_confidence": "medium"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": null,
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/care-health/ultimate-care__wordings.pdf",
+    "source_quote": "not stated in care-health__ultimate-care__wordings.pdf",
+    "_confidence": "low"
+  },
+  "room_rent_capping": {
+    "value": "Single Private AC room / Twin sharing room / General Ward as per Policy schedule",
+    "unit": null,
+    "source_pdf_path": "rag/corpus/care-health/ultimate-care__wordings.pdf",
+    "source_quote": "modify the Room Category/ Room Rent to Single Private AC room / Twin sharing room/General Ward",
+    "_confidence": "medium"
+  },
+  "maternity_coverage": {
+    "value": true,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/care-health/ultimate-care__wordings.pdf",
+    "source_quote": "Maternity expenses shall include- a. Medical treatment expenses traceable to childbirth (including complicated deliveries and caesarean sections incurred during hospitalization)",
+    "_confidence": "medium"
   }
 }

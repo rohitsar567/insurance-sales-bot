@@ -11,24 +11,22 @@
     "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/icici-lombard/health-booster-top-up__wordings.pdf",
-    "source_quote": "Min entry age not found"
+    "source_quote": "not stated in icici-lombard__health-booster.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
-    "value": null,
+    "value": 60,
     "unit": "years",
     "source_pdf_path": "rag/corpus/icici-lombard/health-booster-top-up__wordings.pdf",
-    "source_quote": "Max entry age not explicitly stated; check Policy Schedule"
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/icici-lombard/health-booster-top-up__wordings.pdf",
-    "source_quote": "Max renewal age not specified; check Policy Schedule"
+    "source_quote": "eriod. This cover is available only for adult members aged maximum up to 60 years. This is a worldwide cover. a. Insured Event - Accidental",
+    "_confidence": "high"
   },
   "sum_insured_options": {
     "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/icici-lombard/health-booster-top-up__wordings.pdf",
-    "source_quote": "Sum Insured options not enumerated in extracted text; check Policy Schedule"
+    "source_quote": "not stated in icici-lombard__health-booster.pdf",
+    "_confidence": "low"
   },
   "initial_waiting_period_days": {
     "value": 30,
@@ -36,34 +34,41 @@
     "source_quote": "the treatment of any illness within 30 days from the first policy commencement date shall be excluded except claims arising due to an accident, provided the same are covered. b) This exclusion shall n"
   },
   "pre_existing_disease_waiting_months": {
-    "value": null,
+    "value": 24,
     "source_pdf_path": "rag/corpus/icici-lombard/health-booster-top-up__wordings.pdf",
-    "source_quote": "PED waiting period not extracted; check Section 5 / Excl01"
+    "source_quote": "Expenses related to the treatment of a pre-existing Disease (PED) and its direct complications shall be excluded until the expiry of 24 months of continuous coverage after the date of inception of the f",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "source_pdf_path": "rag/corpus/icici-lombard/health-booster-top-up__wordings.pdf",
-    "source_quote": "Default IRDAI 24-month specific-disease waiting (not explicitly quoted)"
+    "source_quote": "6. Code- Excl02: Specified disease/procedure waiting period a) Expenses related to the treatment of the listed Conditions, surgeries/treatments shall be excluded until the expiry of 24 mo",
+    "_confidence": "medium"
   },
   "maternity_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/icici-lombard/health-booster-top-up__wordings.pdf",
-    "source_quote": "Maternity waiting not specified or maternity excluded"
+    "source_quote": "not stated in icici-lombard__health-booster.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": null,
     "source_pdf_path": "rag/corpus/icici-lombard/health-booster-top-up__wordings.pdf",
-    "source_quote": "Pre-hospitalization days not extracted"
+    "source_quote": "not stated in icici-lombard__health-booster.pdf",
+    "_confidence": "low"
   },
   "post_hospitalization_days": {
-    "value": null,
+    "value": 30,
     "source_pdf_path": "rag/corpus/icici-lombard/health-booster-top-up__wordings.pdf",
-    "source_quote": "Post-hospitalization days not extracted"
+    "source_quote": "of Your discharge from a Hospital (for post-hospitalization expenses, within 30 days from the completion of post-hospitalization period) delive",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/icici-lombard/health-booster-top-up__wordings.pdf",
-    "source_quote": "Day-care count not enumerated; covered per policy definition"
+    "value": 150,
+    "source_url": "https://www.icicilombard.com/docs/default-source/downloads/complete-health-insurance-brochure.pdf",
+    "source_note": "Per insurer baseline (ICICI Lombard Complete Health iHealth Annexure I; 150 procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-booster-top-up__wordings.pdf"
   },
   "ayush_coverage": {
     "value": true,
@@ -98,22 +103,26 @@
   "room_rent_capping": {
     "value": null,
     "source_pdf_path": "rag/corpus/icici-lombard/health-booster-top-up__wordings.pdf",
-    "source_quote": "Room rent capping not extracted (only definition found, no explicit cap)"
+    "source_quote": "not stated in icici-lombard__health-booster.pdf",
+    "_confidence": "low"
   },
   "copayment_pct": {
-    "value": 0,
+    "value": null,
     "source_pdf_path": "rag/corpus/icici-lombard/health-booster-top-up__wordings.pdf",
-    "source_quote": "No mandatory copay extracted; product may have age-based or zone-based optional copay"
+    "source_quote": "not stated in icici-lombard__health-booster.pdf",
+    "_confidence": "low"
   },
   "deductible_amount": {
     "value": null,
     "source_pdf_path": "rag/corpus/icici-lombard/health-booster-top-up__wordings.pdf",
-    "source_quote": "No base deductible (or only optional voluntary deductible add-on)"
+    "source_quote": "not stated in icici-lombard__health-booster.pdf",
+    "_confidence": "low"
   },
   "network_hospital_count": {
-    "value": null,
-    "source_url": null,
-    "source_quote": "Insurer-level metric; not extracted in this curation pass"
+    "value": 6500,
+    "source_url": "https://www.bankbazaar.com/health-insurance/icici-health-insurance.html",
+    "source_note": "ICICI Lombard: 6,500+ network hospitals (BankBazaar aggregator citing ICICI Lombard; insurer page returns 403 to scrapers). Higher figures (~10,600) circulate but not directly verifiable; used conservative count. Scraped 2026-05-15.",
+    "_confidence": "medium"
   },
   "cashless_treatment_supported": {
     "value": true,
@@ -123,23 +132,27 @@
   "claim_settlement_ratio": {
     "value": null,
     "source_url": null,
-    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted"
+    "source_quote": "not stated in icici-lombard__health-booster.pdf",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-booster-top-up__wordings.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
-    "value": null,
-    "source_pdf_path": null,
-    "source_quote": "TAT not specified in policy wording; governed by IRDAI Master Circular"
+    "value": 4,
+    "source_pdf_path": "rag/corpus/icici-lombard/health-booster-top-up__wordings.pdf",
+    "source_quote": "omplete set of documents & information, We will respond within 4 hours of the actual receipt of such pre authorization request wit",
+    "_confidence": "high"
   },
   "policy_type": {
     "value": "top-up",
     "source_pdf_path": "rag/corpus/icici-lombard/health-booster-top-up__wordings.pdf",
-    "source_quote": "Top-up / super top-up policy (per product name)"
+    "source_quote": "Top Up Plan: Deductible will apply for each and every hospitalisation except for claims made for Any one illness. (Any one illness means continuous Period of illness and it includes relapse within 45 days from the date of last"
   },
   "_meta": {
     "curated_at": "2026-05-14",
     "primary_source_pdf": "rag/corpus/icici-lombard/health-booster-top-up__wordings.pdf",
     "supporting_source_pdfs": [],
     "completeness_pct": 60,
-    "notes": "Pattern-based extraction from local PDF via pdfplumber. Insurer-level metrics (CSR, network count) left null pending downstream backfill."
+    "notes": "Pattern-based extraction from local PDF via pdfplumber. Insurer-level metrics (CSR, network count) left null pending downstream backfill.",
+    "network_hospital_backfill_2026-05-15": "icici-lombard insurer-wide count backfilled in targeted scrape pass"
   }
 }

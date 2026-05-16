@@ -939,6 +939,139 @@ def _scan_for_brand_hallucinations(reply_text: str, session) -> None:
         pass
 
 
+def _norm_policy_name(s: str) -> str:
+    """Lowercase + collapse punctuation/whitespace for fuzzy prose↔chunk
+    name matching. 'my:health Suraksha' / 'my health suraksha' / 'My-Health
+    Suraksha' all normalise to 'my health suraksha'."""
+    s = (s or "").lower()
+    out = []
+    prev_space = False
+    for ch in s:
+        if ch.isalnum():
+            out.append(ch)
+            prev_space = False
+        else:
+            if not prev_space:
+                out.append(" ")
+            prev_space = True
+    return "".join(out).strip()
+
+
+def _build_recommendation_citations(
+    reply_text: str,
+    retrieved_chunks_all: list[dict],
+    marked_policy_ids: list[str],
+) -> tuple[list[dict], bool]:
+    """Single source of truth for the structured "CITED POLICIES" cards.
+
+    ROOT CAUSE this addresses (KI-278): the prose the user reads and the
+    citation cards were derived from two different sources. Prose = the
+    LLM's curated shortlist (free text). Cards used to be the raw
+    `retrieve_policies` recall dump deduped by chunk_id and rendered in
+    vector-score order — so the cards listed policies the LLM never named
+    and dropped ones it did.
+
+    This builds the citation set as EXACTLY the policies the assistant
+    actually recommended, in the order it presented them:
+
+      1. If the LLM called `mark_recommendation(policy_ids=[...])`, those
+         ordered ids ARE the recommendation set (the system prompt defines
+         this as "ordered IDs you cited").
+      2. Otherwise (Gemini skips mark_recommendation on ~70% of rec turns
+         per KI-254), parse the reply prose: for every retrieved policy
+         whose name appears in `reply_text`, order by first appearance.
+
+    Each recommended policy is hydrated from its BEST (highest-score)
+    retrieved chunk so source_url / policy_name / insurer_slug are real
+    corpus values, never invented.
+
+    Returns (citations, is_recommendation):
+      - is_recommendation True  → citations is the prose-aligned rec set
+        (may be empty if nothing matched — caller must NOT fall back to the
+        recall dump, an empty rec set is correct).
+      - is_recommendation False → no recommendation detected (pure QA /
+        chit-chat); caller uses the legacy per-chunk recall list so QA
+        answers still get their supporting source chips.
+    """
+    # policy_id -> best chunk (highest score) for hydration; also collect
+    # the per-policy display name + a normalised alias for prose matching.
+    best_by_pid: dict[str, dict] = {}
+    for c in retrieved_chunks_all:
+        pid = (c.get("policy_id") or "").strip()
+        if not pid:
+            continue
+        cur = best_by_pid.get(pid)
+        if cur is None or float(c.get("score", 0.0) or 0.0) > float(
+            cur.get("score", 0.0) or 0.0
+        ):
+            best_by_pid[pid] = c
+
+    def _cite(pid: str) -> Optional[dict]:
+        c = best_by_pid.get(pid)
+        if c is None:
+            return None
+        return {
+            "chunk_id": c.get("chunk_id", ""),
+            "policy_id": pid,
+            "policy_name": c.get("policy_name", ""),
+            "insurer_slug": c.get("insurer_slug", ""),
+            "doc_type": c.get("doc_type", ""),
+            "source_url": c.get("source_url", ""),
+            "score": c.get("score", 0.0),
+        }
+
+    # ---- Path 1: explicit mark_recommendation ordering --------------------
+    if marked_policy_ids:
+        out: list[dict] = []
+        seen: set[str] = set()
+        for pid in marked_policy_ids:
+            pid = (pid or "").strip()
+            if not pid or pid in seen:
+                continue
+            seen.add(pid)
+            cite = _cite(pid)
+            if cite is not None:
+                out.append(cite)
+        # mark_recommendation fired ⇒ this is unambiguously a recommendation
+        # turn even if id↔chunk hydration matched nothing.
+        return out, True
+
+    # ---- Path 2: prose-name matching (LLM forgot mark_recommendation) -----
+    haystack = _norm_policy_name(reply_text)
+    if not haystack:
+        return [], False
+
+    # Score earliest prose offset per policy; only policies whose name is
+    # actually written into the answer become cards. Longest names first so
+    # "my health suraksha" wins over a bare "suraksha" substring.
+    matched: list[tuple[int, str]] = []
+    for pid, c in best_by_pid.items():
+        norm = _norm_policy_name(c.get("policy_name", ""))
+        if len(norm) < 4:  # too short to match safely
+            continue
+        idx = haystack.find(norm)
+        if idx != -1:
+            matched.append((idx, pid))
+
+    if not matched:
+        # No retrieved policy was named in the prose. If chunks WERE
+        # retrieved this is a QA turn that quoted a policy generically →
+        # let the caller keep the legacy recall chips for source grounding.
+        return [], False
+
+    matched.sort(key=lambda t: t[0])
+    out2: list[dict] = []
+    seen2: set[str] = set()
+    for _idx, pid in matched:
+        if pid in seen2:
+            continue
+        seen2.add(pid)
+        cite = _cite(pid)
+        if cite is not None:
+            out2.append(cite)
+    return out2, True
+
+
 def _parts_function_calls(parts: list[dict]) -> list[dict]:
     """Pull every functionCall block out of parts. Each entry is
     {"name": "...", "args": {...}}."""
@@ -1226,17 +1359,19 @@ async def handle_turn(
     # in smoke logs instead of going silent.
     _scan_for_brand_hallucinations(reply_text, session)
 
-    # Citations: deduped by chunk_id; same shape orchestrator emits.
+    # retrieved_chunk_ids — full recall set, deduped by chunk_id. Kept for
+    # logging / faithfulness / KI-254 routing parity regardless of which
+    # citation path we take below.
     seen_ids: set[str] = set()
-    citations: list[dict] = []
     retrieved_chunk_ids: list[str] = []
+    recall_citations: list[dict] = []
     for c in retrieved_chunks_all:
         cid = c.get("chunk_id") or ""
         if not cid or cid in seen_ids:
             continue
         seen_ids.add(cid)
         retrieved_chunk_ids.append(cid)
-        citations.append(
+        recall_citations.append(
             {
                 "chunk_id": cid,
                 "policy_id": c.get("policy_id", ""),
@@ -1246,6 +1381,35 @@ async def handle_turn(
                 "source_url": c.get("source_url", ""),
                 "score": c.get("score", 0.0),
             }
+        )
+
+    # KI-278 — SINGLE SOURCE OF TRUTH for the "CITED POLICIES" cards.
+    # Previously `citations` WAS `recall_citations` (the raw vector-score
+    # recall dump), so the cards listed policies the LLM never named and
+    # dropped ones it did. Now the citation set IS exactly the policies the
+    # assistant recommended, in prose order: explicit mark_recommendation
+    # ids when present, else the policy names actually written in the reply.
+    rec_citations, is_recommendation = _build_recommendation_citations(
+        reply_text=reply_text,
+        retrieved_chunks_all=retrieved_chunks_all,
+        marked_policy_ids=last_marked_policy_ids,
+    )
+    if is_recommendation:
+        # Recommendation turn — cards mirror the prose 1:1 (same count,
+        # same order). An empty rec set here is CORRECT (do not fall back
+        # to the recall dump and resurrect un-named policies).
+        citations = rec_citations
+    else:
+        # Pure QA / chit-chat (no shortlist named) — keep legacy recall
+        # chips so a factual answer still surfaces its supporting source.
+        citations = recall_citations
+
+    if len(citations) != len(recall_citations):
+        _log.info(
+            "single_brain citations: rec=%d recall=%d is_rec=%s marked=%d "
+            "(KI-278 prose-aligned)",
+            len(citations), len(recall_citations), is_recommendation,
+            len(last_marked_policy_ids),
         )
 
     intent = _classify_intent(user_text, tool_calls_made)

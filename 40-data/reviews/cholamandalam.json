@@ -1,0 +1,18 @@
+{
+  "insurer_slug": "cholamandalam",
+  "insurer_name": "Cholamandalam MS General Insurance",
+  "last_updated": "2026-05-15",
+  "claim_metrics": {
+    "claim_settlement_ratio_pct": 94.5,
+    "claim_settlement_ratio_year": "FY 2023-24",
+    "complaints_per_10k_policies": 13,
+    "complaints_year": "FY 2024-25",
+    "incurred_claim_ratio_pct": 73.04,
+    "three_year_avg_csr_pct": null,
+    "source_irdai_url": "https://irdai.gov.in/document-detail",
+    "source_secondary_url": "https://www.policyx.com/health-insurance/cholamandalam-ms-health-insurance/claim-settlement-ratio/",
+    "source_complaints_url": "https://algatesinsurance.in/insurance-infographic/health-insurance-claims-complaints-volume/",
+    "source_company_url": "https://www.cholainsurance.com/",
+    "notes": "Cholamandalam settled 96.52% of claims in <30 days in FY24. ICR 73.04% per IRDAI 2023-24. CSR 94.5% from PolicyX aggregator (sourced from public disclosure)."
+  }
+}

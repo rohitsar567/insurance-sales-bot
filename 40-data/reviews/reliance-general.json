@@ -1,0 +1,18 @@
+{
+  "insurer_slug": "reliance-general",
+  "insurer_name": "Reliance General Insurance (legacy; now IndusInd General)",
+  "last_updated": "2026-05-15",
+  "claim_metrics": {
+    "claim_settlement_ratio_pct": 98.75,
+    "claim_settlement_ratio_year": "FY 2023-24",
+    "complaints_per_10k_policies": 5,
+    "complaints_year": "FY 2024-25",
+    "incurred_claim_ratio_pct": 81.06,
+    "three_year_avg_csr_pct": null,
+    "source_irdai_url": "https://irdai.gov.in/document-detail",
+    "source_secondary_url": "http://web.archive.org/web/20260212185521/https://www.policybazaar.com/insurance-companies/reliance-health-insurance/claim-settlement-ratio/",
+    "source_complaints_url": "https://algatesinsurance.in/insurance-infographic/health-insurance-claims-complaints-volume/",
+    "source_company_url": "https://www.indusindinsurance.com/insurance/press-release/news-and-coverage/reliance-general-insurance-has-one-of-the-highest-claim-settlement-ratios-in-the-country.aspx",
+    "notes": "Reliance General Insurance topped private GI insurers with 98.75% claims paid within 3 months in FY 2023-24. Complaints per 10K claims = 5 (well below industry benchmark of 20). Insurer rebranded to IndusInd General Insurance in October 2025."
+  }
+}

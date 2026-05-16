@@ -17,33 +17,33 @@
     "value": 65,
     "unit": "years",
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
-    "source_quote": "Self, Spouse, Parents, Sister, Brother, In-laws, Aunt, Uncle. 18 years to 65 years lifetime renewals"
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
-    "source_quote": "18 years to 65 years lifetime renewals (no maximum renewal age for self/spouse cover)"
+    "source_quote": "Self, Spouse, Parents, Sister, Brother, In laws, Aunt, Uncle. 18 years to 65 years lifetime renewals** Dependent Children, Grandchildren. 3 months to 30 years 35 Years* * After the completion of maximum renewal age of dependent children, the policy would be renewed for"
   },
   "sum_insured_options": {
     "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
-    "source_quote": "Maternity sub-limit references SI from Rs.3 lacs to Rs.50 lacs; explicit SI option list not in wording body (per brochure: 1.5 / 3 / 5 / 7.5 / 10 / 15 / 20 / 25 / 50 / 75 / 100 lakhs)"
+    "source_quote": "not stated in bajaj-allianz__health-guard-gold.pdf",
+    "_confidence": "low"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
-    "source_quote": "30 day initial waiting period applies to all illness claims (standard mediclaim Section C clause; confirmed in PED+specific-disease sub-section)"
+    "source_quote": "30 days from the first Policy commencement date shall be excluded except claims arising due to an accident, provided the same are covered. b) This exclusion shall not, however apply if the Insured has Continuous Coverage for more than twelve months. The within referred waiting pe",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 36,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
-    "source_quote": "Expenses related to the treatment of a pre-existing Disease (PED) and its direct complications shall be excluded until the expiry of 36 months"
+    "source_quote": "36 months of continuous coverage after the date of inception of the first Health Guard Policy with us. b) In case of enhancement of Sum Insured the exclusion shall apply afresh",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
-    "source_quote": "Specified disease/procedure waiting period: 24 months continuous coverage from inception (standard Section C clause in Bajaj wording)"
+    "source_quote": "24 months of continuous coverage after the date of inception of the first Health Guard Policy with Us. This exclusion shall not be applicable for claims arising due to an accident. b) In case of enhancement of Sum Insured the exclusion shall apply afresh to the extent of Sum Insu",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": 72,
@@ -61,84 +61,119 @@
     "source_quote": "Post-Hospitalisation The Medical Expenses incurred during the 90 days immediately after You were discharged post Hospitalisation"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
-    "source_quote": "Day Care Procedures ... Indicative list of Day Care Procedures is given in the annexure I of Policy"
+    "value": 399,
+    "source_url": "https://www.bajajgeneralinsurance.com/health-insurance-plans/health-guard.html",
+    "source_note": "Bajaj Allianz Health Guard Gold covers 399 day care procedures",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf"
   },
   "ayush_coverage": {
     "value": true,
+    "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
-    "source_quote": "AYUSH Hospital: An AYUSH Hospital is a healthcare facility wherein medical/surgical/para-surgical treatment procedures and interventions are carried out by AYUSH Medical Practitioner(s)"
+    "source_quote": "Ayurvedic and Homeopathic treatment:  Room rent, boarding expenses  Nursing care  Consultation fees  Medicines, drugs and consumables,  Ayurvedic and Homeopathic treatment procedures",
+    "_confidence": "high"
   },
   "maternity_coverage": {
     "value": true,
+    "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
-    "source_quote": "12. Maternity Expenses ... Our maximum liability per delivery or termination shall be limited to the amount specified in the policy Schedule"
+    "source_quote": "Maternity Expenses We will pay the Medical Expenses for the delivery of a baby (including caesarean section) and/or expenses related to medically recommended and lawful termination of pregnancy, limited to maximum 2 deliveries or termination(s) or either",
+    "_confidence": "high"
   },
   "newborn_coverage": {
     "value": true,
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
-    "source_quote": "Coverage for new born baby will be considered subject to a valid claim being accepted under Maternity Expenses (section A12). ... 90 days from the date of birth"
+    "source_quote": "New Born Baby Cover Coverage for new born baby will be considered subject to a valid claim being accepted under Maternity Expenses (section A12). We will pay the following expenses within the limit of the Sum Insured available under the Maternity Expenses section. We will pay for",
+    "_confidence": "high"
   },
   "organ_donor_expenses": {
     "value": true,
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
-    "source_quote": "Organ Donor Expenses (covered as standard section in Bajaj Health Guard Gold)"
+    "source_quote": "Organ Donor Expenses: We will pay expenses towards organ donor's treatment for harvesting of the donated organ, provided that, i. The organ donor is any person whose organ has been made available in accordance and in compliance with THE TRANSPLANTATION OF HUMAN ORGANS (AMENDMENT)",
+    "_confidence": "high"
   },
   "no_claim_bonus_pct": {
     "value": 10,
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
-    "source_quote": "13. Cumulative Bonus: ... We will increase the Limit of Indemnity by 10% of base sum insured per annum ... maximum cumulative increase ... limited to 10 years and 100%"
+    "source_quote": "We will increase the Limit of Indemnity by 10% of base sum insured per annum, but: i. The maximum cumulative increase in the Limit of Indemnity will be limited to 10 years and 100% of base sum insured of Your first \"Health Guard Policy\" with Us. ii. This clause does not alter the",
+    "_confidence": "high"
   },
   "restoration_benefit": {
     "value": "100% Sum Insured reinstatement, once per policy year (Sum Insured Reinstatement Benefit)",
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
-    "source_quote": "9. Sum Insured Reinstatement Benefit: ... 100% of the Sum Insured specified under Inpatient Hospitalization Treatment be reinstated"
+    "source_quote": "9. Sum Insured Reinstatement Benefit: If Section A1 Inpatient Hospitalization Treatment Sum Insured and Cumulative Bonus (if any) is exhausted due to claims lodged during the Policy year, then it is agreed that 100% of the Sum Insured specified under Inpatient Hospitalization"
   },
   "room_rent_capping": {
-    "value": "Room rent capping per Sum Insured slab (per Bajaj HG Gold benefit grid; capped on lower SIs, no limit on higher slabs)",
+    "value": "No cap",
+    "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
-    "source_quote": "Room rent, boarding expenses (listed under hospitalization treatment cover with policy-schedule-driven limits)"
+    "source_quote": "Room, Boarding and Nursing Expenses as provided by the Hospital/Nursing Home without any sublimit. ii) If admitted in ICU, we will pay up to actual expenses provided by Hospital.",
+    "_confidence": "high"
   },
   "copayment_pct": {
-    "value": 0,
+    "value": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
-    "source_quote": "No mandatory base copayment in Health Guard Gold (only optional voluntary copay/zone-based copay for senior entrants)"
+    "source_quote": "not stated in bajaj-allianz__health-guard-gold-individual__wordings.pdf",
+    "_confidence": "low"
   },
   "deductible_amount": {
     "value": null,
-    "source_pdf_path": null,
-    "source_quote": "No base deductible in Bajaj Health Guard Gold (optional zone/deductible add-ons available)"
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
+    "source_quote": "not stated in bajaj-allianz__health-guard-gold.pdf",
+    "_confidence": "low"
   },
   "network_hospital_count": {
-    "value": null,
-    "source_url": null,
-    "source_quote": "Insurer-level metric; Bajaj Allianz advertises 7,500+ network hospitals on its website (not extracted in this pass)"
+    "value": 18400,
+    "source_url": "https://www.bajajgeneralinsurance.com/",
+    "source_note": "18,400+ Cashless Hospitals (homepage, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "cashless_treatment_supported": {
     "value": true,
+    "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
-    "source_quote": "10. Cashless facility ... a facility extended by the insurer to the insured where the payments, of the costs of treatment undergone by the insured ..."
+    "source_quote": "Cashless facility \"Cashless facility” means a facility extended by the insurer to the insured where the payments, of the costs of treatment undergone by the insured in accordance",
+    "_confidence": "high"
   },
   "claim_settlement_ratio": {
     "value": null,
-    "source_url": null,
-    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted in this curation pass"
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
+    "source_quote": "not stated in bajaj-allianz__health-guard-gold.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
     "value": null,
-    "source_pdf_path": null,
-    "source_quote": "TAT not specified in policy wording; governed by IRDAI Master Circular 2024"
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
+    "source_quote": "not stated in bajaj-allianz__health-guard-gold.pdf",
+    "_confidence": "low"
   },
   "policy_type": {
-    "value": "indemnity",
+    "value": "family_floater",
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
-    "source_quote": "Limit of Indemnity (indemnity-based health insurance policy)"
+    "source_quote": "Health Guard -Gold Plan Policy Wordings Preamble Our agreement to insure You is based on Your Proposal to Us, which is the basis of this agreement, and Your payment of the premium. This Policy records the entire agreement between Us and sets out what We insure, how We insure it,",
+    "_confidence": "high"
   },
   "_meta": {
     "curated_at": "2026-05-13",
     "primary_source_pdf": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
     "completeness_pct": 82,
-    "notes": "Sum Insured option list not enumerated in wording body (referenced via maternity SI grid); insurer-level CSR/network counts null."
+    "notes": "Sum Insured option list not enumerated in wording body (referenced via maternity SI grid); insurer-level CSR/network counts null. | Batch 3 (2026-05-15): coverage breadth fields backfilled.",
+    "batch3_added_fields": [
+      "ambulance_cover",
+      "preventive_health_checkup"
+    ]
+  },
+  "ambulance_cover": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
+    "source_quote": "Road Ambulance We will pay the reasonable cost to a maximum of Rs 20000/- per policy year incurred on an ambulance offered by a healthcare or ambulanc",
+    "extraction_method": "tools/curate_batch3.py — pattern-grep over pdfplumber text"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
+    "source_quote": "Preventive Health Check Up",
+    "extraction_method": "tools/curate_batch3.py — pattern-grep over pdfplumber text"
   }
 }

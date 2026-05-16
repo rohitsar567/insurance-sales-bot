@@ -19,16 +19,12 @@
     "source_pdf_path": "rag/corpus/hdfc-ergo/total-health-plan__wordings.pdf",
     "source_quote": "ho is unmarried , age between 91 days to 21 years, financially dependent on the primary insured or proposer and does not have his / her independent sources of income.Children Aged between 1 to 90 Days"
   },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/hdfc-ergo/total-health-plan__wordings.pdf",
-    "source_quote": "Max renewal age not specified; check Policy Schedule"
-  },
   "sum_insured_options": {
     "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/hdfc-ergo/total-health-plan__wordings.pdf",
-    "source_quote": "Sum Insured options not enumerated in extracted text; check Policy Schedule"
+    "source_quote": "not stated in hdfc-ergo__total-health-plan.pdf",
+    "_confidence": "low"
   },
   "initial_waiting_period_days": {
     "value": 30,
@@ -36,34 +32,41 @@
     "source_quote": "the treatment of any illness within 30 days from the first policy commencement date shall be excluded except claims arising due to an accident, provided the same are covered. II. This exclusion shall "
   },
   "pre_existing_disease_waiting_months": {
-    "value": null,
+    "value": 48,
     "source_pdf_path": "rag/corpus/hdfc-ergo/total-health-plan__wordings.pdf",
-    "source_quote": "PED waiting period not extracted; check Section 5 / Excl01"
+    "source_quote": "48 months prior to the effective date of the policy issued by the insurer or its reinstatement",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "source_pdf_path": "rag/corpus/hdfc-ergo/total-health-plan__wordings.pdf",
-    "source_quote": "Default IRDAI 24-month specific-disease waiting (not explicitly quoted)"
+    "source_quote": "table below shall be excluded until the expiry of 24 months of continuous coverage after the date of inception of the first Policy with us. This exc",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/total-health-plan__wordings.pdf",
-    "source_quote": "Maternity waiting not specified or maternity excluded"
+    "source_quote": "not stated in hdfc-ergo__total-health-plan.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
-    "value": null,
+    "value": 30,
     "source_pdf_path": "rag/corpus/hdfc-ergo/total-health-plan__wordings.pdf",
-    "source_quote": "Pre-hospitalization days not extracted"
+    "source_quote": "incurred upto 30 days before Hospitalisation.",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
-    "value": null,
+    "value": 60,
     "source_pdf_path": "rag/corpus/hdfc-ergo/total-health-plan__wordings.pdf",
-    "source_quote": "Post-hospitalization days not extracted"
+    "source_quote": "incurred upto 60 days after discharge from Hospitalisation.",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/hdfc-ergo/total-health-plan__wordings.pdf",
-    "source_quote": "Day-care count not enumerated; covered per policy definition"
+    "value": 144,
+    "source_url": "https://www.hdfcergo.com/health-insurance/day-care-treatment",
+    "source_note": "Per insurer baseline (HDFC Ergo day-care treatment page lists 144 procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/total-health-plan__wordings.pdf"
   },
   "ayush_coverage": {
     "value": true,
@@ -81,14 +84,16 @@
     "source_quote": "New Born Baby means those babies born to you and your spouse during the Policy Period aged bet"
   },
   "organ_donor_expenses": {
-    "value": true,
+    "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/total-health-plan__wordings.pdf",
-    "source_quote": "Organ Donor: 1. Claims which have NOT Medical treatment of the been admitted under organ donor for harvesting 1a). the organ. 2. Admission not HDFC ERGO General Insurance Company Limited. IRDAI Reg. N"
+    "source_quote": "not stated in total-health-plan__wordings.pdf",
+    "_confidence": "low"
   },
   "no_claim_bonus_pct": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/total-health-plan__wordings.pdf",
-    "source_quote": "NCB % not extracted; product may use booster/recharge structure"
+    "source_quote": "not stated in hdfc-ergo__total-health-plan.pdf",
+    "_confidence": "low"
   },
   "restoration_benefit": {
     "value": "reinstatement or",
@@ -98,22 +103,26 @@
   "room_rent_capping": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/total-health-plan__wordings.pdf",
-    "source_quote": "Room rent capping not extracted (only definition found, no explicit cap)"
+    "source_quote": "not stated in hdfc-ergo__total-health-plan.pdf",
+    "_confidence": "low"
   },
   "copayment_pct": {
-    "value": 0,
+    "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/total-health-plan__wordings.pdf",
-    "source_quote": "No mandatory copay extracted; product may have age-based or zone-based optional copay"
+    "source_quote": "not stated in total-health-plan__wordings.pdf",
+    "_confidence": "low"
   },
   "deductible_amount": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/total-health-plan__wordings.pdf",
-    "source_quote": "No base deductible (or only optional voluntary deductible add-on)"
+    "source_quote": "not stated in hdfc-ergo__total-health-plan.pdf",
+    "_confidence": "low"
   },
   "network_hospital_count": {
-    "value": null,
-    "source_url": null,
-    "source_quote": "Insurer-level metric; not extracted in this curation pass"
+    "value": 16000,
+    "source_url": "https://www.hdfcergo.com/",
+    "source_note": "16000+ Cashless Healthcare providers (homepage 'Why Choose HDFC ERGO' / 'Cashless Network' section, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "cashless_treatment_supported": {
     "value": true,
@@ -123,17 +132,21 @@
   "claim_settlement_ratio": {
     "value": null,
     "source_url": null,
-    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted"
+    "source_quote": "not stated in hdfc-ergo__total-health-plan.pdf",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/total-health-plan__wordings.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
     "value": null,
-    "source_pdf_path": null,
-    "source_quote": "TAT not specified in policy wording; governed by IRDAI Master Circular"
+    "source_pdf_path": "rag/corpus/hdfc-ergo/total-health-plan__wordings.pdf",
+    "source_quote": "not stated in hdfc-ergo__total-health-plan.pdf",
+    "_confidence": "low"
   },
   "policy_type": {
     "value": "hospital-cash",
     "source_pdf_path": "rag/corpus/hdfc-ergo/total-health-plan__wordings.pdf",
-    "source_quote": "Hospital cash / daily benefit policy"
+    "source_quote": "group health insurance policy), to transfer the credit gained for pre-existing con",
+    "_confidence": "low"
   },
   "_meta": {
     "curated_at": "2026-05-14",

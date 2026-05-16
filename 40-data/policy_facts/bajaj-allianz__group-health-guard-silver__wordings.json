@@ -10,52 +10,59 @@
   "min_entry_age": {
     "value": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/group-health-guard-silver__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in bajaj-allianz__group-health-guard-silver__wordings.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/group-health-guard-silver__wordings.pdf",
-    "source_quote": ""
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/bajaj-allianz/group-health-guard-silver__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in bajaj-allianz__group-health-guard-silver__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_existing_disease_waiting_months": {
     "value": 36,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/bajaj-allianz/group-health-guard-silver__wordings.pdf",
-    "source_quote": "pre-existing Disease (PED) and its direct complications shall be excluded until the expiry of 36 months"
+    "source_quote": "existing Disease (PED) and its direct complications shall be excluded until the expiry of 36 months of continuous coverage after the date of inception of the first Health Guard Group Policy with us.",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
-    "value": null,
+    "value": 30,
     "source_pdf_path": "rag/corpus/bajaj-allianz/group-health-guard-silver__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "4. 30-day waiting period (Excl03) a. Expenses related to the treatment of any illness within 30 days from the first Policy commencement date shall be excluded except claims arising due to an acc",
+    "_confidence": "high"
   },
   "maternity_coverage": {
     "value": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/group-health-guard-silver__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in bajaj-allianz__group-health-guard-silver__wordings.pdf",
+    "_confidence": "low"
   },
   "maternity_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/group-health-guard-silver__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in bajaj-allianz__group-health-guard-silver__wordings.pdf",
+    "_confidence": "low"
   },
   "ayush_coverage": {
-    "value": null,
+    "value": true,
+    "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/group-health-guard-silver__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "AYUSH Treatment refers to medical expenses incurred on hospitalisation under Ayurveda, Yoga and Naturopathy Unani, Siddha and Homeopathy systems",
+    "_confidence": "high"
   },
   "cashless_treatment_supported": {
     "value": true,
+    "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/group-health-guard-silver__wordings.pdf",
-    "source_quote": "Cashless facility"
+    "source_quote": "Cashless facility: Cashless facility means a facility extended by the Insurer to the Insured where the payments, of the costs of treatment undergone by the Insured in accordance with the Policy terms and conditions",
+    "_confidence": "high"
   },
   "copayment_pct": {
     "value": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/group-health-guard-silver__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in bajaj-allianz__group-health-guard-silver__wordings.pdf",
+    "_confidence": "low"
   },
   "no_claim_bonus_pct": {
     "value": 100,
@@ -63,14 +70,17 @@
     "source_quote": "cumulative bonus (if any) is exhausted due to claims lodged during the Policy\nyear, then it is agreed that 100%"
   },
   "restoration_benefit": {
-    "value": null,
+    "value": true,
     "source_pdf_path": "rag/corpus/bajaj-allianz/group-health-guard-silver__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "alisation Treatment. 9. Sum Insured Reinstatement Benefit: If Section C1 Inpatient Hospitalization Treatment Sum Insured and cumulative bonus (if any) is exhausted due to claims lodged during the",
+    "_confidence": "high"
   },
   "room_rent_capping": {
     "value": null,
+    "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/group-health-guard-silver__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in bajaj-allianz__group-health-guard-silver__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": 60,
@@ -83,34 +93,41 @@
     "source_quote": "Post-Hospitalisation\nThe Medical Expenses incurred during the 90 days"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/bajaj-allianz/group-health-guard-silver__wordings.pdf",
-    "source_quote": ""
+    "value": 130,
+    "source_url": "https://www.bajajgeneralinsurance.com/health-insurance-plans/health-guard.html",
+    "source_note": "Per insurer baseline (Bajaj Allianz Health Guard covers ~130 day care procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/bajaj-allianz/group-health-guard-silver__wordings.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/bajaj-allianz/group-health-guard-silver__wordings.pdf",
-    "source_quote": ""
+    "value": 18400,
+    "source_url": "https://www.bajajgeneralinsurance.com/",
+    "source_note": "18,400+ Cashless Hospitals (homepage, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "sum_insured_options": {
     "value": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/group-health-guard-silver__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in bajaj-allianz__group-health-guard-silver__wordings.pdf",
+    "_confidence": "low"
   },
   "claim_settlement_ratio": {
     "value": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/group-health-guard-silver__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in bajaj-allianz__group-health-guard-silver__wordings.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
     "value": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/group-health-guard-silver__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in bajaj-allianz__group-health-guard-silver__wordings.pdf",
+    "_confidence": "low"
   },
   "policy_type": {
     "value": "group",
     "source_pdf_path": "rag/corpus/bajaj-allianz/group-health-guard-silver__wordings.pdf",
-    "source_quote": "classified as group from PDF heuristics"
+    "source_quote": "Health Guard Group Policy with us. b. In case of enhancement of Sum Insured the exclusion shall apply afresh to the extent of Sum Insured increase. c. If the Insured is continuously covered without any break as defined under the portability",
+    "_confidence": "medium"
   },
   "_meta": {
     "curated_at": "2026-05-14",

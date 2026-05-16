@@ -5,7 +5,8 @@
   "uin_code": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "UIN not found in extracted text"
+    "source_quote": "not stated in hdfc-ergo__optima-enhance.pdf",
+    "_confidence": "low"
   },
   "min_entry_age": {
     "value": 91,
@@ -17,18 +18,15 @@
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "Max entry age not explicitly stated; check Policy Schedule"
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "Max renewal age not specified; check Policy Schedule"
+    "source_quote": "not stated in hdfc-ergo__optima-enhance.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
     "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "Sum Insured options not enumerated in extracted text; check Policy Schedule"
+    "source_quote": "not stated in hdfc-ergo__optima-enhance.pdf",
+    "_confidence": "low"
   },
   "initial_waiting_period_days": {
     "value": 30,
@@ -38,42 +36,51 @@
   "pre_existing_disease_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "PED waiting period not extracted; check Section 5 / Excl01"
+    "source_quote": "not stated in hdfc-ergo__optima-enhance.pdf",
+    "_confidence": "low"
   },
   "specific_disease_waiting_months": {
-    "value": 24,
+    "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "Default IRDAI 24-month specific-disease waiting (not explicitly quoted)"
+    "source_quote": "not stated in optima-enhance__wordings.pdf",
+    "_confidence": "low"
   },
   "maternity_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "Maternity waiting not specified or maternity excluded"
+    "source_quote": "not stated in hdfc-ergo__optima-enhance.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
-    "value": null,
+    "value": 60,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "Pre-hospitalization days not extracted"
+    "source_quote": "Pre-Hospitalisation Medical Expenses incurred upto 60 days before the date of admission to the Hospital",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
-    "value": null,
+    "value": 90,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "Post-hospitalization days not extracted"
+    "source_quote": "Post-Hospitalisation Medical Expenses incurred upto 90 days after discharge from the Hospital.",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "Day-care count not enumerated; covered per policy definition"
+    "value": 144,
+    "source_url": "https://www.hdfcergo.com/health-insurance/day-care-treatment",
+    "source_note": "Per insurer baseline (HDFC Ergo day-care treatment page lists 144 procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf"
   },
   "ayush_coverage": {
-    "value": false,
+    "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "AYUSH coverage not found in extracted text"
+    "source_quote": "not stated in optima-enhance__wordings.pdf",
+    "_confidence": "low"
   },
   "maternity_coverage": {
     "value": false,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "Maternity not explicitly mentioned; presumed excluded in base"
+    "source_quote": "pregnancy (including voluntary termination), miscarriage (except as a result of an Accident or Illness), maternity or child birth (including caesarean section), except in the case of ectopic pregnancy in relation to",
+    "_confidence": "high"
   },
   "newborn_coverage": {
     "value": true,
@@ -81,14 +88,16 @@
     "source_quote": "New born baby means baby born during the Policy Period and is aged upto 90 days. Def. 38. Non Network means any Hospital, day car"
   },
   "organ_donor_expenses": {
-    "value": true,
+    "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "Organ Donor: i) Claims which have NOT been admitted otherwise required Medical and surgical Expenses of the under 1a) for the insured person. hospitalization of more organ donor for harvesting the org"
+    "source_quote": "not stated in optima-enhance__wordings.pdf",
+    "_confidence": "low"
   },
   "no_claim_bonus_pct": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "NCB % not extracted; product may use booster/recharge structure"
+    "source_quote": "not stated in hdfc-ergo__optima-enhance.pdf",
+    "_confidence": "low"
   },
   "restoration_benefit": {
     "value": "restoration of surface continuity of the skin and subcutaneous tissues",
@@ -96,44 +105,53 @@
     "source_quote": "restoration of surface continuity of the skin and subcutaneous tissues"
   },
   "room_rent_capping": {
-    "value": null,
+    "value": "No cap",
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "Room rent capping not extracted (only definition found, no explicit cap)"
+    "source_quote": "Room Rent means the amount charged by a Hospital towards Room and Boarding expenses and shall include the associated medical expenses.",
+    "_confidence": "medium"
   },
   "copayment_pct": {
-    "value": 0,
+    "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "No mandatory copay extracted; product may have age-based or zone-based optional copay"
+    "source_quote": "not stated in optima-enhance__wordings.pdf",
+    "_confidence": "low"
   },
   "deductible_amount": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "No base deductible (or only optional voluntary deductible add-on)"
+    "source_quote": "not stated in hdfc-ergo__optima-enhance.pdf",
+    "_confidence": "low"
   },
   "network_hospital_count": {
-    "value": null,
-    "source_url": null,
-    "source_quote": "Insurer-level metric; not extracted in this curation pass"
+    "value": 16000,
+    "source_url": "https://www.hdfcergo.com/",
+    "source_note": "16000+ Cashless Healthcare providers (homepage 'Why Choose HDFC ERGO' / 'Cashless Network' section, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "cashless_treatment_supported": {
     "value": true,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "ion 1)a): hospitalisation. e. Cashless Service: Toll Free 1800-102-0333 www.apollomunichinsurance.com Email: customerservice@apollomunichinsurance.com Page 7 of 24 Policy Wordings – Optima Enhance We/"
+    "source_quote": "Cashless facility means a facility extended by the insurer to the insured where the payments, of the costs of treatment undergone by the insured in accordance with the Policy terms and conditions, are directly made to the network provider by the insurer to t",
+    "_confidence": "high"
   },
   "claim_settlement_ratio": {
     "value": null,
     "source_url": null,
-    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted"
+    "source_quote": "not stated in hdfc-ergo__optima-enhance.pdf",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
     "value": null,
-    "source_pdf_path": null,
-    "source_quote": "TAT not specified in policy wording; governed by IRDAI Master Circular"
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
+    "source_quote": "not stated in hdfc-ergo__optima-enhance.pdf",
+    "_confidence": "low"
   },
   "policy_type": {
     "value": "top-up",
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "Top-up / super top-up policy (per product name)"
+    "source_quote": "hospital cash policies which will apply before any benefits are payable b",
+    "_confidence": "low"
   },
   "_meta": {
     "curated_at": "2026-05-14",

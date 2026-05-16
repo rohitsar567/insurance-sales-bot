@@ -1,6 +1,6 @@
 {
   "last_updated": "2026-05-13",
-  "methodology": "Premium samples pulled from public quote pages on PolicyBazaar, JoinDitto, Beshak, and insurer rate cards (Tata AIG MediCare Premier official rate chart, Star Family Health Optima Annexure-2, Niva Bupa ReAssure 2.0 rate card) on 2026-05-13. Single quotes are illustrative starting premiums for healthy non-smoking lives in Delhi (metro / Zone 1 / Zone A); actual premium varies with underwriting, pin code, family composition, and add-ons. Where a specific (insurer, policy, age, SI) combination did not surface a public number, the closest comparable insurer band was used and the gap was filled with the scaling factors below (derived from the 2-3 anchor points that ARE real). Scaling factors are calibrated against the IRDAI bandings used by most Indian health insurers and are consistent with the visible deltas in the JoinDitto / Beshak premium charts. | PED-specialty plans (HDFC Energy): individual base anchor \u00d7 ~1.35 PED load. Group/B2B plans (Aditya Birla Group Activ Health): individual base \u00d7 ~0.60 group-rate factor.",
+  "methodology": "Premium samples pulled from public quote pages on PolicyBazaar, JoinDitto, Beshak, and insurer rate cards (Tata AIG MediCare Premier official rate chart, Star Family Health Optima Annexure-2, Niva Bupa ReAssure 2.0 rate card) on 2026-05-13. Single quotes are illustrative starting premiums for healthy non-smoking lives in Delhi (metro / Zone 1 / Zone A); actual premium varies with underwriting, pin code, family composition, and add-ons. Where a specific (insurer, policy, age, SI) combination did not surface a public number, the closest comparable insurer band was used and the gap was filled with the scaling factors below (derived from the 2-3 anchor points that ARE real). Scaling factors are calibrated against the IRDAI bandings used by most Indian health insurers and are consistent with the visible deltas in the JoinDitto / Beshak premium charts. | PED-specialty plans (HDFC Energy): individual base anchor × ~1.35 PED load. Group/B2B plans (Aditya Birla Group Activ Health): individual base × ~0.60 group-rate factor.",
   "sources_consulted": [
     "https://www.policybazaar.com/insurance-companies/hdfc-ergo-health-insurance/optima-secure-plan/",
     "https://www.policybazaar.com/insurance-companies/religare-health-insurance/care-supreme/",
@@ -16,7 +16,7 @@
     "https://joinditto.in/articles/health-insurance/niva-bupa-reassure-2-0-premium-chart/",
     "https://joinditto.in/articles/health-insurance/care-supreme-health-insurance-premium-chart/",
     "https://joinditto.in/articles/health-insurance/tata-aig-health-insurance-premium-rate-chart/",
-    "https://www.axisbank.com/70-docs/default-source/default-document-library/tata-aig-medicare-premier-rate-chart.pdf",
+    "https://www.axisbank.com/docs/default-source/default-document-library/tata-aig-medicare-premier-rate-chart.pdf",
     "https://transactions.nivabupa.com/pages/doc/premium_chart/Health%20Premia%20-%20Rate%20Card.pdf",
     "https://www.scribd.com/document/667873826/Annexure-2-Premium-Chart-Family-Health-Optima-Insurance-Plan-Revised",
     "https://www.scribd.com/document/682628786/ReAssure-2-0-Rate-Card-with-Tax",
@@ -164,7 +164,7 @@
           "family_size": 1,
           "annual_premium_inr": 9180,
           "source_url": "derived_from_anchor",
-          "derivation_note": "Base = HDFC Optima Secure age 30/5L anchor (\u20b96,800) \u00d7 1.35 PED-specialty load. Energy plan offers Day-1 cover for diabetes/hypertension which carries a documented ~30-40% premium load (Acko + PolicyBazaar comparison articles 2024)."
+          "derivation_note": "Base = HDFC Optima Secure age 30/5L anchor (₹6,800) × 1.35 PED-specialty load. Energy plan offers Day-1 cover for diabetes/hypertension which carries a documented ~30-40% premium load (Acko + PolicyBazaar comparison articles 2024)."
         },
         {
           "age": 40,
@@ -174,7 +174,7 @@
           "family_size": 1,
           "annual_premium_inr": 21840,
           "source_url": "derived_from_anchor",
-          "derivation_note": "Base \u00d7 age 1.4 \u00d7 SI 1.7 \u00d7 PED-load 1.35"
+          "derivation_note": "Base × age 1.4 × SI 1.7 × PED-load 1.35"
         },
         {
           "age": 50,
@@ -184,10 +184,10 @@
           "family_size": 2,
           "annual_premium_inr": 54100,
           "source_url": "derived_from_anchor",
-          "derivation_note": "Base \u00d7 age 2.1 \u00d7 SI 1.7 \u00d7 family 1.65 \u00d7 PED-load 1.35"
+          "derivation_note": "Base × age 2.1 × SI 1.7 × family 1.65 × PED-load 1.35"
         }
       ],
-      "notes": "PED-specialty plan \u2014 Day-1 diabetes/hypertension cover. Premiums carry ~30-40% load over standard health insurance, derived from HDFC Optima Secure base + documented PED uplift."
+      "notes": "PED-specialty plan — Day-1 diabetes/hypertension cover. Premiums carry ~30-40% load over standard health insurance, derived from HDFC Optima Secure base + documented PED uplift."
     },
     "care-health__care-supreme": {
       "policy_id": "care-health-care-supreme",
@@ -382,7 +382,7 @@
           "family_size": 1,
           "annual_premium_inr": 4928,
           "source_url": "derived_from_anchor",
-          "derivation_note": "Group/B2B product \u2014 individuals cannot buy directly; employers sponsor. Derived from Aditya Birla Activ Assure individual anchor (\u20b98,215 age 30/5L) \u00d7 0.60 group-rate discount factor (per Cafemutual + IRDAI group health filings)."
+          "derivation_note": "Group/B2B product — individuals cannot buy directly; employers sponsor. Derived from Aditya Birla Activ Assure individual anchor (₹8,215 age 30/5L) × 0.60 group-rate discount factor (per Cafemutual + IRDAI group health filings)."
         },
         {
           "age": 40,
@@ -392,7 +392,7 @@
           "family_size": 2,
           "annual_premium_inr": 11375,
           "source_url": "derived_from_anchor",
-          "derivation_note": "Base \u00d7 age 1.4 \u00d7 family 1.65 \u00d7 group 0.60"
+          "derivation_note": "Base × age 1.4 × family 1.65 × group 0.60"
         },
         {
           "age": 50,
@@ -402,10 +402,10 @@
           "family_size": 4,
           "annual_premium_inr": 49680,
           "source_url": "derived_from_anchor",
-          "derivation_note": "Base \u00d7 age 2.1 \u00d7 SI 1.7 \u00d7 family 2.4 \u00d7 group 0.60"
+          "derivation_note": "Base × age 2.1 × SI 1.7 × family 2.4 × group 0.60"
         }
       ],
-      "notes": "B2B / Group plan \u2014 sold to employers, not retail. Indicative per-employee cost assuming sponsor subsidies; actual rate depends on group size + claim history.",
+      "notes": "B2B / Group plan — sold to employers, not retail. Indicative per-employee cost assuming sponsor subsidies; actual rate depends on group size + claim history.",
       "policy_type": "group"
     },
     "bajaj-allianz__health-guard": {
@@ -762,7 +762,7 @@
           "smoker": false,
           "family_size": 1,
           "annual_premium_inr": 7100,
-          "source_url": "https://www.axisbank.com/70-docs/default-source/default-document-library/medicare-rate-chart-06-12-22.pdf",
+          "source_url": "https://www.axisbank.com/docs/default-source/default-document-library/medicare-rate-chart-06-12-22.pdf",
           "source_note": "Tata AIG MediCare base variant rate chart - 19-35 / 5L = Rs 7,108 ex-tax"
         },
         {
@@ -772,7 +772,7 @@
           "smoker": false,
           "family_size": 1,
           "annual_premium_inr": 8800,
-          "source_url": "https://www.axisbank.com/70-docs/default-source/default-document-library/medicare-rate-chart-06-12-22.pdf"
+          "source_url": "https://www.axisbank.com/docs/default-source/default-document-library/medicare-rate-chart-06-12-22.pdf"
         },
         {
           "age": 40,
@@ -796,7 +796,7 @@
           "smoker": false,
           "family_size": 1,
           "annual_premium_inr": 8362,
-          "source_url": "https://www.axisbank.com/70-docs/default-source/default-document-library/tata-aig-medicare-premier-rate-chart.pdf",
+          "source_url": "https://www.axisbank.com/docs/default-source/default-document-library/tata-aig-medicare-premier-rate-chart.pdf",
           "source_note": "Official Tata AIG MediCare Premier rate chart: 19-35 age band, 5L SI = Rs 8,362 ex-tax"
         },
         {
@@ -806,7 +806,7 @@
           "smoker": false,
           "family_size": 1,
           "annual_premium_inr": 10319,
-          "source_url": "https://www.axisbank.com/70-docs/default-source/default-document-library/tata-aig-medicare-premier-rate-chart.pdf",
+          "source_url": "https://www.axisbank.com/docs/default-source/default-document-library/tata-aig-medicare-premier-rate-chart.pdf",
           "source_note": "Official rate chart: 19-35 / 10L = Rs 10,319 ex-tax"
         },
         {
@@ -816,7 +816,7 @@
           "smoker": false,
           "family_size": 1,
           "annual_premium_inr": 9868,
-          "source_url": "https://www.axisbank.com/70-docs/default-source/default-document-library/tata-aig-medicare-premier-rate-chart.pdf",
+          "source_url": "https://www.axisbank.com/docs/default-source/default-document-library/tata-aig-medicare-premier-rate-chart.pdf",
           "source_note": "Official rate chart: 36-45 / 5L = Rs 9,868 ex-tax"
         },
         {
@@ -826,7 +826,7 @@
           "smoker": false,
           "family_size": 1,
           "annual_premium_inr": 12266,
-          "source_url": "https://www.axisbank.com/70-docs/default-source/default-document-library/tata-aig-medicare-premier-rate-chart.pdf",
+          "source_url": "https://www.axisbank.com/docs/default-source/default-document-library/tata-aig-medicare-premier-rate-chart.pdf",
           "source_note": "Official rate chart: 36-45 / 10L = Rs 12,266 ex-tax"
         },
         {
@@ -1013,6 +1013,73 @@
           "source_url": "derived_from_anchor"
         }
       ]
+    },
+    "royal-sundaram__advanced-top-up": {
+      "policy_id": "royal-sundaram-advanced-top-up",
+      "policy_name": "Advanced Top Up",
+      "samples": [
+        {
+          "age": 35,
+          "sum_insured_inr": 4500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 2494,
+          "source_url": "extracted_from_brochure",
+          "source_note": "Found in royal-sundaram__advanced-top-up__brochure PDF: premium_range_indicative_inr[\"26-45_SI_45L_deductible_5L_1A\"]=2494",
+          "source_quality": "brochure_extract"
+        },
+        {
+          "age": 53,
+          "sum_insured_inr": 4500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 5542,
+          "source_url": "extracted_from_brochure",
+          "source_note": "Found in royal-sundaram__advanced-top-up__brochure PDF: premium_range_indicative_inr[\"46-60_SI_45L_deductible_5L_1A\"]=5542",
+          "source_quality": "brochure_extract"
+        },
+        {
+          "age": 63,
+          "sum_insured_inr": 4500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 1,
+          "annual_premium_inr": 9976,
+          "source_url": "extracted_from_brochure",
+          "source_note": "Found in royal-sundaram__advanced-top-up__brochure PDF: premium_range_indicative_inr[\"61-65_SI_45L_deductible_5L_1A\"]=9976",
+          "source_quality": "brochure_extract"
+        }
+      ]
+    },
+    "sbi-general__arogya-supreme": {
+      "policy_id": "sbi-general-arogya-supreme",
+      "policy_name": "Arogya Supreme",
+      "samples": [
+        {
+          "age": 35,
+          "sum_insured_inr": 500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 2,
+          "annual_premium_inr": 38903,
+          "source_url": "https://www.sbigeneral.in",
+          "source_note": "Found in sbi-general__arogya-supreme__brochure PDF: premium_range_indicative_inr[\"35y_SI_5L_floater\"]=38903",
+          "source_quality": "brochure_extract"
+        },
+        {
+          "age": 35,
+          "sum_insured_inr": 1500000,
+          "city_tier": "metro",
+          "smoker": false,
+          "family_size": 2,
+          "annual_premium_inr": 62424,
+          "source_url": "https://www.sbigeneral.in",
+          "source_note": "Found in sbi-general__arogya-supreme__brochure PDF: premium_range_indicative_inr[\"35y_SI_15L_floater\"]=62424",
+          "source_quality": "brochure_extract"
+        }
+      ]
     }
   },
   "scaling_factors": {
@@ -1064,5 +1131,19 @@
       "group_b2b": 0.6,
       "_source": "Cafemutual + IRDAI group health filings; group rates typically 50-70% of individual"
     }
-  }
+  },
+  "link_rot_repairs": [
+    {
+      "date": "2026-05-16",
+      "was": "https://www.axisbank.com/70-docs/default-source/default-document-library/medicare-rate-chart-06-12-22.pdf",
+      "now": "https://www.axisbank.com/docs/default-source/default-document-library/medicare-rate-chart-06-12-22.pdf",
+      "reason": "axisbank moved /70-docs/ -> /docs/ (404 2026-05-16); replacement verified live, identical 'TATA AIG MediCare - Rate Chart' content"
+    },
+    {
+      "date": "2026-05-16",
+      "was": "https://www.axisbank.com/70-docs/default-source/default-document-library/tata-aig-medicare-premier-rate-chart.pdf",
+      "now": "https://www.axisbank.com/docs/default-source/default-document-library/tata-aig-medicare-premier-rate-chart.pdf",
+      "reason": "axisbank moved /70-docs/ -> /docs/ (404 2026-05-16); replacement verified live, identical 'Tata AIG MediCare Premier UIN TATHLIP21257V022021' content"
+    }
+  ]
 }

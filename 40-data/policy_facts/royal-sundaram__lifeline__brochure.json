@@ -7,146 +7,253 @@
     "value": "RSAHLIP24146V032324",
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/lifeline__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Lifeline (UIN-RSAHLIP24146V032324) is a Health Insurance product underwritten and issued by Royal Sundaram General Insurance Co. Limited.",
+    "_confidence": "high"
   },
   "min_entry_age": {
     "value": 18,
     "unit": "years",
     "source_pdf_path": "rag/corpus/royal-sundaram/lifeline__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "y age for Adults is 18 years onwards and from 91 days to 25 years for chi",
+    "_confidence": "high"
   },
   "max_entry_age": {
-    "value": null,
+    "value": 25,
     "unit": "years",
     "source_pdf_path": "rag/corpus/royal-sundaram/lifeline__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/royal-sundaram/lifeline__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "dren, 18 years for proposer or adults. Maximum Entry Age 25 years for dependent children, lifetime entry age for adults. Pol",
+    "_confidence": "high"
   },
   "min_child_entry_age": {
     "value": 91,
     "unit": "days",
     "source_pdf_path": "rag/corpus/royal-sundaram/lifeline__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "nwards and from 91 days to 25 years for chi",
+    "_confidence": "high"
   },
   "sum_insured_options": {
-    "value": [
-      200000,
-      300000,
-      400000,
-      500000,
-      750000,
-      1000000,
-      1500000,
-      2000000,
-      2500000,
-      3000000,
-      5000000,
-      10000000,
-      15000000
-    ],
+    "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/royal-sundaram/lifeline__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in royal-sundaram__lifeline__brochure.pdf",
+    "_confidence": "low"
   },
   "grace_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/royal-sundaram/lifeline__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Grace Period for Renewal 30 days from the",
+    "_confidence": "high"
   },
   "free_look_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/royal-sundaram/lifeline__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "free look-in period of 30 days (only for new policies). Li",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/lifeline__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "4 1. Initial Waiting Period - 30 Days 2. Initial Waiting Period For Critical Illness - 90 Da",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 36,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/lifeline__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "line cover includes a - 36 months waiting period for Classic, 36 months waiting period for Supreme and 24 months waiting period for Elite for pre-existing cond",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/lifeline__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "d of 24 months for 16 speciﬁed illnesses listed below: • Stones in Biliary an",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": 36,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/lifeline__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Maternity beneﬁts - 36 Months 5. Speciﬁ",
+    "_confidence": "high"
   },
   "pre_hospitalization_days": {
-    "value": 60,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/lifeline__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in royal-sundaram__lifeline__brochure.pdf",
+    "_confidence": "low"
   },
   "post_hospitalization_days": {
-    "value": 180,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/lifeline__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in royal-sundaram__lifeline__brochure.pdf",
+    "_confidence": "low"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/royal-sundaram/lifeline__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 200,
+    "source_url": "https://www.royalsundaram.in/health-insurance/lifeline/",
+    "source_note": "Per insurer baseline (Royal Sundaram Lifeline lists ~200 day care procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/royal-sundaram/lifeline__brochure.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/royal-sundaram/lifeline__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 12500,
+    "source_url": "https://www.royalsundaram.in/",
+    "source_note": "12500+ Cashless hospitals (homepage, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
-    "value": null,
-    "unit": "percent",
+    "value": 20,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/royal-sundaram/lifeline__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "3. Third degree burns 20% co-payment applies for",
+    "_confidence": "high"
   },
   "room_rent_capped_at_pct_of_si": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/royal-sundaram/lifeline__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in royal-sundaram__lifeline__brochure.pdf",
+    "_confidence": "low"
   },
   "policy_term_options_years": {
-    "value": null,
+    "value": [
+      1
+    ],
     "unit": "years",
     "source_pdf_path": "rag/corpus/royal-sundaram/lifeline__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "L OPTIONS Top-up plan on annual aggregate basis Not Available Deducti",
+    "_confidence": "medium"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/royal-sundaram/lifeline__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in royal-sundaram__lifeline__brochure.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/royal-sundaram/lifeline__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in royal-sundaram__lifeline__brochure.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/lifeline__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in royal-sundaram__lifeline__brochure.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/lifeline__brochure.pdf",
+    "source_quote": "(3) AYUSH Treatment - Inpatient Treatment taken up in authorized hospitals as per definition mentioned in policy terms and conditions.",
+    "_confidence": "high"
+  },
+  "maternity_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/lifeline__brochure.pdf",
+    "source_quote": "(10) Maternity Benefit - Covers up to 2 deliveries if both husband and wife are covered under the same family floater policy, New Born Baby Cover and Vaccination for new born (only in Elite Plan). 36 month waiting period applies to maternity",
+    "_confidence": "high"
+  },
+  "newborn_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/lifeline__brochure.pdf",
+    "source_quote": "MATERNITY (10) BENEFITS - Maternity cover for up to 2 deliveries - New Born Baby Cover (#) - Vaccinations for new born baby in the ﬁrst year",
+    "_confidence": "high"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/lifeline__brochure.pdf",
+    "source_quote": "Organ Donor Expenses Covered up to Sum Insured 10% of Base Sum Insured up to a maximum of 50% Up to Base Sum Insured Covered up to Sum Insured",
+    "_confidence": "high"
+  },
+  "restoration_benefit": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/lifeline__brochure.pdf",
+    "source_quote": "(2) Re-load of Sum Insured - Reinstate sum insured upto base sum insured. Applicable for different illness or different Insured member for same illness.",
+    "_confidence": "high"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/lifeline__brochure.pdf",
+    "source_quote": "OTHER BENEFITS Domiciliary Hospitalization No Claim Bonus (2) Re-load of Sum Insured (3) Ayush Treatment (4) Vaccination in case of Animal Bite",
+    "_confidence": "high"
+  },
+  "worldwide_emergency_cover": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/lifeline__brochure.pdf",
+    "source_quote": "Worldwide Emergency Hospitalization (Excluding $ US and Canada) International Treatment abroad for 11 speciﬁed critical illnesses along with one time return airfare (6) $ for insured person (Excluding US and Canada)",
+    "_confidence": "high"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/lifeline__brochure.pdf",
+    "source_quote": "HEALTH & WELLNESS BENEFITS Health Check-up Annual Annual Once in 2 years Preventive Healthcare & Wellness and Disease (7) Management Available Available Available",
+    "_confidence": "high"
+  },
+  "critical_illness_cover": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/lifeline__brochure.pdf",
+    "source_quote": "Second Opinion for 11 speciﬁed Critical Illness Available once during the policy year (Second Opinion for 11 speciﬁed Critical Illness)",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/lifeline__brochure.pdf",
+    "source_quote": "th Insurance Plan Go cashless with India’s leading health insurance plan explore",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_cap_pct": {
+    "value": 100,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/royal-sundaram/lifeline__brochure.pdf",
+    "source_quote": "up to a maximum of 100% Up to Base Sum Insured Cove",
+    "_confidence": "medium"
+  },
+  "geographic_coverage": {
+    "value": "worldwide_ex_usa_canada",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/royal-sundaram/lifeline__brochure.pdf",
+    "source_quote": "Worldwide Emergency Hospitalization (Excluding $ US and Canada) Int",
+    "_confidence": "medium"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "family_floater",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/royal-sundaram/lifeline__brochure.pdf",
+    "source_quote": "re covered under the same family floater policy, New Born Baby Cover and Vaccination for new born (only in Elite Pl",
+    "_confidence": "medium"
+  },
+  "room_rent_capping": {
+    "value": "No Room Rent Cap (Premier hospitals)",
+    "unit": "text",
+    "source_pdf_path": "rag/corpus/royal-sundaram/lifeline__brochure.pdf",
+    "source_quote": "Premier Hospitals in India and Abroad with No-Room-Rent-Cap Emergency Domestic Evacuation Second Opinion for 11 Critical Illnesses",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_pct": {
+    "value": 20,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/royal-sundaram/lifeline__brochure.pdf",
+    "source_quote": "Covered up to Sum Insured 20% of Base Sum Insured up to a maximum of",
+    "_confidence": "medium"
   }
 }

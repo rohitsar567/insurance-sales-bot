@@ -8,32 +8,31 @@
     "source_quote": "IRDA of India Registration No.:108 • CIN: U85110MH2000PLC128425 • UIN: TATHLIP21257V022021"
   },
   "min_entry_age": {
-    "value": 91,
+    "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/tata-aig/medicare-premier__wordings.pdf",
-    "source_quote": "Newborn baby (aged upto 90 days); dependent child entry standard 91 days"
+    "source_quote": "not stated in tata-aig__medicare-premier.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
-    "value": 65,
+    "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/tata-aig/medicare-premier__wordings.pdf",
-    "source_quote": "Adult entry per Policy Schedule (Tata AIG MediCare Premier brochure: 18-65 years)"
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/tata-aig/medicare-premier__wordings.pdf",
-    "source_quote": "Lifelong renewability"
+    "source_quote": "not stated in tata-aig__medicare-premier.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
     "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/tata-aig/medicare-premier__wordings.pdf",
-    "source_quote": "Sum Insured options per Policy Schedule (MediCare Premier: 5L/7.5L/10L/15L/20L/25L/30L/50L/1Cr)"
+    "source_quote": "not stated in tata-aig__medicare-premier.pdf",
+    "_confidence": "low"
   },
   "initial_waiting_period_days": {
-    "value": 30,
+    "value": null,
     "source_pdf_path": "rag/corpus/tata-aig/medicare-premier__wordings.pdf",
-    "source_quote": "30-day waiting period for illness (standard IRDAI Excl03)"
+    "source_quote": "not stated in tata-aig__medicare-premier.pdf",
+    "_confidence": "low"
   },
   "pre_existing_disease_waiting_months": {
     "value": 24,
@@ -43,7 +42,8 @@
   "specific_disease_waiting_months": {
     "value": 24,
     "source_pdf_path": "rag/corpus/tata-aig/medicare-premier__wordings.pdf",
-    "source_quote": "Specified Disease/Procedure Waiting Period (Code-Excl02): Expenses ... shall be excluded until the expiry of 24 months of continuous coverage"
+    "source_quote": "a. Expenses related to the treatment of the listed C o n d i t i o n s , s u r g e r i e s / treatments shall be excluded until the expiry of 24 months of continuous coverage after the date of inception of the first policy with us. This exclusion shall not be applicable for claims arising due to an accident.",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": 48,
@@ -51,24 +51,29 @@
     "source_quote": "B21. Maternity Cover We will cover for Maternity Expenses upto a maximum of Rs. 50,000/- per policy subject to a waiting period of 4 years of continuous coverage"
   },
   "pre_hospitalization_days": {
-    "value": 60,
-    "source_pdf_path": "rag/corpus/tata-aig/medicare-premier__wordings.pdf",
-    "source_quote": "B2. Pre-Hospitalization expenses We will cover for expenses for Pre-Hospitalization consultations, investigations and medicines incurred upto 60 days before the date of admission"
-  },
-  "post_hospitalization_days": {
-    "value": 90,
-    "source_pdf_path": "rag/corpus/tata-aig/medicare-premier__wordings.pdf",
-    "source_quote": "B3. Post-Hospitalization expenses ... incurred upto 90 days after discharge from the hospital."
-  },
-  "day_care_treatments_count": {
     "value": null,
     "source_pdf_path": "rag/corpus/tata-aig/medicare-premier__wordings.pdf",
-    "source_quote": "B4. Day Care Procedures ... The list of such day care procedures covered is available on our website (www.tataaig.com)"
+    "source_quote": "not stated in tata-aig__medicare-premier.pdf",
+    "_confidence": "low"
+  },
+  "post_hospitalization_days": {
+    "value": null,
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-premier__wordings.pdf",
+    "source_quote": "not stated in tata-aig__medicare-premier.pdf",
+    "_confidence": "low"
+  },
+  "day_care_treatments_count": {
+    "value": 540,
+    "source_url": "https://www.tataaig.com/health-insurance/medicare",
+    "source_note": "Per insurer baseline (Tata AIG product pages state 540+ day care procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-premier__wordings.pdf"
   },
   "ayush_coverage": {
     "value": true,
     "source_pdf_path": "rag/corpus/tata-aig/medicare-premier__wordings.pdf",
-    "source_quote": "qualified registered AYUSH Medical Practitioner (AYUSH coverage standard inclusion)"
+    "source_quote": "B8. AYUSH Benefit We will cover for expenses incurred for treatment as in-patient in an Ayush Hospital.",
+    "_confidence": "high"
   },
   "maternity_coverage": {
     "value": true,
@@ -83,12 +88,14 @@
   "organ_donor_expenses": {
     "value": true,
     "source_pdf_path": "rag/corpus/tata-aig/medicare-premier__wordings.pdf",
-    "source_quote": "Organ Donor Expenses (standard inclusion in Tata AIG MediCare Premier)"
+    "source_quote": "B5. Organ Donor We will cover for Medical and surgical Expenses of the organ donor for harvesting the organ where an Insured Person is the recipient provided that:",
+    "_confidence": "high"
   },
   "no_claim_bonus_pct": {
-    "value": null,
+    "value": 50,
     "source_pdf_path": "rag/corpus/tata-aig/medicare-premier__wordings.pdf",
-    "source_quote": "Cumulative Bonus accrued ... The maximum cumulative bonus shall not exceed 100% of the Sum Insured in any Policy Year (rate per claim-free year per Policy Schedule, typically 50%)"
+    "source_quote": "50% cumulative bonus will be applied on the Sum Insured for next policy year under the Policy after every claim free Policy Year, provided that the Policy is renewed with Us and without a break. The maximum cumulative bonus shall not exceed 100% of the Sum Insured in any Policy Year.",
+    "_confidence": "high"
   },
   "restoration_benefit": {
     "value": "Restore Benefit: automatic restoration of Basic Sum Insured upon exhaustion, once per policy period",
@@ -96,49 +103,76 @@
     "source_quote": "B7. Restore benefits We will automatically restore the Basic Sum Insured upon exhaustion of the Sum Insured and accrued Cumulative Bonus, during the policy period. This benefit can be availed once during the policy period"
   },
   "room_rent_capping": {
-    "value": "Per Policy Schedule (Single Private AC Room or higher; voluntary copay for higher category)",
+    "value": null,
     "source_pdf_path": "rag/corpus/tata-aig/medicare-premier__wordings.pdf",
-    "source_quote": "Room Rent means the amount charged (per Policy Schedule entitlement)"
+    "source_quote": "not stated in tata-aig__medicare-premier.pdf",
+    "_confidence": "low"
   },
   "copayment_pct": {
-    "value": 0,
+    "value": null,
     "source_pdf_path": "rag/corpus/tata-aig/medicare-premier__wordings.pdf",
-    "source_quote": "No mandatory base copay (voluntary copay add-on)"
+    "source_quote": "not stated in tata-aig__medicare-premier.pdf",
+    "_confidence": "low"
   },
   "deductible_amount": {
     "value": null,
-    "source_pdf_path": null,
-    "source_quote": "No base deductible"
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-premier__wordings.pdf",
+    "source_quote": "not stated in tata-aig__medicare-premier.pdf",
+    "_confidence": "low"
   },
   "network_hospital_count": {
-    "value": null,
-    "source_url": null,
-    "source_quote": "Insurer-level metric; Tata AIG advertises 7,200+ network hospitals"
+    "value": 12000,
+    "source_url": "https://www.tataaig.com/",
+    "source_note": "12,000+ Network Hospitals (homepage 'Why TATA AIG' section, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "cashless_treatment_supported": {
-    "value": true,
+    "value": null,
     "source_pdf_path": "rag/corpus/tata-aig/medicare-premier__wordings.pdf",
-    "source_quote": "Cashless facility through Network Provider (standard)"
+    "source_quote": "not stated in tata-aig__medicare-premier.pdf",
+    "_confidence": "low"
   },
   "claim_settlement_ratio": {
     "value": null,
     "source_url": null,
-    "source_quote": "Insurer-level metric; not extracted"
+    "source_quote": "not stated in tata-aig__medicare-premier.pdf",
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-premier__wordings.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
     "value": null,
-    "source_pdf_path": null,
-    "source_quote": "TAT governed by IRDAI Master Circular"
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-premier__wordings.pdf",
+    "source_quote": "not stated in tata-aig__medicare-premier.pdf",
+    "_confidence": "low"
   },
   "policy_type": {
     "value": "indemnity",
     "source_pdf_path": "rag/corpus/tata-aig/medicare-premier__wordings.pdf",
-    "source_quote": "Indemnity-based comprehensive plan"
+    "source_quote": "Preamble While the policy is in force, if the Insured Person contracts any disease or suffers from any illness or sustains bodily injury through accident and if such event requires the insured Person to incur expenses for Medically Necessary Treatment, We will indemnify You",
+    "_confidence": "high"
   },
   "_meta": {
     "curated_at": "2026-05-13",
     "primary_source_pdf": "rag/corpus/tata-aig/medicare-premier__wordings.pdf",
     "completeness_pct": 85,
-    "notes": "Tata AIG MediCare Premier: 24-month PED, maternity ₹50K (₹60K girl child) with 4-year waiting, restore benefit once per policy period."
+    "notes": "Tata AIG MediCare Premier: 24-month PED, maternity ₹50K (₹60K girl child) with 4-year waiting, restore benefit once per policy period. | Batch 3 (2026-05-15): coverage breadth fields backfilled.",
+    "batch3_added_fields": [
+      "ambulance_cover",
+      "domiciliary_treatment"
+    ]
+  },
+  "ambulance_cover": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-premier__wordings.pdf",
+    "source_quote": "B9. Ambulance Cover We will cover for expenses incurred on transportation of Insured Person in a registered ambulance to a Hospital for admission in case of an Emergency or from one hospital to another hospital for better medical facilities and treatment, subject to Rs. 5000 per Hospitalization.",
+    "extraction_method": "tools/curate_batch3.py — pattern-grep over pdfplumber text",
+    "_confidence": "high"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-premier__wordings.pdf",
+    "source_quote": "B6. Domiciliary Treatment We will cover for expenses related to Domiciliary Hospitalization of the insured person if the treatment exceeds beyond three days. The treatment must be for management of an illness and not for enteral feedings or end of life care.",
+    "extraction_method": "tools/curate_batch3.py — pattern-grep over pdfplumber text",
+    "_confidence": "high"
   }
 }

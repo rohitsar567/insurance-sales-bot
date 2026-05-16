@@ -7,132 +7,211 @@
     "value": "RSAHLIP24110V012324",
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/surrosafe__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "surance Policy Document 1 UIN: RSAHLIP24110V012324 Royal S",
+    "_confidence": "high"
   },
   "min_entry_age": {
-    "value": 18,
+    "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/royal-sundaram/surrosafe__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in royal-sundaram__surrosafe__wordings.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/royal-sundaram/surrosafe__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
-  },
-  "max_renewal_age": {
-    "value": null,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/royal-sundaram/surrosafe__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in royal-sundaram__surrosafe__wordings.pdf",
+    "_confidence": "low"
   },
   "min_child_entry_age": {
     "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/royal-sundaram/surrosafe__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in royal-sundaram__surrosafe__wordings.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
     "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/royal-sundaram/surrosafe__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in royal-sundaram__surrosafe__wordings.pdf",
+    "_confidence": "low"
   },
   "grace_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/royal-sundaram/surrosafe__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "grace period will be allowed maximum only once for a period of 30 days for payme",
+    "_confidence": "high"
   },
   "free_look_period": {
-    "value": 30,
+    "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/royal-sundaram/surrosafe__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in royal-sundaram__surrosafe__wordings.pdf",
+    "_confidence": "low"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/surrosafe__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "to the treatment of any illness within 30 days from the first policy commencement d",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 36,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/surrosafe__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "re diagnosed by a physician not more than 36 months prior to the date of commencement of the policy issued by the i",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/surrosafe__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in royal-sundaram__surrosafe__wordings.pdf",
+    "_confidence": "low"
   },
   "maternity_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/surrosafe__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in royal-sundaram__surrosafe__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
-    "value": 30,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/surrosafe__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in royal-sundaram__surrosafe__wordings.pdf",
+    "_confidence": "low"
   },
   "post_hospitalization_days": {
     "value": 60,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/surrosafe__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "ion requiring inpatient care, for a fixed period of 60 days from the date of discharge from the ho",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/royal-sundaram/surrosafe__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 200,
+    "source_url": "https://www.royalsundaram.in/health-insurance/lifeline/",
+    "source_note": "Per insurer baseline (Royal Sundaram Lifeline lists ~200 day care procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/royal-sundaram/surrosafe__wordings.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/royal-sundaram/surrosafe__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 12500,
+    "source_url": "https://www.royalsundaram.in/",
+    "source_note": "12500+ Cashless hospitals (homepage, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/royal-sundaram/surrosafe__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in royal-sundaram__surrosafe__wordings.pdf",
+    "_confidence": "low"
   },
   "room_rent_capped_at_pct_of_si": {
-    "value": null,
-    "unit": "percent",
+    "value": 1,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/royal-sundaram/surrosafe__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "1. Room Rent, Boarding, Nursing Expenses as provided by the Hospital / Nursing Home up to 1% of the sum insured per day. 2. Intensive Care Unit (ICU) / Intensive Cardiac Care Unit (ICCU) expenses up to actuals amount subject to sum insured",
+    "_confidence": "medium"
   },
   "policy_term_options_years": {
-    "value": null,
+    "value": [
+      1
+    ],
     "unit": "years",
     "source_pdf_path": "rag/corpus/royal-sundaram/surrosafe__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "pired policy period, if the term of policy is up to one year and there is no c",
+    "_confidence": "medium"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/royal-sundaram/surrosafe__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in royal-sundaram__surrosafe__wordings.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/royal-sundaram/surrosafe__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in royal-sundaram__surrosafe__wordings.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/surrosafe__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in royal-sundaram__surrosafe__wordings.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/surrosafe__wordings.pdf",
+    "source_quote": "8. AYUSH Treatment- Expenses incurred for inpatient care treatment under Ayurveda, Yoga and Naturopathy, Unani, Siddha and Homeopathy systems of medicines is covered up to 100% of Sum Insured, during each policy year as specified in the pol",
+    "_confidence": "high"
+  },
+  "maternity_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/surrosafe__wordings.pdf",
+    "source_quote": "D1. Surrogate Cover By opting this cover, the Company shall indemnify the reasonable and customary medical expenses, incurred for Hospitalization of the Insured Person during the policy year, up to Sum Insured as specified in Policy schedule, arising out of pregnancy and also covering post- partum delivery",
+    "_confidence": "high"
+  },
+  "worldwide_emergency_cover": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/surrosafe__wordings.pdf",
+    "source_quote": "9.Territorial Jurisdiction The geographical scope of this Policy applies to events within India. All admitted or payable claims shall be settled in India in Indian rupees.",
+    "_confidence": "high"
+  },
+  "preventive_health_checkup": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/surrosafe__wordings.pdf",
+    "source_quote": "not stated in royal-sundaram__surrosafe__wordings.pdf",
+    "_confidence": "low"
+  },
+  "critical_illness_cover": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/surrosafe__wordings.pdf",
+    "source_quote": "not stated in royal-sundaram__surrosafe__wordings.pdf",
+    "_confidence": "low"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/surrosafe__wordings.pdf",
+    "source_quote": "grace period. 6. Cashless Facility means a facility extended by the insurer to the insured where the payments, of the cost",
+    "_confidence": "high"
+  },
+  "geographic_coverage": {
+    "value": null,
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/royal-sundaram/surrosafe__wordings.pdf",
+    "source_quote": "not stated in royal-sundaram__surrosafe__wordings.pdf",
+    "_confidence": "low"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": null,
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/royal-sundaram/surrosafe__wordings.pdf",
+    "source_quote": "not stated in royal-sundaram__surrosafe__wordings.pdf",
+    "_confidence": "low"
+  },
+  "room_rent_capping": {
+    "value": "1% of Sum Insured per day",
+    "unit": "text",
+    "source_pdf_path": "rag/corpus/royal-sundaram/surrosafe__wordings.pdf",
+    "source_quote": "1. Room Rent, Boarding, Nursing Expenses as provided by the Hospital / Nursing Home up to 1% of the sum insured per day.",
+    "_confidence": "high"
   }
 }

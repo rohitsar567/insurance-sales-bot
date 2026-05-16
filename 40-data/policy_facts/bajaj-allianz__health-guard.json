@@ -5,24 +5,21 @@
   "uin_code": {
     "value": "BAJHLIP25035V072425",
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
-    "source_quote": "U66010PN2000PLC015329 | UIN: BAJHLIP25035V072425 1 Bajaj Allianz General Insurance Co. Ltd. Bajaj Allianz House, Airport Road, Yerawada, Pune - 411 006. Reg. No.: 113 For more details, log on to: www."
+    "source_quote": "U66010PN2000PLC015329 | UIN: BAJHLIP25035V072425 1 SECTION A) PREAMBLE Whereas the Insured described in the Policy Schedule hereto (hereinafter called the 'Insured Person') has mad"
   },
   "min_entry_age": {
-    "value": null,
+    "value": 90,
     "unit": "days",
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
-    "source_quote": "Min entry age not found"
+    "source_quote": "Insured Person means the persons, or his Family Members, named in the Schedule provided that an Insured Person or his Family Members has attained the age of 3 months and is not older than 65 years of age at the commencement of the Policy Period.",
+    "_confidence": "high"
   },
   "max_entry_age": {
-    "value": null,
+    "value": 65,
     "unit": "years",
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
-    "source_quote": "Max entry age not explicitly stated; check Policy Schedule"
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
-    "source_quote": "Max renewal age not specified; check Policy Schedule"
+    "source_quote": "Insured Person means the persons, or his Family Members, named in the Schedule provided that an Insured Person or his Family Members has attained the age of 3 months and is not older than 65 years of age at the commencement of the Policy Period.",
+    "_confidence": "high"
   },
   "sum_insured_options": {
     "value": [
@@ -40,9 +37,11 @@
     "source_quote": "the treatment of any Illness within 30 days from the first Policy commencement date shall be excluded except claims arising due to an Accident, provided the same are covered. b. This exclusion shall n"
   },
   "pre_existing_disease_waiting_months": {
-    "value": null,
+    "value": 36,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
-    "source_quote": "PED waiting period not extracted; check Section 5 / Excl01"
+    "source_quote": "36 months of continuous coverage after the date of inception of the first Health Guard Policy with us. b. In case of enhancement of Sum Insured the exclusion shall apply afresh",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
@@ -50,34 +49,46 @@
     "source_quote": "lated to the treatment of the listed Conditions, surgeries/treatments shall be excluded until the expiry of 24 months of continuous coverage after the date of inception of the first Health Guard Polic"
   },
   "maternity_waiting_months": {
-    "value": null,
+    "value": 72,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
-    "source_quote": "Maternity waiting not specified or maternity excluded"
+    "source_quote": "Waiting period of 72 months as mentioned in the Policy Schedule would apply from the date of issuance of the first Health Guard Policy with Us,",
+    "_confidence": "high"
   },
   "pre_hospitalization_days": {
-    "value": null,
+    "value": 60,
+    "unit": "days",
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
-    "source_quote": "Pre-hospitalization days not extracted"
+    "source_quote": "Pre-Hospitalization: The Medical Expenses incurred during the 60 days immediately before You Were Hospitalized, provided that:",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
-    "value": null,
+    "value": 90,
+    "unit": "days",
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
-    "source_quote": "Post-hospitalization days not extracted"
+    "source_quote": "Post-Hospitalization: The Medical Expenses incurred during the 90 days immediately after You were discharged post Hospitalization",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
-    "source_quote": "Day-care count not enumerated; covered per policy definition"
+    "value": 130,
+    "source_url": "https://www.bajajgeneralinsurance.com/health-insurance-plans/health-guard.html",
+    "source_note": "Bajaj Allianz Health Guard covers 130 day care procedures",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf"
   },
   "ayush_coverage": {
     "value": true,
+    "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
-    "source_quote": "where treatment was taken. 3. AYUSH Hospital: An AYUSH Hospital is a healthcare facility wherein medical/surgical/para-surgical treatment procedures and interventions are carried out by AYUSH Medical "
+    "source_quote": "AYUSH treatment” refers to the medical and / or hospitalization treatments given under Ayurveda, Yoga and Naturopathy, Unani, Siddha and Homeopathy systems.",
+    "_confidence": "high"
   },
   "maternity_coverage": {
-    "value": false,
+    "value": true,
+    "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
-    "source_quote": "ct/plans of Our Company where maternity expenses are not covered. f. Any complications arising, within 90 days post-delivery, out of or as a consequence of maternity/child birth will be covered up to "
+    "source_quote": "Maternity Expenses (Applicable for Gold and Platinum Plan only): We will pay the Medical Expenses for the delivery of a baby (including caesarean section) and/or expenses related to medically recommended and lawful termination of pregnancy",
+    "_confidence": "high"
   },
   "newborn_coverage": {
     "value": true,
@@ -100,9 +111,11 @@
     "source_quote": "Reinstatement Benefit:"
   },
   "room_rent_capping": {
-    "value": "Single Private room:",
+    "value": "1% of Sum Insured",
+    "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
-    "source_quote": "Single Private room:"
+    "source_quote": "Silver Plan - Up to 1% of Sum Insured per day (Excluding Cumulative Bonus)  Gold Plan and Platinum Plan - Sum Insured 3 lacs to 7.5 lacs- maximum eligible room is Single Private Air-Conditioned room - Sum Insured 10 Lacs and above - eligible for any room category ii. I",
+    "_confidence": "high"
   },
   "copayment_pct": {
     "value": 15,
@@ -115,35 +128,57 @@
     "source_quote": "xcess of the Annual Aggregate Deductible limit of ₹ 50,000 / ₹ 100000 / ₹ 200000 / ₹ 300000, as opted by You , subject to the ”In-patient Hospitalization Treatment” section Sum I"
   },
   "network_hospital_count": {
-    "value": null,
-    "source_url": null,
-    "source_quote": "Insurer-level metric; not extracted in this curation pass"
+    "value": 18400,
+    "source_url": "https://www.bajajgeneralinsurance.com/",
+    "source_note": "18,400+ Cashless Hospitals (homepage, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "cashless_treatment_supported": {
     "value": true,
+    "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
-    "source_quote": "ewal date or Grace period. 7. Cashless facility: Cashless facility means a facility extended by the Insurer to the Insured Person where the payments, of the costs of treatment undergone by the Insured"
+    "source_quote": "Cashless facility: Cashless facility means a facility extended by the Insurer to the Insured Person where the payments, of the costs of treatment undergone by the Insured Person",
+    "_confidence": "high"
   },
   "claim_settlement_ratio": {
     "value": null,
-    "source_url": null,
-    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted"
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
+    "source_quote": "not stated in bajaj-allianz__health-guard.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
     "value": null,
-    "source_pdf_path": null,
-    "source_quote": "TAT not specified in policy wording; governed by IRDAI Master Circular"
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
+    "source_quote": "not stated in bajaj-allianz__health-guard.pdf",
+    "_confidence": "low"
   },
   "policy_type": {
-    "value": "top-up",
+    "value": "family_floater",
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
-    "source_quote": "Top-up / super top-up policy (kicks in above a deductible)"
+    "source_quote": "Floater Sum Insured Policies. Sum Insured at the beginning of the year Accumulated Cumulative Bonus Sum Insured with CB Hospitalization Amount Reinstated Sum Insured Payable Claim Amount Balance Sum Insured 1st Claim 300,000 10% 330,000 350",
+    "_confidence": "medium"
   },
   "_meta": {
     "curated_at": "2026-05-14",
     "primary_source_pdf": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
     "supporting_source_pdfs": [],
     "completeness_pct": 70,
-    "notes": "Pattern-based extraction from local PDF via pdfplumber. Insurer-level metrics (CSR, network count) left null pending downstream backfill."
+    "notes": "Pattern-based extraction from local PDF via pdfplumber. Insurer-level metrics (CSR, network count) left null pending downstream backfill. | Batch 3 (2026-05-15): coverage breadth fields backfilled.",
+    "batch3_added_fields": [
+      "ambulance_cover",
+      "preventive_health_checkup"
+    ]
+  },
+  "ambulance_cover": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
+    "source_quote": "Road Ambulance: We will pay the reasonable cost to a maximum of ₹ 20,000/- per Policy Year incurred on an ambulance offered by a healthcare or ambulan",
+    "extraction_method": "tools/curate_batch3.py — pattern-grep over pdfplumber text"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
+    "source_quote": "Preventive Health Check Up",
+    "extraction_method": "tools/curate_batch3.py — pattern-grep over pdfplumber text"
   }
 }

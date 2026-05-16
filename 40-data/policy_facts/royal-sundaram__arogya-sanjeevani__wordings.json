@@ -7,34 +7,33 @@
     "value": "RSAHLIP25013V022425",
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "l Insurance Co. Limited 1 UIN-RSAHLIP25013V022425 Royal S",
+    "_confidence": "high"
   },
   "min_entry_age": {
     "value": 18,
     "unit": "years",
     "source_pdf_path": "rag/corpus/royal-sundaram/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "y age for Adults is 18 years onwards to 65 years and from 3 months to 25y",
+    "_confidence": "high"
   },
   "max_entry_age": {
     "value": 65,
     "unit": "years",
     "source_pdf_path": "rag/corpus/royal-sundaram/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/royal-sundaram/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "r Adults is 18 years onwards to 65 years and from 3 mont",
+    "_confidence": "high"
   },
   "min_child_entry_age": {
     "value": 91,
     "unit": "days",
     "source_pdf_path": "rag/corpus/royal-sundaram/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "pted) between the age 3 months to 25 years. If t",
+    "_confidence": "high"
   },
   "sum_insured_options": {
     "value": [
+      50000,
       100000,
       150000,
       200000,
@@ -44,110 +43,203 @@
       400000,
       450000,
       500000,
+      550000,
       600000,
+      650000,
+      700000,
+      750000,
       800000,
-      1000000,
-      1500000,
-      2000000
+      850000,
+      900000,
+      950000,
+      1000000
     ],
     "unit": "INR",
     "source_pdf_path": "rag/corpus/royal-sundaram/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "013V022425) Sum Insured (SI) Rupees Rs.50,000, Rs.1 lakh, Rs.1.5 lakhs, Rs.2 lakhs, Rs. 2.5 lakhs, Rs. 3 lakhs, Rs. 3.5 lakhs, Rs.4 lakhs, Rs. 4.5 lakhs, Rs. 5 lakhs, Rs.5.5 lakhs, Rs.6 lakhs, Rs.6.5 lakhs, Rs.7 lakhs, Rs.7.5 lakhs, Rs.8 lakhs, Rs.8.5 lakhs, Rs.9 lakhs, Rs.9.5 lakhs, Rs.10 lakhs",
+    "_confidence": "medium"
   },
   "grace_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/royal-sundaram/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Grace Period of 15 days in monthly and 30 days in case o",
+    "_confidence": "high"
   },
   "free_look_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/royal-sundaram/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "the Insured Person will be allowed a period of 30 days from the date of receipt of the policy to review",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "ses - a 30 days Initial waiting period from inception except in case",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 36,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "re diagnosed by a physician not more than 36 months prior to the date of commencement of the policy issued by the i",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
-    "value": 24,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in royal-sundaram__arogya-sanjeevani__wordings.pdf",
+    "_confidence": "low"
   },
   "maternity_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in royal-sundaram__arogya-sanjeevani__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
-    "value": 30,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in royal-sundaram__arogya-sanjeevani__wordings.pdf",
+    "_confidence": "low"
   },
   "post_hospitalization_days": {
     "value": 60,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "post hospitalization expenses 30/60 days, Covere",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/royal-sundaram/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 200,
+    "source_url": "https://www.royalsundaram.in/health-insurance/lifeline/",
+    "source_note": "Per insurer baseline (Royal Sundaram Lifeline lists ~200 day care procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/royal-sundaram/arogya-sanjeevani__wordings.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/royal-sundaram/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 12500,
+    "source_url": "https://www.royalsundaram.in/",
+    "source_note": "12500+ Cashless hospitals (homepage, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
-    "value": null,
-    "unit": "percent",
+    "value": 5,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/royal-sundaram/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "e subject to a Co-payment of 5% applicable to claim amount admissib",
+    "_confidence": "high"
   },
   "room_rent_capped_at_pct_of_si": {
-    "value": null,
-    "unit": "percent",
+    "value": 2,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/royal-sundaram/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Room Rent, Boarding, Nursing Expenses as provided by the Hospital / Nursing Home up to 2% of the sum insured subject to maximum of Rs.5000/-per day.",
+    "_confidence": "medium"
   },
   "policy_term_options_years": {
-    "value": null,
+    "value": [
+      1
+    ],
     "unit": "years",
     "source_pdf_path": "rag/corpus/royal-sundaram/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "pired policy period, if the term of policy is up to one year and there is no c",
+    "_confidence": "medium"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/royal-sundaram/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in royal-sundaram__arogya-sanjeevani__wordings.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/royal-sundaram/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in royal-sundaram__arogya-sanjeevani__wordings.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in royal-sundaram__arogya-sanjeevani__wordings.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "4.2. AYUSH Treatment The Company shall indemnify medical expenses incurred for inpatient care treatment Under Ayurveda, Yoga and Naturopathy, Unani, Siddha and Homeopathy system of medicines during each Policy Year",
+    "_confidence": "high"
+  },
+  "domiciliary_treatment": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "7.18. Any expenses incurred on Domiciliary Hospitalization and OPD treatment",
+    "_confidence": "high"
+  },
+  "worldwide_emergency_cover": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "7.19. Treatments taken outside the geographical limits in India",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "race period. 3.8. Cashless Facility means a facility extended by the insurer to the insured where the payments, of the cost",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_cap_pct": {
+    "value": 50,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/royal-sundaram/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "ject to maximum of 50% of the sum insured unde",
+    "_confidence": "medium"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "unit": "hours",
+    "source_pdf_path": "rag/corpus/royal-sundaram/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "not stated in royal-sundaram__arogya-sanjeevani__wordings.pdf",
+    "_confidence": "low"
+  },
+  "geographic_coverage": {
+    "value": "pan_india",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/royal-sundaram/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "l Limit All medical treatment for the purpose of this insurance will have to be taken in India only 10.10.",
+    "_confidence": "medium"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": null,
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/royal-sundaram/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "not stated in royal-sundaram__arogya-sanjeevani__wordings.pdf",
+    "_confidence": "low"
+  },
+  "room_rent_capping": {
+    "value": "Up to 2% of sum insured subject to maximum Rs. 5,000 per day",
+    "unit": "text",
+    "source_pdf_path": "rag/corpus/royal-sundaram/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "Room Rent Upto 2% of Sum Insured subject to a maximum of Rs. 5000/- Intensive Care Unit(ICU)/Intensive Cardiac Care Unit(ICCU) Upto 5% of Sum Insured subject to a maximum of Rs. 10000/-",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_pct": {
+    "value": 5,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/royal-sundaram/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "Cumulative Bonus (CB) Cumulative Bonus will be increased by 5% in resp",
+    "_confidence": "medium"
   }
 }

@@ -14,21 +14,30 @@
     "source_quote": "uitability Entry Age: Minimum Child- 0 days Dependent children between 0 days and 5 years can be insured only when both parents are getting insured. Adult- 18 years Entry Age: Maximum Child- 25 years "
   },
   "max_entry_age": {
-    "value": null,
+    "value": 25,
     "unit": "years",
     "source_pdf_path": "rag/corpus/tata-aig/medicare-select__brochure.pdf",
-    "source_quote": "Max entry age not explicitly stated; check Policy Schedule"
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/tata-aig/medicare-select__brochure.pdf",
-    "source_quote": "Lifelong renewability: it Cover Ceasing age There is no maximum cover ceasing age under this policy. Policy Term 1 Year/ 2 Years/ 3 Years Coverage Options Individual/Family floater Age of Proposer 18 years or above Relation"
+    "source_quote": "are getting insured. Adult- 18 years Entry Age: Maximum Child- 25 years Adult- No limit Cover Ceasing age There is no maximum co",
+    "_confidence": "high"
   },
   "sum_insured_options": {
-    "value": null,
+    "value": [
+      500000,
+      750000,
+      1000000,
+      1500000,
+      2000000,
+      2500000,
+      5000000,
+      7500000,
+      10000000,
+      20000000,
+      30000000
+    ],
     "unit": "INR",
     "source_pdf_path": "rag/corpus/tata-aig/medicare-select__brochure.pdf",
-    "source_quote": "Sum Insured options not enumerated in extracted text; check Policy Schedule"
+    "source_quote": "Suitability 1. Sum Insured options (in ₹) : • 15 Lacs • 20 Lacs • 25 Lacs • 5 Lacs • 7.5 Lacs • 10 Lacs 2. Zone(s)",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
@@ -36,34 +45,41 @@
     "source_quote": "Gastric bypass surgeries iii. 30 Days Waiting Period (Code- Excl 03): a. Expenses related to the treatment of any Illness within 30 days from the first Policy commencement date shall be excluded excep"
   },
   "pre_existing_disease_waiting_months": {
-    "value": null,
+    "value": 36,
     "source_pdf_path": "rag/corpus/tata-aig/medicare-select__brochure.pdf",
-    "source_quote": "PED waiting period not extracted; check Section 5 / Excl01"
+    "source_quote": "Expenses related to the treatment of a Pre-Existing Disease (PED) and its direct complications shall be excluded until the expiry of 36 months of continuous coverage after the date of inception of the first Policy with Us.",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "source_pdf_path": "rag/corpus/tata-aig/medicare-select__brochure.pdf",
-    "source_quote": "Default IRDAI 24-month specific-disease waiting (not explicitly quoted)"
+    "source_quote": "Specified Disease/Procedure Waiting Period (Code- Excl02): a. Expenses related to the treatment of the listed Conditions, surgeries/treatments shall be excluded until the expiry of 24 months of continuous coverage after the date o",
+    "_confidence": "medium"
   },
   "maternity_waiting_months": {
-    "value": null,
+    "value": 24,
     "source_pdf_path": "rag/corpus/tata-aig/medicare-select__brochure.pdf",
-    "source_quote": "Maternity waiting not specified or maternity excluded"
+    "source_quote": "Maternity Care : We will cover Maternity Expenses, Delivery Complications of a New Born Baby and First year Vaccinations of the New Born Baby, subject to a waiting period of 2 years of continuous coverage of the insured person(s) under this cover with Us.",
+    "_confidence": "high"
   },
   "pre_hospitalization_days": {
-    "value": null,
+    "value": 90,
     "source_pdf_path": "rag/corpus/tata-aig/medicare-select__brochure.pdf",
-    "source_quote": "Pre-hospitalization days not extracted"
+    "source_quote": "Pre-Hospitalization expenses: Covers Medical Expenses incurred upto 90 days prior to the date of admission to the Hospital.",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
-    "value": null,
+    "value": 90,
     "source_pdf_path": "rag/corpus/tata-aig/medicare-select__brochure.pdf",
-    "source_quote": "Post-hospitalization days not extracted"
+    "source_quote": "Post-Hospitalization expenses: Covers Medical Expenses incurred upto 90 days immediately after the Insured Person was discharged post Hospitalisation.",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/tata-aig/medicare-select__brochure.pdf",
-    "source_quote": "Day-care count not enumerated; covered per policy definition"
+    "value": 540,
+    "source_url": "https://www.tataaig.com/health-insurance/medicare",
+    "source_note": "Per insurer baseline (Tata AIG product pages state 540+ day care procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-select__brochure.pdf"
   },
   "ayush_coverage": {
     "value": true,
@@ -71,9 +87,10 @@
     "source_quote": "dings or end of life care. g. AYUSH Benefit: Covers medical Expenses incurred for In-patient/Day care treatment taken in an AYUSH hospital/AYUSH day care centre, including pre and post hospitalization"
   },
   "maternity_coverage": {
-    "value": false,
+    "value": true,
     "source_pdf_path": "rag/corpus/tata-aig/medicare-select__brochure.pdf",
-    "source_quote": "Maternity not explicitly mentioned; presumed excluded in base"
+    "source_quote": "b. Maternity Care : We will cover Maternity Expenses, Delivery Complications of a New Born Baby and First year Vaccinations of the New Born Baby, subject to a waiting period of 2 years of continuous coverage of the insured person(s) under this cover with Us.",
+    "_confidence": "high"
   },
   "newborn_coverage": {
     "value": true,
@@ -101,19 +118,22 @@
     "source_quote": "Single Private Room"
   },
   "copayment_pct": {
-    "value": 0,
+    "value": null,
     "source_pdf_path": "rag/corpus/tata-aig/medicare-select__brochure.pdf",
-    "source_quote": "No mandatory copay extracted; product may have age-based or zone-based optional copay"
+    "source_quote": "not stated in tata-aig__medicare-select.pdf",
+    "_confidence": "low"
   },
   "deductible_amount": {
     "value": null,
     "source_pdf_path": "rag/corpus/tata-aig/medicare-select__brochure.pdf",
-    "source_quote": "Aggregate Deductible : Our liability under this Policy shall be subject to Aggregate Deductible as"
+    "source_quote": "not stated in tata-aig__medicare-select.pdf",
+    "_confidence": "low"
   },
   "network_hospital_count": {
-    "value": null,
-    "source_url": null,
-    "source_quote": "Insurer-level metric; not extracted in this curation pass"
+    "value": 12000,
+    "source_url": "https://www.tataaig.com/",
+    "source_note": "12,000+ Network Hospitals (homepage 'Why TATA AIG' section, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "cashless_treatment_supported": {
     "value": true,
@@ -123,12 +143,15 @@
   "claim_settlement_ratio": {
     "value": null,
     "source_url": null,
-    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted"
+    "source_quote": "not stated in tata-aig__medicare-select.pdf",
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-select__brochure.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
     "value": null,
-    "source_pdf_path": null,
-    "source_quote": "TAT not specified in policy wording; governed by IRDAI Master Circular"
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-select__brochure.pdf",
+    "source_quote": "not stated in tata-aig__medicare-select.pdf",
+    "_confidence": "low"
   },
   "policy_type": {
     "value": "indemnity",

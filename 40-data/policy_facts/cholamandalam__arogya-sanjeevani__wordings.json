@@ -7,143 +7,206 @@
     "value": "CHOHLIP20035V021920",
     "unit": null,
     "source_pdf_path": "rag/corpus/cholamandalam/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "UIN: CHOHLIP20035V021920",
+    "_confidence": "high"
   },
   "min_entry_age": {
     "value": 18,
     "unit": "years",
     "source_pdf_path": "rag/corpus/cholamandalam/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Policy can be availed by persons between the age of 18 years and 65 years, as Proposer.",
+    "_confidence": "high"
   },
   "max_entry_age": {
     "value": 65,
     "unit": "years",
     "source_pdf_path": "rag/corpus/cholamandalam/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/cholamandalam/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Policy can be availed by persons between the age of 18 years and 65 years, as Proposer.",
+    "_confidence": "high"
   },
   "min_child_entry_age": {
     "value": 90,
     "unit": "days",
     "source_pdf_path": "rag/corpus/cholamandalam/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Dependent children (i.e natural or legally adopted) between the age of 3 months to 25 years",
+    "_confidence": "medium"
   },
   "sum_insured_options": {
-    "value": [
-      100000,
-      200000,
-      300000,
-      400000,
-      500000,
-      600000,
-      700000,
-      800000,
-      900000,
-      1000000
-    ],
+    "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/cholamandalam/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in arogya-sanjeevani__wordings.pdf",
+    "_confidence": "low"
   },
   "grace_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/cholamandalam/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "For Yearly, Half-yearly, Quarterly payment of mode, a fixed period of 30 days is to be allowed as Grace Period and for monthly mode of payment a fixed period of 15 days be allowed as grace period.",
+    "_confidence": "high"
   },
   "free_look_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/cholamandalam/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "free look period of 30 days beginning from the date of receipt of policy document",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/cholamandalam/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Expenses related to the treatment of any illness within 30 days from the first policy commencement date shall be excluded except claims arising due to an accident",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 36,
-    "unit": null,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/cholamandalam/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Expenses related to the treatment of a Pre-Existing Disease (PED) and its direct complications shall be excluded until the expiry of 36 months of continuous coverage after the date of inception of the first policy with us.",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 36,
     "unit": null,
     "source_pdf_path": "rag/corpus/cholamandalam/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Expenses related to the treatment of the following listed conditions, surgeries/ treatments shall be excluded until the expiry of 24/36 months of continuous coverage after the date of inception of the first Policy with the Insurer.",
+    "_confidence": "medium"
   },
   "maternity_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/cholamandalam/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in cholamandalam__arogya-sanjeevani__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/cholamandalam/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Pre-Hospitalisation For 30 days prior to the date of hospitalisation.",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
     "value": 60,
     "unit": null,
     "source_pdf_path": "rag/corpus/cholamandalam/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Post-Hospitalisation For 60 days from the date of discharge from the hospital.",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/cholamandalam/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 141,
+    "source_url": "https://www.policybazaar.com/insurance-companies/cholamandalam-health-insurance/family/",
+    "source_note": "Per insurer baseline (Chola MS family plans: 141 day care procedures; Flexi Health: 539)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/cholamandalam/arogya-sanjeevani__wordings.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/cholamandalam/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 13500,
+    "source_url": "https://www.cholainsurance.com/",
+    "source_note": "13,500+ Cashless Hospitals ('Why Chola MS' section, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
-    "value": null,
+    "value": 5,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/cholamandalam/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Each and every claim under the Policy shall be subject to a co-payment of 5% applicable to claim amount admissible and payable as per the terms and conditions of the Policy.",
+    "_confidence": "high"
   },
   "room_rent_capped_at_pct_of_si": {
-    "value": null,
-    "unit": "percent",
+    "value": 2.0,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/cholamandalam/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Room Rent, Boarding, Nursing expenses as provided by the Hospital/Nursing Home up to 2% of Sum Insured subject to maximum of Rs 5,000 per day. ii. Intensive Care Unit (ICU)/Intensive Cardiac Care Unit (ICCU) expenses up to 5% of Sum Insured subject to maximum of Rs 10,000 per day. iii.",
+    "_confidence": "high"
   },
   "policy_term_options_years": {
-    "value": null,
+    "value": [
+      1,
+      2,
+      3
+    ],
     "unit": "years",
     "source_pdf_path": "rag/corpus/cholamandalam/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Policy Period 1/2/3 Years",
+    "_confidence": "high"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/cholamandalam/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in cholamandalam__arogya-sanjeevani__wordings.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/cholamandalam/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in cholamandalam__arogya-sanjeevani__wordings.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/cholamandalam/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in cholamandalam__arogya-sanjeevani__wordings.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/cholamandalam/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "AYUSH Treatment refers to hospitalisation treatments given under Ayurveda, Yoga and Naturopathy, Unani, Siddha and Homeopathy systems.",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/cholamandalam/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "Cashless Facility means a facility extended by the Insurer to the Insured where the payments, of the costs of treatment undergone by the Insured Person",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_cap_pct": {
+    "value": 50,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/cholamandalam/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "Cumulative Bonus will be increased by 5% in respect of each claim free policy year (where no claims are reported), provided the policy is renewed with the company without a break subject to maximum of 50% of the Sum Insured",
+    "_confidence": "high"
+  },
+  "geographic_coverage": {
+    "value": null,
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/cholamandalam/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "not stated in arogya-sanjeevani__wordings.pdf",
+    "_confidence": "low"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "family_floater",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/cholamandalam/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "Category of Cover Indemnity Sum Insured INR On Individual basis – SI shall apply to each individual family member. On Floater Basis – SI shall apply to the entire family.",
+    "_confidence": "medium"
+  },
+  "room_rent_capping": {
+    "value": "2% of Sum Insured",
+    "unit": null,
+    "source_pdf_path": "rag/corpus/cholamandalam/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "Room Rent, Boarding, Nursing expenses as provided by the Hospital/Nursing Home up to 2% of Sum Insured subject to maximum of Rs 5,000 per day.",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_pct": {
+    "value": 5,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/cholamandalam/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "Cumulative Bonus will be increased by 5% in respect of each claim free policy year",
+    "_confidence": "high"
+  },
+  "maternity_coverage": {
+    "value": null,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/cholamandalam/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "not stated in arogya-sanjeevani__wordings.pdf",
+    "_confidence": "low"
   }
 }

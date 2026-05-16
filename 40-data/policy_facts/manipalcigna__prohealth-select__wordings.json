@@ -7,31 +7,29 @@
     "value": "IRDAI/HLT/CTTK/P-H/V.I/72/2016-17",
     "unit": null,
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "UIN: IRDAI/HLT/CTTK/P-H/V.I/72/2016-17",
+    "_confidence": "high"
   },
   "min_entry_age": {
-    "value": 18,
+    "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in prohealth-select__wordings.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in manipalcigna__prohealth-select__wordings.pdf",
+    "_confidence": "low"
   },
   "min_child_entry_age": {
-    "value": 91,
+    "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in prohealth-select__wordings.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
     "value": [
@@ -49,102 +47,226 @@
     ],
     "unit": "INR",
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "`0.50, 1, 2, 3, 4, 5, 7, 10, 15,20,25 Lacs ProHealth Select (A) Sum Insured",
+    "_confidence": "high"
   },
   "grace_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "in no case later than the Grace Period of 30 days from the expiry of the Policy.",
+    "_confidence": "high"
   },
   "free_look_period": {
     "value": 15,
     "unit": "days",
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "A period of 15 days from the date of receipt of the Policy document is available to review the terms and conditions of this Policy.",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "V.2. 30 days Waiting Period Any disease contracted and/or Medical Expenses incurred in respect of any Pre-existing Disease/Illness by the Insured/Insured Person during the first 30 days from the inception date of the Policy will not be covered.",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 48,
     "unit": null,
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "will not be covered, until 48 months of continuous coverage has elapsed since inception of the first Policy with Us.",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "V.4. Two year waiting period A waiting period of 24 months shall apply to the treatment, of the following, whether medical or",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in manipalcigna__prohealth-select__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": 60,
     "unit": null,
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "60 days Pre - hospitalization",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
     "value": 90,
     "unit": null,
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "90 days Post - hospitalization",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 540,
+    "source_url": "https://www.manipalcigna.com/blog/what-is-day-care-treatment-in-health-insurance-",
+    "source_note": "Per insurer baseline (ManipalCigna publishes 500+ day care procedures; 540 standard)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf"
   },
   "network_hospital_count": {
-    "value": 8500,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in prohealth-select__wordings.pdf",
+    "_confidence": "low"
   },
   "co_payment_pct": {
-    "value": null,
-    "unit": "percent",
+    "value": 0,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "A Voluntary co-payment of 10% or 20% on admissible claim amount (final payable claim amount after assessment) will apply to each and every claim if opted under the plan.",
+    "_confidence": "medium"
   },
   "room_rent_capped_at_pct_of_si": {
-    "value": null,
-    "unit": "percent",
+    "value": 2.0,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Covered up to 2% of Sum Insured for a Hospital Room, up to a",
+    "_confidence": "high"
   },
   "policy_term_options_years": {
-    "value": null,
+    "value": [
+      1,
+      2,
+      3
+    ],
     "unit": "years",
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "If the Policy Period is two/three years",
+    "_confidence": "medium"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in manipalcigna__prohealth-select__wordings.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in manipalcigna__prohealth-select__wordings.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in manipalcigna__prohealth-select__wordings.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "source_quote": "Ayurveda, Yoga & Naturopathy, Unani, Sidha and Homeopathy for Hospitalization arising due to Accident or Illness",
+    "_confidence": "high"
+  },
+  "maternity_coverage": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "source_quote": "childbirth, maternity (including Caesarian section), abortion or complications of any of these.",
+    "_confidence": "medium"
+  },
+  "newborn_coverage": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "source_quote": "not stated in prohealth-select__wordings.pdf",
+    "_confidence": "low"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "source_quote": "Donor Expenses (Hospitalisation Expenses of the donor providing the organ) II. 7",
+    "_confidence": "high"
+  },
+  "restoration_benefit": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "source_quote": "Restoration of Sum Insured (Not Available for Sum Insured `0.5 and 1 Lac under ProHealth S",
+    "_confidence": "high"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "source_quote": "Domiciliary Treatment (Treatment at Home",
+    "_confidence": "high"
+  },
+  "worldwide_emergency_cover": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "source_quote": "Worldwide Emergency Cover (Outside India) Not Available",
+    "_confidence": "high"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "source_quote": "Every year",
+    "_confidence": "high"
+  },
+  "critical_illness_cover": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "source_quote": "diagnosis of a liste",
+    "_confidence": "medium"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "source_quote": "For Cashless Claims, the payment shall be made to the Network Hospital whose discharge would be complete and final.",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_cap_pct": {
+    "value": 100,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "source_quote": "Restoration of Sum Insured 5 % each year maximum upto 100%.This will not be reduced in case of claim under the Po",
+    "_confidence": "medium"
+  },
+  "geographic_coverage": {
+    "value": "pan_india",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "source_quote": "The geographical scope of this policy applies to events within India other than for Worldwide Emergency Cover and which are specifically covered in the Schedule.",
+    "_confidence": "high"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "family_floater",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "source_quote": "If the Policy is a Family Floater Policy as specified in the Schedule",
+    "_confidence": "medium"
+  },
+  "room_rent_capping": {
+    "value": "2% of Sum Insured",
+    "_confidence": "medium",
+    "source_quote": "2% of Sum Insured"
+  },
+  "no_claim_bonus_pct": {
+    "value": 5,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "source_quote": "III.1. Cumulative Bonus We will increase Your Sum Insured by 5% at the end of the Policy Year if the Policy is renewed with Us",
+    "_confidence": "high"
   }
 }

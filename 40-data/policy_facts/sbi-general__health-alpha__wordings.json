@@ -7,132 +7,239 @@
     "value": "SBIHLIP26038V012526",
     "unit": null,
     "source_pdf_path": "rag/corpus/sbi-general/health-alpha__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "SBI General Health Alpha, UIN: SBIHLIP26038V012526 | SBI G",
+    "_confidence": "high"
   },
   "min_entry_age": {
     "value": 18,
     "unit": "years",
     "source_pdf_path": "rag/corpus/sbi-general/health-alpha__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "ed: i. For adults aged 18 years or older, presence of severe obesity",
+    "_confidence": "high"
   },
   "max_entry_age": {
     "value": 65,
     "unit": "years",
     "source_pdf_path": "rag/corpus/sbi-general/health-alpha__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/sbi-general/health-alpha__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "ailable for 18 years to 65 years of age. Dependent child c",
+    "_confidence": "high"
   },
   "min_child_entry_age": {
     "value": 91,
     "unit": "days",
     "source_pdf_path": "rag/corpus/sbi-general/health-alpha__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "be covered from 91 days to 25 years provide",
+    "_confidence": "high"
   },
   "sum_insured_options": {
     "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/sbi-general/health-alpha__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in sbi-general__health-alpha__wordings.pdf",
+    "_confidence": "low"
   },
   "grace_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/sbi-general/health-alpha__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "rly instalment options, a Grace Period of 30 days is applicable. ii. During",
+    "_confidence": "high"
   },
   "free_look_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/sbi-general/health-alpha__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "free look period of 30 days beginning from the date of",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/sbi-general/health-alpha__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "2.3. First Thirty Days Waiting Period (Code-Excl 03): i. Expenses related to the treatment o",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
-    "value": 36,
+    "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/sbi-general/health-alpha__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "re diagnosed by a physician not more than 24 months prior to the date of commencement of the Policy issued by the I",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/sbi-general/health-alpha__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "l be excluded until the expiry of 24 months of continuous coverage after t",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
-    "value": null,
+    "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/sbi-general/health-alpha__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "ng due to Critical Illness Cover. 12.4. Maternity and Child Care Cover A Waiting Period of 24 months shall apply for all Claims under the beneﬁt 3.3. Maternity",
+    "_confidence": "high"
   },
   "pre_hospitalization_days": {
-    "value": 90,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/sbi-general/health-alpha__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in sbi-general__health-alpha__wordings.pdf",
+    "_confidence": "low"
   },
   "post_hospitalization_days": {
-    "value": 180,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/sbi-general/health-alpha__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in sbi-general__health-alpha__wordings.pdf",
+    "_confidence": "low"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/sbi-general/health-alpha__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 142,
+    "source_url": "https://www.sbigeneral.in/health-insurance",
+    "source_note": "Per insurer baseline (SBI General health plans cover ~142 day care procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/sbi-general/health-alpha__wordings.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/sbi-general/health-alpha__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 18324,
+    "source_url": "https://www.sbigeneral.in/",
+    "source_note": "18,324 network hospitals (homepage service-infrastructure stat, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
     "value": null,
-    "unit": "percent",
+    "unit": "%",
     "source_pdf_path": "rag/corpus/sbi-general/health-alpha__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in sbi-general__health-alpha__wordings.pdf",
+    "_confidence": "low"
   },
   "room_rent_capped_at_pct_of_si": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/sbi-general/health-alpha__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in sbi-general__health-alpha__wordings.pdf",
+    "_confidence": "low"
   },
   "policy_term_options_years": {
-    "value": null,
+    "value": [
+      1
+    ],
     "unit": "years",
     "source_pdf_path": "rag/corpus/sbi-general/health-alpha__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "pired Policy Period, if the term of Policy upto one year and there is no C",
+    "_confidence": "medium"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/sbi-general/health-alpha__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in sbi-general__health-alpha__wordings.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/sbi-general/health-alpha__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in sbi-general__health-alpha__wordings.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/sbi-general/health-alpha__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in sbi-general__health-alpha__wordings.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/sbi-general/health-alpha__wordings.pdf",
+    "source_quote": "AYUSH Treatment We will indemnify the Insured Person up to the limit speciĤed in the Policy Schedule, for the Medical Expenses, if during the Policy Year, any of the Insured Person undergoes In-Patient Treatment or treatment taken",
+    "_confidence": "high"
+  },
+  "maternity_coverage": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/sbi-general/health-alpha__wordings.pdf",
+    "source_quote": "r this beneĤt shall not exceed the Maternity limit opted and speciĤed in the Policy Schedule. viii. This beneĤt waives oģ the Standard 13.1(o). Maternity (Code-Excl 18) to the extent mentioned u",
+    "_confidence": "medium"
+  },
+  "newborn_coverage": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/sbi-general/health-alpha__wordings.pdf",
+    "source_quote": "not stated in sbi-general__health-alpha__wordings.pdf",
+    "_confidence": "low"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/sbi-general/health-alpha__wordings.pdf",
+    "source_quote": "3.1(d). Organ Donor We will indemnify the Insured Person up to the limit speciĤed in the Policy Schedule, for the Medical Expenses incurred during In-Patient Treatment, in respect during the Policy Year, provided:",
+    "_confidence": "high"
+  },
+  "restoration_benefit": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/sbi-general/health-alpha__wordings.pdf",
+    "source_quote": "Restore Beneﬁt We shall restore the Base Sum Insured unlimited times during the Policy Year after occurrence and payment of Claim amount under the Policy, provided:",
+    "_confidence": "high"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/sbi-general/health-alpha__wordings.pdf",
+    "source_quote": "3(d). Domiciliary Treatment We will indemnify the Insured Person up to a limit speciĤed in the Policy Schedule, for the Medical Expenses incurred for Domiciliary Hospitalization during the Policy Year, provided that the condition",
+    "_confidence": "high"
+  },
+  "worldwide_emergency_cover": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/sbi-general/health-alpha__wordings.pdf",
+    "source_quote": "re Cover will not be available for Global Cover. xi. Pre and Post Hospitalization expenses shall be excluded under this beneĤt. xii. In case of Planned Hospitalization, prior intimation at least 7",
+    "_confidence": "medium"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/sbi-general/health-alpha__wordings.pdf",
+    "source_quote": "8.1. Health Check Up The Insured may avail a health check-up, only for Preventive Test, up to a limit speciĤed in the Policy Schedule, provided:",
+    "_confidence": "high"
+  },
+  "critical_illness_cover": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/sbi-general/health-alpha__wordings.pdf",
+    "source_quote": "Section 7 Beneﬁt Based Covers 7.1. Critical Illness We shall pay lump sum amount to the Insured Person/Nominee/Legal Heir/Assignee as speciĤed in the Policy Schedule, if the Insured Person is diagnosed with any of the below listed Critical Illness, during the",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/sbi-general/health-alpha__wordings.pdf",
+    "source_quote": "e Period. 2.1(i). Cashless Facility means a facility extended by the Company to the Insured where the payments, of the cost",
+    "_confidence": "high"
+  },
+  "geographic_coverage": {
+    "value": null,
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/sbi-general/health-alpha__wordings.pdf",
+    "source_quote": "not stated in sbi-general__health-alpha__wordings.pdf",
+    "_confidence": "low"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "family_floater",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/sbi-general/health-alpha__wordings.pdf",
+    "source_quote": "ctive of Policy Tenure or Policy Type (Individual or Floater). v. We have accepted Claim under BeneĤt 3(a). In-Patient Treatment,",
+    "_confidence": "medium"
+  },
+  "no_claim_bonus_pct": {
+    "value": null,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/sbi-general/health-alpha__wordings.pdf",
+    "source_quote": "not stated in sbi-general__health-alpha__wordings.pdf",
+    "_confidence": "low"
   }
 }

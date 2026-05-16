@@ -1,0 +1,44 @@
+{
+  "name_display": "Rohit",
+  "name_slug": "rohit",
+  "persona_id": "9b1da84bb052",
+  "profile": {
+    "name": "Rohit",
+    "age": 29,
+    "dependents": "self",
+    "income_band": "under_5L",
+    "existing_cover_inr": 500000,
+    "primary_goal": "first_buy",
+    "location_tier": null,
+    "parents_to_insure": null,
+    "parents_age_max": null,
+    "parents_has_ped": null,
+    "budget_band": "under_15k",
+    "health_conditions": [],
+    "asked": [
+      "name",
+      "location",
+      "health_conditions"
+    ],
+    "free_form_session": false,
+    "shown_policies": [],
+    "selected_policies": [],
+    "rejected_policies": []
+  },
+  "first_seen": "2026-05-15T03:36:34Z",
+  "last_seen": "2026-05-15T03:51:17Z",
+  "sessions": [
+    "ki158_walk_001",
+    "ki155-test-1",
+    "ki158_verify_001",
+    "ki155-test-2",
+    "ki155-test-3",
+    "ki155-test-4",
+    "ki155-test-5",
+    "ki155-final-1",
+    "ki155-final-2",
+    "ki155-final-3",
+    "ki155-final-4",
+    "ki155-final-5"
+  ]
+}

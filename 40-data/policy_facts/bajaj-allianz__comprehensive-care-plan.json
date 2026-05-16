@@ -5,24 +5,21 @@
   "uin_code": {
     "value": "BAJHLIP15002V011415",
     "source_pdf_path": "rag/corpus/bajaj-allianz/comprehensive-care-plan__wordings.pdf",
-    "source_quote": "U66010PN2000PLC015329 | UIN: BAJHLIP15002V011415 1 Bajaj Allianz General Insurance Co. Ltd. Bajaj Allianz House, Airport Road, Yerawada, Pune - 411 006. Reg. No.: 113 For more details, log on to: www."
+    "source_quote": "U66010PN2000PLC015329 | UIN: BAJHLIP15002V011415 1 COMPREHENSIVE CARE PLAN Policy Wordings SECTION A) PREAMBLE WHEREAS the Insured named in the Schedule has applied to Bajaj Allianz General Insurance Company Limited (hereinafter called \"the Company\") for the insur"
   },
   "min_entry_age": {
     "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/bajaj-allianz/comprehensive-care-plan__wordings.pdf",
-    "source_quote": "Min entry age not found"
+    "source_quote": "not stated in bajaj-allianz__comprehensive-care-plan.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/bajaj-allianz/comprehensive-care-plan__wordings.pdf",
-    "source_quote": "Max entry age not explicitly stated; check Policy Schedule"
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/bajaj-allianz/comprehensive-care-plan__wordings.pdf",
-    "source_quote": "Max renewal age not specified; check Policy Schedule"
+    "source_quote": "not stated in bajaj-allianz__comprehensive-care-plan.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
     "value": [
@@ -41,57 +38,70 @@
   "pre_existing_disease_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/comprehensive-care-plan__wordings.pdf",
-    "source_quote": "PED waiting period not extracted; check Section 5 / Excl01"
+    "source_quote": "not stated in bajaj-allianz__comprehensive-care-plan.pdf",
+    "_confidence": "low"
   },
   "specific_disease_waiting_months": {
-    "value": 24,
+    "value": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/comprehensive-care-plan__wordings.pdf",
-    "source_quote": "Default IRDAI 24-month specific-disease waiting (not explicitly quoted)"
+    "source_quote": "not stated in bajaj-allianz__comprehensive-care-plan__wordings.pdf",
+    "_confidence": "low"
   },
   "maternity_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/comprehensive-care-plan__wordings.pdf",
-    "source_quote": "Maternity waiting not specified or maternity excluded"
+    "source_quote": "not stated in bajaj-allianz__comprehensive-care-plan.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/comprehensive-care-plan__wordings.pdf",
-    "source_quote": "Pre-hospitalization days not extracted"
+    "source_quote": "not stated in bajaj-allianz__comprehensive-care-plan.pdf",
+    "_confidence": "low"
   },
   "post_hospitalization_days": {
     "value": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/comprehensive-care-plan__wordings.pdf",
-    "source_quote": "Post-hospitalization days not extracted"
+    "source_quote": "not stated in bajaj-allianz__comprehensive-care-plan.pdf",
+    "_confidence": "low"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/bajaj-allianz/comprehensive-care-plan__wordings.pdf",
-    "source_quote": "Day-care count not enumerated; covered per policy definition"
+    "value": 130,
+    "source_url": "https://www.bajajgeneralinsurance.com/health-insurance-plans/health-guard.html",
+    "source_note": "Per insurer baseline (Bajaj Allianz Health Guard covers ~130 day care procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/bajaj-allianz/comprehensive-care-plan__wordings.pdf"
   },
   "ayush_coverage": {
-    "value": true,
+    "value": null,
+    "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/comprehensive-care-plan__wordings.pdf",
-    "source_quote": "ciated increase in premium 3. AYUSH Hospital: An AYUSH Hospital is a healthcare facility where in medical/surgical/para-surgical treatment procedures and interventions are carried out by AYUSH Medical"
+    "source_quote": "not stated in bajaj-allianz__comprehensive-care-plan__wordings.pdf",
+    "_confidence": "low"
   },
   "maternity_coverage": {
-    "value": false,
+    "value": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/comprehensive-care-plan__wordings.pdf",
-    "source_quote": "Maternity not explicitly mentioned; presumed excluded in base"
+    "source_quote": "not stated in bajaj-allianz__comprehensive-care-plan__wordings.pdf",
+    "_confidence": "low"
   },
   "newborn_coverage": {
-    "value": false,
+    "value": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/comprehensive-care-plan__wordings.pdf",
-    "source_quote": "Newborn cover not found; typically tied to maternity option"
+    "source_quote": "not stated in bajaj-allianz__comprehensive-care-plan__wordings.pdf",
+    "_confidence": "low"
   },
   "organ_donor_expenses": {
-    "value": false,
+    "value": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/comprehensive-care-plan__wordings.pdf",
-    "source_quote": "Organ donor cover not extracted"
+    "source_quote": "not stated in bajaj-allianz__comprehensive-care-plan__wordings.pdf",
+    "_confidence": "low"
   },
   "no_claim_bonus_pct": {
     "value": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/comprehensive-care-plan__wordings.pdf",
-    "source_quote": "NCB % not extracted; product may use booster/recharge structure"
+    "source_quote": "not stated in bajaj-allianz__comprehensive-care-plan.pdf",
+    "_confidence": "low"
   },
   "restoration_benefit": {
     "value": "Restoration of Sum Insured: Except as stated in Clause G (III) (3) (b) of this Policy, the insurance cover will at all times be maintained during",
@@ -100,38 +110,48 @@
   },
   "room_rent_capping": {
     "value": null,
+    "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/comprehensive-care-plan__wordings.pdf",
-    "source_quote": "Room rent capping not extracted (only definition found, no explicit cap)"
+    "source_quote": "not stated in bajaj-allianz__comprehensive-care-plan__wordings.pdf",
+    "_confidence": "low"
   },
   "copayment_pct": {
-    "value": 0,
+    "value": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/comprehensive-care-plan__wordings.pdf",
-    "source_quote": "No mandatory copay extracted; product may have age-based or zone-based optional copay"
+    "source_quote": "not stated in bajaj-allianz__comprehensive-care-plan__wordings.pdf",
+    "_confidence": "low"
   },
   "deductible_amount": {
     "value": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/comprehensive-care-plan__wordings.pdf",
-    "source_quote": "No base deductible (or only optional voluntary deductible add-on)"
+    "source_quote": "not stated in bajaj-allianz__comprehensive-care-plan.pdf",
+    "_confidence": "low"
   },
   "network_hospital_count": {
-    "value": null,
-    "source_url": null,
-    "source_quote": "Insurer-level metric; not extracted in this curation pass"
+    "value": 18400,
+    "source_url": "https://www.bajajgeneralinsurance.com/",
+    "source_note": "18,400+ Cashless Hospitals (homepage, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "cashless_treatment_supported": {
-    "value": true,
+    "value": null,
+    "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/comprehensive-care-plan__wordings.pdf",
-    "source_quote": "Cashless mention not found"
+    "source_quote": "not stated in bajaj-allianz__comprehensive-care-plan__wordings.pdf",
+    "_confidence": "low"
   },
   "claim_settlement_ratio": {
     "value": null,
     "source_url": null,
-    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted"
+    "source_quote": "not stated in bajaj-allianz__comprehensive-care-plan.pdf",
+    "source_pdf_path": "rag/corpus/bajaj-allianz/comprehensive-care-plan__wordings.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
     "value": null,
-    "source_pdf_path": null,
-    "source_quote": "TAT not specified in policy wording; governed by IRDAI Master Circular"
+    "source_pdf_path": "rag/corpus/bajaj-allianz/comprehensive-care-plan__wordings.pdf",
+    "source_quote": "not stated in bajaj-allianz__comprehensive-care-plan.pdf",
+    "_confidence": "low"
   },
   "policy_type": {
     "value": "indemnity",

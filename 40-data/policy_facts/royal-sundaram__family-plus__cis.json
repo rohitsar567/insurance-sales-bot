@@ -7,132 +7,260 @@
     "value": "RSAHLIP22200V032122",
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Road, Chennai - 600 002 1 UIN - RSAHLIP22200V032122 CUSTOME",
+    "_confidence": "high"
   },
   "min_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in royal-sundaram__family-plus__cis.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in royal-sundaram__family-plus__cis.pdf",
+    "_confidence": "low"
   },
   "min_child_entry_age": {
-    "value": null,
+    "value": 91,
     "unit": "days",
-    "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__wordings.pdf",
+    "source_quote": "for adults is 18 years onwards and from 91 days to 21 years for children. New born children can be added to existing policies at ren",
+    "_confidence": "medium"
   },
   "sum_insured_options": {
     "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in royal-sundaram__family-plus__cis.pdf",
+    "_confidence": "low"
   },
   "grace_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "iry of the Grace Period. For the purpose of this provision, Grace Period means a period of 15 days in case of monthly payments and 30 days in case of quarterly, half-yearly and yearly payments immediately",
+    "_confidence": "high"
   },
   "free_look_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "the Insured Person will be allowed a period of 30 days from the date of receipt of the policy to review",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "eriod • 30 days Initial Waiting Period for all illnesses except any",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 36,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "for Pre-existing Diseases cover: 36 months For Pre-existin",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "le • 2 years specific waiting period for the following 16 conditio",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
-    "value": 24,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in royal-sundaram__family-plus__cis.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
-    "value": 60,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in royal-sundaram__family-plus__cis.pdf",
+    "_confidence": "low"
   },
   "post_hospitalization_days": {
     "value": 90,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "enses incurred due to Illness upto 90 days immediately post discharge from Hospit",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 200,
+    "source_url": "https://www.royalsundaram.in/health-insurance/lifeline/",
+    "source_note": "Per insurer baseline (Royal Sundaram Lifeline lists ~200 day care procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 12500,
+    "source_url": "https://www.royalsundaram.in/",
+    "source_note": "12500+ Cashless hospitals (homepage, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
     "value": null,
-    "unit": "percent",
+    "unit": "%",
     "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in royal-sundaram__family-plus__cis.pdf",
+    "_confidence": "low"
   },
   "room_rent_capped_at_pct_of_si": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in royal-sundaram__family-plus__cis.pdf",
+    "_confidence": "low"
   },
   "policy_term_options_years": {
-    "value": null,
+    "value": [
+      1
+    ],
     "unit": "years",
     "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "pired policy period, if the term of policy is up to one year and there is no c",
+    "_confidence": "medium"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in royal-sundaram__family-plus__cis.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in royal-sundaram__family-plus__cis.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in royal-sundaram__family-plus__cis.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
+    "source_quote": "10. AYUSH Treatment: Expenses incurred for inpatient care treatment under Ayurveda, Yoga and Naturopathy, Unani, Siddha and Homeopathy systems of medicines is covered up to 100% of Sum Insured, during each policy year as specified in the policy schedule.",
+    "_confidence": "high"
+  },
+  "maternity_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
+    "source_quote": "16. Maternity Benefits: Medical Expenses for the delivery of a child, where atleast two adult members are covered,after a waiting period of 2 years, subject to a maximum of Rs. 50,000 per delivery. Maternity benefits are paid only for two deliveries for each female member covered during the lifetime of the Policy",
+    "_confidence": "high"
+  },
+  "newborn_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
+    "source_quote": "New Born Baby: New born baby will be covered as an insured person from birth (for the policy year in which the baby is born), if the Maternity Benefits claim has been accepted. This benefit is subject to maximum of Base Sum Insured.",
+    "_confidence": "high"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
+    "source_quote": "6. Organ Donor Expenses: Medical Expenses for an organ donor’s treatment for harvesting of the organ.",
+    "_confidence": "high"
+  },
+  "restoration_benefit": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
+    "source_quote": "9. Re-load of Sum Insured: We will provide a Re-load equal to 100% of Individual Base Sum Insured of any one Insured Member once in a Policy Year, provided that: a) the Base Sum Insured, No Claim Bonus (if any) and Floater Sum Insured is insufficient as a result of previous claims in that Policy Year",
+    "_confidence": "high"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
+    "source_quote": "7. Domiciliary Hospitalization: Medical Expenses for medical treatment taken at home if the treatment continues for an uninterrupted period of 3 days and the condition for which treatment is taken would otherwise have necessitated hospitalization.",
+    "_confidence": "high"
+  },
+  "worldwide_emergency_cover": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
+    "source_quote": "into Network Hospital if cashless facility is not availed (Reimbursement Claims) (For Domestic Claims as well as Worldwide Emergency Hospitalization)",
+    "_confidence": "high"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
+    "source_quote": "12. Health Check-up: Cost of an annual health check-up for prescribed tests subject to renewal of the policy. This benefit is over and above the Base Sum Insured.",
+    "_confidence": "high"
+  },
+  "critical_illness_cover": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
+    "source_quote": "14. Second Opinion for Critical Illness: Available once during Policy period for 11 critical illness. It is available once in a Policy Year and once during the Lifetime of an Insured Person for same Illness.",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
+    "source_quote": "twork Hospital if cashless facility is not availed (Reimbursement Claims) (For Domestic Claims as well as Worldwide Emergen",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_cap_pct": {
+    "value": 100,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
+    "source_quote": "s covered up to 100% of Sum Insured, dur",
+    "_confidence": "medium"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": 1,
+    "unit": "hours",
+    "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
+    "source_quote": "TAT for preauthorisation of cashless facility is 1 hour ii. TAT",
+    "_confidence": "medium"
+  },
+  "geographic_coverage": {
+    "value": null,
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
+    "source_quote": "not stated in royal-sundaram__family-plus__cis.pdf",
+    "_confidence": "low"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": null,
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
+    "source_quote": "not stated in royal-sundaram__family-plus__cis.pdf",
+    "_confidence": "low"
+  },
+  "room_rent_capping": {
+    "value": null,
+    "unit": "text",
+    "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
+    "source_quote": "not stated in family-plus__cis.pdf",
+    "_confidence": "low"
+  },
+  "no_claim_bonus_pct": {
+    "value": 20,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
+    "source_quote": "No Claim Bonus: 20% of base",
+    "_confidence": "medium"
   }
 }

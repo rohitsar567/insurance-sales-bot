@@ -1,0 +1,18 @@
+{
+  "insurer_slug": "sbi-general",
+  "insurer_name": "SBI General Insurance",
+  "last_updated": "2026-05-15",
+  "claim_metrics": {
+    "claim_settlement_ratio_pct": 96.14,
+    "claim_settlement_ratio_year": "FY 2022-25 (3-yr avg)",
+    "complaints_per_10k_policies": 15,
+    "complaints_year": "FY 2024-25",
+    "incurred_claim_ratio_pct": 82.19,
+    "three_year_avg_csr_pct": 96.14,
+    "source_irdai_url": "https://irdai.gov.in/document-detail",
+    "source_secondary_url": "https://joinditto.in/articles/health-insurance/sbi-health-insurance-claim-settlement-ratio/",
+    "source_complaints_url": "https://algatesinsurance.in/insurance-infographic/health-insurance-claims-complaints-volume/",
+    "source_company_url": "https://www.sbigeneral.in/",
+    "notes": "SBI General 3-yr avg CSR (FY22-25) = 96.14% per Ditto (industry avg 91.22%). ICR 82.19% per FY24-25 IRDAI. Complaints per 10K claims = 15 (well below 20-benchmark). PolicyX shows SBI General CSR as 0% in their data-lab listing which is a confirmed PolicyX data error (excluded)."
+  }
+}

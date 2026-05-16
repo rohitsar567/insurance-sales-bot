@@ -130,10 +130,11 @@ The 62 fields are aggregated into **6 sub-scores**, each 0-100. The aggregation 
 
 | Schema field | Effect on score |
 | --- | --- |
-| `max_renewal_age` (int) | +25 if lifelong (≥99), +15 if ≥80, −15 if <65 |
-| `max_entry_age` (int) | +10 if ≥65, −6 if <50 |
+| `max_entry_age` (int) | +25 if ≥65, +12 if ≥55, +0 if ≥50, −20 if <50 |
 
-**Base score: 60.**
+> **Renewal Protection now = `max_entry_age` only.** Lifelong renewability is the IRDAI universal norm for every health-indemnity product (mandated since 2020), so it is constant across the market and is **not scored** — `max_renewal_age` was removed entirely as a scored field. What still genuinely varies between products is the maximum *entry* age (how late a first-time buyer can take the policy), so it is the sole driver of this sub-score.
+
+**Base score: 50.**
 
 ### 2.6 Bonus & Loyalty — *sweeteners for sticking around*
 
@@ -175,7 +176,7 @@ overall_score = 0.22 × Coverage Breadth
 | Field group | In scorecard? | Why / why not |
 | --- | --- | --- |
 | Identity (5 fields) | No | Doesn't affect quality, only display |
-| Eligibility (5 fields) | Partial — `max_renewal_age`, `max_entry_age` only | Renewal age matters for buyer; family composition is a filter, not a quality signal |
+| Eligibility (5 fields) | Partial — `max_entry_age` only | Max entry age matters for a late first-time buyer; lifelong renewability is the IRDAI universal norm (not scored); family composition is a filter, not a quality signal |
 | Sum insured & premium (5 fields) | No | We don't score absolute price (Doc 01 D-007: pricing is illustrative); buyers compare per-rupee value separately |
 | Waiting periods (6 fields) | All 3 used | Direct buyer impact |
 | Coverage scope (~10 fields) | 8 used | Most relevant |

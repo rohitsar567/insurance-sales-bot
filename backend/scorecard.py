@@ -11,13 +11,72 @@ Score philosophy: optimize for the *buyer*, not the insurer. So:
   - Regulatory-mandated minimums (IRDAI 30-day initial) don't hurt the score
 
 Each sub-score is 0-100. Overall is a weighted average. Letter grade comes
-from thresholds (A: 85+, B: 70-84, C: 55-69, D: 40-54, F: <40).
+from ABSOLUTE thresholds, frozen post-recalibration (2026-05-16):
+A: ≥76, B: ≥69, C: ≥61, D: ≥54, F: <54. See grade_for().
 """
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from typing import Any, Optional
+
+
+# ----------------------------------------------------------------------------
+# FIELD ALIASES — the canonical-scorer-key → list-of-acceptable-input-keys map.
+#
+# Why this exists: the data layer is heterogeneous.
+#   * 40-data/policy_facts/<insurer>__<product>.json  → canonical names
+#     (max_renewal_age, copayment_pct, day_care_treatments_count, etc.)
+#   * 40-data/policy_facts/<insurer>__<product>__<doctype>.json → mixed; some
+#     fields use LLM-extracted aliases like co_payment_pct, room_rent_capped_at_pct_of_si
+#   * rag/extracted/*.json → pure LLM output with aliases like
+#     max_renewal_age_years (int), deductible_amount_inr (int),
+#     day_care_treatments: {covered, limit_inr, limit_text/notes} (dict).
+#
+# Without aliasing the scorecard reads `None` for every aliased field and the
+# 6 sub-scores collapse to their neutral bases → 12 different policies all
+# render as 72/100. Aliasing recovers the underlying data spread.
+# ----------------------------------------------------------------------------
+# NOTE: max_renewal_age was deliberately removed as a scored field. Lifelong
+# renewability is the IRDAI norm for health-indemnity products (mandated since
+# 2020), so it does not differentiate policies. The old pipeline faked it as
+# `max_renewal_age=999` to trigger a now-deleted "lifelong" bonus — see
+# score_renewal_protection. Do not re-add it to ALIASES or SCORED_FIELDS.
+ALIASES: dict[str, list[str]] = {
+    "max_entry_age": ["max_entry_age", "max_entry_age_years"],
+    "deductible_amount": ["deductible_amount", "deductible_amount_inr"],
+    "copayment_pct": ["copayment_pct", "co_payment_pct"],
+    "day_care_treatments_count": ["day_care_treatments_count", "day_care_treatments"],
+    "network_hospital_count": ["network_hospital_count", "network_hospital_count_text"],
+    "room_rent_capping": ["room_rent_capping", "room_rent_capped_at_pct_of_si"],
+    "pre_existing_disease_waiting_months": ["pre_existing_disease_waiting_months", "ped_waiting_months"],
+    "initial_waiting_period_days": ["initial_waiting_period_days", "initial_waiting_days"],
+    "maternity_waiting_months": ["maternity_waiting_months", "maternity_wait_months"],
+    "pre_hospitalization_days": ["pre_hospitalization_days", "pre_hosp_days"],
+    "post_hospitalization_days": ["post_hospitalization_days", "post_hosp_days"],
+    "no_claim_bonus_pct": ["no_claim_bonus_pct", "ncb_pct", "cumulative_bonus_pct"],
+    "tat_cashless_authorization_hours": ["tat_cashless_authorization_hours", "tat_cashless_hours"],
+    "claim_settlement_ratio": ["claim_settlement_ratio", "claim_settlement_ratio_pct"],
+}
+
+
+def _pick_alias(p: dict, canonical_key: str):
+    """Return the first non-empty value across the alias list for canonical_key.
+    Treats None, "", [], {} (and dicts whose 'value' is None) as empty.
+    The {value, source_*} wrapper shape used by curated files is unwrapped.
+    """
+    for alias in ALIASES.get(canonical_key, [canonical_key]):
+        v = p.get(alias)
+        # Unwrap the curated {value, source_pdf_path, ...} shape if present.
+        if isinstance(v, dict) and "value" in v and "covered" not in v and "limit_inr" not in v:
+            v = v.get("value")
+        if v is None or v == "" or v == []:
+            continue
+        if isinstance(v, dict) and not v:
+            continue
+        return v
+    return None
 
 
 @dataclass
@@ -44,33 +103,75 @@ class Scorecard:
 # ---- helpers ----
 
 def _get(p: dict, key: str, default: Any = None) -> Any:
-    v = p.get(key, default)
+    v = _pick_alias(p, key)
+    if v is None:
+        return default
     if isinstance(v, dict) and "covered" in v:
         return v.get("covered", default)
     return v
 
 
 def _bool(p: dict, key: str) -> Optional[bool]:
-    v = p.get(key)
+    v = _pick_alias(p, key)
     if isinstance(v, dict) and "covered" in v:
         return v.get("covered")
     if isinstance(v, bool):
         return v
-    if isinstance(v, str) and v.lower() in ("yes", "true", "y"):
+    if isinstance(v, str) and v.lower() in ("yes", "true", "y", "covered"):
         return True
-    if isinstance(v, str) and v.lower() in ("no", "false", "n"):
+    if isinstance(v, str) and v.lower() in ("no", "false", "n", "not covered", "excluded"):
         return False
     return None
 
 
+_INT_FROM_TEXT_RE = re.compile(r"(\d[\d,]*)")
+
+
 def _int(p: dict, key: str) -> Optional[int]:
-    v = p.get(key)
-    if isinstance(v, dict) and "limit_inr" in v:
-        v = v.get("limit_inr")
-    try:
-        return int(v) if v is not None else None
-    except (TypeError, ValueError):
+    """Coerce the aliased value into an int. Handles:
+      * scalar int/float/digit-str
+      * dict shapes: {limit_inr: N}, {value: N}, {covered, limit_text: "N+ procedures"}
+      * pure text shapes: "13,000+" or "586+ procedures" (network_hospital_count_text,
+        day_care_treatments.limit_text/notes)
+    Returns None if no integer can be recovered.
+    """
+    v = _pick_alias(p, key)
+    if v is None:
         return None
+    # Dict shapes the LLM/curators use.
+    if isinstance(v, dict):
+        for nested_key in ("limit_inr", "value", "pct_of_si", "limit_text", "notes"):
+            if nested_key in v and v[nested_key] not in (None, ""):
+                v = v[nested_key]
+                break
+        else:
+            return None
+    # Now v should be a scalar.
+    if isinstance(v, bool):
+        return None  # don't let True/False sneak in as 1/0
+    if isinstance(v, (int, float)):
+        try:
+            return int(v)
+        except (TypeError, ValueError):
+            return None
+    if isinstance(v, str):
+        s = v.strip()
+        if not s:
+            return None
+        # Direct numeric parse first.
+        try:
+            return int(float(s.replace(",", "")))
+        except (TypeError, ValueError):
+            pass
+        # Pull the leading integer out of phrases like "586+ procedures" or
+        # "13,000+ network hospitals".
+        m = _INT_FROM_TEXT_RE.search(s)
+        if m:
+            try:
+                return int(m.group(1).replace(",", ""))
+            except (TypeError, ValueError):
+                return None
+    return None
 
 
 def clamp(x: float, lo: int = 0, hi: int = 100) -> int:
@@ -83,36 +184,37 @@ def score_coverage_breadth(p: dict) -> SubScore:
     """How wide is the safety net? AYUSH, day-care, OPD, organ donor, maternity, etc."""
     signals_pos: list[str] = []
     signals_neg: list[str] = []
-    s = 50  # neutral base
+    s = 40  # true-neutral base (was 50 — recalibrated for real spread)
 
     if _bool(p, "ayush_coverage"):
-        s += 8; signals_pos.append("AYUSH covered")
+        s += 10; signals_pos.append("AYUSH covered")
     elif _bool(p, "ayush_coverage") is False:
-        signals_neg.append("no AYUSH")
+        s -= 6; signals_neg.append("no AYUSH")
 
     dct = _int(p, "day_care_treatments_count")
     if dct is not None:
-        if dct >= 400: s += 10; signals_pos.append(f"{dct} day-care procedures")
-        elif dct >= 200: s += 6
-        elif dct < 100: s -= 5; signals_neg.append(f"only {dct} day-care procedures")
+        if dct >= 400: s += 14; signals_pos.append(f"{dct} day-care procedures")
+        elif dct >= 200: s += 8
+        elif dct >= 100: s += 2
+        else: s -= 8; signals_neg.append(f"only {dct} day-care procedures")
 
     if _bool(p, "maternity_coverage"):
-        s += 6; signals_pos.append("maternity covered")
+        s += 9; signals_pos.append("maternity covered")
     if _bool(p, "newborn_coverage"):
-        s += 4; signals_pos.append("newborn covered")
+        s += 6; signals_pos.append("newborn covered")
     if _bool(p, "organ_donor_expenses"):
-        s += 4; signals_pos.append("organ donor expenses")
+        s += 6; signals_pos.append("organ donor expenses")
     if _bool(p, "ambulance_cover"):
-        s += 3; signals_pos.append("ambulance covered")
+        s += 5; signals_pos.append("ambulance covered")
     if _bool(p, "domiciliary_treatment"):
-        s += 4
+        s += 6
     if _bool(p, "preventive_health_checkup"):
-        s += 3; signals_pos.append("free health checkups")
+        s += 5; signals_pos.append("free health checkups")
 
     pre = _int(p, "pre_hospitalization_days") or 0
     post = _int(p, "post_hospitalization_days") or 0
-    if pre >= 60: s += 4; signals_pos.append(f"{pre}d pre-hospitalization")
-    if post >= 90: s += 4; signals_pos.append(f"{post}d post-hospitalization")
+    if pre >= 60: s += 6; signals_pos.append(f"{pre}d pre-hospitalization")
+    if post >= 90: s += 6; signals_pos.append(f"{post}d post-hospitalization")
 
     summary = "Wide coverage" if s >= 75 else "Standard coverage" if s >= 55 else "Limited coverage"
     return SubScore("Coverage Breadth", clamp(s), summary, signals_pos + [f"− {x}" for x in signals_neg])
@@ -121,27 +223,40 @@ def score_coverage_breadth(p: dict) -> SubScore:
 def score_cost_predictability(p: dict) -> SubScore:
     """How likely are you to face surprise out-of-pocket costs? Copay, room rent caps, sub-limits."""
     signals: list[str] = []
-    s = 75  # most policies start fine
+    s = 60  # true-neutral base (was 75 — recalibrated for real spread)
 
     copay = _int(p, "copayment_pct")
-    if copay is not None and copay > 0:
-        if copay >= 30: s -= 25; signals.append(f"− {copay}% copayment")
-        elif copay >= 20: s -= 18; signals.append(f"− {copay}% copayment")
-        elif copay >= 10: s -= 10; signals.append(f"− {copay}% copayment")
-        else: s -= 4
+    if copay is not None:
+        if copay >= 30: s -= 40; signals.append(f"− {copay}% copayment")
+        elif copay >= 20: s -= 28; signals.append(f"− {copay}% copayment")
+        elif copay >= 10: s -= 15; signals.append(f"− {copay}% copayment")
+        elif copay > 0: s -= 6
+        else: s += 14; signals.append("0% copayment")
 
-    rrc = p.get("room_rent_capping")
-    rrc_text = rrc if isinstance(rrc, str) else (rrc.get("limit_text") if isinstance(rrc, dict) else None)
+    rrc = _pick_alias(p, "room_rent_capping")
+    rrc_text: Optional[str] = None
+    if isinstance(rrc, str):
+        rrc_text = rrc
+    elif isinstance(rrc, dict):
+        # Curated nested shape: {pct_of_si, limit_text, ...}
+        rrc_text = rrc.get("limit_text") or rrc.get("notes")
+        pct = rrc.get("pct_of_si")
+        if rrc_text is None and pct is not None:
+            rrc_text = f"{pct}% of SI"
+    elif isinstance(rrc, (int, float)):
+        # room_rent_capped_at_pct_of_si scalar form
+        rrc_text = f"{rrc}% of SI"
     if rrc_text:
-        if "no cap" in rrc_text.lower() or "no monetary" in rrc_text.lower():
-            s += 6; signals.append("no room rent cap")
+        rtl = rrc_text.lower()
+        if "no cap" in rtl or "no monetary" in rtl or "no limit" in rtl or "no room rent" in rtl:
+            s += 14; signals.append("no room rent cap")
         elif "1%" in rrc_text or "%" in rrc_text:
-            s -= 8; signals.append(f"− room rent capped: {rrc_text[:50]}")
+            s -= 18; signals.append(f"− room rent capped: {rrc_text[:50]}")
 
     deductible = _int(p, "deductible_amount")
     if deductible and deductible > 0:
         signals.append(f"− deductible ₹{deductible:,}")
-        s -= 6
+        s -= 12
 
     summary = "Predictable costs" if s >= 75 else "Some out-of-pocket" if s >= 55 else "Material out-of-pocket"
     return SubScore("Cost Predictability", clamp(s), summary, signals)
@@ -150,14 +265,14 @@ def score_cost_predictability(p: dict) -> SubScore:
 def score_waiting_friction(p: dict) -> SubScore:
     """How long before benefits actually kick in? PED, specific disease, maternity waits."""
     signals: list[str] = []
-    s = 90
+    s = 72  # true-neutral base (was 90 — recalibrated for real spread)
 
     ped = _int(p, "pre_existing_disease_waiting_months")
     if ped is not None:
-        if ped >= 48: s -= 30; signals.append(f"− {ped}mo PED waiting (long)")
-        elif ped >= 36: s -= 20; signals.append(f"− {ped}mo PED waiting")
+        if ped >= 48: s -= 42; signals.append(f"− {ped}mo PED waiting (long)")
+        elif ped >= 36: s -= 25; signals.append(f"− {ped}mo PED waiting")
         elif ped >= 24: s -= 10; signals.append(f"− {ped}mo PED waiting")
-        else: signals.append(f"{ped}mo PED waiting (short)")
+        else: s += 14; signals.append(f"{ped}mo PED waiting (short)")
 
     mw = _int(p, "maternity_waiting_months")
     if mw is not None:
@@ -166,7 +281,7 @@ def score_waiting_friction(p: dict) -> SubScore:
 
     iw = _int(p, "initial_waiting_period_days")
     # 30 days is IRDAI-mandated minimum; don't penalize
-    if iw is not None and iw > 60: s -= 5; signals.append(f"− {iw}d initial waiting")
+    if iw is not None and iw > 60: s -= 8; signals.append(f"− {iw}d initial waiting")
 
     summary = "Quick activation" if s >= 75 else "Standard waits" if s >= 55 else "Heavy waiting periods"
     return SubScore("Waiting-Period Friction", clamp(s), summary, signals)
@@ -181,15 +296,17 @@ def score_claim_experience(p: dict, insurer_reviews: Optional[dict] = None) -> S
     per-policy fields only (which are usually null in extraction).
     """
     signals: list[str] = []
-    s = 60
+    s = 45  # true-neutral base (was 60 — recalibrated for real spread)
 
     if _bool(p, "cashless_treatment_supported"):
-        s += 15; signals.append("cashless supported")
+        s += 18; signals.append("cashless supported")
+    elif _bool(p, "cashless_treatment_supported") is False:
+        s -= 12; signals.append("− no cashless")
     nh = _int(p, "network_hospital_count")
     if nh is not None:
-        if nh >= 10000: s += 15; signals.append(f"{nh:,}+ network hospitals")
-        elif nh >= 5000: s += 8; signals.append(f"{nh:,} network hospitals")
-        elif nh < 2000: s -= 8; signals.append(f"− only {nh} network hospitals")
+        if nh >= 10000: s += 18; signals.append(f"{nh:,}+ network hospitals")
+        elif nh >= 5000: s += 10; signals.append(f"{nh:,} network hospitals")
+        elif nh < 2000: s -= 12; signals.append(f"− only {nh} network hospitals")
 
     # Prefer insurer-level IRDAI data (always present + authoritative) over
     # per-policy claim_settlement_ratio (usually null in extraction).
@@ -199,70 +316,93 @@ def score_claim_experience(p: dict, insurer_reviews: Optional[dict] = None) -> S
         csr_val = cm.get("claim_settlement_ratio_pct")
         cpk = cm.get("complaints_per_10k_policies")
         if csr_val is not None:
-            if csr_val >= 95: s += 12; signals.append(f"{csr_val:.1f}% CSR (IRDAI {cm.get('claim_settlement_ratio_year','')})")
-            elif csr_val >= 85: s += 6; signals.append(f"{csr_val:.1f}% CSR")
-            elif csr_val < 75: s -= 12; signals.append(f"− {csr_val:.1f}% CSR (low)")
+            if csr_val >= 95: s += 20; signals.append(f"{csr_val:.1f}% CSR (IRDAI {cm.get('claim_settlement_ratio_year','')})")
+            elif csr_val >= 90: s += 12; signals.append(f"{csr_val:.1f}% CSR")
+            elif csr_val >= 85: s += 5; signals.append(f"{csr_val:.1f}% CSR")
+            elif csr_val >= 75: s -= 6; signals.append(f"− {csr_val:.1f}% CSR")
+            else: s -= 20; signals.append(f"− {csr_val:.1f}% CSR (low)")
         if cpk is not None:
-            if cpk <= 10: s += 6; signals.append(f"{cpk}/10K complaints (low)")
+            if cpk <= 10: s += 8; signals.append(f"{cpk}/10K complaints (low)")
             elif cpk <= 25: s += 0
-            elif cpk <= 45: s -= 6; signals.append(f"− {cpk}/10K complaints (above avg)")
-            else: s -= 12; signals.append(f"− {cpk}/10K complaints (high)")
+            elif cpk <= 45: s -= 8; signals.append(f"− {cpk}/10K complaints (above avg)")
+            else: s -= 16; signals.append(f"− {cpk}/10K complaints (high)")
     else:
-        # Fallback to per-policy
-        csr = p.get("claim_settlement_ratio")
+        # Fallback to per-policy. The curated `{value, source_*}` wrapper is
+        # unwrapped via _pick_alias; the `_pct` LLM-extracted variant is also
+        # tried.
+        csr = _pick_alias(p, "claim_settlement_ratio")
+        if isinstance(csr, dict):
+            csr = csr.get("value")
         try:
-            csr_val = float(csr)
-            if csr_val >= 95: s += 10; signals.append(f"{csr_val:.1f}% claim settlement ratio")
-            elif csr_val >= 85: s += 6; signals.append(f"{csr_val:.1f}% CSR")
-            elif csr_val < 75: s -= 12; signals.append(f"− {csr_val:.1f}% CSR (low)")
+            csr_val = float(csr) if csr is not None else None
+            if csr_val is None:
+                pass
+            elif csr_val >= 95: s += 18; signals.append(f"{csr_val:.1f}% claim settlement ratio")
+            elif csr_val >= 90: s += 10; signals.append(f"{csr_val:.1f}% CSR")
+            elif csr_val >= 85: s += 4; signals.append(f"{csr_val:.1f}% CSR")
+            elif csr_val < 75: s -= 20; signals.append(f"− {csr_val:.1f}% CSR (low)")
         except (TypeError, ValueError):
             pass
 
     tat = _int(p, "tat_cashless_authorization_hours")
     if tat is not None and tat <= 2:
-        s += 4; signals.append(f"{tat}h cashless TAT")
+        s += 6; signals.append(f"{tat}h cashless TAT")
 
     summary = "Smooth claims" if s >= 75 else "Standard claim experience" if s >= 55 else "Friction risk on claims"
     return SubScore("Claim Experience", clamp(s), summary, signals)
 
 
 def score_renewal_protection(p: dict) -> SubScore:
-    """Can you keep this policy as you age? Lifelong renewability + wide age band."""
-    signals: list[str] = []
-    s = 60
+    """Can you stay covered as you age?
 
-    maxr = _int(p, "max_renewal_age")
-    if maxr is not None:
-        if maxr >= 99: s += 25; signals.append("lifelong renewability")
-        elif maxr >= 80: s += 15; signals.append(f"renewable up to {maxr}")
-        elif maxr < 65: s -= 15; signals.append(f"− only renewable up to {maxr}")
+    Lifelong renewability is the IRDAI norm for health-indemnity products
+    (mandated since 2020) and therefore does NOT differentiate policies — it
+    is intentionally NOT scored. This is also why the old `max_renewal_age`
+    field was removed entirely: it was a non-differentiator that the
+    extraction LLM faked as 999 to trigger a (now-deleted) "lifelong" bonus,
+    corrupting 137 grades. What still genuinely varies between products is the
+    maximum *entry* age — how late a first-time buyer can take the policy —
+    so that is the sole driver of this sub-score.
+    """
+    signals: list[str] = ["lifelong renewable (IRDAI norm — not scored)"]
+    s = 50  # true-neutral base (was 60 — recalibrated for real spread)
 
     maxe = _int(p, "max_entry_age")
     if maxe is not None:
-        if maxe >= 65: s += 10; signals.append(f"entry up to {maxe}")
-        elif maxe < 50: s -= 6
+        if maxe >= 65: s += 25; signals.append(f"entry up to {maxe}")
+        elif maxe >= 55: s += 12; signals.append(f"entry up to {maxe}")
+        elif maxe >= 50: s += 0
+        else: s -= 20; signals.append(f"− entry only up to {maxe}")
 
-    summary = "Future-proof" if s >= 75 else "Adequate" if s >= 55 else "Renewal risk at older ages"
+    summary = "Future-proof" if s >= 75 else "Adequate" if s >= 55 else "Limited entry-age band"
     return SubScore("Renewal Protection", clamp(s), summary, signals)
 
 
 def score_bonuses(p: dict) -> SubScore:
     """No-claim bonuses, restoration, health checkups — sweeteners for loyal buyers."""
     signals: list[str] = []
-    s = 50
+    s = 38  # true-neutral base (was 50 — recalibrated for real spread)
 
     ncb = _int(p, "no_claim_bonus_pct")
     if ncb is not None:
-        if ncb >= 100: s += 25; signals.append(f"{ncb}% NCB step-up")
-        elif ncb >= 50: s += 15; signals.append(f"{ncb}% NCB")
-        elif ncb >= 25: s += 8
+        if ncb >= 100: s += 35; signals.append(f"{ncb}% NCB step-up")
+        elif ncb >= 50: s += 20; signals.append(f"{ncb}% NCB")
+        elif ncb >= 25: s += 10
+        else: s -= 8
 
-    rb = p.get("restoration_benefit")
+    rb = _pick_alias(p, "restoration_benefit")
+    if isinstance(rb, dict):
+        # {covered, limit_text} or {value: "..."}
+        rb = rb.get("limit_text") or rb.get("value") or (
+            "restoration available" if rb.get("covered") else None
+        )
     if rb and isinstance(rb, str) and len(rb) > 5:
-        s += 12; signals.append(f"restoration benefit: {rb[:50]}")
+        s += 18; signals.append(f"restoration benefit: {rb[:50]}")
+    elif rb is True:
+        s += 18; signals.append("restoration benefit included")
 
     if _bool(p, "preventive_health_checkup"):
-        s += 8; signals.append("free preventive checkup")
+        s += 10; signals.append("free preventive checkup")
 
     summary = "Generous bonuses" if s >= 75 else "Standard sweeteners" if s >= 55 else "Few extras"
     return SubScore("Bonus & Loyalty", clamp(s), summary, signals)
@@ -291,6 +431,20 @@ WEIGHTS = {
 #   - the regulatory / industry anchors that justify the weight
 # Used by /api/scorecard/methodology to render a customer-centric explanation
 # of how the headline number is computed.
+#
+# GRADING: the weighted 0-100 overall maps to an ABSOLUTE letter grade with
+# frozen cutoffs A ≥ 76 / B ≥ 69 / C ≥ 61 / D ≥ 54 / F < 54 (see grade_for).
+# A policy's grade does not move as the catalogue changes.
+#
+# FIXED-BENEFIT PRODUCTS: hospital-cash, personal-accident, critical-illness
+# and cancer plans are scored ONLY on the sub-scores that apply to them —
+# Claim Experience, Renewal Protection and Bonus & Loyalty. The three
+# indemnity-only sub-scores (Coverage Breadth, Cost Predictability,
+# Waiting-Period Friction) are dropped and the remaining weights renormalised.
+#
+# Every "+N / −N / threshold" string below is derived directly from the
+# recalibrated sub-score functions above — they must stay byte-for-byte
+# faithful to the code so the in-app methodology endpoint never lies.
 METHODOLOGY_BLUEPRINT = [
     {
         "name": "Coverage Breadth",
@@ -301,16 +455,16 @@ METHODOLOGY_BLUEPRINT = [
             "out-of-pocket for gaps like AYUSH, maternity, newborn care, or ambulance."
         ),
         "fields_driving_score": [
-            {"field": "ayush_coverage", "rule": "AYUSH covered → +8"},
-            {"field": "day_care_treatments_count", "rule": "≥400 procedures → +10, ≥200 → +6, <100 → −5"},
-            {"field": "maternity_coverage", "rule": "Covered → +6"},
-            {"field": "newborn_coverage", "rule": "Covered → +4"},
-            {"field": "organ_donor_expenses", "rule": "Covered → +4"},
-            {"field": "ambulance_cover", "rule": "Covered → +3"},
-            {"field": "domiciliary_treatment", "rule": "Covered → +4"},
-            {"field": "preventive_health_checkup", "rule": "Free → +3"},
-            {"field": "pre_hospitalization_days", "rule": "≥60 days → +4"},
-            {"field": "post_hospitalization_days", "rule": "≥90 days → +4"},
+            {"field": "ayush_coverage", "rule": "Covered → +10, explicitly not covered → −6"},
+            {"field": "day_care_treatments_count", "rule": "≥400 procedures → +14, ≥200 → +8, ≥100 → +2, <100 → −8"},
+            {"field": "maternity_coverage", "rule": "Covered → +9"},
+            {"field": "newborn_coverage", "rule": "Covered → +6"},
+            {"field": "organ_donor_expenses", "rule": "Covered → +6"},
+            {"field": "ambulance_cover", "rule": "Covered → +5"},
+            {"field": "domiciliary_treatment", "rule": "Covered → +6"},
+            {"field": "preventive_health_checkup", "rule": "Free → +5"},
+            {"field": "pre_hospitalization_days", "rule": "≥60 days → +6"},
+            {"field": "post_hospitalization_days", "rule": "≥90 days → +6"},
         ],
         "anchors": [
             "IRDAI Health Insurance Master Circular 2024 — emphasises comprehensive cover",
@@ -322,16 +476,15 @@ METHODOLOGY_BLUEPRINT = [
         "weight_pct": 20,
         "consumer_question": "Will I face surprise bills I can't plan for?",
         "why_it_matters": (
-            "Co-pay forces you to pay a % of every claim; room-rent capping reduces what gets "
-            "reimbursed; sub-limits cap specific treatments below your sum insured. These "
-            "convert a known sum-insured into an unpredictable out-of-pocket exposure."
+            "Co-pay forces you to pay a % of every claim and is the single biggest "
+            "predictability lever; room-rent capping reduces what gets reimbursed; an "
+            "up-front deductible is money you pay before cover starts. These convert a "
+            "known sum-insured into an unpredictable out-of-pocket exposure."
         ),
         "fields_driving_score": [
-            {"field": "copayment_pct", "rule": "0% → +0, 10% → −5, 20%+ → −12"},
-            {"field": "room_rent_capping", "rule": "No limit → +6, capped → −5 to −10"},
-            {"field": "deductible_amount", "rule": "₹0 → +0, ≥₹1L → −8"},
-            {"field": "sub_limits", "rule": "No condition-specific caps → +5"},
-            {"field": "icu_charges_capping", "rule": "No cap → +3"},
+            {"field": "copayment_pct", "rule": "0% → +14, >0–<10% → −6, 10% → −15, 20% → −28, 30%+ → −40"},
+            {"field": "room_rent_capping", "rule": "No cap / no limit → +14, any % cap → −18"},
+            {"field": "deductible_amount", "rule": "Any deductible > ₹0 → −12"},
         ],
         "anchors": [
             "IRDAI Master Circular — disclosure norms on co-pay/sub-limits",
@@ -343,15 +496,15 @@ METHODOLOGY_BLUEPRINT = [
         "weight_pct": 18,
         "consumer_question": "How soon can I actually use this policy if something happens?",
         "why_it_matters": (
-            "Initial waiting period (30 days typical), pre-existing-disease waiting "
-            "(commonly 24–48 months), and maternity waits delay claims. Shorter is better — "
-            "especially for older buyers or those with diabetes/hypertension."
+            "Initial waiting period (the IRDAI-mandated 30-day minimum is never "
+            "penalised), pre-existing-disease waiting (commonly 24–48 months), and "
+            "maternity waits delay claims. Shorter is better — especially for older "
+            "buyers or those with diabetes/hypertension."
         ),
         "fields_driving_score": [
-            {"field": "initial_waiting_period_days", "rule": "≤30 days → 0, >30 days → −3"},
-            {"field": "pre_existing_disease_waiting_months", "rule": "≤24mo → +10, 36mo → 0, ≥48mo → −15"},
-            {"field": "maternity_waiting_months", "rule": "≤24mo → +5, ≥36mo → −5"},
-            {"field": "specific_disease_waiting_months", "rule": "≤24mo → +3"},
+            {"field": "initial_waiting_period_days", "rule": "≤60 days → 0 (30-day IRDAI minimum not penalised), >60 days → −8"},
+            {"field": "pre_existing_disease_waiting_months", "rule": "<24mo → +14, 24–35mo → −10, 36–47mo → −25, ≥48mo → −42"},
+            {"field": "maternity_waiting_months", "rule": "<24mo → +0, 24–47mo → −4, ≥48mo → −10"},
         ],
         "anchors": [
             "IRDAI standard product specifications (Arogya Sanjeevani UIN guideline: 36-month PED max)",
@@ -368,11 +521,11 @@ METHODOLOGY_BLUEPRINT = [
             "complaint count per 10,000 policies, and how fast cashless pre-auth happens."
         ),
         "fields_driving_score": [
-            {"field": "cashless_treatment_supported", "rule": "Yes → +5"},
-            {"field": "network_hospital_count", "rule": "≥10,000 → +10, ≥5,000 → +5, <2,000 → −5"},
-            {"field": "claim_settlement_ratio (IRDAI)", "rule": "≥95% → +12, 90–95 → +6, <85% → −10"},
-            {"field": "complaints_per_10k_policies (IRDAI)", "rule": "<5 → +4, >20 → −8"},
-            {"field": "tat_cashless_authorization_hours", "rule": "≤2h → +4, ≥24h → −4"},
+            {"field": "cashless_treatment_supported", "rule": "Yes → +18, explicitly no → −12"},
+            {"field": "network_hospital_count", "rule": "≥10,000 → +18, ≥5,000 → +10, <2,000 → −12"},
+            {"field": "claim_settlement_ratio (IRDAI)", "rule": "≥95% → +20, 90–94% → +12, 85–89% → +5, 75–84% → −6, <75% → −20"},
+            {"field": "complaints_per_10k_policies (IRDAI)", "rule": "≤10 → +8, 11–25 → +0, 26–45 → −8, >45 → −16"},
+            {"field": "tat_cashless_authorization_hours", "rule": "≤2h → +6"},
         ],
         "anchors": [
             "IRDAI Annual Report 2023-24 — published CSR per insurer",
@@ -382,19 +535,20 @@ METHODOLOGY_BLUEPRINT = [
     {
         "name": "Renewal Protection",
         "weight_pct": 12,
-        "consumer_question": "Can I keep this policy when I'm 70 and need it most?",
+        "consumer_question": "Can I still take this policy if I'm buying late in life?",
         "why_it_matters": (
-            "Health insurance only works if you can keep renewing. Lifelong renewability is "
-            "the IRDAI default since 2020, but entry-age caps and porting friction still "
-            "matter. Buyers who don't check this often lose cover when claims rise."
+            "Lifelong renewability is mandated by IRDAI for every health-indemnity "
+            "product (since 2020), so it is universal and intentionally NOT scored — "
+            "scoring a constant just adds noise. What still varies is the maximum "
+            "ENTRY age: a policy that stops accepting new buyers at 50 is useless to a "
+            "55-year-old first-timer, while one open to 65+ keeps more buyers eligible."
         ),
         "fields_driving_score": [
-            {"field": "max_renewal_age", "rule": "Lifelong → +12, 80 → +6, ≤70 → −5"},
-            {"field": "max_entry_age", "rule": "≥65 → +4 (more buyers eligible)"},
-            {"field": "guaranteed_renewability", "rule": "Stated explicitly → +4"},
+            {"field": "max_entry_age", "rule": "≥65 → +25, 55–64 → +12, 50–54 → +0, <50 → −20"},
+            {"field": "(lifelong renewability)", "rule": "IRDAI-universal mandate — shown for transparency, NOT scored (scoring a constant only adds noise)"},
         ],
         "anchors": [
-            "IRDAI Master Circular 2024 — lifelong renewability mandate",
+            "IRDAI Master Circular 2024 — lifelong renewability mandate (universal → not a differentiator)",
             "IRDAI Portability Regulations 2020",
         ],
     },
@@ -403,15 +557,15 @@ METHODOLOGY_BLUEPRINT = [
         "weight_pct": 8,
         "consumer_question": "What do I get for staying claim-free and renewing year after year?",
         "why_it_matters": (
-            "Claim-free years should compound value: most policies give 20–50% No-Claim Bonus "
-            "and some restore the sum insured on exhaustion. Free annual health checkups are "
-            "the lowest-hanging benefit most buyers don't realise they have."
+            "Claim-free years should compound value: a 100%+ No-Claim Bonus step-up is "
+            "rewarded heaviest, and restoring the sum insured on exhaustion is a major "
+            "sweetener. Free annual health checkups are the lowest-hanging benefit most "
+            "buyers don't realise they have."
         ),
         "fields_driving_score": [
-            {"field": "no_claim_bonus_pct", "rule": "≥50% → +8, ≥25% → +4"},
-            {"field": "restoration_benefit", "rule": "Present → +6"},
-            {"field": "preventive_health_checkup", "rule": "Free annually → +3"},
-            {"field": "wellness_program_present", "rule": "Yes → +2"},
+            {"field": "no_claim_bonus_pct", "rule": "≥100% → +35, 50–99% → +20, 25–49% → +10, <25% → −8"},
+            {"field": "restoration_benefit", "rule": "Present → +18"},
+            {"field": "preventive_health_checkup", "rule": "Free annually → +10"},
         ],
         "anchors": [
             "IRDAI 'Cumulative Bonus' rules — capped at 100% under standard products",
@@ -422,11 +576,19 @@ METHODOLOGY_BLUEPRINT = [
 
 
 def grade_for(score: int) -> tuple[str, str]:
-    """Return (letter, one-line summary tone)."""
-    if score >= 85: return "A", "Strong all-rounder — solid pick for the buyer."
-    if score >= 70: return "B", "Good policy with a few notable gaps."
-    if score >= 55: return "C", "Decent baseline; check the trade-offs before signing."
-    if score >= 40: return "D", "Material concerns — only suitable for specific use-cases."
+    """Return (letter, one-line summary tone).
+
+    Thresholds re-fitted (2026-05-16) to the realized post-recalibration
+    distribution (range ~50–83, mean ~66, stdev ~7.7). The old 85/70/55/40
+    cutoffs were set for a compressed 64–86 distribution and forced ~90% of
+    policies to "B" regardless of quality — the exact bug being fixed. These
+    are ABSOLUTE cutoffs (a policy's grade does not change as the catalogue
+    changes); they were derived from the distribution once and frozen.
+    """
+    if score >= 76: return "A", "Strong all-rounder — solid pick for the buyer."
+    if score >= 69: return "B", "Good policy with a few notable gaps."
+    if score >= 61: return "C", "Decent baseline; check the trade-offs before signing."
+    if score >= 54: return "D", "Material concerns — only suitable for specific use-cases."
     return "F", "Significant gaps — alternative options are likely better."
 
 
@@ -441,7 +603,7 @@ SCORED_FIELDS = [
     "initial_waiting_period_days",
     "cashless_treatment_supported", "network_hospital_count",
     "claim_settlement_ratio", "tat_cashless_authorization_hours",
-    "max_renewal_age", "max_entry_age",
+    "max_entry_age",  # max_renewal_age removed: lifelong is the IRDAI norm
     "no_claim_bonus_pct", "restoration_benefit",
 ]
 
@@ -449,10 +611,12 @@ SCORED_FIELDS = [
 def compute_data_completeness(p: dict) -> float:
     filled = 0
     for k in SCORED_FIELDS:
-        v = p.get(k)
+        v = _pick_alias(p, k)
         if v is None or v == "" or v == []:
             continue
-        if isinstance(v, dict) and v.get("covered") is None and not v.get("limit_inr") and not v.get("limit_text"):
+        if isinstance(v, dict) and v.get("covered") is None \
+                and not v.get("limit_inr") and not v.get("limit_text") \
+                and not v.get("notes") and v.get("value") in (None, "", []):
             continue
         filled += 1
     return round(filled / max(1, len(SCORED_FIELDS)) * 100, 1)
@@ -653,6 +817,33 @@ def profile_completeness(profile: Optional[dict]) -> float:
     return round(total, 2)
 
 
+# Sub-scores that only make sense for an indemnity (hospitalisation-reimbursement)
+# product. For fixed-benefit products (hospital daily cash, personal accident,
+# critical-illness, cancer) these fields genuinely don't exist — judging such a
+# product on them drags every one to the neutral base and re-creates the
+# "everything is B" collapse. So they're dropped and the remaining weights
+# renormalised, scoring the product on what actually applies to it.
+_INDEMNITY_ONLY = {"Coverage Breadth", "Cost Predictability", "Waiting-Period Friction"}
+_FIXED_BENEFIT_RE = re.compile(
+    r"hospital[\s_-]*cash|hospi[\s_-]*cash|daily[\s_-]*cash|personal[\s_-]*accident|"
+    r"critical[\s_-]*illness|criti[\s_-]*(?:care|medicare)|\bcancer\b|wellsurance|"
+    r"hospi[\s_-]*care",
+    re.I,
+)
+
+
+def _is_fixed_benefit(policy: dict) -> bool:
+    pt = _pick_alias(policy, "policy_type_indemnity_or_fixed")
+    if pt is None:
+        pt = policy.get("policy_type")
+    if isinstance(pt, dict):
+        pt = pt.get("value")
+    if isinstance(pt, str) and any(k in pt.lower() for k in ("fixed", "benefit", "defined")):
+        return True
+    blob = f"{policy.get('policy_id','')} {policy.get('policy_name','')}".lower()
+    return bool(_FIXED_BENEFIT_RE.search(blob))
+
+
 def build_scorecard(policy: dict, insurer_reviews: Optional[dict] = None, profile: Optional[dict] = None) -> Scorecard:
     subs = [
         score_coverage_breadth(policy),
@@ -663,7 +854,12 @@ def build_scorecard(policy: dict, insurer_reviews: Optional[dict] = None, profil
         score_bonuses(policy),
     ]
     weights = _profile_tuned_weights(profile)
-    overall = clamp(sum(weights[s.name] * s.score for s in subs))
+    if _is_fixed_benefit(policy):
+        applicable = [s for s in subs if s.name not in _INDEMNITY_ONLY]
+        wsum = sum(weights[s.name] for s in applicable) or 1.0
+        overall = clamp(sum(weights[s.name] * s.score for s in applicable) / wsum)
+    else:
+        overall = clamp(sum(weights[s.name] * s.score for s in subs))
     letter, one_liner = grade_for(overall)
     return Scorecard(
         policy_id=policy.get("policy_id", ""),

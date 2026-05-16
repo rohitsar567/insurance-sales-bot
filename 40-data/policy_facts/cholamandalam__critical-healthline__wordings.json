@@ -7,132 +7,186 @@
     "value": "CHOHLIP21302V022021",
     "unit": null,
     "source_pdf_path": "rag/corpus/cholamandalam/critical-healthline__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "UIN: CHOHLIP21302V022021",
+    "_confidence": "high"
   },
   "min_entry_age": {
-    "value": null,
+    "value": 5,
     "unit": "years",
     "source_pdf_path": "rag/corpus/cholamandalam/critical-healthline__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Entry Age 5 years to 65 years 5 years to 65 years",
+    "_confidence": "high"
   },
   "max_entry_age": {
-    "value": null,
+    "value": 65,
     "unit": "years",
     "source_pdf_path": "rag/corpus/cholamandalam/critical-healthline__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
-  },
-  "max_renewal_age": {
-    "value": null,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/cholamandalam/critical-healthline__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Entry Age 5 years to 65 years 5 years to 65 years",
+    "_confidence": "high"
   },
   "min_child_entry_age": {
     "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/cholamandalam/critical-healthline__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in cholamandalam__critical-healthline__wordings.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
-    "value": null,
+    "value": [
+      100000,
+      300000,
+      500000,
+      1000000
+    ],
     "unit": "INR",
     "source_pdf_path": "rag/corpus/cholamandalam/critical-healthline__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Sum Insured in Lakhs 1 / 3 / 5 / 10 1 / 3 / 5 / 10",
+    "_confidence": "high"
   },
   "grace_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/cholamandalam/critical-healthline__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "The grace period for payment of the premium for all types of insurance policies shall be: fifteen days where premium payment mode is monthly and thirty days in all other cases",
+    "_confidence": "high"
   },
   "free_look_period": {
-    "value": null,
+    "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/cholamandalam/critical-healthline__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Every policyholder of new individual health insurance policies, except for those policies with tenure of less than a year, shall be provided a free look period of 30 days beginning from the date of receipt of policy document",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
-    "value": null,
+    "value": 90,
     "unit": null,
     "source_pdf_path": "rag/corpus/cholamandalam/critical-healthline__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Any Critical Illness diagnosed within the first 90 days from the date of commencement of the Policy is excluded.",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 36,
-    "unit": null,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/cholamandalam/critical-healthline__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Pre-existing disease means any condition, ailment, injury or disease: a. That is/are diagnosed by a physician not more than 36 months prior to",
+    "_confidence": "medium"
   },
   "specific_disease_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/cholamandalam/critical-healthline__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in cholamandalam__critical-healthline__wordings.pdf",
+    "_confidence": "low"
   },
   "maternity_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/cholamandalam/critical-healthline__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in cholamandalam__critical-healthline__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/cholamandalam/critical-healthline__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in cholamandalam__critical-healthline__wordings.pdf",
+    "_confidence": "low"
   },
   "post_hospitalization_days": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/cholamandalam/critical-healthline__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in cholamandalam__critical-healthline__wordings.pdf",
+    "_confidence": "low"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/cholamandalam/critical-healthline__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 141,
+    "source_url": "https://www.policybazaar.com/insurance-companies/cholamandalam-health-insurance/family/",
+    "source_note": "Per insurer baseline (Chola MS family plans: 141 day care procedures; Flexi Health: 539)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/cholamandalam/critical-healthline__wordings.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/cholamandalam/critical-healthline__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 13500,
+    "source_url": "https://www.cholainsurance.com/",
+    "source_note": "13,500+ Cashless Hospitals ('Why Chola MS' section, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/cholamandalam/critical-healthline__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in cholamandalam__critical-healthline__wordings.pdf",
+    "_confidence": "low"
   },
   "room_rent_capped_at_pct_of_si": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/cholamandalam/critical-healthline__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in cholamandalam__critical-healthline__wordings.pdf",
+    "_confidence": "low"
   },
   "policy_term_options_years": {
-    "value": null,
+    "value": 1,
     "unit": "years",
     "source_pdf_path": "rag/corpus/cholamandalam/critical-healthline__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "This policy can be renewed for a period of 12 months subject to payment of premium prior to expiry of the policy",
+    "_confidence": "high"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/cholamandalam/critical-healthline__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in cholamandalam__critical-healthline__wordings.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/cholamandalam/critical-healthline__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in cholamandalam__critical-healthline__wordings.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/cholamandalam/critical-healthline__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in cholamandalam__critical-healthline__wordings.pdf",
+    "_confidence": "low"
+  },
+  "critical_illness_cover": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/cholamandalam/critical-healthline__wordings.pdf",
+    "source_quote": "If the Insured is diagnosed as suffering from a Critical Illness the first occurrence of which manifests itself during the Policy Period, and if the Insured survives for a minimum of 30 days from the date of diagnosis, the Company shall pay a Critical Illness Benefit.",
+    "_confidence": "high"
+  },
+  "geographic_coverage": {
+    "value": "pan_india",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/cholamandalam/critical-healthline__wordings.pdf",
+    "source_quote": "The Insurer’s liability to make any payment towards illness or accidental injury shall be to make payment within India and in Indian Rupees only for medical services or procedures rendered in or undertaken within India.",
+    "_confidence": "medium"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "critical_illness",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/cholamandalam/critical-healthline__wordings.pdf",
+    "source_quote": "policy covers Your Family on Individual Sum Insured basis.",
+    "_confidence": "medium"
+  },
+  "cashless_treatment_supported": {
+    "value": null,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/cholamandalam/critical-healthline__wordings.pdf",
+    "source_quote": "not stated in critical-healthline__wordings.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": null,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/cholamandalam/critical-healthline__wordings.pdf",
+    "source_quote": "not stated in critical-healthline__wordings.pdf",
+    "_confidence": "low"
   }
 }

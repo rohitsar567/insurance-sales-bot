@@ -10,47 +10,50 @@
   "min_entry_age": {
     "value": null,
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in icici-lombard__complete-health-insurance-umbrella__wordings.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
-    "source_quote": ""
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in icici-lombard__complete-health-insurance-umbrella__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_existing_disease_waiting_months": {
-    "value": 3,
+    "value": 24,
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
-    "source_quote": "Pre-Existing Condition/Disease(s) or any Illness or Injury which existed within the first 3 months"
+    "source_quote": "Code- Excl01: Pre-Existing Diseases a) Expenses related to the treatment of a pre-existing Disease (PED) and its direct complications shall be excluded until the expiry of 24 months of continuous coverage after the date of inception of th",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
-    "value": null,
+    "value": 30,
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "a. Expenses related to the treatment of any illness within 30 days from the first policy commencement date shall be excluded except claims arising",
+    "_confidence": "high"
   },
   "maternity_coverage": {
-    "value": false,
+    "value": true,
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
-    "source_quote": "Maternity Cover has been opted for.\nii. Specific Exclusion (Exclusions other than those mentioned under e.i above)\na. An"
+    "source_quote": "9. Maternity Cover We will cover the Medical Expenses incurred for delivery of a child, including a caesarian section, during Hospitalization or lawful medical ter",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in icici-lombard__complete-health-insurance-umbrella__wordings.pdf",
+    "_confidence": "low"
   },
   "ayush_coverage": {
     "value": true,
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
-    "source_quote": "AYUSH Treatment at a AYUSH Hospital or AYUSH Day Care Centre.\nii. This Cover will be provided on reimburs"
+    "source_quote": "Ayush Hospital is a healthcare facility wherein medical/surgical/para-surgical treatment procedures and interventions are carried out by AYUSH Medical practitioner(s) comprising of",
+    "_confidence": "medium"
   },
   "cashless_treatment_supported": {
     "value": true,
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
-    "source_quote": "Cashless Facility"
+    "source_quote": "Cashless Facility means a facility extended by the insurer to the insured where the payments, of the costs of treatment undergone by the insured in accordance with the policy terms",
+    "_confidence": "high"
   },
   "copayment_pct": {
     "value": 10,
@@ -63,59 +66,71 @@
     "source_quote": "Cumulative Bonus (GCB)\nWe will provide a Cumulative Bonus of 20%"
   },
   "restoration_benefit": {
-    "value": null,
+    "value": "Reset Benefit: up to 100% of Annual Sum Insured (once for same illness; unlimited for different illness)",
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "We will reset up to 100% of the Annual Sum Insured, Once for same illness/disease/injury and Unlimited times for different illness/disease/injury",
+    "_confidence": "high"
   },
   "room_rent_capping": {
-    "value": "Room Rent charges up to",
+    "value": "No cap",
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
-    "source_quote": "Room Rent charges up to"
+    "source_quote": "Room Rent charges up to the limits as mentioned in the Policy Schedule ii. Intensive Care Unit Charges; iii. Qualified Nurse charges; iv. Medical Practitioner’s Fees ; We will consider a claim under this Cover, subject to the",
+    "_confidence": "high"
   },
   "pre_hospitalization_days": {
     "value": null,
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in icici-lombard__complete-health-insurance-umbrella__wordings.pdf",
+    "_confidence": "low"
   },
   "post_hospitalization_days": {
     "value": null,
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in icici-lombard__complete-health-insurance-umbrella__wordings.pdf",
+    "_confidence": "low"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
-    "source_quote": ""
+    "value": 150,
+    "source_url": "https://www.icicilombard.com/docs/default-source/downloads/complete-health-insurance-brochure.pdf",
+    "source_note": "Per insurer baseline (ICICI Lombard Complete Health iHealth Annexure I; 150 procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf"
   },
   "network_hospital_count": {
     "value": null,
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in icici-lombard__complete-health-insurance-umbrella__wordings.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
     "value": null,
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
-    "source_quote": "Sum Insured for each of the Optional C"
+    "source_quote": "not stated in icici-lombard__complete-health-insurance-umbrella__wordings.pdf",
+    "_confidence": "low"
   },
   "claim_settlement_ratio": {
     "value": null,
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in icici-lombard__complete-health-insurance-umbrella__wordings.pdf",
+    "source_url": null,
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
-    "value": null,
+    "value": 4,
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "mplete set of documents & information, We will respond within 4 hours (within 2 hours for Covid-19 in-patient claims) of the actu",
+    "_confidence": "high"
   },
   "policy_type": {
-    "value": "group",
+    "value": null,
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
-    "source_quote": "classified as group from PDF heuristics"
+    "source_quote": "not stated in icici-lombard__complete-health-insurance-umbrella__wordings.pdf",
+    "_confidence": "low"
   },
   "_meta": {
     "curated_at": "2026-05-14",
     "primary_source_pdf": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
     "completeness_pct": 41,
-    "notes": "Curated by tools/curate_remaining.py \u2014 pattern-based extraction from local PDF"
+    "notes": "Curated by tools/curate_remaining.py — pattern-based extraction from local PDF"
   }
 }

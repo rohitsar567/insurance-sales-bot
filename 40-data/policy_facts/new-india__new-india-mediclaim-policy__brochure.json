@@ -8,54 +8,63 @@
     "source_quote": "UIN: NIAHLIP25040V082425"
   },
   "min_entry_age": {
-    "value": null,
+    "value": 18,
     "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "All the persons proposed for this Insurance should be between the age of 18 years and 65 years.",
+    "_confidence": "high"
   },
   "max_entry_age": {
-    "value": null,
+    "value": 65,
     "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__brochure.pdf",
-    "source_quote": ""
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "All the persons proposed for this Insurance should be between the age of 18 years and 65 years.",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
-    "value": null,
+    "value": 36,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "of a pre-existing Disease (PED) and its direct \ncomplications shall be excluded until the expiry of 36 months of continuous coverage \nafter the date of inception of the first policy with us.",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in new-india-mediclaim-policy__brochure.pdf",
+    "_confidence": "low"
   },
   "maternity_coverage": {
-    "value": null,
+    "value": false,
+    "unit": "boolean",
     "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "MATERNITY EXPENSES (Code - Excl18) \na. \nMedical treatment expenses traceable to childbirth",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in new-india-mediclaim-policy__brochure.pdf",
+    "_confidence": "low"
   },
   "ayush_coverage": {
     "value": true,
+    "unit": "boolean",
     "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__brochure.pdf",
-    "source_quote": "AYUSH TREATMENT\nExpenses incurred for inpatient care treatment under Ayurveda, Yoga and Naturopathy,\nUnani, Siddha and H"
+    "source_quote": "AYUSH TREATMENT\nExpenses incurred for inpatient care treatment under Ayurveda, Yoga and Naturopathy,\nUnani, Siddha and H",
+    "_confidence": "high"
   },
   "cashless_treatment_supported": {
     "value": true,
+    "unit": "boolean",
     "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__brochure.pdf",
-    "source_quote": "Cashless facility"
+    "source_quote": "Cashless facility",
+    "_confidence": "high"
   },
   "copayment_pct": {
-    "value": 20,
+    "value": 20.0,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__brochure.pdf",
-    "source_quote": "CO-PAY\nIf the Insured person opts for voluntary co-pay of 20%"
+    "source_quote": "CO-PAY\nIf the Insured person opts for voluntary co-pay of 20%",
+    "_confidence": "high"
   },
   "no_claim_bonus_pct": {
     "value": 25,
@@ -68,9 +77,11 @@
     "source_quote": "restoration of normal state of Health under any\ncircumstances. We cover the expenses up to 10%"
   },
   "room_rent_capping": {
-    "value": "Room rent, Boarding, DMO / RMO / CMO / RMP Charges, Nursing (Including Injection",
+    "value": 2.0,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__brochure.pdf",
-    "source_quote": "Room rent, Boarding, DMO / RMO / CMO / RMP Charges, Nursing (Including Injection / Drugs\nand Intra venous fluid administ"
+    "source_quote": "Room rent, Boarding, DMO / RMO / CMO / RMP Charges, Nursing (Including Injection / Drugs\nand Intra venous fluid administ",
+    "_confidence": "high"
   },
   "pre_hospitalization_days": {
     "value": 30,
@@ -84,38 +95,48 @@
   },
   "day_care_treatments_count": {
     "value": null,
+    "unit": "procedures",
     "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in new-india-mediclaim-policy__brochure.pdf",
+    "_confidence": "low"
   },
   "network_hospital_count": {
-    "value": null,
+    "value": 20855,
+    "source_url": "https://www.newindia.co.in/hospitals-list",
+    "source_note": "New India Assurance: 20,855 empanelled hospitals as of 11.02.2025 (direct quote from insurer Hospitals List page, scraped 2026-05-15). Counts all GIPSA PPN-empaneled hospitals so larger than aggregator counts that filter for active cashless.",
+    "_confidence": "high",
     "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "Insurer-level metric backfilled from public-web source — see source_url"
   },
   "sum_insured_options": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "You are free to choose any Sum Insured ranging from Rs. One Lakh to Fifteen Lakhs.",
+    "_confidence": "medium"
   },
   "claim_settlement_ratio": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in new-india-mediclaim-policy__brochure.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__brochure.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in new-india-mediclaim-policy__brochure.pdf",
+    "_confidence": "low"
   },
   "policy_type": {
-    "value": "group",
+    "value": "indemnity",
     "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__brochure.pdf",
-    "source_quote": "classified as group from PDF heuristics"
+    "source_quote": "NEW INDIA MEDICLAIM POLICY is a Policy designed to cover Hospitalisation expenses and/or services incurred in India.",
+    "_confidence": "high"
   },
   "_meta": {
     "curated_at": "2026-05-14",
     "primary_source_pdf": "rag/corpus/new-india/new-india-mediclaim-policy__brochure.pdf",
     "completeness_pct": 45,
-    "notes": "Curated by tools/curate_remaining.py \u2014 pattern-based extraction from local PDF"
+    "notes": "Curated by tools/curate_remaining.py — pattern-based extraction from local PDF",
+    "network_hospital_backfill_2026-05-15": "new-india insurer-wide count backfilled in targeted scrape pass"
   }
 }

@@ -7,31 +7,29 @@
     "value": "SHAHLIP22226V012122",
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/health-premier__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Star Health Premier Insurance Policy Unique Identification No.: SHAHLIP22226V012122",
+    "_confidence": "high"
   },
   "min_entry_age": {
     "value": 50,
     "unit": "years",
     "source_pdf_path": "rag/corpus/star-health/health-premier__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "For Adults: Min - 50 years for primary member & Max - Up to Any Age (Oldest member will be consider as primary member)",
+    "_confidence": "high"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/star-health/health-premier__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/star-health/health-premier__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in star-health__health-premier__brochure.pdf",
+    "_confidence": "low"
   },
   "min_child_entry_age": {
     "value": 91,
     "unit": "days",
     "source_pdf_path": "rag/corpus/star-health/health-premier__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "For Dependent Children: Min - 91 days & Max - Up to 25 years",
+    "_confidence": "high"
   },
   "sum_insured_options": {
     "value": [
@@ -44,102 +42,206 @@
     ],
     "unit": "INR",
     "source_pdf_path": "rag/corpus/star-health/health-premier__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Sum Insured Options Rs.10,00,000/-, Rs.20,00,000/-, Rs.30,00,000/-, Rs.50,00,000/-, Rs.75,00,000/- and Rs.1,00,00,000/-",
+    "_confidence": "high"
   },
   "grace_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/star-health/health-premier__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "the policy shall terminate and can be renewed within the Grace Period of 30 days to maintain continuity of beneﬁts without break in policy.",
+    "_confidence": "high"
   },
   "free_look_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/star-health/health-premier__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "The insured person shall be allowed free look period of thirty days from date of receipt of the policy document whether electronically or otherwise to review the terms and conditions of the policy, and to return the same if not acceptable.",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/health-premier__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Expenses related to the treatment of any illness within 30 days from the ﬁrst policy commencement date shall be excluded except claims arising due to an accident, provided the same are covered.",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/health-premier__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "direct complications shall be excluded until the expiry of 24 months of continuous coverage after the date of inception of the ﬁrst policy with insurer.",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/health-premier__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "surgeries/treatments shall be excluded until the expiry of 24 months of continuous coverage after the date of inception of the ﬁrst policy with us. This exclusion shall not be applicable for claims arising due to an accident.",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/health-premier__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in star-health__health-premier__brochure.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": 60,
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/health-premier__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "9. Pre-hospitalization Expenses: Medical expenses incurred up to 60 days immediately before the insured person is hospitalized.",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
     "value": 90,
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/health-premier__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Post Hospitalization Expenses: Medical expenses incurred up to 90 days immediately after the insured person is discharged from the hospital.",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/star-health/health-premier__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 540,
+    "source_url": "https://www.starhealth.in/health-insurance/daycare-treatment-and-procedures/",
+    "source_note": "Per insurer baseline (Star Health day-care procedures page; 540+ procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/star-health/health-premier__brochure.pdf"
   },
   "network_hospital_count": {
     "value": 14000,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/star-health/health-premier__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_url": "https://www.starhealth.in/",
+    "source_note": "14,000+ network hospitals across India (per official Star Health communications, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
-    "value": null,
-    "unit": "percent",
+    "value": 20,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/star-health/health-premier__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Co-payment (Applicable for Insured persons whose age at the time of entry is above 65 years): Each and every claim under the Policy shall be subject to a Copayment of 20% applicable to claim amount admissible and payable as per the terms and conditions of the Policy even for renewals.",
+    "_confidence": "high"
   },
   "room_rent_capped_at_pct_of_si": {
     "value": null,
-    "unit": "percent",
+    "unit": "%",
     "source_pdf_path": "rag/corpus/star-health/health-premier__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in health-premier__brochure.pdf",
+    "_confidence": "low"
   },
   "policy_term_options_years": {
-    "value": null,
+    "value": [
+      1,
+      2,
+      3
+    ],
     "unit": "years",
     "source_pdf_path": "rag/corpus/star-health/health-premier__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Policy Term - One year / Two years / Three years: For policies more than one year, the Sum Insured is for each year, without any carry over beneﬁt thereof.",
+    "_confidence": "high"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/star-health/health-premier__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in star-health__health-premier__brochure.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/star-health/health-premier__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in star-health__health-premier__brochure.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/health-premier__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in star-health__health-premier__brochure.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/star-health/health-premier__brochure.pdf",
+    "source_quote": "not stated in health-premier__brochure.pdf",
+    "_confidence": "low"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/star-health/health-premier__brochure.pdf",
+    "source_quote": "11. Organ Donor Expenses: In patient hospitalization expenses incurred for organ transplantation from the Donor to the Recipient Insured Person are payable provided the claim for transplantation is payable",
+    "_confidence": "high"
+  },
+  "restoration_benefit": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/star-health/health-premier__brochure.pdf",
+    "source_quote": "automatic restoration of the Sum Insured once by 100% subject to the following; 1",
+    "_confidence": "medium"
+  },
+  "domiciliary_treatment": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/star-health/health-premier__brochure.pdf",
+    "source_quote": "not stated in health-premier__brochure.pdf",
+    "_confidence": "low"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/star-health/health-premier__brochure.pdf",
+    "source_quote": "health checkup reports: If following medical records of the person proposed for insurance are submitted, Company may offer a discount of 10% on the applicable premium, subjec",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/star-health/health-premier__brochure.pdf",
+    "source_quote": "not stated in star-health__health-premier__brochure.pdf",
+    "_confidence": "low"
+  },
+  "no_claim_bonus_cap_pct": {
+    "value": 100,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/star-health/health-premier__brochure.pdf",
+    "source_quote": "Cumulative Bonus: The insured person will be eligible for Cumulative bonus calculated at 20% of sum insured for each claim free year subject to a maximum of 100% of the sum insured",
+    "_confidence": "high"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "unit": "hours",
+    "source_pdf_path": "rag/corpus/star-health/health-premier__brochure.pdf",
+    "source_quote": "not stated in star-health__health-premier__brochure.pdf",
+    "_confidence": "low"
+  },
+  "geographic_coverage": {
+    "value": null,
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/star-health/health-premier__brochure.pdf",
+    "source_quote": "not stated in star-health__health-premier__brochure.pdf",
+    "_confidence": "low"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "senior_citizen",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/star-health/health-premier__brochure.pdf",
+    "source_quote": "indemnity health insurance product which covers expenses incurred for hospitalisation due to Illness or Accident. This policy has been devised as the result of our meticulous research to provide the much needed protection to the individuals who are 50 year",
+    "_confidence": "medium"
+  },
+  "room_rent_capping": {
+    "value": null,
+    "unit": "text",
+    "source_pdf_path": "rag/corpus/star-health/health-premier__brochure.pdf",
+    "source_quote": "not stated in health-premier__brochure.pdf",
+    "_confidence": "low"
+  },
+  "no_claim_bonus_pct": {
+    "value": 20,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/star-health/health-premier__brochure.pdf",
+    "source_quote": "Cumulative Bonus: The insured person will be eligible for Cumulative bonus calculated at 20% of sum insured for each claim free year subject to a maximum of 100% of the sum insured",
+    "_confidence": "high"
   }
 }

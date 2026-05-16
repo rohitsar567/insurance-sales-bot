@@ -7,31 +7,29 @@
     "value": "BAJHLIP21184V022021",
     "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/tax-gain__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "UIN: BAJHLIP21184V022021 1 CUSTOMER INFORMATION SHEET",
+    "_confidence": "high"
   },
   "min_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/bajaj-allianz/tax-gain__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in bajaj-allianz__tax-gain__cis.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/bajaj-allianz/tax-gain__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
-  },
-  "max_renewal_age": {
-    "value": null,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/bajaj-allianz/tax-gain__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in bajaj-allianz__tax-gain__cis.pdf",
+    "_confidence": "low"
   },
   "min_child_entry_age": {
     "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/bajaj-allianz/tax-gain__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in bajaj-allianz__tax-gain__cis.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
     "value": [
@@ -39,102 +37,160 @@
     ],
     "unit": "INR",
     "source_pdf_path": "rag/corpus/bajaj-allianz/tax-gain__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Sum Insured available for each individual is Rs 300,000 Sum Insured available for each family member is Rs 300,000 Sum Insured of Rs 300,000 is available for the entire family",
+    "_confidence": "high"
   },
   "grace_period": {
     "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/bajaj-allianz/tax-gain__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in bajaj-allianz__tax-gain__cis.pdf",
+    "_confidence": "low"
   },
   "free_look_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/bajaj-allianz/tax-gain__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Free Look Cancellation: Insured has an option of cancelling his/her policy up to 30 days from the first inception of policy with Us , subject to rest terms and conditions.",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/tax-gain__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Initial Waiting period: 30 days for all illnesses Specific Waiting period: 24 months for below listed procedures",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 36,
-    "unit": null,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/bajaj-allianz/tax-gain__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Pre-existing diseases waiting period: 36 months Other waiting period 1. Cost of spectacles in the first year of the policy.",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/tax-gain__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Initial Waiting period: 30 days for all illnesses Specific Waiting period: 24 months for below listed procedures 1. Any types of gastric or duodenal ulcers",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/tax-gain__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in bajaj-allianz__tax-gain__cis.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/tax-gain__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in bajaj-allianz__tax-gain__cis.pdf",
+    "_confidence": "low"
   },
   "post_hospitalization_days": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/tax-gain__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in bajaj-allianz__tax-gain__cis.pdf",
+    "_confidence": "low"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/bajaj-allianz/tax-gain__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 130,
+    "source_url": "https://www.bajajgeneralinsurance.com/health-insurance-plans/health-guard.html",
+    "source_note": "Per insurer baseline (Bajaj Allianz Health Guard covers ~130 day care procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/bajaj-allianz/tax-gain__cis.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/bajaj-allianz/tax-gain__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 18400,
+    "source_url": "https://www.bajajgeneralinsurance.com/",
+    "source_note": "18,400+ Cashless Hospitals (homepage, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/bajaj-allianz/tax-gain__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in bajaj-allianz__tax-gain__cis.pdf",
+    "_confidence": "low"
   },
   "room_rent_capped_at_pct_of_si": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/bajaj-allianz/tax-gain__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in bajaj-allianz__tax-gain__cis.pdf",
+    "_confidence": "low"
   },
   "policy_term_options_years": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/bajaj-allianz/tax-gain__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in bajaj-allianz__tax-gain__cis.pdf",
+    "_confidence": "low"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/bajaj-allianz/tax-gain__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in bajaj-allianz__tax-gain__cis.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/bajaj-allianz/tax-gain__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in bajaj-allianz__tax-gain__cis.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/tax-gain__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in bajaj-allianz__tax-gain__cis.pdf",
+    "_confidence": "low"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/bajaj-allianz/tax-gain__cis.pdf",
+    "source_quote": "Health Check-up. 4. Any expenses in excess of the maximum payable under the Outpatient medical expenses limit. 8 Waiting Period Time period during which specified disease/treatme nt are not covered It is counted from beginning Initial Waiti",
+    "_confidence": "medium"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/bajaj-allianz/tax-gain__cis.pdf",
+    "source_quote": "Cashless Claim process Cashless treatment is only available at Network Hospitals  You or Your representative must intimate Us 48 hours before the planned Hospitalization and within 24 hours of emergency hospitalization and request pre-authorization by way of the written form",
+    "_confidence": "high"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "unit": "hours",
+    "source_pdf_path": "rag/corpus/bajaj-allianz/tax-gain__cis.pdf",
+    "source_quote": "not stated in bajaj-allianz__tax-gain__cis.pdf",
+    "_confidence": "low"
+  },
+  "geographic_coverage": {
+    "value": "pan_india",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/bajaj-allianz/tax-gain__cis.pdf",
+    "source_quote": "Any treatment received outside India 11. Circumcision unless required for the treatment of Illness or Accidental bodily injury.",
+    "_confidence": "high"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "family_floater",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/bajaj-allianz/tax-gain__cis.pdf",
+    "source_quote": "Family Floater basis Age of the members to be insured Coverage opted on Individual Basis covering each member of the family separately",
+    "_confidence": "high"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/bajaj-allianz/tax-gain__cis.pdf",
+    "source_quote": "Treatment for any other system other than modern medicine (allopathy) and AYUSH therapies.",
+    "_confidence": "medium"
   }
 }

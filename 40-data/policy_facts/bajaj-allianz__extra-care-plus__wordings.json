@@ -4,141 +4,233 @@
   "insurer_slug": "bajaj-allianz",
   "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
   "uin_code": {
-    "value": "BAJHLIP21321V012021",
+    "value": "BAJHLIP23069V032223",
     "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "UIN: BAJHLIP23069V032223 1 Bajaj Allianz General Insurance Co. Ltd. Bajaj Allianz House, Airport Road, Yerawada, Pune -",
+    "_confidence": "high"
   },
   "min_entry_age": {
-    "value": 18,
+    "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in bajaj-allianz__extra-care-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
-    "value": 65,
+    "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in bajaj-allianz__extra-care-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "min_child_entry_age": {
     "value": 91,
     "unit": "days",
     "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "has attained the age of 3 months and is not older than 80years of age at the commencement of the Policy Period",
+    "_confidence": "medium"
   },
   "sum_insured_options": {
-    "value": [
-      3000000,
-      5000000,
-      10000000,
-      20000000,
-      50000000
-    ],
+    "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in bajaj-allianz__extra-care-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "grace_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "grace period of fifteen days (where premium is paid on a monthly instalments) and thirty days (where premium is paid in quarterly/half- yearly/annual instalments) is available on the premium due date, to pay the premium.",
+    "_confidence": "high"
   },
   "free_look_period": {
-    "value": 15,
+    "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "free look period of thirty days from date of receipt of the policy document to review the terms and conditions of the policy, and to return the same if not acceptable.",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "the treatment of any illness within 30 days from the first Policy commencement date shall be excluded except claims arising due to an accident, provided the same are covered.",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
-    "value": 36,
-    "unit": null,
+    "value": null,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in bajaj-allianz__extra-care-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "specific_disease_waiting_months": {
-    "value": 24,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in bajaj-allianz__extra-care-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "maternity_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in bajaj-allianz__extra-care-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": 60,
     "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "The medical expenses incurred in the 60 days period immediately before you were hospitalised, provided that: i. Such medical expenses were incurred for the same condition requiring subsequent Hospitalization",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
     "value": 90,
     "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "The medical expenses incurred in the 90 days period immediately after you were discharged, provided that: i. Such medical expenses were incurred for the same condition requiring earlier Hospitalization",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 130,
+    "source_url": "https://www.bajajgeneralinsurance.com/health-insurance-plans/health-guard.html",
+    "source_note": "Per insurer baseline (Bajaj Allianz Health Guard covers ~130 day care procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 18400,
+    "source_url": "https://www.bajajgeneralinsurance.com/",
+    "source_note": "18,400+ Cashless Hospitals (homepage, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in bajaj-allianz__extra-care-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "room_rent_capped_at_pct_of_si": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in bajaj-allianz__extra-care-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "policy_term_options_years": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in bajaj-allianz__extra-care-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in bajaj-allianz__extra-care-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in bajaj-allianz__extra-care-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in bajaj-allianz__extra-care-plus__wordings.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
+    "source_quote": "AYUSH Treatment refers to medical expenses incurred on hospitalization under Ayurveda, Yoga and Naturopathy Unani, Siddha and Homeopathy systems",
+    "_confidence": "high"
+  },
+  "maternity_coverage": {
+    "value": true,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
+    "source_quote": "Maternity Expenses We will pay the Medical Expenses related to pregnancy, childbirth or medically recommended and lawful termination of pregnancy, limited to maximum 2 deliveries or termination(s) or either, during the lifetime of the insured person",
+    "_confidence": "high"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
+    "source_quote": "Organ Donor Expenses We will pay for Medical treatment of the organ donor for harvesting the organ i.e. including surgery to remove organs from a donor",
+    "_confidence": "high"
+  },
+  "domiciliary_treatment": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
+    "source_quote": "not stated in bajaj-allianz__extra-care-plus__wordings.pdf",
+    "_confidence": "low"
+  },
+  "worldwide_emergency_cover": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
+    "source_quote": "not stated in bajaj-allianz__extra-care-plus__wordings.pdf",
+    "_confidence": "low"
+  },
+  "preventive_health_checkup": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
+    "source_quote": "not stated in bajaj-allianz__extra-care-plus__wordings.pdf",
+    "_confidence": "low"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
+    "source_quote": "Cashless facility: Cashless facility means a facility extended by the Insurer to the Insured where the payments, of the costs of treatment undergone by the Insured in accordance with the policy terms and conditions",
+    "_confidence": "high"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "unit": "hours",
+    "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
+    "source_quote": "not stated in bajaj-allianz__extra-care-plus__wordings.pdf",
+    "_confidence": "low"
+  },
+  "geographic_coverage": {
+    "value": "pan_india",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
+    "source_quote": "Territorial Limits & Governing Law a. We cover insured events arising during the Policy Period for treatment availed within India only.",
+    "_confidence": "high"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "super_top_up",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
+    "source_quote": "Aggregate Deductible Aggregate deductible is a cost sharing requirement under this policy that provides the company will not be liable for a specified rupee amount of the covered expenses",
+    "_confidence": "medium"
+  },
+  "deductible_amount": {
+    "value": null,
+    "unit": "INR",
+    "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
+    "source_quote": "not stated in bajaj-allianz__extra-care-plus__wordings.pdf",
+    "_confidence": "low"
+  },
+  "modern_treatments_covered": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
+    "source_quote": "Modern Treatment Methods and Advancement in Technologies are covered up to Base Sum Insured, subject to policy terms, conditions, coverages",
+    "_confidence": "high"
   }
 }

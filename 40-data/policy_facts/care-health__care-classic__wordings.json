@@ -7,132 +7,200 @@
     "value": "CHIHLIP22071V012122",
     "unit": null,
     "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "C161503 UIN: CHIHLIP22071V012122",
+    "_confidence": "high"
   },
   "min_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in care-health__care-classic__wordings.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
-  },
-  "max_renewal_age": {
-    "value": null,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in care-health__care-classic__wordings.pdf",
+    "_confidence": "low"
   },
   "min_child_entry_age": {
     "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in care-health__care-classic__wordings.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
     "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in care-health__care-classic__wordings.pdf",
+    "_confidence": "low"
   },
   "grace_period": {
-    "value": null,
-    "unit": "days",
-    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
-  },
-  "free_look_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "terminate and can be renewed within the Grace Period of 30 days to maintain continuity of benefits without break in po",
+    "_confidence": "high"
+  },
+  "free_look_period": {
+    "value": null,
+    "unit": "days",
+    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
+    "source_quote": "not stated in care-health__care-classic__wordings.pdf",
+    "_confidence": "low"
   },
   "initial_waiting_period_days": {
-    "value": null,
+    "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "y waiting period- Code- Excl03 a. Expenses related to the treatment of any illness within 30 days from the first policy commencement date shall be excluded except claims arising due to",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
-    "value": null,
-    "unit": null,
+    "value": 36,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Pre-Existing Diseases: Code- Excl01 a. Expenses related to the treatment of a pre- existing Disease (PED) and its direct complications shall be excluded until the expiry of 36 months of contin",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
-    "value": null,
+    "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "related to the treatment of the listed Conditions, surgeries/treatments shall be excluded until the expiry of 24 months of continuous coverage, as may be the case after the",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in care-health__care-classic__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
-    "value": null,
+    "value": 60,
     "unit": null,
     "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "hospitalization Medical Expenses, for a period of 60 days immediately prior to the Insured Person's date of admission to the Hospital, subject to the conditions",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
-    "value": null,
+    "value": 90,
     "unit": null,
     "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "hospitalization Medical Expenses, for a period of 90 days immediately after the Insured Person's date of discharge from the Hospital, subject to the conditions",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 541,
+    "source_url": "https://www.careinsurance.com/product/care-senior",
+    "source_note": "Per insurer baseline (Care Health publishes 541+ day care treatments across plans)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
+    "value": 11600,
+    "source_url": "https://www.careinsurance.com/health-plan-network-hospitals.html",
+    "source_note": "Care Health Insurance: 22,100+ healthcare providers including 11,600+ network hospitals (insurer network-hospitals page; corroborated by Google snippet of careinsurance.com, scraped 2026-05-15). Conservative count uses hospital-specific subset, not the wider healthcare-provider count.",
+    "_confidence": "medium",
     "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Insurer-level metric backfilled from public-web source — see source_url"
   },
   "co_payment_pct": {
-    "value": null,
+    "value": 20,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "List of Hospitals where Co-Payment of 20% is not applicable under Optional Cover \"Smart Select",
+    "_confidence": "medium"
   },
   "room_rent_capped_at_pct_of_si": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in care-health__care-classic__wordings.pdf",
+    "_confidence": "low"
   },
   "policy_term_options_years": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in care-health__care-classic__wordings.pdf",
+    "_confidence": "low"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in care-health__care-classic__wordings.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in care-health__care-classic__wordings.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in care-health__care-classic__wordings.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
+    "source_quote": "AYUSH Hospital is a healthcare facility wherein medical/surgical/para-surgical treatment procedures and interventions are carried out by AYUSH Medical Practitioner",
+    "_confidence": "high"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
+    "source_quote": "Domiciliary Hospitalization means medical treatment for an illness/disease/injury which in the normal course would require care and treatment at a Hospital but is actually taken while confined at home under any of the following circumstances: a.",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
+    "source_quote": "Cashless Facility means a facility extended by the insurer to the Insured where the payments, of the costs of treatment undergone by the insured in accordance with the Policy terms and conditions, are directly made to the",
+    "_confidence": "high"
+  },
+  "geographic_coverage": {
+    "value": "pan_india",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
+    "source_quote": "medical treatment taken entirely within India. All payments under this Policy shall be made in Indian Rupees and within India",
+    "_confidence": "high"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": null,
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
+    "source_quote": "not stated in care-health__care-classic__wordings.pdf",
+    "_confidence": "low"
+  },
+  "room_rent_capping": {
+    "value": null,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
+    "source_quote": "not stated in care-health__care-classic__wordings.pdf",
+    "_confidence": "low"
+  },
+  "maternity_coverage": {
+    "value": true,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
+    "source_quote": "Maternity expenses shall include- a. Medical treatment expenses traceable to childbirth (including complicated deliveries and caesarean sections incurred during hospitalization)",
+    "_confidence": "medium"
+  },
+  "_meta": {
+    "network_hospital_backfill_2026-05-15": "care-health insurer-wide count backfilled in targeted scrape pass"
   }
 }

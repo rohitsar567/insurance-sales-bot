@@ -7,31 +7,29 @@
     "value": "CHIHLIP26049V042526",
     "unit": null,
     "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": ":25076804 UIN:CHIHLIP26049V042526",
+    "_confidence": "high"
   },
   "min_entry_age": {
     "value": 5,
     "unit": "years",
     "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Entry Age - Minimum Individual : 5 years Floater : 91 Days with at least 1 Insured Person of age 18 years",
+    "_confidence": "high"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in care-health__care-advantage__brochure.pdf",
+    "_confidence": "low"
   },
   "min_child_entry_age": {
     "value": 91,
     "unit": "days",
     "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Entry Age - Minimum Individual : 5 years Floater : 91 Days with at least 1 Insured Person of age 18 years",
+    "_confidence": "high"
   },
   "sum_insured_options": {
     "value": [
@@ -41,102 +39,177 @@
     ],
     "unit": "INR",
     "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Sum Insured* '25 Lacs, '50 Lacs and '1 Crore",
+    "_confidence": "high"
   },
   "grace_period": {
     "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in care-health__care-advantage__brochure.pdf",
+    "_confidence": "low"
   },
   "free_look_period": {
     "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in care-health__care-advantage__brochure.pdf",
+    "_confidence": "low"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Initial Wait Period 30 Days Named Ailment wait Period 24 Months Pre-Existing Disease Wait Period 36 Months",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 36,
-    "unit": null,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Initial Wait Period 30 Days Named Ailment wait Period 24 Months Pre-Existing Disease Wait Period 36 Months",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Initial Wait Period 30 Days Named Ailment wait Period 24 Months Pre-Existing Disease Wait Period 36 Months",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in care-health__care-advantage__brochure.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
-    "value": 30,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
-  },
-  "post_hospitalization_days": {
-    "value": 60,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
-  },
-  "day_care_treatments_count": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in care-health__care-advantage__brochure.pdf",
+    "_confidence": "low"
+  },
+  "post_hospitalization_days": {
+    "value": null,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
+    "source_quote": "not stated in care-health__care-advantage__brochure.pdf",
+    "_confidence": "low"
+  },
+  "day_care_treatments_count": {
+    "value": 541,
+    "source_url": "https://www.careinsurance.com/product/care-senior",
+    "source_note": "Per insurer baseline (Care Health publishes 541+ day care treatments across plans)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf"
   },
   "network_hospital_count": {
     "value": 24000,
     "unit": null,
     "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "network of over 24000+ healthcare providers pan India",
+    "_confidence": "high"
   },
   "co_payment_pct": {
-    "value": null,
+    "value": 20,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "itals not part of Smart Select Network: 20% co-payment on all claims Note : check the list of hospitals covered under smart s",
+    "_confidence": "high"
   },
   "room_rent_capped_at_pct_of_si": {
-    "value": null,
+    "value": 0,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "sured* `25 Lacs, `50 Lacs and `1 Crore Room Rent No Sub-Limit ICU charges No Sub-Limit Pricing Zones Zone 1 - Delhi NC",
+    "_confidence": "high"
   },
   "policy_term_options_years": {
-    "value": null,
+    "value": [
+      1
+    ],
     "unit": "years",
     "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Policy Term 1/2/3 Years",
+    "_confidence": "medium"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in care-health__care-advantage__brochure.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in care-health__care-advantage__brochure.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in care-health__care-advantage__brochure.pdf",
+    "_confidence": "low"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
+    "source_quote": "Organ Donor Expenses Up to Sum Insured No Claim Bonus (NCB) 10% increase in SI per Policy Year in case of claim-free year; Max up to 50% of SI OPTIONAL BENEFITS: No Claims Bonus Super (NCBS) Air Ambulance",
+    "_confidence": "high"
+  },
+  "restoration_benefit": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
+    "source_quote": "AUTOMATIC RECHARGE OF SUM INSURED A health emergency can arise anytime and potentially exhaust the entire Sum Insured that is available. In such cases, features like Automatic recharge of Sum Insured reinstates the Sum Insured back to the original levels. This amount",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
+    "source_quote": "CASHLESS MEDICAL SERVICES AT NETWORK OF 24000+ HEALTHCARE PROVIDERS Care Advantage gives you the advantage of cashless treatmen",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_cap_pct": {
+    "value": 50,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
+    "source_quote": "No Claim Bonus will not exceed 50% of Sum Insured under the policy",
+    "_confidence": "high"
+  },
+  "geographic_coverage": {
+    "value": "pan_india",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
+    "source_quote": "network of over 24000+ healthcare providers pan India",
+    "_confidence": "high"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": null,
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
+    "source_quote": "not stated in care-health__care-advantage__brochure.pdf",
+    "_confidence": "low"
+  },
+  "room_rent_capping": {
+    "value": "No Sub-Limit",
+    "unit": null,
+    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
+    "source_quote": "POLICY BENEFITS: Room Rent No Sub-Limit ICU charges No Sub-Limit",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_pct": {
+    "value": 10,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
+    "source_quote": "flat increase of 10% in Sum Insured for next policy year in case of no claim. No Claim Bonus will not exceed 50%",
+    "_confidence": "high"
   }
 }

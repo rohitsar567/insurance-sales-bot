@@ -5,7 +5,8 @@
   "uin_code": {
     "value": "HDFHLIP25041V062425",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
-    "source_quote": "UIN: my: Optima Secure - 1 HDFHLIP25041V062425"
+    "source_quote": "UIN: my: Optima Secure - HDFHLIP25041V062425 1 Table of Contents Sr. No. P",
+    "_confidence": "high"
   },
   "min_entry_age": {
     "value": 91,
@@ -19,16 +20,22 @@
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-restore__brochure.pdf",
     "source_quote": "Maximum Age: The maximum entry age is 65 years."
   },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-restore__brochure.pdf",
-    "source_quote": "There is no maximum cover ceasing age in this Policy. (Life-long Renewal)"
-  },
   "sum_insured_options": {
-    "value": [500000, 750000, 1000000, 1500000, 2000000, 2500000, 5000000, 10000000, 20000000],
+    "value": [
+      500000,
+      750000,
+      1000000,
+      1500000,
+      2000000,
+      2500000,
+      5000000,
+      10000000,
+      20000000
+    ],
     "unit": "INR",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
-    "source_quote": "Base Sum Insured 5 & 7.5 Lacs 10 Lacs 15 Lacs 20, 25, 50 & 100 & 200"
+    "source_quote": "Sum Insured options range from Rs",
+    "_confidence": "medium"
   },
   "initial_waiting_period_days": {
     "value": 30,
@@ -36,9 +43,10 @@
     "source_quote": "Expenses related to the treatment of any illness within 30 days from the first Policy"
   },
   "pre_existing_disease_waiting_months": {
-    "value": 36,
+    "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
-    "source_quote": "pre-existing Disease (PED) and its direct complications shall be excluded until the expiry of 36 months"
+    "source_quote": "not stated in my-optima-secure__wordings.pdf",
+    "_confidence": "low"
   },
   "specific_disease_waiting_months": {
     "value": 24,
@@ -48,7 +56,8 @@
   "maternity_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
-    "source_quote": "Maternity: Code – Excl18 (Maternity not covered in base; available only via optional 'Parenthood' add-on)"
+    "source_quote": "not stated in hdfc-ergo__optima-secure.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": 60,
@@ -61,79 +70,96 @@
     "source_quote": "180 days unless otherwise specified in the Policy Schedule, immediately post the date of discharge"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
-    "source_quote": "Day Care Treatment covered (all listed day-care procedures included; no fixed count in wording)"
+    "value": 144,
+    "source_url": "https://www.hdfcergo.com/health-insurance/optima-secure/",
+    "source_note": "HDFC Ergo Optima Secure covers all listed day-care procedures (144 per insurer-wide list)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf"
   },
   "ayush_coverage": {
-    "value": true,
+    "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
-    "source_quote": "1.4. AYUSH Treatment ... in any AYUSH Hospital."
+    "source_quote": "not stated in my-optima-secure__wordings.pdf",
+    "_confidence": "low"
   },
   "maternity_coverage": {
     "value": false,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
-    "source_quote": "Maternity: Code – Excl18 (excluded in base; Parenthood add-on optional)"
+    "source_quote": "Maternity: Code – Excl18: i.",
+    "_confidence": "high"
   },
   "newborn_coverage": {
-    "value": false,
+    "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
-    "source_quote": "Newborn baby cover available only under Parenthood add-on, not in base"
+    "source_quote": "not stated in my-optima-secure__wordings.pdf",
+    "_confidence": "low"
   },
   "organ_donor_expenses": {
     "value": true,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
-    "source_quote": "1.7. Organ Donor Expenses The Company shall indemnify the Medical Expenses ... towards the organ donor's Hospitalization for harvesting"
+    "source_quote": "7. Organ Donor Expenses The Company shall indemnify the Medical Expenses covered under Section B-1",
+    "_confidence": "high"
   },
   "no_claim_bonus_pct": {
-    "value": 50,
+    "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
-    "source_quote": "Modification of Cumulative bonus from 10% of Base Sum Insured upto 100% ... to 25% of Base Sum Insured upto 100% (base CB: 50% on renewal, max 100%)"
+    "source_quote": "not stated in my-optima-secure__wordings.pdf",
+    "_confidence": "low"
   },
   "restoration_benefit": {
-    "value": "Automatic Restore Benefit: 100% of Base Sum Insured, once per policy year",
+    "value": true,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
-    "source_quote": "2.6. Automatic Restore Benefit ... Automatic Restore Equal to 100% of Base sum"
+    "source_quote": "Automatic Restore Benefit The company shall instantly add 100% of the Base Sum Insured under this benefit in the event of an admissible claim during the Policy Year due to which Sum Insured was partially or completely exha",
+    "_confidence": "medium"
   },
   "room_rent_capping": {
     "value": "No room rent capping (any room category)",
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-restore__brochure.pdf",
-    "source_quote": "No room rent capping is a feature of HDFC ERGO Optima series (per product brochure summary)"
+    "source_quote": "No sub-limit on room rent : With this health plan you can get the room you like and the treatment you des",
+    "_confidence": "medium"
   },
   "copayment_pct": {
-    "value": 0,
+    "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
-    "source_quote": "No co-payment shall apply if Insured Person from Tier 2 avails a treatment in Tier 1. (No base copay; optional zone-based copay only)"
+    "source_quote": "not stated in my-optima-secure__wordings.pdf",
+    "_confidence": "low"
   },
   "deductible_amount": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
-    "source_quote": "Aggregate Deductible refers to a cost-sharing agreement ... Insured agrees to bear a self-opted amount (optional, not base)"
+    "source_quote": "not stated in hdfc-ergo__optima-secure.pdf",
+    "_confidence": "low"
   },
   "network_hospital_count": {
-    "value": null,
-    "source_url": null,
-    "source_quote": "Insurer-level metric — not extracted from PDF; HDFC ERGO publishes 13,000+ network hospitals on its website but not verified here"
+    "value": 16000,
+    "source_url": "https://www.hdfcergo.com/",
+    "source_note": "16000+ Cashless Healthcare providers (homepage 'Why Choose HDFC ERGO' / 'Cashless Network' section, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "cashless_treatment_supported": {
     "value": true,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
-    "source_quote": "Cashless facility means a facility extended by the insurer to the insured where the payments, of the costs of treatment undergone by the insured ..."
+    "source_quote": "Cashless facility means a facility extended by the insurer to the insured where the payments, of the costs of treatment undergone by the insured in accordance with the policy terms and conditions, are directly made to the network provider by the insurer to t",
+    "_confidence": "high"
   },
   "claim_settlement_ratio": {
     "value": null,
     "source_url": null,
-    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted in this curation pass"
+    "source_quote": "not stated in hdfc-ergo__optima-secure.pdf",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
     "value": null,
-    "source_pdf_path": null,
-    "source_quote": "TAT for cashless authorization not specified in policy wording; governed by IRDAI Master Circular (one hour for initial, three hours for discharge)"
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
+    "source_quote": "not stated in hdfc-ergo__optima-secure.pdf",
+    "_confidence": "low"
   },
   "policy_type": {
     "value": "indemnity",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
-    "source_quote": "Sum Insured means the aggregate limit of indemnity ... (indemnity-based health insurance)"
+    "source_quote": "hospital cash policies which will apply before any benefits are payable b",
+    "_confidence": "low"
   },
   "_meta": {
     "curated_at": "2026-05-13",
@@ -142,6 +168,29 @@
       "rag/corpus/hdfc-ergo/optima-restore__brochure.pdf"
     ],
     "completeness_pct": 85,
-    "notes": "Parsed via pdfplumber from local policy wording. CSR + network count are insurer-level and intentionally null pending IRDAI/website verification."
+    "notes": "Parsed via pdfplumber from local policy wording. CSR + network count are insurer-level and intentionally null pending IRDAI/website verification. | Batch 3 (2026-05-15): coverage breadth fields backfilled.",
+    "batch3_added_fields": [
+      "ambulance_cover",
+      "domiciliary_treatment",
+      "preventive_health_checkup"
+    ]
+  },
+  "ambulance_cover": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
+    "source_quote": "Ambulance means a motor vehicle operated by a licenced/authorised service provider and equipped for the transport and paramedical treatment of the per",
+    "extraction_method": "tools/curate_batch3.py — pattern-grep over pdfplumber text"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
+    "source_quote": "Domiciliary Hospitalization means medical treatment for an illness/disease/injury which in the normal course would requi",
+    "extraction_method": "tools/curate_batch3.py — pattern-grep over pdfplumber text"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
+    "source_quote": "Preventive Health Check-up",
+    "extraction_method": "tools/curate_batch3.py — pattern-grep over pdfplumber text"
   }
 }

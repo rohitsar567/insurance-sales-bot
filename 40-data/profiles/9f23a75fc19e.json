@@ -1,0 +1,35 @@
+{
+  "name_display": "Rohit",
+  "name_slug": "rohit",
+  "persona_id": "9f23a75fc19e",
+  "profile": {
+    "name": "Rohit",
+    "age": 29,
+    "dependents": "self",
+    "income_band": "under_5L",
+    "existing_cover_inr": 500000,
+    "primary_goal": "first_buy",
+    "location_tier": "metro",
+    "parents_to_insure": null,
+    "parents_age_max": null,
+    "parents_has_ped": null,
+    "budget_band": "30k_60k",
+    "health_conditions": [],
+    "asked": [
+      "name",
+      "location",
+      "health_conditions",
+      "budget"
+    ],
+    "free_form_session": false,
+    "shown_policies": [],
+    "selected_policies": [],
+    "rejected_policies": []
+  },
+  "first_seen": "2026-05-15T03:36:41Z",
+  "last_seen": "2026-05-15T03:48:34Z",
+  "sessions": [
+    "ki158_walk_001",
+    "ki158_verify_001"
+  ]
+}

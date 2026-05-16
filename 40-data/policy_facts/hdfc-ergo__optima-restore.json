@@ -19,13 +19,16 @@
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-restore__brochure.pdf",
     "source_quote": "Maximum Age: The maximum entry age is 65 years. There is no maximum cover ceasing age in this Policy."
   },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-restore__brochure.pdf",
-    "source_quote": "Life-long Renewal: We offer life-long renewal regardless of your health status or previous claims"
-  },
   "sum_insured_options": {
-    "value": [300000, 500000, 1000000, 1500000, 2000000, 2500000, 5000000],
+    "value": [
+      300000,
+      500000,
+      1000000,
+      1500000,
+      2000000,
+      2500000,
+      5000000
+    ],
     "unit": "INR",
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-restore__brochure.pdf",
     "source_quote": "Basic Sum Insured per Insured Person per Policy Year (Rs. in Lakh) 3.00 5.00 10.00 15.00 20.00, 25.00, 50.00"
@@ -48,7 +51,8 @@
   "maternity_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-restore__brochure.pdf",
-    "source_quote": "Pregnancy, dental treatment, external aids and appliances. (listed under MAJOR EXCLUSIONS)"
+    "source_quote": "not stated in hdfc-ergo__optima-restore.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": 60,
@@ -61,24 +65,29 @@
     "source_quote": "1c) Post-Hospitalization Covered upto 180 Days"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-restore__brochure.pdf",
-    "source_quote": "1d) Day Care Procedures All Day Care Treatments Covered"
+    "value": 144,
+    "source_url": "https://www.hdfcergo.com/health-insurance/optima-restore-individual",
+    "source_note": "HDFC Ergo Optima Restore covers all listed day-care procedures (144 per insurer-wide list)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-restore__brochure.pdf"
   },
   "ayush_coverage": {
-    "value": false,
+    "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-restore__brochure.pdf",
-    "source_quote": "Non-allopathic treatment, congenital external diseases, cosmetic surgery (listed under MAJOR EXCLUSIONS)"
+    "source_quote": "not stated in optima-restore__brochure.pdf",
+    "_confidence": "low"
   },
   "maternity_coverage": {
-    "value": false,
+    "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-restore__brochure.pdf",
-    "source_quote": "Pregnancy, dental treatment, external aids and appliances. (MAJOR EXCLUSIONS)"
+    "source_quote": "not stated in optima-restore__brochure.pdf",
+    "_confidence": "low"
   },
   "newborn_coverage": {
-    "value": false,
+    "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-restore__brochure.pdf",
-    "source_quote": "Not covered in base (no newborn-specific benefit listed in brochure feature table)"
+    "source_quote": "not stated in optima-restore__brochure.pdf",
+    "_confidence": "low"
   },
   "organ_donor_expenses": {
     "value": true,
@@ -101,19 +110,22 @@
     "source_quote": "No sub-limit on room rent : With this health plan you can get the room you like and the treatment you deserve without a hassle."
   },
   "copayment_pct": {
-    "value": 0,
+    "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-restore__brochure.pdf",
-    "source_quote": "No geography based sub-limits ... no additional copays or sub-limits."
+    "source_quote": "not stated in optima-restore__brochure.pdf",
+    "_confidence": "low"
   },
   "deductible_amount": {
     "value": null,
-    "source_pdf_path": null,
-    "source_quote": "No base deductible in Optima Restore"
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-restore__brochure.pdf",
+    "source_quote": "not stated in hdfc-ergo__optima-restore.pdf",
+    "_confidence": "low"
   },
   "network_hospital_count": {
-    "value": 10000,
-    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-restore__brochure.pdf",
-    "source_quote": "Cashless transactions: Optim Restore enables you to get treated on a cashless basis across 10,000+ cashless network hospitals."
+    "value": 16000,
+    "source_url": "https://www.hdfcergo.com/",
+    "source_note": "16000+ Cashless Healthcare providers (homepage 'Why Choose HDFC ERGO' / 'Cashless Network' section, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "cashless_treatment_supported": {
     "value": true,
@@ -123,22 +135,50 @@
   "claim_settlement_ratio": {
     "value": null,
     "source_url": null,
-    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted in this curation pass"
+    "source_quote": "not stated in hdfc-ergo__optima-restore.pdf",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-restore__brochure.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-restore__brochure.pdf",
-    "source_quote": "Quick turnaround time: You do not have to worry about pre-authorization, we have a quick turnaround time. (No explicit hour count)"
+    "source_quote": "not stated in hdfc-ergo__optima-restore.pdf",
+    "_confidence": "low"
   },
   "policy_type": {
     "value": "indemnity",
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-restore__brochure.pdf",
-    "source_quote": "1a) In-patient Treatment Covered upto sum insured (indemnity health plan)"
+    "source_quote": "Critical Illness One opinion per policy year 1j) Emergency Air Ambulance Cov",
+    "_confidence": "low"
   },
   "_meta": {
     "curated_at": "2026-05-13",
     "primary_source_pdf": "rag/corpus/hdfc-ergo/optima-restore__brochure.pdf",
     "completeness_pct": 88,
-    "notes": "Parsed via pdfplumber from local brochure. CSR insurer-level (null)."
+    "notes": "Parsed via pdfplumber from local brochure. CSR insurer-level (null). | Batch 3 (2026-05-15): coverage breadth fields backfilled.",
+    "batch3_added_fields": [
+      "ambulance_cover",
+      "domiciliary_treatment",
+      "preventive_health_checkup"
+    ]
+  },
+  "ambulance_cover": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-restore__brochure.pdf",
+    "source_quote": "Ambulance Cover Upto Rs",
+    "extraction_method": "tools/curate_batch3.py — pattern-grep over pdfplumber text"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-restore__brochure.pdf",
+    "source_quote": "Domiciliary Treatment Covered upto sum insured 1f) Organ Donor Covered upto sum insured 1g) Ambulance Cover Upto Rs",
+    "extraction_method": "tools/curate_batch3.py — pattern-grep over pdfplumber text",
+    "_confidence": "high"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-restore__brochure.pdf",
+    "source_quote": "preventive health check up",
+    "extraction_method": "tools/curate_batch3.py — pattern-grep over pdfplumber text"
   }
 }

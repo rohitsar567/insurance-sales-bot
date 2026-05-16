@@ -7,132 +7,237 @@
     "value": "TATHLIP24132V012324",
     "unit": null,
     "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "TATA AIG MediCare LITE UIN: TATHLIP24132V012324",
+    "_confidence": "high"
   },
   "min_entry_age": {
-    "value": 18,
+    "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in tata-aig__medicare-lite__cis.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in tata-aig__medicare-lite__cis.pdf",
+    "_confidence": "low"
   },
   "min_child_entry_age": {
-    "value": 91,
+    "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in tata-aig__medicare-lite__cis.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
     "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in tata-aig__medicare-lite__cis.pdf",
+    "_confidence": "low"
   },
   "grace_period": {
-    "value": 30,
+    "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in tata-aig__medicare-lite__cis.pdf",
+    "_confidence": "low"
   },
   "free_look_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Free Look Period: The insured person shall be provided a Free Look Period of thirty days beginning from the date of receipt of the Policy Document",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "7. Waiting Period I. Initial Waiting Period of 30 days. 8. i. Financial limits of coverage",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 36,
     "unit": null,
     "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Periods of 24 months for Specified Disease/Procedure III. Pre-existing disease Waiting Section (3) Period 36 months The Policy will pay only up to the limits specified hereunder",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Periods of 24 months for Specified Disease/Procedure III. Pre-existing disease Waiting Section (3) Period 36 months The Policy will pay only up to the limits specified hereunder",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in tata-aig__medicare-lite__cis.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
-    "value": 60,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in tata-aig__medicare-lite__cis.pdf",
+    "_confidence": "low"
   },
   "post_hospitalization_days": {
-    "value": 180,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in tata-aig__medicare-lite__cis.pdf",
+    "_confidence": "low"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 540,
+    "source_url": "https://www.tataaig.com/health-insurance/medicare",
+    "source_note": "Per insurer baseline (Tata AIG product pages state 540+ day care procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 12000,
+    "source_url": "https://www.tataaig.com/",
+    "source_note": "12,000+ Network Hospitals (homepage 'Why TATA AIG' section, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
-    "value": null,
-    "unit": "percent",
+    "value": 30,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "If the Insured Person avails treatment outside Our network of “Valued Provider-Pan India”, then a Co-Payment of 30% will be applicable for each such claim resulting from admission of the Insured Person in a Hosp",
+    "_confidence": "medium"
   },
   "room_rent_capped_at_pct_of_si": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in tata-aig__medicare-lite__cis.pdf",
+    "_confidence": "low"
   },
   "policy_term_options_years": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in tata-aig__medicare-lite__cis.pdf",
+    "_confidence": "low"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in tata-aig__medicare-lite__cis.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in tata-aig__medicare-lite__cis.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in tata-aig__medicare-lite__cis.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
+    "source_quote": "B8. AYUSH Benefit - In-Patient or Day Care Treatment",
+    "_confidence": "high"
+  },
+  "maternity_coverage": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
+    "source_quote": "XII. Maternity (Code-Excl18)",
+    "_confidence": "high"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
+    "source_quote": "B5. Organ Donor B6. Domiciliary Treatment",
+    "_confidence": "high"
+  },
+  "restoration_benefit": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
+    "source_quote": "B7. Restore Benefit - Once during the Policy Year",
+    "_confidence": "high"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
+    "source_quote": "B6. Domiciliary Treatment B7. Restore Benefit - Once during the Policy Year",
+    "_confidence": "high"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
+    "source_quote": "B10. Health Checkup B11. Compassionate Travel",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
+    "source_quote": "9. Claims/Claims Procedure Claim Procedure: For Cashless Service: Notify us at least 48 hours before the planned Hospitalisation.",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_cap_pct": {
+    "value": 100,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
+    "source_quote": "B20. Cumulative Bonus/No Claim Discount - 50% increase in Cumulative Bonus for every claim free year. Maximum up to 100% of the Sum Insured.",
+    "_confidence": "high"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "unit": "hours",
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
+    "source_quote": "not stated in tata-aig__medicare-lite__cis.pdf",
+    "_confidence": "low"
+  },
+  "geographic_coverage": {
+    "value": null,
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
+    "source_quote": "not stated in tata-aig__medicare-lite__cis.pdf",
+    "_confidence": "low"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": null,
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
+    "source_quote": "not stated in tata-aig__medicare-lite__cis.pdf",
+    "_confidence": "low"
+  },
+  "room_rent_capping": {
+    "value": "Room category: Up to Single private room",
+    "unit": "text",
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
+    "source_quote": "Room category: Up to Single private room.",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_pct": {
+    "value": 50,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
+    "source_quote": "B20. Cumulative Bonus/No Claim Discount - 50% increase in Cumulative Bonus for every claim free year. Maximum up to 100% of the Sum Insured.",
+    "_confidence": "high"
   }
 }

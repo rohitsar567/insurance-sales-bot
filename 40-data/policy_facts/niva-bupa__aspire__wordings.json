@@ -7,132 +7,260 @@
     "value": "NBHHLIP26049V022526",
     "unit": null,
     "source_pdf_path": "rag/corpus/niva-bupa/aspire__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Product Name: Aspire | Product UIN: NBHHLIP26049V022526 Aspire Policy Wordings 1. Preamble You are a global citizen and the w",
+    "_confidence": "high"
   },
   "min_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/niva-bupa/aspire__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in niva-bupa__aspire__wordings.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/niva-bupa/aspire__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/niva-bupa/aspire__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in niva-bupa__aspire__wordings.pdf",
+    "_confidence": "low"
   },
   "min_child_entry_age": {
     "value": 90,
     "unit": "days",
     "source_pdf_path": "rag/corpus/niva-bupa/aspire__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "New Born Baby means baby born during the policy period and is aged up to 90 days",
+    "_confidence": "high"
   },
   "sum_insured_options": {
     "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/niva-bupa/aspire__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in niva-bupa__aspire__wordings.pdf",
+    "_confidence": "low"
   },
   "grace_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/niva-bupa/aspire__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "d for payment of the premium for all types of insurance policies shall be: fifteen days where premium payment mode is monthly and thirty days in all other cases. Provided the insurers shall offer coverage during the grace period, if",
+    "_confidence": "medium"
   },
   "free_look_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/niva-bupa/aspire__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "sured person shall be allowed free look period of thirty days from date of receipt of the policy document",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/niva-bupa/aspire__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "nses related to the treatment of any Illness within 30 days from the first Policy commencement date shall be excluded except claims arising due to an Accident",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 36,
-    "unit": null,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/niva-bupa/aspire__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Pre-existing Diseases (Code-Excl01): a. Expenses related to the treatment of a Pre-existing Disease (PED) and its direct complications shall be excluded until the expiry of 12months/24 months/ 36 months (as per Variant selected)",
+    "_confidence": "medium"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/niva-bupa/aspire__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "the treatment of the listed conditions, surgeries/treatments shall be excluded until the expiry of 24 months/12 months (as per Variant Selected) of continuous",
+    "_confidence": "medium"
   },
   "maternity_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/niva-bupa/aspire__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in niva-bupa__aspire__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": 60,
     "unit": null,
     "source_pdf_path": "rag/corpus/niva-bupa/aspire__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "incurred on consultations, medicines, physiotherapy, diagnostic tests for 60 days before the date of admission and 180 days after date of discharge IF t",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
     "value": 180,
     "unit": null,
     "source_pdf_path": "rag/corpus/niva-bupa/aspire__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "for 60 days before the date of admission and 180 days after date of discharge IF these are related to the condition for wh",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
     "value": null,
-    "unit": null,
+    "unit": "procedures",
     "source_pdf_path": "rag/corpus/niva-bupa/aspire__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in niva-bupa__aspire__wordings.pdf",
+    "_confidence": "low"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/niva-bupa/aspire__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 10400,
+    "source_url": "https://www.nivabupa.com/health-insurance-plans.html",
+    "source_note": "10,400+ cashless hospitals spanning 450+ cities across India (health-insurance-plans page, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
-    "value": null,
-    "unit": "percent",
+    "value": 0,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/niva-bupa/aspire__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "treatments anywhere in the world. Choose from a range of co-payments options 0%, 20%, 30%, 40% & 50% Note",
+    "_confidence": "medium"
   },
   "room_rent_capped_at_pct_of_si": {
-    "value": null,
-    "unit": "percent",
+    "value": "No cap",
+    "unit": null,
     "source_pdf_path": "rag/corpus/niva-bupa/aspire__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "choose to change the room category we are offering, and opt for what suits you best! You can choose between a Standard Single Room and a Shared Room up to Sum Insured",
+    "_confidence": "medium"
   },
   "policy_term_options_years": {
-    "value": null,
+    "value": [
+      1
+    ],
     "unit": "years",
     "source_pdf_path": "rag/corpus/niva-bupa/aspire__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Policy Year means the period of one year from the date of commencement of the policy",
+    "_confidence": "medium"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/niva-bupa/aspire__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in niva-bupa__aspire__wordings.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/niva-bupa/aspire__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in niva-bupa__aspire__wordings.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/niva-bupa/aspire__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in niva-bupa__aspire__wordings.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/niva-bupa/aspire__wordings.pdf",
+    "source_quote": "This Policy covers Allopathic treatments anywhere in the world. AYUSH treatments are covered in India only. After all, the world comes to us for the best of AYUSH.",
+    "_confidence": "high"
+  },
+  "maternity_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/niva-bupa/aspire__wordings.pdf",
+    "source_quote": "4.1.10. M-iracle Celebrating Parenthood! A baby adds new meaning to life, new meaning to family. All that goes in to planning for, welcoming and bringing up the little ones are the most beautiful times in life.",
+    "_confidence": "high"
+  },
+  "newborn_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/niva-bupa/aspire__wordings.pdf",
+    "source_quote": "The New Born will be covered from Day 1 in the policy. (Excl 5.2.3 will not apply for New Born Babies added)",
+    "_confidence": "high"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/niva-bupa/aspire__wordings.pdf",
+    "source_quote": "4.1.5. Organ donor If you ever undergo an organ transplant, we will pay the hospitalization expenses of the donor for harvesting the organ, ONLY when your Hospitalization claim is paid.",
+    "_confidence": "high"
+  },
+  "restoration_benefit": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/niva-bupa/aspire__wordings.pdf",
+    "source_quote": "ReAssure “Forever”: Enjoy unlimited Sum Insured. The first paid claim in the life of the policy triggers ReAssure “Forever”. Once Triggered it stays for life, provided that the policy is renewed without break.",
+    "_confidence": "high"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/niva-bupa/aspire__wordings.pdf",
+    "source_quote": "4.1.4. Home Care / Domiciliary Treatment Home Care Treatment means treatment availed by the insured person at home which in normal course would require care and treatment at a hospital but is actually taken at home",
+    "_confidence": "high"
+  },
+  "worldwide_emergency_cover": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/niva-bupa/aspire__wordings.pdf",
+    "source_quote": "consumer can be diagnosed anywhere in the world and can go for treatments anywhere in the world. This benefit is also available under cashless and reimbursement.",
+    "_confidence": "high"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/niva-bupa/aspire__wordings.pdf",
+    "source_quote": "Annual Health Checkup Available once every Policy Year, from day 1 of the policy. You can choose any test(s) from the list specified below.",
+    "_confidence": "high"
+  },
+  "critical_illness_cover": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/niva-bupa/aspire__wordings.pdf",
+    "source_quote": "not stated in niva-bupa__aspire.pdf",
+    "_confidence": "low"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/niva-bupa/aspire__wordings.pdf",
+    "source_quote": "Cashless Facility means a facility extended by the insurer to the insured where the payments, of the costs of treatment undergone by the insured in accordance with the policy terms and conditions, are directly made to the",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_cap_pct": {
+    "value": null,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/niva-bupa/aspire__wordings.pdf",
+    "source_quote": "not stated in niva-bupa__aspire__wordings.pdf",
+    "_confidence": "low"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "unit": "hours",
+    "source_pdf_path": "rag/corpus/niva-bupa/aspire__wordings.pdf",
+    "source_quote": "not stated in niva-bupa__aspire__wordings.pdf",
+    "_confidence": "low"
+  },
+  "geographic_coverage": {
+    "value": "worldwide",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/niva-bupa/aspire__wordings.pdf",
+    "source_quote": "This Policy covers Allopathic treatments anywhere in the world. AYUSH treatments are covered in India only. After all, th",
+    "_confidence": "high"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "family_floater",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/niva-bupa/aspire__wordings.pdf",
+    "source_quote": "In a floater policy, if a claim is paid for anyone in the plan then we will unlock the age for the entire policy",
+    "_confidence": "medium"
+  },
+  "room_rent_capping": {
+    "value": "No cap",
+    "unit": "text",
+    "source_pdf_path": "rag/corpus/niva-bupa/aspire__wordings.pdf",
+    "source_quote": "choose to change the room category we are offering, and opt for what suits you best! You can choose between a Standard Single Room and a Shared Room up to Sum Insured",
+    "_confidence": "medium"
+  },
+  "no_claim_bonus_pct": {
+    "value": null,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/niva-bupa/aspire__wordings.pdf",
+    "source_quote": "not stated in niva-bupa__aspire__wordings.pdf",
+    "_confidence": "low"
   }
 }

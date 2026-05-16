@@ -7,145 +7,251 @@
     "value": "SBIHLIP21043V012122",
     "unit": null,
     "source_pdf_path": "rag/corpus/sbi-general/arogya-supreme__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "imited | Arogya Supreme | UIN: SBIHLIP21043V012122 Tollfre",
+    "_confidence": "high"
   },
   "min_entry_age": {
-    "value": 18,
+    "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/sbi-general/arogya-supreme__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in sbi-general__arogya-supreme__cis.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
-    "value": 65,
+    "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/sbi-general/arogya-supreme__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/sbi-general/arogya-supreme__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in sbi-general__arogya-supreme__cis.pdf",
+    "_confidence": "low"
   },
   "min_child_entry_age": {
-    "value": 91,
+    "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/sbi-general/arogya-supreme__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in sbi-general__arogya-supreme__cis.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
-    "value": [
-      300000,
-      400000,
-      500000,
-      600000,
-      800000,
-      1000000,
-      1500000,
-      2000000,
-      2500000,
-      5000000,
-      7500000,
-      10000000
-    ],
+    "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/sbi-general/arogya-supreme__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in sbi-general__arogya-supreme__cis.pdf",
+    "_confidence": "low"
   },
   "grace_period": {
-    "value": 30,
+    "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/sbi-general/arogya-supreme__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in sbi-general__arogya-supreme__cis.pdf",
+    "_confidence": "low"
   },
   "free_look_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/sbi-general/arogya-supreme__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "cy if you do not want it, within 30 days from the beginning of the policy. For de",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/sbi-general/arogya-supreme__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "8) • Initial Waiting Period: 30 days • Specific Waiting Periods ◦24 months for Internal Con",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 36,
     "unit": null,
     "source_pdf_path": "rag/corpus/sbi-general/arogya-supreme__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "19 • Pre-Existing diseases: 36 months 7. Waiting peri",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/sbi-general/arogya-supreme__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "ys • Specific Waiting Periods ◦24 months for Internal Congenital disea",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/sbi-general/arogya-supreme__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in sbi-general__arogya-supreme__cis.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
-    "value": 60,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/sbi-general/arogya-supreme__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in sbi-general__arogya-supreme__cis.pdf",
+    "_confidence": "low"
   },
   "post_hospitalization_days": {
-    "value": 90,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/sbi-general/arogya-supreme__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in sbi-general__arogya-supreme__cis.pdf",
+    "_confidence": "low"
   },
   "day_care_treatments_count": {
     "value": null,
-    "unit": null,
+    "unit": "procedures",
     "source_pdf_path": "rag/corpus/sbi-general/arogya-supreme__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in sbi-general__arogya-supreme__cis.pdf",
+    "_confidence": "low"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/sbi-general/arogya-supreme__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 18324,
+    "source_url": "https://www.sbigeneral.in/",
+    "source_note": "18,324 network hospitals (homepage service-infrastructure stat, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
-    "value": null,
-    "unit": "percent",
+    "value": 10,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/sbi-general/arogya-supreme__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "6. Co-Payment: 10% or 20% Co-Payment as specified in the Policy Schedule, shall be applied on each and every admissible claim after Deductible wherever applicable under this Policy.",
+    "_confidence": "medium"
   },
   "room_rent_capped_at_pct_of_si": {
     "value": null,
     "unit": "percent",
-    "source_pdf_path": "rag/corpus/sbi-general/arogya-supreme__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_pdf_path": "rag/corpus/sbi-general/arogya-supreme__brochure.pdf",
+    "source_quote": "not stated in arogya-supreme__brochure.pdf (room rent is a Single Private Room category restriction for the Rs.3-4 Lakh SI tier, not a percentage-of-SI cap; the only '1% of Sum Insured' clause in this PDF is the air-ambulance benefit)",
+    "_confidence": "low"
   },
   "policy_term_options_years": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/sbi-general/arogya-supreme__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in sbi-general__arogya-supreme__cis.pdf",
+    "_confidence": "low"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/sbi-general/arogya-supreme__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in sbi-general__arogya-supreme__cis.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/sbi-general/arogya-supreme__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in sbi-general__arogya-supreme__cis.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/sbi-general/arogya-supreme__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in sbi-general__arogya-supreme__cis.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/sbi-general/arogya-supreme__cis.pdf",
+    "source_quote": "15. Alternative Treatment / AYUSH: We will pay Medical Expenses up to the Sum Insured as specified in the Policy Schedule for Alternative Treatments like Ayurvedic , Unani, Siddha and Homeopathy",
+    "_confidence": "high"
+  },
+  "maternity_coverage": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/sbi-general/arogya-supreme__cis.pdf",
+    "source_quote": "12. Sterility and Infertility (Code-Excl 17) 13. Maternity (Code-Excl 18)",
+    "_confidence": "high"
+  },
+  "newborn_coverage": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/sbi-general/arogya-supreme__cis.pdf",
+    "source_quote": "not stated in sbi-general__arogya-supreme__cis.pdf",
+    "_confidence": "low"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/sbi-general/arogya-supreme__cis.pdf",
+    "source_quote": "14. Organ Donor Expenses: We will pay Medical Expenses up to the amount specified in the Policy Schedule, towards organ donor’s Hospitalization.",
+    "_confidence": "high"
+  },
+  "restoration_benefit": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/sbi-general/arogya-supreme__cis.pdf",
+    "source_quote": "18. Sum Insured Refill: We will refill 100% Basic Sum Insured on complete or partial utilization of your existing Policy Sum Insured including Cumulative Bonus or Enhanced Cumulative Bonus (if applicable) during the Policy Year.",
+    "_confidence": "high"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/sbi-general/arogya-supreme__cis.pdf",
+    "source_quote": "11. Domiciliary Hospitalization: We will pay the Medical Expenses up to the Sum Insured as specified in the Policy Schedule.",
+    "_confidence": "high"
+  },
+  "worldwide_emergency_cover": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/sbi-general/arogya-supreme__cis.pdf",
+    "source_quote": "Emergency medical assistance when you are travelling within India 150 kilometers or more away from your residential address as mentioned in the Policy Schedule for domestic services.",
+    "_confidence": "high"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/sbi-general/arogya-supreme__cis.pdf",
+    "source_quote": "1.Preventive Health Check-Up: You will be eligible for a preventive health check-up as per the defined list every year from 1st renewal year.",
+    "_confidence": "high"
+  },
+  "critical_illness_cover": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/sbi-general/arogya-supreme__cis.pdf",
+    "source_quote": "2. Major Illness Benefit: We will pay 100% of Sum Insured or maximum up to Rs. 25,00,000/- whichever is less if the Insured Person suffers from listed major illnesses.",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/sbi-general/arogya-supreme__cis.pdf",
+    "source_quote": "-authorization of cashless facility - within 1 hour from receipt of complete documents. ii. TAT for cashless final bill set",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_cap_pct": {
+    "value": null,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/sbi-general/arogya-supreme__cis.pdf",
+    "source_quote": "not stated in sbi-general__arogya-supreme__cis.pdf",
+    "_confidence": "low"
+  },
+  "geographic_coverage": {
+    "value": null,
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/sbi-general/arogya-supreme__cis.pdf",
+    "source_quote": "not stated in sbi-general__arogya-supreme__cis.pdf",
+    "_confidence": "low"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "family_floater",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/sbi-general/arogya-supreme__cis.pdf",
+    "source_quote": "red Name Base Sum Insured Family Floater Sum Insured Sr. No. Insured Name Base Sum Insured Note: This is the base Sum In",
+    "_confidence": "medium"
+  },
+  "room_rent_capping": {
+    "value": "For Rs.3 Lakhs & Rs. 4 Lakhs - Single Private AC Room (1% restriction as an option available) For Rs. 5 Lakhs - Single pvt AC Room (upgrade option available)",
+    "unit": "text",
+    "source_pdf_path": "rag/corpus/sbi-general/arogya-supreme__cis.pdf",
+    "source_quote": "Room Rent For Rs.3 Lakhs & Rs. 4 Lakhs - Single Private AC Room (1% restriction as an option available) For Rs. 5 Lakhs - Single pvt AC Room (upgrade option available)",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_pct": {
+    "value": 15,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/sbi-general/arogya-supreme__cis.pdf",
+    "source_quote": "Cumulative Bonus: In case of claim free year, you will be eligible for 15% of Base",
+    "_confidence": "medium"
   }
 }

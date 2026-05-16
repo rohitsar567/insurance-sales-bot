@@ -174,7 +174,7 @@ Full Pydantic model lives in `rag/schema.py` (designed in parallel by a sub-agen
 **Field groupings:**
 
 1. **Identity** — `policy_id`, `insurer_name`, `insurer_slug`, `policy_name`, `policy_type` (enum), `uin_code`
-2. **Eligibility** — `min_entry_age`, `max_entry_age`, `max_renewal_age`, `family_composition`
+2. **Eligibility** — `min_entry_age`, `max_entry_age`, `family_composition` *(lifelong renewability is the IRDAI universal norm — not a scored field)*
 3. **Sum insured & premium** — `sum_insured_options[]`, `premium_payment_modes[]`, `premium_band_illustrative`, `grace_period_days`
 4. **Waiting periods** *(comparison-critical)* — `initial_waiting_period_days`, `pre_existing_disease_waiting_months`, `specific_disease_waiting_months`, `maternity_waiting_months`, `specific_diseases_listed[]`
 5. **Coverage scope** *(comparison-critical)* — `pre_hospitalization_days`, `post_hospitalization_days`, `day_care_treatments_count`, `domiciliary_treatment`, `ayush_coverage`, `maternity_coverage`, `newborn_coverage`, `organ_donor_expenses`, `ambulance_cover`, `critical_illness_cover`, `restoration_benefit`, `no_claim_bonus_pct`, `preventive_health_checkup`

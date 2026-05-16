@@ -7,31 +7,29 @@
     "value": "OICHLIP21557V022021",
     "unit": null,
     "source_pdf_path": "rag/corpus/oriental-insurance/arogya-sanjeevani__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "The Oriental Insurance Company Ltd AROGYA SANJEEVANI POLICY-ORIENTAL UIN: OICHLIP21557V022021",
+    "_confidence": "high"
   },
   "min_entry_age": {
     "value": 18,
     "unit": "years",
     "source_pdf_path": "rag/corpus/oriental-insurance/arogya-sanjeevani__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "The Policy term is one year and is available to any proposer between the age of 18 to 65 years for treatment taken in India.",
+    "_confidence": "high"
   },
   "max_entry_age": {
     "value": 65,
     "unit": "years",
     "source_pdf_path": "rag/corpus/oriental-insurance/arogya-sanjeevani__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/oriental-insurance/arogya-sanjeevani__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Maximum Entry age for any member, is 65 years.",
+    "_confidence": "high"
   },
   "min_child_entry_age": {
     "value": 91,
     "unit": "days",
     "source_pdf_path": "rag/corpus/oriental-insurance/arogya-sanjeevani__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "mid-term inclusion is permitted for a newly married spouse and /or a child attaining the age of 3 months during the currency of the policy, on payment of pro-rata premium.",
+    "_confidence": "medium"
   },
   "sum_insured_options": {
     "value": [
@@ -52,102 +50,189 @@
     ],
     "unit": "INR",
     "source_pdf_path": "rag/corpus/oriental-insurance/arogya-sanjeevani__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Minimum sum insured is Rs 100,000 and in multiples of Rs 50,000 upto Rs 5,00,000 and thereafter, sum insured is available for Rs. 6,8,10,15, and 20 lacs.",
+    "_confidence": "medium"
   },
   "grace_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/oriental-insurance/arogya-sanjeevani__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Grace period facility for payment of renewal premium available. • 30 days grace for annual premium. • 15 days for half yearly, quarterly and monthly modes of premium payment.",
+    "_confidence": "high"
   },
   "free_look_period": {
     "value": 15,
     "unit": "days",
     "source_pdf_path": "rag/corpus/oriental-insurance/arogya-sanjeevani__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Free Look Period- A period of 15 days from the date of receipt of the policy to review the terms and conditions of the policy and return the same, if not acceptable.",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/oriental-insurance/arogya-sanjeevani__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "First Thirty Days Waiting Period (Code- Exc103) i. Expenses related to the treatment of any illness within 30 days from the first policy commencement date shall be excluded except claims arising due to an accident, provided the same are covered.",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 48,
-    "unit": null,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/oriental-insurance/arogya-sanjeevani__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "All pre-existing diseases covered after 48 months of continuous coverage, subject to the same being declared at the time of application and accepted by insurer.",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/oriental-insurance/arogya-sanjeevani__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "f) 24 Months waiting period: 1. Benign ENT disorders 2. Tonsillectomy 3. Adenoidectomy 4. Mastoidectomy",
+    "_confidence": "medium"
   },
   "maternity_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/oriental-insurance/arogya-sanjeevani__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in oriental-insurance__arogya-sanjeevani__brochure.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/oriental-insurance/arogya-sanjeevani__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "The company shall indemnify pre-hospitalization medical expenses incurred, related to an admissible hospitalization requiring inpatient care, for a fixed period of 30 days prior to the date of admissible hospitalization covered under the policy.",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
     "value": 60,
     "unit": null,
     "source_pdf_path": "rag/corpus/oriental-insurance/arogya-sanjeevani__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "POST-HOSPITALISATION The company shall indemnify post hospitalization medical expenses incurred, related to",
+    "_confidence": "medium"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/oriental-insurance/arogya-sanjeevani__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 140,
+    "source_url": "https://orientalinsurance.org.in/",
+    "source_note": "Per insurer baseline (Oriental Insurance health plans cover 140+ day care treatments)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/oriental-insurance/arogya-sanjeevani__brochure.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
+    "value": 4300,
+    "source_url": "https://www.coverfox.com/health-insurance/oriental-health-insurance/network-hospitals/",
+    "source_note": "Oriental Insurance: 4,300+ network hospitals via GIPSA PPN (Coverfox aggregator; insurer site timed out). Alternate aggregator counts range 4,000-5,116 across the four PSU general insurers (GIPSA shared network). Scraped 2026-05-15.",
+    "_confidence": "medium",
     "source_pdf_path": "rag/corpus/oriental-insurance/arogya-sanjeevani__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Insurer-level metric backfilled from public-web source — see source_url"
   },
   "co_payment_pct": {
-    "value": null,
-    "unit": "percent",
+    "value": 5,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/oriental-insurance/arogya-sanjeevani__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "8. CO-PAYMENT Each and every claim under the Policy shall be subject to a Co-payment of 5% applicable to claim amount admissible and payable as per the terms and conditions of the Policy.",
+    "_confidence": "high"
   },
   "room_rent_capped_at_pct_of_si": {
-    "value": null,
-    "unit": "percent",
+    "value": 2.0,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/oriental-insurance/arogya-sanjeevani__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Room Rent, Boarding, Nursing Expenses as provided by the Hospital /Nursing Home: Upto SI INR 5 Lacs: Up to 2% of the sum insured subject to maximum of Rs. 5000/- per day.",
+    "_confidence": "medium"
   },
   "policy_term_options_years": {
-    "value": null,
+    "value": [
+      1
+    ],
     "unit": "years",
     "source_pdf_path": "rag/corpus/oriental-insurance/arogya-sanjeevani__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "The Policy term is one year and is available to any proposer between the age of 18 to 65 years for treatment taken in India.",
+    "_confidence": "medium"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/oriental-insurance/arogya-sanjeevani__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in oriental-insurance__arogya-sanjeevani__brochure.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/oriental-insurance/arogya-sanjeevani__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in oriental-insurance__arogya-sanjeevani__brochure.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/oriental-insurance/arogya-sanjeevani__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in oriental-insurance__arogya-sanjeevani__brochure.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/oriental-insurance/arogya-sanjeevani__brochure.pdf",
+    "source_quote": "AYUSH TREATMENT The Company shall indemnify medical expenses incurred for inpatient care treatment under Ayurveda, Yoga and Naturopathy, Unani, Siddha and Homeopathy systems of medicines during each Policy Year up to the limit of sum insured as specified in th",
+    "_confidence": "high"
+  },
+  "domiciliary_treatment": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/oriental-insurance/arogya-sanjeevani__brochure.pdf",
+    "source_quote": "Any expenses incurred on Domiciliary Hospitalization and OPD treatment. Treatment taken outside the geographical limits of India",
+    "_confidence": "high"
+  },
+  "worldwide_emergency_cover": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/oriental-insurance/arogya-sanjeevani__brochure.pdf",
+    "source_quote": "The Policy term is one year and is available to any proposer between the age of 18 to 65 years for treatment taken in India.",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/oriental-insurance/arogya-sanjeevani__brochure.pdf",
+    "source_quote": "Cashless Facility means a facility extended by the insurer to the insured where the payments, of the costs of treatment undergone by the insured person in accordance with the Policy ter",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_cap_pct": {
+    "value": 50,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/oriental-insurance/arogya-sanjeevani__brochure.pdf",
+    "source_quote": "Cumulative Bonus of 5% of sum insured for each claim free year maximum up to 50% of sum insured, provided the policy is renewed without any break.",
+    "_confidence": "high"
+  },
+  "geographic_coverage": {
+    "value": "pan_india",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/oriental-insurance/arogya-sanjeevani__brochure.pdf",
+    "source_quote": "Treatment taken outside the geographical limits of India",
+    "_confidence": "medium"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "individual",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/oriental-insurance/arogya-sanjeevani__brochure.pdf",
+    "source_quote": "Policy can be issued, as per the option of the Proposer, on • Individual Basis (i.e., Sum Insured and Cumulative Bonus shall apply separately on each Insured Person) • Floater Basis (i.e., Sum Insured and Cumulative Bonus shall apply cumulatively to c",
+    "_confidence": "medium"
+  },
+  "maternity_coverage": null,
+  "room_rent_capping": {
+    "value": "Upto SI INR 5 Lacs: Up to 2% of the sum insured subject to maximum of Rs. 5000/- per day. SI INR 6, 8, 10 Lacs: Up to 2% of the sum insured subject to maximum of Rs. 10,000/- per day. SI INR 15 & 20 Lacs: Up to 2% of the sum insured subject to maximum of Rs. 20,000/- per day.",
+    "unit": "text",
+    "source_pdf_path": "rag/corpus/oriental-insurance/arogya-sanjeevani__brochure.pdf",
+    "source_quote": "Upto SI INR 5 Lacs: Up to 2% of the sum insured subject to maximum of Rs. 5000/- per day. SI INR 6, 8, 10 Lacs: Up to 2% of the sum insured subject to maximum of Rs. 10,000/- per day. SI INR 15 & 20 Lacs: Up to 2% of the sum insured subject to maximum of Rs. 20,000/- per day.",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_pct": {
+    "value": 5,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/oriental-insurance/arogya-sanjeevani__brochure.pdf",
+    "source_quote": "Cumulative Bonus of 5% of sum insured for each claim free year maximum up to 50% of sum insured, provided the policy is renewed without any break.",
+    "_confidence": "high"
+  },
+  "_meta": {
+    "network_hospital_backfill_2026-05-15": "oriental-insurance insurer-wide count backfilled in targeted scrape pass"
   }
 }

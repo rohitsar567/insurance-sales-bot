@@ -7,132 +7,192 @@
     "value": "BAJHLIP25035V072425",
     "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "UIN: BAJHLIP25035V072425 1 SECTION A) PREAMBLE",
+    "_confidence": "high"
   },
   "min_entry_age": {
-    "value": null,
-    "unit": "years",
+    "value": 3,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Insured Person means the persons, or his Family Members, named in the Schedule provided that an Insured Person or his Family Members has attained the age of 3 months and is not older than 65 years of age at the commencement of the Policy Period.",
+    "_confidence": "high"
   },
   "max_entry_age": {
-    "value": null,
+    "value": 65,
     "unit": "years",
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
-  },
-  "max_renewal_age": {
-    "value": null,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Insured Person means the persons, or his Family Members, named in the Schedule provided that an Insured Person or his Family Members has attained the age of 3 months and is not older than 65 years of age at the commencement of the Policy Period.",
+    "_confidence": "high"
   },
   "min_child_entry_age": {
-    "value": null,
+    "value": 90,
     "unit": "days",
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Insured Person means the persons, or his Family Members, named in the Schedule provided that an Insured Person or his Family Members has attained the age of 3 months and is not older than 65 years of age at the commencement of the Policy Period.",
+    "_confidence": "medium"
   },
   "sum_insured_options": {
     "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in bajaj-allianz__health-guard__wordings.pdf",
+    "_confidence": "low"
   },
   "grace_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "The grace period of fifteen days (where premium is paid on a monthly instalments) and thirty days (where premium is paid in quarterly/half-yearly/annual instalments) is available on the premium due date, to pay the premium.",
+    "_confidence": "high"
   },
   "free_look_period": {
-    "value": null,
+    "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "The Insured Person shall be allowed free look period of Thirty days from date of receipt of the policy document to review the terms and conditions of the policy, and to return the same if not acceptable.",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
-    "value": null,
-    "unit": null,
+    "value": 30,
+    "unit": "days",
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Expenses related to the treatment of any Illness within 30 days from the first Policy commencement date shall be excluded except claims arising due to an Accident, provided the same are covered.",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
-    "value": null,
-    "unit": null,
+    "value": 36,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "36 months of continuous coverage after the date of inception of the first Health Guard Policy with us. b. In case of enhancement of Sum Insured the exclusion shall apply afresh",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
-    "value": null,
-    "unit": null,
+    "value": 24,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Expenses related to the treatment of the listed Conditions, surgeries/treatments shall be excluded until the expiry of 24 months of continuous coverage after the date of inception of the first Health Guard Policy with Us.",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
-    "value": null,
-    "unit": null,
+    "value": 72,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Waiting period of 72 months as mentioned in the Policy Schedule would apply from the date of issuance of the first Health Guard Policy with Us,",
+    "_confidence": "high"
   },
   "pre_hospitalization_days": {
-    "value": null,
-    "unit": null,
+    "value": 60,
+    "unit": "days",
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Pre-Hospitalization: The Medical Expenses incurred during the 60 days immediately before You Were Hospitalized, provided that:",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
-    "value": null,
-    "unit": null,
+    "value": 90,
+    "unit": "days",
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Post-Hospitalization: The Medical Expenses incurred during the 90 days immediately after You were discharged post Hospitalization",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 130,
+    "source_url": "https://www.bajajgeneralinsurance.com/health-insurance-plans/health-guard.html",
+    "source_note": "Bajaj Allianz Health Guard covers 130 day care procedures",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 18400,
+    "source_url": "https://www.bajajgeneralinsurance.com/",
+    "source_note": "18,400+ Cashless Hospitals (homepage, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
-    "value": null,
+    "value": 0,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Voluntary co-payment: If opted voluntarily by You, You shall bear 10%/ 20% of co-payment for each and every claim",
+    "_confidence": "medium"
   },
   "room_rent_capped_at_pct_of_si": {
-    "value": null,
+    "value": 1,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Room rent and Boarding expenses as provided by the Hospital/Nursing Home subject to below limits  Silver Plan - Up to 1% of Sum Insured per day (Excluding Cumulative Bonus)  Gold Plan and Platinum Plan - Sum Insured 3 lacs to 7.5 lacs- maximum eligible room is Single Priv",
+    "_confidence": "medium"
   },
   "policy_term_options_years": {
-    "value": null,
+    "value": [
+      1,
+      2,
+      3
+    ],
     "unit": "years",
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Tenure of Policy: • Health Guard-Individual: 1year, 2 years or 3 years • Health Guard-Family Floater: 1year, 2 years or 3 years",
+    "_confidence": "high"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in bajaj-allianz__health-guard__wordings.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in bajaj-allianz__health-guard__wordings.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in bajaj-allianz__health-guard__wordings.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
+    "source_quote": "AYUSH treatment” refers to the medical and / or hospitalization treatments given under Ayurveda, Yoga and Naturopathy, Unani, Siddha and Homeopathy systems.",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
+    "source_quote": "Cashless facility: Cashless facility means a facility extended by the Insurer to the Insured Person where the payments, of the costs of treatment undergone by the Insured Person",
+    "_confidence": "high"
+  },
+  "geographic_coverage": {
+    "value": "pan_india",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
+    "source_quote": "Territorial Limits & Governing Law i. We cover Medical Expenses for treatment availed within India only. Our liability to make any payment shall be to make payment within India",
+    "_confidence": "high"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "family_floater",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
+    "source_quote": "Floater Sum Insured Policies. Sum Insured at the beginning of the year Accumulated Cumulative Bonus Sum Insured with CB",
+    "_confidence": "medium"
+  },
+  "room_rent_capping": {
+    "value": "1% of Sum Insured",
+    "unit": null,
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
+    "source_quote": "Silver Plan - Up to 1% of Sum Insured per day (Excluding Cumulative Bonus)  Gold Plan and Platinum Plan - Sum Insured 3 lacs to 7.5 lacs- maximum eligible room is Single Private Air-Conditioned room - Sum Insured 10 Lacs and above - eligible for any room category ii. I",
+    "_confidence": "high"
+  },
+  "maternity_coverage": {
+    "value": true,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard__wordings.pdf",
+    "source_quote": "Maternity Expenses (Applicable for Gold and Platinum Plan only): We will pay the Medical Expenses for the delivery of a baby (including caesarean section) and/or expenses related to medically recommended and lawful termination of pregnancy",
+    "_confidence": "high"
   }
 }

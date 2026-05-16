@@ -7,142 +7,258 @@
     "value": "MAXHLIP21176V022021",
     "unit": null,
     "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Health Premia, Product UIN: MAXHLIP21176V022021",
+    "_confidence": "high"
   },
   "min_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in niva-bupa__health-premia__wordings.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in niva-bupa__health-premia__wordings.pdf",
+    "_confidence": "low"
   },
   "min_child_entry_age": {
     "value": 90,
     "unit": "days",
     "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "New Born Baby means baby born during the Policy Period and is aged between 1 day and 90 days",
+    "_confidence": "high"
   },
   "sum_insured_options": {
-    "value": [
-      500000,
-      1000000,
-      1500000,
-      2000000,
-      3000000,
-      5000000,
-      10000000,
-      20000000,
-      30000000
-    ],
+    "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in niva-bupa__health-premia__wordings.pdf",
+    "_confidence": "low"
   },
   "grace_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "d for payment of the premium for all types of insurance policies shall be: fifteen days where premium payment mode is monthly and thirty days in all other cases. Provided the insurers shall offer coverage during the grace period, if",
+    "_confidence": "medium"
   },
   "free_look_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "sured person shall be allowed free look period of thirty days from date of receipt of the policy document",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "treatment of any Illness within 30 days from the first Policy commencement date shall be excluded",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 36,
-    "unit": null,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Pre-existing Diseases (Code-Excl01) a. Expenses related to the treatment of a Pre-existing Disease (PED) and its direct complications shall be excluded until the expiry of 36 months of continuous coverage after the date",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
-    "value": 24,
+    "value": 12,
     "unit": null,
     "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Specified disease/procedure waiting period- Code- Excl02 a. Expenses related to the treatment of the listed conditions, surgeries/treatments shall be excluded until the expiry of 12 months of continuous",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
-    "value": 24,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in niva-bupa__health-premia__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
-    "value": 60,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in niva-bupa__health-premia__wordings.pdf",
+    "_confidence": "low"
   },
   "post_hospitalization_days": {
-    "value": 180,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in niva-bupa__health-premia__wordings.pdf",
+    "_confidence": "low"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 586,
+    "source_url": "https://www.nivabupa.com/family-health-insurance-plans/reassurev2-insurance.html",
+    "source_note": "Per insurer baseline (Niva Bupa ReAssure 2.0 covers ~586 day care procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 10400,
+    "source_url": "https://www.nivabupa.com/health-insurance-plans.html",
+    "source_note": "10,400+ cashless hospitals spanning 450+ cities across India (health-insurance-plans page, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
     "value": null,
-    "unit": "percent",
+    "unit": "%",
     "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in niva-bupa__health-premia__wordings.pdf",
+    "_confidence": "low"
   },
   "room_rent_capped_at_pct_of_si": {
     "value": null,
-    "unit": "percent",
+    "unit": null,
     "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in niva-bupa__health-premia__wordings.pdf",
+    "_confidence": "low"
   },
   "policy_term_options_years": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in niva-bupa__health-premia__wordings.pdf",
+    "_confidence": "low"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in niva-bupa__health-premia__wordings.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in niva-bupa__health-premia__wordings.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in niva-bupa__health-premia__wordings.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
+    "source_quote": "AYUSH Treatment Any form of AYUSH Treatments, except as mentioned under Section 3.6",
+    "_confidence": "medium"
+  },
+  "maternity_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
+    "source_quote": "We will indemnify the Maternity Expenses incurred during the Policy Period.",
+    "_confidence": "high"
+  },
+  "newborn_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
+    "source_quote": "3.11 New Born Baby What is covered: We will cover the Medical Expenses incurred towards the medical treatment of the Insured Person’s New Born Baby from the date of delivery until the expiry of the Policy Year",
+    "_confidence": "high"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
+    "source_quote": "Living Organ Donor Transplant What is covered: We will indemnify the Medical Expenses incurred for a living organ donor's treatment as an Inpatient for the harvesting of the organ donated",
+    "_confidence": "high"
+  },
+  "restoration_benefit": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
+    "source_quote": "Re-fill Benefit What is covered: If the Base Sum Insured and increased Sum Insured under Loyalty Additions (Section 3.16)/ Enhanced Loyalty Additions (Section 4.3) (if any) has been partially or compl",
+    "_confidence": "high"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
+    "source_quote": "Domiciliary Hospitalization What is covered: We will indemnify on Reimbursement basis only, the Medical Expenses incurred for the Insured Person’s Domiciliary Hospitalization during the Policy Period following an Illness or Injury",
+    "_confidence": "high"
+  },
+  "worldwide_emergency_cover": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
+    "source_quote": "Enhanced Geographical Scope for International Coverage’ can ",
+    "_confidence": "medium"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
+    "source_quote": "Health Check-up What is covered: The Insured Person may avai",
+    "_confidence": "high"
+  },
+  "critical_illness_cover": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
+    "source_quote": "Critical Illness Cover What is covered: ",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
+    "source_quote": "Cashless Facility means a facility extended by the insurer to the insured where the payments, of the costs of treatment undergone by the insured in accordance with the policy terms and conditions, are directly made to the",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_cap_pct": {
+    "value": 100,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
+    "source_quote": "Cumulative Bonus by increasing the Sum Insured applicable under the Policy by 10% of the Base Sum Insured of the immediately preceding Policy Year subject to a maximum of 100% of the Base Sum Insured",
+    "_confidence": "high"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "unit": "hours",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
+    "source_quote": "not stated in niva-bupa__health-premia__wordings.pdf",
+    "_confidence": "low"
+  },
+  "geographic_coverage": {
+    "value": "worldwide",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
+    "source_quote": "Enhanced Geographical Scope for International Coverage’ can ",
+    "_confidence": "medium"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": null,
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
+    "source_quote": "not stated in niva-bupa__health-premia__wordings.pdf",
+    "_confidence": "low"
+  },
+  "room_rent_capping": {
+    "value": "Per Policy Schedule eligibility; proportionate deduction for higher room category",
+    "unit": "text",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
+    "source_quote": "room where the room category opted or Room Rent incurred is higher than the eligibility as specified in the Policy Schedule, then We shall be liable to pay only a pro-rated portion",
+    "_confidence": "medium"
+  },
+  "no_claim_bonus_pct": {
+    "value": 10,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
+    "source_quote": "Cumulative Bonus by increasing the Sum Insured applicable under the Policy by 10% of the Base Sum Insured of the immediately preceding Policy Year subject to a maximum of 100% of the Base Sum Insured",
+    "_confidence": "high"
   }
 }

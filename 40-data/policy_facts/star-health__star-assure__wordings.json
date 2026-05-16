@@ -7,141 +7,251 @@
     "value": "SHAHLIP26048V032526",
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/star-assure__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Star Health Assure Insurance Policy | UIN : SHAHLIP26048V032526 | POL / HA / V.12 / 2026",
+    "_confidence": "high"
   },
   "min_entry_age": {
-    "value": 18,
+    "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/star-health/star-assure__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in star-health__star-assure__wordings.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/star-health/star-assure__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/star-health/star-assure__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in star-health__star-assure__wordings.pdf",
+    "_confidence": "low"
   },
   "min_child_entry_age": {
-    "value": 91,
+    "value": 16,
     "unit": "days",
     "source_pdf_path": "rag/corpus/star-health/star-assure__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Family includes Insured Person, spouse, dependent children between 16 days and 25 years of age not exceeding 3 in number, Dependent Parent and Dependent Parents in law.",
+    "_confidence": "high"
   },
   "sum_insured_options": {
     "value": [
       500000,
+      750000,
       1000000,
       1500000,
       2000000,
       2500000,
       5000000,
       7500000,
-      10000000
+      10000000,
+      20000000
     ],
     "unit": "INR",
     "source_pdf_path": "rag/corpus/star-health/star-assure__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Sum Insured in Lakhs (Rs.) Limit Per Policy Period (Rs.) 5/7.5/10/15/20/25 2,00,000 50/75/100/200 4,00,000",
+    "_confidence": "medium"
   },
   "grace_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/star-health/star-assure__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "the policy shall terminate and can be renewed within the Grace Period of 30 days.",
+    "_confidence": "high"
   },
   "free_look_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/star-health/star-assure__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "The Policyholder shall be allowed free look period of thirty days from date of receipt of the policy document whether electronically or otherwise to review the terms and conditions of the policy.",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/star-assure__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Expenses related to the treatment of any illness within 30 days from the first policy commencement date shall be excluded except claims arising due to an accident, provided the same are covered",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 36,
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/star-assure__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Expenses related to the treatment of a pre-existing Disease (PED) and its direct complications shall be excluded until the expiry of 36 months of continuous coverage after the date of inception of the first policy with insurer",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/star-assure__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Expenses related to the treatment of the listed Conditions, surgeries/ treatments shall be excluded until the expiry of 24 months of continuous coverage after the date of inception of the first policy with us. This exclusion shall not be applicable for claims arising due to an accident.",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/star-assure__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in star-health__star-assure__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": 60,
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/star-assure__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Pre-Hospitalization Expenses: Medical expenses incurred up to 60 days immediately before the Insured Person is hospitalized.",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
-    "value": 90,
+    "value": 180,
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/star-assure__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Post-Hospitalization Expenses: Medical expenses incurred up to 180 days immediately after the Insured Person is discharged from the hospital.",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/star-health/star-assure__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 540,
+    "source_url": "https://www.starhealth.in/health-insurance/daycare-treatment-and-procedures/",
+    "source_note": "Per insurer baseline (Star Health day-care procedures page; 540+ procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/star-health/star-assure__wordings.pdf"
   },
   "network_hospital_count": {
     "value": 14000,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/star-health/star-assure__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_url": "https://www.starhealth.in/",
+    "source_note": "14,000+ network hospitals across India (per official Star Health communications, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
-    "value": null,
-    "unit": "percent",
+    "value": 10,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/star-health/star-assure__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "co-payment of 10% of each and every claim amount for fresh as well as renewal policies for Insured Person whose age at the time of entry is 61 years and abov",
+    "_confidence": "high"
   },
   "room_rent_capped_at_pct_of_si": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/star-health/star-assure__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in star-health__star-assure__wordings.pdf",
+    "_confidence": "low"
   },
   "policy_term_options_years": {
-    "value": null,
+    "value": [
+      1,
+      2
+    ],
     "unit": "years",
     "source_pdf_path": "rag/corpus/star-health/star-assure__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "In case of two year policy, total number of wellness points earned in two year period will be divided by two.",
+    "_confidence": "medium"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/star-health/star-assure__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in star-health__star-assure__wordings.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/star-health/star-assure__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in star-health__star-assure__wordings.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/star-assure__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in star-health__star-assure__wordings.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/star-health/star-assure__wordings.pdf",
+    "source_quote": "AYUSH Treatment: Medical expenses for Inpatient Hospitalization incurred on treatment under Ayurveda, Unani, Siddha and Homeopathy systems of medicines in a AYUSH Hospital is payable up to the Sum Insured.",
+    "_confidence": "high"
+  },
+  "maternity_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/star-health/star-assure__wordings.pdf",
+    "source_quote": "Expenses for a Delivery including Delivery by Caesarean section (including pre-natal and postnatal expenses) up to 10% of the Sum Insured is payable, subject to the following: i",
+    "_confidence": "high"
+  },
+  "newborn_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/star-health/star-assure__wordings.pdf",
+    "source_quote": "New Born baby cover",
+    "_confidence": "high"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/star-health/star-assure__wordings.pdf",
+    "source_quote": "9. Organ Donor Expenses: In patient hospitalization expenses incurred for organ transplantation from the Donor to the Recipient Insured Person are payable provided the claim for transplantation is payable",
+    "_confidence": "high"
+  },
+  "restoration_benefit": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/star-health/star-assure__wordings.pdf",
+    "source_quote": "restored to 100%",
+    "_confidence": "medium"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/star-health/star-assure__wordings.pdf",
+    "source_quote": "Domiciliary Hospitalization: Domiciliary hospitalization means medical treatment for an illness/disease/injury which in the normal course would require care and treatment at a hospital but is actually taken while confined at home un",
+    "_confidence": "high"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/star-health/star-assure__wordings.pdf",
+    "source_quote": "Health Check-up: We will arrange for a Preventive Health Check-up at Our Network Providers for the applicable limits as specified below as per opted Sum Insured and subject to",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/star-health/star-assure__wordings.pdf",
+    "source_quote": "Cashless facility means a facility extended by the insurer to the insured where the payments, of the costs of treatment undergone by the insured in accordance with the Policy Terms and conditions, are directly made to the network provider",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_cap_pct": {
+    "value": 100,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/star-health/star-assure__wordings.pdf",
+    "source_quote": "The Insured Person will be eligible for Cumulative bonus calculated at 25% of Sum Insured for each claim free year and maximum up to 100% of the Sum Insured.",
+    "_confidence": "high"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "unit": "hours",
+    "source_pdf_path": "rag/corpus/star-health/star-assure__wordings.pdf",
+    "source_quote": "not stated in star-health__star-assure__wordings.pdf",
+    "_confidence": "low"
+  },
+  "geographic_coverage": {
+    "value": "pan_india",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/star-health/star-assure__wordings.pdf",
+    "source_quote": "The Insured Person is in India and the treatment is in India only.",
+    "_confidence": "medium"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "family_floater",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/star-health/star-assure__wordings.pdf",
+    "source_quote": "Family includes Insured Person, spouse, dependent children between 16 days and 25 years of age not exceeding 3 in number, Dependent Parent and Dependent Parents in law.",
+    "_confidence": "medium"
+  },
+  "no_claim_bonus_pct": {
+    "value": 25,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/star-health/star-assure__wordings.pdf",
+    "source_quote": "The Insured Person will be eligible for Cumulative bonus calculated at 25% of Sum Insured for each claim free year and maximum up to 100% of the Sum Insured.",
+    "_confidence": "high"
   }
 }

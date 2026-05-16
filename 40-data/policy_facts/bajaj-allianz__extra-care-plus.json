@@ -19,16 +19,12 @@
     "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
     "source_quote": "age of 3 months and is not older than 80years of age at the commencement of the Policy Period."
   },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": null,
-    "source_quote": "Renewal terms permit continuation; max renewal age not specified explicitly in wording"
-  },
   "sum_insured_options": {
     "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
-    "source_quote": "Sum Insured selectable with Aggregate Deductible options (super top-up structure); option list specified in Policy Schedule"
+    "source_quote": "not stated in bajaj-allianz__extra-care-plus.pdf",
+    "_confidence": "low"
   },
   "initial_waiting_period_days": {
     "value": 30,
@@ -36,9 +32,11 @@
     "source_quote": "3. 30-day waiting period (Excl03) a. Expenses related to the treatment of any illness within 30 days from the first Policy commencement date shall be excluded"
   },
   "pre_existing_disease_waiting_months": {
-    "value": 12,
+    "value": null,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
-    "source_quote": "1. Pre-existing Diseases waiting period (Excl01) a. Expenses related to the treatment of a pre-existing Disease (PED) and its direct complications shall be excluded until the expiry of 12 months"
+    "source_quote": "not stated in bajaj-allianz__extra-care-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "specific_disease_waiting_months": {
     "value": 12,
@@ -48,7 +46,7 @@
   "maternity_waiting_months": {
     "value": 12,
     "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
-    "source_quote": "Any treatment arising from or traceable to pregnancy ... until 12 months continuous period has elapsed since the inception of the first Extra Care Plus"
+    "source_quote": "Any treatment arising from or traceable to pregnancy, child birth including cesarean section and/or any treatment related to pre and postnatal care and complications arising out of Pregnancy and Childbirth until 12 months continuous period has elapsed since the inception of the"
   },
   "pre_hospitalization_days": {
     "value": 60,
@@ -61,49 +59,59 @@
     "source_quote": "The medical expenses incurred in the 90 days period immediately after you were discharged"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
-    "source_quote": "Day Care Treatment (defined per IRDAI; covered under hospitalization cover)"
+    "value": 130,
+    "source_url": "https://www.bajajgeneralinsurance.com/health-insurance-plans/health-guard.html",
+    "source_note": "Per insurer baseline (Bajaj Allianz Health Guard covers ~130 day care procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf"
   },
   "ayush_coverage": {
     "value": true,
+    "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
-    "source_quote": "AYUSH Day Care Centre / AYUSH Hospital defined (AYUSH In-patient hospitalization covered)"
+    "source_quote": "AYUSH Treatment refers to medical expenses incurred on hospitalization under Ayurveda, Yoga and Naturopathy Unani, Siddha and Homeopathy systems",
+    "_confidence": "high"
   },
   "maternity_coverage": {
     "value": true,
+    "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
-    "source_quote": "2. Maternity Expenses ... We will cover the Medical expenses for maternity including complications of maternity over and above the aggregate deductible limit"
+    "source_quote": "Maternity Expenses We will pay the Medical Expenses related to pregnancy, childbirth or medically recommended and lawful termination of pregnancy, limited to maximum 2 deliveries or termination(s) or either, during the lifetime of the insured person",
+    "_confidence": "high"
   },
   "newborn_coverage": {
     "value": false,
     "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
-    "source_quote": "2. Any Medical Expenses of the new born baby (excluded)"
+    "source_quote": "2. Any Medical Expenses of the new born baby 3. Dental treatment or surgery of any kind unless requiring hospitalization and as a result of accidental Bodily Injury to natural teeth. 4. The cost of spectacles, contact lenses, hearing aids, crutches, artificial limbs, denture"
   },
   "organ_donor_expenses": {
     "value": true,
     "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
-    "source_quote": "Organ Donor Expenses are covered under the policy (donor's hospitalization expenses for organ harvesting)"
+    "source_quote": "Organ Donor Expenses We will pay for Medical treatment of the organ donor for harvesting the organ i.e. including surgery to remove organs from a donor provided that, i. The organ donor is any person whose organ has been made available in accordance and in compliance with THE TRA",
+    "_confidence": "high"
   },
   "no_claim_bonus_pct": {
     "value": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
-    "source_quote": "Reference to 'No Claim Bonus' carry-over on renewal exists; explicit base NCB % for Extra Care Plus super-top-up varies by variant (not stated as fixed % in wording)"
+    "source_quote": "not stated in bajaj-allianz__extra-care-plus.pdf",
+    "_confidence": "low"
   },
   "restoration_benefit": {
     "value": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
-    "source_quote": "Restoration benefit not a base feature of Extra Care Plus super top-up (typical for top-up products)"
+    "source_quote": "not stated in bajaj-allianz__extra-care-plus.pdf",
+    "_confidence": "low"
   },
   "room_rent_capping": {
     "value": "No specific room rent capping in base (subject to Policy Schedule)",
     "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
-    "source_quote": "Reasonable and Customary Medical Expenses ... subject to aggregate deductible (no explicit room rent sub-limit in benefit table)"
+    "source_quote": "Reasonable and Customary Medical Expenses Medical Expenses incurred, subject to aggregate deductible as specified on the policy document Aggregate deductible is a cost sharing requirement under this policy that provides that the company will not be liable for a specified rupe"
   },
   "copayment_pct": {
-    "value": 0,
+    "value": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
-    "source_quote": "Co-payment ... A co-payment does not reduce the Sum Insured. (Defined but no mandatory base copay in Extra Care Plus)"
+    "source_quote": "not stated in bajaj-allianz__extra-care-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "deductible_amount": {
     "value": "Aggregate Deductible (selectable; per Policy Schedule)",
@@ -111,34 +119,50 @@
     "source_quote": "Aggregate deductible is a cost sharing requirement under this policy that provides the company will not be liable for a specified rupee amount"
   },
   "network_hospital_count": {
-    "value": null,
-    "source_url": null,
-    "source_quote": "Insurer-level metric (Bajaj Allianz advertises 7,500+ network hospitals)"
+    "value": 18400,
+    "source_url": "https://www.bajajgeneralinsurance.com/",
+    "source_note": "18,400+ Cashless Hospitals (homepage, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "cashless_treatment_supported": {
     "value": true,
+    "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
-    "source_quote": "Cashless facility ... extended by the insurer to the insured where the payments, of the costs of treatment undergone by the insured (defined and operational)"
+    "source_quote": "Cashless facility: Cashless facility means a facility extended by the Insurer to the Insured where the payments, of the costs of treatment undergone by the Insured in accordance with the policy terms and conditions",
+    "_confidence": "high"
   },
   "claim_settlement_ratio": {
     "value": null,
     "source_url": null,
-    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted"
+    "source_quote": "not stated in bajaj-allianz__extra-care-plus.pdf",
+    "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
     "value": null,
-    "source_pdf_path": null,
-    "source_quote": "TAT not specified in policy wording; governed by IRDAI Master Circular"
+    "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
+    "source_quote": "not stated in bajaj-allianz__extra-care-plus.pdf",
+    "_confidence": "low"
   },
   "policy_type": {
     "value": "super_top_up",
     "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
-    "source_quote": "Aggregate deductible ... applicable in aggregate towards hospitalization expenses incurred during the policy period (super top-up structure)"
+    "source_quote": "Aggregate Deductible Aggregate deductible is a cost sharing requirement under this policy that provides the company will not be liable for a specified rupee amount of the covered expenses, which will apply before any benefits are payable by",
+    "_confidence": "medium"
   },
   "_meta": {
     "curated_at": "2026-05-13",
     "primary_source_pdf": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
     "completeness_pct": 82,
-    "notes": "Super top-up product; SI options and deductibles configured per Policy Schedule. CSR + network count are insurer-level."
+    "notes": "Super top-up product; SI options and deductibles configured per Policy Schedule. CSR + network count are insurer-level. | Batch 3 (2026-05-15): coverage breadth fields backfilled.",
+    "batch3_added_fields": [
+      "ambulance_cover"
+    ]
+  },
+  "ambulance_cover": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/bajaj-allianz/extra-care-plus__wordings.pdf",
+    "source_quote": "Ambulance Expenses If a claim under Medical Expenses is accepted, We will also pay the ambulance expenses to a maximum of Rs3000/- per valid hospitali",
+    "extraction_method": "tools/curate_batch3.py — pattern-grep over pdfplumber text"
   }
 }

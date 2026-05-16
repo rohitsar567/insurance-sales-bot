@@ -2,138 +2,187 @@
   "policy_id": "indusind-general__hospi-care__wordings",
   "policy_name": "IndusInd Hospi Care Insurance",
   "insurer_slug": "indusind-general",
-  "source_pdf_path": "rag/corpus/reliance-general/hospi-care__wordings.pdf",
+  "source_pdf_path": "rag/corpus/indusind-general/hospi-care__wordings.pdf",
   "uin_code": {
     "value": "RELHLIP20027V012021",
     "unit": null,
-    "source_pdf_path": "rag/corpus/reliance-general/hospi-care__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_pdf_path": "rag/corpus/indusind-general/hospi-care__wordings.pdf",
+    "source_quote": "urance. UIN: RELHLIP20027V012021",
+    "_confidence": "high"
   },
   "min_entry_age": {
     "value": null,
     "unit": "years",
-    "source_pdf_path": "rag/corpus/reliance-general/hospi-care__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_pdf_path": "rag/corpus/indusind-general/hospi-care__wordings.pdf",
+    "source_quote": "not stated in hospi-care__wordings.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
-    "source_pdf_path": "rag/corpus/reliance-general/hospi-care__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/reliance-general/hospi-care__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_pdf_path": "rag/corpus/indusind-general/hospi-care__wordings.pdf",
+    "source_quote": "not stated in hospi-care__wordings.pdf",
+    "_confidence": "low"
   },
   "min_child_entry_age": {
     "value": null,
     "unit": "days",
-    "source_pdf_path": "rag/corpus/reliance-general/hospi-care__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_pdf_path": "rag/corpus/indusind-general/hospi-care__wordings.pdf",
+    "source_quote": "not stated in hospi-care__wordings.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
-    "value": null,
+    "value": [
+      100000,
+      200000,
+      300000,
+      400000,
+      500000,
+      1000000
+    ],
     "unit": "INR",
-    "source_pdf_path": "rag/corpus/reliance-general/hospi-care__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_pdf_path": "rag/corpus/indusind-general/hospi-care__wordings.pdf",
+    "source_quote": "Sum Insured per Insured Person per Policy Year [All figures in INR] Upto 90 days 100,000 200,000 300,000 400,000 500,000 10,00,000",
+    "_confidence": "high"
   },
   "grace_period": {
-    "value": null,
+    "value": 30,
     "unit": "days",
-    "source_pdf_path": "rag/corpus/reliance-general/hospi-care__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_pdf_path": "rag/corpus/indusind-general/hospi-care__wordings.pdf",
+    "source_quote": "All applications for Renewal must be received by Us before the end of the Policy Period. Grace Period of 30 days for renewing the policy is provided under this Policy.",
+    "_confidence": "high"
   },
   "free_look_period": {
-    "value": null,
+    "value": 30,
     "unit": "days",
-    "source_pdf_path": "rag/corpus/reliance-general/hospi-care__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_pdf_path": "rag/corpus/indusind-general/hospi-care__wordings.pdf",
+    "source_quote": "You have a period of 30 days from the date of receipt of the Policy document to review the terms and conditions of this Policy.",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
-    "value": null,
+    "value": 90,
     "unit": null,
-    "source_pdf_path": "rag/corpus/reliance-general/hospi-care__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_pdf_path": "rag/corpus/indusind-general/hospi-care__wordings.pdf",
+    "source_quote": "A waiting period of 90 days from the Policy Commencement Date shall apply to all claims under the Policy. This waiting period will not apply for any Insured Person for subsequent and continuous Renewals of the Policy with Us.",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 48,
     "unit": null,
-    "source_pdf_path": "rag/corpus/reliance-general/hospi-care__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_pdf_path": "rag/corpus/indusind-general/hospi-care__wordings.pdf",
+    "source_quote": ") Pre-existing Waiting Period Pre-Existing Diseases shall not be covered until the completion of 48 months of continuous coverage, since inception of the first IndusInd Hospi Care Insurance Policy",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
-    "value": null,
+    "value": 24,
     "unit": null,
-    "source_pdf_path": "rag/corpus/reliance-general/hospi-care__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_pdf_path": "rag/corpus/indusind-general/hospi-care__wordings.pdf",
+    "source_quote": "The Illnesses and treatments listed below will be covered subject to a waiting period of 24 months from the Policy Commencement Date as long as in the third Policy Year the Insured Person has been insured under IndusInd Hospi Care Insurance Policy continuously and without any break:",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "unit": null,
-    "source_pdf_path": "rag/corpus/reliance-general/hospi-care__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_pdf_path": "rag/corpus/indusind-general/hospi-care__wordings.pdf",
+    "source_quote": "not stated in hospi-care__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": null,
     "unit": null,
-    "source_pdf_path": "rag/corpus/reliance-general/hospi-care__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_pdf_path": "rag/corpus/indusind-general/hospi-care__wordings.pdf",
+    "source_quote": "not stated in hospi-care__wordings.pdf",
+    "_confidence": "low"
   },
   "post_hospitalization_days": {
     "value": null,
     "unit": null,
-    "source_pdf_path": "rag/corpus/reliance-general/hospi-care__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_pdf_path": "rag/corpus/indusind-general/hospi-care__wordings.pdf",
+    "source_quote": "not stated in hospi-care__wordings.pdf",
+    "_confidence": "low"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/reliance-general/hospi-care__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 540,
+    "source_url": "https://www.indusind.bank.in/in/en/personal/insurance/indusInd-health-gain-insurance.html",
+    "source_note": "Per insurer baseline (IndusInd Health Gain covers all day-care up to SI; ~540 standard)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/indusind-general/hospi-care__wordings.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/reliance-general/hospi-care__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 10000,
+    "source_url": "https://www.indusindinsurance.com/",
+    "source_note": "10,000+ Network Hospitals (homepage 'Find nearest hospital' section, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
     "value": null,
     "unit": "percent",
-    "source_pdf_path": "rag/corpus/reliance-general/hospi-care__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_pdf_path": "rag/corpus/indusind-general/hospi-care__wordings.pdf",
+    "source_quote": "not stated in hospi-care__wordings.pdf",
+    "_confidence": "low"
   },
   "room_rent_capped_at_pct_of_si": {
     "value": null,
     "unit": "percent",
-    "source_pdf_path": "rag/corpus/reliance-general/hospi-care__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_pdf_path": "rag/corpus/indusind-general/hospi-care__wordings.pdf",
+    "source_quote": "not stated in hospi-care__wordings.pdf",
+    "_confidence": "low"
   },
   "policy_term_options_years": {
     "value": null,
     "unit": "years",
-    "source_pdf_path": "rag/corpus/reliance-general/hospi-care__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_pdf_path": "rag/corpus/indusind-general/hospi-care__wordings.pdf",
+    "source_quote": "not stated in indusind-general__hospi-care__wordings.pdf",
+    "_confidence": "low"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
-    "source_pdf_path": "rag/corpus/reliance-general/hospi-care__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_pdf_path": "rag/corpus/indusind-general/hospi-care__wordings.pdf",
+    "source_quote": "not stated in hospi-care__wordings.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
-    "source_pdf_path": "rag/corpus/reliance-general/hospi-care__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_pdf_path": "rag/corpus/indusind-general/hospi-care__wordings.pdf",
+    "source_quote": "not stated in hospi-care__wordings.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
-    "source_pdf_path": "rag/corpus/reliance-general/hospi-care__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_pdf_path": "rag/corpus/indusind-general/hospi-care__wordings.pdf",
+    "source_quote": "not stated in hospi-care__wordings.pdf",
+    "_confidence": "low"
   },
-  "legacy_issuer": "Reliance General Insurance"
+  "legacy_issuer": "Reliance General Insurance",
+  "maternity_coverage": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/indusind-general/hospi-care__wordings.pdf",
+    "source_quote": "t of an Accident or Illness), maternity or child birth (including caesarean section), except in the case of ectopic pregnancy",
+    "_confidence": "high"
+  },
+  "worldwide_emergency_cover": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/indusind-general/hospi-care__wordings.pdf",
+    "source_quote": "Treatment availed outside India. ii. Treatment at a healthcare facility which is not a Hospital",
+    "_confidence": "medium"
+  },
+  "geographic_coverage": {
+    "value": "pan_india",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/indusind-general/hospi-care__wordings.pdf",
+    "source_quote": "Treatment availed outside India. ii. Treatment at a healthcare facility which is not a Hospital",
+    "_confidence": "medium"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": null,
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/indusind-general/hospi-care__wordings.pdf",
+    "source_quote": "not stated in indusind-general__hospi-care__wordings.pdf",
+    "_confidence": "low"
+  }
 }

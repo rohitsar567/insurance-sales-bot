@@ -7,143 +7,253 @@
     "value": "NICHLIP25037V022425",
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "UIN: NICHLIP25037V022425",
+    "_confidence": "high"
   },
   "min_entry_age": {
-    "value": 18,
+    "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in new-national-parivar__wordings.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
-    "value": 65,
+    "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in new-national-parivar__wordings.pdf",
+    "_confidence": "low"
   },
   "min_child_entry_age": {
-    "value": 91,
+    "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in new-national-parivar__wordings.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
-    "value": [
-      100000,
-      200000,
-      300000,
-      400000,
-      500000,
-      600000,
-      700000,
-      800000,
-      900000,
-      1000000
-    ],
+    "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in new-national-parivar__wordings.pdf",
+    "_confidence": "low"
   },
   "grace_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Grace Period for payment of the premium shall be thirty days",
+    "_confidence": "high"
   },
   "free_look_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "free look period of thirty days from date of receipt of the policy document",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "First 30 days waiting period (Excl 03) a) Expenses related to the treatment of any illness within thirty (30) days from the first policy commencement date shall be excluded",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 36,
-    "unit": null,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Pre-Existing Diseases (Excl 01) a) Expenses related to the treatment of a Pre-Existing Disease (PED) and its direct complications shall be excluded until the expiry of thirty six (36) months of continuous coverage",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "90 days/ one year/ two year/ three years (as specified against specific disease/ procedure)",
+    "_confidence": "medium"
   },
   "maternity_waiting_months": {
     "value": 36,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Maternity (including Baby from Birth Cover) (per insured person, in a policy year, waiting period of 3 years applies) Up to 10% of SI subject to INR",
+    "_confidence": "medium"
   },
   "pre_hospitalization_days": {
     "value": 45,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Pre Hospitalisation 45 days Post Hospitalisation 75 days",
+    "_confidence": "medium"
   },
   "post_hospitalization_days": {
     "value": 75,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Post Hospitalisation 75 days",
+    "_confidence": "medium"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 140,
+    "source_url": "https://nationalinsurance.nic.co.in/en/health-insurance/new-national-parivar-mediclaim-policy",
+    "source_note": "Per insurer baseline (National Parivar Mediclaim covers 140+ day care procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__wordings.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 5322,
+    "source_url": "https://nationalinsurance.nic.co.in/",
+    "source_note": "5322 Network Hospitals ('Why Choose NICL' section, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in new-national-parivar__wordings.pdf",
+    "_confidence": "low"
   },
   "room_rent_capped_at_pct_of_si": {
-    "value": null,
-    "unit": "percent",
+    "value": 1.0,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "3.1.1.1 Limit for Room Charges and Intensive Care Unit Charges Room charges and intensive care unit charges per day shall be payable up to the limit as shown in the Table of Benefits.",
+    "_confidence": "high"
   },
   "policy_term_options_years": {
-    "value": null,
+    "value": [
+      1
+    ],
     "unit": "years",
     "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "period of 1 year",
+    "_confidence": "medium"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in new-national-parivar__wordings.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in new-national-parivar__wordings.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in new-national-parivar__wordings.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__wordings.pdf",
+    "source_quote": "2.7 AYUSH Treatment refers to the medical and/ or Hospitalisation treatments given under Ayurveda, Yoga and Naturopathy, Unani, Sidha and Homeopathy systems.",
+    "_confidence": "high"
+  },
+  "maternity_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__wordings.pdf",
+    "source_quote": "3.1.11 Maternity The Company shall indemnify Maternity Expenses as described below for any female Insured Person, and also Pre-Natal and Post- Natal Hospitalisation expenses per delivery, including expenses for necessary vaccination for the New Born Baby",
+    "_confidence": "high"
+  },
+  "newborn_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__wordings.pdf",
+    "source_quote": "New Born Baby shall be automatically covered from birth under the Sum Insured available to the mother during the corresponding Policy Period, for up to 3 months of age.",
+    "_confidence": "high"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__wordings.pdf",
+    "source_quote": "3.1.7 Organ Donor's Medical Expenses The Company shall indemnify the Medical Expenses incurred in respect of an organ donor's Hospitalisation during the Policy Period for harvesting of the organ donated to an Insured Person",
+    "_confidence": "high"
+  },
+  "restoration_benefit": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__wordings.pdf",
+    "source_quote": "Reinstatement of Basic Sum Insured (available to Basic Sum Insured of ₹ 6L and above) For Policies with Floater Basic Sum Insured of ₹ 6 lacs and above, in the event of available Sum Insured being exhausted anytime during the Policy Year on account of Hospitalisation claim(s)",
+    "_confidence": "high"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__wordings.pdf",
+    "source_quote": "2.19 Domiciliary Hospitalisation means medical treatment for an illness /injury which in the normal course would require care and treatment at a hospital but is actually taken while confined at home",
+    "_confidence": "high"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__wordings.pdf",
+    "source_quote": "3.3.2 Preventive Health Check Up Expenses of preventive health check-up/ prescribed diagnostic tests will be reimbursed once at the end of a block of three (03) continuous years provided no claims are reported and admitted during the block",
+    "_confidence": "high"
+  },
+  "critical_illness_cover": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__wordings.pdf",
+    "source_quote": "3.4.3 Critical Illness Subject otherwise to the terms, definitions, exclusions, and conditions of the Policy, the Company shall pay the benefit amount, as stated in the schedule",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__wordings.pdf",
+    "source_quote": "Cashless Facility can be availed, if TPA service is opted",
+    "_confidence": "medium"
+  },
+  "no_claim_bonus_cap_pct": {
+    "value": 50,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__wordings.pdf",
+    "source_quote": "not be accumulated in excess of 50% of the Basic Sum Insured",
+    "_confidence": "medium"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": 1,
+    "unit": "hours",
+    "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__wordings.pdf",
+    "source_quote": "pre-authorization letter within an hour to the Hospital after verification",
+    "_confidence": "medium"
+  },
+  "geographic_coverage": {
+    "value": "pan_india",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__wordings.pdf",
+    "source_quote": "geographical limits of India",
+    "_confidence": "medium"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "family_floater",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__wordings.pdf",
+    "source_quote": "Family Floater basis",
+    "_confidence": "medium"
+  },
+  "room_rent_capping": {
+    "value": "1% of SI per day",
+    "unit": "text",
+    "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__wordings.pdf",
+    "source_quote": "3.1.1.1 Limit for Room Charges and Intensive Care Unit Charges Room charges and intensive care unit charges per day shall be payable up to the limit as shown in the Table of Benefits.",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_pct": {
+    "value": 5,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__wordings.pdf",
+    "source_quote": "increase by 5% of Basic SI in respect of each claim free",
+    "_confidence": "medium"
   }
 }

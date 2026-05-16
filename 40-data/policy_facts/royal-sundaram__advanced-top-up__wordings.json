@@ -7,31 +7,29 @@
     "value": "RSAHLIP23029V012223",
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/advanced-top-up__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Road, Chennai - 600 002 1 UIN- RSAHLIP23029V012223 Part II",
+    "_confidence": "high"
   },
   "min_entry_age": {
     "value": 18,
     "unit": "years",
     "source_pdf_path": "rag/corpus/royal-sundaram/advanced-top-up__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "age Adult: 18 years to 65 years Depe",
+    "_confidence": "high"
   },
   "max_entry_age": {
     "value": 65,
     "unit": "years",
     "source_pdf_path": "rag/corpus/royal-sundaram/advanced-top-up__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/royal-sundaram/advanced-top-up__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "age Adult: 18 years to 65 years Depe",
+    "_confidence": "high"
   },
   "min_child_entry_age": {
     "value": 91,
     "unit": "days",
     "source_pdf_path": "rag/corpus/royal-sundaram/advanced-top-up__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "ears Dependent Children: 91 days to 25 yrs (After 25 years, Dependent c",
+    "_confidence": "high"
   },
   "sum_insured_options": {
     "value": [
@@ -56,102 +54,204 @@
     ],
     "unit": "INR",
     "source_pdf_path": "rag/corpus/royal-sundaram/advanced-top-up__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "of Benefits 1 Sum Insured 10 Lakhs, 15 Lakhs 20 Lakhs, 25 lakhs, 30 lakhs, 35 Lakhs, 40 Lakhs, 45 Lakhs, 50 lakhs, 55 lakhs, 60 lakhs, 65 Lakhs, 70 Lakhs, 75 lakhs, 80 lakhs, 85 lakhs 90 lakhs, 95 Lakhs 2 De",
+    "_confidence": "medium"
   },
   "grace_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/royal-sundaram/advanced-top-up__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Grace Period means a period of 30 days in case of one year immediately following the Policy Period End Date during whi",
+    "_confidence": "high"
   },
   "free_look_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/royal-sundaram/advanced-top-up__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "the Insured Person will be allowed a period of 30 days from the date of receipt of the policy to review",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/advanced-top-up__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "s 14 Initial Waiting Period 30 days 15 Pre-Existing Diseases waiting period 36 months 16 S",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 36,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/advanced-top-up__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "s 15 Pre-Existing Diseases waiting period 36 months 16 Specific wai",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/advanced-top-up__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Specific waiting period* 24 months Opti",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/advanced-top-up__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in royal-sundaram__advanced-top-up__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
-    "value": 60,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/advanced-top-up__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in royal-sundaram__advanced-top-up__wordings.pdf",
+    "_confidence": "low"
   },
   "post_hospitalization_days": {
     "value": 90,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/advanced-top-up__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "post hospitalization expenses 60/90 days, Covere",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/royal-sundaram/advanced-top-up__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 200,
+    "source_url": "https://www.royalsundaram.in/health-insurance/lifeline/",
+    "source_note": "Per insurer baseline (Royal Sundaram Lifeline lists ~200 day care procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/royal-sundaram/advanced-top-up__wordings.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/royal-sundaram/advanced-top-up__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 12500,
+    "source_url": "https://www.royalsundaram.in/",
+    "source_note": "12500+ Cashless hospitals (homepage, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
     "value": null,
-    "unit": "percent",
+    "unit": "%",
     "source_pdf_path": "rag/corpus/royal-sundaram/advanced-top-up__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in royal-sundaram__advanced-top-up__wordings.pdf",
+    "_confidence": "low"
   },
   "room_rent_capped_at_pct_of_si": {
-    "value": null,
+    "value": 0,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/royal-sundaram/advanced-top-up__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "ered as adults in a separate policy) Room Rent No Room Rent capping Entry age Discount on Multiyear policy 6% discount",
+    "_confidence": "high"
   },
   "policy_term_options_years": {
-    "value": null,
+    "value": [
+      1
+    ],
     "unit": "years",
     "source_pdf_path": "rag/corpus/royal-sundaram/advanced-top-up__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "pired policy period, if the term of policy is up to one year and there is no c",
+    "_confidence": "medium"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/royal-sundaram/advanced-top-up__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in royal-sundaram__advanced-top-up__wordings.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/royal-sundaram/advanced-top-up__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in royal-sundaram__advanced-top-up__wordings.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/royal-sundaram/advanced-top-up__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in royal-sundaram__advanced-top-up__wordings.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/advanced-top-up__wordings.pdf",
+    "source_quote": "AYUSH Treatment Expenses incurred for inpatient care treatment under Ayurveda, Yoga and Naturopathy, Unani, Siddha and Homeopathy systems of medicines is covered up to 100% of Sum Insured, during each policy year as specified in the policy schedule.",
+    "_confidence": "high"
+  },
+  "maternity_coverage": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/advanced-top-up__wordings.pdf",
+    "source_quote": "Maternity Expenses (Code – Excl18): i. Medical treatment expenses traceable to childbirth (including complicated deliveries and caesarean sections incurred during hospitalization) except ectopic pregnancy; ii. Expenses towards miscarriage",
+    "_confidence": "high"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/advanced-top-up__wordings.pdf",
+    "source_quote": "Organ Donor Expenses We will cover Inpatient Care Medical Expenses towards the donor for the harvesting of the organ donated provided that: (a) the organ donor is any person in accordance with the Transplantation of Human Organs Act, 1994 and other applicable",
+    "_confidence": "high"
+  },
+  "restoration_benefit": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/advanced-top-up__wordings.pdf",
+    "source_quote": "Life Protect Benefit In the event of Life Threatening Condition if the Sum Insured becomes insufficient, we will give additional amount for any claim admissible under section D.1 up to the limits specified in Product Benefits Table",
+    "_confidence": "high"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/advanced-top-up__wordings.pdf",
+    "source_quote": "Domiciliary Hospitalization We will cover Medical Expenses upto Sum Insured for medical treatment taken at home if this continues for an uninterrupted period of 3 days and the condition for which treatment is taken would otherwise have necessitated Hospitalization",
+    "_confidence": "high"
+  },
+  "critical_illness_cover": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/advanced-top-up__wordings.pdf",
+    "source_quote": "Second Opinion for Critical Illness We will provide You a second opinion from Medical Practitioner, if an Insured Person is diagnosed with the Critical Illness during the Policy Period. The expert opinion would be directly sent to the Insured Person.",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/advanced-top-up__wordings.pdf",
+    "source_quote": "ace period. C.1.6 Cashless Facility means a facility extended by the insurer to the insured where the payments, of the cost",
+    "_confidence": "high"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "unit": "hours",
+    "source_pdf_path": "rag/corpus/royal-sundaram/advanced-top-up__wordings.pdf",
+    "source_quote": "not stated in royal-sundaram__advanced-top-up__wordings.pdf",
+    "_confidence": "low"
+  },
+  "geographic_coverage": {
+    "value": "pan_india",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/royal-sundaram/advanced-top-up__wordings.pdf",
+    "source_quote": "we will consider Hospitalizations in India only. C.1.14 Den",
+    "_confidence": "medium"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "super_top_up",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/royal-sundaram/advanced-top-up__wordings.pdf",
+    "source_quote": "e Product Type Deductible on Annual Aggregate Basis Sr No Product Feature Scope of Benefits 1 Sum Insured 10 Lakhs, 15",
+    "_confidence": "medium"
+  },
+  "deductible_amount": {
+    "value": 500000,
+    "unit": "INR",
+    "source_pdf_path": "rag/corpus/royal-sundaram/advanced-top-up__wordings.pdf",
+    "source_quote": "Deductible For 10- 95 lakhs Sum Insure",
+    "_confidence": "medium"
+  },
+  "room_rent_capping": {
+    "value": "No room rent capping",
+    "unit": "text",
+    "source_pdf_path": "rag/corpus/royal-sundaram/advanced-top-up__wordings.pdf",
+    "source_quote": "Room Rent No Room Rent capping Discount on Multiyear policy 6% discount for 2 years policy 9% discount for 3 years policy",
+    "_confidence": "high"
   }
 }

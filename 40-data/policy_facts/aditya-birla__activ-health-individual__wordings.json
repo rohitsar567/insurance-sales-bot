@@ -10,52 +10,60 @@
   "min_entry_age": {
     "value": null,
     "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in aditya-birla__activ-health-individual__wordings.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
-    "source_quote": ""
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in aditya-birla__activ-health-individual__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_existing_disease_waiting_months": {
     "value": null,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in activ-health-individual__wordings.pdf",
+    "_confidence": "low"
   },
   "initial_waiting_period_days": {
-    "value": null,
+    "value": 30,
     "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "Expenses related to the treatment of any illness within 30 days from the ﬁrst policy commencement date shall be excluded except claims arising due to an accident, provided the same are covered.",
+    "_confidence": "high"
   },
   "maternity_coverage": {
-    "value": null,
+    "value": true,
+    "unit": null,
     "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "Where Maternity Expenses is opted as an Optional Cover under this Policy, We will cover Maternity Expenses up to the Maternity Sum Insured speciﬁed in the Policy Schedule",
+    "_confidence": "medium"
   },
   "maternity_waiting_months": {
-    "value": null,
+    "value": 48,
     "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "Maternity Waiting Period Any treatment arising from or traceable to pregnancy, childbirth including caesarean section will not be covered until 48 months of continuous coverage has elapsed for that particular Insured Person since the inception of the Maternity Expenses Beneﬁt under the Policy for that Insured Person.",
+    "_confidence": "high"
   },
   "ayush_coverage": {
     "value": true,
+    "unit": null,
     "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
-    "source_quote": "Ayush Cover:\nWhat is covered"
+    "source_quote": "given under ‘Ayurveda, Yoga and Naturopathy, Unani, Siddha and Homeopathy systems.",
+    "_confidence": "high"
   },
   "cashless_treatment_supported": {
     "value": true,
+    "unit": null,
     "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
-    "source_quote": "Cashless Facility"
+    "source_quote": "Cashless Facility means a facility extended by the insurer to the insured where the payments, of the costs of treatment undergone by the insured",
+    "_confidence": "high"
   },
   "copayment_pct": {
-    "value": 10,
+    "value": null,
     "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
-    "source_quote": "Co-payment applicable\nZone II Zone I 10%"
+    "source_quote": "not stated in aditya-birla__activ-health-individual.pdf",
+    "_confidence": "low"
   },
   "no_claim_bonus_pct": {
     "value": 100,
@@ -63,59 +71,78 @@
     "source_quote": "Cumulative Bonus shall not exceed 100%"
   },
   "restoration_benefit": {
-    "value": null,
+    "value": true,
     "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "Once in the Policy Year, We shall provide for a reload of the Sum Insured up to the limits as speciﬁed in the Policy Schedule / Product Beneﬁt Table of this Policy, in case the available Sum Insured which shall be considered to be inclusive of accumulated Cumulative Bonus (if any), is insufficient for covering a claim under the Policy as a result of previous claims in that Policy Year.",
+    "_confidence": "high"
   },
   "room_rent_capping": {
-    "value": "Room Rent for accommodation in Hospital room and other boarding charges up to",
+    "value": "Single Private A/C Room",
+    "unit": null,
     "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
-    "source_quote": "Room Rent for accommodation in Hospital room and other boarding charges up to"
+    "source_quote": "Single Private A/C Room means a basic (most economical of all accommodation) category of single room in a Hospital with air-conditioning facility",
+    "_confidence": "medium"
   },
   "pre_hospitalization_days": {
     "value": null,
     "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in aditya-birla__activ-health-individual__wordings.pdf",
+    "_confidence": "low"
   },
   "post_hospitalization_days": {
     "value": null,
     "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in aditya-birla__activ-health-individual__wordings.pdf",
+    "_confidence": "low"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
-    "source_quote": ""
+    "value": 586,
+    "source_url": "https://www.adityabirlacapital.com/healthinsurance/activ-one-plan",
+    "source_note": "Per insurer baseline (Aditya Birla Activ One MAX / Activ Care: 586 day care procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
-    "source_quote": ""
+    "value": 10051,
+    "source_url": "https://www.adityabirlacapital.com/healthinsurance/health-insurance-plans",
+    "source_note": "Cashless facility available at 10051+ network hospitals (health-insurance-plans page, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "sum_insured_options": {
     "value": null,
     "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in aditya-birla__activ-health-individual__wordings.pdf",
+    "_confidence": "low"
   },
   "claim_settlement_ratio": {
     "value": null,
     "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in aditya-birla__activ-health-individual__wordings.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
-    "value": null,
+    "value": 24,
     "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "The Authorization letter shall be issued to the Network Provider within 24 hours of receiving the complete information.",
+    "_confidence": "high"
   },
   "policy_type": {
     "value": "hospital_cash",
     "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
-    "source_quote": "classified as hospital_cash from PDF heuristics"
+    "source_quote": "Where an insured person has policies from more than one insurer to cover the same risk on indemnity basis, the insured person shall only be indemnified the treatment costs in accordance with the terms and conditions of the chosen policy.",
+    "_confidence": "high"
   },
   "_meta": {
     "curated_at": "2026-05-14",
     "primary_source_pdf": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
     "completeness_pct": 32,
-    "notes": "Curated by tools/curate_remaining.py \u2014 pattern-based extraction from local PDF"
+    "notes": "Curated by tools/curate_remaining.py — pattern-based extraction from local PDF"
+  },
+  "co_payment_pct": {
+    "value": 10,
+    "unit": "percent",
+    "source_pdf_path": "rag/corpus/aditya-birla/activ-health-individual__wordings.pdf",
+    "source_quote": "Co-payment applicable 10% 15% 25%",
+    "_confidence": "medium"
   }
 }

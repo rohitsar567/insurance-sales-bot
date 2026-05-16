@@ -7,135 +7,205 @@
     "value": "NICHLIP25042V012425",
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/national-surrogacy__prospectus.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "UIN: NICHLIP25042V012425",
+    "_confidence": "high"
   },
   "min_entry_age": {
     "value": 25,
     "unit": "years",
     "source_pdf_path": "rag/corpus/national-insurance/national-surrogacy__prospectus.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Entry age for Surrogate Mother shall be between 25 years to 35 years",
+    "_confidence": "high"
   },
   "max_entry_age": {
     "value": 35,
     "unit": "years",
     "source_pdf_path": "rag/corpus/national-insurance/national-surrogacy__prospectus.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
-  },
-  "max_renewal_age": {
-    "value": null,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/national-insurance/national-surrogacy__prospectus.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Entry age for Surrogate Mother shall be between 25 years to 35 years",
+    "_confidence": "high"
   },
   "min_child_entry_age": {
     "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/national-insurance/national-surrogacy__prospectus.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in national-surrogacy__prospectus.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
     "value": [
-      200000,
-      300000
+      600000,
+      900000
     ],
     "unit": "INR",
     "source_pdf_path": "rag/corpus/national-insurance/national-surrogacy__prospectus.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Sum Insured (SI) options are INR 6 lacs or INR 9 lacs, during the entire 36 months",
+    "_confidence": "high"
   },
   "grace_period": {
     "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/national-insurance/national-surrogacy__prospectus.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in national-surrogacy__prospectus.pdf",
+    "_confidence": "low"
   },
   "free_look_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/national-insurance/national-surrogacy__prospectus.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "free look period of thirty days from date of receipt of the policy document",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/national-surrogacy__prospectus.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "First 30 days Waiting Period Expenses related to the treatment of any illness within thirty (30) days from the first policy commencement date shall be excluded",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/national-surrogacy__prospectus.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in national-surrogacy__prospectus.pdf",
+    "_confidence": "low"
   },
   "specific_disease_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/national-surrogacy__prospectus.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in national-surrogacy__prospectus.pdf",
+    "_confidence": "low"
   },
   "maternity_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/national-surrogacy__prospectus.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in national-surrogacy__prospectus.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/national-surrogacy__prospectus.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in national-surrogacy__prospectus.pdf",
+    "_confidence": "low"
   },
   "post_hospitalization_days": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/national-surrogacy__prospectus.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in national-surrogacy__prospectus.pdf",
+    "_confidence": "low"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/national-insurance/national-surrogacy__prospectus.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 140,
+    "source_url": "https://nationalinsurance.nic.co.in/en/health-insurance/new-national-parivar-mediclaim-policy",
+    "source_note": "Per insurer baseline (National Parivar Mediclaim covers 140+ day care procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/national-insurance/national-surrogacy__prospectus.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/national-insurance/national-surrogacy__prospectus.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 5322,
+    "source_url": "https://nationalinsurance.nic.co.in/",
+    "source_note": "5322 Network Hospitals ('Why Choose NICL' section, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/national-insurance/national-surrogacy__prospectus.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in national-surrogacy__prospectus.pdf",
+    "_confidence": "low"
   },
   "room_rent_capped_at_pct_of_si": {
-    "value": null,
-    "unit": "percent",
+    "value": "Single AC/Non-AC base single room; proportionate deduction if higher",
+    "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/national-surrogacy__prospectus.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Room Rent - Single Occupancy room (AC or Non AC) ICU Charges - Upto 5% of Annual SI, per day Proportionate Deduction shall apply if opted for higher Room Rent/ category",
+    "_confidence": "high"
   },
   "policy_term_options_years": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/national-insurance/national-surrogacy__prospectus.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in national-surrogacy__prospectus.pdf",
+    "_confidence": "low"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/national-insurance/national-surrogacy__prospectus.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in national-surrogacy__prospectus.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/national-insurance/national-surrogacy__prospectus.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in national-surrogacy__prospectus.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/national-surrogacy__prospectus.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in national-surrogacy__prospectus.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/national-surrogacy__prospectus.pdf",
+    "source_quote": "2.9 AYUSH Treatment refers to the Hospitalisation treatments given Ayurveda, Yoga and Naturopathy, Unani, Sidha and Homeopathy systems.",
+    "_confidence": "high"
+  },
+  "maternity_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/national-surrogacy__prospectus.pdf",
+    "source_quote": "National Surrogacy Insurance Policy is an indemnity health insurance product covering the Surrogate Mother. The Policy covers expenses in respect of any complication arising due to surrogacy pregnancy & post-partum delivery during the Policy Period.",
+    "_confidence": "high"
+  },
+  "domiciliary_treatment": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/national-surrogacy__prospectus.pdf",
+    "source_quote": "5.23. Domiciliary Hospitalization & Out Patient Department (OPD) treatment Any expenses incurred on Domiciliary Hospitalization and OPD treatment",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/national-surrogacy__prospectus.pdf",
+    "source_quote": "Cashless facility is available if opted for TPA service, subject to prior approval by the TPA",
+    "_confidence": "medium"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": 1,
+    "unit": "hours",
+    "source_pdf_path": "rag/corpus/national-insurance/national-surrogacy__prospectus.pdf",
+    "source_quote": "pre-authorization letter within an hour to the Hospital after verification",
+    "_confidence": "medium"
+  },
+  "geographic_coverage": {
+    "value": "pan_india",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/national-insurance/national-surrogacy__prospectus.pdf",
+    "source_quote": "geographical limits of India",
+    "_confidence": "medium"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "other",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/national-insurance/national-surrogacy__prospectus.pdf",
+    "source_quote": "The Policy ONLY covers Hospitalisation expenses",
+    "_confidence": "medium"
+  },
+  "room_rent_capping": {
+    "value": "Single AC/Non-AC base single room; proportionate deduction if higher",
+    "unit": "text",
+    "source_pdf_path": "rag/corpus/national-insurance/national-surrogacy__prospectus.pdf",
+    "source_quote": "Room Rent - Single Occupancy room (AC or Non AC) ICU Charges - Upto 5% of Annual SI, per day Proportionate Deduction shall apply if opted for higher Room Rent/ category",
+    "_confidence": "high"
   }
 }

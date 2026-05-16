@@ -7,132 +7,246 @@
     "value": "GODHLIP27048V052627",
     "unit": null,
     "source_pdf_path": "rag/corpus/go-digit/digit-health-care-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Digit Health Care Plus Policy – Policy Wording (UIN: GODHLIP27048V052627)",
+    "_confidence": "high"
   },
   "min_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/go-digit/digit-health-care-plus__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in go-digit__digit-health-care-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/go-digit/digit-health-care-plus__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/go-digit/digit-health-care-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in go-digit__digit-health-care-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "min_child_entry_age": {
     "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/go-digit/digit-health-care-plus__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in go-digit__digit-health-care-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
     "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/go-digit/digit-health-care-plus__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in go-digit__digit-health-care-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "grace_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/go-digit/digit-health-care-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "The grace period for payment of the premium for all types of insurance policies shall be: fifteen days where \npremium payment mode is monthly and thirty days in all other cases.",
+    "_confidence": "high"
   },
   "free_look_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/go-digit/digit-health-care-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "The insured person shall be allowed free look period of thirty (30) from date of receipt of the policy document",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/go-digit/digit-health-care-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "after expiry of 30 days from the first Policy Start date, provided that:",
+    "_confidence": "medium"
   },
   "pre_existing_disease_waiting_months": {
-    "value": 36,
-    "unit": null,
+    "value": null,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/go-digit/digit-health-care-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in go-digit__digit-health-care-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "specific_disease_waiting_months": {
-    "value": 24,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/go-digit/digit-health-care-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in go-digit__digit-health-care-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "maternity_waiting_months": {
-    "value": 9,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/go-digit/digit-health-care-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in go-digit__digit-health-care-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
-    "value": 60,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/go-digit/digit-health-care-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in go-digit__digit-health-care-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "post_hospitalization_days": {
-    "value": 180,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/go-digit/digit-health-care-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in go-digit__digit-health-care-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/go-digit/digit-health-care-plus__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 100,
+    "source_url": "https://www.godigit.com/health-insurance/daycare-treatment-and-procedures-in-health-insurance",
+    "source_note": "Per insurer baseline (Go Digit Health covers all day-care up to SI; ~100 listed procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/go-digit/digit-health-care-plus__wordings.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/go-digit/digit-health-care-plus__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 9000,
+    "source_url": "https://www.godigit.com/health-insurance",
+    "source_note": "9000+ Cashless Hospitals (health-insurance USP section, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
-    "value": null,
+    "value": 25,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/go-digit/digit-health-care-plus__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Basis 1:  Co-payment of 25% in the First Year of this Section being Opted, 10% on First Renewal.",
+    "_confidence": "medium"
   },
   "room_rent_capped_at_pct_of_si": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/go-digit/digit-health-care-plus__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in go-digit__digit-health-care-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "policy_term_options_years": {
-    "value": null,
+    "value": [
+      1
+    ],
     "unit": "years",
     "source_pdf_path": "rag/corpus/go-digit/digit-health-care-plus__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Refund proportionate premium for unexpired policy period, if the term of policy is upto one year and \nthere is no claim (s) made during the policy period.",
+    "_confidence": "medium"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/go-digit/digit-health-care-plus__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in go-digit__digit-health-care-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/go-digit/digit-health-care-plus__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in go-digit__digit-health-care-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/go-digit/digit-health-care-plus__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in go-digit__digit-health-care-plus__wordings.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/go-digit/digit-health-care-plus__wordings.pdf",
+    "source_quote": "A9. AYUSH COVER  \nDigit Simplification:  We'll cover Your in-patient medical expenses for treatments in Ayurveda, Unani, Siddha, \nor Homeopathy.",
+    "_confidence": "high"
+  },
+  "maternity_coverage": {
+    "value": true,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/go-digit/digit-health-care-plus__wordings.pdf",
+    "source_quote": "SECTION 6. MATERNITY BENEFIT & NEW BORN BABY COVER \nA. Maternity Benefit",
+    "_confidence": "high"
+  },
+  "newborn_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/go-digit/digit-health-care-plus__wordings.pdf",
+    "source_quote": "B. New Born Baby Benefit Digit Simplification: Your babies need all the love, care and cover they can get. Under this cover, we will also pay the Medical Expenses, within the limit of the Sum Insured available under the Section 6.",
+    "_confidence": "high"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/go-digit/digit-health-care-plus__wordings.pdf",
+    "source_quote": "We will pay You for the following incurred Medical Expenses in respect of organ transplantation: a) For the harvesting of the donated organ subject to availability of the Sum Insured under Section 1. A. Accidental & Illness Hospitalization Cover.",
+    "_confidence": "high"
+  },
+  "restoration_benefit": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/go-digit/digit-health-care-plus__wordings.pdf",
+    "source_quote": "SECTION 12. SUM INSURED REFILL BENEFIT Digit Simplification: We refill Your Sum Insured after You exhaust it. ===PAGE 20=== Go Digit General Insurance Ltd.",
+    "_confidence": "high"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/go-digit/digit-health-care-plus__wordings.pdf",
+    "source_quote": "We will pay the Medial Expenses incurred by You for any illness or Injury requiring medical treatment taken at home, which would otherwise have required Hospitalization, provided that: a) The condition of the patient is such that s/he is not in a condition to be moved to a Hospital or b) The",
+    "_confidence": "high"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/go-digit/digit-health-care-plus__wordings.pdf",
+    "source_quote": "SECTION 22. HEALTH CHECKUP COVER FROM DAY ONE Digit Simplification: We pay for your health check-up expenses from Day 1 of the Policy up to the amount mentioned in your Policy .",
+    "_confidence": "high"
+  },
+  "critical_illness_cover": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/go-digit/digit-health-care-plus__wordings.pdf",
+    "source_quote": "We will pay You the Sum Insured as mentioned in Your Policy Schedule against this Section, in case You are diagnosed as suffering from any of the Critical Illnesses or undergoing covered Surgical Procedures as per Critical Illness plan opted by You Provided that, a) This Critical illness or covered",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/go-digit/digit-health-care-plus__wordings.pdf",
+    "source_quote": "Cashless facility means a facility extended by the Insurer to the Insured where the payments, of the costs of \ntreatment undergone by the Insured",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_cap_pct": {
+    "value": null,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/go-digit/digit-health-care-plus__wordings.pdf",
+    "source_quote": "not stated in go-digit__digit-health-care-plus__wordings.pdf",
+    "_confidence": "low"
+  },
+  "geographic_coverage": {
+    "value": "pan_india",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/go-digit/digit-health-care-plus__wordings.pdf",
+    "source_quote": "The Air ambulance services will be limited within India only and NOT overseas in any condition whatsoever.",
+    "_confidence": "medium"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "individual",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/go-digit/digit-health-care-plus__wordings.pdf",
+    "source_quote": "The Free Look Period shall be applicable on new individual health insurance policies",
+    "_confidence": "medium"
+  },
+  "no_claim_bonus_pct": {
+    "value": null,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/go-digit/digit-health-care-plus__wordings.pdf",
+    "source_quote": "not stated in go-digit__digit-health-care-plus__wordings.pdf",
+    "_confidence": "low"
+  },
+  "room_rent_capping": {
+    "value": null,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/go-digit/digit-health-care-plus__wordings.pdf",
+    "source_quote": "not stated in go-digit__digit-health-care-plus__wordings.pdf",
+    "_confidence": "low"
   }
 }

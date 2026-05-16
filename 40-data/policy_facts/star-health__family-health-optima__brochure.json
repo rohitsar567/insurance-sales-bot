@@ -7,31 +7,29 @@
     "value": "SHAHLIP26046V092526",
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/family-health-optima__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Family Health Optima Insurance Plan SHAHLIP26046V092526",
+    "_confidence": "high"
   },
   "min_entry_age": {
     "value": 18,
     "unit": "years",
     "source_pdf_path": "rag/corpus/star-health/family-health-optima__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Sum Insured (SI) For Adults: 18 years to 65 years For Dependent Children: 16 days to 25 years (Floater Policy)",
+    "_confidence": "high"
   },
   "max_entry_age": {
     "value": 65,
     "unit": "years",
     "source_pdf_path": "rag/corpus/star-health/family-health-optima__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/star-health/family-health-optima__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Sum Insured (SI) For Adults: 18 years to 65 years For Dependent Children: 16 days to 25 years (Floater Policy)",
+    "_confidence": "high"
   },
   "min_child_entry_age": {
     "value": 16,
     "unit": "days",
     "source_pdf_path": "rag/corpus/star-health/family-health-optima__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Sum Insured (SI) For Adults: 18 years to 65 years For Dependent Children: 16 days to 25 years (Floater Policy)",
+    "_confidence": "high"
   },
   "sum_insured_options": {
     "value": [
@@ -43,102 +41,212 @@
     ],
     "unit": "INR",
     "source_pdf_path": "rag/corpus/star-health/family-health-optima__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Insured (SI) ₹5 L, ₹10 L, ₹15 L, ₹20 L and ₹25 L Policy Tenure 1 and 2 years",
+    "_confidence": "high"
   },
   "grace_period": {
     "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/star-health/family-health-optima__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in star-health__family-health-optima__brochure.pdf",
+    "_confidence": "low"
   },
   "free_look_period": {
     "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/star-health/family-health-optima__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in star-health__family-health-optima__brochure.pdf",
+    "_confidence": "low"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/family-health-optima__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "eriod: 30 days Specified Disease/Procedure Waiting Period: 24 months Pre-existing Diseases Waiting Period: 36 months Assisted Reproduction Treatment: 36 months",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 36,
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/family-health-optima__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "eriod: 30 days Specified Disease/Procedure Waiting Period: 24 months Pre-existing Diseases Waiting Period: 36 months Assisted Reproduction Treatment: 36 months",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/family-health-optima__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "eriod: 30 days Specified Disease/Procedure Waiting Period: 24 months Pre-existing Diseases Waiting Period: 36 months Assisted Reproduction Treatment: 36 months",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/family-health-optima__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in star-health__family-health-optima__brochure.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": 60,
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/family-health-optima__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Coverage for medical expenses incurred up to 60 days immediately before the Insured Person is hospitalized.",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
     "value": 90,
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/family-health-optima__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Coverage for medical expenses incurred up to 90 days immediately after the Insured Person is discharged from the hospital.",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/star-health/family-health-optima__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 540,
+    "source_url": "https://www.starhealth.in/health-insurance/daycare-treatment-and-procedures/",
+    "source_note": "Per insurer baseline (Star Health day-care procedures page; 540+ procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__brochure.pdf"
   },
   "network_hospital_count": {
     "value": 14000,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/star-health/family-health-optima__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_url": "https://www.starhealth.in/",
+    "source_note": "14,000+ network hospitals across India (per official Star Health communications, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
-    "value": null,
-    "unit": "percent",
+    "value": 20,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/star-health/family-health-optima__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "This policy is subject to Co-payment of 20% of each and every claim amount for fresh as well as renewal policies for Insured Persons whose age at the time of entry is 61 years and above.",
+    "_confidence": "high"
   },
   "room_rent_capped_at_pct_of_si": {
-    "value": null,
-    "unit": "percent",
+    "value": "single_private_ac_room",
+    "unit": null,
     "source_pdf_path": "rag/corpus/star-health/family-health-optima__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Single Private A/C Room",
+    "_confidence": "medium"
   },
   "policy_term_options_years": {
-    "value": null,
+    "value": [
+      1,
+      2
+    ],
     "unit": "years",
     "source_pdf_path": "rag/corpus/star-health/family-health-optima__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Insured (SI) ₹5 L, ₹10 L, ₹15 L, ₹20 L and ₹25 L Policy Tenure 1 and 2 years Instalment Facility Monthly, Quarterly and Half-yearly options are available.",
+    "_confidence": "high"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/star-health/family-health-optima__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in star-health__family-health-optima__brochure.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/star-health/family-health-optima__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in star-health__family-health-optima__brochure.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/family-health-optima__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in star-health__family-health-optima__brochure.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__brochure.pdf",
+    "source_quote": "not stated in family-health-optima__brochure.pdf",
+    "_confidence": "low"
+  },
+  "newborn_coverage": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__brochure.pdf",
+    "source_quote": "not stated in family-health-optima__brochure.pdf",
+    "_confidence": "low"
+  },
+  "organ_donor_expenses": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__brochure.pdf",
+    "source_quote": "not stated in family-health-optima__brochure.pdf",
+    "_confidence": "low"
+  },
+  "restoration_benefit": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__brochure.pdf",
+    "source_quote": "restored 3 times in a Policy Year by 100% each time upon exhaustion of the limit of coverage",
+    "_confidence": "medium"
+  },
+  "domiciliary_treatment": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__brochure.pdf",
+    "source_quote": "not stated in family-health-optima__brochure.pdf",
+    "_confidence": "low"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__brochure.pdf",
+    "source_quote": "We will arrange for a Preventive Health Check-up at our Network Providers for the applicable package as specified below as per opted Sum Insured.",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__brochure.pdf",
+    "source_quote": "not stated in star-health__family-health-optima__brochure.pdf",
+    "_confidence": "low"
+  },
+  "no_claim_bonus_cap_pct": {
+    "value": 100,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__brochure.pdf",
+    "source_quote": "The Insured Person shall be eligible for a Loyalty Bonus of 10% of the expiring Sum Insured subject to a maximum accumulation of 100% of the Sum Insured.",
+    "_confidence": "high"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "unit": "hours",
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__brochure.pdf",
+    "source_quote": "not stated in star-health__family-health-optima__brochure.pdf",
+    "_confidence": "low"
+  },
+  "geographic_coverage": {
+    "value": null,
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__brochure.pdf",
+    "source_quote": "not stated in star-health__family-health-optima__brochure.pdf",
+    "_confidence": "low"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "family_floater",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__brochure.pdf",
+    "source_quote": "For Dependent Children: 16 days to 25 years (Floater Policy)",
+    "_confidence": "high"
+  },
+  "room_rent_capping": {
+    "value": "Single Private A/C Room",
+    "unit": "text",
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__brochure.pdf",
+    "source_quote": "Single Private A/C Room",
+    "_confidence": "medium"
+  },
+  "no_claim_bonus_pct": {
+    "value": 10,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/star-health/family-health-optima__brochure.pdf",
+    "source_quote": "The Insured Person shall be eligible for a Loyalty Bonus of 10% of the expiring Sum Insured subject to a maximum accumulation of 100% of the Sum Insured.",
+    "_confidence": "high"
   }
 }

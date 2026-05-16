@@ -1,0 +1,18 @@
+{
+  "insurer_slug": "national-insurance",
+  "insurer_name": "National Insurance Company",
+  "last_updated": "2026-05-15",
+  "claim_metrics": {
+    "claim_settlement_ratio_pct": 91.18,
+    "claim_settlement_ratio_year": "FY 2023-24",
+    "complaints_per_10k_policies": 29,
+    "complaints_year": "FY 2024-25",
+    "incurred_claim_ratio_pct": 95.9,
+    "three_year_avg_csr_pct": null,
+    "source_irdai_url": "https://irdai.gov.in/document-detail",
+    "source_secondary_url": "https://www.policyx.com/health-insurance/national-health-insurance/claim-settlement-ratio/",
+    "source_complaints_url": "https://algatesinsurance.in/insurance-infographic/health-insurance-claims-complaints-volume/",
+    "source_company_url": "https://nationalinsurance.nic.co.in/",
+    "notes": "National Insurance is a public-sector general insurer. Ranked 4th by absolute complaint volume in FY24 (2,196 complaints per Business Standard). FY24-25 CSR rose to 91.79% per IRDAI 2026 release. Complaints per 10K claims = 29 (above 20-benchmark)."
+  }
+}

@@ -2,138 +2,194 @@
   "policy_id": "indusind-general__group-mediclaim__wordings",
   "policy_name": "IndusInd Group Mediclaim",
   "insurer_slug": "indusind-general",
-  "source_pdf_path": "rag/corpus/reliance-general/group-mediclaim__wordings.pdf",
+  "source_pdf_path": "rag/corpus/indusind-general/group-mediclaim__wordings.pdf",
   "uin_code": {
     "value": "RELHLGP21523V022021",
     "unit": null,
-    "source_pdf_path": "rag/corpus/reliance-general/group-mediclaim__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_pdf_path": "rag/corpus/indusind-general/group-mediclaim__wordings.pdf",
+    "source_quote": "o. 103. UIN: RELHLGP21523V022021",
+    "_confidence": "high"
   },
   "min_entry_age": {
     "value": null,
     "unit": "years",
-    "source_pdf_path": "rag/corpus/reliance-general/group-mediclaim__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_pdf_path": "rag/corpus/indusind-general/group-mediclaim__wordings.pdf",
+    "source_quote": "not stated in group-mediclaim__wordings.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
-    "source_pdf_path": "rag/corpus/reliance-general/group-mediclaim__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/reliance-general/group-mediclaim__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_pdf_path": "rag/corpus/indusind-general/group-mediclaim__wordings.pdf",
+    "source_quote": "not stated in group-mediclaim__wordings.pdf",
+    "_confidence": "low"
   },
   "min_child_entry_age": {
     "value": null,
     "unit": "days",
-    "source_pdf_path": "rag/corpus/reliance-general/group-mediclaim__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_pdf_path": "rag/corpus/indusind-general/group-mediclaim__wordings.pdf",
+    "source_quote": "not stated in group-mediclaim__wordings.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
     "value": null,
     "unit": "INR",
-    "source_pdf_path": "rag/corpus/reliance-general/group-mediclaim__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_pdf_path": "rag/corpus/indusind-general/group-mediclaim__wordings.pdf",
+    "source_quote": "not stated in group-mediclaim__wordings.pdf",
+    "_confidence": "low"
   },
   "grace_period": {
     "value": 30,
     "unit": "days",
-    "source_pdf_path": "rag/corpus/reliance-general/group-mediclaim__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_pdf_path": "rag/corpus/indusind-general/group-mediclaim__wordings.pdf",
+    "source_quote": "grace period of fifteen days (where premium is paid on a monthly instalments) and thirty days (where premium is paid in quarterly/half-yearly/annual instalments)",
+    "_confidence": "high"
   },
   "free_look_period": {
-    "value": null,
+    "value": 30,
     "unit": "days",
-    "source_pdf_path": "rag/corpus/reliance-general/group-mediclaim__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_pdf_path": "rag/corpus/indusind-general/group-mediclaim__wordings.pdf",
+    "source_quote": "The Insured Person shall be allowed free look period of thirty days from date of receipt of the policy document to review the terms and conditions of the Policy, and to return the same if not acceptable.",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
-    "source_pdf_path": "rag/corpus/reliance-general/group-mediclaim__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_pdf_path": "rag/corpus/indusind-general/group-mediclaim__wordings.pdf",
+    "source_quote": "treatment of any illness within 30 days from the first policy commencement date shall be excluded",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 36,
     "unit": null,
-    "source_pdf_path": "rag/corpus/reliance-general/group-mediclaim__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_pdf_path": "rag/corpus/indusind-general/group-mediclaim__wordings.pdf",
+    "source_quote": "Pre-Existing Diseases - Code- Excl01 a) Expenses related to the treatment of a preexisting Disease (PED) and its direct complications shall be excluded until the expiry of 36 months of contin",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
-    "value": 24,
+    "value": 12,
     "unit": null,
-    "source_pdf_path": "rag/corpus/reliance-general/group-mediclaim__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_pdf_path": "rag/corpus/indusind-general/group-mediclaim__wordings.pdf",
+    "source_quote": "Specified disease/procedure waiting period- Code-Excl02 a. Expenses related to the treatment of the listed Conditions, surgeries/treatments shall be excluded until the expiry of 12 months of contin",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "unit": null,
-    "source_pdf_path": "rag/corpus/reliance-general/group-mediclaim__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_pdf_path": "rag/corpus/indusind-general/group-mediclaim__wordings.pdf",
+    "source_quote": "not stated in group-mediclaim__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
-    "value": 30,
+    "value": null,
     "unit": null,
-    "source_pdf_path": "rag/corpus/reliance-general/group-mediclaim__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_pdf_path": "rag/corpus/indusind-general/group-mediclaim__wordings.pdf",
+    "source_quote": "not stated in indusind-general__group-mediclaim__wordings.pdf",
+    "_confidence": "low"
   },
   "post_hospitalization_days": {
-    "value": 60,
+    "value": null,
     "unit": null,
-    "source_pdf_path": "rag/corpus/reliance-general/group-mediclaim__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_pdf_path": "rag/corpus/indusind-general/group-mediclaim__wordings.pdf",
+    "source_quote": "not stated in indusind-general__group-mediclaim__wordings.pdf",
+    "_confidence": "low"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/reliance-general/group-mediclaim__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 540,
+    "source_url": "https://www.indusind.bank.in/in/en/personal/insurance/indusInd-health-gain-insurance.html",
+    "source_note": "Per insurer baseline (IndusInd Health Gain covers all day-care up to SI; ~540 standard)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/indusind-general/group-mediclaim__wordings.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/reliance-general/group-mediclaim__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 10000,
+    "source_url": "https://www.indusindinsurance.com/",
+    "source_note": "10,000+ Network Hospitals (homepage 'Find nearest hospital' section, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
     "value": null,
     "unit": "percent",
-    "source_pdf_path": "rag/corpus/reliance-general/group-mediclaim__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_pdf_path": "rag/corpus/indusind-general/group-mediclaim__wordings.pdf",
+    "source_quote": "not stated in group-mediclaim__wordings.pdf",
+    "_confidence": "low"
   },
   "room_rent_capped_at_pct_of_si": {
     "value": null,
     "unit": "percent",
-    "source_pdf_path": "rag/corpus/reliance-general/group-mediclaim__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_pdf_path": "rag/corpus/indusind-general/group-mediclaim__wordings.pdf",
+    "source_quote": "not stated in group-mediclaim__wordings.pdf",
+    "_confidence": "low"
   },
   "policy_term_options_years": {
     "value": null,
     "unit": "years",
-    "source_pdf_path": "rag/corpus/reliance-general/group-mediclaim__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_pdf_path": "rag/corpus/indusind-general/group-mediclaim__wordings.pdf",
+    "source_quote": "not stated in indusind-general__group-mediclaim__wordings.pdf",
+    "_confidence": "low"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
-    "source_pdf_path": "rag/corpus/reliance-general/group-mediclaim__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_pdf_path": "rag/corpus/indusind-general/group-mediclaim__wordings.pdf",
+    "source_quote": "not stated in group-mediclaim__wordings.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
-    "source_pdf_path": "rag/corpus/reliance-general/group-mediclaim__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_pdf_path": "rag/corpus/indusind-general/group-mediclaim__wordings.pdf",
+    "source_quote": "not stated in group-mediclaim__wordings.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
-    "source_pdf_path": "rag/corpus/reliance-general/group-mediclaim__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_pdf_path": "rag/corpus/indusind-general/group-mediclaim__wordings.pdf",
+    "source_quote": "not stated in group-mediclaim__wordings.pdf",
+    "_confidence": "low"
   },
-  "legacy_issuer": "Reliance General Insurance"
+  "legacy_issuer": "Reliance General Insurance",
+  "ayush_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/indusind-general/group-mediclaim__wordings.pdf",
+    "source_quote": "AYUSH Treatment refers to the medical and / or hospitalization treatments given under Ayurveda, Yoga and Naturopathy, Unani, Siddha and Homeopathy systems",
+    "_confidence": "high"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/indusind-general/group-mediclaim__wordings.pdf",
+    "source_quote": "Domiciliary Hospitalisation means medical treatment for a period exceeding three days for disease/ injury which in the normal course would require care and treatment at a hospital/nursing home but is actually taken whilst c",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/indusind-general/group-mediclaim__wordings.pdf",
+    "source_quote": "\"Cashless Facility\" means a facility extended by the company to the insured where the payments, of the costs of treatment undergone by the insured in accordance with the policy terms and conditions, are directly ma",
+    "_confidence": "high"
+  },
+  "geographic_coverage": {
+    "value": "pan_india",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/indusind-general/group-mediclaim__wordings.pdf",
+    "source_quote": "Treatment availed outside India. iv. Treatment at a healthcare facility which is NOT an AYUSH Hospital",
+    "_confidence": "medium"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "group",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/indusind-general/group-mediclaim__wordings.pdf",
+    "source_quote": "o. 103. UIN: RELHLGP21523V022021",
+    "_confidence": "medium"
+  },
+  "room_rent_capping": {
+    "value": "As per group policy schedule",
+    "unit": "text",
+    "source_pdf_path": "rag/corpus/indusind-general/group-mediclaim__wordings.pdf",
+    "source_quote": "The Insured Person chooses a room category in which the room rent charges are more than the applicable Sum Insured sub-limit (in percentage or Rupee terms) on the room rent as per the Policy term",
+    "_confidence": "medium"
+  }
 }

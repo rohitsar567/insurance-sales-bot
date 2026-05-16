@@ -7,138 +7,244 @@
     "value": "ACKHLIP20183V011920",
     "unit": null,
     "source_pdf_path": "rag/corpus/acko/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "UIN: ACKHLIP20183V011920 HSN: 9971 | Mail: hello@acko.com Page 1 of 33 Arogya Sanjeevani Policy - Acko General Insurance Limited Policy Wordings",
+    "_confidence": "high"
   },
   "min_entry_age": {
     "value": 18,
     "unit": "years",
     "source_pdf_path": "rag/corpus/acko/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Eligibility Policy can be availed by persons between the age of 18 years and 65years, as Proposer.",
+    "_confidence": "high"
   },
   "max_entry_age": {
     "value": 65,
     "unit": "years",
     "source_pdf_path": "rag/corpus/acko/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/acko/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Eligibility Policy can be availed by persons between the age of 18 years and 65years, as Proposer.",
+    "_confidence": "high"
   },
   "min_child_entry_age": {
     "value": 91,
     "unit": "days",
     "source_pdf_path": "rag/corpus/acko/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "dependent Children (i.e. natural or legally adopted) between the age 3 months to 25 years. If the child above 18 years of age is financially independent, he or she shall be ineligible for coverage in the subsequent renewals. 3.19 Grace Peri",
+    "_confidence": "medium"
   },
   "sum_insured_options": {
-    "value": [
-      100000,
-      200000,
-      300000,
-      500000,
-      1000000
-    ],
+    "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/acko/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in acko__arogya-sanjeevani__wordings.pdf",
+    "_confidence": "low"
   },
   "grace_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/acko/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "The grace period for payment of the premium for all types of insurance policies shall be: fifteen days where premium payment mode is monthly and thirty days in all other cases.",
+    "_confidence": "high"
   },
   "free_look_period": {
-    "value": 15,
+    "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/acko/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Free Look Period A period of 30 days (from the date of receipt of the policy document) is available to the policyholder to review the terms and conditions of the policy.",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/acko/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "any illness within 30 days from the first policy commencement date shall be excluded except claims arising due to an accident, provided the same are covered. b. This exclusion shall not, however, apply if the Insured Person has Continuous Coverage for more than twelve months.",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
-    "value": 48,
-    "unit": null,
+    "value": 36,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/acko/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "a pre-existing Disease (PED) and its direct complications shall be excluded until the expiry of 36 months of continuous coverage after the date of inception of the first policy with us.",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/acko/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Specific Waiting Period (Code- Excl02) a. Expenses related to the treatment of the following listed conditions, surgeries/treatments shall be excluded until the expiry of24/36 months of continuous coverage, as may be the case after the date of inception of the first policy with the insurer.",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/acko/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in acko__arogya-sanjeevani__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/acko/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "period of 30 days prior to the date of admissible hospitalization covered under the policy.",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
     "value": 60,
     "unit": null,
     "source_pdf_path": "rag/corpus/acko/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "a fixed period of 60 days from the date of discharge from the hospital, following an admissible hospitalization covered under the policy.",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/acko/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 500,
+    "source_url": "https://www.acko.com/health-insurance/daycare-treatment-and-procedures/",
+    "source_note": "Per insurer baseline (Acko covers all day-care procedures up to SI; 500+ procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/acko/arogya-sanjeevani__wordings.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
+    "value": 11500,
+    "source_url": "https://www.acko.com/health-insurance/cashless/",
+    "source_note": "ACKO has 11,500+ cashless hospitals across India (insurer's cashless landing page, scraped 2026-05-15)",
+    "_confidence": "high",
     "source_pdf_path": "rag/corpus/acko/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Insurer-level metric backfilled from public-web source — see source_url"
   },
   "co_payment_pct": {
-    "value": null,
+    "value": 5,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/acko/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Co-payment Each and every claim under the Policy shall be subject to a Co-payment of 5% applicable to claim amount admissible and payable as per the terms and conditions of the Policy.",
+    "_confidence": "high"
   },
   "room_rent_capped_at_pct_of_si": {
-    "value": null,
-    "unit": "percent",
+    "value": 2,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/acko/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Room Rent, Boarding, Nursing Expenses as provided by the Hospital / Nursing Home up to 2% of the sum insured subject to maximum of Rs.5000 /-, per day. ii. Intensive Care Unit (ICU)/ Intensive Cardiac Care Unit (ICCU) expenses up to 5% of s",
+    "_confidence": "high"
   },
   "policy_term_options_years": {
-    "value": null,
+    "value": [
+      1
+    ],
     "unit": "years",
     "source_pdf_path": "rag/corpus/acko/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Policy period means period of one policy year as mentioned in the schedule for which the Policy is issued",
+    "_confidence": "high"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/acko/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in acko__arogya-sanjeevani__wordings.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/acko/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in acko__arogya-sanjeevani__wordings.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/acko/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in acko__arogya-sanjeevani__wordings.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/acko/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "AYUSH Treatment The Company shall indemnify medical expenses incurred for inpatient care treatment under Ayurveda, Yoga and Naturopathy, Unani, Siddha and Homeopathy systems of medicines during each Policy Year up to the limit of sum insured as specified in the policy schedule",
+    "_confidence": "high"
+  },
+  "maternity_coverage": {
+    "value": false,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/acko/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "Maternity Expenses (Code - Exel18): i. Medical treatment expenses traceable to childbirth (including complicated deliveries and caesarean sections incurred during hospitalization) except ectopic pregnancy",
+    "_confidence": "high"
+  },
+  "newborn_coverage": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/acko/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "not stated in acko__arogya-sanjeevani__wordings.pdf",
+    "_confidence": "low"
+  },
+  "organ_donor_expenses": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/acko/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "not stated in acko__arogya-sanjeevani__wordings.pdf",
+    "_confidence": "low"
+  },
+  "domiciliary_treatment": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/acko/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "7.18 Any expenses incurred on Domiciliary Hospitalization and OPD treatment 7.19 Treatment taken outside the geographical limits of India",
+    "_confidence": "high"
+  },
+  "worldwide_emergency_cover": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/acko/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "Treatment taken outside the geographical limits of India 7.20 In respect of the existing diseases, disclosed by the insured and mentioned in the policy schedule(based on insured's consent), policyholder is not entitled t",
+    "_confidence": "high"
+  },
+  "preventive_health_checkup": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/acko/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "not stated in acko__arogya-sanjeevani__wordings.pdf",
+    "_confidence": "low"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": null,
+    "source_pdf_path": "rag/corpus/acko/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "Cashless Facility means a facility extended by the insurer to the insured where the payments, of the costs of treatment undergone by the insured person in accordance with the Policy terms and conditions, are directly mad e to the network provider by the insurer to the extent pr",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_cap_pct": {
+    "value": 50,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/acko/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "increased by 5% in respect of each claim free policy year (where no claims are reported), provided the policy is renewed with the company without a break subject to maximum of 50% of the sum insured under the current policy year.",
+    "_confidence": "high"
+  },
+  "geographic_coverage": {
+    "value": "pan_india",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/acko/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "Territorial Limit All medical treatment for the purpose of this insurance will have to be taken in India only.",
+    "_confidence": "high"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "family_floater",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/acko/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "in respect of that Insured Person (on Individual basis) or all Insured Persons (on Floater basis)",
+    "_confidence": "medium"
+  },
+  "room_rent_capping": {
+    "value": "2% of Sum Insured",
+    "unit": null,
+    "source_pdf_path": "rag/corpus/acko/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "Room Rent, Boarding, Nursing Expenses as provided by the Hospital / Nursing Home up to 2% of the sum insured subject to maximum of Rs.5000 /-, per day.",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_pct": {
+    "value": 5,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/acko/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "increased by 5% in respect of each claim free policy year (where no claims are reported), provided the policy is renewed with the company without a break subject to maximum of 50% of the sum insured under the current policy year.",
+    "_confidence": "high"
+  },
+  "_meta": {
+    "network_hospital_backfill_2026-05-15": "acko insurer-wide count backfilled in targeted scrape pass"
   }
 }

@@ -10,52 +10,60 @@
   "min_entry_age": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/janata-mediclaim-policy__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in janata-mediclaim-policy__wordings.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/janata-mediclaim-policy__wordings.pdf",
-    "source_quote": ""
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/new-india/janata-mediclaim-policy__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in janata-mediclaim-policy__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_existing_disease_waiting_months": {
-    "value": null,
+    "value": 36,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/new-india/janata-mediclaim-policy__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "of a pre-existing Disease (PED) and its direct \ncomplications shall be excluded until the expiry of 36 months of continuous coverage \nafter the date of inception of the first policy with us.",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
-    "value": null,
+    "value": 30,
     "source_pdf_path": "rag/corpus/new-india/janata-mediclaim-policy__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "a. Expenses related to the treatment of any illness within 30 days from the first policy\ncommencement date shall be excluded except claims arising due to an accident",
+    "_confidence": "high"
   },
   "maternity_coverage": {
-    "value": null,
+    "value": false,
+    "unit": "boolean",
     "source_pdf_path": "rag/corpus/new-india/janata-mediclaim-policy__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "4.4.15 MATERNITY EXPENSES (Code - Excl18) \na. \nMedical treatment expenses traceable to childbirth",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/janata-mediclaim-policy__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in janata-mediclaim-policy__wordings.pdf",
+    "_confidence": "low"
   },
   "ayush_coverage": {
     "value": true,
+    "unit": "boolean",
     "source_pdf_path": "rag/corpus/new-india/janata-mediclaim-policy__wordings.pdf",
-    "source_quote": "AYUSH TREATMENT\nExpenses incurred for Ayurveda, Yoga and Naturopathy, Unani, Siddha and Homeopathy\nsystem of medicines i"
+    "source_quote": "AYUSH TREATMENT\nExpenses incurred for Ayurveda, Yoga and Naturopathy, Unani, Siddha and Homeopathy\nsystem of medicines i",
+    "_confidence": "high"
   },
   "cashless_treatment_supported": {
     "value": true,
+    "unit": "boolean",
     "source_pdf_path": "rag/corpus/new-india/janata-mediclaim-policy__wordings.pdf",
-    "source_quote": "CASHLESS FACILITY"
+    "source_quote": "CASHLESS FACILITY",
+    "_confidence": "high"
   },
   "copayment_pct": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/janata-mediclaim-policy__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in janata-mediclaim-policy__wordings.pdf",
+    "_confidence": "low"
   },
   "no_claim_bonus_pct": {
     "value": 5,
@@ -68,9 +76,11 @@
     "source_quote": "restoration of the previous state of Health\nunder any circumstances unless in a vegetative state as certified by the tre"
   },
   "room_rent_capping": {
-    "value": null,
+    "value": "Room Rent (inclusive of nursing/treatment charges) Rs 450 per day",
+    "unit": null,
     "source_pdf_path": "rag/corpus/new-india/janata-mediclaim-policy__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "PER DAY CHARGES \nRoom Rent (inclusive of nursing / treatment charges) \n450/-",
+    "_confidence": "high"
   },
   "pre_hospitalization_days": {
     "value": 30,
@@ -83,39 +93,49 @@
     "source_quote": "Post-Hospitalisation medical Expenses up to 60 days"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/new-india/janata-mediclaim-policy__wordings.pdf",
-    "source_quote": ""
+    "value": 139,
+    "source_url": "https://www.newindia.co.in/health-insurance/health-insurance-policy",
+    "source_note": "Per insurer baseline (New India Assurance Mediclaim covers ~139 day care procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/new-india/janata-mediclaim-policy__wordings.pdf"
   },
   "network_hospital_count": {
-    "value": null,
+    "value": 20855,
+    "source_url": "https://www.newindia.co.in/hospitals-list",
+    "source_note": "New India Assurance: 20,855 empanelled hospitals as of 11.02.2025 (direct quote from insurer Hospitals List page, scraped 2026-05-15). Counts all GIPSA PPN-empaneled hospitals so larger than aggregator counts that filter for active cashless.",
+    "_confidence": "high",
     "source_pdf_path": "rag/corpus/new-india/janata-mediclaim-policy__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "Insurer-level metric backfilled from public-web source — see source_url"
   },
   "sum_insured_options": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/janata-mediclaim-policy__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in janata-mediclaim-policy__wordings.pdf",
+    "_confidence": "low"
   },
   "claim_settlement_ratio": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/janata-mediclaim-policy__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in janata-mediclaim-policy__wordings.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
     "value": null,
     "source_pdf_path": "rag/corpus/new-india/janata-mediclaim-policy__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in janata-mediclaim-policy__wordings.pdf",
+    "_confidence": "low"
   },
   "policy_type": {
-    "value": "group",
+    "value": "indemnity",
     "source_pdf_path": "rag/corpus/new-india/janata-mediclaim-policy__wordings.pdf",
-    "source_quote": "classified as group from PDF heuristics"
+    "source_quote": "the Company will pay to the Hospital / Day Care Centre or reimburse the Insured Person the following expenses that are Medically Necessary incurred for the treatment of such Illness or Injury.",
+    "_confidence": "high"
   },
   "_meta": {
     "curated_at": "2026-05-14",
     "primary_source_pdf": "rag/corpus/new-india/janata-mediclaim-policy__wordings.pdf",
     "completeness_pct": 36,
-    "notes": "Curated by tools/curate_remaining.py \u2014 pattern-based extraction from local PDF"
+    "notes": "Curated by tools/curate_remaining.py — pattern-based extraction from local PDF",
+    "network_hospital_backfill_2026-05-15": "new-india insurer-wide count backfilled in targeted scrape pass"
   }
 }

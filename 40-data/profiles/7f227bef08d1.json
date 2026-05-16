@@ -1,0 +1,35 @@
+{
+  "name_display": "Rohit",
+  "name_slug": "rohit",
+  "persona_id": "7f227bef08d1",
+  "profile": {
+    "name": "Rohit",
+    "age": null,
+    "dependents": null,
+    "income_band": null,
+    "existing_cover_inr": null,
+    "primary_goal": null,
+    "location_tier": null,
+    "parents_to_insure": null,
+    "parents_age_max": null,
+    "parents_has_ped": null,
+    "budget_band": null,
+    "health_conditions": [],
+    "asked": [
+      "name"
+    ],
+    "free_form_session": false,
+    "shown_policies": [],
+    "selected_policies": [],
+    "rejected_policies": []
+  },
+  "first_seen": "2026-05-14T23:24:52Z",
+  "last_seen": "2026-05-15T03:36:22Z",
+  "sessions": [
+    "ephem_1",
+    "4556ffba-ef6c-4035-8c67-ce806e681fa7",
+    "probe_ki151_t1",
+    "ki151_smoke_1",
+    "ki158_walk_001"
+  ]
+}

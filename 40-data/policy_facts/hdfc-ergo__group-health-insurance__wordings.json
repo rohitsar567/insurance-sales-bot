@@ -3,39 +3,42 @@
   "policy_name": "Group Health Insurance",
   "insurer_slug": "hdfc-ergo",
   "uin_code": {
-    "value": null,
+    "value": "HDFHLGP24095V032425",
     "source_pdf_path": "rag/corpus/hdfc-ergo/group-health-insurance__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "UIN: HDFC ERGO Group Health Insurance - HDFHLGP24095V032425",
+    "_confidence": "high"
   },
   "min_entry_age": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/group-health-insurance__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in hdfc-ergo__group-health-insurance__wordings.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/group-health-insurance__wordings.pdf",
-    "source_quote": ""
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/hdfc-ergo/group-health-insurance__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in hdfc-ergo__group-health-insurance__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_existing_disease_waiting_months": {
-    "value": null,
+    "value": 36,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/hdfc-ergo/group-health-insurance__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "Expenses related to the treatment of a pre-existing disease (PED) and its direct complications shall be excluded until the expiry of 36 months of continuous coverage after the date of inception of the first policy with insurer.",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
-    "value": null,
+    "value": 30,
     "source_pdf_path": "rag/corpus/hdfc-ergo/group-health-insurance__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "30-DAY WAITING PERIOD: CODE – EXCL03 a) Expenses related to the treatment of any illness within 30 days from the first Policy commencement date shall be excluded except claims arising due to an Accident, provided the same are covered.",
+    "_confidence": "high"
   },
   "maternity_coverage": {
     "value": true,
+    "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/group-health-insurance__wordings.pdf",
-    "source_quote": "Maternity Cover does not have an independent Sum Insured, hence any claim admissible\nunder this cover shall reduce the S"
+    "source_quote": "14. Maternity Cover We will indemnify Maternity Expenses incurred by the Insured Person under Section 2.A.I.a,incurred during the Policy Year.",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": 48,
@@ -44,33 +47,42 @@
   },
   "ayush_coverage": {
     "value": true,
+    "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/group-health-insurance__wordings.pdf",
-    "source_quote": "AYUSH Treatment\nWe will indemnify Medical Expenses covered"
+    "source_quote": "Note: AYUSH Treatment is no longer an optional cover. Basis CIR. Ref. IRDAI/HLT/CIR/GDL/31/01/2024 issued by IRDAI, all Insured Persons shall be covered by default for In-patient care expenses under this cover upto Sum Insured",
+    "_confidence": "high"
   },
   "cashless_treatment_supported": {
     "value": true,
+    "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/group-health-insurance__wordings.pdf",
-    "source_quote": "Cashless Facility"
+    "source_quote": "Cashless Facility means a facility extended by the insurer to the insured where the payments, of the costs of treatment undergone by the insured in accordance with the policy terms and conditions, are directly made to the Network Provider by the insurer",
+    "_confidence": "high"
   },
   "copayment_pct": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/group-health-insurance__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in hdfc-ergo__group-health-insurance__wordings.pdf",
+    "_confidence": "low"
   },
   "no_claim_bonus_pct": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/group-health-insurance__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in hdfc-ergo__group-health-insurance__wordings.pdf",
+    "_confidence": "low"
   },
   "restoration_benefit": {
-    "value": null,
+    "value": true,
     "source_pdf_path": "rag/corpus/hdfc-ergo/group-health-insurance__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "In the event of complete or partial utilization of the Base Sum Insured due to any claim admitted during the Policy Year, the Company shall reinstate only the utilized portion of the Base Sum Insured of Section 2.A.I. (as applicable under the current Policy Year)",
+    "_confidence": "high"
   },
   "room_rent_capping": {
-    "value": null,
+    "value": "no limit",
+    "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/group-health-insurance__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "Room Rent and boarding charges at actuals (unless specified otherwise in the Policy Schedule / Certificate of Insurance)",
+    "_confidence": "medium"
   },
   "pre_hospitalization_days": {
     "value": 30,
@@ -83,39 +95,53 @@
     "source_quote": "Post-Hospitalization Medical Expenses Cover\nWe will indemnify the Post-HospitalizationMedical Expenses incurred upto 60 "
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/hdfc-ergo/group-health-insurance__wordings.pdf",
-    "source_quote": ""
+    "value": 144,
+    "source_url": "https://www.hdfcergo.com/health-insurance/day-care-treatment",
+    "source_note": "Per insurer baseline (HDFC Ergo day-care treatment page lists 144 procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/group-health-insurance__wordings.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/hdfc-ergo/group-health-insurance__wordings.pdf",
-    "source_quote": ""
+    "value": 16000,
+    "source_url": "https://www.hdfcergo.com/",
+    "source_note": "16000+ Cashless Healthcare providers (homepage 'Why Choose HDFC ERGO' / 'Cashless Network' section, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "sum_insured_options": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/group-health-insurance__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in hdfc-ergo__group-health-insurance__wordings.pdf",
+    "_confidence": "low"
   },
   "claim_settlement_ratio": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/group-health-insurance__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in hdfc-ergo__group-health-insurance__wordings.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/group-health-insurance__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in hdfc-ergo__group-health-insurance__wordings.pdf",
+    "_confidence": "low"
   },
   "policy_type": {
     "value": "group",
     "source_pdf_path": "rag/corpus/hdfc-ergo/group-health-insurance__wordings.pdf",
-    "source_quote": "classified as group from PDF heuristics"
+    "source_quote": "Hospital cash policies, which will apply before any benefits are payable",
+    "_confidence": "low"
   },
   "_meta": {
     "curated_at": "2026-05-14",
     "primary_source_pdf": "rag/corpus/hdfc-ergo/group-health-insurance__wordings.pdf",
     "completeness_pct": 32,
-    "notes": "Curated by tools/curate_remaining.py \u2014 pattern-based extraction from local PDF"
+    "notes": "Curated by tools/curate_remaining.py — pattern-based extraction from local PDF"
+  },
+  "co_payment_pct": {
+    "value": null,
+    "unit": "percent",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/group-health-insurance__wordings.pdf",
+    "source_quote": "not stated in hdfc-ergo__group-health-insurance__wordings.pdf",
+    "_confidence": "low"
   }
 }

@@ -7,140 +7,257 @@
     "value": "ICIHLIP21383V052021",
     "unit": null,
     "source_pdf_path": "rag/corpus/icici-lombard/health-elite-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Product Name HEALTH ELITE PLUS 2 What am I covered for? Benefit as per Sum Insured Opted: Part II of the Schedule Clause 2. Scope of the Cover 15lacs/ 20lacs/25lacs/50lacs Sum Insured (Rs.) UIN : ICIHLIP21383V052021",
+    "_confidence": "high"
   },
   "min_entry_age": {
-    "value": 18,
+    "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/icici-lombard/health-elite-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in icici-lombard__health-elite-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/icici-lombard/health-elite-plus__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/icici-lombard/health-elite-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in icici-lombard__health-elite-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "min_child_entry_age": {
-    "value": 91,
+    "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/icici-lombard/health-elite-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in icici-lombard__health-elite-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
     "value": [
-      500000,
-      1000000,
       1500000,
       2000000,
       2500000,
-      5000000,
-      10000000
+      5000000
     ],
     "unit": "INR",
     "source_pdf_path": "rag/corpus/icici-lombard/health-elite-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Benefit as per Sum Insured Opted: Part II of the Schedule Clause 2. Scope of the Cover 15lacs/ 20lacs/25lacs/50lacs Sum Insured (Rs.)",
+    "_confidence": "medium"
   },
   "grace_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/icici-lombard/health-elite-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "At the end of the policy period, the policy shall terminate and can be renewed within the Grace Period of 30 days to maintain continuity of benefits without break in policy.",
+    "_confidence": "high"
   },
   "free_look_period": {
     "value": 15,
     "unit": "days",
     "source_pdf_path": "rag/corpus/icici-lombard/health-elite-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "The insured person shall be allowed free look period of fifteen days from date of receipt of the Policy documents to review the terms and conditions of the Policy, and to return the same if not acceptable.",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/icici-lombard/health-elite-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "(d) Initial waiting period: 30 days for all illnesses (except Hospitalisation due to injury).",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/icici-lombard/health-elite-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "3.1 Code- Excl01: Pre-Existing Diseases a) Expenses related to the treatment of a pre-existing Disease (PED) and its direct complications shall be excluded until the expiry of 24 months of continuous coverage after the date of inception of the first policy with insurer.",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/icici-lombard/health-elite-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "3.2 Code- Excl02: Specified disease/procedure waiting period a) Expenses related to the treatment of the listed Conditions, surgeries/treatments shall be excluded until the expiry of 24 months of continuous coverage after the date",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": 36,
     "unit": null,
     "source_pdf_path": "rag/corpus/icici-lombard/health-elite-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "(e) 36 months waiting period for maternity benefit.",
+    "_confidence": "high"
   },
   "pre_hospitalization_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/icici-lombard/health-elite-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "i. Pre-hospitalization Medical Expenses incurred by You for a 30-day period immediately prior to Your Hospitalization; and ii. Post-hospitalization Medical Expenses incurred by You for a 60-day period immediately",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
     "value": 60,
     "unit": null,
     "source_pdf_path": "rag/corpus/icici-lombard/health-elite-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "i. Pre-hospitalization Medical Expenses incurred by You for a 30-day period immediately prior to Your Hospitalization; and ii. Post-hospitalization Medical Expenses incurred by You for a 60-day period immediately",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/icici-lombard/health-elite-plus__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 150,
+    "source_url": "https://www.icicilombard.com/docs/default-source/downloads/complete-health-insurance-brochure.pdf",
+    "source_note": "Per insurer baseline (ICICI Lombard Complete Health iHealth Annexure I; 150 procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-elite-plus__wordings.pdf"
   },
   "network_hospital_count": {
-    "value": 6500,
+    "value": 4000,
     "unit": null,
     "source_pdf_path": "rag/corpus/icici-lombard/health-elite-plus__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "available at over 4000+ network hospitals. 9 Renewal Condition (a) Maximum renewal age - There will be life-long renewable without any age restriction for the cover. However Premium at",
+    "_confidence": "high"
   },
   "co_payment_pct": {
     "value": null,
-    "unit": "percent",
+    "unit": "%",
     "source_pdf_path": "rag/corpus/icici-lombard/health-elite-plus__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in icici-lombard__health-elite-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "room_rent_capped_at_pct_of_si": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/icici-lombard/health-elite-plus__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in icici-lombard__health-elite-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "policy_term_options_years": {
-    "value": null,
+    "value": [
+      1
+    ],
     "unit": "years",
     "source_pdf_path": "rag/corpus/icici-lombard/health-elite-plus__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "The Free Look Period shall be applicable on new individual health insurance policies and not on renewals or at the time of porting/migrating the policy.",
+    "_confidence": "low"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/icici-lombard/health-elite-plus__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in icici-lombard__health-elite-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/icici-lombard/health-elite-plus__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in icici-lombard__health-elite-plus__wordings.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/icici-lombard/health-elite-plus__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in icici-lombard__health-elite-plus__wordings.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-elite-plus__wordings.pdf",
+    "source_quote": "AYUSH treatments refers to the medical aid and / or hospitalisation treatments given under ‘Ayurveda, Yoga and Naturopathy, Unani, Siddha and Homeopathy systems",
+    "_confidence": "medium"
+  },
+  "maternity_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-elite-plus__wordings.pdf",
+    "source_quote": "a child, where Insured Person and spouse, both are covered, after a waiting period of 3 years, subject to the following sub-limits: Normal Delivery of Rs.25,000/ Caesarian delivery of Rs.50,000/ Pre-Post Natal Rs.2,000 each.",
+    "_confidence": "high"
+  },
+  "newborn_coverage": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-elite-plus__wordings.pdf",
+    "source_quote": "not stated in icici-lombard__health-elite-plus__wordings.pdf",
+    "_confidence": "low"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-elite-plus__wordings.pdf",
+    "source_quote": "donor expenses up to Sum insured for any of the organ transplant surgery, provided the organ donated is for Insured persons, subject to a limit of Rs.10 Lakhs.",
+    "_confidence": "high"
+  },
+  "restoration_benefit": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-elite-plus__wordings.pdf",
+    "source_quote": "Reset Benefit Applicable Sum Insured Protector UIN : ICIHLIP21383V052021 CIN: L67200MH2000PLC129408 1 Health Elite Plus KEY INFORMATION SHEET S.No Title Description Refer To Policy Wordings 1 Product Name HEALTH ELITE PLUS 2",
+    "_confidence": "high"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-elite-plus__wordings.pdf",
+    "source_quote": "Domiciliary Hospitalisation means medical treatment for an illness/disease/injury which in the normal course would require care and treatment at a hospital but is actually taken while confined at home under any of the following circumstances: a)",
+    "_confidence": "high"
+  },
+  "worldwide_emergency_cover": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-elite-plus__wordings.pdf",
+    "source_quote": "World Wide Cover Applicable Super No claim Bonus 3 Optional Add On Covers Critical Illness cover up to 50% of sum insured for specified critical Illnesses/ medical procedures like Cancer of specified",
+    "_confidence": "high"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-elite-plus__wordings.pdf",
+    "source_quote": "health check-up coupon to Insured for every Policy Year, subject to a maximum of 2 coupons per year for floater policies. * Online Chat with Medical Practitioners. * E-opinion (Second opinion). * Diet & Nutrition e-consultation.",
+    "_confidence": "high"
+  },
+  "critical_illness_cover": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-elite-plus__wordings.pdf",
+    "source_quote": "Critical Illness cover up to 50% of sum insured for specified critical Illnesses/ medical procedures like Cancer of specified severity, open chest CABG, First heart attack, major organ/bone marrow transplant, permanent paralysis of limbs, Kidney",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-elite-plus__wordings.pdf",
+    "source_quote": "Cashless Facility means a facility extended by the insurer to the insured where the payments, of the costs of treatment undergone by the insured in accordance with the policy terms and conditions, are directly",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_cap_pct": {
+    "value": 50,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-elite-plus__wordings.pdf",
+    "source_quote": "(a) Cumulative Bonus (Additional Sum Insured) - An Additional Sum Insured of 10% of Annual Sum Insured provided on each renewal for every claim-free year up to a maximum of 50%.",
+    "_confidence": "high"
+  },
+  "geographic_coverage": {
+    "value": null,
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-elite-plus__wordings.pdf",
+    "source_quote": "not stated in icici-lombard__health-elite-plus__wordings.pdf",
+    "_confidence": "low"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "family_floater",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-elite-plus__wordings.pdf",
+    "source_quote": "(b) Complimentary Health Check Up Coupons: One coupon per individual policy and two coupons per Floater policy will be offered.",
+    "_confidence": "medium"
+  },
+  "room_rent_capping": {
+    "value": null,
+    "_confidence": "low",
+    "source_quote": "not stated in icici-lombard__health-elite-plus__wordings.pdf"
+  },
+  "no_claim_bonus_pct": {
+    "value": 10,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-elite-plus__wordings.pdf",
+    "source_quote": "(a) Cumulative Bonus (Additional Sum Insured) - An Additional Sum Insured of 10% of Annual Sum Insured provided on each renewal for every claim-free year up to a maximum of 50%.",
+    "_confidence": "high"
   }
 }

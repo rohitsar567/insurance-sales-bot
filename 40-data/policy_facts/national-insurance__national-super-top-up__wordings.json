@@ -7,143 +7,239 @@
     "value": "NICHLIP24154V042324",
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/national-super-top-up__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "UIN: NICHLIP24154V042324",
+    "_confidence": "high"
   },
   "min_entry_age": {
-    "value": 18,
+    "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/national-insurance/national-super-top-up__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in national-super-top-up__wordings.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
-    "value": 65,
+    "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/national-insurance/national-super-top-up__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/national-insurance/national-super-top-up__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in national-super-top-up__wordings.pdf",
+    "_confidence": "low"
   },
   "min_child_entry_age": {
-    "value": 91,
+    "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/national-insurance/national-super-top-up__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in national-super-top-up__wordings.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
-    "value": [
-      300000,
-      500000,
-      700000,
-      800000,
-      1000000,
-      1500000,
-      2000000,
-      3000000,
-      5000000,
-      8000000
-    ],
+    "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/national-insurance/national-super-top-up__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in national-super-top-up__wordings.pdf",
+    "_confidence": "low"
   },
   "grace_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/national-insurance/national-super-top-up__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Grace Period for payment of the premium shall be thirty days",
+    "_confidence": "high"
   },
   "free_look_period": {
-    "value": 30,
+    "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/national-insurance/national-super-top-up__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in national-super-top-up__wordings.pdf",
+    "_confidence": "low"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/national-super-top-up__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "First 30 days waiting period (Excl 03) a) Expenses related to the treatment of any Illness within thirty (30) days from the date of commencement of the first",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
-    "value": 12,
-    "unit": null,
+    "value": null,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/national-insurance/national-super-top-up__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in national-super-top-up__wordings.pdf",
+    "_confidence": "low"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/national-super-top-up__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "shall be excluded until the expiry of 90 days/ one year/ two years (as specified against specific disease/ procedure) of continuous coverage",
+    "_confidence": "medium"
   },
   "maternity_waiting_months": {
     "value": 36,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/national-super-top-up__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Maternity Expenses Covered up to Sum Insured after waiting period of 3 years, No Sub Limit Modern Treatment (12 nos)",
+    "_confidence": "medium"
   },
   "pre_hospitalization_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/national-super-top-up__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Pre-hospitalisation 30 days immediately before hospitalisation Post-hospitalisation 60",
+    "_confidence": "medium"
   },
   "post_hospitalization_days": {
     "value": 60,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/national-super-top-up__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Post-hospitalisation 60 days immediately after discharge Day Care Procedures 140+ day ca",
+    "_confidence": "medium"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
+    "value": 140,
+    "unit": "procedures",
     "source_pdf_path": "rag/corpus/national-insurance/national-super-top-up__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Day Care Procedures 140",
+    "_confidence": "medium"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/national-insurance/national-super-top-up__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 5322,
+    "source_url": "https://nationalinsurance.nic.co.in/",
+    "source_note": "5322 Network Hospitals ('Why Choose NICL' section, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/national-insurance/national-super-top-up__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in national-super-top-up__wordings.pdf",
+    "_confidence": "low"
   },
   "room_rent_capped_at_pct_of_si": {
     "value": null,
-    "unit": "percent",
+    "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/national-super-top-up__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in national-super-top-up__wordings.pdf",
+    "_confidence": "low"
   },
   "policy_term_options_years": {
-    "value": null,
+    "value": [
+      1
+    ],
     "unit": "years",
     "source_pdf_path": "rag/corpus/national-insurance/national-super-top-up__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "period of one year",
+    "_confidence": "medium"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/national-insurance/national-super-top-up__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in national-super-top-up__wordings.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/national-insurance/national-super-top-up__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in national-super-top-up__wordings.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/national-super-top-up__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in national-super-top-up__wordings.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/national-super-top-up__wordings.pdf",
+    "source_quote": "2.7 AYUSH Treatment refers to the medical and / or Hospitalisation treatment given under Ayurveda, Yoga and Naturopathy, Unani, Siddha and Homeopathy systems.",
+    "_confidence": "high"
+  },
+  "maternity_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/national-super-top-up__wordings.pdf",
+    "source_quote": "3.1.9 Maternity The Company shall indemnify Maternity Expenses as described below for any female Insured Person, and also Pre-Natal and Post- Natal Hospitalisation expenses per delivery, including expenses for necessary vaccination for the New Born Baby",
+    "_confidence": "high"
+  },
+  "newborn_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/national-super-top-up__wordings.pdf",
+    "source_quote": "New Born Baby shall be automatically covered from birth under the Sum Insured available to the mother during the corresponding Policy Period, for up to 3 months of age.",
+    "_confidence": "high"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/national-super-top-up__wordings.pdf",
+    "source_quote": "3.1.6. Organ Donor's Medical Expenses, 3.1.7. HIV Treatment, 3.1.8. Morbid Obesity Treatment, 3.1.9. Maternity",
+    "_confidence": "high"
+  },
+  "domiciliary_treatment": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/national-super-top-up__wordings.pdf",
+    "source_quote": "5.9. Out-Patient Department (OPD) or Domiciliary treatment Any expenses incurred on OPD or Domiciliary treatment.",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/national-super-top-up__wordings.pdf",
+    "source_quote": "cashless facility shall be available provided that all evidences and documents are produced prior to cashless authorisation, t",
+    "_confidence": "medium"
+  },
+  "no_claim_bonus_cap_pct": {
+    "value": 50,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/national-insurance/national-super-top-up__wordings.pdf",
+    "source_quote": "not be accumulated in excess of 50% of the Basic Sum Insured",
+    "_confidence": "medium"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": 1,
+    "unit": "hours",
+    "source_pdf_path": "rag/corpus/national-insurance/national-super-top-up__wordings.pdf",
+    "source_quote": "within an hour to the Hospital",
+    "_confidence": "medium"
+  },
+  "geographic_coverage": {
+    "value": "pan_india",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/national-insurance/national-super-top-up__wordings.pdf",
+    "source_quote": "geographical limits of India",
+    "_confidence": "medium"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "super_top_up",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/national-insurance/national-super-top-up__wordings.pdf",
+    "source_quote": "Super Top Up Mediclaim Policy",
+    "_confidence": "medium"
+  },
+  "deductible_amount": {
+    "value": null,
+    "unit": "INR",
+    "source_pdf_path": "rag/corpus/national-insurance/national-super-top-up__wordings.pdf",
+    "source_quote": "not stated in national-super-top-up__wordings.pdf",
+    "_confidence": "low"
+  },
+  "room_rent_capping": {
+    "value": null,
+    "unit": "text",
+    "source_pdf_path": "rag/corpus/national-insurance/national-super-top-up__wordings.pdf",
+    "source_quote": "not stated in national-super-top-up__wordings.pdf",
+    "_confidence": "low"
+  },
+  "no_claim_bonus_pct": {
+    "value": 5,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/national-insurance/national-super-top-up__wordings.pdf",
+    "source_quote": "Cumulative Bonus (CB) • CB at 5% of Sum Insured",
+    "_confidence": "medium"
   }
 }

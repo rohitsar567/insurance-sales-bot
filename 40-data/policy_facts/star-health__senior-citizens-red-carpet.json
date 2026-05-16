@@ -5,141 +5,172 @@
   "uin_code": {
     "value": "SHAHLIP26041V082526",
     "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "arpet Health Insurance Policy SHAHLIP26041V082526 1 Medical Underwriting / Pre-Policy Medical Check-up: The company may ask the members Senior Citizens Red Carpet Senior Citizens Red Carpet to be prop"
+    "source_quote": "Unique Identification No.: SHAHLIP26041V082526 Eligibility • Entry age between 60 and 75 years • Guaranteed Lifelong ren",
+    "_confidence": "high"
   },
   "min_entry_age": {
-    "value": null,
+    "value": 60,
     "unit": "days",
     "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "Min entry age not found"
+    "source_quote": "Entry age between 60 and 75 years • Guaranteed Lifelong renewals",
+    "_confidence": "high"
   },
   "max_entry_age": {
-    "value": null,
+    "value": 75,
     "unit": "years",
     "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "Max entry age not explicitly stated; check Policy Schedule"
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "Lifelong renewability: ly without break • Guaranteed Lifelong renewals Coverage Policy Term: The policy is available for 1/2/3 years which can be renewed. Where the 1. Hospitalization Cover: Room, Boarding and Nursing expen"
+    "source_quote": "Entry age between 60 and 75 years • Guaranteed Lifelong renewals",
+    "_confidence": "high"
   },
   "sum_insured_options": {
     "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "Sum Insured options not enumerated in extracted text; check Policy Schedule"
+    "source_quote": "not stated in star-health__senior-citizens-red-carpet.pdf",
+    "_confidence": "low"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "eatment of any illness within 30 days from the first policy Burn(s) or Cancer or as part of medically necessary treatment to remove a direct and commencement date shall be excluded except claims arisi"
+    "source_quote": "Expenses related to the treatment of any illness within 30 days from the first policy commencement date shall be excluded except claims arising due to an accident, provided the same are covered B",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
-    "value": null,
+    "value": 12,
     "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "PED waiting period not extracted; check Section 5 / Excl01"
+    "source_quote": "treatment of a pre-existing Disease (PED) and its direct complications shall be excluded until the expiry of 12 months of continuous coverage after the date of inception of the",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "Default IRDAI 24-month specific-disease waiting (not explicitly quoted)"
+    "source_quote": "/treatments shall be excluded until the expiry of 24 months of continuous coverage after the date of inception of the first policy with us. This exc",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "Maternity waiting not specified or maternity excluded"
+    "source_quote": "not stated in star-health__senior-citizens-red-carpet.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
-    "value": null,
+    "value": 30,
     "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "Pre-hospitalization days not extracted"
+    "source_quote": "Pre Hospitalization medical expenses incurred for a period not exceeding 30 days prior to the date of hospitalization, for disease/illn",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
     "value": null,
     "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "Post-hospitalization days not extracted"
+    "source_quote": "not stated in star-health__senior-citizens-red-carpet.pdf",
+    "_confidence": "low"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "Day-care count not enumerated; covered per policy definition"
+    "value": 540,
+    "source_url": "https://www.starhealth.in/health-insurance/daycare-treatment-and-procedures/",
+    "source_note": "Per insurer baseline (Star Health day-care procedures page; 540+ procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf"
   },
   "ayush_coverage": {
     "value": true,
     "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "ating doctor is maintained 9. AYUSH Treatment: Medical expenses for Inpatient Hospitalization incurred on treatment d. Insured can avail ‘’Home Care Treatment’’ service on cashless basis from the list"
+    "source_quote": "AYUSH Treatment: Medical expenses for Inpatient Hospitalization incurred on treatment under Ayurveda, Unani, Siddha and Homeopathy systems of medicines in a AYUSH Hospital is payable up to the Sum Insured.",
+    "_confidence": "high"
   },
   "maternity_coverage": {
     "value": false,
     "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "Maternity not explicitly mentioned; presumed excluded in base"
+    "source_quote": "Maternity - Code Excl 18 a.",
+    "_confidence": "high"
   },
   "newborn_coverage": {
-    "value": false,
+    "value": null,
     "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "Newborn cover not found; typically tied to maternity option"
+    "source_quote": "not stated in senior-citizens-red-carpet__brochure.pdf",
+    "_confidence": "low"
   },
   "organ_donor_expenses": {
-    "value": false,
+    "value": null,
     "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "Organ donor cover not extracted"
+    "source_quote": "not stated in senior-citizens-red-carpet__brochure.pdf",
+    "_confidence": "low"
   },
   "no_claim_bonus_pct": {
     "value": null,
     "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "NCB % not extracted; product may use booster/recharge structure"
+    "source_quote": "not stated in star-health__senior-citizens-red-carpet.pdf",
+    "_confidence": "low"
   },
   "restoration_benefit": {
     "value": null,
     "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "Restoration benefit not found in extracted text"
+    "source_quote": "not stated in star-health__senior-citizens-red-carpet.pdf",
+    "_confidence": "low"
   },
   "room_rent_capping": {
-    "value": null,
+    "value": "Up to 1% of the Sum Insured (per day, varies by Sum Insured)",
     "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "Room rent capping not extracted (only definition found, no explicit cap)"
+    "source_quote": "Room Rent Limit (per day) Rs.1,00,000/- to Rs.5,00,000/- Up to 1% of the Sum Insured",
+    "_confidence": "high"
   },
   "copayment_pct": {
     "value": 30,
     "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "nt: This policy is subject to co-payment of 30% for all claims. 6 7 Sublimits C laim Illustration for Sublimit and Co-pay: Treatment for Cerebro Vascular Accident (Ind"
+    "source_quote": "co-payment of 30% for all claims",
+    "_confidence": "high"
   },
   "deductible_amount": {
     "value": null,
     "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "No base deductible (or only optional voluntary deductible add-on)"
+    "source_quote": "not stated in star-health__senior-citizens-red-carpet.pdf",
+    "_confidence": "low"
   },
   "network_hospital_count": {
-    "value": null,
-    "source_url": null,
-    "source_quote": "Insurer-level metric; not extracted in this curation pass"
+    "value": 14000,
+    "source_url": "https://www.starhealth.in/",
+    "source_note": "14,000+ network hospitals across India (per official Star Health communications, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "cashless_treatment_supported": {
     "value": true,
     "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "e Care Treatment’’ service on cashless basis from the list of under Ayurveda, Unani, Siddha and Homeopathy systems of medicines in a AYUSH our Network service providers given in our website ‘’www.star"
+    "source_quote": "Emergency Hospitalization (Cashless/Reimbursement): Within 24 hours of date and time of Hospitalization if the Insured Person has been hospitalized in an Emergency",
+    "_confidence": "high"
   },
   "claim_settlement_ratio": {
     "value": null,
     "source_url": null,
-    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted"
+    "source_quote": "not stated in star-health__senior-citizens-red-carpet.pdf",
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
     "value": null,
-    "source_pdf_path": null,
-    "source_quote": "TAT not specified in policy wording; governed by IRDAI Master Circular"
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "not stated in star-health__senior-citizens-red-carpet.pdf",
+    "_confidence": "low"
   },
   "policy_type": {
     "value": "indemnity",
     "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "Default indemnity (no explicit alternate type detected)"
+    "source_quote": "Cancer care requiring medical assistance g",
+    "_confidence": "low"
   },
   "_meta": {
     "curated_at": "2026-05-14",
     "primary_source_pdf": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
     "supporting_source_pdfs": [],
     "completeness_pct": 50,
-    "notes": "Pattern-based extraction from local PDF via pdfplumber. Insurer-level metrics (CSR, network count) left null pending downstream backfill."
+    "notes": "Pattern-based extraction from local PDF via pdfplumber. Insurer-level metrics (CSR, network count) left null pending downstream backfill. | Batch 3 (2026-05-15): coverage breadth fields backfilled.",
+    "batch3_added_fields": [
+      "preventive_health_checkup"
+    ]
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "Preventive Health Check-up",
+    "extraction_method": "tools/curate_batch3.py — pattern-grep over pdfplumber text"
   }
 }

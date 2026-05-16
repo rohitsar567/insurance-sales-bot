@@ -31,6 +31,20 @@ export type ChatResponse = {
   // frontend uses this when constructing the playback Blob URL so Safari
   // doesn't refuse to play an mp4 payload labelled as wav.
   audio_mime?: string | null;
+  // KI-278 (2026-05-16) — voice-OUTPUT (TTS) failures used to be silent:
+  // the bot returned a text reply with audio_base64=null and NO signal,
+  // so the user saw a voice-less answer with zero explanation ("no voice
+  // in reply. wtf?"). The backend now classifies the failure (closed enum,
+  // same contract as the STT path) and ships a user-facing message the
+  // chat UI renders inline under the bubble. Absent on the success path.
+  tts_error_code?:
+    | "rate_limit"
+    | "service_unavailable"
+    | "network"
+    | "auth"
+    | "unknown"
+    | null;
+  tts_user_message?: string | null;
   faithfulness_passed?: boolean;
   faithfulness_reasons?: string[];
   blocked?: boolean;
@@ -383,7 +397,6 @@ export type MarketplacePolicy = {
   data_completeness_pct: number;
   min_entry_age?: number | null;
   max_entry_age?: number | null;
-  max_renewal_age?: number | null;
   sum_insured_options: number[];
   pre_existing_disease_waiting_months?: number | null;
   initial_waiting_period_days?: number | null;

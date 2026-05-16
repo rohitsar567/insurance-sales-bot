@@ -1,0 +1,19 @@
+{
+  "insurer_slug": "indusind-general",
+  "insurer_name": "IndusInd General Insurance (formerly Reliance General)",
+  "last_updated": "2026-05-15",
+  "claim_metrics": {
+    "claim_settlement_ratio_pct": 86.38,
+    "claim_settlement_ratio_year": "FY 2024-25",
+    "complaints_per_10k_policies": 5,
+    "complaints_year": "FY 2024-25",
+    "complaints_metric_unit": "per 10,000 claims (Reliance General predecessor reporting)",
+    "incurred_claim_ratio_pct": null,
+    "three_year_avg_csr_pct": null,
+    "source_irdai_url": "https://irdai.gov.in/document-detail",
+    "source_secondary_url": "https://www.beshak.org/insurance/insurance-companies/indus-ind-general-insurance-company-limited/claim-settlement-ratio/",
+    "source_complaints_url": "https://algatesinsurance.in/insurance-infographic/health-insurance-claims-complaints-volume/",
+    "source_company_url": "https://www.indusindinsurance.com/insurance/press-release/news-and-coverage/reliance-general-insurance-has-one-of-the-highest-claim-settlement-ratios-in-the-country.aspx",
+    "notes": "IndusInd General Insurance is the rebrand of Reliance General Insurance (rebrand October 2025). Predecessor Reliance General had CSR 98.75% (claims settled in <3 months) in FY 2023-24 and 99.32% in FY 2024-25. Standalone post-rebrand health-only CSR is 86.38% per Beshak/public disclosure FY24-25. Complaints metric of 5 per 10,000 claims (FY24-25) is from the Reliance General reporting line in the IRDAI grievance digest (Algates aggregator) — same entity continuing post-rebrand. Backfilled 2026-05-15 in targeted scrape pass."
+  }
+}

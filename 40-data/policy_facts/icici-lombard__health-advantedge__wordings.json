@@ -7,140 +7,252 @@
     "value": "ICIHLIP24182V042324",
     "unit": null,
     "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "UIN: ICIHLIP24182V042324 Health AdvantEdge",
+    "_confidence": "high"
   },
   "min_entry_age": {
-    "value": 18,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
-  },
-  "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in icici-lombard__health-advantedge__wordings.pdf",
+    "_confidence": "low"
   },
-  "max_renewal_age": {
-    "value": 999,
+  "max_entry_age": {
+    "value": 50,
     "unit": "years",
     "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "dule. This cover is available only for adult members aged maximum up to 50 years during first time issuance. “Critical Illness” for the pur",
+    "_confidence": "high"
   },
   "min_child_entry_age": {
     "value": 91,
     "unit": "days",
     "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "\"Dependent Child\" means a child (natural or legally adopted), who is unmarried, aged between 91 days and 25 years, financially dependent on the Insured and does not have his / her independent sources of income.",
+    "_confidence": "high"
   },
   "sum_insured_options": {
-    "value": [
-      500000,
-      1000000,
-      1500000,
-      2000000,
-      2500000,
-      5000000,
-      10000000
-    ],
+    "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in icici-lombard__health-advantedge__wordings.pdf",
+    "_confidence": "low"
   },
   "grace_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "At the end of the policy period, the policy shall terminate and can be renewed within the Grace Period of 30 days to maintain continuity of benefits without break in policy.",
+    "_confidence": "high"
   },
   "free_look_period": {
-    "value": 30,
+    "value": 15,
     "unit": "days",
     "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "The insured person shall be allowed free look period of fifteen days (thirty days in case of distance marketing) from date of receipt of the policy document to review the terms and conditions of the policy",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "4. 30-day waiting period- Code- Excl03 a. Expenses related to the treatment of any illness within 30 days from the first policy commencement date shall be excluded except claims arising due to an accident, provided the same",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "1. Pre-Existing Diseases - Code- Excl01 a. Expenses related to the treatment of a pre-existing Disease (PED) and its direct complications shall be excluded until the expiry of 0 Months24 months .(depending on plan opted) of",
+    "_confidence": "medium"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "2. Specified disease/procedure waiting period- Code- Excl02 a. Expenses related to the treatment of the listed Conditions, surgeries/treatments shall be excluded until the expiry of /24months of continuous coverage after th",
+    "_confidence": "medium"
   },
   "maternity_waiting_months": {
-    "value": 24,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in icici-lombard__health-advantedge__wordings.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": 60,
     "unit": null,
     "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "4. Pre- Hospitalisation Medical Expenses We will cover the Pre-hospitalization Medical Expenses incurred in respect of the Insured Person immediately 60 days before the Insured Person’s Admission to Hospital",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
     "value": 180,
     "unit": null,
     "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "5. Post Hospitalization Medical Expenses We will cover the Post-hospitalization Medical Expenses incurred in respect of the Insured Person immediately 180 days following the Insured Person’s discharge from Hospital",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
+    "value": 150,
+    "source_url": "https://www.icicilombard.com/docs/default-source/downloads/complete-health-insurance-brochure.pdf",
+    "source_note": "Per insurer baseline (ICICI Lombard Complete Health iHealth Annexure I; 150 procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf"
+  },
+  "network_hospital_count": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
-  },
-  "network_hospital_count": {
-    "value": 6500,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in icici-lombard__health-advantedge__wordings.pdf",
+    "_confidence": "low"
   },
   "co_payment_pct": {
     "value": null,
-    "unit": "percent",
+    "unit": "%",
     "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in icici-lombard__health-advantedge__wordings.pdf",
+    "_confidence": "low"
   },
   "room_rent_capped_at_pct_of_si": {
-    "value": null,
+    "value": 1,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Sum Insured options up to Rs. 4 Lakhs- room rent charges shall be capped at 1 % of Annual Sum Insured b. For policies with Annual Sum I",
+    "_confidence": "high"
   },
   "policy_term_options_years": {
-    "value": null,
+    "value": [
+      1
+    ],
     "unit": "years",
     "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "The Free Look Period shall be applicable on new individual health insurance policies and not on renewals or at the time of porting/migrating the policy.",
+    "_confidence": "low"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in icici-lombard__health-advantedge__wordings.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in icici-lombard__health-advantedge__wordings.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in icici-lombard__health-advantedge__wordings.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
+    "source_quote": "6. In Patient AYUSH Hospitalization We will cover medical expenses incurred in respect of Insured Person’s AYUSH Treatment during the Policy Period up to the Annual Sum Insured specified in the Policy Schedule",
+    "_confidence": "high"
+  },
+  "maternity_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
+    "source_quote": "1. Maternity Benefit_A: i. This optional benefit covers the medical expenses up to 10% of the Annual Sum Insured; subject to a maximum limit of INR 1 Lakhs (Sum Insured) for the delivery of a baby",
+    "_confidence": "high"
+  },
+  "newborn_coverage": {
+    "value": null,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
+    "source_quote": "not stated in icici-lombard__health-advantedge__wordings.pdf",
+    "_confidence": "low"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
+    "source_quote": "Donor Expenses We will cover the medical expenses incurred in respect of an organ donor’s Hospitalization during the Policy Period for harvesting of the organ donated to the Insured Person up to the Annual Sum Insured specified in the Policy Schedule provided that: i.",
+    "_confidence": "high"
+  },
+  "restoration_benefit": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
+    "source_quote": "Reset Benefit We will reset up to 100% of the Annual Sum Insured, for any illness/disease/injury for the Insured Person in a Policy Year as stated in the Policy Schedule subject to the following conditions: i. For policies with annual sum insured less than Rs. 10",
+    "_confidence": "high"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
+    "source_quote": "Domiciliary Hospitalization We will cover the Medical Expenses incurred in respect of the Domiciliary Hospitalization of the Insured Person during the Policy Period provided that: i. The Domiciliary Hospitalization has commenced on the written advice of a medical",
+    "_confidence": "high"
+  },
+  "worldwide_emergency_cover": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
+    "source_quote": "Worldwide Cover We will cover the Insured Person for Hospitalization expenses including planned Hospitalization incurred outside India and anywhere across the world including USA and Canada, upto the Annual Sum Insured subject to the terms &",
+    "_confidence": "high"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
+    "source_quote": "Preventive Health check-up 300 Medical Vault 300 First usage of Chat with Health Expert/ Health Coach Service 100 Tele- consultations 300 ICICI Lombard initiated Contest/ health quiz (Any one contest) 200",
+    "_confidence": "high"
+  },
+  "critical_illness_cover": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
+    "source_quote": "critical illness benefit shall be limited to the sum insured as mentioned against this benefit in the policy schedule. This cover is available only for adult members aged maximum up to 50 years during first",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
+    "source_quote": "\"Cashless facility\" means a facility extended by the Insurer to the Insured where, the payments of the costs of treatment undergone by the Insured in accordance with the Policy terms and conditions are directly made to th",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_cap_pct": {
+    "value": 100,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
+    "source_quote": "16. Guaranteed Cumulative Bonus (GCB) We will provide a Cumulative Bonus of 20% of expiring or renewed Annual Sum Insured (whichever is lower) at the end of each Policy Year if theexpiring Policy has been claim free and is continuously renewed with the Company.",
+    "_confidence": "medium"
+  },
+  "geographic_coverage": {
+    "value": "pan_india",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
+    "source_quote": "25. Treatment taken outside the geographical limits of India. This exclusion shall not be applicable for policies with Annual Sum Insured Rs. 25 lakhs and above",
+    "_confidence": "medium"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "family_floater",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
+    "source_quote": "\"Family Floater Policy\" means a Policy in terms of which, two or more persons of a Family are named in the Schedule as Insured Persons.",
+    "_confidence": "medium"
+  },
+  "room_rent_capping": {
+    "value": null,
+    "_confidence": "low",
+    "source_quote": "not stated in icici-lombard__health-advantedge__wordings.pdf"
+  },
+  "no_claim_bonus_pct": {
+    "value": 20,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
+    "source_quote": "16. Guaranteed Cumulative Bonus (GCB) We will provide a Cumulative Bonus of 20% of expiring or renewed Annual Sum Insured (whichever is lower) at the end of each Policy Year if theexpiring Policy has been claim free and is continuously renewed with the Company.",
+    "_confidence": "high"
   }
 }

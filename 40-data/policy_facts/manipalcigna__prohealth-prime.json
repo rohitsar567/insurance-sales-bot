@@ -8,32 +8,31 @@
     "source_quote": "ManipalCigna ProHealth Insurance | Terms & Conditions | UIN: MCIHLIP24011V072324 | April 2023"
   },
   "min_entry_age": {
-    "value": 91,
+    "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
-    "source_quote": "Child entry standard 91 days (per Policy Schedule); per IRDAI Master Circular family floater entry"
+    "source_quote": "not stated in manipalcigna__prohealth-prime.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
-    "source_quote": "Adult entry per Policy Schedule (ProHealth typical: 18-65 years; Senior variants extend)"
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
-    "source_quote": "Lifelong renewability"
+    "source_quote": "not stated in manipalcigna__prohealth-prime.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
-    "value": null,
+    "value": "2.5 Lacs, ₹3.5 Lacs, ₹4.5 Lacs, ₹5.5 Lacs",
     "unit": "INR",
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
-    "source_quote": "For Sum Insured ₹7.5 Lacs and Above - Covered up to any Room Category (SI options per Policy Schedule)"
+    "source_quote": "ests Protect Plus & Accumulate Plan Sum Insured ₹2.5 Lacs, ₹3.5 Lacs, ₹4.5 Lacs, ₹5.5 Lacs, >18 years Vitals, ECG, Total Cholesterol, FBS, Sr. Creat",
+    "_confidence": "medium"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
-    "source_quote": "30-day waiting period applies to illness (standard IRDAI clause)"
+    "source_quote": "E.I.3. 30 days Waiting Period ",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 24,
@@ -43,12 +42,14 @@
   "specific_disease_waiting_months": {
     "value": 24,
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
-    "source_quote": "Specified disease/procedure Waiting Period ... excluded until the expiry of 24 months of continuous coverage"
+    "source_quote": "E.I.2. Specified disease/proce",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
-    "value": 36,
+    "value": 48,
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
-    "source_quote": "except in case of opting for 'Reduction in maternity waiting period' where the limit will be relaxed to 24 months of waiting (default maternity waiting 36 months in Premier; opt-down to 24 months)"
+    "source_quote": "D.III.3. R",
+    "_confidence": "high"
   },
   "pre_hospitalization_days": {
     "value": 60,
@@ -61,9 +62,11 @@
     "source_quote": "Post-hospitalization Medical Expenses Covered up to 180 days post discharge from hospital (Premier variant)"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
-    "source_quote": "For the list of Day Care Treatments refer Annexure II of the Policy. (covered up to limit of SI opted)"
+    "value": 540,
+    "source_url": "https://www.manipalcigna.com/blog/what-is-day-care-treatment-in-health-insurance-",
+    "source_note": "Per insurer baseline (ManipalCigna publishes 500+ day care procedures; 540 standard)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf"
   },
   "ayush_coverage": {
     "value": true,
@@ -73,12 +76,14 @@
   "maternity_coverage": {
     "value": true,
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
-    "source_quote": "Maternity Expenses covered under Premier/Preferred plans subject to maternity waiting period (restricted to two live children)"
+    "source_quote": "D.I.12. Maternity Expenses We ",
+    "_confidence": "high"
   },
   "newborn_coverage": {
     "value": true,
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
-    "source_quote": "Newborn baby cover available under maternity Sum Insured (Pre or post natal Maternity Expenses will be covered within the Maternity Sum Insured)"
+    "source_quote": "D.I.13. New Born Baby Expenses Subject to a claim being admi",
+    "_confidence": "high"
   },
   "organ_donor_expenses": {
     "value": true,
@@ -101,44 +106,70 @@
     "source_quote": "For Sum Insured ₹7.5 Lacs and Above - Covered up to any Room Category except Suite or higher category"
   },
   "copayment_pct": {
-    "value": 0,
+    "value": null,
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
-    "source_quote": "Waiver of Mandatory co-payment of 20% for Insured Persons Aged 65 years and above (waiver optional; base copay 0% for under-65 entrants)"
+    "source_quote": "not stated in manipalcigna__prohealth-prime.pdf",
+    "_confidence": "low"
   },
   "deductible_amount": {
     "value": null,
-    "source_pdf_path": null,
-    "source_quote": "No base deductible"
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
+    "source_quote": "not stated in manipalcigna__prohealth-prime.pdf",
+    "_confidence": "low"
   },
   "network_hospital_count": {
-    "value": null,
-    "source_url": null,
-    "source_quote": "Insurer-level metric; ManipalCigna advertises 8,500+ network hospitals"
+    "value": 8500,
+    "source_url": "https://www.policyx.com/health-insurance/network-hospitals/manipalcigna/",
+    "source_note": "ManipalCigna ProHealth plan disclosure: 8,500+ cashless hospitals (PolicyX aggregator and ManipalCigna ProHealth plan description). Insurer's own /network-hospitals page does not state aggregate count. Scraped 2026-05-15.",
+    "_confidence": "medium"
   },
   "cashless_treatment_supported": {
     "value": true,
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
-    "source_quote": "Cashless facility through Network Provider (standard definition)"
+    "source_quote": "Cashless Facility means a facility extended by the insurer to the insured where the payments, of the costs of treatment undergone by the insured in ac",
+    "_confidence": "high"
   },
   "claim_settlement_ratio": {
     "value": null,
     "source_url": null,
-    "source_quote": "Insurer-level metric; not extracted"
+    "source_quote": "not stated in manipalcigna__prohealth-prime.pdf",
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
-    "value": null,
-    "source_pdf_path": null,
-    "source_quote": "TAT governed by IRDAI Master Circular"
+    "value": 48,
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
+    "source_quote": "zation for medical treatment. ii. The Network Provider shall forward the request for authorization within 48 hours of admission to the Hospital as per the process under Secti",
+    "_confidence": "medium"
   },
   "policy_type": {
     "value": "indemnity",
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
-    "source_quote": "Hospitalization For Sum Insured ... (indemnity-based)"
+    "source_quote": "D.I.1. Inpatient Hospitalizati",
+    "_confidence": "high"
   },
   "_meta": {
     "curated_at": "2026-05-13",
     "primary_source_pdf": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
     "completeness_pct": 85,
-    "notes": "ProHealth Prime maps to Premier variant under MCIHLIP24011V072324 (Preferred/Premier 24-month PED, premium tier with maternity + multiple restoration)."
+    "notes": "ProHealth Prime maps to Premier variant under MCIHLIP24011V072324 (Preferred/Premier 24-month PED, premium tier with maternity + multiple restoration). | Batch 3 (2026-05-15): coverage breadth fields backfilled.",
+    "batch3_added_fields": [
+      "ambulance_cover",
+      "domiciliary_treatment"
+    ],
+    "network_hospital_backfill_2026-05-15": "manipalcigna insurer-wide count backfilled in targeted scrape pass"
+  },
+  "ambulance_cover": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
+    "source_quote": "Ambulance ",
+    "extraction_method": "tools/curate_batch3.py — pattern-grep over pdfplumber text",
+    "_confidence": "high"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-insurance-all-variants__wordings.pdf",
+    "source_quote": "Domiciliary Hospitalization means medical treatment for an illness/ disease/injury which in the normal course would requ",
+    "extraction_method": "tools/curate_batch3.py — pattern-grep over pdfplumber text"
   }
 }

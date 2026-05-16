@@ -7,31 +7,29 @@
     "value": "SHAHLIP26041V082526",
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Senior Citizens Red Carpet Health Insurance Policy SHAHLIP26041V082526",
+    "_confidence": "high"
   },
   "min_entry_age": {
     "value": 60,
     "unit": "years",
     "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Eligibility • Entry age between 60 and 75 years • Guaranteed Lifelong renewals",
+    "_confidence": "high"
   },
   "max_entry_age": {
     "value": 75,
     "unit": "years",
     "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Eligibility • Entry age between 60 and 75 years • Guaranteed Lifelong renewals",
+    "_confidence": "high"
   },
   "min_child_entry_age": {
     "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in star-health__senior-citizens-red-carpet__brochure.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
     "value": [
@@ -48,102 +46,171 @@
     ],
     "unit": "INR",
     "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Sum Insured Options Sum Insured on Individual Basis (Rs.) 1,00,000/- 2,00,000/- 3,00,000/- 4,00,000/- 5,00,000/- 7,50,000/- Sum Insured on Individual & Floater Basis (Rs.) 10,00,000/- 15,00,000/- 20,00,000/- 25,00,000/-",
+    "_confidence": "high"
   },
   "grace_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "the policy shall terminate and can be renewed within the Grace Period of 30 days.",
+    "_confidence": "high"
   },
   "free_look_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "The Policyholder shall be allowed free look period of thirty days from date of receipt of the policy document whether electronically or otherwise to review the terms and conditions of the policy.",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Expenses related to the treatment of any illness within 30 days from the first policy commencement date shall be excluded except claims arising due to an accident, provided the same are covered",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 12,
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Expenses related to the treatment of a pre-existing Disease (PED) and its direct complications shall be excluded until the expiry of 12 months of continuous coverage after the date of inception of the first policy with insurer",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Expenses related to the treatment of following listed Conditions, surgeries/treatments shall be excluded until the expiry of 24 months of continuous coverage after the date of inception of the first policy with us. This exclusion shall not be applicable for claims arising due to an accident",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in star-health__senior-citizens-red-carpet__brochure.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": 30,
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "medical expenses incurred for a period not exceeding 30 days prior to the date of hospitalization, for disease/illness, injury sustained following an admissible claim for hospitalization under the policy",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in star-health__senior-citizens-red-carpet__brochure.pdf",
+    "_confidence": "low"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 540,
+    "source_url": "https://www.starhealth.in/health-insurance/daycare-treatment-and-procedures/",
+    "source_note": "Per insurer baseline (Star Health day-care procedures page; 540+ procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf"
   },
   "network_hospital_count": {
     "value": 14000,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_url": "https://www.starhealth.in/",
+    "source_note": "14,000+ network hospitals across India (per official Star Health communications, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
-    "value": null,
-    "unit": "percent",
+    "value": 30,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Co-Payment: This policy is subject to co-payment of 30% for all claims.",
+    "_confidence": "high"
   },
   "room_rent_capped_at_pct_of_si": {
     "value": null,
-    "unit": "percent",
+    "unit": "%",
     "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in senior-citizens-red-carpet__brochure.pdf",
+    "_confidence": "low"
   },
   "policy_term_options_years": {
-    "value": null,
+    "value": [
+      1,
+      2,
+      3
+    ],
     "unit": "years",
     "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Policy Term: The policy is available for 1/2/3 years which can be renewed.",
+    "_confidence": "high"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in star-health__senior-citizens-red-carpet__brochure.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in star-health__senior-citizens-red-carpet__brochure.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in star-health__senior-citizens-red-carpet__brochure.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "AYUSH Treatment: Medical expenses for Inpatient Hospitalization incurred on treatment under Ayurveda, Unani, Siddha and Homeopathy systems of medicines in a AYUSH Hospital is payable up to the Sum Insured.",
+    "_confidence": "high"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "Health Check-up: We will arrange for a Preventive Health Check-up at Our Network Providers for the applicable package as specified below as per opted Sum Insured and subject t",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "Emergency Hospitalization (Cashless/Reimbursement): Within 24 hours of date and time of Hospitalization if the Insured Person has been hospitalized in an Emergency.",
+    "_confidence": "high"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": null,
+    "unit": "hours",
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "not stated in star-health__senior-citizens-red-carpet__brochure.pdf",
+    "_confidence": "low"
+  },
+  "geographic_coverage": {
+    "value": null,
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "not stated in star-health__senior-citizens-red-carpet__brochure.pdf",
+    "_confidence": "low"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "senior_citizen",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "Senior Citizens Red Carpet Health Insurance Policy Senior Citizens Red Carpet Health Insurance Policy Turning sixty is a major milestone",
+    "_confidence": "medium"
+  },
+  "room_rent_capping": {
+    "value": null,
+    "unit": "text",
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "not stated in senior-citizens-red-carpet__brochure.pdf",
+    "_confidence": "low"
   }
 }

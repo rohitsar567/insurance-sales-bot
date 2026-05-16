@@ -5,24 +5,22 @@
   "uin_code": {
     "value": null,
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
-    "source_quote": "UIN not found in extracted text"
+    "source_quote": "not stated in manipalcigna__prohealth-select.pdf",
+    "_confidence": "low"
   },
   "min_entry_age": {
     "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
-    "source_quote": "Min entry age not found"
+    "source_quote": "not stated in manipalcigna__prohealth-select.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
-    "source_quote": "Max entry age not explicitly stated; check Policy Schedule"
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
-    "source_quote": "Max renewal age not specified; check Policy Schedule"
+    "source_quote": "not stated in manipalcigna__prohealth-select.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
     "value": [
@@ -36,57 +34,68 @@
   "initial_waiting_period_days": {
     "value": 30,
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
-    "source_quote": "Default IRDAI 30-day waiting period applies (not explicitly quoted in extracted snippet)"
+    "source_quote": "V.2. 30 da",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
-    "value": null,
+    "value": 48,
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
-    "source_quote": "PED waiting period not extracted; check Section 5 / Excl01"
+    "source_quote": "e-existing Disease Waiting Period All Pre-existing Diseases / Illness / Injury / conditions as defined in the Policy will not be covered, until 48 months of continuous coverage has elapsed since inception of the first Policy with Us. T",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
-    "value": 24,
+    "value": null,
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
-    "source_quote": "Default IRDAI 24-month specific-disease waiting (not explicitly quoted)"
+    "source_quote": "not stated in manipalcigna__prohealth-select.pdf",
+    "_confidence": "low"
   },
   "maternity_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
-    "source_quote": "Maternity waiting not specified or maternity excluded"
+    "source_quote": "not stated in manipalcigna__prohealth-select.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
-    "value": 3,
+    "value": 60,
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
-    "source_quote": "nsured Person should at least 3 days prior to admission to the Policy. Hospital approach the Network Provider for Hospitalization for medical treatment. VII. CLAIM PROCESS & MANAGEMENT ii. The Network"
+    "source_quote": "60 days Pre - hospitalization II. 2 II. 1 90 days Post - hos",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
     "value": null,
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
-    "source_quote": "Post-hospitalization days not extracted"
+    "source_quote": "not stated in manipalcigna__prohealth-select.pdf",
+    "_confidence": "low"
   },
   "day_care_treatments_count": {
     "value": 171,
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
-    "source_quote": "ost - hospitalization 90 days Day Care Treatment 171 procedures, Covered up to full sum insured Domiciliary Treatment Covered up to the limit of Sum Insured opted Ambulance Cover Covered upto `2000 pe"
+    "source_quote": "171 procedures, Cove",
+    "_confidence": "high"
   },
   "ayush_coverage": {
     "value": true,
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
-    "source_quote": "ed opted. ProHealth Select A) AYUSH Cover Covered upto full Sum Insured II. 9 Value Added Cumulative Bonus 5 % each year maximum upto 100%.This will not be reduced in case of claim III. 1 Covers under"
+    "source_quote": "Covered upto full Su",
+    "_confidence": "high"
   },
   "maternity_coverage": {
     "value": false,
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
-    "source_quote": "Maternity not explicitly mentioned; presumed excluded in base"
+    "source_quote": "childbirth",
+    "_confidence": "high"
   },
   "newborn_coverage": {
-    "value": false,
+    "value": null,
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
-    "source_quote": "Newborn cover not found; typically tied to maternity option"
+    "source_quote": "not stated in manipalcigna__prohealth-select.pdf",
+    "_confidence": "low"
   },
   "organ_donor_expenses": {
     "value": true,
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
-    "source_quote": "organ donor is any We will, on a reimbursement basis cover Medical Expenses of an Insured person in accordance with the Transplantation of Human Organs Act 1994 Person which are incurred due to a Dise"
+    "source_quote": "Donor Expenses (Hospitalisation Expenses of the donor providing the organ) II. 7",
+    "_confidence": "high"
   },
   "no_claim_bonus_pct": {
     "value": 5,
@@ -99,9 +108,10 @@
     "source_quote": "Restoration of Sum Insured Sum Insured restored to 100% when total of opted Sum Insured and Cumulative Bonus II"
   },
   "room_rent_capping": {
-    "value": "Single Private Room IV",
+    "value": "2% of Sum Insured per day, max Rs.3,000",
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
-    "source_quote": "Single Private Room IV"
+    "source_quote": "Covered up to 2% of Sum Insured for a Hospital Room, up to a",
+    "_confidence": "high"
   },
   "copayment_pct": {
     "value": 10,
@@ -111,12 +121,14 @@
   "deductible_amount": {
     "value": null,
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
-    "source_quote": "No base deductible (or only optional voluntary deductible add-on)"
+    "source_quote": "not stated in manipalcigna__prohealth-select.pdf",
+    "_confidence": "low"
   },
   "network_hospital_count": {
-    "value": null,
-    "source_url": null,
-    "source_quote": "Insurer-level metric; not extracted in this curation pass"
+    "value": 8500,
+    "source_url": "https://www.policyx.com/health-insurance/network-hospitals/manipalcigna/",
+    "source_note": "ManipalCigna ProHealth plan disclosure: 8,500+ cashless hospitals (PolicyX aggregator and ManipalCigna ProHealth plan description). Insurer's own /network-hospitals page does not state aggregate count. Scraped 2026-05-15.",
+    "_confidence": "medium"
   },
   "cashless_treatment_supported": {
     "value": true,
@@ -126,23 +138,45 @@
   "claim_settlement_ratio": {
     "value": null,
     "source_url": null,
-    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted"
+    "source_quote": "not stated in manipalcigna__prohealth-select.pdf",
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
-    "value": null,
-    "source_pdf_path": null,
-    "source_quote": "TAT not specified in policy wording; governed by IRDAI Master Circular"
+    "value": 48,
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "source_quote": "ization for medical treatment. ii. The Network Provider shall forward the request for authorization within 48 hours of admission to the Hospital as per the process under Secti",
+    "_confidence": "medium"
   },
   "policy_type": {
-    "value": "hospital-cash",
+    "value": "indemnity",
     "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
-    "source_quote": "Hospital cash / daily benefit policy"
+    "source_quote": "II.1. Inpatient Hospitalizatio",
+    "_confidence": "high"
   },
   "_meta": {
     "curated_at": "2026-05-14",
     "primary_source_pdf": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
     "supporting_source_pdfs": [],
     "completeness_pct": 75,
-    "notes": "Pattern-based extraction from local PDF via pdfplumber. Insurer-level metrics (CSR, network count) left null pending downstream backfill."
+    "notes": "Pattern-based extraction from local PDF via pdfplumber. Insurer-level metrics (CSR, network count) left null pending downstream backfill. | Batch 3 (2026-05-15): coverage breadth fields backfilled.",
+    "batch3_added_fields": [
+      "domiciliary_treatment",
+      "preventive_health_checkup"
+    ],
+    "network_hospital_backfill_2026-05-15": "manipalcigna insurer-wide count backfilled in targeted scrape pass"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "source_quote": "Domiciliary Treatment Covered up to the limit of Sum Insured opted II",
+    "extraction_method": "tools/curate_batch3.py — pattern-grep over pdfplumber text"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/manipalcigna/prohealth-select__wordings.pdf",
+    "source_quote": "Every year",
+    "extraction_method": "tools/curate_batch3.py — pattern-grep over pdfplumber text",
+    "_confidence": "high"
   }
 }

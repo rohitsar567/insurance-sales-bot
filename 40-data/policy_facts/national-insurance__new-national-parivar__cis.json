@@ -7,143 +7,251 @@
     "value": "NICHLIP25037V022425",
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "UIN: NICHLIP25037V022425",
+    "_confidence": "high"
   },
   "min_entry_age": {
-    "value": 18,
+    "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in new-national-parivar__cis.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
-    "value": 65,
+    "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in new-national-parivar__cis.pdf",
+    "_confidence": "low"
   },
   "min_child_entry_age": {
-    "value": 91,
+    "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in new-national-parivar__cis.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
-    "value": [
-      100000,
-      200000,
-      300000,
-      400000,
-      500000,
-      600000,
-      700000,
-      800000,
-      900000,
-      1000000
-    ],
+    "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in new-national-parivar__cis.pdf",
+    "_confidence": "low"
   },
   "grace_period": {
-    "value": 30,
+    "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in new-national-parivar__cis.pdf",
+    "_confidence": "low"
   },
   "free_look_period": {
     "value": 30,
     "unit": "days",
     "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "within 30 days from the beginning of the policy",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
-    "value": 30,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in new-national-parivar__cis.pdf",
+    "_confidence": "low"
   },
   "pre_existing_disease_waiting_months": {
-    "value": 36,
-    "unit": null,
+    "value": null,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in new-national-parivar__cis.pdf",
+    "_confidence": "low"
   },
   "specific_disease_waiting_months": {
-    "value": 24,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in new-national-parivar__cis.pdf",
+    "_confidence": "low"
   },
   "maternity_waiting_months": {
-    "value": 36,
+    "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "not stated in new-national-parivar__cis.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": 45,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Pre-hospitalisation (treatment prior to admission in hospital) of 45 days c",
+    "_confidence": "medium"
   },
   "post_hospitalization_days": {
     "value": 75,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__cis.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_quote": "Post-hospitalisation (treatment after discharge from hospital) within 75 days from date of discharge d",
+    "_confidence": "medium"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 140,
+    "source_url": "https://nationalinsurance.nic.co.in/en/health-insurance/new-national-parivar-mediclaim-policy",
+    "source_note": "Per insurer baseline (National Parivar Mediclaim covers 140+ day care procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__cis.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 5322,
+    "source_url": "https://nationalinsurance.nic.co.in/",
+    "source_note": "5322 Network Hospitals ('Why Choose NICL' section, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Insured opting for cover for pre-existing diabetes and\nhypertension, can avail treatment for diabetes or\nhypertension, subject to a copayment of 25%",
+    "_confidence": "low"
   },
   "room_rent_capped_at_pct_of_si": {
-    "value": null,
-    "unit": "percent",
+    "value": 1.0,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "Room Rent - Up to 1% of SI or actual, whichever is lower Proportionate Deduction shall apply if opted for Room of higher category.",
+    "_confidence": "high"
   },
   "policy_term_options_years": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in new-national-parivar__cis.pdf",
+    "_confidence": "low"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in new-national-parivar__cis.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in new-national-parivar__cis.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
     "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__cis.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_quote": "not stated in new-national-parivar__cis.pdf",
+    "_confidence": "low"
+  },
+  "ayush_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__cis.pdf",
+    "source_quote": "f. AYUSH Treatment g. Organ donor's medical expenses h. Hospital Cash for maximum of 5 days i. Ambulance j. Anti Rabies Vaccination k. Maternity",
+    "_confidence": "high"
+  },
+  "maternity_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__cis.pdf",
+    "source_quote": "Baby from Birth Cover) (per insured person, in a policy year - Up to 10% of SI subject to INR 30,000 in case of normal delivery and INR 50,000 in case of caesarean section",
+    "_confidence": "high"
+  },
+  "newborn_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__cis.pdf",
+    "source_quote": "Baby from Birth Cover) (per insured person, in a policy year - Up to 10% of SI subject to INR 30,000 in case of normal delivery and INR 50,000 in case of caesarean section",
+    "_confidence": "high"
+  },
+  "organ_donor_expenses": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__cis.pdf",
+    "source_quote": "f. AYUSH Treatment g. Organ donor's medical expenses h. Hospital Cash for maximum of 5 days i. Ambulance j. Anti Rabies Vaccination k. Maternity",
+    "_confidence": "high"
+  },
+  "restoration_benefit": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__cis.pdf",
+    "source_quote": "Other Benefits: a. Reinstatement of Basic SI (available to Basic SI of ₹ 6L and above)",
+    "_confidence": "high"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__cis.pdf",
+    "source_quote": "c. Domiciliary Hospitalisation e. Procedures requiring less than 24 hours of hospitalization (day care). f. AYUSH Treatment",
+    "_confidence": "high"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__cis.pdf",
+    "source_quote": "Good Health Incentive: a. Cumulative Bonus (CB) b. Preventive Health Check Up",
+    "_confidence": "high"
+  },
+  "critical_illness_cover": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__cis.pdf",
+    "source_quote": "Optional Covers: a. Pre-existing Diabetes / Hypertension b. Out-Patient Treatment c. Critical Illness",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__cis.pdf",
+    "source_quote": "Cashless Facility can be availed, if TPA service is opted",
+    "_confidence": "medium"
+  },
+  "no_claim_bonus_cap_pct": {
+    "value": null,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__cis.pdf",
+    "source_quote": "not stated in new-national-parivar__cis.pdf",
+    "_confidence": "low"
+  },
+  "tat_cashless_authorization_hours": {
+    "value": 1,
+    "unit": "hours",
+    "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__cis.pdf",
+    "source_quote": "pre-authorization letter within an hour to the Hospital after verification",
+    "_confidence": "medium"
+  },
+  "geographic_coverage": {
+    "value": "pan_india",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__cis.pdf",
+    "source_quote": "geographical limits of India",
+    "_confidence": "medium"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "family_floater",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__cis.pdf",
+    "source_quote": "Floater Sum Insured",
+    "_confidence": "medium"
+  },
+  "room_rent_capping": {
+    "value": "Up to 1% of SI per day or actual (lower)",
+    "unit": "text",
+    "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__cis.pdf",
+    "source_quote": "Room Rent - Up to 1% of SI or actual, whichever is lower Proportionate Deduction shall apply if opted for Room of higher category.",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_pct": {
+    "value": null,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/national-insurance/new-national-parivar__cis.pdf",
+    "source_quote": "not stated in new-national-parivar__cis.pdf",
+    "_confidence": "low"
   }
 }

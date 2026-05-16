@@ -2,138 +2,212 @@
   "policy_id": "indusind-general__health-gain__wordings",
   "policy_name": "IndusInd HealthGain Policy",
   "insurer_slug": "indusind-general",
-  "source_pdf_path": "rag/corpus/reliance-general/health-gain__wordings.pdf",
+  "source_pdf_path": "rag/corpus/indusind-general/health-gain__wordings.pdf",
   "uin_code": {
     "value": "INIHLIP26040V042526",
     "unit": null,
-    "source_pdf_path": "rag/corpus/reliance-general/health-gain__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_pdf_path": "rag/corpus/indusind-general/health-gain__wordings.pdf",
+    "source_quote": "IN No.: INIHLIP26040V042526",
+    "_confidence": "high"
   },
   "min_entry_age": {
-    "value": 18,
+    "value": null,
     "unit": "years",
-    "source_pdf_path": "rag/corpus/reliance-general/health-gain__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_pdf_path": "rag/corpus/indusind-general/health-gain__wordings.pdf",
+    "source_quote": "not stated in indusind-general__health-gain__wordings.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
-    "source_pdf_path": "rag/corpus/reliance-general/health-gain__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
-  },
-  "max_renewal_age": {
-    "value": 999,
-    "unit": "years",
-    "source_pdf_path": "rag/corpus/reliance-general/health-gain__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_pdf_path": "rag/corpus/indusind-general/health-gain__wordings.pdf",
+    "source_quote": "not stated in health-gain__wordings.pdf",
+    "_confidence": "low"
   },
   "min_child_entry_age": {
-    "value": 91,
+    "value": 90,
     "unit": "days",
-    "source_pdf_path": "rag/corpus/reliance-general/health-gain__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_pdf_path": "rag/corpus/indusind-general/health-gain__wordings.pdf",
+    "source_quote": "born during the Policy Period and is aged upto 90 days",
+    "_confidence": "high"
   },
   "sum_insured_options": {
-    "value": null,
+    "value": [
+      500000,
+      1000000,
+      1500000,
+      2000000,
+      2500000,
+      3000000,
+      5000000,
+      10000000,
+      30000000,
+      50000000
+    ],
     "unit": "INR",
-    "source_pdf_path": "rag/corpus/reliance-general/health-gain__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_pdf_path": "rag/corpus/indusind-general/health-gain__wordings.pdf",
+    "source_quote": "New Business Base Sum Insured (in lakhs) Plus: 5 Power: 10, 15, 20 Prime: 25, 30, 50, 100, 300, 500",
+    "_confidence": "high"
   },
   "grace_period": {
     "value": 30,
     "unit": "days",
-    "source_pdf_path": "rag/corpus/reliance-general/health-gain__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_pdf_path": "rag/corpus/indusind-general/health-gain__wordings.pdf",
+    "source_quote": "grace period for payment of the premium for all types of insurance policies shall be: fifteen days where premium payment mode is monthly and thirty days in all other cases",
+    "_confidence": "medium"
   },
   "free_look_period": {
     "value": 30,
     "unit": "days",
-    "source_pdf_path": "rag/corpus/reliance-general/health-gain__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_pdf_path": "rag/corpus/indusind-general/health-gain__wordings.pdf",
+    "source_quote": "sured Person shall be allowed free look period of thirty days from date of receipt of the policy document",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "unit": null,
-    "source_pdf_path": "rag/corpus/reliance-general/health-gain__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_pdf_path": "rag/corpus/indusind-general/health-gain__wordings.pdf",
+    "source_quote": "treatment of any illness within 30 days from the first policy commencement date shall be excluded",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 36,
     "unit": null,
-    "source_pdf_path": "rag/corpus/reliance-general/health-gain__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_pdf_path": "rag/corpus/indusind-general/health-gain__wordings.pdf",
+    "source_quote": "4.1.1. Pre-Existing Diseases (Code- Excl 01) i. Expenses related to the treatment of a Pre-existing Disease (PED) and its direct complications shall be excluded until the expiry of 36months of continuous coverage after the",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "unit": null,
-    "source_pdf_path": "rag/corpus/reliance-general/health-gain__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_pdf_path": "rag/corpus/indusind-general/health-gain__wordings.pdf",
+    "source_quote": "the treatment of the following listed conditions, surgeries/treatments shall be excluded until the expiry of 24 months of continuous coverage, as may b",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
-    "value": null,
+    "value": 24,
     "unit": null,
-    "source_pdf_path": "rag/corpus/reliance-general/health-gain__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_pdf_path": "rag/corpus/indusind-general/health-gain__wordings.pdf",
+    "source_quote": "This benefit shall become available only after the expiry of the waiting periods mentioned below: Policy Period 1 and 2 years Waiting Period* 24 months",
+    "_confidence": "medium"
   },
   "pre_hospitalization_days": {
-    "value": 60,
+    "value": null,
     "unit": null,
-    "source_pdf_path": "rag/corpus/reliance-general/health-gain__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_pdf_path": "rag/corpus/indusind-general/health-gain__wordings.pdf",
+    "source_quote": "not stated in indusind-general__health-gain__wordings.pdf",
+    "_confidence": "low"
   },
   "post_hospitalization_days": {
-    "value": 90,
+    "value": null,
     "unit": null,
-    "source_pdf_path": "rag/corpus/reliance-general/health-gain__wordings.pdf",
-    "source_quote": "extracted from PDF policy document by NIM DeepSeek-V4 (D-019); see source PDF for verbatim"
+    "source_pdf_path": "rag/corpus/indusind-general/health-gain__wordings.pdf",
+    "source_quote": "not stated in indusind-general__health-gain__wordings.pdf",
+    "_confidence": "low"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/reliance-general/health-gain__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 540,
+    "source_url": "https://www.indusind.bank.in/in/en/personal/insurance/indusInd-health-gain-insurance.html",
+    "source_note": "Per insurer baseline (IndusInd Health Gain covers all day-care up to SI; ~540 standard)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/indusind-general/health-gain__wordings.pdf"
   },
   "network_hospital_count": {
-    "value": null,
-    "unit": null,
-    "source_pdf_path": "rag/corpus/reliance-general/health-gain__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "value": 10000,
+    "source_url": "https://www.indusindinsurance.com/",
+    "source_note": "10,000+ Network Hospitals (homepage 'Find nearest hospital' section, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "co_payment_pct": {
     "value": null,
     "unit": "percent",
-    "source_pdf_path": "rag/corpus/reliance-general/health-gain__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_pdf_path": "rag/corpus/indusind-general/health-gain__wordings.pdf",
+    "source_quote": "not stated in health-gain__wordings.pdf",
+    "_confidence": "low"
   },
   "room_rent_capped_at_pct_of_si": {
     "value": null,
     "unit": "percent",
-    "source_pdf_path": "rag/corpus/reliance-general/health-gain__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_pdf_path": "rag/corpus/indusind-general/health-gain__wordings.pdf",
+    "source_quote": "not stated in health-gain__wordings.pdf",
+    "_confidence": "low"
   },
   "policy_term_options_years": {
     "value": null,
     "unit": "years",
-    "source_pdf_path": "rag/corpus/reliance-general/health-gain__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_pdf_path": "rag/corpus/indusind-general/health-gain__wordings.pdf",
+    "source_quote": "not stated in indusind-general__health-gain__wordings.pdf",
+    "_confidence": "low"
   },
   "claim_settlement_ratio_pct": {
     "value": null,
     "unit": "percent",
-    "source_pdf_path": "rag/corpus/reliance-general/health-gain__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_pdf_path": "rag/corpus/indusind-general/health-gain__wordings.pdf",
+    "source_quote": "not stated in health-gain__wordings.pdf",
+    "_confidence": "low"
   },
   "incurred_claim_ratio_pct": {
     "value": null,
     "unit": "percent",
-    "source_pdf_path": "rag/corpus/reliance-general/health-gain__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_pdf_path": "rag/corpus/indusind-general/health-gain__wordings.pdf",
+    "source_quote": "not stated in health-gain__wordings.pdf",
+    "_confidence": "low"
   },
   "complaint_per_10k_claims": {
     "value": null,
     "unit": null,
-    "source_pdf_path": "rag/corpus/reliance-general/health-gain__wordings.pdf",
-    "source_quote": "not extracted from this PDF (field absent or LLM unable to infer)"
+    "source_pdf_path": "rag/corpus/indusind-general/health-gain__wordings.pdf",
+    "source_quote": "not stated in health-gain__wordings.pdf",
+    "_confidence": "low"
   },
-  "legacy_issuer": "Reliance General Insurance"
+  "legacy_issuer": "Reliance General Insurance",
+  "ayush_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/indusind-general/health-gain__wordings.pdf",
+    "source_quote": "If the Insured Person is diagnosed with any Illness or suffers any Injury that requires Hospitalization, (including Hospitalization under AYUSH Treatment), during the Policy Period, then the Company shall pay Medical Expenses incurred by the Policyholder/Insured",
+    "_confidence": "high"
+  },
+  "maternity_coverage": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/indusind-general/health-gain__wordings.pdf",
+    "source_quote": "Maternity Expenses means i. Medical Treatment Expenses traceable to childbirth (including complicated deliveries and caesarean sections incurred during hospitalization)",
+    "_confidence": "medium"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/indusind-general/health-gain__wordings.pdf",
+    "source_quote": "Domiciliary Hospitalization means medical treatment for an illness/disease/injury which in the normal course would require care and treatment at a hospital but is actually taken while confined at",
+    "_confidence": "high"
+  },
+  "cashless_treatment_supported": {
+    "value": true,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/indusind-general/health-gain__wordings.pdf",
+    "source_quote": "Cashless Facility means a facility extended by the Company to the Insured where the payments, of the costs of treatment undergone by the Insured in accordance with the Policy Terms and Conditions, are directly ma",
+    "_confidence": "high"
+  },
+  "geographic_coverage": {
+    "value": "pan_india",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/indusind-general/health-gain__wordings.pdf",
+    "source_quote": "the Insured(s) travels outside India during the Policy Year, they may choose to pause this Policy",
+    "_confidence": "medium"
+  },
+  "policy_type_indemnity_or_fixed": {
+    "value": "individual",
+    "unit": "enum",
+    "source_pdf_path": "rag/corpus/indusind-general/health-gain__wordings.pdf",
+    "source_quote": "in respect of that Insured Person (on Individual basis) or all Insured Persons (on Floater basis) during the Policy Year",
+    "_confidence": "medium"
+  },
+  "room_rent_capping": {
+    "value": null,
+    "unit": "text",
+    "source_pdf_path": "rag/corpus/indusind-general/health-gain__wordings.pdf",
+    "source_quote": "not stated in indusind-general__health-gain__wordings.pdf",
+    "_confidence": "low"
+  }
 }

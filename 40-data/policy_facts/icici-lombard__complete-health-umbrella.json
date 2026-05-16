@@ -11,18 +11,15 @@
     "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
-    "source_quote": "Min entry age not found"
+    "source_quote": "not stated in icici-lombard__complete-health-umbrella.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
-    "source_quote": "Max entry age not explicitly stated; check Policy Schedule"
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
-    "source_quote": "Max renewal age not specified; check Policy Schedule"
+    "source_quote": "not stated in icici-lombard__complete-health-umbrella.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
     "value": [
@@ -51,22 +48,27 @@
   "maternity_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
-    "source_quote": "Maternity waiting not specified or maternity excluded"
+    "source_quote": "not stated in icici-lombard__complete-health-umbrella.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": null,
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
-    "source_quote": "Pre-hospitalization days not extracted"
+    "source_quote": "not stated in icici-lombard__complete-health-umbrella.pdf",
+    "_confidence": "low"
   },
   "post_hospitalization_days": {
     "value": null,
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
-    "source_quote": "Post-hospitalization days not extracted"
+    "source_quote": "not stated in icici-lombard__complete-health-umbrella.pdf",
+    "_confidence": "low"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
-    "source_quote": "Day-care count not enumerated; covered per policy definition"
+    "value": 150,
+    "source_url": "https://www.icicilombard.com/docs/default-source/downloads/complete-health-insurance-brochure.pdf",
+    "source_note": "Per insurer baseline (ICICI Lombard Complete Health iHealth Annexure I; 150 procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf"
   },
   "ayush_coverage": {
     "value": true,
@@ -111,12 +113,14 @@
   "deductible_amount": {
     "value": null,
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
-    "source_quote": "No base deductible (or only optional voluntary deductible add-on)"
+    "source_quote": "not stated in icici-lombard__complete-health-umbrella.pdf",
+    "_confidence": "low"
   },
   "network_hospital_count": {
-    "value": null,
-    "source_url": null,
-    "source_quote": "Insurer-level metric; not extracted in this curation pass"
+    "value": 6500,
+    "source_url": "https://www.bankbazaar.com/health-insurance/icici-health-insurance.html",
+    "source_note": "ICICI Lombard: 6,500+ network hospitals (BankBazaar aggregator citing ICICI Lombard; insurer page returns 403 to scrapers). Higher figures (~10,600) circulate but not directly verifiable; used conservative count. Scraped 2026-05-15.",
+    "_confidence": "medium"
   },
   "cashless_treatment_supported": {
     "value": true,
@@ -126,23 +130,27 @@
   "claim_settlement_ratio": {
     "value": null,
     "source_url": null,
-    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted"
+    "source_quote": "not stated in icici-lombard__complete-health-umbrella.pdf",
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
-    "value": null,
-    "source_pdf_path": null,
-    "source_quote": "TAT not specified in policy wording; governed by IRDAI Master Circular"
+    "value": 4,
+    "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
+    "source_quote": "mplete set of documents & information, We will respond within 4 hours (within 2 hours for Covid-19 in-patient claims) of the actu",
+    "_confidence": "high"
   },
   "policy_type": {
     "value": "hospital-cash",
     "source_pdf_path": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
-    "source_quote": "Hospital cash / daily benefit policy"
+    "source_quote": "hospital cash policies , which will apply before any benefits are payable by the insurer . A deductible does not reduce the sum insured. Dental treatment means a treatment related to teeth or structures supporting teeth"
   },
   "_meta": {
     "curated_at": "2026-05-14",
     "primary_source_pdf": "rag/corpus/icici-lombard/complete-health-insurance-umbrella__wordings.pdf",
     "supporting_source_pdfs": [],
     "completeness_pct": 75,
-    "notes": "Pattern-based extraction from local PDF via pdfplumber. Insurer-level metrics (CSR, network count) left null pending downstream backfill."
+    "notes": "Pattern-based extraction from local PDF via pdfplumber. Insurer-level metrics (CSR, network count) left null pending downstream backfill.",
+    "network_hospital_backfill_2026-05-15": "icici-lombard insurer-wide count backfilled in targeted scrape pass"
   }
 }

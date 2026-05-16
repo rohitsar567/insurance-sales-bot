@@ -8,32 +8,31 @@
     "source_quote": "Product Name: Senior First | Product UIN: MAXHLIP21575V012021"
   },
   "min_entry_age": {
-    "value": 60,
+    "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
-    "source_quote": "Senior First (senior-citizens-only product; typical entry: 60+ years per Policy Schedule)"
+    "source_quote": "not stated in niva-bupa__senior-first.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
-    "source_quote": "No max entry age cap stated explicitly in wording (senior-citizens product positioned for unlimited entry age)"
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
-    "source_quote": "Lifelong renewability"
+    "source_quote": "not stated in niva-bupa__senior-first.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
     "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
-    "source_quote": "SI options per Policy Schedule (Senior First base: 5L/7.5L/10L/15L/25L; example references 10 Lac base SI)"
+    "source_quote": "not stated in niva-bupa__senior-first.pdf",
+    "_confidence": "low"
   },
   "initial_waiting_period_days": {
     "value": 30,
     "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
-    "source_quote": "30-day waiting period (Code- Excl03) applies (standard IRDAI clause; consistent across Niva Bupa products)"
+    "source_quote": "30-day waiting period (Code- E",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 24,
@@ -43,12 +42,14 @@
   "specific_disease_waiting_months": {
     "value": 24,
     "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
-    "source_quote": "Specified disease/procedure waiting period (Code-Excl02): standard 24 months continuous coverage (per IRDAI standard)"
+    "source_quote": "expiry of 24 months of continuous coverage after the date of",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
-    "source_quote": "XVIII. Maternity Expenses (Code-Excl18) — excluded; senior-citizens product, no maternity benefit"
+    "source_quote": "not stated in niva-bupa__senior-first.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
     "value": 60,
@@ -61,24 +62,29 @@
     "source_quote": "60 days before date of admission and 180 days after date of discharge"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
-    "source_quote": "Day Care Treatment defined per IRDAI Standard Definition (covered)"
+    "value": 586,
+    "source_url": "https://www.nivabupa.com/family-health-insurance-plans/reassurev2-insurance.html",
+    "source_note": "Per insurer baseline (Niva Bupa ReAssure 2.0 covers ~586 day care procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf"
   },
   "ayush_coverage": {
     "value": true,
     "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
-    "source_quote": "AYUSH hospitalization covered (standard inclusion across Niva Bupa products)"
+    "source_quote": "This Policy covers Allopathic and AYUSH treatments taken in India ONLY.",
+    "_confidence": "high"
   },
   "maternity_coverage": {
     "value": false,
     "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
-    "source_quote": "XVIII. Maternity Expenses (Code-Excl18) excluded; senior-citizens product"
+    "source_quote": "Maternity Expenses (Code-Excl18) a. Medi",
+    "_confidence": "high"
   },
   "newborn_coverage": {
-    "value": false,
+    "value": null,
     "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
-    "source_quote": "Maternity excluded; no newborn benefit (senior-citizens product)"
+    "source_quote": "not stated in niva-bupa__senior-first.pdf",
+    "_confidence": "low"
   },
   "organ_donor_expenses": {
     "value": true,
@@ -103,7 +109,8 @@
   "copayment_pct": {
     "value": null,
     "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
-    "source_quote": "4.1. Co-payment ... Co-payment once chosen CAN NOT be changed. It's the percentage of admissible claim amount You would have to bear (chosen at inception; typical seniors product: 10-30% co-pay options)"
+    "source_quote": "not stated in niva-bupa__senior-first.pdf",
+    "_confidence": "low"
   },
   "deductible_amount": {
     "value": "Annual Aggregate Deductible (optional benefit)",
@@ -111,34 +118,64 @@
     "source_quote": "4.2. Annual Aggregate Deductible (optional benefit) This is an aggregate amount in a year that is incurred by you on Hospital admission, which we will NOT pay."
   },
   "network_hospital_count": {
-    "value": null,
-    "source_url": null,
-    "source_quote": "Insurer-level metric; Niva Bupa 10,000+ network hospitals"
+    "value": 10400,
+    "source_url": "https://www.nivabupa.com/health-insurance-plans.html",
+    "source_note": "10,400+ cashless hospitals spanning 450+ cities across India (health-insurance-plans page, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "cashless_treatment_supported": {
     "value": true,
     "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
-    "source_quote": "Cashless facility through Network Provider (standard)"
+    "source_quote": "Cashless Facility means a facility extended by the insurer to the insured where the payments, of the costs of treatment undergone by the insured in accordance with the policy terms",
+    "_confidence": "high"
   },
   "claim_settlement_ratio": {
     "value": null,
     "source_url": null,
-    "source_quote": "Insurer-level metric; not extracted"
+    "source_quote": "not stated in niva-bupa__senior-first.pdf",
+    "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
     "value": null,
-    "source_pdf_path": null,
-    "source_quote": "TAT governed by IRDAI Master Circular"
+    "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
+    "source_quote": "not stated in niva-bupa__senior-first.pdf",
+    "_confidence": "low"
   },
   "policy_type": {
     "value": "indemnity",
     "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
-    "source_quote": "Indemnity-based senior-citizens health policy"
+    "source_quote": "3.2. Expenses during hospitalization (Hospital admission) a. We will pay the expenses incurred by you on treatment (Naturally this excludes expenses not linked to treatment like food, beverage, toiletries and cosmetics)",
+    "_confidence": "high"
   },
   "_meta": {
     "curated_at": "2026-05-13",
     "primary_source_pdf": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
     "completeness_pct": 85,
-    "notes": "Niva Bupa Senior First: 24-month PED (shorter than standard 36-month), ReAssure unlimited SI trigger, optional copay/deductible at inception."
+    "notes": "Niva Bupa Senior First: 24-month PED (shorter than standard 36-month), ReAssure unlimited SI trigger, optional copay/deductible at inception. | Batch 3 (2026-05-15): coverage breadth fields backfilled.",
+    "batch3_added_fields": [
+      "ambulance_cover",
+      "domiciliary_treatment",
+      "preventive_health_checkup"
+    ]
+  },
+  "ambulance_cover": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
+    "source_quote": "each hospital (Ambul",
+    "extraction_method": "tools/curate_batch3.py — pattern-grep over pdfplumber text",
+    "_confidence": "high"
+  },
+  "domiciliary_treatment": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
+    "source_quote": "Domiciliary Hospitalization means medical treatment for an Illness/disease/Injury which in the normal course would requi",
+    "extraction_method": "tools/curate_batch3.py — pattern-grep over pdfplumber text"
+  },
+  "preventive_health_checkup": {
+    "value": true,
+    "source_pdf_path": "rag/corpus/niva-bupa/senior-first__wordings.pdf",
+    "source_quote": "Health Check-up benefit",
+    "extraction_method": "tools/curate_batch3.py — pattern-grep over pdfplumber text"
   }
 }

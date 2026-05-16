@@ -1,0 +1,18 @@
+{
+  "insurer_slug": "iffco-tokio",
+  "insurer_name": "IFFCO Tokio General Insurance",
+  "last_updated": "2026-05-15",
+  "claim_metrics": {
+    "claim_settlement_ratio_pct": 96.33,
+    "claim_settlement_ratio_year": "FY 2023-24",
+    "complaints_per_10k_policies": 41,
+    "complaints_year": "FY 2024-25",
+    "incurred_claim_ratio_pct": 86.33,
+    "three_year_avg_csr_pct": null,
+    "source_irdai_url": "https://irdai.gov.in/document-detail",
+    "source_secondary_url": "https://www.policyx.com/health-insurance/iffco-tokio-health-insurance/claim-settlement-ratio/",
+    "source_complaints_url": "https://algatesinsurance.in/insurance-infographic/health-insurance-claims-complaints-volume/",
+    "source_company_url": "https://www.iffcotokio.co.in/content/dam/iffcotokio/iffco-pdf/public-disclosure-march-2024.pdf",
+    "notes": "IFFCO Tokio CSR 96.33% per IRDAI 2023-24 (PolicyX). Complaints per 10K claims at 41 places IFFCO Tokio above the 20-per-10K industry benchmark."
+  }
+}

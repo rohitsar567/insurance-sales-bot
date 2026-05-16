@@ -8,49 +8,60 @@
     "source_quote": "UIN: BAJHLIP21185V032021"
   },
   "min_entry_age": {
-    "value": null,
+    "value": 3,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "Insured means the persons, or his Family members, named in the Schedule provided that an Insured or his Family Members has attained the age of 3 months and is not older than 65 years of age at the commencement of the Policy Period.",
+    "_confidence": "high"
   },
   "max_entry_age": {
-    "value": null,
+    "value": 65,
+    "unit": "years",
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
-    "source_quote": ""
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "Insured means the persons, or his Family members, named in the Schedule provided that an Insured or his Family Members has attained the age of 3 months and is not older than 65 years of age at the commencement of the Policy Period.",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 36,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
-    "source_quote": "pre-existing Disease (PED) and its direct complications shall be excluded until the expiry of 36 months"
+    "source_quote": "36 months of continuous coverage after the date of inception of the first Health Guard Policy with us. b) In case of enhancement of Sum Insured the exclusion shall apply afresh",
+    "_confidence": "high"
   },
   "initial_waiting_period_days": {
-    "value": null,
+    "value": 30,
+    "unit": "days",
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "Expenses related to the treatment of any illness within 30 days from the first Policy commencement date shall be excluded except claims arising",
+    "_confidence": "high"
   },
   "maternity_coverage": {
-    "value": null,
+    "value": true,
+    "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "Maternity Expenses We will pay the Medical Expenses for the delivery of a baby (including caesarean section) and/or expenses related to medically recommended and lawful termination of pregnancy, limited to maximum 2 deliveries or termination(s) or either",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
-    "value": null,
+    "value": 72,
+    "unit": "months",
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "Waiting period of 72 months from the date of issuance of the first policy with us, provided that the policy has been renewed continuously renewed with us without break for you.",
+    "_confidence": "high"
   },
   "ayush_coverage": {
-    "value": null,
+    "value": true,
+    "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "Ayurvedic and Homeopathic treatment:  Room rent, boarding expenses  Nursing care  Consultation fees  Medicines, drugs and consumables,  Ayurvedic and Homeopathic treatment procedures",
+    "_confidence": "high"
   },
   "cashless_treatment_supported": {
     "value": true,
+    "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
-    "source_quote": "cashless treatment"
+    "source_quote": "Cashless facility \"Cashless facility” means a facility extended by the insurer to the insured where the payments, of the costs of treatment undergone by the insured in accordance",
+    "_confidence": "high"
   },
   "copayment_pct": {
     "value": 10,
@@ -63,14 +74,17 @@
     "source_quote": "Cumulative Bonus (if any) is exhausted due to claims lodged during the Policy year,\nthen it is agreed that 100%"
   },
   "restoration_benefit": {
-    "value": null,
+    "value": "100% Sum Insured reinstatement once Inpatient Hospitalization Treatment Sum Insured and Cumulative Bonus are exhausted (Sum Insured Reinstatement Benefit)",
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "9. Sum Insured Reinstatement Benefit: If Section A1 Inpatient Hospitalization Treatment Sum Insured and Cumulative Bonus (if any) is exhausted due to claims lodged during the Policy year, then it is agreed that 100% of the Sum Insured specified under Inpatient Hospitalization Treatment be reinstated",
+    "_confidence": "high"
   },
   "room_rent_capping": {
-    "value": null,
+    "value": "No cap",
+    "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "Room, Boarding and Nursing Expenses as provided by the Hospital/Nursing Home without any sublimit. ii) If admitted in ICU, we will pay up to actual expenses provided by Hospital.",
+    "_confidence": "high"
   },
   "pre_hospitalization_days": {
     "value": 60,
@@ -83,39 +97,46 @@
     "source_quote": "Post-Hospitalisation\nThe Medical Expenses incurred during the 90 days"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
-    "source_quote": ""
+    "value": 130,
+    "source_url": "https://www.bajajgeneralinsurance.com/health-insurance-plans/health-guard.html",
+    "source_note": "Per insurer baseline (Bajaj Allianz Health Guard covers ~130 day care procedures)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf"
   },
   "network_hospital_count": {
-    "value": 3300,
-    "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
-    "source_quote": "3300+ Network hospitals"
+    "value": 18400,
+    "source_url": "https://www.bajajgeneralinsurance.com/",
+    "source_note": "18,400+ Cashless Hospitals (homepage, scraped 2026-05-15)",
+    "_confidence": "high"
   },
   "sum_insured_options": {
     "value": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in bajaj-allianz__health-guard-gold-individual__wordings.pdf",
+    "_confidence": "low"
   },
   "claim_settlement_ratio": {
     "value": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in bajaj-allianz__health-guard-gold-individual__wordings.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
     "value": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
-    "source_quote": ""
+    "source_quote": "not stated in bajaj-allianz__health-guard-gold-individual__wordings.pdf",
+    "_confidence": "low"
   },
   "policy_type": {
-    "value": "group",
+    "value": "family_floater",
     "source_pdf_path": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
-    "source_quote": "classified as group from PDF heuristics"
+    "source_quote": "Health Guard -Gold Plan Policy Wordings Preamble Our agreement to insure You is based on Your Proposal to Us, which is the basis of this agreement, and Your payment of the premium. This Policy records the entire agreement between Us and set",
+    "_confidence": "medium"
   },
   "_meta": {
     "curated_at": "2026-05-14",
     "primary_source_pdf": "rag/corpus/bajaj-allianz/health-guard-gold-individual__wordings.pdf",
     "completeness_pct": 41,
-    "notes": "Curated by tools/curate_remaining.py \u2014 pattern-based extraction from local PDF"
+    "notes": "Curated by tools/curate_remaining.py — pattern-based extraction from local PDF"
   }
 }

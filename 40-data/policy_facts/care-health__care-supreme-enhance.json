@@ -5,30 +5,28 @@
   "uin_code": {
     "value": "CHIHLIP25036V012425",
     "source_pdf_path": "rag/corpus/care-health/care-supreme-enhance__wordings.pdf",
-    "source_quote": "(s) on SUPREME ENHANCE - UIN: CHIHLIP25036V012425 4 1 day care basis without in-patient services and 2.1.11. Day Care Centre means any institution must comply with all the following criterion: establi"
+    "source_quote": "CHIHLIP25036V012425 1 2. DEFINITIONS 2.1. Standard Definitions: 2.1.1. Accidental /"
   },
   "min_entry_age": {
     "value": null,
     "unit": "days",
     "source_pdf_path": "rag/corpus/care-health/care-supreme-enhance__wordings.pdf",
-    "source_quote": "Min entry age not found"
+    "source_quote": "not stated in care-health__care-supreme-enhance.pdf",
+    "_confidence": "low"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/care-health/care-supreme-enhance__wordings.pdf",
-    "source_quote": "Max entry age not explicitly stated; check Policy Schedule"
-  },
-  "max_renewal_age": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/care-health/care-supreme-enhance__wordings.pdf",
-    "source_quote": "Max renewal age not specified; check Policy Schedule"
+    "source_quote": "not stated in care-health__care-supreme-enhance.pdf",
+    "_confidence": "low"
   },
   "sum_insured_options": {
     "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/care-health/care-supreme-enhance__wordings.pdf",
-    "source_quote": "Sum Insured options not enumerated in extracted text; check Policy Schedule"
+    "source_quote": "not stated in care-health__care-supreme-enhance.pdf",
+    "_confidence": "low"
   },
   "initial_waiting_period_days": {
     "value": 30,
@@ -36,44 +34,54 @@
     "source_quote": "rion: please inform us within 30 days from the date of receipt of the policy, failing which the details relating to the person/s covered i. Having at least 5 in-patient beds; would be taken as correct"
   },
   "pre_existing_disease_waiting_months": {
-    "value": null,
+    "value": 24,
     "source_pdf_path": "rag/corpus/care-health/care-supreme-enhance__wordings.pdf",
-    "source_quote": "PED waiting period not extracted; check Section 5 / Excl01"
+    "source_quote": "treatments shall be excluded until the expiry of 24 months of continuous coverage, as may be the case after the date of inception of the first policy with the Company. This exclusion shall not be applicable f",
+    "_confidence": "high"
   },
   "specific_disease_waiting_months": {
     "value": 24,
     "source_pdf_path": "rag/corpus/care-health/care-supreme-enhance__wordings.pdf",
-    "source_quote": "Default IRDAI 24-month specific-disease waiting (not explicitly quoted)"
+    "source_quote": "Named Ailment Waiting Period: Code- Excl02 a. Expenses related to the treatment of the listed Conditions, surgeries/ treatments shall be excluded until the expiry of 24 months of continuous coverage, as may be the case after the date of inception of the first policy with the Company."
   },
   "maternity_waiting_months": {
     "value": null,
     "source_pdf_path": "rag/corpus/care-health/care-supreme-enhance__wordings.pdf",
-    "source_quote": "Maternity waiting not specified or maternity excluded"
+    "source_quote": "not stated in care-health__care-supreme-enhance.pdf",
+    "_confidence": "low"
   },
   "pre_hospitalization_days": {
-    "value": null,
+    "value": 60,
     "source_pdf_path": "rag/corpus/care-health/care-supreme-enhance__wordings.pdf",
-    "source_quote": "Pre-hospitalization days not extracted"
+    "source_quote": "the conditions specified below: (i) For a period of 60 days immediately prior to the Insured Person's date of admission to the Hospital, provided that the Company shall not be lia",
+    "_confidence": "high"
   },
   "post_hospitalization_days": {
-    "value": null,
+    "value": 90,
     "source_pdf_path": "rag/corpus/care-health/care-supreme-enhance__wordings.pdf",
-    "source_quote": "Post-hospitalization days not extracted"
+    "source_quote": "o the conditions specified below: i) For a period of 90 days immediately after the Insured Person's date of discharge from the hospital and claim documents to be submitted wit",
+    "_confidence": "high"
   },
   "day_care_treatments_count": {
-    "value": null,
-    "source_pdf_path": "rag/corpus/care-health/care-supreme-enhance__wordings.pdf",
-    "source_quote": "Day-care count not enumerated; covered per policy definition"
+    "value": 541,
+    "source_url": "https://www.careinsurance.com/product/care-senior",
+    "source_note": "Per insurer baseline (Care Health publishes 541+ day care treatments across plans)",
+    "_confidence": "medium",
+    "source_pdf_path": "rag/corpus/care-health/care-supreme-enhance__wordings.pdf"
   },
   "ayush_coverage": {
     "value": true,
+    "unit": null,
     "source_pdf_path": "rag/corpus/care-health/care-supreme-enhance__wordings.pdf",
-    "source_quote": "e Provisions of Indian 2.1.2. AYUSH Hospital is a healthcare facility Contract Act, 1872, shall hold good in this regard. The references wherein medical/surgical/para-surgical to the singular include "
+    "source_quote": "AYUSH Hospital is a healthcare facility wherein medical/surgical/para-surgical treatment procedures and interventions are carried out by AYUSH Medical Practitioner",
+    "_confidence": "high"
   },
   "maternity_coverage": {
-    "value": false,
+    "value": true,
+    "unit": null,
     "source_pdf_path": "rag/corpus/care-health/care-supreme-enhance__wordings.pdf",
-    "source_quote": "tment in 15. Maternity: (Code Excl18) any hospital or by any Medical Practitioner or any other provider specifically excluded a. Medical treatment expenses traceable to by the Insurer and disclosed"
+    "source_quote": "Maternity expenses shall include- a. Medical treatment expenses traceable to childbirth (including complicated deliveries and caesarean sections incurred during hospitalization)",
+    "_confidence": "medium"
   },
   "newborn_coverage": {
     "value": true,
@@ -86,60 +94,74 @@
     "source_quote": "Organ Donor Cover, available as twin sharing rooms in that Hospital Optional Benefits: Daily Cash Allowance, Air Ambulance Cover in the event giving rise to a Claim under Benefit “In- patient Care” sh"
   },
   "no_claim_bonus_pct": {
-    "value": null,
+    "value": 10,
     "source_pdf_path": "rag/corpus/care-health/care-supreme-enhance__wordings.pdf",
-    "source_quote": "NCB % not extracted; product may use booster/recharge structure"
+    "source_quote": "of each Policy Year, the Company will enhance the Sum Insured by 10% flat, on a cumulative basis, as a Cumulative Bonus for each completed and continuous Policy Year, and subjec",
+    "_confidence": "high"
   },
   "restoration_benefit": {
-    "value": "restore him to the position in which he was in, Policy Schedule against that benefit for that Insured",
+    "value": null,
     "source_pdf_path": "rag/corpus/care-health/care-supreme-enhance__wordings.pdf",
-    "source_quote": "restore him to the position in which he was in, Policy Schedule against that benefit for that Insured"
+    "source_quote": "not stated in care-health__care-supreme-enhance.pdf",
+    "_confidence": "low"
   },
   "room_rent_capping": {
-    "value": "Single Private AC Room means an air",
+    "value": "No limit",
+    "unit": null,
     "source_pdf_path": "rag/corpus/care-health/care-supreme-enhance__wordings.pdf",
-    "source_quote": "Single Private AC Room means an air"
+    "source_quote": "No limit on Room Rent/ICU charges applicable under this benefit provided the charges are reasonable and customary",
+    "_confidence": "high"
   },
   "copayment_pct": {
-    "value": 0,
+    "value": null,
     "source_pdf_path": "rag/corpus/care-health/care-supreme-enhance__wordings.pdf",
-    "source_quote": "No mandatory copay extracted; product may have age-based or zone-based optional copay"
+    "source_quote": "not stated in care-health__care-supreme-enhance.pdf",
+    "_confidence": "low"
   },
   "deductible_amount": {
     "value": null,
     "source_pdf_path": "rag/corpus/care-health/care-supreme-enhance__wordings.pdf",
-    "source_quote": "No base deductible (or only optional voluntary deductible add-on)"
+    "source_quote": "not stated in care-health__care-supreme-enhance.pdf",
+    "_confidence": "low"
   },
   "network_hospital_count": {
-    "value": null,
-    "source_url": null,
-    "source_quote": "Insurer-level metric; not extracted in this curation pass"
+    "value": 11600,
+    "source_url": "https://www.careinsurance.com/health-plan-network-hospitals.html",
+    "source_note": "Care Health Insurance: 22,100+ healthcare providers including 11,600+ network hospitals (insurer network-hospitals page; corroborated by Google snippet of careinsurance.com, scraped 2026-05-15). Conservative count uses hospital-specific subset, not the wider healthcare-provider count.",
+    "_confidence": "medium"
   },
   "cashless_treatment_supported": {
     "value": true,
+    "unit": null,
     "source_pdf_path": "rag/corpus/care-health/care-supreme-enhance__wordings.pdf",
-    "source_quote": "secutive hours because 2.1.6. Cashless Facility means a facility extended by of technological advancement, and the insurer to the Insured where the payments, of b. which would have otherwise required "
+    "source_quote": "Cashless Facility means a facility extended by the insurer to the Insured where the payments, of the costs of treatment undergone by the insured in accordance with the Policy terms and conditions, are directly made to the",
+    "_confidence": "high"
   },
   "claim_settlement_ratio": {
     "value": null,
     "source_url": null,
-    "source_quote": "Insurer-level metric (IRDAI Annual Report); not extracted"
+    "source_quote": "not stated in care-health__care-supreme-enhance.pdf",
+    "source_pdf_path": "rag/corpus/care-health/care-supreme-enhance__wordings.pdf",
+    "_confidence": "low"
   },
   "tat_cashless_authorization_hours": {
     "value": null,
-    "source_pdf_path": null,
-    "source_quote": "TAT not specified in policy wording; governed by IRDAI Master Circular"
+    "source_pdf_path": "rag/corpus/care-health/care-supreme-enhance__wordings.pdf",
+    "source_quote": "not stated in care-health__care-supreme-enhance.pdf",
+    "_confidence": "low"
   },
   "policy_type": {
-    "value": "top-up",
+    "value": null,
     "source_pdf_path": "rag/corpus/care-health/care-supreme-enhance__wordings.pdf",
-    "source_quote": "Top-up / super top-up policy (per product name)"
+    "source_quote": "not stated in care-health__care-supreme-enhance.pdf",
+    "_confidence": "low"
   },
   "_meta": {
     "curated_at": "2026-05-14",
     "primary_source_pdf": "rag/corpus/care-health/care-supreme-enhance__wordings.pdf",
     "supporting_source_pdfs": [],
     "completeness_pct": 60,
-    "notes": "Pattern-based extraction from local PDF via pdfplumber. Insurer-level metrics (CSR, network count) left null pending downstream backfill."
+    "notes": "Pattern-based extraction from local PDF via pdfplumber. Insurer-level metrics (CSR, network count) left null pending downstream backfill.",
+    "network_hospital_backfill_2026-05-15": "care-health insurer-wide count backfilled in targeted scrape pass"
   }
 }
