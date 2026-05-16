@@ -24,10 +24,11 @@ from pathlib import Path
 from typing import Iterator
 
 import requests
+from backend.config import settings
 
 ROOT = Path(__file__).resolve().parent.parent
 CORPUS_DIR = ROOT / "rag" / "corpus"
-URL_FILE = ROOT / "40-data" / "corpus_urls.md"
+URL_FILE = settings.DATA_DIR / "corpus_urls.md"
 MANIFEST_FILE = CORPUS_DIR / "_manifest.json"
 
 # Generous headers — some insurer CDNs reject default Python UA

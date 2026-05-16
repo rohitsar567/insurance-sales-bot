@@ -1,7 +1,7 @@
 {
   "insurer_slug": "care-health",
   "insurer_name": "Care Health Insurance",
-  "last_updated": "2026-05-13",
+  "last_updated": "2026-05-16",
   "claim_metrics": {
     "claim_settlement_ratio_pct": 93.13,
     "claim_settlement_ratio_year": "2023-24 (3-year avg)",
@@ -9,7 +9,7 @@
     "complaints_year": "2023-24",
     "claims_rejected_fy24": 76903,
     "incurred_claim_ratio_pct": 57.69,
-    "source_irdai_url": "https://irdai.gov.in/document-detail",
+    "source_irdai_url": "https://irdai.gov.in/document-detail?documentId=6436847",
     "source_secondary_url": "https://www.policyx.com/health-insurance/religare-health-insurance/claim-settlement-ratio/",
     "source_company_url": "https://www.careinsurance.com/health-insurance/health-insurance-claim-settlement-ratio"
   },
@@ -30,12 +30,6 @@
       "review_count": null,
       "url": "https://joinditto.in/articles/health-insurance/care-health-insurance-review/"
     }
-  },
-  "trustpilot": {
-    "score": null,
-    "review_count": null,
-    "url": null,
-    "note": "Care Health Insurance (Religare) does not have an established Trustpilot review profile - Indian standalone health insurers typically have very thin / non-existent Trustpilot footprints. Customer review traffic concentrates on Policybazaar, InsuranceDekho, MouthShut instead."
   },
   "reddit_sentiment": {
     "subreddit": "IndianFinance / IndiaInvestments",
@@ -149,7 +143,6 @@
     "computation_notes": "0.40*93.13 + 0.20*(100-42*2) + 0.15*(4.2*20) + 0.10*60 + 0.10*90 + 0.05*33 = 37.3 + 3.2 + 12.6 + 6 + 9 + 1.65 = 69.75 ~= 70.4"
   },
   "_data_gaps": {
-    "trustpilot": "No established Trustpilot profile for Care Health Insurance (Religare) - documented",
     "policybazaar_review_count": "Not exposed publicly",
     "insuredekho_review_count": "Not exposed publicly",
     "reddit_sample_post_urls": "Google site:reddit.com queries do not return r/IndianFinance permalinks; community discussion proxies used instead (Quora, Ditto, IndiaInvestments wiki)"
@@ -162,10 +155,9 @@
     ],
     "couldnt_find": [
       "Direct r/IndianFinance / r/IndiaInvestments thread URLs for Care Health",
-      "Trustpilot profile (likely does not exist; documented)",
       "Aggregator review counts"
     ],
-    "added_this_pass": "3 new YouTube URLs (Ditto Care Updated 2025, Ditto Care Freedom diabetes, PolicyX detailed); 2 new news URLs (15K hospitals suspension MedBound + BS GST commission cut + H1 FY26 Unlisted Zone); 1 Reddit-proxy (Quora opinion thread); documented Trustpilot absence explicitly"
+    "added_this_pass": "3 new YouTube URLs (Ditto Care Updated 2025, Ditto Care Freedom diabetes, PolicyX detailed); 2 new news URLs (15K hospitals suspension MedBound + BS GST commission cut + H1 FY26 Unlisted Zone); 1 Reddit-proxy (Quora opinion thread)"
   },
   "_url_verification": {
     "verified_at": "2026-05-13T00:26:25Z",

@@ -1,14 +1,14 @@
 {
   "insurer_slug": "manipalcigna",
   "insurer_name": "ManipalCigna Health Insurance",
-  "last_updated": "2026-05-13",
+  "last_updated": "2026-05-16",
   "claim_metrics": {
     "claim_settlement_ratio_pct": 99.0,
     "claim_settlement_ratio_year": "2023-24",
     "complaints_per_10k_policies": 24,
     "complaints_year": "2023-24",
     "incurred_claim_ratio_pct": 74.81,
-    "source_irdai_url": "https://irdai.gov.in/document-detail",
+    "source_irdai_url": "https://irdai.gov.in/document-detail?documentId=6436847",
     "source_secondary_url": "https://www.policyx.com/health-insurance/manipalcigna-health-insurance/claim-settlement-ratio/",
     "source_company_url": "https://www.manipalcigna.com/blog/claim-settlement-ratio"
   },
@@ -29,12 +29,6 @@
       "review_count": null,
       "url": "https://joinditto.in/articles/health-insurance/manipal-cigna-health-insurance-review/"
     }
-  },
-  "trustpilot": {
-    "score": null,
-    "review_count": null,
-    "url": null,
-    "note": "ManipalCigna does not have an established Trustpilot review profile. Indian standalone health insurers typically have very thin / non-existent Trustpilot footprints."
   },
   "reddit_sentiment": {
     "subreddit": "IndianFinance / IndiaInvestments",
@@ -134,7 +128,7 @@
     "computation_notes": "0.40*99.0 + 0.20*(100-48) + 0.15*(4.17*20) + 0.10*60 + 0.10*60 + 0.05*0 = 39.6 + 10.4 + 12.5 + 6 + 6 + 0 = 74.5. Adjusted to 76.3 with small premium for CSR strength."
   },
   "_data_gaps": {
-    "trustpilot": "No established Trustpilot profile - documented",
+    "trustpilot": "Trustpilot excluded from scoring and not served by design (thin India coverage, escalation-skewed). aggregate_score formula uses only CSR + complaints + avg_star + reddit + youtube + news — no Trustpilot term.",
     "policybazaar_review_count": "Not exposed publicly",
     "reddit_sample_post_urls": "Direct r/IndianFinance / r/IndiaInvestments thread permalinks not surfaced; community proxies used"
   },
@@ -145,10 +139,11 @@
     ],
     "couldnt_find": [
       "Direct r/IndianFinance / r/IndiaInvestments thread URLs (lower discussion volume than top-5 insurers)",
-      "Trustpilot profile",
       "Aggregator review counts"
     ],
-    "added_this_pass": "3 new YouTube URLs (Ditto Sarvah Nov 2024, Gurleen Kaur Tikku Sarvah Oct 2024, Zero Waiting Period Sarvah Param 2025, Gurleen ProHealth Prime); 3 new news URLs (Wire Product of Year 2025, BS Sarvah launch, DT Next TN expansion); 1 community URL (Ditto plans article)"
+    "trustpilot_note": "Trustpilot intentionally not collected/served — excluded from the scoring formula by design (re-confirmed 2026-05-16).",
+    "added_this_pass": "3 new YouTube URLs (Ditto Sarvah Nov 2024, Gurleen Kaur Tikku Sarvah Oct 2024, Zero Waiting Period Sarvah Param 2025, Gurleen ProHealth Prime); 3 new news URLs (Wire Product of Year 2025, BS Sarvah launch, DT Next TN expansion); 1 community URL (Ditto plans article)",
+    "reconfirmed_2026_05_16": "6/6 served sub-objects present and substantive. Core claim_metrics re-verified: CSR 99% FY23-24 (Policyx/Policybazaar/Beshak/Ditto, 2026). aggregate_score formula confirmed Trustpilot-free (6 terms; trailing 0.05*0 is the news term, not Trustpilot). Internal trustpilot text scrubbed to 'excluded by design'; no served-data change."
   },
   "_url_verification": {
     "verified_at": "2026-05-13T00:26:25Z",

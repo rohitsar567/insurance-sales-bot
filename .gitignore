@@ -95,3 +95,8 @@ README.pdf
 80-audit/postfix_*/
 MUST_FIX.md
 rag/vectors
+
+# regenerable PDF-text extraction cache (tooling artifact)
+tools/.pdf_text_cache/
+rag/corpus
+rag/extracted

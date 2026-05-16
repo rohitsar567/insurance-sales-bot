@@ -107,6 +107,13 @@
     "source_note": "12500+ Cashless hospitals (homepage, scraped 2026-05-15)",
     "_confidence": "high"
   },
+  "no_claim_bonus_pct": {
+    "value": null,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/royal-sundaram/advanced-top-up__brochure.pdf",
+    "source_quote": "no No-Claim-Bonus / Cumulative-Bonus benefit percentage stated in policy wording, brochure or CIS; this is a top-up plan whose only NCB references are generic continuity-of-credit on renewal/portability ('Cumulative Bonus earned will be suitably passed on the fresh policy of child') with no benefit percentage (checked all indexed chunks across wordings, brochure and CIS siblings)",
+    "_confidence": "low"
+  },
   "co_payment_pct": {
     "value": null,
     "unit": "%",

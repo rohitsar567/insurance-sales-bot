@@ -116,11 +116,11 @@
     "_confidence": "high"
   },
   "co_payment_pct": {
-    "value": null,
+    "value": 0,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-restore__brochure.pdf",
-    "source_quote": "not stated in hdfc-ergo__optima-restore__brochure.pdf",
-    "_confidence": "low"
+    "source_quote": "In any city or hospital you like in the country with policy renewal.\nno additional copays or sub-limits.",
+    "_confidence": "high"
   },
   "room_rent_capped_at_pct_of_si": {
     "value": null,
@@ -235,6 +235,13 @@
     "unit": "%",
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-restore__brochure.pdf",
     "source_quote": "2X MULTIPLIER BENEFIR 50% increase in your basic sum insured for every claim free year, subject to a maximum of 100%.",
+    "_confidence": "high"
+  },
+  "maternity_coverage": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/hdfc-ergo/optima-restore__brochure.pdf",
+    "source_quote": "EXCLUSIONS • Abuse of intoxicant or hallucinogenic substance like drugs and alcohol.\n• Pregnancy, dental treatment, external aids and appliances.",
     "_confidence": "high"
   }
 }

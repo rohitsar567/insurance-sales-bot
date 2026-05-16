@@ -32,11 +32,21 @@
     "_confidence": "medium"
   },
   "sum_insured_options": {
-    "value": null,
+    "value": [
+      300000,
+      500000,
+      700000,
+      1000000,
+      1500000,
+      2000000,
+      3000000,
+      5000000,
+      8000000
+    ],
     "unit": "INR",
     "source_pdf_path": "rag/corpus/national-insurance/national-super-top-up__prospectus.pdf",
-    "source_quote": "not stated in national-super-top-up__prospectus.pdf",
-    "_confidence": "low"
+    "source_quote": "Policy is available with following combinations of Threshold and Sum Insured (in ₹): Threshold Sum Insured (above Threshold) 2 Lakhs 3,5,7 Lakhs 3 Lakhs 3,5,7,10 Lakhs 5 Lakhs 5,7,10,15 Lakhs 8 Lakhs 8,10,15,20 Lakhs 10 Lakhs 10,15,20,30 Lakhs 20 Lakhs 20,30,50,80 Lakhs",
+    "_confidence": "high"
   },
   "grace_period": {
     "value": 30,

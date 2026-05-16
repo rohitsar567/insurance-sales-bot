@@ -35,7 +35,7 @@
     "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/sbi-general/arogya-top-up__wordings.pdf",
-    "source_quote": "not stated in sbi-general__arogya-top-up__wordings.pdf",
+    "source_quote": "no enumerated Sum Insured options stated; this is a top-up plan where the Sum Insured is set in the Policy Schedule ('Sum insured 68) means the amount specified in the schedule to this Policy') with no options grid in any indexed chunk (checked all indexed chunks)",
     "_confidence": "low"
   },
   "grace_period": {
@@ -111,7 +111,7 @@
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/sbi-general/arogya-top-up__wordings.pdf",
-    "source_quote": "not stated in sbi-general__arogya-top-up__wordings.pdf",
+    "source_quote": "no fixed co-payment percentage stated; co-payment appears only in the standard definition ('co-payment does not reduce the Sum Insured') with no mandatory percentage in any indexed chunk (checked all indexed chunks)",
     "_confidence": "low"
   },
   "room_rent_capped_at_pct_of_si": {
@@ -119,6 +119,20 @@
     "unit": "percent",
     "source_pdf_path": "rag/corpus/sbi-general/arogya-top-up__wordings.pdf",
     "source_quote": "not stated in sbi-general__arogya-top-up__wordings.pdf",
+    "_confidence": "low"
+  },
+  "room_rent_capping": {
+    "value": null,
+    "unit": "text",
+    "source_pdf_path": "rag/corpus/sbi-general/arogya-top-up__wordings.pdf",
+    "source_quote": "no room-rent cap or room-category clause stated; 'Room Rent' appears only as a standard definition ('Room Rent 46) means the amount charged by a Hospital towards Room and Boarding expenses') with no sub-limit/cap in any indexed chunk (checked all indexed chunks)",
+    "_confidence": "low"
+  },
+  "no_claim_bonus_pct": {
+    "value": null,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/sbi-general/arogya-top-up__wordings.pdf",
+    "source_quote": "no No-Claim-Bonus / Cumulative-Bonus percentage stated; 'Cumulative Bonus' appears only in the standard definition ('means any increase or addition in Sum Insured granted by the Insurer without an associated increase in premium') with no benefit percentage in any indexed chunk (checked all indexed chunks)",
     "_confidence": "low"
   },
   "policy_term_options_years": {

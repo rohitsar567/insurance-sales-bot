@@ -217,7 +217,13 @@
     "source_quote": "Policy can be issued, as per the option of the Proposer, on • Individual Basis (i.e., Sum Insured and Cumulative Bonus shall apply separately on each Insured Person) • Floater Basis (i.e., Sum Insured and Cumulative Bonus shall apply cumulatively to c",
     "_confidence": "medium"
   },
-  "maternity_coverage": null,
+  "maternity_coverage": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/oriental-insurance/arogya-sanjeevani__brochure.pdf",
+    "source_quote": "Maternity Expenses (Code - Excl 18): i. Medical treatment expenses traceable to childbirth(including complicated deliveries and caesarean sections incurred during hospitalization) except ectopic pregnancy; ii. Expenses towards miscarriage (unless due to an accident) and lawful medical termination of",
+    "_confidence": "high"
+  },
   "room_rent_capping": {
     "value": "Upto SI INR 5 Lacs: Up to 2% of the sum insured subject to maximum of Rs. 5000/- per day. SI INR 6, 8, 10 Lacs: Up to 2% of the sum insured subject to maximum of Rs. 10,000/- per day. SI INR 15 & 20 Lacs: Up to 2% of the sum insured subject to maximum of Rs. 20,000/- per day.",
     "unit": "text",

@@ -32,11 +32,13 @@
     "_confidence": "low"
   },
   "sum_insured_options": {
-    "value": null,
+    "value": [
+      300000
+    ],
     "unit": "INR",
     "source_pdf_path": "rag/corpus/bajaj-allianz/silver-health__cis.pdf",
-    "source_quote": "not stated in bajaj-allianz__silver-health__cis.pdf",
-    "_confidence": "low"
+    "source_quote": "Sum Insured available for each individual is Rs 300,000 / Sum Insured available for each family member is Rs 300,000 / Sum Insured of Rs 300,000 is available for the entire family (cis p.7-7)",
+    "_confidence": "high"
   },
   "grace_period": {
     "value": null,

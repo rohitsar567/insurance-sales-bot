@@ -21,7 +21,7 @@
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/royal-sundaram/surrosafe__wordings.pdf",
-    "source_quote": "not stated in royal-sundaram__surrosafe__wordings.pdf",
+    "source_quote": "no conventional maximum entry age stated; this is a statutory surrogacy cover whose eligibility is governed by The Surrogacy Act 2021 age bands ('Intending woman means an Indian woman who is a widow or divorcee between the age of 35 to 45 years') rather than a policyholder entry-age cap (checked all indexed chunks)",
     "_confidence": "low"
   },
   "min_child_entry_age": {
@@ -32,11 +32,16 @@
     "_confidence": "low"
   },
   "sum_insured_options": {
-    "value": null,
+    "value": [
+      500000
+    ],
     "unit": "INR",
     "source_pdf_path": "rag/corpus/royal-sundaram/surrosafe__wordings.pdf",
-    "source_quote": "not stated in royal-sundaram__surrosafe__wordings.pdf",
-    "_confidence": "low"
+    "source_quote": "Total Premium for all insured members (Surrogate Cover ) is Rs. 53,622 when each member is covered separately. Not Applicable. Not Applicable. Sum Insured available for each individual is Rs. 5,00,000.",
+    "source_doc_type": "wordings",
+    "source_page": "27",
+    "_note": "No enumerated Sum Insured options grid exists in the policy wording; Rs.5,00,000 is the single Sum Insured shown in the policy's own premium illustration (Surrogate Cover). Statutory surrogacy cover.",
+    "_confidence": "medium"
   },
   "grace_period": {
     "value": 30,
@@ -111,7 +116,14 @@
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/royal-sundaram/surrosafe__wordings.pdf",
-    "source_quote": "not stated in royal-sundaram__surrosafe__wordings.pdf",
+    "source_quote": "no mandatory co-payment percentage stated; co-payment referenced only as conditional ('subject always to the Sum Insured, any sub limit specified in the Product Benefits Table, the terms, conditions, limitations and exclusions, Co-pay (if any) mentioned in the Policy') with no fixed percentage in any indexed chunk (checked all indexed chunks)",
+    "_confidence": "low"
+  },
+  "no_claim_bonus_pct": {
+    "value": null,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/royal-sundaram/surrosafe__wordings.pdf",
+    "source_quote": "no No-Claim-Bonus / Cumulative-Bonus percentage stated in policy wording; 'No Claim Bonus' appears only in the generic Base Sum Insured definition ('exclusive of No Claim Bonus, if any') with no benefit percentage (checked all indexed chunks)",
     "_confidence": "low"
   },
   "room_rent_capped_at_pct_of_si": {

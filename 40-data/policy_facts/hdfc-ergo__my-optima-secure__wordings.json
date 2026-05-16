@@ -59,7 +59,7 @@
   "copayment_pct": {
     "value": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-optima-secure__wordings.pdf",
-    "source_quote": "not stated in hdfc-ergo__my-optima-secure__wordings.pdf",
+    "source_quote": "no product-wide co-payment stated in policy wording; only a Tier-based conditional rule is present ('No co-payment shall apply if Insured Person from Tier 2 avails a treatment in Tier 1') — checked all indexed chunks",
     "_confidence": "low"
   },
   "no_claim_bonus_pct": {

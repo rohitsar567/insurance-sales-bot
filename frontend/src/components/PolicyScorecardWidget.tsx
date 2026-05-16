@@ -3,8 +3,10 @@
 //
 // Why a per-policy widget (rather than a single multi-policy table):
 //   - PolicyCompareModal renders 2-4 of these side-by-side in a flex row.
-//   - Each card is self-contained: header grade + overall score, sub-score
-//     bars, profile rationale bullets, data-completeness warning.
+//   - Each card is self-contained: insurer logo strip, header grade +
+//     overall score, sub-score bars with their *drivers* (the concrete
+//     policy fields that moved each bar), a prominent "Why this fits you"
+//     personalisation panel, and a data-completeness warning.
 //   - The fetch is one bulk POST per widget mount (single-policy), but the
 //     SAME endpoint can be batched by a parent that wants to issue one call
 //     for all N policies — we expose `precomputed` for that case.
@@ -57,6 +59,125 @@ const SUBSCORE_ORDER: { key: string; label: string }[] = [
   { key: "renewal_protection", label: "Renewal protection" },
   { key: "bonus_and_loyalty", label: "Bonuses" },
 ];
+
+// Insurer brand assets — forked from PolicyCompareModal so the scorecard
+// block can carry the same logo top-left without importing from a sibling
+// (keeps each widget self-contained; both maps stay in lock-step).
+const INSURER_COLOR: Record<string, string> = {
+  "aditya-birla":  "#ea580c",
+  "bajaj-allianz": "#1d4ed8",
+  "care-health":   "#047857",
+  "hdfc-ergo":     "#be123c",
+  "icici-lombard": "#f97316",
+  "manipalcigna":  "#a21caf",
+  "new-india":     "#4338ca",
+  "niva-bupa":     "#0e7490",
+  "star-health":   "#d97706",
+  "tata-aig":      "#334155",
+};
+
+const INSURER_LOGO_URL: Record<string, string> = {
+  "aditya-birla":  "https://www.adityabirlacapital.com/healthinsurance/static/assets/images/abhi-logo.svg",
+  "bajaj-allianz": "https://www.bajajallianz.com/content/dam/bagic/header/logo.png",
+  "care-health":   "https://www.careinsurance.com/upload_master/images/logo.png",
+  "hdfc-ergo":     "https://www.hdfcergo.com/etc.clientlibs/hdfcergo/clientlibs/clientlib-site/resources/images/HDFC-ERGO-Logo.png",
+  "icici-lombard": "https://www.icicilombard.com/content/dam/ilom-website/icon/icici-lombard-logo-new.svg",
+  "manipalcigna":  "https://www.manipalcigna.com/o/manipal-cigna-theme/images/manipal-cigna-logo.svg",
+  "new-india":     "https://www.newindia.co.in/portal/readWriteData/NIAImages/NewLogo.png",
+  "niva-bupa":     "https://transactions.nivabupa.com/_next/static/media/niva-bupa-logo.7b6e7f4e.svg",
+  "star-health":   "https://www.starhealth.in/sites/default/files/star-logo-revised.png",
+  "tata-aig":      "https://www.tataaig.com/etc/designs/tataaig/clientlibs/responsive/images/tataaig-logo.svg",
+};
+
+function insurerInitials(name: string): string {
+  return name
+    .split(/[\s-]+/)
+    .map((w) => w[0])
+    .filter(Boolean)
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+// Small brand chip — image with a typeset-initials fallback. Used top-left
+// of the scorecard so the card is identifiable at a glance inside a row of
+// 2-4 side-by-side scorecards.
+function InsurerLogo({
+  slug,
+  name,
+  size = 36,
+}: {
+  slug: string;
+  name: string;
+  size?: number;
+}) {
+  const [failed, setFailed] = useState(false);
+  const url = INSURER_LOGO_URL[slug];
+  const color = INSURER_COLOR[slug] || "#64748b";
+  if (!url || failed) {
+    return (
+      <div
+        style={{
+          width: size,
+          height: size,
+          borderRadius: 10,
+          background: color,
+          color: "#fff",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontWeight: 700,
+          fontSize: size * 0.32,
+          flexShrink: 0,
+        }}
+        aria-hidden
+      >
+        {insurerInitials(name)}
+      </div>
+    );
+  }
+  return (
+    <div
+      style={{
+        width: size,
+        height: size,
+        borderRadius: 10,
+        background: "#fff",
+        border: "1px solid var(--border)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        overflow: "hidden",
+        padding: 5,
+        flexShrink: 0,
+        boxShadow:
+          "0 1px 2px color-mix(in srgb, var(--foreground) 6%, transparent)",
+      }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={url}
+        alt={name}
+        onError={() => setFailed(true)}
+        style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
+      />
+    </div>
+  );
+}
+
+// Humanise an insurer slug for the fallback initials / label.
+function humaniseSlug(slug: string): string {
+  return slug
+    .split("-")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
+// Pretty label for a sub-score key when the backend hands us one we don't
+// have a curated label for.
+function prettyKey(k: string): string {
+  return k.replace(/_/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
+}
 
 // Serif display face + sans UI face, pulled from the landing's CSS vars so
 // the widget shares the exact type system as the rest of the app.
@@ -264,6 +385,44 @@ export default function PolicyScorecardWidget({
       }}
       data-policy-id={policyId}
     >
+      {/* Insurer identity strip — logo top-left so a row of side-by-side
+          scorecards is scannable without reading the policy name. */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 9,
+          paddingBottom: 12,
+          borderBottom: "1px solid var(--border)",
+        }}
+      >
+        <InsurerLogo
+          slug={entry.insurer_slug || ""}
+          name={
+            entry.insurer_slug
+              ? humaniseSlug(entry.insurer_slug)
+              : entry.policy_name || policyName
+          }
+          size={34}
+        />
+        <span
+          style={{
+            fontSize: 10,
+            textTransform: "uppercase",
+            letterSpacing: "0.1em",
+            color: "var(--muted-foreground)",
+            fontWeight: 700,
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+        >
+          {entry.insurer_slug
+            ? humaniseSlug(entry.insurer_slug)
+            : "Fit scorecard"}
+        </span>
+      </div>
+
       {/* Header: grade medallion + overall score */}
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
         <div
@@ -402,6 +561,14 @@ export default function PolicyScorecardWidget({
           {renderable.map(({ key, label }) => {
             const v = entry.sub_scores[key] ?? 0;
             const pct = Math.max(0, Math.min(100, v));
+            // What drove THIS bar — the backend returns a per-sub-score
+            // signal list (the concrete policy fields / rules that moved
+            // the number). Surfacing it makes each bar auditable instead
+            // of a mystery fill.
+            const drivers = (entry.signals?.[key] ?? [])
+              .map((s) => s.trim())
+              .filter(Boolean)
+              .slice(0, 3);
             return (
               <div
                 key={key}
@@ -456,33 +623,109 @@ export default function PolicyScorecardWidget({
                     }}
                   />
                 </div>
+                {drivers.length > 0 && (
+                  <ul
+                    style={{
+                      margin: "3px 0 0",
+                      padding: 0,
+                      listStyle: "none",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 3,
+                    }}
+                  >
+                    {drivers.map((d, di) => (
+                      <li
+                        key={di}
+                        style={{
+                          display: "flex",
+                          alignItems: "flex-start",
+                          gap: 6,
+                          fontSize: 10.5,
+                          lineHeight: 1.4,
+                          color: "var(--muted-foreground)",
+                        }}
+                      >
+                        <span
+                          aria-hidden
+                          style={{
+                            flex: "none",
+                            marginTop: 5,
+                            width: 4,
+                            height: 4,
+                            borderRadius: 999,
+                            background: barColor(v),
+                          }}
+                        />
+                        <span>{d}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             );
           })}
+          <div
+            style={{
+              fontSize: 9.5,
+              color: "var(--muted-foreground)",
+              letterSpacing: "0.04em",
+              marginTop: 1,
+            }}
+          >
+            Bars show what each criterion contributed — drivers under a bar
+            are the exact policy fields that moved it.
+          </div>
         </div>
       )}
 
-      {/* Profile rationale — section-titled like the landing chapters */}
+      {/* "Why this fits you" — the headline personalisation payoff. Given
+          its own emphatic teal-tinted panel so it reads as the answer to
+          the user's real question, not a footnote under the bars. */}
       {entry.profile_rationale.length > 0 && (
         <div
           style={{
-            background: "color-mix(in srgb, var(--primary) 4%, var(--muted))",
-            border: "1px solid var(--border)",
-            borderRadius: 12,
-            padding: "12px 13px",
+            background:
+              "linear-gradient(180deg, color-mix(in srgb, var(--primary) 9%, var(--card)) 0%, color-mix(in srgb, var(--primary) 4%, var(--card)) 100%)",
+            border:
+              "1px solid color-mix(in srgb, var(--primary) 28%, var(--border))",
+            borderRadius: 14,
+            padding: "14px 15px",
+            boxShadow:
+              "0 1px 2px color-mix(in srgb, var(--primary) 10%, transparent)",
           }}
         >
           <div
             style={{
-              fontSize: 9.5,
-              textTransform: "uppercase",
-              letterSpacing: "0.12em",
-              color: "color-mix(in srgb, var(--primary) 70%, var(--muted-foreground))",
-              fontWeight: 700,
-              marginBottom: 9,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              marginBottom: 10,
             }}
           >
-            Why this score for you
+            <span
+              aria-hidden
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: 999,
+                background: "var(--primary)",
+                flexShrink: 0,
+              }}
+            />
+            <span
+              style={{
+                fontFamily: SERIF,
+                fontOpticalSizing: "auto",
+                fontSize: 14,
+                fontWeight: 600,
+                letterSpacing: "-0.01em",
+                color:
+                  "color-mix(in srgb, var(--primary) 80%, var(--foreground))",
+              }}
+            >
+              Why this fits you
+            </span>
           </div>
           <ul
             style={{
@@ -491,7 +734,7 @@ export default function PolicyScorecardWidget({
               listStyle: "none",
               display: "flex",
               flexDirection: "column",
-              gap: 7,
+              gap: 8,
             }}
           >
             {entry.profile_rationale.map((b, i) => {
@@ -508,10 +751,10 @@ export default function PolicyScorecardWidget({
                   style={{
                     display: "flex",
                     alignItems: "flex-start",
-                    gap: 8,
-                    fontSize: 12,
+                    gap: 9,
+                    fontSize: 12.5,
                     color: "var(--foreground)",
-                    lineHeight: 1.45,
+                    lineHeight: 1.5,
                   }}
                 >
                   <span
@@ -519,8 +762,8 @@ export default function PolicyScorecardWidget({
                     style={{
                       flex: "none",
                       marginTop: 6,
-                      width: 5,
-                      height: 5,
+                      width: 6,
+                      height: 6,
                       borderRadius: 999,
                       background: tickColor,
                     }}
@@ -550,10 +793,11 @@ export default function PolicyScorecardWidget({
           }}
           role="status"
         >
-          <span style={{ fontWeight: 700, flexShrink: 0 }}>Limited data ·</span>
+          <span style={{ fontWeight: 700, flexShrink: 0 }}>Partial information ·</span>
           <span>
-            Only {completeness.toFixed(0)}% of scoring fields are filled for
-            this policy — the grade may shift once more details are indexed.
+            The insurer hasn&apos;t published every term for this policy yet,
+            so this grade is an early read — open the policy PDF for the full
+            wording before you decide.
           </span>
         </div>
       )}

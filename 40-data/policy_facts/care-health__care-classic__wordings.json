@@ -187,11 +187,11 @@
     "_confidence": "low"
   },
   "room_rent_capping": {
-    "value": null,
+    "value": "1% of SI per day (Room Rent); 2% of SI per day (ICU) - default eligibility",
     "unit": null,
     "source_pdf_path": "rag/corpus/care-health/care-classic__wordings.pdf",
-    "source_quote": "not stated in care-health__care-classic__wordings.pdf",
-    "_confidence": "low"
+    "source_quote": "3.2.4 Optional Benefit : Room Rent and ICU Modification ... the Company agrees to upgrade the eligibility of Room Rent / Room Category from '1% of SI per day' to 'Single Private AC Room', similarly ICU Charges limit from '2% of SI per day' to 'No limit' (wordings p.13-14)",
+    "_confidence": "high"
   },
   "maternity_coverage": {
     "value": true,

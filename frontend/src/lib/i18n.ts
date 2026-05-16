@@ -12,7 +12,7 @@ export const UI_STRINGS = {
   en: {
     // Header
     "header.title": "Health insurance, finally honest.",
-    "header.subtitle": "Compare. Score. Buy what fits — not what pays the highest commission.",
+    "header.subtitle": "Compare. Score. Buy the policy that genuinely fits you.",
     "header.policy_library": "Policy Library",
     "header.policy_library_kicker": "Interactive",
     "header.annual_premium": "Annual premium",
@@ -25,7 +25,6 @@ export const UI_STRINGS = {
     "welcome.heading_b": "you",
     "welcome.heading_c": ".",
     "welcome.subtitle": "I'll ask a few short questions, then show you 3 policies that match — with the exact reasons each ranked well.",
-    "welcome.no_commissions": "No broker commissions in my ranking.",
     "welcome.source_link": "Every fact you see has a source link.",
     "welcome.trust_title": "Tell me the truth — even on the hard things.",
     "welcome.trust_body": "When I ask about your health later, please don't hide a condition to lower your premium. Insurers cross-check disclosed history against hospital records at claim time. The ₹500/month you save today turns into an ₹8 lakh denied claim later. Your honest answers stay in this chat — they're not shared with any insurer until you choose to buy.",
@@ -39,6 +38,9 @@ export const UI_STRINGS = {
     "input.voice_input": "Voice input",
     "input.upload": "Upload your own policy PDF",
     "input.enter_to_send": "Enter to send · 📎 to upload your own PDF",
+    "upload.indexing": "Indexing ${name}…",
+    "upload.success": "✓ Indexed “${name}” — ${chunks} chunks from ${pages} pages (${secs}s). It's now searchable in this chat. Ask me about it.",
+    "upload.error": "✗ Upload failed: ${err}",
 
     // Marketplace panel
     "mp.heading": "Health insurance marketplace",
@@ -71,7 +73,7 @@ export const UI_STRINGS = {
     "mp.compare_count": "of ${max} selected",
 
     // Policy card stat labels
-    "stat.sum_insured_up_to": "Sum insured up to",
+    "stat.sum_insured_up_to": "Sum insured",
     "stat.ped_waiting": "PED waiting",
     "stat.ayush": "AYUSH",
     "stat.network": "Network",
@@ -96,8 +98,8 @@ export const UI_STRINGS = {
     "detail.generic_grade_body": "Tell me about yourself (age, dependents, conditions, budget) and I'll re-score this policy for your situation. The same policy can be a B for a 30-year-old and a D for a 60-year-old with diabetes — context changes everything.",
     "detail.personalized_label": "Personalized for you · profile",
     "detail.profile_complete": "complete",
-    "detail.methodology_q": "How is this score computed?",
-    "detail.methodology_sub": "(48 fields → 6 criteria, with weights)",
+    "detail.methodology_q": "How is this score decided?",
+    "detail.methodology_sub": "(six things that matter, weighted)",
 
     // Scorecard criterion blurbs
     "scorecard.coverage_blurb": "What's actually covered when you claim",
@@ -106,7 +108,7 @@ export const UI_STRINGS = {
     "scorecard.claim_blurb": "Will the insurer actually pay when you claim?",
     "scorecard.renewal_blurb": "Can you keep this policy at 70+ when you need it most",
     "scorecard.bonus_blurb": "Rewards for staying claim-free + renewing",
-    "scorecard.weighted_avg": "Weighted average across 6 criteria. Rules-based — no LLM in the scoring loop.",
+    "scorecard.weighted_avg": "A weighted blend of the six things that decide whether cover actually protects you. Every policy is judged the same way on the same public facts.",
 
     // Footer
     "footer.disclaimer": "Advisory only. Information based on policy documents; verify with the insurer before purchase. All policy ratings are illustrative and based on publicly disclosed data.",
@@ -130,7 +132,7 @@ export const UI_STRINGS = {
   },
   hi: {
     "header.title": "स्वास्थ्य बीमा, अब ईमानदारी से।",
-    "header.subtitle": "तुलना करें। स्कोर देखें। वो खरीदें जो आपके लिए सही है — कमीशन वाला नहीं।",
+    "header.subtitle": "तुलना करें। स्कोर देखें। वो policy खरीदें जो वाकई आपके लिए सही है।",
     "header.policy_library": "पॉलिसी लाइब्रेरी",
     "header.policy_library_kicker": "इंटरेक्टिव",
     "header.annual_premium": "वार्षिक प्रीमियम",
@@ -142,7 +144,6 @@ export const UI_STRINGS = {
     "welcome.heading_b": "बस आपके लिए",
     "welcome.heading_c": "।",
     "welcome.subtitle": "मैं कुछ छोटे सवाल पूछूंगा, फिर 3 पॉलिसियाँ दिखाऊंगा जो आपके लिए सबसे सही हैं — सटीक कारणों के साथ।",
-    "welcome.no_commissions": "मेरी रैंकिंग में कोई ब्रोकर कमीशन नहीं।",
     "welcome.source_link": "हर तथ्य का source link है।",
     "welcome.trust_title": "सच बताइए — मुश्किल बातें भी।",
     "welcome.trust_body": "जब मैं आपकी सेहत के बारे में पूछूं, premium कम करने के लिए कोई condition मत छिपाइए। बीमाकर्ता claim time पर hospital records से check करते हैं। आज के ₹500/महीने की बचत बाद में ₹8 लाख का denied claim बन जाती है। आपके ईमानदार जवाब इसी chat में रहते हैं — किसी insurer के साथ शेयर नहीं होते।",
@@ -155,6 +156,9 @@ export const UI_STRINGS = {
     "input.voice_input": "आवाज़ input",
     "input.upload": "अपनी policy PDF upload करें",
     "input.enter_to_send": "Enter दबाकर भेजें · 📎 से PDF upload",
+    "upload.indexing": "${name} index हो रही है…",
+    "upload.success": "✓ “${name}” index हो गई — ${pages} पेज से ${chunks} chunks (${secs}s)। अब यह इसी chat में search हो सकती है। इसके बारे में पूछिए।",
+    "upload.error": "✗ Upload विफल: ${err}",
 
     "mp.heading": "स्वास्थ्य बीमा बाज़ार",
     "mp.summary": "${total} पॉलिसियाँ, ${insurers} प्रमुख भारतीय बीमाकर्ताओं से। पूरी रेटिंग और source document के लिए किसी भी पॉलिसी पर click करें।",
@@ -185,7 +189,7 @@ export const UI_STRINGS = {
     "mp.clear": "साफ़ करें",
     "mp.compare_count": "${max} में से चयनित",
 
-    "stat.sum_insured_up_to": "बीमित राशि तक",
+    "stat.sum_insured_up_to": "बीमित राशि",
     "stat.ped_waiting": "PED प्रतीक्षा",
     "stat.ayush": "AYUSH",
     "stat.network": "नेटवर्क",
@@ -209,8 +213,8 @@ export const UI_STRINGS = {
     "detail.generic_grade_body": "अपने बारे में बताइए (उम्र, dependents, conditions, budget) और मैं इस policy को आपके लिए re-score करूंगा। एक ही पॉलिसी 30 साल वाले के लिए B हो सकती है और 60 साल वाले diabetic के लिए D — context से सब बदलता है।",
     "detail.personalized_label": "आपके लिए personalized · profile",
     "detail.profile_complete": "complete",
-    "detail.methodology_q": "यह score कैसे calculate हुआ?",
-    "detail.methodology_sub": "(48 fields → 6 criteria, weights के साथ)",
+    "detail.methodology_q": "यह स्कोर कैसे तय हुआ?",
+    "detail.methodology_sub": "(छह अहम बातें, वज़न के साथ)",
 
     "scorecard.coverage_blurb": "Claim time पर वास्तव में क्या cover है",
     "scorecard.cost_blurb": "अप्रत्याशित out-of-pocket खर्च की संभावना",
@@ -218,7 +222,7 @@ export const UI_STRINGS = {
     "scorecard.claim_blurb": "बीमाकर्ता claim time पर payment करेगा?",
     "scorecard.renewal_blurb": "70+ की उम्र में policy renew कर पाएंगे?",
     "scorecard.bonus_blurb": "Claim-free वर्षों के लिए पुरस्कार",
-    "scorecard.weighted_avg": "6 criteria का weighted average। Rules-based — कोई LLM scoring loop में नहीं।",
+    "scorecard.weighted_avg": "छह अहम बातों का वज़नदार मिश्रण जो तय करती हैं कि कवर सच में आपको बचाता है या नहीं। हर पॉलिसी को एक ही सार्वजनिक तथ्यों पर समान रूप से परखा जाता है।",
 
     "footer.disclaimer": "केवल सलाह के लिए। Policy documents पर आधारित जानकारी; खरीदने से पहले बीमाकर्ता से verify करें। सभी ratings illustrative हैं।",
 

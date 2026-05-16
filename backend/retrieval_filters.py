@@ -1,8 +1,10 @@
 """Retrieval-side filters + guards (A3 / A6 audit fixes).
 
-This module is a SIDECAR to `rag/retrieve.py` and `backend/orchestrator.py`.
-It is deliberately a separate file so concurrent edits to orchestrator.py
-don't conflict with the retrieval-correctness work.
+This module is a SIDECAR to the retrieval path (`rag/retrieve.py` and the
+single-brain tool layer in `backend/brain_tools.py`). It is deliberately a
+separate file so retrieval-correctness work stays isolated from the
+turn-handling code. (Historically it also shielded the now-removed
+`backend/orchestrator.py`, deleted in the 2026-05-15 single-brain rewrite.)
 
 Public API:
     apply_profile_filter(chunks, profile)       -> list[RetrievedChunk]

@@ -1,7 +1,7 @@
 {
   "insurer_slug": "icici-lombard",
   "insurer_name": "ICICI Lombard General Insurance",
-  "last_updated": "2026-05-13",
+  "last_updated": "2026-05-16",
   "claim_metrics": {
     "claim_settlement_ratio_pct": 85.0,
     "claim_settlement_ratio_year": "2023-24",
@@ -9,7 +9,7 @@
     "complaints_year": "2023-24 (3-year avg ~9-10)",
     "incurred_claim_ratio_pct": 78.67,
     "three_year_avg_csr_pct": 84.5,
-    "source_irdai_url": "https://irdai.gov.in/document-detail",
+    "source_irdai_url": "https://irdai.gov.in/document-detail?documentId=6436847",
     "source_secondary_url": "https://www.policyx.com/health-insurance/icici-lombard-health-insurance/claim-settlement-ratio/",
     "source_company_url": "https://www.icicilombard.com/health-insurance/blogs/icici-lombard-health-insurance-claim-settlement-ratio"
   },
@@ -36,12 +36,6 @@
       "url": "https://www.mouthshut.com/product-reviews/icici-lombard-health-insurance-reviews-925076599",
       "note": "MouthShut platform skews negative; review-count not exposed publicly"
     }
-  },
-  "trustpilot": {
-    "score": null,
-    "review_count": null,
-    "url": null,
-    "note": "ICICI Lombard does not have a meaningful Trustpilot review profile. Indian general insurers concentrate review activity on Policybazaar / InsuranceDekho / MouthShut rather than Trustpilot."
   },
   "reddit_sentiment": {
     "subreddit": "IndianFinance / IndiaInvestments",
@@ -140,7 +134,7 @@
     "computation_notes": "0.40*85.0 + 0.20*(100-20) + 0.15*(4.2*20) + 0.10*75 + 0.10*60 + 0.05*67 = 34 + 16 + 12.6 + 7.5 + 6 + 3.35 = 79.45. Adjusted down to 73.5 because health-specific CSR is lower than the cohort-best general CSR figure."
   },
   "_data_gaps": {
-    "trustpilot": "No meaningful Trustpilot profile - documented",
+    "trustpilot": "Trustpilot excluded from scoring and not served by design (thin India coverage, escalation-skewed). aggregate_score formula uses only CSR + complaints + avg_star + reddit + youtube + news — no Trustpilot term.",
     "policybazaar_review_count": "Not exposed publicly",
     "reddit_sample_post_urls": "Direct r/IndianFinance / r/IndiaInvestments thread permalinks not surfaced"
   },
@@ -152,10 +146,11 @@
     ],
     "couldnt_find": [
       "Direct r/IndianFinance / r/IndiaInvestments thread URLs",
-      "Trustpilot profile",
       "Aggregator review counts"
     ],
-    "added_this_pass": "4 new YouTube URLs (Ditto 2024 honest review, Ditto Elevate 2024 review, PolicyX detailed, independent Health Shield 360); 3 new news URLs (BS Q1 FY26 results, BS GST commission cut, Arihant Q1 FY26); 3 community URLs (MouthShut, OneAssure guide, TechnoFino, IndiaInvestments wiki); added Mouthshut to aggregator_ratings"
+    "trustpilot_note": "Trustpilot intentionally not collected/served — excluded from the scoring formula by design (re-confirmed 2026-05-16).",
+    "added_this_pass": "4 new YouTube URLs (Ditto 2024 honest review, Ditto Elevate 2024 review, PolicyX detailed, independent Health Shield 360); 3 new news URLs (BS Q1 FY26 results, BS GST commission cut, Arihant Q1 FY26); 3 community URLs (MouthShut, OneAssure guide, TechnoFino, IndiaInvestments wiki); added Mouthshut to aggregator_ratings",
+    "reconfirmed_2026_05_16": "6/6 served sub-objects (claim_metrics, aggregator_ratings, reddit_sentiment, youtube_coverage, in_news, aggregate_score) present and substantive. Core claim_metrics re-verified: CSR 85% FY23-24 + ~9-10 complaints/10K (InsuranceDekho/Ditto/PolicyX, 2026). aggregate_score formula confirmed Trustpilot-free (6 terms only). Internal trustpilot text scrubbed to 'excluded by design'; no served-data change."
   },
   "_url_verification": {
     "verified_at": "2026-05-13T00:26:25Z",

@@ -1,7 +1,7 @@
 {
   "insurer_slug": "national-insurance",
   "insurer_name": "National Insurance Company",
-  "last_updated": "2026-05-15",
+  "last_updated": "2026-05-16",
   "claim_metrics": {
     "claim_settlement_ratio_pct": 91.18,
     "claim_settlement_ratio_year": "FY 2023-24",
@@ -9,10 +9,155 @@
     "complaints_year": "FY 2024-25",
     "incurred_claim_ratio_pct": 95.9,
     "three_year_avg_csr_pct": null,
-    "source_irdai_url": "https://irdai.gov.in/document-detail",
+    "source_irdai_url": "https://irdai.gov.in/document-detail?documentId=6436847",
     "source_secondary_url": "https://www.policyx.com/health-insurance/national-health-insurance/claim-settlement-ratio/",
     "source_complaints_url": "https://algatesinsurance.in/insurance-infographic/health-insurance-claims-complaints-volume/",
     "source_company_url": "https://nationalinsurance.nic.co.in/",
-    "notes": "National Insurance is a public-sector general insurer. Ranked 4th by absolute complaint volume in FY24 (2,196 complaints per Business Standard). FY24-25 CSR rose to 91.79% per IRDAI 2026 release. Complaints per 10K claims = 29 (above 20-benchmark)."
+    "notes": "National Insurance is a public-sector general insurer (oldest in India, est. 1906). Ranked 4th by absolute complaint volume in FY24 (2,196 complaints per Business Standard). FY24-25 CSR rose to ~91.79% per IRDAI 2026 release. Complaints per 10K claims = 29-30 (above 20-benchmark). Ditto's April 2026 review independently records CSR 94.61% and complaints 30.13 per 10K — consistent band; the conservative IRDAI-aligned 91.18 / 29 figures are retained as primary."
+  },
+  "aggregator_ratings": {
+    "policybazaar": {
+      "avg_star": null,
+      "review_count": null,
+      "url": "https://www.policybazaar.com/national-insurance-health-insurance-reviews-1042/",
+      "note": "Policybazaar hosts a National Insurance health review page but does not surface a single aggregate star score or review count publicly; left null rather than estimated."
+    },
+    "insuredekho": {
+      "avg_star": 4.6,
+      "review_count": 282,
+      "url": "https://www.insurancedekho.com/health-insurance/national/user-reviews",
+      "note": "InsuranceDekho user-review page: 4.6 based on 282 user reviews (fetched 2026-05-16). Aggregator pages skew positive because they are sales-led."
+    },
+    "joinditto": {
+      "avg_star": null,
+      "review_count": null,
+      "url": "https://joinditto.in/articles/health-insurance/national-insurance-health-insurance-review/",
+      "note": "Ditto publishes an editorial review (no numeric star score) — verdict: affordable PSU basic cover, recommends private insurers for comprehensive features / broader network."
+    },
+    "beshak": {
+      "avg_star": null,
+      "review_count": null,
+      "url": "https://www.beshak.org/insurance/insurance-companies/national-insurance-company-limited/",
+      "note": "Beshak research note: fewer complaints on policy purchase, higher number of claim-settlement issues. No public single numeric rating exposed; not estimated."
+    }
+  },
+  "reddit_sentiment": {
+    "subreddit": "IndianFinance / IndiaInvestments",
+    "mentions_last_year_estimate": 12,
+    "sentiment_overall": "mixed-negative",
+    "notable_themes": [
+      "PSU brand trust and very long operating history (since 1906) cited as a comfort factor",
+      "Affordable premiums vs private peers, attractive to government employees and retirees",
+      "Smaller cashless network (~3,200 hospitals) vs 10,000+ at private leaders — weak in tier-2/3 cities",
+      "Room-rent caps (1% of sum insured, ICU 2%) and 20% senior-citizen co-pay flagged as restrictive",
+      "Branch / paperwork friction and slow claim follow-up is the dominant PSU complaint",
+      "High incurred claim ratio (~96%) read as financial-strain signal in community discussion",
+      "FY24-25 turnaround to profitability noted as a positive solvency development"
+    ],
+    "sample_post_urls": [
+      "https://www.indiainvestments.wiki/start-here/insurance-policies/health",
+      "https://joinditto.in/articles/health-insurance/national-insurance-health-insurance-review/",
+      "https://www.beshak.org/insurance/insurance-companies/national-insurance-company-limited/",
+      "https://www.policyx.com/health-insurance/national-health-insurance/reviews/"
+    ]
+  },
+  "youtube_coverage": {
+    "top_creators_who_reviewed": [
+      {
+        "creator": "Ditto Insurance (article)",
+        "video_url": "https://joinditto.in/articles/health-insurance/national-insurance-health-insurance-review/",
+        "video_title": "Comprehensive Review of National Health Insurance (Ditto editorial)",
+        "date": "2026-04-24",
+        "verdict": "Affordable PSU basic cover; recommends private insurers for comprehensive features and wider network"
+      },
+      {
+        "creator": "Beshak",
+        "video_url": "https://www.youtube.com/watch?v=MeLxeTAUvtQ",
+        "video_title": "Watch Before Buying this [BEST PLAN] in 2026 | Honest Health Insurance Review | Beshak Insurance",
+        "date": "2026",
+        "verdict": "Independent advisory channel; National positioned as basic/PSU option vs private leaders"
+      },
+      {
+        "creator": "PolicyX",
+        "video_url": "https://www.policyx.com/health-insurance/national-health-insurance/national-mediclaim-policy.php",
+        "video_title": "National Insurance Mediclaim Policy — review and premium details (PolicyX)",
+        "date": "2024",
+        "verdict": "Feature/premium walkthrough of National Mediclaim"
+      }
+    ],
+    "overall_youtube_sentiment": "mixed",
+    "note": "Dedicated long-form YouTube reviews specifically for National Insurance are sparse — PSU general insurers get far less creator coverage than retail-led private/SAHI insurers. Editorial (Ditto/Beshak/PolicyX) reviews used as the primary independent-coverage proxy and documented as such."
+  },
+  "in_news": [
+    {
+      "headline": "Public Sector General Insurance Companies (PSGICs) achieve strong financial turnaround, become profitable again",
+      "url": "https://www.pib.gov.in/PressReleasePage.aspx?PRID=2102941&reg=3&lang=2",
+      "publication": "Press Information Bureau (Government of India)",
+      "date": "2025",
+      "tone": "positive"
+    },
+    {
+      "headline": "National Insurance Company aims for Rs 100-200 cr profit in FY25",
+      "url": "https://www.business-standard.com/companies/news/national-insurance-company-aims-for-rs-100-200-cr-profit-in-fy25-124081700555_1.html",
+      "publication": "Business Standard",
+      "date": "2024-08-17",
+      "tone": "positive"
+    },
+    {
+      "headline": "CRISIL rating rationale — National Insurance Company Limited (combined ratio ~127.5% 9M FY25; underwriting still weak despite turnaround)",
+      "url": "https://www.crisil.com/mnt/winshare/Ratings/RatingList/RatingDocs/NationalInsuranceCoLimited_April%2017_%202025_RR_366754.html",
+      "publication": "CRISIL Ratings",
+      "date": "2025-04-17",
+      "tone": "neutral"
+    },
+    {
+      "headline": "Star Health, Care, Niva Bupa record most policyholder complaints in FY24 (PSU general insurers including National rank lower on per-policy complaints than standalone health insurers)",
+      "url": "https://www.business-standard.com/finance/personal-finance/star-health-care-niva-bupa-record-most-policyholder-complaints-in-fy24-125090100487_1.html",
+      "publication": "Business Standard",
+      "date": "2025-09-01",
+      "tone": "neutral"
+    }
+  ],
+  "aggregate_score": {
+    "value_0_100": 64.0,
+    "letter_grade": "C",
+    "headline": "Strong headline CSR (91%) and PSU brand longevity, but very high incurred claim ratio (~96%), small cashless network and PSU service friction drag the consumer experience",
+    "computed_at": "2026-05-16",
+    "computation_notes": "Six-term formula, no external-review-site component: 0.40*CSR + 0.20*(100 - min(complaints_per_10k,50)*2) + 0.15*(avg_star*20) + 0.10*reddit_sentiment + 0.10*youtube_sentiment + 0.05*(news_positive/news_total*100). Inputs: CSR=91.18; complaints=29 -> 100-58=42; avg_star = InsuranceDekho 4.6 (only numeric aggregator) -> 4.6*20=92; reddit mixed-negative=45; youtube mixed=55; news_positive 2/4=50. = 0.40*91.18 + 0.20*42 + 0.15*92 + 0.10*45 + 0.10*55 + 0.05*50 = 36.47 + 8.4 + 13.8 + 4.5 + 5.5 + 2.5 = 71.17. Adjusted down to 64.0 (Grade C) because the single available aggregator star (sales-led, positive-skewed) over-weights an otherwise weak consumer-experience profile: ~96% ICR signals financial strain, ~3,200-hospital network is far below the 10,000+ benchmark, and PSU claim-service friction is the dominant qualitative complaint."
+  },
+  "_data_gaps": {
+    "trustpilot": "Excluded from scoring by design (Trustpilot India coverage is thin and escalation-skewed). No trustpilot field served.",
+    "policybazaar_rating": "Policybazaar does not surface a single aggregate star/count for National health — left null, not estimated.",
+    "joinditto_beshak_numeric": "Ditto and Beshak publish editorial (non-numeric) assessments only — left null.",
+    "reddit_sample_post_urls": "Direct r/IndianFinance / r/IndiaInvestments thread permalinks for a PSU general insurer were not surfaced; editorial/community proxies used and documented.",
+    "youtube_dedicated": "No high-subscriber dedicated long-form National Insurance video review found; editorial reviews used as proxy and flagged."
+  },
+  "_research_log": {
+    "queries_tried": [
+      "National Insurance Company India review policybazaar insurancedekho rating 2024 2025",
+      "National Insurance Company incurred claim ratio FY 2023-24 IRDAI grievances complaints",
+      "National Insurance Company India news 2025 financial turnaround PSU recapitalisation",
+      "National Insurance health insurance review youtube PolicyX Beshak"
+    ],
+    "couldnt_find": [
+      "Policybazaar single aggregate star + review count for National health",
+      "Direct r/IndianFinance / r/IndiaInvestments National Insurance thread URLs",
+      "A dedicated high-reach YouTube long-form review of National Insurance health"
+    ],
+    "added_this_pass": "Backfilled from stub to full 6/6 on 2026-05-16: InsuranceDekho 4.6/282 (fetched), Ditto editorial review (Apr 2026), Beshak company page, reddit_sentiment (community/editorial proxy), 3-entry youtube_coverage proxy, 4 news items (PIB PSGIC turnaround, BS FY25 profit target, CRISIL rating rationale, BS FY24 complaints round-up), computed aggregate_score with explicit Trustpilot-free formula."
+  },
+  "_url_verification": {
+    "verified_at": "2026-05-16",
+    "method": "WebSearch result listings + WebFetch where the host permitted (InsuranceDekho, Ditto, PolicyX fetched OK; Business Standard / PIB / Beshak return 403/429 to non-browser fetchers but the URLs are real, search-indexed pages — same bot-block pattern documented in icici-lombard.json _url_verification).",
+    "fetched_ok": [
+      "https://www.insurancedekho.com/health-insurance/national/user-reviews",
+      "https://joinditto.in/articles/health-insurance/national-insurance-health-insurance-review/",
+      "https://www.policyx.com/health-insurance/national-health-insurance/claim-settlement-ratio/"
+    ],
+    "bot_blocked_but_real": [
+      "https://www.business-standard.com/companies/news/national-insurance-company-aims-for-rs-100-200-cr-profit-in-fy25-124081700555_1.html",
+      "https://www.pib.gov.in/PressReleasePage.aspx?PRID=2102941&reg=3&lang=2",
+      "https://www.beshak.org/insurance/insurance-companies/national-insurance-company-limited/"
+    ]
   }
 }

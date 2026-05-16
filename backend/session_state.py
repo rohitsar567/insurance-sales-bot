@@ -84,6 +84,25 @@ class SessionState:
     # fall through to the orchestrator — they emit a graceful retry
     # prompt so the session stays sticky on single_brain.
     single_brain_sticky: bool = False
+    # KI-RECALL-FIX (2026-05-16) — one-shot guard for the cross-session
+    # recall name sniff. Set True the first time single_brain attempts a
+    # name-based recall on this session (turn 1 OR a later turn where the
+    # user answers the bot's "what's your name?" prompt). Prevents
+    # re-prompting "are you the same <name>?" on every subsequent nameless
+    # turn. Independent of `pending_profile_recall` (which tracks an
+    # in-flight confirm), so a declined recall is not retried either.
+    _recall_sniff_done: bool = False
+    # Bug #108 + #110 (2026-05-16) — POST-RECAP pricing & family-history
+    # bundle re-ask gate (brain_tools.retrieve_policies).
+    #   pricing_bundle_reasked — one-shot guard. Set True the first time the
+    #     gate re-asks an unresolved bundle slot so the NEXT recommendation
+    #     retrieve proceeds even if the user skips (SOFT capture, no hard
+    #     loop).
+    #   pricing_bundle_skipped — set True by single_brain when the user
+    #     explicitly declines the pricing inputs ("just show me options",
+    #     "you decide", "skip"). Bypasses the re-ask entirely.
+    pricing_bundle_reasked: bool = False
+    pricing_bundle_skipped: bool = False
 
     def _flush(self) -> None:
         """No-op since KI-118 (2026-05-15). Disk persistence was removed; the

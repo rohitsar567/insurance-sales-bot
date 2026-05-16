@@ -37,7 +37,7 @@ from typing import Literal, Optional
 from backend.config import settings
 from backend.needs_finder import Profile
 
-_PROFILES_DIR = settings.CORPUS_DIR.parent.parent / "40-data" / "profiles"
+_PROFILES_DIR = settings.DATA_DIR / "profiles"
 
 
 def _normalise_name(name: str) -> str:
@@ -130,21 +130,43 @@ def load_profile(name: str, *, persona_id: Optional[str] = None) -> Optional[Pro
     cross-identity leak: a fresh, no-cookie visitor stating a common first
     name ("I'm Rahul") pulled a *stranger's* persona-id profile (different
     age / city / dependents) — exactly the audit's "Welcome back, Rahul"
-    finding. The scan has no legitimate use: `save_profile` already writes
-    a name-slug file on the first visit (before identity fields exist) and
-    only graduates to a persona-id file once enough disambiguating signal
-    exists, so a real returning user is resolved by step 1 (their own
-    persona_id, passed by the client) or step 2 (their own slug file).
-    Matching strangers by bare display name is removed entirely. Cross-name
-    recall, when intended, is now gated behind explicit user confirmation
-    at the session layer (`session_state.apply_pending_recall`).
+    finding. The directory scan is removed entirely.
+
+    KI-RECALL-FIX (2026-05-16). The privacy fix above, on its own, made
+    cross-session recall structurally DEAD: `save_profile` graduates to a
+    persona-id-keyed file the moment the user gives a name + ANY identity
+    fact (which the fact-find always asks immediately), so the bare
+    name-slug file `<slug>.json` never existed and step 2 always missed.
+    Five real "Rohit" profiles existed on disk, all persona-id-keyed, none
+    recoverable by the chat-path bare-name lookup → the "Welcome back"
+    banner was unreachable for every returning user.
+
+    The fix keeps the privacy boundary where it belongs (the explicit
+    "are you the same <name>?" confirm gate in single_brain /
+    session_state.apply_pending_recall) and restores recall by making
+    `save_profile` ALWAYS also write a `<slug>.json` recall pointer that
+    carries the user's most-recently-seen profile under that name. So:
+
+      • step 2 (slug file) resolves a real returning user's OWN most-recent
+        profile — enough to STAGE the confirm prompt. Nothing is merged
+        into the live session until the user explicitly says "yes that's
+        me" (session_state.apply_pending_recall), so a stranger stating a
+        common name is asked to confirm and, on anything other than a
+        clear yes, gets NOTHING (fail-closed).
+      • the cross-identity DIRECTORY SCAN stays removed — we never pick an
+        arbitrary persona-id file by matching display names. We only ever
+        read the deterministic slug file (the user's own pointer) or the
+        caller's own persona_id.
     """
     # 1. Direct persona-id hit (the caller's OWN id, never inferred here).
     if persona_id:
         p = _path_for(name, persona_id=persona_id)
         if p and p.exists():
             return _load_from_path(p)
-    # 2. Legacy / first-visit name-slug file (this user's own slug file).
+    # 2. Name-slug recall pointer (this user's own most-recent profile under
+    #    this name — written on EVERY save by save_profile). Safe to return
+    #    for *staging*: the session layer gates the actual merge behind an
+    #    explicit user confirmation, so a same-name stranger leaks nothing.
     p = _path_for(name)
     if p and p.exists():
         return _load_from_path(p)
@@ -152,40 +174,65 @@ def load_profile(name: str, *, persona_id: Optional[str] = None) -> Optional[Pro
     return None
 
 
+def _atomic_write_json(p: Path, payload: dict) -> None:
+    """Write `payload` to `p` atomically (tmp + replace)."""
+    tmp = p.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(payload, indent=2, default=str))
+    tmp.replace(p)
+
+
 def save_profile(name: str, profile: Profile, *, session_id: Optional[str] = None) -> bool:
-    """Persist `profile`. KI-062 (2026-05-15): files are keyed by
+    """Persist `profile`.
+
+    KI-062 (2026-05-15): the CANONICAL, disambiguated copy is keyed by
     `compute_persona_id(profile)` when there's enough signal so two users
     named 'Rohit' with different age/location don't overwrite each other.
-    Falls back to the name slug when persona_id can't be derived.
+
+    KI-RECALL-FIX (2026-05-16): we ALSO always write a `<slug>.json` recall
+    POINTER carrying the most-recently-seen profile under this name. Without
+    it, cross-session recall was structurally dead — `load_profile(name)` on
+    the chat path has no persona_id, the persona-id file is unreachable by
+    bare name, the privacy fix removed the directory scan, and the bare-slug
+    file was being *deleted* on graduation. The pointer is the deterministic
+    entry point a real returning user (typing their own name) is resolved by;
+    the actual merge into a live session stays gated behind the explicit
+    "are you the same <name>?" confirmation (session_state.apply_pending_recall),
+    so a same-name stranger still leaks nothing.
+
+    When no persona_id can be derived (name only, no identity facts yet) the
+    slug file IS the canonical file and we write it once.
     """
+    slug = _normalise_name(name)
+    if not slug:
+        return False
     persona_id = compute_persona_id(profile)
-    p = _path_for(name, persona_id=persona_id) if persona_id else _path_for(name)
-    if not p:
+    canonical = _path_for(name, persona_id=persona_id) if persona_id else _path_for(name)
+    slug_path = _path_for(name)
+    if not canonical or not slug_path:
         return False
     try:
         _PROFILES_DIR.mkdir(parents=True, exist_ok=True)
         existing: dict = {}
-        if p.exists():
+        if canonical.exists():
             try:
-                existing = json.loads(p.read_text())
+                existing = json.loads(canonical.read_text())
             except Exception:
                 existing = {}
-        # KI-062 — also clean up any older same-name file that was saved
-        # before we had enough identity signal to disambiguate. We move
-        # its session history into the new file rather than orphaning.
-        if persona_id:
-            legacy = _path_for(name)
-            if legacy and legacy.exists() and legacy.resolve() != p.resolve():
-                try:
-                    leg_raw = json.loads(legacy.read_text())
-                    legacy_sessions = list(leg_raw.get("sessions") or [])
-                    existing.setdefault("sessions", [])
-                    for s in legacy_sessions:
-                        if s not in existing["sessions"]:
-                            existing["sessions"].append(s)
-                    legacy.unlink()
-                except Exception:
-                    pass
+        # KI-062 / KI-RECALL-FIX — when graduating from a slug-keyed file to a
+        # persona-id-keyed file, carry the slug file's session history forward
+        # so it isn't orphaned. We DO NOT delete the slug file anymore — it is
+        # rewritten below as the recall pointer.
+        if persona_id and slug_path.resolve() != canonical.resolve() and slug_path.exists():
+            try:
+                leg_raw = json.loads(slug_path.read_text())
+                existing.setdefault("sessions", [])
+                for s in list(leg_raw.get("sessions") or []):
+                    if s not in existing["sessions"]:
+                        existing["sessions"].append(s)
+                if not existing.get("first_seen"):
+                    existing["first_seen"] = leg_raw.get("first_seen")
+            except Exception:
+                pass
         now_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         sessions = list(existing.get("sessions") or [])
         if session_id and session_id not in sessions:
@@ -193,16 +240,25 @@ def save_profile(name: str, profile: Profile, *, session_id: Optional[str] = Non
             sessions = sessions[-20:]  # keep last 20 only
         payload = {
             "name_display": (profile.name or name).strip(),
-            "name_slug": _normalise_name(name),
+            "name_slug": slug,
             "persona_id": persona_id,  # KI-062
             "profile": asdict(profile),
             "first_seen": existing.get("first_seen") or now_iso,
             "last_seen": now_iso,
             "sessions": sessions,
         }
-        tmp = p.with_suffix(".json.tmp")
-        tmp.write_text(json.dumps(payload, indent=2, default=str))
-        tmp.replace(p)
+        # 1) Canonical (persona-id-keyed when disambiguated, else slug).
+        _atomic_write_json(canonical, payload)
+        # 2) Recall pointer — always keep <slug>.json pointing at this user's
+        #    MOST-RECENT profile under this name. When canonical IS the slug
+        #    file (no persona_id) step 1 already wrote it; skip the dup write.
+        if slug_path.resolve() != canonical.resolve():
+            pointer = dict(payload)
+            # Breadcrumb so the admin/audit view can see this is a recall
+            # pointer that resolves to a persona-id-keyed canonical file.
+            pointer["recall_pointer"] = True
+            pointer["points_to_persona_id"] = persona_id
+            _atomic_write_json(slug_path, pointer)
         return True
     except Exception as e:
         logging.warning("profile_store save failed name=%s: %s", name, e)

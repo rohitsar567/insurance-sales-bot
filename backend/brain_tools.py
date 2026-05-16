@@ -65,6 +65,8 @@ import logging
 from pathlib import Path
 from typing import Any, Optional
 
+from backend.config import settings
+
 _log = logging.getLogger(__name__)
 
 
@@ -84,7 +86,7 @@ _log = logging.getLogger(__name__)
 # files; we only ever touch the ≤8 retrieved per turn, and memoise stems).
 # ───────────────────────────────────────────────────────────────────────────
 
-_FACTS_DIR = Path(__file__).resolve().parent.parent / "40-data" / "policy_facts"
+_FACTS_DIR = settings.DATA_DIR / "policy_facts"
 _DOCTYPE_SUFFIXES = ("__wordings", "__brochure", "__cis", "__prospectus")
 _FACT_KEYS = (
     "policy_type_indemnity_or_fixed",
@@ -291,6 +293,100 @@ _REQUIRED_FOR_READY = (
 
 
 # ───────────────────────────────────────────────────────────────────────────
+# Bug #108 + #110 (2026-05-16) — POST-RECAP pricing & family-history bundle.
+#
+# Bug #108: the RULE 2.5 bundle (SI / budget / co-pay / family history /
+#           smoker) is asked in ONE prompt. When the user answers SOME but
+#           not all, the LLM treated the bundle as fully satisfied (it's
+#           SOFT capture) and recommended with the unanswered slot blank —
+#           e.g. asked SI/budget/co-pay/smoker, user gave SI/budget/co-pay,
+#           smoker never re-asked, bot recommended.
+# Bug #110: family_medical_history (item 5 of the bundle) was the slot most
+#           often silently dropped — the fact-find effectively NEVER asked it.
+#
+# FIX: a deterministic ONE-SHOT re-ask gate. After the hard 7-slot gate
+# passes, on a recommendation retrieve_policies call, if any UNRESOLVED
+# bundle slot remains we return a directive `pricing_inputs_incomplete`
+# response (re-ask exactly the unresolved ones, verbatim) — but ONLY once
+# per session, and ONLY when the user has not explicitly skipped. After the
+# single re-ask we proceed (SOFT-capture semantics preserved: the user can
+# still skip; we never hard-loop).
+#
+# A bundle slot is RESOLVED when it is either captured on the profile OR the
+# user explicitly declined/skipped it (session.pricing_bundle_skipped — set
+# by single_brain when the user says "just show me options" / "skip" / "you
+# decide"). parents_age_max is conditional: only part of the bundle when the
+# user is covering parents and it isn't captured yet.
+_PRICING_BUNDLE_CORE: tuple[str, ...] = (
+    "desired_sum_insured_inr",
+    "budget_band",
+    "existing_cover_inr",
+    "copay_pct",
+    "family_medical_history",   # Bug #110 — must be asked, same skip handling
+    "smoker",
+)
+
+# Exact verbatim re-ask phrasing per bundle slot (mirrors RULE 2.5 wording so
+# the re-ask reads identically to the first ask). family_medical_history is
+# first so a forgotten Bug #110 slot leads the re-ask.
+_PRICING_BUNDLE_QUESTIONS: dict[str, str] = {
+    "family_medical_history": (
+        "Any major conditions running in your blood family "
+        "(parents/siblings) — cancer / diabetes / heart disease / "
+        "hypertension? (say 'none' if not)"
+    ),
+    "desired_sum_insured_inr": (
+        "How much sum insured would you like? (e.g., ₹5L / ₹10L / "
+        "₹25L / ₹1Cr)"
+    ),
+    "budget_band": (
+        "What's your annual premium budget? (e.g., ₹10-15K/year, or "
+        "₹50K+ for premium covers)"
+    ),
+    "existing_cover_inr": (
+        "Any existing health cover from work or otherwise? "
+        "(e.g., '5L through employer', or 'no')"
+    ),
+    "copay_pct": (
+        "Are you OK with a co-pay — sharing 10-30% of every claim — to "
+        "lower the premium? Or do you want zero co-pay?"
+    ),
+    "smoker": "Do you smoke or use tobacco products? (yes / no)",
+    "parents_age_max": (
+        "Roughly what's the age of the eldest parent you'd cover?"
+    ),
+}
+
+
+def _profile_has_parents(profile) -> bool:
+    """True when the captured dependents indicate parents are covered (so
+    parents_age_max becomes part of the post-recap bundle)."""
+    dep = getattr(profile, "dependents", None)
+    if isinstance(dep, str) and "parent" in dep.lower():
+        return True
+    return bool(getattr(profile, "parents_to_insure", None))
+
+
+def _unresolved_pricing_bundle(profile, session) -> list[str]:
+    """Return the bundle slots that are NEITHER captured on the profile NOR
+    explicitly skipped by the user this session. Empty list ⇒ nothing left
+    to re-ask (recommend may proceed)."""
+    if session is not None and bool(
+        getattr(session, "pricing_bundle_skipped", False)
+    ):
+        # User explicitly said "just show me options / you decide / skip".
+        return []
+    bundle = list(_PRICING_BUNDLE_CORE)
+    if _profile_has_parents(profile):
+        bundle.append("parents_age_max")
+    unresolved: list[str] = []
+    for slot in bundle:
+        if getattr(profile, slot, None) in (None, "", []):
+            unresolved.append(slot)
+    return unresolved
+
+
+# ───────────────────────────────────────────────────────────────────────────
 # SLOT_UNION (B6, 2026-05-15)
 # ───────────────────────────────────────────────────────────────────────────
 # Single source of truth for every captured field that drives EITHER the
@@ -419,6 +515,8 @@ def save_profile_field(session, field: str, value: Any) -> dict:
             normalized = _coerce_family_medical_history(value)
         elif fld == "smoker":
             normalized = _coerce_smoker(value)
+        elif fld == "budget_band":
+            normalized = _coerce_budget_band(value)
         elif fld == "name":
             normalized = (str(value).strip() if value is not None else None) or None
         elif fld == "gender":
@@ -434,7 +532,8 @@ def save_profile_field(session, field: str, value: Any) -> dict:
                 "profile_complete": _profile_complete(profile),
             }
         else:
-            # location_tier / income_band / primary_goal / budget_band — pass through
+            # location_tier / income_band / primary_goal — pass through
+            # (budget_band is normalised above via _coerce_budget_band)
             normalized = (str(value).strip() if value is not None else None) or None
     except (TypeError, ValueError) as e:
         return {
@@ -491,6 +590,7 @@ async def retrieve_policies(
     profile=None,
     intent: str = "recommendation",
     session=None,
+    session_id: Optional[str] = None,
 ) -> dict:
     """Call the existing Chroma retriever and return policy chunks.
 
@@ -502,7 +602,30 @@ async def retrieve_policies(
        "guard": optional {reason, fallback} if filter pipeline says abort}
 
     On failure: {"chunks": [], "count": 0, "error": "..."}.
+
+    QUARANTINE-RETRIEVAL FIX (2026-05-16) — `session_id` is threaded all the
+    way down to `rag.retrieve.retrieve(...)` so a PDF the caller uploaded via
+    POST /api/upload-policy (indexed into the SEPARATE
+    `user_uploads_quarantine` Chroma collection, tagged with this session's
+    id) becomes retrievable BY THE CHAT BRAIN FOR THAT SESSION ONLY. Before
+    this fix the upload was embedded but the brain never forwarded
+    session_id, so the quarantine boost pass in retrieve.py never fired and
+    an uploaded policy could never surface in the conversation. Resolution
+    order: explicit `session_id` arg > `session.session_id` attribute >
+    None (no quarantine lookup). User A's session_id never leaks into user
+    B's retrieval because the quarantine `where={"session_id": ...}` filter
+    is strictly equality-scoped (see rag/retrieve.py).
     """
+    # Resolve the effective session id. The single_brain dispatcher passes
+    # the live SessionState as `session`; older callers may pass session_id
+    # explicitly. Never raise — a missing id just means "no quarantine".
+    eff_session_id = session_id
+    if eff_session_id is None and session is not None:
+        eff_session_id = getattr(session, "session_id", None)
+    if isinstance(eff_session_id, str):
+        eff_session_id = eff_session_id.strip() or None
+    elif eff_session_id is not None:
+        eff_session_id = None
     if not isinstance(query, str) or not query.strip():
         return {"chunks": [], "count": 0, "error": "empty_query"}
 
@@ -564,6 +687,63 @@ async def retrieve_policies(
                 ),
             }
 
+    # Bug #108 + #110 (2026-05-16) — POST-RECAP pricing & family-history
+    # bundle re-ask gate. The hard 7-slot gate above is satisfied; before we
+    # return chunks for a RECOMMENDATION, ensure every bundle item (SI /
+    # budget / existing cover / co-pay / FAMILY MEDICAL HISTORY / smoker /
+    # parents-age-if-applicable) has been RESOLVED — captured OR explicitly
+    # skipped. If the user answered some but not all, re-ask ONLY the
+    # unresolved ones — but exactly ONCE per session (one-shot guard) so we
+    # never hard-loop and SOFT-capture semantics survive (the user can still
+    # skip on the re-ask). Follow-ups (policy_filter_ids) bypass this — it's
+    # purely the first recommendation path.
+    if (
+        profile is not None
+        and not policy_filter_ids
+        and (intent or "").lower() == "recommendation"
+        and session is not None
+        and not bool(getattr(session, "pricing_bundle_reasked", False))
+    ):
+        unresolved = _unresolved_pricing_bundle(profile, session)
+        if unresolved:
+            # One-shot: mark so the NEXT recommendation retrieve proceeds
+            # even if the user skips on the re-ask (SOFT capture, not a hard
+            # gate — Bug #108 fix must re-ask, not loop forever).
+            try:
+                session.pricing_bundle_reasked = True
+            except Exception:  # noqa: BLE001 — bookkeeping must not break
+                pass
+            _qs = [
+                _PRICING_BUNDLE_QUESTIONS.get(
+                    s, f"Could you share your {s.replace('_', ' ')}?"
+                )
+                for s in unresolved
+            ]
+            _numbered = "\n".join(
+                f"{i}. {q}" for i, q in enumerate(_qs, start=1)
+            )
+            return {
+                "chunks": [],
+                "count": 0,
+                "error": "pricing_inputs_incomplete",
+                "missing_slots": unresolved,
+                "action_required": "ask_user_for",
+                "field": unresolved[0],
+                "exact_question": (
+                    "Before I pull your recommendations, just a couple more "
+                    "(you can skip any):\n" + _numbered
+                ),
+                "instruction": (
+                    "The user answered some but not all of the pricing / "
+                    "family-history questions. Do NOT call retrieve_policies "
+                    "again this turn and do NOT recommend yet. Emit a TEXT "
+                    "reply that asks ONLY the still-missing items in "
+                    "`exact_question` verbatim. If the user then provides "
+                    "them, save each via save_profile_field; if they skip, "
+                    "proceed to retrieve_policies on the next turn."
+                ),
+            }
+
     try:
         from rag.retrieve import retrieve as _retrieve
 
@@ -571,6 +751,7 @@ async def retrieve_policies(
             query=query,
             top_k=int(top_k) if top_k else 8,
             policy_ids=policy_filter_ids or None,
+            session_id=eff_session_id,
         )
     except Exception as e:  # noqa: BLE001 — return graceful empty
         _log.warning(
@@ -721,10 +902,9 @@ def mark_recommendation(
             pass
 
     # X7 — write a shown_policies event per cited policy so the admin
-    # Recommendation History panel reflects single_brain turns the same way
-    # it does orchestrator turns. Orchestrator-side pattern lives at
-    # backend/orchestrator.py near line 1669 (_log_shown_policies, KI-063);
-    # we mirror it: dedupe by slug, resolve insurer via the slug→insurer
+    # Recommendation History panel needs single_brain turns logged the same
+    # way the (now-removed) orchestrator did its `_log_shown_policies`
+    # (KI-063): dedupe by slug, resolve insurer via the slug→insurer
     # cache `retrieve_policies` stashed on the session this turn, and stamp
     # `turn_idx=session.turn_idx` so the frontend "Conversation turn" column
     # has a real value instead of "—".
@@ -920,6 +1100,92 @@ def _coerce_existing_cover(value: Any) -> Optional[int]:
         if digits:
             return max(0, int(digits))
     except Exception:  # noqa: BLE001
+        pass
+    return None
+
+
+# Canonical budget bands — the EXACT string contract the frontend
+# ProfileBuilderPanel round-trips via budgetBandToInr / budgetInrToBand
+# (frontend/src/app/page.tsx) and that needs_finder._parse_budget_band
+# emits. Keeping this set inline makes the contract greppable from the
+# capture surface.
+_CANONICAL_BUDGET_BANDS: frozenset[str] = frozenset(
+    {"under_15k", "15k_30k", "30k_60k", "60k+"}
+)
+
+
+def _coerce_budget_band(value: Any) -> Optional[str]:
+    """Normalise a budget capture to the documented `budget_band` contract.
+
+    Bug #109 (2026-05-16). The user states a premium budget in chat
+    ("max ₹15,000/yr", "around 30k", "15000"). Gemini calls
+    save_profile_field(field="budget_band", value=...) but often passes the
+    NUMERIC the user said, not a canonical band. The old code let
+    budget_band fall through the generic string pass-through, so
+    profile.budget_band was stored as the raw "15000" — which the frontend
+    ProfileBuilderPanel's budgetBandToInr() switch can't map, so the panel
+    never pre-filled the budget slider even though the bot's summary showed
+    it.
+
+    Mapping (matches frontend budgetInrToBand + needs_finder bands):
+      • already a canonical band ("15k_30k") → passed through unchanged
+      • free-text / numeric ("max ₹15,000/yr", "30k", 22000, "10-15K")
+        → delegated to needs_finder._parse_budget_band → canonical band
+      • unrecognised → None (KI-091 null-overwrite guard then refuses to
+        clobber a previously-captured band)
+    """
+    if value is None:
+        return None
+    # Numeric → bucket directly (₹ amount per year).
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        v = int(value)
+        if v < 15_000:
+            return "under_15k"
+        if v < 30_000:
+            return "15k_30k"
+        if v < 60_000:
+            return "30k_60k"
+        return "60k+"
+    s = str(value).strip()
+    if not s:
+        return None
+    # Already canonical — accept verbatim (case/space tolerant).
+    norm = s.lower().replace(" ", "")
+    if norm in _CANONICAL_BUDGET_BANDS:
+        return norm
+    # Strip ANNUAL-budget qualifiers FIRST. needs_finder._parse_inr_amount
+    # treats a bare "yr" / "year" as an AGE context and refuses to read any
+    # number as currency (the KI-161 age guard) — so the canonical live
+    # phrasing "max ₹15,000/yr" / "₹15000 per year" parsed to None and the
+    # band was never captured (Bug #109). These suffixes are unambiguous
+    # PER-ANNUM budget markers here (the field is explicitly the premium
+    # budget), not an age, so we drop them before delegating.
+    import re as _re
+
+    cleaned = _re.sub(
+        r"\b(?:per\s*(?:year|annum)|p\.?\s*a\.?|/\s*(?:yr|year|annum)|"
+        r"a\s*year|annually|yearly|/\s*yr)\b",
+        " ",
+        s,
+        flags=_re.IGNORECASE,
+    )
+    # Free-text / amount → canonical band via the shared parser. This
+    # handles "max ₹15,000", "30k", "around 25000", "15-30k", "1 lakh".
+    try:
+        from backend.needs_finder import _parse_budget_band
+
+        band = _parse_budget_band(cleaned)
+        if band in _CANONICAL_BUDGET_BANDS:
+            return band
+        # Last-resort: if the qualifier strip left only the amount, try the
+        # raw string too (covers phrasings the regex didn't anticipate).
+        if cleaned != s:
+            band = _parse_budget_band(s)
+            if band in _CANONICAL_BUDGET_BANDS:
+                return band
+    except Exception:  # noqa: BLE001 — parser optional; fall through to None
         pass
     return None
 

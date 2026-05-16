@@ -368,6 +368,10 @@ export type PremiumEstimateResponse = {
   // the policy is in illustrative_premiums.json). Drives the widget's
   // "Estimate" badge — replaces bulk_estimate's `assumed` flag.
   base_sample_used?: boolean;
+  // D2 — non-null ONLY when the policy publishes no corroborated Sum
+  // Insured, so this estimate was priced against a fallback cover. Render
+  // verbatim under the estimate.
+  sum_insured_disclosure?: string | null;
 };
 
 export type ComparePolicyEntry = {
@@ -397,7 +401,16 @@ export type MarketplacePolicy = {
   data_completeness_pct: number;
   min_entry_age?: number | null;
   max_entry_age?: number | null;
+  // SI RATIONALISATION (D1/D3) — these are the SOURCE-QUOTE-CORROBORATED
+  // set only (backend/sum_insured.py): SI values the policy document's own
+  // quote does not state are dropped. sum_insured_is_band is true ONLY when
+  // the corroborated set is a genuine continuous band (render "₹X – ₹Y");
+  // otherwise render the discrete tiers in sum_insured_tiers.
   sum_insured_options: number[];
+  sum_insured_min?: number | null;
+  sum_insured_max?: number | null;
+  sum_insured_is_band?: boolean;
+  sum_insured_tiers?: number[];
   pre_existing_disease_waiting_months?: number | null;
   initial_waiting_period_days?: number | null;
   maternity_waiting_months?: number | null;
@@ -408,6 +421,11 @@ export type MarketplacePolicy = {
   maternity_coverage?: boolean | null;
   cashless_treatment_supported?: boolean | null;
   room_rent_capping?: string | null;
+  // #86 — sourced insurer-level network: official list URL + official
+  // stated count (when the insurer publishes one).
+  network_list_url?: string | null;
+  network_count_official?: number | null;
+  network_list_is_pdf?: boolean | null;
 };
 
 export type MarketplaceResponse = {
@@ -590,6 +608,19 @@ export type PremiumBulkProfile = {
   family_size?: number | null;
   smoker?: boolean | null;
   pre_existing_conditions?: PreExistingCondition | null;
+  // KI-278 (2026-05-16) — SI-reconciliation fields. PolicyPremiumWidget
+  // resolves its initial sum-insured from these with the EXACT precedence
+  // the header-chip backend uses (resolve_profile_sum_insured in
+  // backend/premium_calculator.py): desired_sum_insured_inr →
+  // existing_cover_inr → ₹10L default. Carrying them on this shape lets the
+  // per-policy widget price the SAME SI the header band priced, so the two
+  // surfaces reconcile instead of contradicting. The backend
+  // PremiumBulkProfile Pydantic model ignores unknown keys (strict model +
+  // exclude_none dump), so adding these is forward-safe for the bulk path;
+  // PolicyPremiumWidget itself only reads them client-side to seed the SI
+  // slider + estimate request.
+  desired_sum_insured_inr?: number | null;
+  existing_cover_inr?: number | null;
 };
 
 export type PremiumBulkOverride = {
@@ -683,9 +714,17 @@ export async function postSessionClear(
 }
 
 
-export async function uploadPolicy(file: File): Promise<UploadResponse> {
+export async function uploadPolicy(
+  file: File,
+  session_id?: string,
+): Promise<UploadResponse> {
   const fd = new FormData();
   fd.append("file", file);
+  // Scope the uploaded doc to this chat session so retrieval can answer
+  // questions about it for this user only (backend tags the quarantine
+  // chunks with session_id; missing → "anonymous"). Contract: the endpoint
+  // reads session_id as an optional multipart Form field.
+  if (session_id) fd.append("session_id", session_id);
   const resp = await fetch(`${BACKEND_URL}/api/upload-policy`, {
     method: "POST",
     body: fd,

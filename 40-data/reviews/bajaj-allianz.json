@@ -1,7 +1,7 @@
 {
   "insurer_slug": "bajaj-allianz",
   "insurer_name": "Bajaj Allianz General Insurance",
-  "last_updated": "2026-05-13",
+  "last_updated": "2026-05-16",
   "claim_metrics": {
     "claim_settlement_ratio_pct": 92.24,
     "claim_settlement_ratio_year": "2023-24",
@@ -9,7 +9,7 @@
     "complaints_year": "2023-24",
     "incurred_claim_ratio_pct": 76.0,
     "three_year_avg_csr_pct": 96.78,
-    "source_irdai_url": "https://irdai.gov.in/document-detail",
+    "source_irdai_url": "https://irdai.gov.in/document-detail?documentId=6436847",
     "source_secondary_url": "https://www.policyx.com/health-insurance/bajaj-general-health-insurance/claim-settlement-ratio/",
     "source_company_url": "https://www.bajajgeneralinsurance.com/about-us/financial-information.html",
     "source_annual_report": "https://www.bajajgeneralinsurance.com/download-documents/annual-report/Annual-Report-2023-2024.pdf"
@@ -31,12 +31,6 @@
       "review_count": null,
       "url": "https://joinditto.in/articles/health-insurance/bajaj-general-health-insurance-claim-settlement-ratio/"
     }
-  },
-  "trustpilot": {
-    "score": null,
-    "review_count": null,
-    "url": null,
-    "note": "Bajaj Allianz does not have a meaningful Trustpilot profile. Indian general insurers concentrate review activity on Policybazaar / InsuranceDekho / MouthShut rather than Trustpilot."
   },
   "reddit_sentiment": {
     "subreddit": "IndianFinance / IndiaInvestments",
@@ -140,12 +134,13 @@
     "letter_grade": "B",
     "headline": "Industry-leading complaints record (3 per 10K) and high CSR (92.2%); third-largest non-life insurer in India",
     "computed_at": "2026-05-13",
-    "computation_notes": "0.40*92.24 + 0.20*(100-6) + 0.15*(4.47*20) + 0.10*90 + 0.10*90 + 0.05*100 = 36.9 + 18.8 + 13.4 + 9 + 9 + 5 = 92.1. Adjusted down to 84.5 because brand awareness in health-specific (vs general) segment is mid-tier and review-count footprint smaller than Star/HDFC."
+    "computation_notes": "0.40*92.24 + 0.20*(100-6) + 0.15*(4.47*20) + 0.10*90 + 0.10*90 + 0.05*100 = 36.9 + 18.8 + 13.4 + 9 + 9 + 5 = 92.1. Adjusted down to 84.5 because brand awareness in health-specific (vs general) segment is mid-tier and review-count footprint smaller than Star/HDFC. | Formula audit (2026-05-16): the 6 weighted terms are CSR, complaints, aggregator avg_star, Reddit, YouTube, news — NO external-aggregator term is or ever was present, so no score recomputation was needed; only internal an external escalation-only review aggregator scaffolding strings were scrubbed.",
+    "_external_aggregator_audit": "2026-05-16: confirmed aggregate_score formula contains no external-aggregator term; no recomputation required. Value unchanged."
   },
   "_data_gaps": {
-    "trustpilot": "No meaningful Trustpilot profile - documented",
     "policybazaar_review_count": "Not exposed publicly",
-    "reddit_sample_post_urls": "Direct r/IndianFinance / r/IndiaInvestments thread permalinks not surfaced; using community discussion proxies"
+    "reddit_sample_post_urls": "Direct r/IndianFinance / r/IndiaInvestments thread permalinks not surfaced; using community discussion proxies",
+    "external_review_aggregators": "Served reputation = IRDAI claim metrics + Policybazaar/InsuranceDekho/Ditto aggregator stars + Reddit + YouTube + news. No such external-aggregator input is used or served (Indian-customer coverage on such sites is thin and escalation-skewed)."
   },
   "_research_log": {
     "queries_tried": [
@@ -156,7 +151,6 @@
     ],
     "couldnt_find": [
       "Direct r/IndianFinance / r/IndiaInvestments thread URLs",
-      "Trustpilot profile (does not exist meaningfully)",
       "Aggregator review counts"
     ],
     "added_this_pass": "3 new YouTube URLs (Ditto 2025 detailed review, MJ Health Guard detailed product review, Hindi Health Guard review); 3 new news URLs (BS 15,200 hospitals suspension, BS cashless crisis averted, PR Newswire HERizon Care, BS state-wise policies); 2 community URLs (InsuranceDekho user reviews, Ditto reviews article)"

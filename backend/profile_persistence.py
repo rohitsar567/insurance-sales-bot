@@ -230,6 +230,69 @@ def extract_potential_name(text: str) -> Optional[str]:
     return raw
 
 
+# KI-RECALL-FIX (2026-05-16). The intro regex above only fires on explicit
+# self-introductions ("I'm Priya", "Priya here"). But a returning user most
+# often gives their name when ANSWERING the bot's "What's your name?" prompt —
+# typically a bare token ("Rohit", "It's Rohit", "Rohit Sharma") on turn 2+,
+# which `extract_potential_name` deliberately rejects as too noisy WITHOUT
+# context. When we KNOW the assistant just asked for the name, a short
+# proper-noun reply IS the name and is safe to use as a recall key (still
+# gated by the explicit confirm prompt downstream).
+_ASSISTANT_ASKED_NAME_RE = re.compile(
+    r"(your name|what.*\bname\b|may i (?:have|know) your name|who am i (?:speaking|chatting) with|call you|whom am i)",
+    re.IGNORECASE,
+)
+# A bare-name answer: optional lead-in ("it's", "i'm", "this is", "call me",
+# "name is") then 1–2 capitalised-or-lowercase alpha tokens. Used ONLY when
+# the assistant just asked for the name (context disambiguates the noise).
+_BARE_NAME_ANSWER_RE = re.compile(
+    r"""^\s*
+        (?:(?:it'?s|i\s*am|i'?m|this\s+is|name'?s|name\s+is|call\s+me|my\s+name\s+is)\s+)?
+        (?P<n>[A-Za-z][a-zA-Z'.\-]{1,30}(?:\s+[A-Za-z][a-zA-Z'.\-]{1,30})?)
+        \s*[.!]?\s*$
+    """,
+    re.VERBOSE,
+)
+
+
+def extract_name_in_context(user_text: str, prev_assistant_text: Optional[str]) -> Optional[str]:
+    """Best-effort name capture for the recall sniff.
+
+    Layered:
+      1. The strong intro regex (`extract_potential_name`) — works regardless
+         of context ("Hi I'm Priya").
+      2. If the assistant's PREVIOUS message asked for the user's name, accept
+         a short proper-noun answer ("Rohit", "It's Rohit Sharma") that the
+         intro regex deliberately ignores out of context.
+
+    Returns the captured display name, or None. No DB / LLM cost. The result
+    is only ever used to STAGE a confirmation-gated recall.
+    """
+    n = extract_potential_name(user_text)
+    if n:
+        return n
+    if not user_text or not user_text.strip():
+        return None
+    if not prev_assistant_text or not _ASSISTANT_ASKED_NAME_RE.search(prev_assistant_text):
+        return None
+    m = _BARE_NAME_ANSWER_RE.match(user_text.strip())
+    if not m:
+        return None
+    raw = (m.group("n") or "").strip()
+    if not raw:
+        return None
+    first = raw.split()[0]
+    # Reject stop-words ("okay", "sure", "later") and digit-laden tokens even
+    # in the name-question context — the user may be deflecting.
+    if first.lower() in _NAME_STOPWORDS:
+        return None
+    if not first[:1].isalpha() or len(first) < 2:
+        return None
+    if any(ch.isdigit() for ch in raw):
+        return None
+    return raw
+
+
 def try_recall_by_name(session, name: str) -> bool:
     """Look up a stored profile by name and STAGE it for confirmation.
 
@@ -327,6 +390,7 @@ async def recall_by_name_payload(
 __all__ = [
     "auto_persist_session",
     "extract_potential_name",
+    "extract_name_in_context",
     "try_recall_by_name",
     "recall_by_name_payload",
 ]

@@ -179,6 +179,16 @@
     "source_quote": "4.2. AYUSH Treatment The Company shall indemnify medical expenses incurred for inpatient care treatment Under Ayurveda, Yoga and Naturopathy, Unani, Siddha and Homeopathy system of medicines during each Policy Year",
     "_confidence": "high"
   },
+  "maternity_coverage": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/royal-sundaram/arogya-sanjeevani__wordings.pdf",
+    "source_quote": "7.15. Maternity Expenses (Code – Excl18): i. Medical treatment expenses traceable to childbirth (including complicated deliveries and caesarean sections incurred during hospitalization) except ectopic pregnancy; ii. Expenses towards miscarriage (unless due to an accident) and lawful medical termination",
+    "source_doc_type": "wordings",
+    "source_page": "12-13",
+    "_note": "Maternity expenses are an express permanent exclusion (Code-Excl18) under Arogya Sanjeevani",
+    "_confidence": "high"
+  },
   "domiciliary_treatment": {
     "value": false,
     "unit": "boolean",

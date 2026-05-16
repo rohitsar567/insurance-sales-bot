@@ -20,10 +20,11 @@ from pathlib import Path
 from urllib.parse import urljoin, urlparse
 
 import requests
+from backend.config import settings
 
 ROOT = Path(__file__).resolve().parent.parent
 CORPUS_DIR = ROOT / "rag" / "corpus" / "regulatory"
-URL_FILE = ROOT / "40-data" / "regulatory_urls.md"
+URL_FILE = settings.DATA_DIR / "regulatory_urls.md"
 MANIFEST_FILE = CORPUS_DIR / "_manifest.json"
 
 UA = (

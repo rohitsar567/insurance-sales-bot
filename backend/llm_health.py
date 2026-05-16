@@ -66,6 +66,8 @@ Operating schedule:
 """
 from __future__ import annotations
 
+from backend.config import settings
+
 import asyncio
 import json
 import logging
@@ -82,7 +84,7 @@ import httpx
 logger = logging.getLogger(__name__)
 
 ROOT = Path(__file__).resolve().parent.parent
-HEALTH_FILE = ROOT / "40-data" / "llm_health.json"
+HEALTH_FILE = settings.DATA_DIR / "llm_health.json"
 HEALTH_FILE.parent.mkdir(parents=True, exist_ok=True)
 
 # KI-084 (2026-05-15) — probe cadence raised 60s → 300s. With ~25

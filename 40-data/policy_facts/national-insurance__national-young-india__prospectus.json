@@ -32,11 +32,15 @@
     "_confidence": "medium"
   },
   "sum_insured_options": {
-    "value": null,
+    "value": [
+      300000,
+      500000,
+      1000000
+    ],
     "unit": "INR",
     "source_pdf_path": "rag/corpus/national-insurance/national-young-india__prospectus.pdf",
-    "source_quote": "not stated in national-young-india__prospectus.pdf",
-    "_confidence": "low"
+    "source_quote": "TABLE OF BENEFITS Name National Young India Mediclaim Policy (NYIMP) Type Individual/ Floater Category of Cover Indemnity Sum Insured ₹ 3L, 5L, 10L (Basic SI)",
+    "_confidence": "high"
   },
   "grace_period": {
     "value": 30,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   audioBlobURLFromBase64,
   BACKEND_URL,
@@ -32,7 +32,7 @@ import {
   UserProfile,
 } from "@/lib/api";
 import { translate, UILang, StringKey, GLOSSARY } from "@/lib/i18n";
-import PolicyCompareModal from "@/components/PolicyCompareModal";
+import PolicyCompareModal, { parseScorecardFacts, SnapshotView, GlossaryTip, fmtSumInsured } from "@/components/PolicyCompareModal";
 import PolicyPremiumWidget from "@/components/PolicyPremiumWidget";
 import PolicyScorecardWidget from "@/components/PolicyScorecardWidget";
 import type { PremiumBulkProfile, BulkScorecardProfile } from "@/lib/api";
@@ -40,6 +40,7 @@ import type { PremiumBulkProfile, BulkScorecardProfile } from "@/lib/api";
 // to native browser SpeechRecognition via `useStreamingVoice`. The old hook
 // remains on disk as a graveyard reference until KI-168 is field-verified.
 import { useStreamingVoice } from "@/lib/useStreamingVoice";
+import { useIsTouch } from "@/lib/useIsTouch";
 
 type DisplayMessage = ChatMessage & {
   id: string;
@@ -59,6 +60,14 @@ export default function Page() {
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
+  // Voice-display fix — the composer <textarea> must grow as the live
+  // interim voice transcript accumulates so the user sees their FULL
+  // spoken sentence (not just the first line) while holding SPACE / PTT.
+  // The textarea has resize-none + a small min-height, so without this
+  // it stays clamped to one line and the transcript visually truncates
+  // even though capture/submit are correct. We size height to scrollHeight
+  // (capped by the max-h-32 CSS) and auto-scroll to the newest text.
+  const composerRef = useRef<HTMLTextAreaElement | null>(null);
   // KI-038 (2026-05-14) — voicePhase exposes the otherwise-invisible
   // "between recording and showing the user bubble" Sarvam-STT gap (~1-2s)
   // and the "between user bubble and bot reply" /api/chat gap (~5-15s).
@@ -82,6 +91,10 @@ export default function Page() {
   // KI-257 — true while the user is holding SPACE (drives the visual
   // "ready to take audio" indicator near the PTT button).
   const [spaceHoldActive, setSpaceHoldActive] = useState(false);
+  // #3 mobile — touch devices have no SPACE key, so SPACE-centric voice
+  // copy reads as "voice is broken" on a phone (tap-to-talk DOES work via
+  // the button's onClick + VAD auto-stop). Shared SSR-safe hook.
+  const isTouch = useIsTouch();
   // Live (BETA) risk-confirmation gate. Opening Live always-on must surface
   // a clear, styled WARNING modal listing the real failure modes EVERY time
   // (no localStorage "seen once" bypass — the old window.confirm gate let
@@ -107,6 +120,9 @@ export default function Page() {
   const [openPolicy, setOpenPolicy] = useState<MarketplacePolicy | null>(null);
   const [sessionId, setSessionId] = useState<string | undefined>();
   const [profileCompleteness, setProfileCompleteness] = useState<ProfileCompletenessResponse | null>(null);
+  // #101 — live profile-completion % reported by the open ProfileBuilderPanel
+  // so the header pill shows the SAME number as the panel's progress bar.
+  const [liveProfilePct, setLiveProfilePct] = useState<number | null>(null);
   // Predicted-premium BAND chip — sits next to the "X% DONE" profile pill.
   // Refetches reactively on every completeness_pct change (same trigger as
   // the completeness bar) so the user sees their personal premium envelope
@@ -306,6 +322,12 @@ export default function Page() {
   const [pttInterim, setPttInterim] = useState<string>("");
   const pttInterimTimerRef = useRef<number | null>(null);
   const pttInterimLatestRef = useRef<string>("");
+  // Voice-display fix — ref to the PTT interim strip so we can keep it
+  // scrolled to the newest words once the accumulated transcript exceeds
+  // the strip's capped height. Previously this strip used `truncate`
+  // (white-space:nowrap + overflow:hidden) which clipped the live
+  // transcript to a single line.
+  const pttInterimBoxRef = useRef<HTMLDivElement | null>(null);
   // V4 FIX 2 — dedup window for final transcripts. Some browsers fire the
   // final SpeechRecognition result twice (Safari quirk). Suppress
   // identical strings arriving within 500ms.
@@ -450,6 +472,56 @@ export default function Page() {
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
+
+  // #42 — auto-grow the composer textarea to fit its FULL content so the
+  // live interim voice transcript is visible in its entirety (no string
+  // slice, no single-line clamp, no overflow:hidden clip). The textarea has
+  // NO Tailwind max-h; instead we cap it here in JS to a generous height
+  // that is larger WHILE listening (so a full spoken paragraph shows) and
+  // tighter when idle. Only when the accumulated text genuinely exceeds the
+  // cap do we enable internal scroll and pin to the newest words. Runs on
+  // every `input` change AND when recording toggles so the cap switches
+  // live as the user starts/stops speaking.
+  useEffect(() => {
+    const ta = composerRef.current;
+    if (!ta) return;
+    // While capturing voice (PTT click, hold-SPACE, or Live), give the box
+    // far more room so the entire accumulated interim transcript is on
+    // screen. Idle/typed flow keeps a calmer cap. Both are well above one
+    // line — the previous max-h-32 (128px) was the perceived "truncation".
+    // #91 — the 240px capture cap meant a long spoken query only ever
+    // showed its last ~10 lines (scroll pinned to newest), so the user
+    // "couldn't see the whole transcript even though it was all captured".
+    // While capturing, grow up to ~half the viewport so the full utterance
+    // is visible; only the genuinely huge tail still scrolls.
+    const isCapturing = recording || spaceHoldActive || live.recording;
+    const vh = typeof window !== "undefined" ? window.innerHeight : 800;
+    const maxH = isCapturing ? Math.min(Math.round(vh * 0.5), 520) : 160;
+    // Collapse first so shrinking text (word-erase / send-clear) recomputes
+    // the natural height instead of staying tall.
+    ta.style.height = "auto";
+    const needed = ta.scrollHeight;
+    const applied = Math.min(needed, maxH);
+    ta.style.height = `${applied}px`;
+    // Enable internal scroll ONLY when content truly overflows the cap;
+    // otherwise the whole transcript is shown with no scrollbar. Pin to the
+    // newest text (the word just spoken) when we do scroll.
+    if (needed > maxH) {
+      ta.style.overflowY = "auto";
+      ta.scrollTop = ta.scrollHeight;
+    } else {
+      ta.style.overflowY = "hidden";
+    }
+  }, [input, recording, spaceHoldActive, live.recording]);
+
+  // Voice-display fix — keep the PTT interim strip pinned to its newest
+  // text. The strip now wraps + caps its height + scrolls internally, so
+  // as the spoken sentence grows past the cap the user still sees the
+  // most-recent words rather than a clipped first line.
+  useEffect(() => {
+    const box = pttInterimBoxRef.current;
+    if (box) box.scrollTop = box.scrollHeight;
+  }, [pttInterim]);
 
   // Hands-free continuous loop: when toggled ON, immediately open mic. When
   // toggled OFF, close any in-progress recording. The send() function takes
@@ -619,6 +691,31 @@ export default function Page() {
   // with any other callsite — both true and false now route through the new
   // endpoint since the server-side semantic is identical (in-memory wipe +
   // fresh UUID; on-disk profile JSON untouched).
+  // #67 — single-active panel model. Exactly ONE side panel can be open at
+  // a time. Every open/toggle routes through here so there is no path that
+  // leaves two panels (and two close buttons) stacked. `togglePanel` flips
+  // the named panel and force-closes the rest; `closeAllPanels` is the
+  // shared dismiss.
+  type PanelName = "marketplace" | "profile" | "admin";
+  const closeAllPanels = () => {
+    setShowMarketplace(false);
+    setShowProfile(false);
+    setShowAdmin(false);
+    setShowPremium(false);
+    setShowCoverage(false);
+  };
+  const openPanel = (name: PanelName) => {
+    setShowMarketplace(name === "marketplace");
+    setShowProfile(name === "profile");
+    setShowAdmin(name === "admin");
+    setShowPremium(false);
+    setShowCoverage(false);
+  };
+  const togglePanel = (name: PanelName, isOpen: boolean) => {
+    if (isOpen) closeAllPanels();
+    else openPanel(name);
+  };
+
   async function handleClearChat(_dropProfile: boolean = false) {
     // Always wipe the visible chat + local storage.
     setMessages([]);
@@ -1068,10 +1165,17 @@ export default function Page() {
             }
           } else if (tr.text && tr.text.trim()) {
             // KI-213 — replace the interim SR transcript with Sarvam's
-            // authoritative version, then submit. send() clears the input
-            // itself so the brief flash here is intentional UX feedback.
+            // authoritative version, then submit.
+            // #105 — the live composer shows the Web-Speech INTERIM (instant
+            // but approximate / shorter); the SENT message is this Sarvam
+            // authoritative text (fuller, punctuated). Before, setInput then
+            // immediate send() cleared it in the same tick, so the user only
+            // ever saw the shorter interim and read it as "truncated". Show
+            // the full authoritative transcript for a perceptible beat so
+            // what they see == what is sent, THEN submit.
             // V4 FIX 4 — transcript-sourced.
             setInputFromTranscript(tr.text);
+            await new Promise((r) => setTimeout(r, 380));
             // send() flips voicePhase to "thinking" itself; no need to set here
             await send(tr.text);
           } else if (srFallback) {
@@ -1278,14 +1382,28 @@ export default function Page() {
   async function handleFile(ev: React.ChangeEvent<HTMLInputElement>) {
     const f = ev.target.files?.[0];
     if (!f) return;
-    setUploadStatus(`Indexing ${f.name}…`);
+    setUploadStatus(t("upload.indexing", { name: f.name }));
     try {
-      const r = await uploadPolicy(f);
-      setUploadStatus(`✓ Indexed "${r.policy_name}" — ${r.chunks_added} chunks from ${r.pages_indexed} pages (${(r.elapsed_ms / 1000).toFixed(1)}s). Ask me about it.`);
+      // Pass the live chat session so the backend scopes the uploaded doc
+      // to this user — the assistant can then answer questions about it
+      // for the rest of THIS conversation.
+      const r = await uploadPolicy(f, sessionId);
+      setUploadStatus(
+        t("upload.success", {
+          name: r.policy_name,
+          chunks: r.chunks_added,
+          pages: r.pages_indexed,
+          secs: (r.elapsed_ms / 1000).toFixed(1),
+        }),
+      );
       // Refresh coverage so the uploaded doc shows up
       getCoverage().then(setCoverage).catch(() => {});
     } catch (e: unknown) {
-      setUploadStatus(`✗ Upload failed: ${e instanceof Error ? e.message : String(e)}`);
+      setUploadStatus(
+        t("upload.error", {
+          err: e instanceof Error ? e.message : String(e),
+        }),
+      );
     } finally {
       if (fileInputRef.current) fileInputRef.current.value = "";
       setTimeout(() => setUploadStatus(null), 8000);
@@ -1369,9 +1487,11 @@ export default function Page() {
               {uiLang === "hi" ? "बीमा सलाहकार" : "Insurance Advisor"}
             </h1>
           </div>
-          <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap ml-auto">
+          {/* #49 — on phones this row scrolls horizontally (chip-row-scroll)
+              instead of wrapping into a tall ragged stack. */}
+          <div className="chip-row-scroll flex items-center gap-2 sm:gap-2.5 flex-wrap ml-auto">
             <button
-              onClick={() => { setShowMarketplace(!showMarketplace); setShowPremium(false); setShowCoverage(false); setShowAdmin(false); }}
+              onClick={() => togglePanel("marketplace", showMarketplace)}
               className={`chip-tile group relative overflow-hidden rounded-xl transition-all shadow-sm hover:shadow-md ${
                 showMarketplace
                   ? "ring-2 ring-[var(--primary)]"
@@ -1398,42 +1518,11 @@ export default function Page() {
                 </div>
               </div>
             </button>
-            {/* KI (2026-05-15) — old "ESTIMATE Annual premium" CTA chip
-                removed. The premium-band chip below is now itself the
-                clickable surface to open the PremiumCalculatorPanel, so
-                two redundant premium UI elements collapsed into one. */}
-            <button
-              onClick={() => { setShowProfile(!showProfile); setShowMarketplace(false); setShowPremium(false); setShowCoverage(false); setShowAdmin(false); }}
-              className={`chip-tile group relative overflow-hidden rounded-xl transition-all shadow-sm hover:shadow-md ${
-                showProfile ? "ring-2 ring-[var(--primary)]" : ""
-              }`}
-              title={uiLang === "hi" ? "अपनी profile बनाएं — हर policy को आपके लिए score करेंगे" : "Build your profile — every policy gets a personal score"}
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-violet-600 via-purple-600 to-fuchsia-600" />
-              <div className="relative flex items-stretch text-white">
-                <div className="flex items-center justify-center px-3 py-2 bg-black/15">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="8" r="4" /><path d="M4 21v-2a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v2" /></svg>
-                </div>
-                <div className="px-3 py-2 text-left">
-                  <div className="text-[11px] uppercase tracking-wider font-semibold leading-none whitespace-nowrap">
-                    {uiLang === "hi" ? "आपकी profile" : "Your profile"}
-                  </div>
-                  <div className="text-[12px] leading-tight whitespace-nowrap opacity-90 mt-1">
-                    {profileCompleteness
-                      ? (uiLang === "hi"
-                          ? `${profileCompleteness.completeness_pct}% पूर्ण`
-                          : `${profileCompleteness.completeness_pct}% complete`)
-                      : (uiLang === "hi" ? "शुरू करें" : "Tap to build")}
-                  </div>
-                </div>
-              </div>
-            </button>
-            {/* KI-273 — Premium chip is now ALWAYS visible (the entry point
-                to the premium calculator). Shows a real band ("₹X–₹Y/yr")
-                when profile is ≥50% complete AND we have a sample; below
-                that it shows a tap-to-start placeholder so the user always
-                has a way to open the calculator regardless of profile state.
-                Amber/orange signals "estimate, not a binding quote". */}
+            {/* #60 (2026-05-16) — the profile chip and the premium-range chip
+                were two separate pills that BOTH opened the same merged
+                Profile & premium view (#47c). Unified into ONE pill with two
+                segments (profile | premium); the whole pill opens the merged
+                view. */}
             {(() => {
               const hasMeaningfulBand =
                 profileCompleteness &&
@@ -1443,32 +1532,56 @@ export default function Page() {
               return (
               <button
                 type="button"
-                onClick={() => { setShowPremium(!showPremium); setShowMarketplace(false); setShowCoverage(false); setShowProfile(false); setShowAdmin(false); }}
-                className={`chip-tile group relative overflow-hidden rounded-xl shadow-sm transition-all hover:shadow-md hover:brightness-110 cursor-pointer ${
-                  showPremium ? "ring-2 ring-[var(--primary)]" : ""
+                onClick={() => togglePanel("profile", showProfile)}
+                className={`chip-tile group relative overflow-hidden rounded-xl shadow-sm transition-all hover:shadow-md ${
+                  showProfile ? "ring-2 ring-[var(--primary)]" : ""
                 }`}
-                title={uiLang === "hi" ? "आपकी profile के सभी eligible plans का अनुमानित premium range. किसी एक plan के लिए estimate देखने के लिए tap करें." : "Estimated premium range across all eligible plans for your profile. Tap to estimate for a specific plan."}
+                title={uiLang === "hi" ? "आपकी profile + सभी eligible plans का live premium range — एक ही merged view." : "Your profile + the live premium range across all eligible plans — one merged view."}
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600" />
                 <div className="relative flex items-stretch text-white">
-                  <div className="flex items-center justify-center px-3 py-2 bg-black/15">
-                    <RupeeIcon />
-                  </div>
-                  <div className="px-3 py-2 text-left">
-                    <div className="text-[11px] uppercase tracking-wider font-semibold leading-none whitespace-nowrap">
-                      {uiLang === "hi" ? "प्रीमियम रेंज" : "Premium range"}
+                  {/* Profile segment */}
+                  <div className="flex items-stretch bg-gradient-to-br from-violet-600 via-purple-600 to-fuchsia-600">
+                    <div className="flex items-center justify-center px-3 py-2 bg-black/15">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="8" r="4" /><path d="M4 21v-2a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v2" /></svg>
                     </div>
-                    <div className="text-[12px] leading-tight whitespace-nowrap opacity-90 mt-1">
-                      {hasMeaningfulBand
-                        ? `₹${premiumBand!.min_inr.toLocaleString("en-IN")}–₹${premiumBand!.max_inr.toLocaleString("en-IN")}/yr`
-                        : (uiLang === "hi" ? "अनुमान देखें" : "Tap to estimate")}
+                    <div className="px-3 py-2 text-left">
+                      <div className="text-[11px] uppercase tracking-wider font-semibold leading-none whitespace-nowrap">
+                        {uiLang === "hi" ? "आपकी profile" : "Your profile"}
+                      </div>
+                      <div className="text-[12px] leading-tight whitespace-nowrap opacity-90 mt-1">
+                        {(() => {
+                          // #101 — single source: prefer the live % the open
+                          // panel reports (so the pill === the panel bar);
+                          // fall back to the saved backend % when the panel
+                          // isn't open; "Tap to build" only when neither.
+                          const pct = liveProfilePct ?? profileCompleteness?.completeness_pct ?? null;
+                          if (pct == null) return uiLang === "hi" ? "शुरू करें" : "Tap to build";
+                          return uiLang === "hi" ? `${pct}% पूर्ण` : `${pct}% complete`;
+                        })()}
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center justify-center px-2 py-2 bg-white/15 border-l border-white/20 transition-transform group-hover:translate-x-0.5">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <path d="M4 21v-4l11-11 4 4-11 11H4z" />
-                      <path d="M14 6l4 4" />
-                    </svg>
+                  {/* Premium segment */}
+                  <div className="flex items-stretch bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600 border-l border-white/25">
+                    <div className="flex items-center justify-center px-3 py-2 bg-black/15">
+                      <RupeeIcon />
+                    </div>
+                    <div className="px-3 py-2 text-left">
+                      <div className="text-[11px] uppercase tracking-wider font-semibold leading-none whitespace-nowrap">
+                        {uiLang === "hi" ? "प्रीमियम रेंज" : "Premium range"}
+                      </div>
+                      <div className="text-[12px] leading-tight whitespace-nowrap opacity-90 mt-1">
+                        {hasMeaningfulBand
+                          ? `₹${premiumBand!.min_inr.toLocaleString("en-IN")}–₹${premiumBand!.max_inr.toLocaleString("en-IN")}/yr`
+                          : (uiLang === "hi" ? "अनुमान देखें" : "Tap to estimate")}
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-center px-2 py-2 bg-white/15 border-l border-white/20 transition-transform group-hover:translate-x-0.5">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M4 21v-4l11-11 4 4-11 11H4z" />
+                        <path d="M14 6l4 4" />
+                      </svg>
+                    </div>
                   </div>
                 </div>
               </button>
@@ -1478,11 +1591,11 @@ export default function Page() {
                 Backend admin API is password-gated (KI-097); enter the admin
                 password in the embedded dashboard to unlock the live data. */}
             <button
-              onClick={() => { setShowAdmin(!showAdmin); setShowMarketplace(false); setShowPremium(false); setShowProfile(false); setShowCoverage(false); }}
+              onClick={() => togglePanel("admin", showAdmin)}
               className={`chip-tile group relative overflow-hidden rounded-xl transition-all shadow-sm hover:shadow-md ${
                 showAdmin ? "ring-2 ring-[var(--primary)]" : ""
               }`}
-              title="LLM control panel — health, chain order, usage (admin-only, password-gated)"
+              title="Admin console — password-protected"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-slate-700 via-slate-600 to-zinc-700" />
               <div className="relative flex items-stretch text-white">
@@ -1508,10 +1621,14 @@ export default function Page() {
           never unmounts, so messages, voice, and view-context stay live no
           matter which view the user is focused on. */}
       <div className="flex-1 flex flex-col lg:flex-row min-h-0 w-full">
-        <main className={`flex flex-col min-h-0 px-4 sm:px-6 py-4 sm:py-6 ${
-          (showMarketplace || showPremium || showProfile)
-            ? "lg:w-2/5 lg:border-r lg:border-[var(--border)] w-full"
-            : "max-w-6xl w-full mx-auto"
+        {/* #49 — on phones, an open panel "takes over": the chat main is
+            hidden (NOT unmounted, so voice + view-context stay live) and
+            the panel gets the full viewport. Desktop keeps the two-column
+            split. `flex` restores the column on lg. */}
+        <main className={`flex-col min-h-0 px-4 sm:px-6 py-4 sm:py-6 ${
+          (showMarketplace || showPremium || showProfile || showAdmin)
+            ? "hidden"
+            : "flex max-w-6xl w-full mx-auto"
         }`}>
         {messages.length === 0 ? (
           <>
@@ -1577,7 +1694,7 @@ export default function Page() {
                   <button
                     onClick={() => {
                       setWelcomeBack(null);
-                      setShowProfile(true);
+                      openPanel("profile");
                     }}
                     className="px-2 py-1 rounded-md text-xs border border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--primary)] hover:text-[var(--foreground)] transition"
                     title="Open the profile builder to revise"
@@ -1595,13 +1712,7 @@ export default function Page() {
                   marketplace={marketplace}
                   profile={profileCompleteness?.profile}
                   premiumBand={premiumBand}
-                  onOpenMarketplace={() => {
-                    setShowMarketplace(true);
-                    setShowPremium(false);
-                    setShowCoverage(false);
-                    setShowProfile(false);
-                    setShowAdmin(false);
-                  }}
+                  onOpenMarketplace={() => openPanel("marketplace")}
                 />
               ))}
               {(busy || voicePhase) && <ThinkingDots phase={voicePhase} />}
@@ -1630,6 +1741,7 @@ export default function Page() {
         >
           <div className="flex items-end gap-2">
             <textarea
+              ref={composerRef}
               value={input}
               onChange={(e) => {
                 // V4 FIX 4 — once the user starts typing, the input is no
@@ -1677,9 +1789,42 @@ export default function Page() {
               }}
               placeholder="Ask about coverage, waiting periods, exclusions, or compare policies…"
               rows={1}
-              className="flex-1 resize-none bg-transparent outline-none text-sm sm:text-base px-2 py-2 min-h-[40px] max-h-32"
+              aria-label="Message"
+              // #42 — NO Tailwind max-h here; the auto-grow effect caps the
+              // height in JS (taller while listening so the full interim
+              // transcript shows) and toggles overflow only on real
+              // overflow. overflowY starts hidden; the effect manages it.
+              className="flex-1 resize-none scrollbar-thin bg-transparent outline-none text-sm sm:text-base px-2 py-2 min-h-[40px]"
+              style={{ overflowY: "hidden" }}
               disabled={busy}
             />
+            {/* Hidden file input — the visible 📎 control drives it. PDF
+                only; the backend rejects non-PDF magic bytes anyway, but
+                the accept filter keeps the OS picker focused. */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,application/pdf"
+              onChange={handleFile}
+              className="hidden"
+              aria-hidden="true"
+              tabIndex={-1}
+            />
+            {/* Attach-PDF control. Same 44px tap height + radius language
+                as the Send button (.btn-primary → 12px radius, h-11); a
+                hairline-bordered secondary so it reads as a companion to
+                Send, not a competing primary. */}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={busy}
+              aria-label={t("input.upload")}
+              title={t("input.upload")}
+              className="shrink-0 h-11 px-3.5 rounded-xl border border-[var(--border)] bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--primary)] hover:border-[var(--primary)] transition-colors flex items-center gap-1.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <PaperclipIcon />
+              <span className="hidden sm:inline">PDF</span>
+            </button>
             <button
               type="button"
               onClick={() => send(input)}
@@ -1765,8 +1910,12 @@ export default function Page() {
                       : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-md ring-2 ring-emerald-300 dark:ring-emerald-700"
                 } disabled:opacity-40`}
                 title={recording
-                  ? "Recording… click to stop and submit (or release SPACE)"
-                  : "Push-to-talk: click to start, click again to stop. Or hold SPACE."}
+                  ? (isTouch
+                      ? "Recording… tap to stop and send"
+                      : "Recording… click to stop and submit (or release SPACE)")
+                  : (isTouch
+                      ? "Tap to talk; tap again to stop. A pause auto-sends."
+                      : "Push-to-talk: click to start, click again to stop. Or hold SPACE.")}
               >
                 {recording ? <StopIcon /> : <MicIcon />}
                 <span>{recording ? "Stop & send" : "Push-to-talk"}</span>
@@ -1778,16 +1927,22 @@ export default function Page() {
                 {recording && spaceHoldActive
                   ? "Listening… release SPACE to submit"
                   : recording
-                    ? "Listening… click Stop to submit"
-                    : "or hold SPACE to talk · release to submit"}
+                    ? (isTouch ? "Listening… tap Stop to send" : "Listening… click Stop to submit")
+                    : (isTouch
+                        ? "Tap Push-to-talk, then pause — it sends itself"
+                        : "or hold SPACE to talk · release to submit")}
               </span>
             </div>
           )}
 
-          {/* PTT interim transcript — visible only while actually recording */}
+          {/* #42 — PTT interim transcript strip. Visible while recording.
+              Generous cap (max-h-40 ≈ 160px) so a full spoken sentence is
+              readable here too, wraps + scrolls (newest pinned by the
+              effect) instead of clipping to one line. */}
           {voiceMasterOn && recording && pttInterim && (
             <div
-              className="mt-1 px-2 text-xs italic text-[var(--muted-foreground)] leading-snug truncate"
+              ref={pttInterimBoxRef}
+              className="mt-2 px-3 py-2 rounded-xl border border-[color-mix(in_srgb,var(--primary)_22%,var(--border))] bg-[color-mix(in_srgb,var(--primary)_4%,var(--card))] text-xs sm:text-[13px] italic text-[var(--muted-foreground)] leading-relaxed whitespace-pre-wrap break-words max-h-40 overflow-y-auto scrollbar-thin"
               aria-live="polite"
               aria-atomic="true"
               title={pttInterim}
@@ -1801,45 +1956,41 @@ export default function Page() {
         {/* Panel column — sits beside the chat on desktop, takes over on
             mobile. Stays mounted as long as a panel is open; chat in the
             other column remains fully interactive (real-time copilot). */}
-        {(showMarketplace || showPremium || showProfile || showAdmin) && (
-          <aside className="lg:w-3/5 w-full overflow-y-auto bg-[var(--background)]">
-            {showMarketplace && marketplace && (
+        {(showMarketplace || showProfile || showAdmin) && (
+          <aside className="w-full flex-1 min-h-0 overflow-y-auto bg-[var(--background)]">
+            {/* #67 — strict single-active: an explicit if/else-if chain so
+                only ONE panel can ever mount even if two flags raced true.
+                Every close routes through closeAllPanels (one close path,
+                never two stacked close buttons). */}
+            {showMarketplace && marketplace ? (
               <MarketplacePanel
                 data={marketplace}
                 onOpenPolicy={(p) => setOpenPolicy(p)}
-                onClose={() => setShowMarketplace(false)}
+                onClose={closeAllPanels}
                 t={t}
                 isPersonalized={profileCompleteness?.is_personalized === true}
               />
-            )}
-            {showPremium && (
-              <PremiumCalculatorPanel
-                onClose={() => setShowPremium(false)}
-                initialProfile={profileCompleteness?.profile}
-                uiLang={uiLang}
-              />
-            )}
-            {showProfile && (
+            ) : showProfile ? (
               <ProfileBuilderPanel
                 sessionId={sessionId}
                 setSessionId={setSessionId}
                 initialProfile={profileCompleteness?.profile || {}}
                 onSaved={(resp) => { setProfileCompleteness(resp); }}
-                onClose={() => setShowProfile(false)}
+                onClose={closeAllPanels}
                 uiLang={uiLang}
+                onProgress={setLiveProfilePct}
               />
-            )}
-            {showAdmin && (
+            ) : showAdmin ? (
               <div className="flex flex-col h-full">
                 <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)] bg-[var(--card)]">
                   <div>
                     <h2 className="text-sm font-semibold">Admin Console</h2>
                     <p className="text-xs text-[var(--muted-foreground)]">
-                      Password-gated. Enter the admin password to view LLM health, usage rollups, saved profiles, and chain controls.
+                      Password-protected. Sign in to view system health, usage, saved profiles, and controls.
                     </p>
                   </div>
                   <button
-                    onClick={() => setShowAdmin(false)}
+                    onClick={closeAllPanels}
                     className="text-xs text-[var(--muted-foreground)] hover:underline"
                   >
                     close
@@ -1847,12 +1998,12 @@ export default function Page() {
                 </div>
                 <iframe
                   src="/admin/llm-control.html"
-                  title="LLM Control Panel"
+                  title="Admin console"
                   className="flex-1 w-full border-0 bg-white"
                   sandbox="allow-scripts allow-same-origin allow-forms"
                 />
               </div>
-            )}
+            ) : null}
           </aside>
         )}
       </div>
@@ -1886,6 +2037,190 @@ export default function Page() {
   );
 }
 
+// ────────────────────────────────────────────────────────────────────────
+// #47 — shared continuous-slider primitives + ₹ helpers. All discrete
+// pill/band selectors for money fields (sum insured, existing cover,
+// co-pay, annual premium budget) are replaced by these so the user can
+// pick ANY value, not a coarse band.
+// ────────────────────────────────────────────────────────────────────────
+
+// Compact ₹ label: ₹X cr / ₹X L / ₹Xk / ₹X. One decimal max per the
+// decimal-numbering rule (1–2 digit → ≤1 decimal; ≥3 digit → 0 decimals).
+function fmtRupeeShort(v: number): string {
+  if (v <= 0) return "₹0";
+  if (v >= 10000000) {
+    const cr = v / 10000000;
+    return `₹${cr % 1 === 0 ? cr : cr.toFixed(1)} cr`;
+  }
+  if (v >= 100000) {
+    const l = v / 100000;
+    return `₹${l % 1 === 0 ? l : l.toFixed(1)}L`;
+  }
+  if (v >= 1000) {
+    const k = v / 1000;
+    return `₹${k % 1 === 0 ? k : k.toFixed(1)}k`;
+  }
+  return `₹${Math.round(v)}`;
+}
+
+// Annual-premium-budget numeric value ⇄ backend `budget_band` string.
+// The backend Profile contract field is `budget_band` (a string enum);
+// we keep sending that (contract unchanged) but the UI is now a precise
+// numeric slider. This maps the numeric rupee value onto the documented
+// band so the profile save still persists it (#47b).
+function budgetInrToBand(v: number): string {
+  if (v < 15000) return "under_15k";
+  if (v < 30000) return "15k_30k";
+  if (v < 60000) return "30k_60k";
+  return "60k+";
+}
+function budgetBandToInr(band?: string | null): number | null {
+  switch (band) {
+    case "under_15k":
+      return 12000;
+    case "15k_30k":
+      return 22000;
+    case "30k_60k":
+      return 45000;
+    case "60k+":
+      return 75000;
+    default:
+      return null;
+  }
+}
+
+// One continuous money/number slider with a live ₹ readout. Themed via the
+// existing .app-range token so it matches the editorial-fintech system.
+// ≥44px effective tap target (touch-action + generous padding on mobile).
+//
+// ARCHITECTURE (rebuild — two prior patches failed): the slider is FULLY
+// self-contained. It owns a local `draft` value that tracks the pointer in
+// real time. The parent is only told the new value on COMMIT — pointer
+// release, keyboard change, or blur — never per drag tick. The component is
+// React.memo'd and never reads parent state mid-drag, so dragging one slider
+// cannot re-render the panel (no premium recompute, no sibling re-render, no
+// "blink every fractional second"). The thumb position is driven purely by
+// `draft`, so the drag always completes smoothly.
+const RupeeSlider = React.memo(function RupeeSlider({
+  label,
+  hint,
+  value,
+  min,
+  max,
+  step,
+  format = fmtRupeeShort,
+  unsetLabel,
+  onCommit,
+}: {
+  label: React.ReactNode;
+  hint?: React.ReactNode;
+  value: number | null;
+  min: number;
+  max: number;
+  step: number;
+  format?: (v: number) => string;
+  unsetLabel?: string;
+  // Called ONLY when the user settles (pointer up / keyboard / blur). Never
+  // per drag tick — that is the decoupling that kills the re-render storm.
+  onCommit: (v: number) => void;
+}) {
+  const mid = Math.round((min + max) / 2);
+  // Local draft — the single source of truth WHILE interacting. Seeded from
+  // the parent value but never re-synced mid-drag.
+  const [draft, setDraft] = React.useState<number>(value ?? mid);
+  const draggingRef = React.useRef(false);
+
+  // Re-sync the draft to the parent value ONLY when the parent value changes
+  // AND we are not mid-drag (e.g. profile loaded from chat, recall, reset).
+  React.useEffect(() => {
+    if (draggingRef.current) return;
+    setDraft(value ?? mid);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+
+  // The readout reflects the live draft so the number tracks the thumb with
+  // zero parent involvement. "Not set" only shows before the user touches it.
+  const display =
+    value == null && !draggingRef.current && draft === mid
+      ? (unsetLabel ?? "—")
+      : format(draft);
+
+  const commit = (v: number) => {
+    draggingRef.current = false;
+    if (v !== value) onCommit(v);
+  };
+
+  return (
+    <div>
+      <label className="flex items-baseline justify-between gap-3 text-xs mb-2">
+        <span className="font-semibold">{label}</span>
+        <span className="font-mono text-sm text-[var(--primary)] font-semibold tabular-nums">
+          {display}
+        </span>
+      </label>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={draft}
+        // Drag tick: update LOCAL state only. Smooth thumb tracking, zero
+        // parent re-render, zero premium recompute.
+        onInput={(e) => {
+          draggingRef.current = true;
+          setDraft(parseInt((e.target as HTMLInputElement).value, 10));
+        }}
+        onChange={(e) => {
+          // Fires for keyboard arrows / click-to-step. Treat as a commit.
+          const v = parseInt((e.target as HTMLInputElement).value, 10);
+          setDraft(v);
+          if (!draggingRef.current) commit(v);
+        }}
+        // Settle: pointer release / touch end / blur all commit the final
+        // value to the parent exactly once.
+        onPointerUp={() => commit(draft)}
+        onPointerCancel={() => commit(draft)}
+        onTouchEnd={() => commit(draft)}
+        onKeyUp={() => commit(draft)}
+        onBlur={() => commit(draft)}
+        className="app-range app-range-lg"
+        style={{ touchAction: "none" }}
+      />
+      <div className="flex justify-between text-[10px] text-[var(--muted-foreground)] mt-1 tabular-nums">
+        <span>{format(min)}</span>
+        <span>{format(max)}</span>
+      </div>
+      {hint && (
+        <p className="text-[10.5px] text-[var(--muted-foreground)] mt-1.5 leading-snug">
+          {hint}
+        </p>
+      )}
+    </div>
+  );
+});
+
+// #100 — module-scope so its identity is STABLE across ProfileBuilderPanel
+// re-renders (an in-render definition remounted the whole form every
+// keystroke). Purely presentational; depends only on its props.
+function Group({
+  n, title, hint, children,
+}: { n: number; title: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <section className="field-group p-4 sm:p-5">
+      <div className="flex items-start gap-3 mb-4">
+        <div className="field-medallion shrink-0">{n}</div>
+        <div className="min-w-0">
+          <h3 className="panel-title text-[15px] leading-tight">{title}</h3>
+          {hint && (
+            <p className="text-[11.5px] text-[var(--muted-foreground)] leading-snug mt-0.5">{hint}</p>
+          )}
+        </div>
+      </div>
+      <div className="space-y-4">{children}</div>
+    </section>
+  );
+}
+
 function ProfileBuilderPanel({
   sessionId,
   setSessionId,
@@ -1893,6 +2228,7 @@ function ProfileBuilderPanel({
   onSaved,
   onClose,
   uiLang,
+  onProgress,
 }: {
   sessionId: string | undefined;
   setSessionId: (id: string) => void;
@@ -1900,6 +2236,9 @@ function ProfileBuilderPanel({
   onSaved: (r: ProfileCompletenessResponse) => void;
   onClose: () => void;
   uiLang: UILang;
+  // #101 — report the LIVE completion % up so the header pill shows the
+  // SAME number as this panel's progress bar (was: pill=backend 0%, bar=14%).
+  onProgress?: (pct: number) => void;
 }) {
   // KI-077 — pre-fill from initialProfile (the chat-captured state). If the
   // chat already heard "I am Rohit Sar, 29, just me, Mumbai", every chip
@@ -1907,7 +2246,13 @@ function ProfileBuilderPanel({
   const [name, setName] = useState<string>(initialProfile.name ?? "");
   const [age, setAge] = useState<number | null>(initialProfile.age ?? null);
   const [dependents, setDependents] = useState<string>(initialProfile.dependents ?? "self");
-  const [budget, setBudget] = useState<string>(initialProfile.budget_band ?? "");
+  // #47b — Annual premium budget is now a precise NUMERIC value (continuous
+  // slider), seeded from the stored `budget_band` string. It IS captured +
+  // persisted: handleSave derives `budget_band` (the backend contract field)
+  // from this number via budgetInrToBand so the profile save round-trips it.
+  const [budgetInr, setBudgetInr] = useState<number | null>(
+    initialProfile.budget_band ? budgetBandToInr(initialProfile.budget_band) : null,
+  );
   const [income, setIncome] = useState<string>(initialProfile.income_band ?? "");
   const [city, setCity] = useState<string>(initialProfile.location_tier ?? "");
   const [conditions, setConditions] = useState<string[]>(initialProfile.health_conditions ?? []);
@@ -1934,7 +2279,7 @@ function ProfileBuilderPanel({
     if (initialProfile.name && !name) setName(initialProfile.name);
     if (initialProfile.age != null && age == null) setAge(initialProfile.age);
     if (initialProfile.dependents && dependents === "self") setDependents(initialProfile.dependents);
-    if (initialProfile.budget_band && !budget) setBudget(initialProfile.budget_band);
+    if (initialProfile.budget_band && budgetInr == null) setBudgetInr(budgetBandToInr(initialProfile.budget_band));
     if (initialProfile.income_band && !income) setIncome(initialProfile.income_band);
     if (initialProfile.location_tier && !city) setCity(initialProfile.location_tier);
     if (initialProfile.health_conditions?.length && !conditions.length) setConditions(initialProfile.health_conditions);
@@ -1946,8 +2291,21 @@ function ProfileBuilderPanel({
     if (initialProfile.smoker != null && smoker == null) setSmoker(initialProfile.smoker);
     if (initialProfile.copay_pct != null && copay == null) setCopay(initialProfile.copay_pct);
     if (initialProfile.family_medical_history?.length && !familyHistory.length) setFamilyHistory(initialProfile.family_medical_history);
+    // #62 — depend on the PRIMITIVE fields, not the initialProfile object.
+    // The parent passes `profileCompleteness?.profile || {}`, so the object
+    // identity changes every parent render; keying on it re-ran this sync on
+    // every render and compounded the slider re-render storm.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialProfile]);
+  }, [
+    initialProfile.name, initialProfile.age, initialProfile.dependents,
+    initialProfile.budget_band, initialProfile.income_band,
+    initialProfile.location_tier, initialProfile.existing_cover_inr,
+    initialProfile.primary_goal, initialProfile.parents_age_max,
+    initialProfile.parents_has_ped, initialProfile.desired_sum_insured_inr,
+    initialProfile.smoker, initialProfile.copay_pct,
+    (initialProfile.health_conditions || []).join(","),
+    (initialProfile.family_medical_history || []).join(","),
+  ]);
 
   const hindi = uiLang === "hi";
 
@@ -1973,7 +2331,9 @@ function ProfileBuilderPanel({
         name: name.trim() || undefined,  // KI-077 — submit the name too
         age: age ?? undefined,
         dependents: dependents || undefined,
-        budget_band: budget || undefined,
+        // #47b — persist the numeric annual-premium budget by mapping it
+        // onto the backend's documented `budget_band` contract field.
+        budget_band: budgetInr != null ? budgetInrToBand(budgetInr) : undefined,
         income_band: income || undefined,
         location_tier: city || undefined,
         health_conditions: conditions.length ? conditions : undefined,
@@ -1982,12 +2342,9 @@ function ProfileBuilderPanel({
         parents_to_insure: dependents.includes("parent") ? true : null,
         parents_has_ped: parentsHasPed,
         parents_age_max: parentsAgeMax ?? undefined,
-        // Pricing/scoring slots. The backend Profile dataclass + chat-path
-        // save_profile_field consume all four; the HTTP /api/profile
-        // ProfileUpdateRequest currently whitelists only the fields above,
-        // so Pydantic drops these server-side until that gap is closed.
-        // Sent anyway so they take effect with zero frontend change once it
-        // is. (See returned report — flagged, backend left untouched.)
+        // Pricing/scoring slots — now fully whitelisted by the backend
+        // ProfileUpdateRequest (main.py) AND consumed by premium_calculator
+        // + retrieval, so they round-trip end-to-end.
         desired_sum_insured_inr: desiredSI ?? undefined,
         smoker: smoker,
         copay_pct: copay ?? undefined,
@@ -2000,6 +2357,72 @@ function ProfileBuilderPanel({
       setBusy(false);
     }
   };
+
+  // LIVE premium — ARCHITECTURE REBUILD.
+  //
+  // ONE premium figure. ONE recompute path. The recompute is fully decoupled
+  // from slider drag: every slider commits to parent state only on release
+  // (self-contained RupeeSlider above), so a dep change here can only happen
+  // AFTER the user settles — never per tick. A single debounce coalesces
+  // rapid commits (e.g. tabbing through several fields). No pointer guards,
+  // no recompute nonce, no dual band — the prior layered patches that fought
+  // each other are gone. The estimate uses the SAME contract the premium
+  // engine owns (postPremiumEstimate) so this number and the header chip
+  // never diverge.
+  const [livePremium, setLivePremium] = useState<PremiumEstimateResponse | null>(null);
+  const [livePremiumBusy, setLivePremiumBusy] = useState(false);
+
+  const deriveFamilySize = (dep: string): number => {
+    const d = dep.toLowerCase();
+    if (d.includes("parents") && d.includes("spouse")) return 4;
+    if (d.includes("parents")) return 2;
+    if (d.includes("kids") || d.includes("children")) return 3;
+    if (d.includes("spouse")) return 1;
+    return 0;
+  };
+  const derivePed = (
+    conds: string[],
+  ): "none" | "diabetes_or_hypertension" | "heart_disease" | "multiple" => {
+    const lower = conds.map((c) => (c || "").toLowerCase()).filter((c) => c && c !== "none");
+    if (lower.length === 0) return "none";
+    if (lower.length >= 2) return "multiple";
+    if (lower.some((c) => c.includes("heart"))) return "heart_disease";
+    if (lower.some((c) => c.includes("diabetes") || c.includes("hypertension") || c.includes("bp")))
+      return "diabetes_or_hypertension";
+    return "diabetes_or_hypertension";
+  };
+  const deriveCityTier = (loc: string): "metro" | "tier1" | "tier2" => {
+    const l = loc.toLowerCase().replace(/[-_\s]/g, "");
+    if (l === "metro") return "metro";
+    if (l.includes("1")) return "tier1";
+    if (l.includes("2")) return "tier2";
+    return "tier2";
+  };
+
+  // Single debounced recompute. Deps only change when the user COMMITS a
+  // field (slider release / pill tap / typed field blur). A 450ms debounce
+  // coalesces a quick burst of commits into one estimate. On failure we keep
+  // the last good number (never blink to empty). Because no dep can change
+  // mid-drag, the premium pane never re-renders while a slider is held.
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      setLivePremiumBusy(true);
+      postPremiumEstimate({
+        age: age ?? 35,
+        sum_insured_inr: desiredSI ?? existingCover ?? 1000000,
+        city_tier: city ? deriveCityTier(city) : "metro",
+        smoker: smoker === true,
+        family_size: deriveFamilySize(dependents),
+        pre_existing_conditions: derivePed(conditions),
+        copayment_pct: copay ?? 0,
+      })
+        .then(setLivePremium)
+        .catch(() => { /* keep the last good estimate — never blink to empty */ })
+        .finally(() => { setLivePremiumBusy(false); });
+    }, 450);
+    return () => clearTimeout(handle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [age, desiredSI, existingCover, city, smoker, dependents, conditions, copay]);
 
   const conditionOptions = hindi
     ? [["diabetes", "मधुमेह"], ["hypertension", "BP"], ["thyroid", "थायरॉइड"], ["heart", "हृदय रोग"], ["asthma", "अस्थमा"], ["cancer", "कैंसर इतिहास"]]
@@ -2026,49 +2449,47 @@ function ProfileBuilderPanel({
     conditions.length > 0,
   ].filter(Boolean).length;
   const progressPct = Math.round((requiredFilled / 7) * 100);
+  // #101 — single source of truth: the header "Your profile" pill mirrors
+  // THIS live bar, so they can never disagree (was 14% bar vs 0% pill).
+  useEffect(() => {
+    onProgress?.(progressPct);
+  }, [progressPct, onProgress]);
 
-  // Reusable group header — serif index medallion + title + one-line hint.
-  const Group = ({
-    n, title, hint, children,
-  }: { n: number; title: string; hint?: string; children: React.ReactNode }) => (
-    <section className="field-group p-4 sm:p-5 reveal reveal-1">
-      <div className="flex items-start gap-3 mb-4">
-        <div className="field-medallion shrink-0">{n}</div>
-        <div className="min-w-0">
-          <h3 className="panel-title text-[15px] leading-tight">{title}</h3>
-          {hint && (
-            <p className="text-[11.5px] text-[var(--muted-foreground)] leading-snug mt-0.5">{hint}</p>
-          )}
-        </div>
-      </div>
-      <div className="space-y-4">{children}</div>
-    </section>
-  );
+  // #100 — `Group` is now a MODULE-SCOPE component (hoisted out of this
+  // render). Defining it inline gave it a new function identity on every
+  // ProfileBuilderPanel re-render, so React unmounted+remounted the whole
+  // form subtree on each keystroke/slider tick → the name input lost focus
+  // after every letter, the panel scroll jumped to the top, and it
+  // "flickered". Hoisting reuses the DOM across re-renders; the input keeps
+  // focus and scroll position. (#92 only removed the entrance animation —
+  // this removes the actual remount.)
 
   return (
-    <div className="app-panel border-t border-[var(--border)] animate-fade-up max-h-[80vh] overflow-y-auto scrollbar-thin">
+    <div className="app-panel app-panel-mobile-full border-t border-[var(--border)] max-h-[80vh] overflow-y-auto scrollbar-thin">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
-        {/* Chaptered header — kicker + serif title, live completeness rail */}
-        <div className="flex items-start justify-between gap-4 mb-5 reveal reveal-1">
+        {/* #47c — consolidated header. The old separate "Your profile" and
+            "Premium range" panels are merged into this ONE view: profile on
+            the left, the live premium translation + range on the right. */}
+        <div className="flex items-start justify-between gap-4 mb-5">
           <div className="min-w-0">
             <div className="panel-kicker mb-1.5">
               <span className="dot" />
-              {hindi ? "आपकी प्रोफ़ाइल" : "Your profile"}
+              {hindi ? "प्रोफ़ाइल और प्रीमियम" : "Profile & premium"}
             </div>
             <h2 className="panel-title text-2xl sm:text-[28px] leading-[1.1]">
-              {hindi ? "हर policy को आपके लिए score करें" : "Score every policy for you"}
+              {hindi ? "आपकी profile, आपका premium — एक ही जगह" : "Your profile, your premium — together"}
             </h2>
             <p className="text-[13px] text-[var(--muted-foreground)] mt-2 max-w-xl leading-relaxed">
               {hindi
-                ? "ये जवाब इसी chat में रहते हैं। सच बताना आपकी claim बचाता है — premium बढ़ाने का बहाना नहीं। आप जब तक खुद न चाहें, किसी बीमाकर्ता से साझा नहीं होता।"
-                : "Your answers stay in this chat. The truth protects your claim later, not just my ranking. Nothing is shared with any insurer until you choose to buy."}
+                ? "हर field बदलते ही premium live update होता है। ये जवाब इसी chat में रहते हैं; जब तक आप न चाहें किसी बीमाकर्ता से साझा नहीं।"
+                : "Edit any field and the premium recomputes live beside it. Your answers stay in this chat — nothing is shared with any insurer until you choose to buy."}
             </p>
           </div>
-          <button onClick={onClose} className="shrink-0 text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition">{hindi ? "बंद करें" : "Close"}</button>
+          <button onClick={onClose} className="shrink-0 text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition min-h-[44px] px-2">{hindi ? "बंद करें" : "Close"}</button>
         </div>
 
         {/* Live progress rail */}
-        <div className="mb-5 reveal reveal-2">
+        <div className="mb-5">
           <div className="flex items-center justify-between text-[11px] mb-1.5">
             <span className="text-[var(--muted-foreground)] uppercase tracking-wider font-semibold">
               {hindi ? "स्कोरिंग के लिए ज़रूरी फ़ील्ड" : "Fields the score uses"}
@@ -2083,7 +2504,12 @@ function ProfileBuilderPanel({
           </div>
         </div>
 
-        <div className="space-y-4">
+        {/* #47c — consolidated two-pane grid: profile fields on the left,
+            the live premium translation + range on the right. On phones it
+            stacks (premium pane drops below the form but stays sticky-ish
+            at the top of the stack for at-a-glance feedback). */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-5 lg:gap-6 items-start">
+        <div className="space-y-4 min-w-0 order-2 lg:order-1">
           {/* ── Group 1 · About you ───────────────────────────── */}
           <Group
             n={1}
@@ -2106,17 +2532,20 @@ function ProfileBuilderPanel({
                 className="app-input"
               />
               <p className="text-[10.5px] text-[var(--muted-foreground)] mt-1">
-                {hindi ? "अगली बार आने पर मैं आपकी profile पहचान लूंगा।" : "I'll recognise you next visit so you never repeat this."}
+                {hindi ? "अगली बार आने पर आपकी जानकारी पहले से भरी मिलेगी — दोबारा बताने की ज़रूरत नहीं।" : "Saved for next time, so you never have to enter this again."}
               </p>
             </div>
 
-            <div>
-              <label className="flex items-baseline justify-between text-xs mb-2">
-                <span className="font-semibold">{hindi ? "आपकी उम्र" : "Your age"}</span>
-                <span className="font-mono text-sm text-[var(--primary)] font-semibold">{age ?? "—"}</span>
-              </label>
-              <input type="range" min={18} max={80} value={age ?? 35} onChange={(e) => setAge(parseInt(e.target.value))} className="app-range" />
-            </div>
+            <RupeeSlider
+              label={hindi ? "आपकी उम्र" : "Your age"}
+              value={age}
+              min={18}
+              max={80}
+              step={1}
+              format={(v) => `${v}`}
+              unsetLabel="—"
+              onCommit={setAge}
+            />
 
             <div>
               <label className="block text-xs font-semibold mb-2">{hindi ? "किसको cover करना है" : "Who needs cover"}</label>
@@ -2134,17 +2563,20 @@ function ProfileBuilderPanel({
             </div>
 
             {dependents.includes("parent") && (
-              <div className="subfield p-4 space-y-4 animate-fade-up">
+              <div className="subfield p-4 space-y-4">
                 <div className="text-[11px] uppercase tracking-wider font-semibold text-[var(--primary)]">
                   {hindi ? "माता-पिता का विवरण" : "Parents detail"}
                 </div>
-                <div>
-                  <label className="flex items-baseline justify-between text-xs mb-2">
-                    <span className="font-semibold">{hindi ? "सबसे बड़े parent की उम्र" : "Eldest parent's age"}</span>
-                    <span className="font-mono text-sm text-[var(--primary)] font-semibold">{parentsAgeMax ?? "—"}</span>
-                  </label>
-                  <input type="range" min={45} max={85} value={parentsAgeMax ?? 65} onChange={(e) => setParentsAgeMax(parseInt(e.target.value))} className="app-range" />
-                </div>
+                <RupeeSlider
+                  label={hindi ? "सबसे बड़े parent की उम्र" : "Eldest parent's age"}
+                  value={parentsAgeMax}
+                  min={45}
+                  max={85}
+                  step={1}
+                  format={(v) => `${v}`}
+                  unsetLabel="—"
+                  onCommit={setParentsAgeMax}
+                />
                 <div>
                   <label className="block text-xs font-semibold mb-2">{hindi ? "क्या उन्हें diabetes / BP / heart है?" : "Any pre-existing conditions (diabetes / BP / heart)?"}</label>
                   <div className="flex gap-2">
@@ -2197,62 +2629,66 @@ function ProfileBuilderPanel({
           </Group>
 
           {/* ── Group 3 · Cover & cost ────────────────────────── */}
+          {/* #47a — every money field here is now a CONTINUOUS slider
+              (any value, sensible min/max/step, ₹ formatting). The old
+              discrete pill bands are gone. Each slider feeds the live
+              premium translation on the right pane. */}
           <Group
             n={3}
             title={hindi ? "कवर और लागत" : "Cover & cost"}
             hint={hindi ? "ये premium अनुमान और cover-band की खोज तय करते हैं।" : "These drive the premium estimate and the cover band we search."}
           >
-            <div>
-              <label className="flex items-baseline justify-between text-xs mb-2">
-                <span className="font-semibold">{hindi ? "आप कितना cover चाहते हैं" : "Sum insured you want"}</span>
-                <span className="font-mono text-sm text-[var(--primary)] font-semibold">
-                  {desiredSI ? (desiredSI >= 10000000 ? `₹${desiredSI / 10000000} cr` : `₹${desiredSI / 100000}L`) : "—"}
-                </span>
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {[[500000, "₹5L"], [1000000, "₹10L"], [1500000, "₹15L"], [2500000, "₹25L"], [5000000, "₹50L"], [10000000, "₹1 cr"]].map(([v, label]) => (
-                  <button key={String(v)} type="button" onClick={() => setDesiredSI(v as number)} className="opt-pill" data-on={desiredSI === v}>{label}</button>
-                ))}
-              </div>
-              <p className="text-[10.5px] text-[var(--muted-foreground)] mt-1.5">{hindi ? "खाली छोड़ें तो आय से ~5-7× अनुमान लगाते हैं।" : "Leave blank and we estimate ~5–7× your income."}</p>
-            </div>
+            <RupeeSlider
+              label={hindi ? "आप कितना cover चाहते हैं" : "Sum insured you want"}
+              value={desiredSI}
+              min={300000}
+              max={20000000}
+              step={100000}
+              unsetLabel={hindi ? "तय नहीं" : "Not set"}
+              onCommit={setDesiredSI}
+              hint={hindi ? "Slide कर कोई भी राशि चुनें। खाली छोड़ें तो आय से ~5-7×।" : "Slide to any amount. Leave at default and we estimate ~5–7× your income."}
+            />
 
-            <div>
-              <label className="block text-xs font-semibold mb-2">{hindi ? "पहले से कोई health insurance?" : "Already have any health insurance?"}</label>
-              <div className="flex flex-wrap gap-2">
-                {[[0, hindi ? "नहीं" : "None"], [300000, "₹3L"], [500000, "₹5L"], [1000000, "₹10L"], [2500000, "₹25L+"]].map(([v, label]) => (
-                  <button key={String(v)} type="button" onClick={() => setExistingCover(v as number)} className="opt-pill" data-on={existingCover === v}>{label}</button>
-                ))}
-              </div>
-              <p className="text-[10.5px] text-[var(--muted-foreground)] mt-1.5">{hindi ? "है तो हम top-up की ओर देखते हैं, नई base policy की नहीं।" : "If you have cover, we look at top-ups, not a fresh base policy."}</p>
-            </div>
+            <RupeeSlider
+              label={hindi ? "पहले से कोई health insurance?" : "Existing health cover you hold"}
+              value={existingCover}
+              min={0}
+              max={10000000}
+              step={100000}
+              format={(v) => (v <= 0 ? (hindi ? "कोई नहीं" : "None") : fmtRupeeShort(v))}
+              unsetLabel={hindi ? "कोई नहीं" : "None"}
+              onCommit={setExistingCover}
+              hint={hindi ? "है तो हम top-up की ओर देखते हैं, नई base policy की नहीं।" : "If you have cover, we look at top-ups, not a fresh base policy."}
+            />
 
-            <div>
-              <label className="block text-xs font-semibold mb-2">
-                {hindi ? "हर claim में आपका हिस्सा (co-pay)" : "Your share per claim (co-pay)"}
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {[[0, hindi ? "कोई co-pay नहीं" : "No co-pay"], [10, "10%"], [20, "20%"], [30, "30%"]].map(([v, label]) => (
-                  <button key={String(v)} type="button" onClick={() => setCopay(v as number)} className="opt-pill" data-on={copay === v}>{label}</button>
-                ))}
-              </div>
-              <p className="text-[10.5px] text-[var(--muted-foreground)] mt-1.5">
-                {copay && copay > 0
+            <RupeeSlider
+              label={hindi ? "हर claim में आपका हिस्सा (co-pay)" : "Your share per claim (co-pay)"}
+              value={copay}
+              min={0}
+              max={40}
+              step={5}
+              format={(v) => `${v}%`}
+              unsetLabel="0%"
+              onCommit={setCopay}
+              hint={
+                copay && copay > 0
                   ? (hindi
                       ? `Premium ~${Math.round(copay * 0.7)}% घटता है, पर हर अस्पताल बिल का ${copay}% आप भरते हैं।`
                       : `Premium drops ~${Math.round(copay * 0.7)}%, but you pay ${copay}% of every hospital bill.`)
-                  : (hindi ? "0% = बीमाकर्ता पूरा भरता है (premium ज़्यादा)।" : "0% = insurer pays it all (higher premium).")}
-              </p>
-            </div>
+                  : (hindi ? "0% = बीमाकर्ता पूरा भरता है (premium ज़्यादा)।" : "0% = insurer pays it all (higher premium).")
+              }
+            />
 
-            <div>
-              <label className="block text-xs font-semibold mb-2">{hindi ? "सालाना premium budget" : "Annual premium budget"}</label>
-              <div className="flex flex-wrap gap-2">
-                {[["under_15k", hindi ? "₹15k से कम" : "Under ₹15k"], ["15k_30k", "₹15–30k"], ["30k_60k", "₹30–60k"], ["60k+", "₹60k+"]].map(([key, label]) => (
-                  <button key={key} type="button" onClick={() => setBudget(key)} className="opt-pill" data-on={budget === key}>{label}</button>
-                ))}
-              </div>
-            </div>
+            <RupeeSlider
+              label={hindi ? "सालाना premium budget" : "Annual premium budget"}
+              value={budgetInr}
+              min={5000}
+              max={150000}
+              step={1000}
+              unsetLabel={hindi ? "तय नहीं" : "Not set"}
+              onCommit={setBudgetInr}
+              hint={hindi ? "आप हर साल कितना premium दे सकते हैं — slide कर सटीक राशि चुनें।" : "What you can pay per year — slide to the exact figure. Saved with your profile."}
+            />
           </Group>
 
           {/* ── Group 4 · Context ─────────────────────────────── */}
@@ -2291,6 +2727,75 @@ function ProfileBuilderPanel({
           </Group>
         </div>
 
+        {/* ── Live premium — ONE figure, decoupled from drag ───────────── */}
+        <aside className="order-1 lg:order-2 lg:sticky lg:top-4">
+          <div className="rounded-2xl border border-[color-mix(in_srgb,var(--primary)_22%,var(--border))] bg-[color-mix(in_srgb,var(--primary)_5%,var(--card))] p-4 sm:p-5">
+            <div className="panel-kicker mb-2">
+              <span className="dot" />
+              {hindi ? "लाइव प्रीमियम" : "Live premium"}
+            </div>
+            <div className="text-[11px] text-[var(--muted-foreground)] uppercase tracking-wide font-semibold">
+              {(desiredSI == null && existingCover == null && !copay && budgetInr == null)
+                ? (hindi ? "सामान्य प्रोफ़ाइल (डिफ़ॉल्ट) · ₹/वर्ष" : "For a typical profile (defaults) · ₹/year")
+                : (hindi ? "इन settings के लिए · ₹/वर्ष" : "For these settings · ₹/year")}
+            </div>
+            {livePremium ? (
+              <>
+                {/* Exactly ONE premium block — the indicative annual range. */}
+                <div className="font-display text-2xl sm:text-[26px] font-semibold mt-1 leading-tight tabular-nums">
+                  ₹{livePremium.low_inr.toLocaleString("en-IN")}
+                  <span className="text-[var(--muted-foreground)] text-base font-normal"> – </span>
+                  ₹{livePremium.high_inr.toLocaleString("en-IN")}
+                </div>
+                <div className="text-xs text-[var(--muted-foreground)] mt-1 tabular-nums">
+                  {hindi ? "विशिष्ट अनुमान" : "Typical"} ₹{livePremium.point_estimate_inr.toLocaleString("en-IN")}/{hindi ? "वर्ष" : "yr"}
+                  {livePremiumBusy && <span className="ml-1.5 italic">· {hindi ? "अपडेट हो रहा है…" : "updating…"}</span>}
+                </div>
+                {/* State the cover this is priced on. fmtRupeeShort ALREADY
+                    returns a leading ₹ — no extra ₹ prefix (fixes ₹₹15L). */}
+                <div className="text-[10.5px] text-[var(--muted-foreground)] mt-1 leading-snug">
+                  {hindi
+                    ? `${fmtRupeeShort(desiredSI ?? existingCover ?? 1000000)} cover पर अनुमानित${(desiredSI == null && existingCover == null) ? " — personalize के लिए ऊपर sliders सेट करें" : ""}.`
+                    : `Estimated on ${fmtRupeeShort(desiredSI ?? existingCover ?? 1000000)} cover${(desiredSI == null && existingCover == null) ? " — set the sliders above to personalize" : ""}.`}
+                </div>
+                {/* Budget-fit signal — compares the user's saved annual
+                    budget against the live estimate so the slider has a
+                    visible consequence. */}
+                {budgetInr != null && (
+                  <div
+                    className={`mt-2.5 text-[11.5px] rounded-lg px-2.5 py-1.5 leading-snug ${
+                      livePremium.point_estimate_inr <= budgetInr
+                        ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-900/25 dark:text-emerald-300"
+                        : "bg-amber-50 text-amber-800 dark:bg-amber-900/25 dark:text-amber-300"
+                    }`}
+                  >
+                    {livePremium.point_estimate_inr <= budgetInr
+                      ? (hindi
+                          ? `आपके ₹${budgetInr.toLocaleString("en-IN")}/वर्ष बजट के अंदर।`
+                          : `Within your ₹${budgetInr.toLocaleString("en-IN")}/year budget.`)
+                      : (hindi
+                          ? `आपके ₹${budgetInr.toLocaleString("en-IN")}/वर्ष बजट से ऊपर — cover घटाएँ या co-pay बढ़ाएँ।`
+                          : `Above your ₹${budgetInr.toLocaleString("en-IN")}/year budget — lower the cover or raise co-pay.`)}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-sm text-[var(--muted-foreground)] mt-2 leading-snug">
+                {livePremiumBusy
+                  ? (hindi ? "कीमत निकाल रहे…" : "Pricing…")
+                  : (hindi ? "अपनी profile बनाते रहें — रुकते ही कीमत दिखा दूँगा।" : "Keep building your profile — I'll show the price the moment you pause.")}
+              </div>
+            )}
+
+            {livePremium?.disclaimer && (
+              <div className="mt-3 text-[10.5px] text-amber-700 dark:text-amber-300 leading-snug">
+                ⚠ {livePremium.disclaimer}
+              </div>
+            )}
+          </div>
+        </aside>
+        </div>
+
         <div className="save-bar sticky bottom-0 mt-5 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
           <span className="text-[11px] text-[var(--muted-foreground)] hidden sm:block">
             {hindi ? "Save करते ही हर policy आपके लिए re-score होती है।" : "Saving instantly re-scores every policy for you."}
@@ -2304,280 +2809,6 @@ function ProfileBuilderPanel({
             >
               {busy ? (hindi ? "Save हो रहा है…" : "Saving…") : (hindi ? "Save & Score" : "Save & Score")}
             </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function PremiumCalculatorPanel({
-  onClose,
-  initialProfile,
-  uiLang = "en",
-}: {
-  onClose: () => void;
-  initialProfile?: UserProfile;
-  uiLang?: UILang;
-}) {
-  const isHi = uiLang === "hi";
-  // KI (2026-05-15) — Fix B. The panel previously opened with static
-  // defaults (Age 35 / SI 10L / Self only / None / metro) which felt
-  // disconnected from the user's already-captured profile. We now seed
-  // each slider from initialProfile (forwarded by page.tsx from
-  // profileCompleteness.profile) and fall back to the legacy default
-  // only when a slot is missing. User can still slide to override.
-  //
-  // The UserProfile schema (api.ts) does not yet carry a
-  // `desired_sum_insured_inr` slot, so we fall back to
-  // `existing_cover_inr` as the closest available signal; if that's
-  // also missing we land on the legacy 10L default.
-  const deriveFamilySize = (dep?: string | null): number => {
-    if (!dep) return 0;
-    const d = dep.toLowerCase();
-    if (d === "self" || d === "self only" || d === "self_only") return 0;
-    if (d.includes("parents") && d.includes("spouse")) return 4; // self+spouse+2 parents
-    if (d.includes("parents")) return 2; // self+parents
-    if (d.includes("kids") || d.includes("children")) return 3; // self+spouse+kids -> floater
-    if (d.includes("spouse")) return 1; // self+spouse
-    return 0;
-  };
-  const derivePed = (
-    conds?: string[] | null,
-  ): "none" | "diabetes_or_hypertension" | "heart_disease" | "multiple" => {
-    if (!conds || conds.length === 0) return "none";
-    const lower = conds.map((c) => (c || "").toLowerCase());
-    if (lower.every((c) => !c || c === "none")) return "none";
-    if (lower.length >= 2 && lower.some((c) => c !== "none")) {
-      const distinct = lower.filter((c) => c && c !== "none");
-      if (distinct.length >= 2) return "multiple";
-    }
-    if (lower.some((c) => c.includes("heart"))) return "heart_disease";
-    if (lower.some((c) => c.includes("diabetes") || c.includes("hypertension") || c.includes("bp")))
-      return "diabetes_or_hypertension";
-    return "diabetes_or_hypertension"; // any single non-none condition lands on the closest model bucket
-  };
-  const deriveCityTier = (loc?: string | null): "metro" | "tier1" | "tier2" => {
-    const l = (loc || "metro").toLowerCase();
-    if (l === "metro") return "metro";
-    if (l === "tier1" || l === "tier_1" || l === "tier-1") return "tier1";
-    if (l === "tier2" || l === "tier_2" || l === "tier-2") return "tier2";
-    // tier3 / unknown — fold down to tier2 (closest supported bucket)
-    return "tier2";
-  };
-
-  const [age, setAge] = useState<number>(initialProfile?.age ?? 35);
-  // KI-258 (B5, 2026-05-15) — Prefer `desired_sum_insured_inr` (the user's
-  // stated target SI from chat/extractor) over `existing_cover_inr` (what
-  // they already hold). Fall back to legacy 10L default when both are
-  // missing.
-  const [sumInsured, setSumInsured] = useState<number>(
-    initialProfile?.desired_sum_insured_inr ??
-      initialProfile?.existing_cover_inr ??
-      1_000_000,
-  );
-  const [cityTier, setCityTier] = useState<"metro" | "tier1" | "tier2">(
-    deriveCityTier(initialProfile?.location_tier),
-  );
-  const [smoker, setSmoker] = useState(false);
-  const [familySize, setFamilySize] = useState<number>(deriveFamilySize(initialProfile?.dependents));
-  const [ped, setPed] = useState<"none" | "diabetes_or_hypertension" | "heart_disease" | "multiple">(
-    derivePed(initialProfile?.health_conditions),
-  );
-  // KI-272 — copay pre-fill (D1 missed this). When profile has copay_pct,
-  // start the slider there instead of 0.
-  const [copay, setCopay] = useState<number>(initialProfile?.copay_pct ?? 0);
-  const [estimate, setEstimate] = useState<PremiumEstimateResponse | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  // KI-272 — re-sync sliders if profile loads AFTER the panel has mounted
-  // (race: user clicks the chip the moment profile data finishes fetching).
-  // We use a "user has not yet touched this slider" guard: only update from
-  // profile when the slider still holds its initial-default value. Once the
-  // user moves a slider, profile updates no longer override their choice.
-  const profileSnapshotRef = useRef<string>("");
-  useEffect(() => {
-    if (!initialProfile) return;
-    const snap = JSON.stringify([
-      initialProfile.age,
-      initialProfile.desired_sum_insured_inr ?? initialProfile.existing_cover_inr,
-      initialProfile.location_tier,
-      initialProfile.dependents,
-      initialProfile.health_conditions,
-      initialProfile.copay_pct,
-    ]);
-    if (snap === profileSnapshotRef.current) return;
-    profileSnapshotRef.current = snap;
-    if (initialProfile.age != null && age === 35) setAge(initialProfile.age);
-    const newSI =
-      initialProfile.desired_sum_insured_inr ??
-      initialProfile.existing_cover_inr;
-    if (newSI != null && sumInsured === 1_000_000) setSumInsured(newSI);
-    if (initialProfile.location_tier && cityTier === "metro") {
-      setCityTier(deriveCityTier(initialProfile.location_tier));
-    }
-    if (initialProfile.dependents && familySize === 0) {
-      setFamilySize(deriveFamilySize(initialProfile.dependents));
-    }
-    if (initialProfile.health_conditions?.length && ped === "none") {
-      setPed(derivePed(initialProfile.health_conditions));
-    }
-    if (initialProfile.copay_pct != null && copay === 0) {
-      setCopay(initialProfile.copay_pct);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialProfile]);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setBusy(true);
-      postPremiumEstimate({ age, sum_insured_inr: sumInsured, city_tier: cityTier, smoker, family_size: familySize, pre_existing_conditions: ped, copayment_pct: copay })
-        .then(setEstimate)
-        .catch(() => setEstimate(null))
-        .finally(() => setBusy(false));
-    }, 200); // debounce
-    return () => clearTimeout(handler);
-  }, [age, sumInsured, cityTier, smoker, familySize, ped, copay]);
-
-  const fmtINR = (v: number) => `₹${v.toLocaleString("en-IN")}`;
-  const siDisplay = sumInsured >= 10000000 ? `${sumInsured / 10000000} cr` : `${sumInsured / 100000} L`;
-
-  return (
-    <div className="border-t border-[var(--border)] bg-[var(--muted)] animate-fade-up">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-5">
-        <div className="flex items-baseline justify-between mb-3">
-          <div>
-            <h2 className="text-sm font-semibold">{isHi ? "एक-policy premium अनुमान" : "Per-plan premium estimate"}</h2>
-            <p className="text-xs text-[var(--muted-foreground)]">
-              {isHi
-                ? "इन specific settings के साथ एक policy का अनुमानित premium देखने के लिए sliders adjust करें."
-                : "Adjust the sliders to see the estimated premium for a single plan with these specific settings."}
-            </p>
-            <p className="text-[11px] text-[var(--muted-foreground)] mt-1 italic">
-              {isHi
-                ? "Tip: header chip = सभी plans का range · panel = इन specific settings के लिए"
-                : "Tip: header chip = range across plans · panel = for these specific settings"}
-            </p>
-          </div>
-          <button onClick={onClose} className="text-xs text-[var(--muted-foreground)] hover:underline">close</button>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-          <div className="space-y-4">
-            <div>
-              <label className="flex items-center justify-between text-xs mb-1">
-                <span className="font-medium">Age</span>
-                <span className="font-mono">{age}</span>
-              </label>
-              <input
-                type="range" min={18} max={80} step={1}
-                value={age}
-                onChange={(e) => setAge(parseInt(e.target.value))}
-                className="w-full accent-[var(--primary)]"
-              />
-            </div>
-            <div>
-              <label className="flex items-center justify-between text-xs mb-1">
-                <span className="font-medium">Sum insured</span>
-                <span className="font-mono">{siDisplay}</span>
-              </label>
-              <input
-                type="range" min={300000} max={20000000} step={100000}
-                value={sumInsured}
-                onChange={(e) => setSumInsured(parseInt(e.target.value))}
-                className="w-full accent-[var(--primary)]"
-              />
-              <div className="flex gap-1 mt-1 text-[10px] text-[var(--muted-foreground)]">
-                {[500000, 1000000, 2500000, 5000000, 10000000].map((s) => (
-                  <button key={s} onClick={() => setSumInsured(s)} className="hover:text-[var(--primary)]">
-                    {s >= 10000000 ? `${s/10000000} cr` : `${s/100000} L`}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="flex items-center justify-between text-xs mb-1">
-                <span className="font-medium">Family covered</span>
-                <span className="font-mono">{familySize === 0 ? "Self only" : `Self + ${familySize} dependent${familySize === 1 ? "" : "s"}`}</span>
-              </label>
-              <input
-                type="range" min={0} max={6} step={1}
-                value={familySize}
-                onChange={(e) => setFamilySize(parseInt(e.target.value))}
-                className="w-full accent-[var(--primary)]"
-              />
-            </div>
-            <div>
-              <label className="block text-xs mb-1 font-medium">Pre-existing conditions</label>
-              <select
-                value={ped}
-                onChange={(e) => setPed(e.target.value as typeof ped)}
-                className="w-full text-xs bg-transparent border border-[var(--border)] rounded-md px-2 py-1.5 outline-none focus:border-[var(--primary)]"
-              >
-                <option value="none">None</option>
-                <option value="diabetes_or_hypertension">Diabetes or hypertension</option>
-                <option value="heart_disease">Heart disease</option>
-                <option value="multiple">Multiple conditions</option>
-              </select>
-            </div>
-            <div>
-              <label className="flex items-center justify-between text-xs mb-1">
-                <span className="font-medium">Your share of every claim</span>
-                <span className="font-mono">
-                  {copay === 0 ? (
-                    <span className="text-emerald-600 font-semibold">Insurer pays it all</span>
-                  ) : (
-                    <span>You pay ~₹{Math.round(sumInsured * copay / 100 / 100000)}L on a ₹{Math.round(sumInsured / 100000)}L claim</span>
-                  )}
-                </span>
-              </label>
-              <input
-                type="range" min={0} max={40} step={5}
-                value={copay}
-                onChange={(e) => setCopay(parseInt(e.target.value))}
-                className="w-full accent-[var(--primary)]"
-              />
-              <p className="text-[10px] text-[var(--muted-foreground)] mt-0.5">
-                {copay === 0
-                  ? "No share. Highest premium."
-                  : `Your premium drops ~${Math.round(copay * 0.7)}%. In exchange you pay ₹${Math.round(sumInsured * copay / 100 / 1000)}k on a ₹${Math.round(sumInsured / 100000)}L hospital bill.`}
-              </p>
-            </div>
-            <div className="flex items-center gap-3 flex-wrap text-xs">
-              <span className="font-medium">City tier:</span>
-              {(["metro", "tier1", "tier2"] as const).map((t) => (
-                <button key={t} onClick={() => setCityTier(t)}
-                  className={`px-2 py-1 rounded-md border text-[11px] ${cityTier === t ? "border-[var(--primary)] bg-[var(--accent)]" : "border-[var(--border)]"}`}>
-                  {t}
-                </button>
-              ))}
-            </div>
-            <label className="flex items-center gap-2 text-xs cursor-pointer">
-              <input type="checkbox" checked={smoker} onChange={(e) => setSmoker(e.target.checked)} className="w-3.5 h-3.5 accent-[var(--primary)]" />
-              <span>Smoker / tobacco user</span>
-            </label>
-          </div>
-          <div className="bg-[var(--card)] rounded-xl border border-[var(--border)] p-5 flex flex-col justify-center">
-            {busy && <div className="text-xs text-[var(--muted-foreground)]">Estimating…</div>}
-            {!busy && estimate && (
-              <>
-                <div className="text-[10px] uppercase tracking-wide text-[var(--muted-foreground)] font-semibold">{isHi ? "इन settings के लिए · ₹/वर्ष" : "For these settings · ₹/year"}</div>
-                <div className="text-3xl font-bold mt-1">
-                  {fmtINR(estimate.low_inr)} <span className="text-[var(--muted-foreground)] text-base font-normal">–</span> {fmtINR(estimate.high_inr)}
-                </div>
-                <div className="text-xs text-[var(--muted-foreground)] mt-1">point estimate {fmtINR(estimate.point_estimate_inr)}</div>
-                <div className="mt-3 pt-3 border-t border-[var(--border)] text-[10px] text-[var(--muted-foreground)]">
-                  {estimate.methodology}
-                </div>
-                {estimate.sources.length > 0 && (
-                  <div className="mt-1 text-[10px] text-[var(--muted-foreground)]">
-                    Source anchor: <a href={estimate.sources[0]} target="_blank" rel="noopener" className="hover:text-[var(--primary)] underline">verified URL</a>
-                  </div>
-                )}
-                <div className="mt-2 text-[10px] text-amber-700 dark:text-amber-300">
-                  ⚠ {estimate.disclaimer}
-                </div>
-              </>
-            )}
           </div>
         </div>
       </div>
@@ -2664,6 +2895,9 @@ function EmptyState({
 }) {
   const isHi = uiLang === "hi";
   const L = (en: string, hi: string) => (isHi ? hi : en);
+  // #3 mobile — drop the SPACE-only mode on touch; the Push-to-talk tile
+  // already gives phone users the correct ("tap the green mic") path.
+  const isTouch = useIsTouch();
 
   // Coverage facts, rendered as one-line bullets (never a wrapping blob).
   const policyCount = coverage ? coverage.total_policies : 169;
@@ -2707,8 +2941,8 @@ function EmptyState({
 
             <p className="text-[15px] sm:text-[16.5px] text-[var(--muted-foreground)] leading-relaxed max-w-[44ch] mx-auto">
               {L(
-                "A few short questions. Then policies ranked by fit — never commission — plus the premium you'd actually pay.",
-                "कुछ छोटे सवाल। फिर आपके लिए सही पॉलिसियाँ — कमीशन से नहीं — और जो premium आप असल में देंगे।"
+                "A few short questions. Then policies ranked by how well they fit you — plus the premium you'd actually pay.",
+                "कुछ छोटे सवाल। फिर आपके लिए कितनी सही हैं, उसके हिसाब से रैंक की गई पॉलिसियाँ — और जो premium आप असल में देंगे।"
               )}
             </p>
 
@@ -2719,7 +2953,7 @@ function EmptyState({
               </span>
               <span className="inline-flex items-center gap-2">
                 <TrustTick />
-                {L("Ranked by fit, not commission", "fit के हिसाब से, कमीशन से नहीं")}
+                {L("Ranked for your best fit", "आपके लिए सबसे सही fit के हिसाब से")}
               </span>
               <span className="inline-flex items-center gap-2">
                 <TrustTick />
@@ -2751,7 +2985,7 @@ function EmptyState({
               title={L("Matched to you", "आपके लिए match")}
               points={[
                 L(`${policyCount} policies · ${insurerCount} Indian insurers`, `${policyCount} पॉलिसियाँ · ${insurerCount} बीमाकर्ता`),
-                L("Ranked by fit, not commission", "fit के हिसाब से, कमीशन से नहीं"),
+                L("Personalised to your profile — ranked for your best fit", "आपकी profile के अनुसार — सबसे सही fit के लिए रैंक"),
               ]}
             />
             <StepCard
@@ -2792,11 +3026,13 @@ function EmptyState({
               title={L("Push-to-talk", "Push-to-talk")}
               body={L("Tap the green mic for one turn", "हरे mic पर tap करें")}
             />
-            <ModeRow
-              icon="space"
-              title={L("Hold SPACE", "SPACE दबाएं")}
-              body={L("Hold to talk, release to send", "दबाकर बोलें, छोड़ने पर send")}
-            />
+            {!isTouch && (
+              <ModeRow
+                icon="space"
+                title={L("Hold SPACE", "SPACE दबाएं")}
+                body={L("Hold to talk, release to send", "दबाकर बोलें, छोड़ने पर send")}
+              />
+            )}
             <ModeRow
               icon="wave"
               title={L("Live (BETA)", "Live (BETA)")}
@@ -2973,7 +3209,7 @@ function StepCard({
       <div className="step-medallion mb-5" aria-hidden="true">
         {n}
       </div>
-      <div className="font-display text-[17px] font-semibold text-[var(--foreground)] mb-3 leading-tight whitespace-nowrap">
+      <div className="font-display text-[17px] font-semibold text-[var(--foreground)] mb-3 leading-tight">
         {title}
       </div>
       <ul className="fact-list">
@@ -3157,8 +3393,292 @@ function ModeIcon({ kind }: { kind: "keyboard" | "mic" | "space" | "wave" }) {
 }
 
 function stripInlineCitations(text: string): string {
-  // Customer-facing: hide inline [Source: ...] tags from prose; the citation list below the message already shows them.
-  return text.replace(/\s*\[(?:Source|Regulation):[^\]]+\]/gi, "").replace(/\s{2,}/g, " ").trim();
+  // Customer-facing: hide inline [Source: ...] tags from prose; the citation
+  // list below the message already shows them.
+  // #44 — CRITICAL: do NOT collapse newlines. The old `\s{2,}→" "` rule
+  // flattened every blank line + list break into a single space, which
+  // destroyed all markdown structure before MarkdownMessage could parse it
+  // (this is what made replies render as a literal "**…1.…2.…" wall).
+  // We now strip only the citation tags + collapse runs of spaces/tabs
+  // (NOT \n), and tidy excess blank lines.
+  return text
+    .replace(/[ \t]*\[(?:Source|Regulation):[^\]]+\]/gi, "")
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// #44 — lightweight, dependency-free, SANITIZED markdown renderer for
+// assistant replies. The backend (single_brain) emits real markdown:
+// `**bold policy names**`, numbered lists (`1. … 2. … 3. …`), bullet
+// lists (`- …` / `* …`), inline `code`, links, and blank-line-separated
+// paragraphs. Before this, the chat printed the raw source so users saw
+// literal `**` and a run-on "1. …2. …3. …" wall.
+//
+// Why hand-rolled (no react-markdown / remark): the task forbids touching
+// package.json. This parser is intentionally tiny and produces ONLY React
+// elements (never dangerouslySetInnerHTML), so there is no HTML-injection
+// surface — any `<script>` / raw HTML in the model output renders as inert
+// text. EN/HI agnostic (it only keys off markdown punctuation).
+// ────────────────────────────────────────────────────────────────────────
+
+type MdInlineToken =
+  | { t: "text"; v: string }
+  | { t: "strong"; v: MdInlineToken[] }
+  | { t: "em"; v: MdInlineToken[] }
+  | { t: "code"; v: string }
+  | { t: "link"; v: string; href: string };
+
+// Parse inline markdown (bold / italic / code / links). Recursion is
+// bounded by string length so a pathological input can't blow the stack.
+function parseInline(src: string): MdInlineToken[] {
+  const out: MdInlineToken[] = [];
+  let i = 0;
+  let buf = "";
+  const flush = () => {
+    if (buf) {
+      out.push({ t: "text", v: buf });
+      buf = "";
+    }
+  };
+  while (i < src.length) {
+    const rest = src.slice(i);
+    // Links: [label](http(s)://… or relative). Only http/https/mailto or
+    // root-relative hrefs are kept; anything else (javascript:, data:) is
+    // rendered as plain text so there's no injection vector.
+    const link = /^\[([^\]]+)\]\(([^)\s]+)\)/.exec(rest);
+    if (link) {
+      const rawHref = link[2];
+      const safe = /^(https?:\/\/|mailto:|\/)/i.test(rawHref);
+      if (safe) {
+        flush();
+        out.push({ t: "link", v: link[1], href: rawHref });
+        i += link[0].length;
+        continue;
+      }
+    }
+    // Bold: **…** or __…__
+    const strong = /^(\*\*|__)([\s\S]+?)\1/.exec(rest);
+    if (strong) {
+      flush();
+      out.push({ t: "strong", v: parseInline(strong[2]) });
+      i += strong[0].length;
+      continue;
+    }
+    // Italic: *…* or _…_ (single delimiter, not part of a ** run)
+    const emM = /^(\*|_)(?!\1)([\s\S]+?)\1/.exec(rest);
+    if (emM && emM[2].trim()) {
+      flush();
+      out.push({ t: "em", v: parseInline(emM[2]) });
+      i += emM[0].length;
+      continue;
+    }
+    // Inline code: `…`
+    const codeM = /^`([^`]+)`/.exec(rest);
+    if (codeM) {
+      flush();
+      out.push({ t: "code", v: codeM[1] });
+      i += codeM[0].length;
+      continue;
+    }
+    buf += src[i];
+    i += 1;
+  }
+  flush();
+  return out;
+}
+
+function renderInline(tokens: MdInlineToken[], keyPrefix: string): React.ReactNode[] {
+  return tokens.map((tok, idx) => {
+    const k = `${keyPrefix}-${idx}`;
+    switch (tok.t) {
+      case "strong":
+        return (
+          <strong key={k} className="font-semibold text-[var(--foreground)]">
+            {renderInline(tok.v, k)}
+          </strong>
+        );
+      case "em":
+        return <em key={k}>{renderInline(tok.v, k)}</em>;
+      case "code":
+        return (
+          <code
+            key={k}
+            className="px-1 py-0.5 rounded bg-[var(--muted)] text-[0.92em] font-mono break-words"
+          >
+            {tok.v}
+          </code>
+        );
+      case "link":
+        return (
+          <a
+            key={k}
+            href={tok.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[var(--primary)] underline underline-offset-2 hover:opacity-80 break-words"
+          >
+            {tok.v}
+          </a>
+        );
+      default:
+        return <span key={k}>{tok.v}</span>;
+    }
+  });
+}
+
+// Block-level grouping: paragraphs, ordered lists, unordered lists,
+// headings. Consecutive list lines coalesce into one <ol>/<ul> so a
+// "1. … 2. … 3. …" run renders as a real numbered list, not a wall.
+type MdBlock =
+  | { t: "p"; lines: string[] }
+  | { t: "ol"; items: string[]; start: number }
+  | { t: "ul"; items: string[] }
+  | { t: "h"; level: number; text: string };
+
+function parseBlocks(src: string): MdBlock[] {
+  // Normalise newlines; also break a run-on "1. a 2. b 3. c" that arrived
+  // on a single physical line into separate list lines so it still renders
+  // as an ordered list (the model sometimes streams without hard breaks).
+  const normalised = src
+    .replace(/\r\n?/g, "\n")
+    .replace(/\s(?=\d{1,2}\.\s)/g, "\n")
+    .replace(/\s(?=[•]\s)/g, "\n");
+  const rawLines = normalised.split("\n");
+  const blocks: MdBlock[] = [];
+  let para: string[] = [];
+  const flushPara = () => {
+    if (para.length) {
+      blocks.push({ t: "p", lines: para });
+      para = [];
+    }
+  };
+  for (let idx = 0; idx < rawLines.length; idx++) {
+    const line = rawLines[idx];
+    const trimmed = line.trim();
+    if (!trimmed) {
+      flushPara();
+      continue;
+    }
+    const headingM = /^(#{1,4})\s+(.*)$/.exec(trimmed);
+    if (headingM) {
+      flushPara();
+      blocks.push({ t: "h", level: headingM[1].length, text: headingM[2] });
+      continue;
+    }
+    const olM = /^(\d{1,2})[.)]\s+(.*)$/.exec(trimmed);
+    if (olM) {
+      flushPara();
+      const last = blocks[blocks.length - 1];
+      if (last && last.t === "ol") {
+        last.items.push(olM[2]);
+      } else {
+        blocks.push({ t: "ol", items: [olM[2]], start: parseInt(olM[1], 10) || 1 });
+      }
+      continue;
+    }
+    const ulM = /^[-*•]\s+(.*)$/.exec(trimmed);
+    if (ulM) {
+      flushPara();
+      const last = blocks[blocks.length - 1];
+      if (last && last.t === "ul") {
+        last.items.push(ulM[1]);
+      } else {
+        blocks.push({ t: "ul", items: [ulM[1]] });
+      }
+      continue;
+    }
+    para.push(trimmed);
+  }
+  flushPara();
+  return blocks;
+}
+
+function MarkdownMessage({ source }: { source: string }) {
+  const blocks = parseBlocks(source);
+  return (
+    <div className="md-body text-sm sm:text-[15px] leading-relaxed text-[var(--foreground)]">
+      {blocks.map((b, i) => {
+        if (b.t === "h") {
+          const cls =
+            b.level <= 2
+              ? "font-display text-[1.05em] font-semibold mt-3 first:mt-0 mb-1"
+              : "font-semibold text-[0.98em] mt-2.5 first:mt-0 mb-1";
+          return (
+            <p key={i} className={cls}>
+              {renderInline(parseInline(b.text), `h${i}`)}
+            </p>
+          );
+        }
+        if (b.t === "ol") {
+          return (
+            <ol
+              key={i}
+              start={b.start}
+              className="md-ol list-decimal pl-5 my-2 space-y-1.5 marker:text-[var(--primary)] marker:font-semibold"
+            >
+              {b.items.map((it, j) => (
+                <li key={j} className="pl-1 leading-relaxed">
+                  {renderInline(parseInline(it), `ol${i}-${j}`)}
+                </li>
+              ))}
+            </ol>
+          );
+        }
+        if (b.t === "ul") {
+          return (
+            <ul
+              key={i}
+              className="md-ul list-disc pl-5 my-2 space-y-1.5 marker:text-[var(--primary)]"
+            >
+              {b.items.map((it, j) => (
+                <li key={j} className="pl-1 leading-relaxed">
+                  {renderInline(parseInline(it), `ul${i}-${j}`)}
+                </li>
+              ))}
+            </ul>
+          );
+        }
+        // paragraph — preserve soft line breaks inside the paragraph
+        return (
+          <p key={i} className="my-2 first:mt-0 last:mb-0">
+            {b.lines.map((ln, j) => (
+              <span key={j}>
+                {j > 0 && <br />}
+                {renderInline(parseInline(ln), `p${i}-${j}`)}
+              </span>
+            ))}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
+// #45 (UI half) — recommendation-change transparency. The concurrent
+// backend agent makes single_brain emit an explicit "I removed X because
+// …" line in the reply when the gate drops a previously-shown policy on a
+// new constraint. We detect that sentence in the rendered reply and ALSO
+// lift it into a small, visually-distinct notice rendered ABOVE the cited
+// cards so the change is impossible to miss (it still reads inline in the
+// prose via the markdown renderer too). Matches several natural phrasings
+// the model uses; EN + HI. Returns the matched sentence(s) or null.
+function extractRecommendationChange(text: string): string | null {
+  if (!text) return null;
+  // Sentence-ish split that keeps Devanagari danda + ./!/? boundaries.
+  const sentences = text
+    .replace(/\n+/g, " ")
+    .split(/(?<=[.!?।])\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const triggers =
+    /\b(I (?:have |'ve )?(?:removed|dropped|taken (?:out|off)|excluded|swapped out)|no longer (?:recommend|showing|suggesting)|removed (?:it|this|that) because|replacing|replaced)\b|(?:हटा दिया|अब (?:नहीं|recommend नहीं)|निकाल दिया|बदल दिया)/i;
+  const hits = sentences.filter((s) => triggers.test(s));
+  if (hits.length === 0) return null;
+  // Cap at the first two matched sentences so a long reply doesn't dump a
+  // paragraph into the notice; the full reasoning stays in the prose.
+  return hits.slice(0, 2).join(" ");
 }
 
 function Message({
@@ -3233,14 +3753,53 @@ function Message({
             Advisor
           </div>
         )}
-        <div className={`text-sm sm:text-[15px] whitespace-pre-wrap leading-relaxed ${isUser ? "" : "text-[var(--foreground)]"}`}>
-          {displayContent}
-          {isPaused && (
-            <span className="ml-1 italic opacity-70">
-              ⏸ paused
-            </span>
-          )}
-        </div>
+        {isUser ? (
+          <div className="text-sm sm:text-[15px] whitespace-pre-wrap leading-relaxed break-words">
+            {displayContent}
+          </div>
+        ) : (
+          <div className="break-words">
+            {/* #45 — recommendation-change notice, surfaced ABOVE the prose
+                so a dropped/swapped policy is impossible to miss. The same
+                sentence still reads inline in the markdown body below. */}
+            {(() => {
+              const change = extractRecommendationChange(displayContent);
+              if (!change) return null;
+              return (
+                <div
+                  className="mb-2.5 flex items-start gap-2 rounded-xl border border-amber-300/80 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700/60 px-3 py-2"
+                  role="status"
+                >
+                  <svg
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="shrink-0 mt-px text-amber-600 dark:text-amber-400"
+                    aria-hidden="true"
+                  >
+                    <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+                    <path d="M12 9v4" />
+                    <path d="M12 17h.01" />
+                  </svg>
+                  <span className="text-[12.5px] leading-snug text-amber-900 dark:text-amber-200">
+                    {renderInline(parseInline(change), "rec-change")}
+                  </span>
+                </div>
+              );
+            })()}
+            <MarkdownMessage source={displayContent} />
+            {isPaused && (
+              <span className="ml-1 italic opacity-70 text-sm">
+                ⏸ paused
+              </span>
+            )}
+          </div>
+        )}
         {m.audioUrl && (
           <audio
             ref={audioRef}
@@ -3337,7 +3896,10 @@ function CitedPolicyCards({
         family_size: undefined,
         dependents: profile.dependents ?? undefined,
         location_tier: profile.location_tier ?? undefined,
-        smoker: undefined,
+        // #52A — was hardcoded `undefined`, so the per-policy panel ignored
+        // smoker while the header band reflected it. Pass the real flag
+        // (?? undefined preserves an explicit non-smoker `false`).
+        smoker: profile.smoker ?? undefined,
         pre_existing_conditions:
           profile.health_conditions && profile.health_conditions.length > 0
             ? (profile.health_conditions.includes("diabetes") ||
@@ -3417,10 +3979,10 @@ function CitedPolicyCards({
               <div className="flex items-start gap-3">
                 <InsurerLogo slug={c.insurer_slug} name={insurerName} size={38} />
                 <div className="flex-1 min-w-0">
-                  <div className="text-[10px] uppercase tracking-[0.12em] text-[var(--muted-foreground)] truncate">
+                  <div className="text-[10px] uppercase tracking-[0.12em] text-[var(--muted-foreground)] line-clamp-2 break-words">
                     {insurerName}
                   </div>
-                  <div className="font-semibold text-sm truncate leading-tight mt-0.5">{c.policy_name}</div>
+                  <div className="font-semibold text-sm line-clamp-2 break-words leading-snug mt-0.5">{c.policy_name}</div>
                   {sc ? (
                     <div className="text-[11.5px] text-[var(--muted-foreground)] leading-snug line-clamp-2 mt-1">
                       {sc.one_liner}
@@ -3555,7 +4117,7 @@ function ScorecardBadgesForCitations({ citations }: { citations: Citation[] }) {
               </span>
               <span className="font-medium truncate max-w-[140px]">{sc.policy_name}</span>
               <span className="opacity-60">{sc.overall_score}</span>
-              {lowData && <span title="extraction was incomplete" className="opacity-50">⚠</span>}
+              {lowData && <span title="Some policy terms not yet published" className="opacity-50">⚠</span>}
             </button>
           );
         })}
@@ -3596,7 +4158,9 @@ function ScorecardCard({ sc }: { sc: ScorecardResponse }) {
         </div>
         <div className="text-right shrink-0">
           <div className="text-2xl font-bold leading-none">{sc.overall_score}<span className="text-[var(--muted-foreground)] text-sm font-normal">/100</span></div>
-          <div className="text-[10px] text-[var(--muted-foreground)] mt-0.5">data {sc.data_completeness_pct.toFixed(0)}% complete</div>
+          {sc.data_completeness_pct < 50 && (
+            <div className="text-[10px] text-[var(--muted-foreground)] mt-0.5">some terms not yet published</div>
+          )}
         </div>
       </div>
       <div className="space-y-2.5 mt-4">
@@ -3639,7 +4203,7 @@ function ScorecardCard({ sc }: { sc: ScorecardResponse }) {
         })}
       </div>
       <div className="mt-3 pt-2.5 border-t border-[var(--border)] text-[10px] text-[var(--muted-foreground)] leading-snug">
-        Weighted average across 6 criteria. Rules-based — no LLM in the scoring loop. Expand &quot;How is this score computed?&quot; below to see which of 48 schema fields feed each criterion.
+        This grade weighs six things that decide how well a policy actually protects you — how much it covers, how predictable your costs are, how soon you can claim, how reliably the insurer pays, and its renewal and bonus terms. Open &quot;How is this grade decided?&quot; below to see how each one was judged.
       </div>
     </div>
   );
@@ -3681,11 +4245,9 @@ function StopIcon() {
   return (<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>);
 }
 
-function UploadIcon() {
-  return (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-    <polyline points="17 8 12 3 7 8" />
-    <line x1="12" y1="3" x2="12" y2="15" />
+function PaperclipIcon() {
+  return (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M21.44 11.05 12.25 20.24a5 5 0 0 1-7.07-7.07l9.19-9.19a3 3 0 0 1 4.24 4.24l-9.2 9.19a1 1 0 0 1-1.41-1.41l8.49-8.49" />
   </svg>);
 }
 
@@ -3754,30 +4316,38 @@ function SafeLink({ href, children, className, fallbackClassName }: {
 
 // Jargon — inline component that wraps a term and shows an info popover
 // on click with a plain-language explanation. Bilingual via uiLang.
+// #50 — the "?" explainer is HOVER-only (and keyboard-focus for a11y):
+// it appears while you hover/focus the badge and disappears when you stop.
+// No click, no × close (clicking several used to leave them all stuck open,
+// overflowing across cards). The tooltip is width-constrained, sits ABOVE
+// the badge centered, and is pointer-events-none so it never blocks or
+// thrashes. Scoped group/jg so only the badge — not the whole label —
+// triggers it.
 function Jargon({ term, children, uiLang }: { term: keyof typeof GLOSSARY; children: React.ReactNode; uiLang: UILang }) {
-  const [open, setOpen] = useState(false);
   const entry = GLOSSARY[term];
   if (!entry) return <>{children}</>;
   const lang = uiLang === "hi" ? "hi" : "en";
   const { title, body } = entry[lang];
   return (
-    <span className="inline-flex items-center gap-0.5 relative">
+    <span className="inline-flex items-center gap-0.5">
       {children}
-      <button
-        onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
-        className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border border-[var(--muted-foreground)] text-[8px] text-[var(--muted-foreground)] hover:text-[var(--primary)] hover:border-[var(--primary)] ml-0.5"
-        aria-label={`Explain ${String(term)}`}
-        type="button"
-      >
-        ?
-      </button>
-      {open && (
-        <span className="absolute z-50 top-full mt-1 left-0 w-64 bg-[var(--card)] border border-[var(--border)] rounded-lg shadow-lg p-2.5 text-left animate-fade-up" onClick={(e) => e.stopPropagation()}>
-          <span className="block text-[11px] font-semibold text-[var(--foreground)] mb-1">{title}</span>
-          <span className="block text-[10px] text-[var(--muted-foreground)] leading-snug">{body}</span>
-          <button onClick={() => setOpen(false)} className="absolute top-1 right-1.5 text-[var(--muted-foreground)] hover:text-[var(--foreground)] text-xs">×</button>
+      <span className="relative inline-flex group/jg align-middle">
+        <span
+          tabIndex={0}
+          role="img"
+          aria-label={`Explain ${String(term)}`}
+          className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border border-[var(--muted-foreground)] text-[8px] text-[var(--muted-foreground)] group-hover/jg:text-[var(--primary)] group-hover/jg:border-[var(--primary)] focus:text-[var(--primary)] focus:border-[var(--primary)] outline-none ml-0.5 cursor-help select-none"
+        >
+          ?
         </span>
-      )}
+        <span
+          role="tooltip"
+          className="pointer-events-none absolute z-[60] bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-[min(15rem,72vw)] bg-[var(--card)] border border-[var(--border)] rounded-lg shadow-lg p-2.5 text-left opacity-0 invisible translate-y-0.5 transition-all duration-150 group-hover/jg:opacity-100 group-hover/jg:visible group-hover/jg:translate-y-0 group-focus-within/jg:opacity-100 group-focus-within/jg:visible group-focus-within/jg:translate-y-0"
+        >
+          <span className="block text-[11px] font-semibold text-[var(--foreground)] mb-1">{title}</span>
+          <span className="block text-[10px] text-[var(--muted-foreground)] leading-snug normal-case">{body}</span>
+        </span>
+      </span>
     </span>
   );
 }
@@ -3786,48 +4356,76 @@ function insurerInitials(name: string): string {
   return name.split(" ").map((w) => w[0]).filter(Boolean).join("").slice(0, 2).toUpperCase();
 }
 
-// Real insurer logos sourced from each insurer's official site (favicons /
-// media-kit assets). Fall back to colored letter avatar when the URL fails
-// to load (handled by onError swap in InsurerLogo component).
-const INSURER_LOGO_URL: Record<string, string> = {
-  "aditya-birla":  "https://www.adityabirlacapital.com/healthinsurance/static/assets/images/abhi-logo.svg",
-  "bajaj-allianz": "https://www.bajajallianz.com/content/dam/bagic/header/logo.png",
-  "care-health":   "https://www.careinsurance.com/upload_master/images/logo.png",
-  "hdfc-ergo":     "https://www.hdfcergo.com/etc.clientlibs/hdfcergo/clientlibs/clientlib-site/resources/images/HDFC-ERGO-Logo.png",
-  "icici-lombard": "https://www.icicilombard.com/content/dam/ilom-website/icon/icici-lombard-logo-new.svg",
-  "manipalcigna":  "https://www.manipalcigna.com/o/manipal-cigna-theme/images/manipal-cigna-logo.svg",
-  "new-india":     "https://www.newindia.co.in/portal/readWriteData/NIAImages/NewLogo.png",
-  "niva-bupa":     "https://transactions.nivabupa.com/_next/static/media/niva-bupa-logo.7b6e7f4e.svg",
-  "star-health":   "https://www.starhealth.in/sites/default/files/star-logo-revised.png",
-  "tata-aig":      "https://www.tataaig.com/etc/designs/tataaig/clientlibs/responsive/images/tataaig-logo.svg",
+// #94 — every insurer's official domain. The previous hand-picked logo
+// hotlinks broke constantly (CDN path changes, hotlink protection, 404/
+// 410), so cards fell back to letter avatars. We instead render the brand
+// mark via Google's favicon service for the official domain — it is
+// effectively never down and always returns the real logo — with the
+// letter avatar only as the absolute last resort.
+const INSURER_DOMAIN: Record<string, string> = {
+  "acko": "acko.com",
+  "aditya-birla": "adityabirlacapital.com",
+  "bajaj-allianz": "bajajallianz.com",
+  "care-health": "careinsurance.com",
+  "cholamandalam": "cholainsurance.com",
+  "go-digit": "godigit.com",
+  "hdfc-ergo": "hdfcergo.com",
+  "icici-lombard": "icicilombard.com",
+  "iffco-tokio": "iffcotokio.co.in",
+  "indusind-general": "indusindinsurance.com",
+  "manipalcigna": "manipalcigna.com",
+  "national-insurance": "nationalinsurance.nic.co.in",
+  "new-india": "newindia.co.in",
+  "niva-bupa": "nivabupa.com",
+  "oriental-insurance": "orientalinsurance.org.in",
+  "reliance-general": "reliancegeneral.co.in",
+  "royal-sundaram": "royalsundaram.in",
+  "sbi-general": "sbigeneral.in",
+  "star-health": "starhealth.in",
+  "tata-aig": "tataaig.com",
 };
 
-function InsurerLogo({ slug, name, size = 44 }: { slug: string; name: string; size?: number }) {
-  const [failed, setFailed] = useState(false);
-  const url = INSURER_LOGO_URL[slug];
+function InsurerLogo({ slug, name, homeUrl, size = 44 }: { slug: string; name: string; homeUrl?: string; size?: number }) {
+  // #94 — staged fallback: a locally-hosted real logo (durable, no external
+  // dependency) → DuckDuckGo's icon service (very reliable, returns the
+  // site icon, effectively never hard-404s) → colored letter avatar. The
+  // previous gstatic faviconV2 hard-404'd for several insurers
+  // (manipalcigna/royalsundaram/sbigeneral/national) so cards fell back to
+  // initials.
+  const [stage, setStage] = useState(0);
   const color = INSURER_COLOR[slug] || "bg-slate-500";
-  if (!url || failed) {
-    const initials = insurerInitials(name);
+  let domain = INSURER_DOMAIN[slug];
+  if (!domain && homeUrl) {
+    try { domain = new URL(homeUrl).hostname.replace(/^www\./, ""); } catch { /* keep undefined */ }
+  }
+  const sources = [
+    `/insurer-logos/${slug}.png`,
+    domain ? `https://icons.duckduckgo.com/ip3/${domain}.ico` : "",
+  ].filter(Boolean);
+  if (stage >= sources.length) {
     return (
       <div
         className={`rounded-lg ${color} text-white flex items-center justify-center font-bold shrink-0`}
         style={{ width: size, height: size, fontSize: size * 0.32 }}
       >
-        {initials}
+        {insurerInitials(name)}
       </div>
     );
   }
   return (
+    // #103 — logo sits directly on the card (no white box / border / inner
+    // padding that shrank it to ~36px and looked pasted-on). Fills the full
+    // box, object-contain so the brand mark stays legible.
     <div
-      className="rounded-lg bg-white border border-[var(--border)] flex items-center justify-center shrink-0 overflow-hidden p-1"
+      className="flex items-center justify-center shrink-0"
       style={{ width: size, height: size }}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={url}
+        src={sources[stage]}
         alt={name}
-        onError={() => setFailed(true)}
-        className="max-w-full max-h-full object-contain"
+        onError={() => setStage((s) => s + 1)}
+        className="w-full h-full object-contain"
       />
     </div>
   );
@@ -3874,10 +4472,30 @@ function MarketplacePanel({
       if (!p.policy_name.toLowerCase().includes(q) && !p.insurer_name.toLowerCase().includes(q) && !aliasHit) return false;
     }
     if (insurerFilter !== "all" && p.insurer_slug !== insurerFilter) return false;
-    if (grade !== "all" && p.grade !== grade) return false;
+    // #85 — MIN RATING is a THRESHOLD, not an equality. "A" = A only;
+    // "B" = B or better (A,B); "C" = C or better (A,B,C). The old
+    // `p.grade !== grade` made "B or better" silently exclude every A.
+    if (grade !== "all") {
+      const RANK: Record<string, number> = { A: 4, B: 3, C: 2, D: 1, F: 0 };
+      const pr = RANK[p.grade] ?? -1;
+      if (grade === "A" ? p.grade !== "A" : pr < (RANK[grade] ?? 99)) return false;
+    }
     if (p.pre_existing_disease_waiting_months && p.pre_existing_disease_waiting_months > maxPED) return false;
-    const maxAvailable = p.sum_insured_options.length ? Math.max(...p.sum_insured_options) : minSI;
-    if (maxAvailable < minSI) return false;
+    // #85 / SI RATIONALISATION (D3) — filter on the CORROBORATED SI ceiling
+    // (sum_insured_max is now the source-quote-corroborated max; D3). The
+    // slider FLOOR (₹5 L) means "Any" — at the lowest setting nothing is
+    // filtered, so policies whose corroborated ceiling is below ₹5 L stay
+    // reachable. Above the floor it filters for real; policies with NO
+    // corroborated SI stay visible (don't punish unpublished data).
+    if (minSI > 500000) {
+      const _siTiers = p.sum_insured_tiers && p.sum_insured_tiers.length
+        ? p.sum_insured_tiers
+        : p.sum_insured_options;
+      const siCap =
+        p.sum_insured_max ??
+        (_siTiers.length ? Math.max(..._siTiers) : null);
+      if (siCap != null && siCap < minSI) return false;
+    }
     if (requireAyush && p.ayush_coverage !== true) return false;
     if (requireCashless && p.cashless_treatment_supported !== true) return false;
     return true;
@@ -3890,9 +4508,9 @@ function MarketplacePanel({
   });
 
   return (
-    <div className="app-panel border-t border-[var(--border)] animate-fade-up max-h-[80vh] overflow-y-auto scrollbar-thin">
+    <div className="app-panel app-panel-mobile-full border-t border-[var(--border)] max-h-[80vh] overflow-y-auto scrollbar-thin">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-        <div className="flex items-start justify-between gap-4 mb-5 reveal reveal-1">
+        <div className="flex items-start justify-between gap-4 mb-5">
           <div className="min-w-0">
             <div className="panel-kicker mb-1.5">
               <span className="dot" />
@@ -3907,7 +4525,7 @@ function MarketplacePanel({
         </div>
 
         {/* Filter bar */}
-        <div className="filter-shell p-4 mb-5 reveal reveal-2">
+        <div className="filter-shell p-4 mb-5">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
             <div>
               <label className="block text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wide mb-1">{t("mp.search")}</label>
@@ -3945,18 +4563,28 @@ function MarketplacePanel({
                 <option value="insurer">{t("mp.sort_insurer")}</option>
               </select>
             </div>
-            <div>
-              <label className="block text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wide mb-2">{t("mp.max_ped_wait")} <span className="font-mono text-[var(--primary)]">{maxPED} mo</span></label>
+            {/* #85 — each slider in its own bordered cell spanning half the
+                row, so the two no longer collide at a column boundary and
+                read as one broken double-thumb control. Value chip is
+                normal-case (was being uppercased to "48 MO" / "5 L"). */}
+            <div className="lg:col-span-2 rounded-xl border border-[var(--border)] bg-[var(--card)] px-3.5 py-2.5">
+              <label className="flex items-center justify-between text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wide mb-2">
+                <span>{t("mp.max_ped_wait")}</span>
+                <span className="font-mono text-[var(--primary)] normal-case">{maxPED === 48 ? "Any" : `≤ ${maxPED} mo`}</span>
+              </label>
               <input type="range" min={12} max={48} step={6} value={maxPED} onChange={(e) => setMaxPED(parseInt(e.target.value))} className="app-range" />
             </div>
-            <div>
-              <label className="block text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wide mb-2">{t("mp.min_sum_insured")} <span className="font-mono text-[var(--primary)]">{minSI >= 10000000 ? (minSI/10000000) + " cr" : (minSI/100000) + " L"}</span></label>
+            <div className="lg:col-span-2 rounded-xl border border-[var(--border)] bg-[var(--card)] px-3.5 py-2.5">
+              <label className="flex items-center justify-between text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wide mb-2">
+                <span>{t("mp.min_sum_insured")}</span>
+                <span className="font-mono text-[var(--primary)] normal-case">{minSI === 500000 ? "Any" : minSI >= 10000000 ? `₹${minSI / 10000000} Cr+` : `₹${minSI / 100000} L+`}</span>
+              </label>
               <input type="range" min={500000} max={10000000} step={500000} value={minSI} onChange={(e) => setMinSI(parseInt(e.target.value))} className="app-range" />
             </div>
-            <label className="flex items-center gap-2 text-xs">
+            <label className="flex items-center gap-2 text-xs lg:col-span-2">
               <input type="checkbox" checked={requireAyush} onChange={(e) => setRequireAyush(e.target.checked)} className="accent-[var(--primary)]" /> {t("mp.ayush_covered")}
             </label>
-            <label className="flex items-center gap-2 text-xs">
+            <label className="flex items-center gap-2 text-xs lg:col-span-2">
               <input type="checkbox" checked={requireCashless} onChange={(e) => setRequireCashless(e.target.checked)} className="accent-[var(--primary)]" /> {t("mp.cashless_network")}
             </label>
           </div>
@@ -3966,7 +4594,7 @@ function MarketplacePanel({
         </div>
 
         {/* Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pb-20 reveal reveal-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 pb-20">
           {sorted.map((p) => (
             <PolicyCard
               key={p.policy_id}
@@ -4035,9 +4663,18 @@ function MarketplacePanel({
   );
 }
 
-function PerPolicyPremiumEstimator({ policy }: { policy: MarketplacePolicy }) {
+function PerPolicyPremiumEstimator({ policy, desiredSI }: { policy: MarketplacePolicy; desiredSI?: number | null }) {
   const [age, setAge] = useState(35);
-  const defaultSI = policy.sum_insured_options.length ? policy.sum_insured_options[Math.floor(policy.sum_insured_options.length / 2)] : 1000000;
+  // SI RATIONALISATION (D1/D2) — seed the slider from the policy's
+  // CORROBORATED tiers (mid tier). When the policy publishes no corroborated
+  // SI, fall back to the user's stated desired_sum_insured_inr, else ₹10 L
+  // (D2) — the backend then returns sum_insured_disclosure for this case.
+  const _siTiers = (policy.sum_insured_tiers && policy.sum_insured_tiers.length
+    ? policy.sum_insured_tiers
+    : policy.sum_insured_options) || [];
+  const defaultSI = _siTiers.length
+    ? _siTiers[Math.floor(_siTiers.length / 2)]
+    : (desiredSI && desiredSI > 0 ? desiredSI : 1000000);
   const [si, setSI] = useState(defaultSI);
   const [city, setCity] = useState<"metro" | "tier1" | "tier2">("metro");
   const [smoker, setSmoker] = useState(false);
@@ -4124,6 +4761,13 @@ function PerPolicyPremiumEstimator({ policy }: { policy: MarketplacePolicy }) {
                 <a href={est.sources[0]} target="_blank" rel="noopener" className="text-[var(--primary)] hover:underline">verified source ↗</a>
               </div>
             )}
+            {/* D2 — verbatim disclosure when the policy publishes no
+                corroborated SI and the estimate used a fallback cover. */}
+            {est.sum_insured_disclosure && (
+              <div className="text-[10px] text-amber-700 dark:text-amber-300 mt-2 leading-tight font-medium">
+                {est.sum_insured_disclosure}
+              </div>
+            )}
             <div className="text-[9px] text-amber-700 dark:text-amber-300 mt-2 leading-tight">Illustrative only. Final quote depends on underwriting.</div>
           </>
         )}
@@ -4132,63 +4776,248 @@ function PerPolicyPremiumEstimator({ policy }: { policy: MarketplacePolicy }) {
   );
 }
 
+// #82 — reputation is read from several independent sources (IRDAI claims
+// data, consumer rating sites, Reddit, YouTube, news). The block makes that
+// explicit: one lead "overall" synthesis, then ONE card per source, each a
+// number / score / one-line verdict, every card clickable through to where
+// that rating actually lives. Same editorial language (.rev-*) as the
+// snapshot above — no plain-HTML island.
 function InsurerReviewsBlock({ reviews }: { reviews: InsurerReviews }) {
   const cm = reviews.claim_metrics || {};
   const agg = reviews.aggregator_ratings || {};
   const score = reviews.aggregate_score || {};
-  return (
-    <div className="space-y-3 text-xs">
-      <div className="flex items-center gap-3">
-        {score.value_0_100 != null && (
-          <div className={`flex flex-col items-center justify-center px-3 py-1.5 rounded-lg ${gradeColor(score.letter_grade || "C")}`}>
-            <div className="text-base font-bold leading-none">{score.value_0_100}</div>
-            <div className="text-[9px] uppercase tracking-wide opacity-90">{score.letter_grade}</div>
-          </div>
-        )}
-        <div className="flex-1 text-[var(--muted-foreground)]">{score.headline}</div>
-      </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-        {cm.claim_settlement_ratio_pct != null && (
-          <SafeLink href={cm.source_irdai_url} className="rounded-lg border border-[var(--border)] p-2 hover:border-[var(--primary)] transition block">
-            <div className="text-[9px] uppercase tracking-wide text-[var(--muted-foreground)]">Claim ratio (IRDAI {cm.claim_settlement_ratio_year})</div>
-            <div className="font-semibold text-sm">{cm.claim_settlement_ratio_pct}%</div>
-          </SafeLink>
-        )}
-        {cm.complaints_per_10k_policies != null && (
-          <div className="rounded-lg border border-[var(--border)] p-2">
-            <div className="text-[9px] uppercase tracking-wide text-[var(--muted-foreground)]">Complaints / 10K policies</div>
-            <div className="font-semibold text-sm">{cm.complaints_per_10k_policies}</div>
-          </div>
-        )}
-        {Object.entries(agg).filter(([, v]) => v?.avg_star != null).slice(0, 2).map(([portal, v]) => (
-          <SafeLink key={portal} href={v?.url} className="rounded-lg border border-[var(--border)] p-2 hover:border-[var(--primary)] transition block">
-            <div className="text-[9px] uppercase tracking-wide text-[var(--muted-foreground)]">{portal}</div>
-            <div className="font-semibold text-sm">{v?.avg_star}★ {v?.review_count != null && <span className="opacity-60 font-normal">({v?.review_count.toLocaleString()})</span>}</div>
-          </SafeLink>
-        ))}
-      </div>
-      {reviews.reddit_sentiment?.notable_themes && reviews.reddit_sentiment.notable_themes.length > 0 && (
-        <div>
-          <div className="text-[10px] uppercase tracking-wide text-[var(--muted-foreground)] font-semibold mb-1">What customers say (Reddit)</div>
-          <div className="flex flex-wrap gap-1">
-            {reviews.reddit_sentiment.notable_themes.slice(0, 6).map((t, i) => (
-              <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--muted)] text-[var(--muted-foreground)]">{t}</span>
-            ))}
-          </div>
+  const reddit = reviews.reddit_sentiment || {};
+  const yt = reviews.youtube_coverage || {};
+  const news = reviews.in_news || [];
+
+  // One entry per DISTINCT reviewer (the source legitimately lists the same
+  // outlet across an article + videos; raw rendering made one creator
+  // appear 3× and read like a bug).
+  const normName = (s?: string | null) =>
+    (s || "").toLowerCase().replace(/\(.*?\)/g, "").replace(/\s+/g, " ").trim();
+  const ytByCreator = new Map<string, { creator?: string; video_url?: string; verdict?: string }>();
+  for (const c of yt.top_creators_who_reviewed || []) {
+    const k = normName(c.creator);
+    if (k && !ytByCreator.has(k)) ytByCreator.set(k, c);
+  }
+  const ytCreators = [...ytByCreator.values()];
+
+  const aggList = Object.entries(agg).filter(([, v]) => v?.avg_star != null);
+
+  // Plain-language count of how many independent sources fed the grade —
+  // so it's obvious this is a synthesis, not a single site's number.
+  const sources: string[] = [];
+  if (cm.claim_settlement_ratio_pct != null || cm.complaints_per_10k_policies != null)
+    sources.push("IRDAI claims data");
+  if (aggList.length) sources.push(`${aggList.length} consumer rating ${aggList.length === 1 ? "site" : "sites"}`);
+  if ((reddit.notable_themes || []).length || reddit.sentiment_overall) sources.push("Reddit");
+  if (ytCreators.length) sources.push("YouTube reviewers");
+  if (news.length) sources.push("news coverage");
+
+  // Whole-card link wrapper — the card IS the click target when a source
+  // URL exists, a plain tile when it doesn't (never a dead link).
+  const Card = ({
+    src, value, sub, href,
+  }: { src: string; value: React.ReactNode; sub?: string; href?: string | null }) => {
+    const inner = (
+      <>
+        <div className="rev-src">{src}{href && <span className="rev-go" aria-hidden> ↗</span>}</div>
+        <div className="rev-val">{value}</div>
+        {sub && <div className="rev-sub">{sub}</div>}
+      </>
+    );
+    return href
+      ? <SafeLink href={href} className="rev-card rev-card--link">{inner}</SafeLink>
+      : <div className="rev-card">{inner}</div>;
+  };
+
+  const redditHref = `https://www.reddit.com/search/?q=${encodeURIComponent(reviews.insurer_name + " health insurance")}`;
+  // #99 — WEIGHTED by each site's review_count: insuredekho 4.6★ over 386
+  // reviews must dominate mouthshut 1.39★ with little/no volume. A flat
+  // mean ((4.6+1.39)/2 = 3.0) is meaningless. Fall back to a flat mean
+  // ONLY when no site reports a count.
+  const _aggW = (() => {
+    if (aggList.length === 0) return { avg: null as number | null, weighted: false };
+    const withCount = aggList.filter(([, v]) => (v?.review_count ?? 0) > 0);
+    if (withCount.length > 0) {
+      const num = withCount.reduce((s, [, v]) => s + (v!.avg_star! * (v!.review_count || 0)), 0);
+      const den = withCount.reduce((s, [, v]) => s + (v!.review_count || 0), 0);
+      return { avg: den > 0 ? num / den : null, weighted: true };
+    }
+    return {
+      avg: aggList.reduce((s, [, v]) => s + (v?.avg_star || 0), 0) / aggList.length,
+      weighted: false,
+    };
+  })();
+  const aggAvg = _aggW.avg;
+  const cap = (s?: string | null) =>
+    s ? s.charAt(0).toUpperCase() + s.slice(1) : "";
+
+  // #90 — EXACTLY six fixed, uniform buckets, always rendered (honest
+  // "Not published" when an insurer's source has no value) so the grid is
+  // a clean even 3×2, never a ragged auto-fit. Scalar buckets are
+  // whole-card links; list buckets carry per-row links.
+  type Line = { name?: string | null; meta?: string | null; href?: string | null };
+  type Bucket = {
+    key: string;
+    label: string;
+    value: React.ReactNode;
+    sub?: string;
+    href?: string | null;
+    lines?: Line[];
+  };
+  const buckets: Bucket[] = [
+    {
+      key: "claims",
+      label: `Claims settled · IRDAI ${cm.claim_settlement_ratio_year || ""}`.trim(),
+      value:
+        cm.claim_settlement_ratio_pct != null
+          ? `${cm.claim_settlement_ratio_pct}%`
+          : "Not published",
+      sub: "Share of claims the insurer actually settled",
+      href: cm.claim_settlement_ratio_pct != null ? cm.source_irdai_url : null,
+    },
+    {
+      key: "complaints",
+      label: `Complaints · IRDAI ${cm.complaints_year || ""}`.trim(),
+      value:
+        cm.complaints_per_10k_policies != null
+          ? `${cm.complaints_per_10k_policies}`
+          : "Not published",
+      sub: "Per 10,000 policies — lower is better",
+      href: cm.complaints_per_10k_policies != null ? cm.source_irdai_url : null,
+    },
+    {
+      key: "ratings",
+      label: "Consumer ratings",
+      value:
+        aggAvg != null ? (
+          <>
+            {aggAvg.toFixed(1)}
+            <span className="rev-star">★</span>
+          </>
+        ) : (
+          "Not rated"
+        ),
+      sub:
+        aggList.length > 0
+          ? `${_aggW.weighted ? "Weighted by review volume across" : "Average across"} ${aggList.length} rating ${aggList.length === 1 ? "site" : "sites"}`
+          : "No public aggregator rating",
+      lines: aggList.map(([portal, v]) => ({
+        name: portal,
+        meta: `${v?.avg_star}★${v?.review_count != null ? ` (${v.review_count.toLocaleString()})` : ""}`,
+        href: v?.url,
+      })),
+    },
+    {
+      key: "reddit",
+      label: "Customer voice · Reddit",
+      value: (
+        <span className="rev-verdict">
+          {cap(reddit.sentiment_overall) || "Discussed"}
+        </span>
+      ),
+      sub:
+        (reddit.notable_themes || []).slice(0, 2).join(" · ") ||
+        "Community discussion on Reddit",
+      href: redditHref,
+    },
+    {
+      key: "youtube",
+      label: "Reviewer voice · YouTube",
+      value: (
+        <span className="rev-verdict">
+          {cap(yt.overall_youtube_sentiment) ||
+            (ytCreators.length ? "Reviewed" : "No coverage")}
+        </span>
+      ),
+      sub:
+        ytCreators.length === 0
+          ? "No independent video reviews found"
+          : undefined,
+      lines: ytCreators.slice(0, 3).map((c) => ({
+        name: c.creator,
+        meta: c.verdict,
+        href: c.video_url,
+      })),
+    },
+    {
+      key: "news",
+      label: "In the news",
+      value: (
+        <span className="rev-verdict">
+          {news.length
+            ? `${news.length} mention${news.length > 1 ? "s" : ""}`
+            : "No recent coverage"}
+        </span>
+      ),
+      sub: news.length === 0 ? "No recent press coverage found" : undefined,
+      lines: news.slice(0, 3).map((n) => ({
+        name: n.headline,
+        meta: [n.publication, n.date].filter(Boolean).join(", "),
+        href: n.url,
+      })),
+    },
+  ];
+
+  const BucketCard = ({ b }: { b: Bucket }) => {
+    const hasLines = (b.lines || []).length > 0;
+    const linkable = !hasLines && !!b.href;
+    const body = (
+      <>
+        <div className="rev-src">
+          {b.label}
+          {linkable && <span className="rev-go" aria-hidden> ↗</span>}
         </div>
-      )}
-      {reviews.youtube_coverage?.top_creators_who_reviewed && reviews.youtube_coverage.top_creators_who_reviewed.length > 0 && (
-        <div>
-          <div className="text-[10px] uppercase tracking-wide text-[var(--muted-foreground)] font-semibold mb-1">Reviewed by</div>
-          <div className="space-y-0.5">
-            {reviews.youtube_coverage.top_creators_who_reviewed.slice(0, 3).map((c, i) => (
-              <SafeLink key={i} href={c.video_url} className="block text-xs hover:text-[var(--primary)]">
-                <span className="font-medium">{c.creator}</span> — <span className="text-[var(--muted-foreground)]">{c.verdict}</span>
+        <div className="rev-val">{b.value}</div>
+        {b.sub && <div className="rev-sub">{b.sub}</div>}
+        {hasLines && (
+          <div className="rev-lines">
+            {b.lines!.map((ln, i) => (
+              <SafeLink key={i} href={ln.href || undefined} className="rev-line">
+                <span className="rev-line-name">{ln.name}</span>
+                {ln.meta && (
+                  <span className="rev-line-verdict"> — {ln.meta}</span>
+                )}
+                {ln.href && <span className="rev-go" aria-hidden> ↗</span>}
               </SafeLink>
             ))}
           </div>
+        )}
+      </>
+    );
+    return linkable ? (
+      <SafeLink href={b.href!} className="rev-card rev-card--link">
+        {body}
+      </SafeLink>
+    ) : (
+      <div className="rev-card">{body}</div>
+    );
+  };
+
+  return (
+    <div className="space-y-3">
+      {(score.headline || score.value_0_100 != null) && (
+        <div className="rev-lead">
+          {score.value_0_100 != null && (
+            <span className={`rev-grade ${gradeColor(score.letter_grade || "C")}`}>
+              {score.value_0_100}<small>{score.letter_grade}</small>
+            </span>
+          )}
+          <div className="min-w-0">
+            <div className="rev-lead-head">{score.headline}</div>
+            {sources.length > 0 && (
+              <div className="rev-lead-sub">Synthesised from {sources.join(", ")}.</div>
+            )}
+          </div>
         </div>
       )}
+
+      <div className="rev-grid">
+        {buckets.map((b) => (
+          <BucketCard key={b.key} b={b} />
+        ))}
+      </div>
     </div>
   );
 }
@@ -4210,8 +5039,12 @@ function PolicyCard({
   t: (k: StringKey, v?: Record<string, string | number>) => string;
   isPersonalized?: boolean;
 }) {
-  const maxSI = policy.sum_insured_options.length ? Math.max(...policy.sum_insured_options) : null;
-  const siDisplay = maxSI ? (maxSI >= 10000000 ? `${maxSI/10000000} cr` : `${maxSI/100000} L`) : "—";
+  // SI RATIONALISATION (D1) — IDENTICAL helper as the compare card /
+  // SnapshotView "Cover amount" (single shared fmtSumInsured) so the same
+  // policy never reads differently across the marketplace card, the detail
+  // snapshot and the compare card. Continuous band → "₹X – ₹Y"; discrete
+  // plans → tier list; no corroborated SI → "As per policy schedule".
+  const siDisplay = fmtSumInsured(policy);
   // Translate the grade one-liner — backend produces fixed English strings;
   // we map them to i18n keys to flip with the UI language.
   const oneLinerKey = ({ A: "grade.a", B: "grade.b", C: "grade.c", D: "grade.d", F: "grade.f" } as Record<string, StringKey>)[policy.grade] || "grade.c";
@@ -4241,36 +5074,58 @@ function PolicyCard({
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } }}
         className="w-full text-left cursor-pointer"
       >
+        {/* #93 — the insurer + policy name get the FULL row width. The old
+            inline "SEE SCORE / build profile" pill stole ~90px and crushed
+            names into "SBI General… / Super Health…". For un-scored
+            policies the "Complete your profile…" line right below already
+            says it, so no pill here; when scored we show a COMPACT grade
+            chip that doesn't squeeze the title. */}
         <div className="flex items-start gap-3 mb-3 pr-16">
-          <InsurerLogo slug={policy.insurer_slug} name={policy.insurer_name} size={44} />
+          <InsurerLogo slug={policy.insurer_slug} name={policy.insurer_name} homeUrl={policy.insurer_home_url} size={44} />
           <div className="flex-1 min-w-0">
-            <div className="text-xs text-[var(--muted-foreground)] truncate">{policy.insurer_name}</div>
-            <div className="font-semibold text-sm truncate group-hover:text-[var(--primary)] transition">{policy.policy_name}</div>
+            <div className="text-xs text-[var(--muted-foreground)] leading-snug line-clamp-2 break-words">{policy.insurer_name}</div>
+            <div className="font-semibold text-sm leading-snug line-clamp-3 break-words group-hover:text-[var(--primary)] transition">{policy.policy_name}</div>
             {policy.aliases && policy.aliases.length > 0 && (
-              <div className="text-xs text-slate-500 italic mt-0.5 truncate">
+              <div className="text-xs text-slate-500 italic mt-0.5 line-clamp-2 break-words">
                 Also marketed as: {policy.aliases.join(", ")}
               </div>
             )}
           </div>
-          {/* Score badge ONLY when we have a profile — otherwise CTA pill */}
-          {isPersonalized ? (
+          {isPersonalized && (
             <div className={`shrink-0 flex flex-col items-center rounded-lg overflow-hidden ${gradeColor(policy.grade)}`}>
               <div className="px-2 pt-0.5 text-[10px] font-semibold opacity-90 uppercase tracking-wide">{policy.grade}</div>
               <div className="px-2 pb-0.5 text-base font-bold leading-none">{policy.overall_score}<span className="text-[10px] font-normal opacity-80">/100</span></div>
             </div>
-          ) : (
-            <div className="shrink-0 flex flex-col items-center justify-center rounded-lg overflow-hidden bg-[var(--muted)] border border-dashed border-[var(--border)] px-2 py-1.5 text-center" style={{ minWidth: 64 }}>
-              <div className="text-[9px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)] leading-tight">{t("card.see_score_pill")}</div>
-              <div className="text-[8px] text-[var(--muted-foreground)] leading-tight mt-0.5">{t("card.see_score_sub")}</div>
-            </div>
           )}
         </div>
         <p className="text-xs text-[var(--muted-foreground)] mb-3 line-clamp-2">{isPersonalized ? oneLiner : t("card.score_locked_msg")}</p>
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          <Stat label={<Jargon term="SI" uiLang={t("header.title").includes("स्व") ? "hi" : "en"}>{t("stat.sum_insured_up_to")}</Jargon>} value={siDisplay} />
-          <Stat label={<Jargon term="PED" uiLang={t("header.title").includes("स्व") ? "hi" : "en"}>{t("stat.ped_waiting")}</Jargon>} value={policy.pre_existing_disease_waiting_months ? `${policy.pre_existing_disease_waiting_months} mo` : "—"} />
-          <Stat label={<Jargon term="AYUSH" uiLang={t("header.title").includes("स्व") ? "hi" : "en"}>{t("stat.ayush")}</Jargon>} value={policy.ayush_coverage === true ? "Yes" : policy.ayush_coverage === false ? "No" : "—"} />
-          <Stat label={t("stat.network")} value={policy.network_hospital_count ? `${(policy.network_hospital_count / 1000).toFixed(0)}K+` : "—"} />
+        {/* #97/#98 — DYNAMIC tiles: cover (always) + the next 3 facts that
+            are actually KNOWN for THIS policy, in decision-priority order.
+            A card never shows a blank "Not stated" slot while richer info
+            exists (the modal-vs-card mismatch). "?" is the SHARED hover
+            GlossaryTip — identical component, copy and style as the
+            detail-modal snapshot. #47/#89: equal-height tiles, label
+            reserves 2 lines, value pinned to the bottom. */}
+        <div className="grid grid-cols-2 gap-2">
+          {(() => {
+            const cand: { term: "cover" | "copay" | "ped" | "cashless" | "ncb" | "entry" | "initwait" | "room"; label: string; value: string | null }[] = [
+              { term: "cover", label: "Sum insured", value: siDisplay },
+              { term: "copay", label: "Mandatory co-pay", value: policy.copayment_pct == null ? null : policy.copayment_pct === 0 ? "None" : `${policy.copayment_pct}%` },
+              { term: "ped", label: "Pre-existing wait", value: policy.pre_existing_disease_waiting_months == null ? null : policy.pre_existing_disease_waiting_months === 0 ? "None" : `${policy.pre_existing_disease_waiting_months} mo` },
+              { term: "cashless", label: "Cashless", value: policy.cashless_treatment_supported === true ? (policy.network_count_official ? `Yes · ${(policy.network_count_official / 1000).toFixed(0)}K+` : "Yes") : policy.cashless_treatment_supported === false ? "No" : null },
+              { term: "ncb", label: "No-claim bonus", value: policy.no_claim_bonus_pct == null ? null : policy.no_claim_bonus_pct === 0 ? "None" : `+${policy.no_claim_bonus_pct}%` },
+              { term: "entry", label: "Entry age", value: (policy.min_entry_age != null || policy.max_entry_age != null) ? `${policy.min_entry_age ?? "?"}–${policy.max_entry_age ?? "?"} yrs` : null },
+              { term: "initwait", label: "Initial wait", value: policy.initial_waiting_period_days == null ? null : policy.initial_waiting_period_days === 0 ? "None" : `${policy.initial_waiting_period_days} d` },
+              { term: "room", label: "Room cap", value: policy.room_rent_capping ? policy.room_rent_capping : null },
+            ];
+            const tiles = cand.filter((c) => c.value != null).slice(0, 4);
+            return tiles.map((c) => (
+              <div key={c.term} className="cs-tile">
+                <div className="cs-label">{c.label}<GlossaryTip term={c.term} /></div>
+                <div className="cs-value">{c.value}</div>
+              </div>
+            ));
+          })()}
         </div>
       </div>
     </div>
@@ -4310,7 +5165,7 @@ function MethodologyExpander() {
         onClick={() => setOpen(!open)}
         className="w-full text-left px-3 py-2 text-xs font-semibold flex items-center justify-between hover:bg-[var(--muted)]"
       >
-        <span>How is this score computed? <span className="text-[var(--muted-foreground)] font-normal">(48 fields → 6 criteria, with weights)</span></span>
+        <span>How is this grade decided? <span className="text-[var(--muted-foreground)] font-normal">(six things that matter, weighted)</span></span>
         <span className="text-[var(--muted-foreground)]">{open ? "−" : "+"}</span>
       </button>
       {open && (
@@ -4319,43 +5174,22 @@ function MethodologyExpander() {
           {data && (
             <>
               <p className="text-[var(--muted-foreground)] leading-snug">
-                {data.scoring_approach} The blueprint below shows which fields drive each criterion and what regulatory or buyer-research source justifies the weight.
+                Every policy is judged the same way on the things that decide whether health cover actually protects you. Each is rated out of 100 and combined by how much it matters for someone in your situation — here is what each one means and why it carries the weight it does.
               </p>
               {data.criteria.map((c) => (
                 <div key={c.name} className="border border-[var(--border)] rounded-md p-2.5 bg-[var(--muted)]">
                   <div className="flex items-baseline justify-between mb-1">
                     <span className="text-xs font-bold">{c.name}</span>
-                    <span className="text-[10px] font-mono text-[var(--primary)]">{c.weight_pct}% of overall</span>
+                    <span className="text-[10px] font-semibold text-[var(--primary)]">{c.weight_pct}% of the grade</span>
                   </div>
-                  <div className="text-[11px] text-[var(--foreground)] italic mb-1">"{c.consumer_question}"</div>
-                  <div className="text-[11px] text-[var(--muted-foreground)] mb-2 leading-snug">{c.why_it_matters}</div>
-                  <details className="text-[11px]">
-                    <summary className="cursor-pointer text-[var(--primary)] hover:underline mb-1">
-                      {c.fields_driving_score.length} fields drive this score
-                    </summary>
-                    <ul className="mt-1 space-y-0.5 pl-2">
-                      {c.fields_driving_score.map((f, i) => (
-                        <li key={i} className="text-[10px]">
-                          <code className="text-[var(--primary)]">{f.field}</code>
-                          <span className="text-[var(--muted-foreground)]"> — {f.rule}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </details>
-                  {c.anchors.length > 0 && (
-                    <details className="text-[11px] mt-1">
-                      <summary className="cursor-pointer text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
-                        Why this weight? {c.anchors.length} source{c.anchors.length === 1 ? "" : "s"}
-                      </summary>
-                      <ul className="mt-1 space-y-0.5 pl-2 text-[10px] text-[var(--muted-foreground)]">
-                        {c.anchors.map((a, i) => <li key={i}>· {a}</li>)}
-                      </ul>
-                    </details>
-                  )}
+                  <div className="text-[11px] text-[var(--foreground)] italic mb-1">&ldquo;{c.consumer_question}&rdquo;</div>
+                  <div className="text-[11px] text-[var(--muted-foreground)] leading-snug">{c.why_it_matters}</div>
                 </div>
               ))}
               <div className="text-[10px] text-[var(--muted-foreground)] pt-1 border-t border-[var(--border)]">
-                Grade bands: A ≥85, B 70–84, C 55–69, D 40–54, F &lt;40. Overall = weighted average of the 6 sub-scores (weights re-tuned to buyer profile when known).
+                What the grades mean: {Object.entries(data.grade_thresholds).map(([g, d], i) => (
+                  <span key={g}>{i > 0 ? " · " : ""}<strong>{g}</strong> — {String(d).split("—").slice(1).join("—").trim() || String(d).trim()}</span>
+                ))}.
               </div>
             </>
           )}
@@ -4464,6 +5298,7 @@ function LiveBetaGateModal({
   onCancel: () => void;
 }) {
   const L = (en: string, hi: string) => (hindi ? hi : en);
+  const isTouch = useIsTouch();
   const dialogRef = useRef<HTMLDivElement | null>(null);
 
   // Escape cancels (treated as "did not confirm"); move focus into the
@@ -4522,7 +5357,7 @@ function LiveBetaGateModal({
 
   return (
     <div
-      className="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center p-4 animate-fade-up"
+      className="modal-shell-mobile fixed inset-0 z-[70] bg-black/50 flex items-center justify-center p-4 animate-fade-up"
       onClick={onCancel}
     >
       <div
@@ -4532,7 +5367,7 @@ function LiveBetaGateModal({
         aria-labelledby="live-gate-title"
         aria-describedby="live-gate-desc"
         onClick={(e) => e.stopPropagation()}
-        className="section-card w-full max-w-md max-h-[92vh] overflow-y-auto scrollbar-thin"
+        className="modal-card-mobile section-card w-full max-w-md max-h-[92vh] overflow-y-auto scrollbar-thin"
       >
         <div className="px-6 sm:px-7 py-7">
           {/* Kicker — reuses the landing's brand pill, recoloured amber to
@@ -4615,10 +5450,15 @@ function LiveBetaGateModal({
           </ul>
 
           <p className="mt-4 text-[12.5px] leading-relaxed text-[var(--muted-foreground)]">
-            {L(
-              "Prefer Push-to-talk or hold-SPACE — both are stable and use Sarvam STT (handles Hindi / Indic correctly).",
-              "Push-to-talk या SPACE दबाकर बोलना बेहतर है — दोनों स्थिर हैं और Sarvam STT वापरते हैं (हिन्दी / Indic सही संभालता है)।"
-            )}
+            {isTouch
+              ? L(
+                  "Prefer Push-to-talk — it's stable and uses Sarvam STT (handles Hindi / Indic correctly).",
+                  "Push-to-talk बेहतर है — यह स्थिर है और Sarvam STT वापरता है (हिन्दी / Indic सही संभालता है)।"
+                )
+              : L(
+                  "Prefer Push-to-talk or hold-SPACE — both are stable and use Sarvam STT (handles Hindi / Indic correctly).",
+                  "Push-to-talk या SPACE दबाकर बोलना बेहतर है — दोनों स्थिर हैं और Sarvam STT वापरते हैं (हिन्दी / Indic सही संभालता है)।"
+                )}
           </p>
 
           {/* Confirm / Cancel. Cancel is the safe default (autofocused). */}
@@ -4656,9 +5496,9 @@ function ComparisonModal({ policyIds, onClose }: { policyIds: string[]; onClose:
   }, [policyIds]);
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-3 animate-fade-up" onClick={onClose}>
+    <div className="modal-shell-mobile fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-3 animate-fade-up" onClick={onClose}>
       <div
-        className="bg-[var(--card)] rounded-2xl shadow-xl w-full max-w-6xl max-h-[92vh] overflow-y-auto scrollbar-thin"
+        className="modal-card-mobile bg-[var(--card)] rounded-2xl shadow-xl w-full max-w-6xl max-h-[92vh] overflow-y-auto scrollbar-thin"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 z-10 bg-[var(--card)] border-b border-[var(--border)] px-5 py-4 flex items-center justify-between">
@@ -4686,7 +5526,7 @@ function ComparisonModal({ policyIds, onClose }: { policyIds: string[]; onClose:
             </div>
           )}
           {data && (
-            <div className="overflow-x-auto -mx-5 px-5">
+            <div className="table-scroll-x overflow-x-auto -mx-5 px-5">
               <table className="w-full border-collapse text-xs">
                 <thead>
                   <tr>
@@ -4750,11 +5590,28 @@ function ComparisonModal({ policyIds, onClose }: { policyIds: string[]; onClose:
   );
 }
 
+// #64 — section eyebrow that matches the front-page kicker-pill pattern
+// (teal uppercase, dot) so every policy panel reads in the same editorial
+// system as the landing page rather than a generic bold label.
+function PanelEyebrow({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="panel-kicker mb-3">
+      <span className="dot" />
+      {children}
+    </div>
+  );
+}
+
 function PolicyDetailModal({ policy, onClose }: { policy: MarketplacePolicy; onClose: () => void }) {
-  const [sc, setSc] = useState<ScorecardResponse | null>(null);
+  // Tri-state: undefined = still loading, null = fetch failed (show Retry),
+  // value = loaded. Distinguishing loading-vs-failed is what stops the whole
+  // Score section from silently vanishing on a slow/failed scorecard fetch.
+  const [sc, setSc] = useState<ScorecardResponse | null | undefined>(undefined);
   const [reviews, setReviews] = useState<InsurerReviews | null>(null);
   const [completeness, setCompleteness] = useState<ProfileCompletenessResponse | null>(null);
+  const [method, setMethod] = useState<MethodologyResponse | null>(null);
   useEffect(() => {
+    setSc(undefined);
     getScorecard(policy.policy_id).then(setSc).catch(() => setSc(null));
     if (policy.insurer_slug) {
       getInsurerReviews(policy.insurer_slug).then(setReviews).catch(() => setReviews(null));
@@ -4764,119 +5621,181 @@ function PolicyDetailModal({ policy, onClose }: { policy: MarketplacePolicy; onC
     // CTA to complete the profile.
     const sid = typeof window !== "undefined" ? sessionStorage.getItem("insurance_session_id") || undefined : undefined;
     getProfileCompleteness(sid).then(setCompleteness).catch(() => setCompleteness(null));
+    // Server-derived methodology counts so the footer never states an
+    // invented "24 of 48" — it renders the real "{scored} of {total}".
+    fetch(`${BACKEND_URL}/api/scorecard/methodology`).then((r) => r.json()).then(setMethod).catch(() => setMethod(null));
   }, [policy.policy_id, policy.insurer_slug]);
+
+  // Standalone retry so a slow/failed scorecard fetch shows a Retry
+  // affordance instead of removing the entire Score section without a trace.
+  const retryScorecard = () => {
+    setSc(undefined);
+    getScorecard(policy.policy_id).then(setSc).catch(() => setSc(null));
+  };
   const isPersonalized = completeness?.is_personalized === true;
 
-  const initials = insurerInitials(policy.insurer_name);
-  const color = INSURER_COLOR[policy.insurer_slug] || "bg-slate-500";
-  const maxSI = policy.sum_insured_options.length ? Math.max(...policy.sum_insured_options) : null;
-  const siDisplay = maxSI ? (maxSI >= 10000000 ? `${maxSI/10000000} cr` : `${maxSI/100000} L`) : "—";
+  // #102 — logo + colour now handled inside <InsurerLogo>; the old
+  // initials/color medallion consts are gone.
+  // #75 + #64 — the "what this covers" grid is now the shared, decision-
+  // ordered SnapshotView (What you get · Who qualifies & when · Your share
+  // & limits, + a profile-aware Situational disclosure). scFacts recovers
+  // any value the flat marketplace row is missing from the SAME data the
+  // scorecard reads, so a policy with a full scorecard never shows blanks.
+  const scFacts = parseScorecardFacts(sc || null);
 
-  const pdfHref = policy.source_pdf_url ||
-    `https://www.google.com/search?q=site:${(new URL(policy.insurer_home_url || "https://www.google.com")).hostname}+${encodeURIComponent(policy.policy_name + " policy wording PDF")}`;
-  const hasRealPdf = Boolean(policy.source_pdf_url);
+  // #87 — every policy has a real source PDF (the doc the corpus was built
+  // from). The backend now always emits source_pdf_url: a public origin URL
+  // or a backend-served local-corpus path (/api/policy-pdf/...). Resolve the
+  // latter against BACKEND_URL so it works in dev and on the Space.
+  const _spu = policy.source_pdf_url;
+  const pdfHref = _spu
+    ? (_spu.startsWith("/api/") ? `${BACKEND_URL}${_spu}` : _spu)
+    : `https://www.google.com/search?q=site:${(new URL(policy.insurer_home_url || "https://www.google.com")).hostname}+${encodeURIComponent(policy.policy_name + " policy wording PDF")}`;
+  const hasRealPdf = Boolean(_spu);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4 animate-fade-up" onClick={onClose}>
-      <div className="bg-[var(--card)] rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-thin" onClick={(e) => e.stopPropagation()}>
-        <div className="p-5 border-b border-[var(--border)] sticky top-0 bg-[var(--card)] z-10">
-          <div className="flex items-start gap-3">
-            <div className={`w-12 h-12 rounded-lg ${color} text-white flex items-center justify-center font-bold shrink-0`}>{initials}</div>
+    <div className="modal-shell-mobile fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4 animate-fade-up" onClick={onClose}>
+      <div className="modal-card-mobile bg-[var(--card)] rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-thin" onClick={(e) => e.stopPropagation()}>
+        {/* #64 — header re-grounded on the front-page editorial system:
+            kicker pill, Fraunces (.panel-title) policy name, aligned
+            insurer / name / PDF row, rounded brand PDF button. */}
+        <div className="px-5 sm:px-6 pt-5 pb-4 border-b border-[var(--border)] sticky top-0 bg-[var(--card)] z-10">
+          <div className="flex items-start gap-3.5">
+            {/* #102 — real insurer logo (was a hardcoded initials
+                medallion that never showed the brand mark). */}
+            <InsurerLogo slug={policy.insurer_slug} name={policy.insurer_name} homeUrl={policy.insurer_home_url} size={48} />
             <div className="flex-1 min-w-0">
-              <div className="text-xs text-[var(--muted-foreground)]">
-                <a href={policy.insurer_home_url} target="_blank" rel="noopener" className="hover:text-[var(--primary)] underline-offset-2 hover:underline">
+              <div className="panel-kicker mb-1">
+                <span className="dot" />
+                <a href={policy.insurer_home_url} target="_blank" rel="noopener" className="hover:text-[var(--primary)] transition">
                   {policy.insurer_name}
                 </a>
               </div>
-              <h3 className="text-lg font-bold">{policy.policy_name}</h3>
+              <h3 className="panel-title text-xl sm:text-2xl leading-[1.15] break-words">{policy.policy_name}</h3>
+              {policy.aliases && policy.aliases.length > 0 && (
+                <div className="text-[11.5px] text-[var(--muted-foreground)] italic mt-1 leading-snug break-words">
+                  Also marketed as: {policy.aliases.join(", ")}
+                </div>
+              )}
             </div>
-            <a
-              href={pdfHref}
-              target="_blank"
-              rel="noopener"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold bg-[var(--primary)] text-white hover:opacity-90 px-3 py-2 rounded-md shrink-0"
-              title={hasRealPdf ? "Open the source policy PDF" : "Search the insurer's site for the policy PDF (we don't have a direct link for this policy yet)"}
-            >
-              <PdfIcon /> {hasRealPdf ? "Policy PDF" : "Find PDF"}
-            </a>
-            <button onClick={onClose} className="text-[var(--muted-foreground)] hover:text-[var(--foreground)] text-2xl leading-none ml-1">×</button>
+            <div className="flex items-center gap-1.5 shrink-0">
+              {/* #86 — the insurer's official cashless/network hospital list,
+                  alongside the policy PDF. Sourced from the insurer's own
+                  domain (a downloadable PDF where one exists, else the
+                  official locator). */}
+              {policy.network_list_url && (
+                <a
+                  href={policy.network_list_url}
+                  target="_blank"
+                  rel="noopener"
+                  className="inline-flex items-center gap-1 text-xs px-3 py-2 rounded-lg border border-[var(--border)] text-[var(--foreground)] hover:border-[var(--primary)] hover:text-[var(--primary)] transition"
+                  title={`Open ${policy.insurer_name}'s official ${policy.network_list_is_pdf ? "network hospital list (PDF)" : "cashless hospital locator"}`}
+                >
+                  Hospitals list ↗
+                </a>
+              )}
+              <a
+                href={pdfHref}
+                target="_blank"
+                rel="noopener"
+                className="btn-primary inline-flex items-center gap-1.5 text-xs px-3.5 py-2"
+                title={hasRealPdf ? "Open the source policy PDF" : "Search the insurer's site for the policy PDF (we don't have a direct link for this policy yet)"}
+              >
+                <PdfIcon /> {hasRealPdf ? "Policy PDF" : "Find PDF"}
+              </a>
+              <button onClick={onClose} aria-label="Close" className="shrink-0 w-10 h-10 flex items-center justify-center rounded-full text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] text-2xl leading-none transition">×</button>
+            </div>
           </div>
         </div>
 
         <div className="p-5 space-y-5">
-          {sc && (
-            <div>
-              {!isPersonalized && (
-                <div className="mb-3 bg-[var(--accent)] border border-[var(--primary)] rounded-lg p-3 text-xs">
-                  <div className="font-semibold text-[var(--primary)] mb-1">This is the generic grade for an average buyer.</div>
-                  <p className="text-[var(--muted-foreground)] leading-snug">
-                    Tell me about yourself (age, dependents, conditions, budget) and I&apos;ll re-score this policy for <strong className="text-[var(--foreground)]">your</strong> situation. The same policy can be a B for a 30-year-old and a D for a 60-year-old with diabetes — context changes everything.
-                    {completeness && completeness.completeness_pct > 0 && (
-                      <span className="block mt-1">Your profile is {completeness.completeness_pct}% complete. {completeness.next_question_hint && <em className="not-italic">Next: {completeness.next_question_hint.slice(0, 80)}…</em>}</span>
-                    )}
-                  </p>
-                </div>
-              )}
-              {isPersonalized && completeness && (
-                <div className="mb-3 text-[10px] text-[var(--primary)] font-semibold flex items-center gap-1">
-                  ✓ Personalized for you · profile {completeness.completeness_pct}% complete
-                </div>
-              )}
-              <div className="flex items-center gap-3 mb-3">
-                <span className={`inline-flex items-center justify-center w-12 h-12 rounded-lg font-bold ${gradeColor(sc.grade)}`}>{sc.grade}</span>
-                <div className="flex-1">
-                  <div className="text-2xl font-bold">{sc.overall_score}<span className="text-[var(--muted-foreground)] text-base font-normal">/100</span></div>
-                  <div className="text-xs text-[var(--muted-foreground)]">{sc.one_liner}</div>
-                </div>
-              </div>
-              <ScorecardCard sc={sc} />
-              <MethodologyExpander />
-            </div>
-          )}
-
+          {/* 1 — DETAILS (#75 + #64): the decision-ordered snapshot —
+              What you get · Who qualifies & when cover starts · Your share
+              & limits — with a profile-aware Situational disclosure.
+              Identical shared component (SnapshotView) as the in-chat
+              compare card, so the two surfaces never diverge. */}
           <div>
-            <h4 className="text-sm font-semibold mb-3">What this policy covers, in plain words</h4>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
-              <Stat label={<Jargon term="SI" uiLang="en">Cover up to</Jargon>} value={siDisplay} />
-              <Stat label="Who can buy + renew" value={(() => {
-                const min = policy.min_entry_age;
-                const max = policy.max_entry_age;
-                const minStr = min ? (min >= 30 && min <= 365 ? `${min} days` : `${min} yrs`) : null;
-                const maxStr = max ? `${max} yrs` : null;
-                const range = minStr && maxStr ? `${minStr} – ${maxStr}` : (minStr || maxStr || "Not stated");
-                return `${range} · lifelong renewal`;
-              })()} />
-              <Stat label="Wait before any claim" value={policy.initial_waiting_period_days ? `${policy.initial_waiting_period_days} days from start` : "Not stated"} />
-              <Stat label={<Jargon term="PED" uiLang="en">Wait if you already had a condition</Jargon>} value={policy.pre_existing_disease_waiting_months ? `${policy.pre_existing_disease_waiting_months} months` : "Not stated"} />
-              <Stat label="Maternity" value={policy.maternity_coverage === true ? (policy.maternity_waiting_months ? `Covered after ${policy.maternity_waiting_months}-month wait` : "Covered") : policy.maternity_coverage === false ? "Not covered" : "Check the wording"} />
-              <Stat label={<Jargon term="CoPay" uiLang="en">Your share per claim</Jargon>} value={policy.copayment_pct != null ? (policy.copayment_pct === 0 ? "Insurer pays it all" : `You pay ${policy.copayment_pct}% of every bill`) : "Not stated"} />
-              <Stat label={<Jargon term="NCB" uiLang="en">Reward for staying claim-free</Jargon>} value={policy.no_claim_bonus_pct ? `+${policy.no_claim_bonus_pct}% cover each claim-free year` : "Not stated"} />
-              <Stat label={<Jargon term="Cashless" uiLang="en">Cashless at hospital</Jargon>} value={policy.cashless_treatment_supported === true ? `Yes · ${policy.network_hospital_count ? policy.network_hospital_count.toLocaleString() + "+ network hospitals" : "network published by insurer"}` : "Not supported"} />
-              <Stat label={<Jargon term="AYUSH" uiLang="en">AYUSH (Ayurveda, Yoga…)</Jargon>} value={policy.ayush_coverage === true ? "Covered" : policy.ayush_coverage === false ? "Not covered" : "Check the wording"} />
-              {policy.room_rent_capping && (
-                <div className="col-span-2 pt-1 border-t border-[var(--border)]">
-                  <Stat label={<Jargon term="RoomRent" uiLang="en">Hospital room category</Jargon>} value={policy.room_rent_capping} />
-                </div>
-              )}
-            </div>
+            <PanelEyebrow>What this policy covers, in plain words</PanelEyebrow>
+            <SnapshotView
+              policy={policy}
+              facts={scFacts}
+              profile={completeness?.profile ?? null}
+            />
           </div>
 
-          {/* Per-policy premium estimator */}
+          {/* 2 — SCORE (always rendered in this position; tri-state so a
+              slow/failed scorecard fetch shows loading/Retry, never a silent
+              gap where the whole "how this score was calculated" section
+              used to disappear). */}
           <div className="pt-5 border-t border-[var(--border)]">
-            <h4 className="text-sm font-semibold mb-2">Estimate premium for this policy</h4>
-            <PerPolicyPremiumEstimator policy={policy} />
+            <PanelEyebrow>How this policy scores {isPersonalized ? "for you" : "(generic buyer)"}</PanelEyebrow>
+            {sc === undefined && (
+              <div className="py-8 flex flex-col items-center justify-center text-xs text-[var(--muted-foreground)]">
+                <span className="inline-block w-5 h-5 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin mb-2" />
+                Calculating the detailed scorecard…
+              </div>
+            )}
+            {sc === null && (
+              <div className="py-6 text-center text-xs">
+                <p className="text-[var(--muted-foreground)] mb-2">Couldn&apos;t load the scorecard for this policy.</p>
+                <button
+                  onClick={retryScorecard}
+                  className="px-3 py-1.5 rounded-md border border-[var(--primary)] text-[var(--primary)] font-semibold hover:bg-[var(--accent)] transition"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+            {sc && (
+              <div>
+                {!isPersonalized && (
+                  <div className="mb-3 bg-[var(--accent)] border border-[var(--primary)] rounded-lg p-3 text-xs">
+                    <div className="font-semibold text-[var(--primary)] mb-1">This is the generic grade for an average buyer.</div>
+                    <p className="text-[var(--muted-foreground)] leading-snug">
+                      Tell me about yourself (age, dependents, conditions, budget) and I&apos;ll re-score this policy for <strong className="text-[var(--foreground)]">your</strong> situation. The same policy can be a B for a 30-year-old and a D for a 60-year-old with diabetes — context changes everything.
+                      {completeness && completeness.completeness_pct > 0 && (
+                        <span className="block mt-1">Your profile is {completeness.completeness_pct}% complete. {completeness.next_question_hint && <em className="not-italic">Next: {completeness.next_question_hint.slice(0, 80)}…</em>}</span>
+                      )}
+                    </p>
+                  </div>
+                )}
+                {isPersonalized && completeness && (
+                  <div className="mb-3 text-[10px] text-[var(--primary)] font-semibold flex items-center gap-1">
+                    ✓ Personalized for you · profile {completeness.completeness_pct}% complete
+                  </div>
+                )}
+                <div className="flex items-center gap-3 mb-3">
+                  <span className={`inline-flex items-center justify-center w-12 h-12 rounded-lg font-bold ${gradeColor(sc.grade)}`}>{sc.grade}</span>
+                  <div className="flex-1">
+                    <div className="text-2xl font-bold">{sc.overall_score}<span className="text-[var(--muted-foreground)] text-base font-normal">/100</span></div>
+                    <div className="text-xs text-[var(--muted-foreground)]">{sc.one_liner}</div>
+                  </div>
+                </div>
+                <ScorecardCard sc={sc} />
+                <MethodologyExpander />
+              </div>
+            )}
           </div>
 
-          {/* Insurer reviews + IRDAI metrics */}
-          {reviews && (
-            <div className="pt-5 border-t border-[var(--border)]">
-              <h4 className="text-sm font-semibold mb-2">{reviews.insurer_name} — reputation & claim metrics</h4>
-              <InsurerReviewsBlock reviews={reviews} />
-            </div>
-          )}
+          {/* 3 — PRICING (per-policy premium estimator) */}
+          <div className="pt-5 border-t border-[var(--border)]">
+            <PanelEyebrow>Estimate premium for this policy</PanelEyebrow>
+            <PerPolicyPremiumEstimator policy={policy} desiredSI={completeness?.profile?.desired_sum_insured_inr ?? null} />
+          </div>
+
+          {/* 4 — REVIEWS (insurer reputation + IRDAI claim metrics). #76 —
+              ALWAYS render the section; it must NEVER silently vanish when
+              the reviews fetch is null/slow or insurer_slug is missing
+              (the old scorecard-vanish bug class). */}
+          <div className="pt-5 border-t border-[var(--border)]">
+            <PanelEyebrow>{`${reviews ? reviews.insurer_name : policy.insurer_name} — reputation & claim metrics`}</PanelEyebrow>
+            {reviews
+              ? <InsurerReviewsBlock reviews={reviews} />
+              : <p className="text-xs text-[var(--muted-foreground)] mt-1 leading-snug">Independent reputation &amp; claim-settlement data for this insurer is being compiled.</p>}
+          </div>
 
           <div className="text-[10px] text-[var(--muted-foreground)] pt-3 border-t border-[var(--border)]">
-            Rating methodology weighs 24 of 48 policy fields across coverage breadth, cost predictability, waiting periods, claim experience, renewal protection, and bonus benefits. Data extracted from the policy wording PDF and combined with publicly disclosed IRDAI claim metrics. Premium ranges are illustrative.
+            This grade reflects how much the policy covers, how predictable your costs are, how soon you can claim, how reliably the insurer settles claims, and its renewal and bonus terms — read from the official policy document and the insurer&apos;s publicly disclosed claim record. Premium figures are indicative, not a quote.
           </div>
         </div>
       </div>

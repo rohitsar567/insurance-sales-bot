@@ -4,8 +4,14 @@
 | --- | --- |
 | Project | Insurance Sales Portfolio Expert |
 | Version | 0.2 |
-| Date | 2026-05-15 |
-| Implementation | `backend/sales_brain.py` (KI-167) — the schema source still lives in `backend/needs_finder.py::GRAPH` |
+| Date | 2026-05-17 |
+| Implementation | `backend/single_brain.py` (single-brain rewrite — replaced the removed `backend/sales_brain.py`). The slot schema still lives in `backend/needs_finder.py::GRAPH`. |
+
+> ℹ️ **Still conceptually accurate, one pointer updated.** The core design
+> below — *one LLM call per turn owns the entire fact-find surface* — is
+> exactly what `backend/single_brain.py` does today; only the module name
+> changed (`sales_brain.py` → `single_brain.py`, which also subsumes QA +
+> recommendation). Present-state authority: [`README.md`](../../README.md) §4.
 
 ## 0. Why one LLM call per turn (not "scripted question graph + paraphraser")
 

@@ -125,6 +125,13 @@
     "source_quote": "Co-Payment: This policy is subject to co-payment of 30% for all claims.",
     "_confidence": "high"
   },
+  "no_claim_bonus_pct": {
+    "value": null,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/star-health/senior-citizens-red-carpet__brochure.pdf",
+    "source_quote": "no No-Claim-Bonus / Cumulative-Bonus benefit percentage stated; 'No Claim Bonus' appears only inside the generic portability/migration continuity-of-credits clause ('the credits (Sum Insured, No Claim Bonus, Specific Waiting Periods, Waiting period for Pre-Existing Diseases, Moratorium period etc.)'), with no NCB benefit percentage for this senior-citizen plan in any indexed chunk (checked all 15 indexed brochure chunks)",
+    "_confidence": "low"
+  },
   "room_rent_capped_at_pct_of_si": {
     "value": null,
     "unit": "%",

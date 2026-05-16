@@ -33,6 +33,7 @@ from fastapi import APIRouter, HTTPException, Request, Header
 from pydantic import BaseModel
 
 from backend import llm_health
+from backend.config import settings
 
 router = APIRouter()
 
@@ -136,7 +137,7 @@ async def admin_chain_set(
     setattr(nim, "BRAIN_CHAIN", list(body.order))
 
     # Persist for next process restart — write to 40-data/admin_overrides.json
-    override_path = Path(__file__).resolve().parent.parent / "40-data" / "admin_overrides.json"
+    override_path = settings.DATA_DIR / "admin_overrides.json"
     override_path.parent.mkdir(parents=True, exist_ok=True)
     state = {}
     if override_path.exists():
@@ -271,7 +272,7 @@ async def admin_usage(
         "brain": list(getattr(nim, "BRAIN_CHAIN", [])),
     }
 
-    usage_path = Path(__file__).resolve().parent.parent / "40-data" / "llm_usage.jsonl"
+    usage_path = settings.DATA_DIR / "llm_usage.jsonl"
     rows = _tail_jsonl(usage_path, USAGE_TAIL_LINES)
     health_state = llm_health.load()  # {model: ModelHealth} dict
 
@@ -556,7 +557,7 @@ def _read_usage_24h() -> Optional[dict]:
     surfacing every historical role value. llm_health.ROLES is the single
     source of truth (also used as _LLM_HEALTH_CHAIN_ROLES below).
     """
-    usage_path = _REPO_ROOT / "40-data" / "llm_usage.jsonl"
+    usage_path = settings.DATA_DIR / "llm_usage.jsonl"
     rows = _tail_jsonl(usage_path, USAGE_TAIL_LINES)
     if not rows:
         return None
@@ -882,7 +883,7 @@ def _recent_turns(n: int = 20) -> list[dict]:
       ts / role / chain_primary / elected_primary / elected_backup /
       served_model / latency_ms / success / fallback_reason
     """
-    usage_path = _REPO_ROOT / "40-data" / "llm_usage.jsonl"
+    usage_path = settings.DATA_DIR / "llm_usage.jsonl"
     # Re-use the existing tail-reader; cap at N so we don't pay for the
     # full 1000-row tail when the panel only renders 20.
     rows = _tail_jsonl(usage_path, max(n, 20))

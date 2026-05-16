@@ -1,6 +1,6 @@
 # ADR-040 — Google Gemini Flash as primary LLM tier (KI-179)
 
-**Status:** Accepted — 2026-05-15
+**Status:** **Superseded by the single-brain rewrite** (accepted 2026-05-15, superseded shortly after). The 3-tier "Brain Fast (`sales_brain`) / Brain Main / Judge" chain this ADR specifies **no longer exists in the codebase**: every turn is now one Google Gemini (`gemini-2.5-flash-lite`) + function-calling call in `backend/single_brain.py`, with `backend/nim_fallback.py` as the NIM fallback and the separate judge retired. Retained as the decision record for the chain design that *preceded* the single-brain consolidation. **Present-state authority: [`README.md`](../../README.md) §4 + §7.**
 **Owner:** Rohit Saraf
 **Supersedes:** [ADR-038](ADR-038-nim-only-chains.md) (NIM-only chain lock) — partially. The "fail-loud > fail-silent-with-garbage" principle and the brain ↔ judge family-diversity invariant are preserved; the strict NIM-only candidate-pool scope is relaxed now that the `<FF>` trailer convention that motivated the lock no longer exists post-[ADR-039](ADR-039-llm-driven-sales-brain.md) / KI-167.
 **Related KIs:** KI-167 (sales_brain rip-out), KI-171 (judge skip on fact_find + recommendation), KI-175 (NIM chain reorder — nemotron demoted to last), KI-176 (OpenRouter `models: [...]` server-side fallback), KI-178 (live audit of OR free-tier JSON-mode support), KI-179 (this decision — Google AI Studio added as Tier 0).

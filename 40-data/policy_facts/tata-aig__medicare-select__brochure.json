@@ -123,7 +123,7 @@
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/tata-aig/medicare-select__brochure.pdf",
-    "source_quote": "not stated in tata-aig__medicare-select__brochure.pdf",
+    "source_quote": "no mandatory co-payment percentage stated; co-payment is referenced only as an optional/conditional feature ('The policies would however be subject to all limits, sub limits, Co-Payments, Aggregate Deductibles (If opted) as per the Policy contract') with no fixed percentage in any of the 20 indexed brochure chunks (checked all indexed chunks)",
     "_confidence": "low"
   },
   "room_rent_capped_at_pct_of_si": {

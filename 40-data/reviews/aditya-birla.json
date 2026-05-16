@@ -1,14 +1,14 @@
 {
   "insurer_slug": "aditya-birla",
   "insurer_name": "Aditya Birla Health Insurance",
-  "last_updated": "2026-05-13",
+  "last_updated": "2026-05-16",
   "claim_metrics": {
     "claim_settlement_ratio_pct": 92.97,
     "claim_settlement_ratio_year": "2023-24",
     "complaints_per_10k_policies": 13,
     "complaints_year": "2023-24",
     "incurred_claim_ratio_pct": 71.5,
-    "source_irdai_url": "https://irdai.gov.in/document-detail",
+    "source_irdai_url": "https://irdai.gov.in/document-detail?documentId=6436847",
     "source_secondary_url": "https://www.policyx.com/health-insurance/aditya-birla-health-insurance/claim-settlement-ratio/",
     "source_company_url": "https://www.angelone.in/news/market-updates/aditya-birla-health-insurance-claims-settlement-ratio-analysis-for-2024-25"
   },
@@ -29,12 +29,6 @@
       "review_count": null,
       "url": "https://joinditto.in/articles/health-insurance/aditya-birla-health-insurance-claim-settlement-ratio/"
     }
-  },
-  "trustpilot": {
-    "score": null,
-    "review_count": null,
-    "url": null,
-    "note": "Aditya Birla Health Insurance does not have an established Trustpilot review profile. Indian standalone health insurers typically have very thin / non-existent Trustpilot footprints; customer reviews concentrate on Policybazaar / InsuranceDekho / MouthShut."
   },
   "reddit_sentiment": {
     "subreddit": "IndianFinance / IndiaInvestments",
@@ -137,13 +131,14 @@
     "letter_grade": "B",
     "headline": "Strong CSR (93%) with low complaints (13 per 10K), differentiated by HealthReturns wellness program",
     "computed_at": "2026-05-13",
-    "computation_notes": "0.40*92.97 + 0.20*(100-26) + 0.15*(4.4*20) + 0.10*75 + 0.10*90 + 0.05*100 = 37.2 + 14.8 + 13.2 + 7.5 + 9 + 5 = 86.7. Adjusted to 81.2 for smaller mindshare on Reddit/YouTube vs Top 3."
+    "computation_notes": "0.40*92.97 + 0.20*(100-26) + 0.15*(4.4*20) + 0.10*75 + 0.10*90 + 0.05*100 = 37.2 + 14.8 + 13.2 + 7.5 + 9 + 5 = 86.7. Adjusted to 81.2 for smaller mindshare on Reddit/YouTube vs Top 3. | Formula audit (2026-05-16): the 6 weighted terms are CSR, complaints, aggregator avg_star, Reddit, YouTube, news — NO external-aggregator term is or ever was present, so no score recomputation was needed; only internal an external escalation-only review aggregator scaffolding strings were scrubbed.",
+    "_external_aggregator_audit": "2026-05-16: confirmed aggregate_score formula contains no external-aggregator term; no recomputation required. Value unchanged."
   },
   "_data_gaps": {
-    "trustpilot": "No established Trustpilot profile - documented",
     "policybazaar_review_count": "Not exposed publicly",
     "insuredekho_review_count": "Not exposed publicly",
-    "reddit_sample_post_urls": "Google site:reddit.com queries do not return r/IndianFinance permalinks; community discussion proxies used"
+    "reddit_sample_post_urls": "Google site:reddit.com queries do not return r/IndianFinance permalinks; community discussion proxies used",
+    "external_review_aggregators": "Served reputation = IRDAI claim metrics + Policybazaar/InsuranceDekho/Ditto aggregator stars + Reddit + YouTube + news. No such external-aggregator input is used or served (Indian-customer coverage on such sites is thin and escalation-skewed)."
   },
   "_research_log": {
     "queries_tried": [
@@ -154,7 +149,6 @@
     ],
     "couldnt_find": [
       "Direct r/IndianFinance / r/IndiaInvestments thread URLs",
-      "Trustpilot profile (likely does not exist)",
       "Aggregator review counts"
     ],
     "added_this_pass": "4 new YouTube URLs (Ditto Activ One 2025 detailed, Ditto Activ One Max first-time buyer, Ditto AB vs HDFC ERGO comparison, Gurleen Kaur Tikku Day 1 review, Ditto Acko vs AB); 3 new news URLs (Cafemutual claim settlement leader + BS commission cut + Outlook Business growth ambition); 2 supplementary community URLs (Ditto article, IndiaInvestments wiki)"

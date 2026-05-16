@@ -32,11 +32,28 @@
     "_confidence": "low"
   },
   "sum_insured_options": {
-    "value": null,
+    "value": [
+      300000,
+      500000,
+      700000,
+      1000000,
+      1500000,
+      2000000,
+      2500000,
+      3000000,
+      4000000,
+      5000000,
+      7500000,
+      10000000,
+      20000000
+    ],
     "unit": "INR",
-    "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__cis.pdf",
-    "source_quote": "not stated in sbi-general__super-health-insurance__cis.pdf",
-    "_confidence": "low"
+    "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__wordings.pdf",
+    "source_quote": "ANNEXURE I - PRODUCT BENEFIT TABLE Benefits Prime Elite Premier Platinum Platinum Infinite Entry Age (Adult) Min - 18 years ... Sum Insured (SI) 3 Lacs, 5 Lacs, 7 Lacs, 10 Lacs, 15 Lacs, 20 Lacs, 25 Lacs / 30 Lacs, 40 Lacs, 50 Lacs / 50 Lacs, 75 Lacs, 1 Crore and 2 Crores",
+    "source_doc_type": "wordings",
+    "source_page": "29-30",
+    "_note": "Union of all distinct Sum Insured options stated across the five plan variants (Prime / Elite / Premier / Platinum / Platinum Infinite) in the Annexure I Product Benefit Table",
+    "_confidence": "high"
   },
   "grace_period": {
     "value": null,
@@ -120,6 +137,16 @@
     "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__cis.pdf",
     "source_quote": "not stated in sbi-general__super-health-insurance__cis.pdf",
     "_confidence": "low"
+  },
+  "room_rent_capping": {
+    "value": "No room rent cap (Actuals up to Sum Insured)",
+    "unit": "text",
+    "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__wordings.pdf",
+    "source_quote": "ANNEXURE I - PRODUCT BENEFIT TABLE Benefits Prime Elite Premier Platinum Platinum Infinite ... Inpatient Room Rent Actuals up to Sum Insured Actuals up to Sum Insured Actuals up to Sum Insured Actuals up to Sum Insured Actuals up to Sum Insured",
+    "source_doc_type": "wordings",
+    "source_page": "29-30",
+    "_note": "Inpatient Room Rent is 'Actuals up to Sum Insured' across all five plan variants — i.e. there is no room-rent sub-limit/cap",
+    "_confidence": "high"
   },
   "policy_term_options_years": {
     "value": null,

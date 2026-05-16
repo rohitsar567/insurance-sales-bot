@@ -33,10 +33,14 @@
     "_confidence": "high"
   },
   "maternity_coverage": {
-    "value": null,
+    "value": false,
+    "unit": "boolean",
     "source_pdf_path": "rag/corpus/tata-aig/criti-medicare__wordings.pdf",
-    "source_quote": "not stated in tata-aig__criti-medicare__wordings.pdf",
-    "_confidence": "low"
+    "source_quote": "Maternity (Code- Excl18): a. Medical treatment expenses traceable to childbirth",
+    "source_doc_type": "wordings",
+    "source_page": "47-49",
+    "_note": "Maternity is an express permanent exclusion (Code-Excl18) under Criti MediCare (a critical-illness benefit plan); source text is interleaved with the cosmetic-surgery exclusion column in the wordings OCR but the Code-Excl18 maternity clause is verbatim-recoverable",
+    "_confidence": "high"
   },
   "maternity_waiting_months": {
     "value": null,
@@ -66,7 +70,14 @@
   "no_claim_bonus_pct": {
     "value": null,
     "source_pdf_path": "rag/corpus/tata-aig/criti-medicare__wordings.pdf",
-    "source_quote": "not stated in tata-aig__criti-medicare__wordings.pdf",
+    "source_quote": "no No-Claim-Bonus / Cumulative-Bonus percentage stated; the terms 'cumulative bonus' and 'no claim bonus' do not appear in any of the 63 indexed wordings chunks of this critical-illness benefit plan (checked all indexed chunks)",
+    "_confidence": "low"
+  },
+  "co_payment_pct": {
+    "value": null,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/tata-aig/criti-medicare__wordings.pdf",
+    "source_quote": "no fixed co-payment percentage stated; co-payment is referenced only generically ('The policies would however be subject to all limits, sub limits, co-payments, deductibles as per the policy contract') with no mandatory percentage in any indexed chunk (checked all indexed chunks)",
     "_confidence": "low"
   },
   "restoration_benefit": {
@@ -107,8 +118,9 @@
   },
   "sum_insured_options": {
     "value": null,
+    "unit": "INR",
     "source_pdf_path": "rag/corpus/tata-aig/criti-medicare__wordings.pdf",
-    "source_quote": "not stated in tata-aig__criti-medicare__wordings.pdf",
+    "source_quote": "no enumerated Sum Insured options list stated; this is a critical-illness benefit plan where the Sum Insured is set in the Policy Schedule (only an illustrative example value appears: 'an Individual has opted for Smart Century Premier Plan ... with Sum insured of Rs 10 Lacs') with no options grid in any indexed chunk (checked all 63 indexed wordings chunks)",
     "_confidence": "low"
   },
   "claim_settlement_ratio": {

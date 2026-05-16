@@ -1,0 +1,209 @@
+{
+  "_meta": {
+    "purpose": "Official insurer-level network/empaneled hospital source per insurer. Replaces the web-backfilled per-policy network_hospital_count with a sourced figure + the official list URL. NO fabrication: every URL is on the insurer's own domain; counts only where the official page states one.",
+    "generated_at": "2026-05-16T11:09:59Z",
+    "insurers": 20
+  },
+  "insurers": {
+    "acko": {
+      "insurer_name": "Acko",
+      "network_list_url": "https://www.acko.com/gi/p/health/networkhospitals",
+      "is_pdf": false,
+      "stated_count": 5200,
+      "source_quote": "Acko has more than 5200+ hospitals where you can avail the cashless facility. The list of the network hospitals can be accessed here. (stated on Acko's official support page https://www.acko.com/support/solutions/articles/35000164551-where-can-i-find-the-network-hospitals-in-my-city-)",
+      "official_domain": true,
+      "verified_fetch": true,
+      "note": "Official Acko network-hospitals locator page on acko.com (HTTP 200, verified reachable via curl). Confirmed as the canonical network-hospitals path: Acko's own official excluded-hospitals page and support article both reference this same /health/networkhospitals path. It is an interactive JS-rendered hospital locator (search/filter by city), not a downloadable PDF; Acko does not publish a single official full-list PDF. Stated count 5200+ comes from Acko's official support article."
+    },
+    "aditya-birla": {
+      "insurer_name": "Aditya Birla Health Insurance",
+      "network_list_url": "https://www.adityabirlacapital.com/healthinsurance/locate-care/hospital-listing",
+      "is_pdf": false,
+      "stated_count": null,
+      "source_quote": "Find Cashless Hospitals in your city! Search for your preferred location or select from popular cities. ... Click here to view Hospitals not eligible for Cashless and Reimbursement",
+      "official_domain": true,
+      "verified_fetch": true,
+      "note": "Official Aditya Birla Health Insurance cashless hospital locator on adityabirlacapital.com/healthinsurance (WebFetch succeeded and confirmed it is the official locator). It is an interactive search tool (search by location / popular cities Mumbai, NCR, Bengaluru, Hyderabad, Ahmedabad, Chennai), not a downloadable PDF; no total hospital count is stated on the page itself. Aditya Birla does not publish a single official full-list PDF; the locator is the official source."
+    },
+    "bajaj-allianz": {
+      "insurer_name": "Bajaj Allianz General Insurance",
+      "network_list_url": "https://general.bajajallianz.com/BagicNxt/hm/hmSearchExternalHosp.do",
+      "is_pdf": false,
+      "stated_count": 18400,
+      "source_quote": "18,400+ Cashless Hospitals (stated on Bajaj Allianz General Insurance's own official site bajajgeneralinsurance.com/general-insurance-features/health-insurance/cashless-health-insurance.html)",
+      "official_domain": true,
+      "verified_fetch": true,
+      "note": "Official Bajaj Allianz General Insurance hospital-search/locator on general.bajajallianz.com (HTTP 200, verified reachable via curl). bajajallianz.com 301-redirects to bajajgeneralinsurance.com (same insurer). The hospital search is an interactive JS app (search by state/city/pincode/hospital name) so WebFetch sees only the shell; reachability and official status confirmed via HTTP 200 and the official cashless-health-insurance page which states 18,400+ cashless hospitals. Bajaj Allianz publishes no public official full-list PDF (only a limited Prive/HNI subset PDF); the locator is the canonical official source. Alternative official locator: https://www.bajajgeneralinsurance.com/branch-locator.html (also HTTP 200, supports hospital search)."
+    },
+    "care-health": {
+      "insurer_name": "Care Health Insurance",
+      "network_list_url": "https://www.careinsurance.com/health-plan-network-hospitals.html",
+      "is_pdf": false,
+      "stated_count": null,
+      "source_quote": "Network Hospitals | Care Health Insurance (Formerly Religare Health Insurance) -- canonical page title; Care Health states a network of 22,100+ healthcare providers including 11,600+ hospitals (per Care Health's official descriptions, not directly readable due to CDN block)",
+      "official_domain": true,
+      "verified_fetch": false,
+      "note": "This is the correct canonical official Care Health Insurance network-hospitals locator page on careinsurance.com (formerly Religare). It is consistently the #1 organic result with the official title 'Network Hospitals | Care Health Insurance' across multiple independent searches. verified_fetch is false ONLY because careinsurance.com sits behind Akamai/CDN bot protection that returns HTTP 403 'Access Denied' to all automated clients (WebFetch and curl with full browser headers both blocked) -- this is anti-bot protection, NOT a dead or wrong link; the page loads normally in a real browser. It is an interactive hospital locator (search by state/city), not a downloadable PDF. No fabricated content: stated counts could not be read directly from the page due to the block."
+    },
+    "cholamandalam": {
+      "insurer_name": "Cholamandalam MS",
+      "network_list_url": "https://www.cholainsurance.com/cashless-hospitals",
+      "is_pdf": false,
+      "stated_count": null,
+      "source_quote": "Page header: \"Cashless Hospital Network List | Chola MS\". Interactive locator with search by Pin Code, City, or Hospital Name and Cashless vs Excluded Hospital filter. No total count stated on page; no downloadable PDF present.",
+      "official_domain": true,
+      "verified_fetch": true,
+      "note": "Official Chola MS domain (cholainsurance.com). Verified via WebFetch: this is the official cashless network hospital list/locator page yielding the list via search. No bulk PDF and no on-page total count; web-search snippet cited ~8000+ network hospitals but that figure is not stated on the verified page itself, so stated_count left null. Sub-page /cashless-hospitals/general-hospital also verified as same locator."
+    },
+    "go-digit": {
+      "insurer_name": "Go Digit General Insurance",
+      "network_list_url": "https://www.godigit.com/health-insurance/digit-cashless-network-hospitals-list",
+      "is_pdf": false,
+      "stated_count": 9000,
+      "source_quote": "At Digit, we have a network of 9000+ network hospitals",
+      "official_domain": true,
+      "verified_fetch": true,
+      "note": "Official Go Digit domain (godigit.com). Verified via WebFetch: official cashless network hospitals page with interactive search by city/state/pincode yielding the network hospital list. Page explicitly states '9000+ network hospitals' (stated_count recorded as 9000 floor of the 9000+ figure). No bulk downloadable PDF; locator-based list."
+    },
+    "hdfc-ergo": {
+      "insurer_name": "HDFC ERGO General Insurance",
+      "network_list_url": "https://www.hdfcergo.com/locators/cashless-hospitals-networks",
+      "is_pdf": false,
+      "stated_count": 16000,
+      "source_quote": "16000+ healthcare providers as on February 2025.",
+      "official_domain": true,
+      "verified_fetch": true,
+      "note": "Official HDFC ERGO domain (hdfcergo.com). Verified via WebFetch: official cashless hospitals/network locator portal with search tools (Cashless Hospitals, Preferred Hospital Network, Missing Middle Hospitals) yielding the network hospital list. Page states '16000+ healthcare providers as on February 2025' (stated_count recorded as 16000 floor of 16000+). No single bulk PDF of the full list; locator-based."
+    },
+    "icici-lombard": {
+      "insurer_name": "ICICI Lombard General Insurance",
+      "network_list_url": "https://www.icicilombard.com/cashless-hospitals",
+      "is_pdf": false,
+      "stated_count": null,
+      "source_quote": "Search result (Bing/index) title: \"Cashless Network Hospital List in India 2026\" at https://www.icicilombard.com/cashless-hospitals; an official PDF also exists at https://www.icicilombard.com/docs/default-source/default-document-library/hospital-list.pdf?sfvrsn=2",
+      "official_domain": true,
+      "verified_fetch": false,
+      "note": "Official ICICI Lombard domain (icicilombard.com). The official cashless hospital list page (/cashless-hospitals) and an official PDF (/docs/default-source/default-document-library/hospital-list.pdf) both exist on the official domain and are indexed by search engines, but icicilombard.com is behind Akamai bot protection that returns HTTP 403 to all automated clients (WebFetch and curl with multiple browser user-agents + referer all blocked; ILHC portal /Customer/GetHospitalList returns 302 redirect). Could not complete a verified fetch of page content, so verified_fetch=false honestly. URL is real and on the official domain (confirmed by search-engine indexing of its content showing the cashless network hospital list and a ~5380 hospital figure in snippets) but not personally fetch-confirmed; a real browser reaches it. Direct PDF: https://www.icicilombard.com/docs/default-source/default-document-library/hospital-list.pdf?sfvrsn=2"
+    },
+    "iffco-tokio": {
+      "insurer_name": "IFFCO Tokio",
+      "network_list_url": "https://www.iffcotokio.co.in/content/dam/iffcotokio/pdfs/list-of-network-hospitals.pdf",
+      "is_pdf": true,
+      "stated_count": null,
+      "source_quote": "Genuine IFFCO Tokio cashless/network hospital list PDF. Verified via HTTP 200, Content-Type application/pdf, Content-Length 2,332,651 bytes; PDF created 2025-09-15 from Microsoft Excel 2019, spanning 329 pages of hospital directory entries. No explicit numeric total printed inside the document.",
+      "official_domain": true,
+      "verified_fetch": true,
+      "note": "Official IFFCO Tokio domain (iffcotokio.co.in). WebFetch + curl header check both confirm a real reachable 2.2MB / 329-page network-hospital list PDF. No aggregate hospital count stated inside the file; third-party sources cite ~6,600-7,000 but that is not on the official document so stated_count left null."
+    },
+    "indusind-general": {
+      "insurer_name": "IndusInd General Insurance (formerly Reliance General Insurance)",
+      "network_list_url": "https://www.indusindinsurance.com/downloads/Qualitative_and_Quantitate_parameters_of_network_hospitals.pdf",
+      "is_pdf": true,
+      "stated_count": null,
+      "source_quote": "Official IndusInd General Insurance network-hospital disclosure PDF (IRDAI-format: Rohini ID, Hospital Name, Address, City, Pincode, Total Bed Strength, No of Doctors). Verified reachable via HTTP 200, Content-Type application/pdf, Content-Length 2,780,251 bytes (~2.78MB). The official cashless-locator page states: \"11,000+ network garages ... along with 10,000+ hospitals for smooth cashless services.\"",
+      "official_domain": true,
+      "verified_fetch": true,
+      "note": "The 'IndusInd' health brand is IndusInd General Insurance, the rebranded Reliance General Insurance; official domain is indusindinsurance.com. Linked directly from the official self-help cashless page (https://www.indusindinsurance.com/insurance/self-help/cashless-garages-and-hospitals.aspx). PDF reachable and confirmed application/pdf via curl headers; the encoded Excel-export text was not extractable by the fetcher (rendering limitation, not a broken document). No exact count printed in the PDF; official site narrative says 10,000+ hospitals (count left null since not stated inside the list document itself)."
+    },
+    "manipalcigna": {
+      "insurer_name": "ManipalCigna Health Insurance",
+      "network_list_url": "https://www.manipalcigna.com/network-hospitals",
+      "is_pdf": false,
+      "stated_count": null,
+      "source_quote": "Official ManipalCigna network-hospitals directory at manipalcigna.com/network-hospitals. WebFetch confirmed: official directory on primary domain, reachable, hospital data organized city-wise (Network Hospitals in Abhanpur, Agra, Bangalore, ... A-Z). No total numeric figure printed on the page; describes \"a vast nationwide network of trusted hospitals.\"",
+      "official_domain": true,
+      "verified_fetch": true,
+      "note": "ManipalCigna does NOT publish a single official downloadable network-list PDF on its own domain; the canonical official source is the city-wise locator page https://www.manipalcigna.com/network-hospitals (verified reachable, official domain, drills down per city). The /locate-us page provides an interactive TPA/hospital search but also no consolidated PDF. Third-party/Scribd PDFs exist (~6,600-9,500 hospitals quoted by aggregators) but were excluded per the official-domain requirement. No count stated on the official page, so stated_count is null."
+    },
+    "national-insurance": {
+      "insurer_name": "National Insurance Company",
+      "network_list_url": "https://nationalinsurance.nic.co.in/key-links/our-networks/ppn-hospitals",
+      "is_pdf": false,
+      "stated_count": 5322,
+      "source_quote": "Official National Insurance Company Limited (NICL) PPN/network hospital list page. WebFetch confirmed it displays \"Showing 5322 results\" in the searchable hospital directory and offers two downloadable files: \"List of PPN Hospital (594.69 KB)\" updated as of 31 March 2026 and \"List of Network Hospitals other than PPN Cities (138.11 KB)\".",
+      "official_domain": true,
+      "verified_fetch": true,
+      "note": "Official National Insurance domain (nationalinsurance.nic.co.in). Chosen URL is the authoritative PPN-hospitals landing page which both states the count (5,322) and links the official PDFs. The direct PDF https://nationalinsurance.nic.co.in/sites/default/files/List%20of%20Network%20Hospitals%20other%20than%20PPN%20Cities.pdf is also reachable (curl HTTP 200, application/pdf, ~141KB) but its Excel-exported text was not parser-readable; the landing page is the better canonical source as it carries the stated total and the live PDF links. Earlier /en/health-insurance/city-wise-list-ppn-hospitals path 301-redirected away (stale URL), so the /key-links/our-networks/ppn-hospitals page was used."
+    },
+    "new-india": {
+      "insurer_name": "New India Assurance",
+      "network_list_url": "https://www.newindia.co.in/hospitals-list",
+      "is_pdf": false,
+      "stated_count": 20855,
+      "source_quote": "Total Number Of Hospitals - 20,855 As On 11.02.2025",
+      "official_domain": true,
+      "verified_fetch": true,
+      "note": "Official New India Assurance network/cashless hospital list page on newindia.co.in (verified via WebFetch). It is a searchable locator (PPN + TPA network) organized by city, not a single all-India downloadable PDF. City-specific PPN PDFs are linked from this page and confirmed reachable (e.g. https://www.newindia.co.in/cms/699a2b4e-b114-4254-b5a5-566cd65f8c8c/List%20of%20PPN%20Hospitals%20in%20Kolkata.pdf?guest=true returned a 55.9KB application/pdf). The page itself states the total network hospital count quoted above."
+    },
+    "niva-bupa": {
+      "insurer_name": "Niva Bupa Health Insurance",
+      "network_list_url": "https://rules.nivabupa.com/hospital-network/",
+      "is_pdf": false,
+      "stated_count": null,
+      "source_quote": "",
+      "official_domain": true,
+      "verified_fetch": true,
+      "note": "Official Niva Bupa (formerly Max Bupa) live network hospital locator on the nivabupa.com domain (rules.nivabupa.com subdomain), HTTP 200 verified. It is a JavaScript-rendered Bootstrap locator app yielding the network hospital list by state/city; Niva Bupa does not publish a single downloadable all-India network-hospital PDF on its own domain (network is dynamic and locator-only). Niva Bupa's official site states the network is '10K+' (10,000+) hospitals but no exact total count is rendered on the locator page itself, so stated_count is null. No content count could be quoted because the page is client-rendered."
+    },
+    "oriental-insurance": {
+      "insurer_name": "The Oriental Insurance Company",
+      "network_list_url": "https://orientalinsurance.org.in/network-hospitals",
+      "is_pdf": false,
+      "stated_count": null,
+      "source_quote": "",
+      "official_domain": true,
+      "verified_fetch": true,
+      "note": "Official Oriental Insurance network hospitals page on orientalinsurance.org.in, HTTP 200 verified. The site is a React single-page app behind AWS WAF that requires JavaScript ('This website requires JavaScript to function properly'), so the rendered network-hospital locator content is not accessible to non-browser fetch clients. The orientalinsurance.org.in/documents/.../*PPN.pdf city links found in search return an HTML SPA shell (Content-Type text/html, ~7975 bytes), not actual PDFs, when fetched without a browser/captcha session, so no downloadable PDF on the official domain could be verified. This network-hospitals locator URL is the canonical official-domain entry point for the empanelled/network hospital list. No total count is exposed without JS, so stated_count is null."
+    },
+    "reliance-general": {
+      "insurer_name": "Reliance General Insurance",
+      "network_list_url": "https://www.reliancegeneral.co.in/downloads/Network_Hospital_List_Treating_Covid-19.pdf",
+      "is_pdf": true,
+      "stated_count": null,
+      "source_quote": "",
+      "official_domain": true,
+      "verified_fetch": true,
+      "note": "Reliance General Insurance was rebranded as IndusInd General Insurance; the entire reliancegeneral.co.in domain now 301-redirects to indusindinsurance.com. This reliancegeneral.co.in URL resolves (via 301) to a real, reachable application/pdf (659,907 bytes, Content-Type application/pdf verified via HTTP). IMPORTANT CAVEAT: this PDF is a COVID-19-treating network hospital SUBSET, not the full all-India empanelled network list. No full all-India network-hospital PDF is served on the reliancegeneral.co.in own domain anymore; the complete current network list is an interactive locator only, on the rebranded domain https://www.indusindinsurance.com/insurance/self-help/cashless-garages-and-hospitals.aspx (official, states '10,000+ hospitals', WebFetch-verified, but that is indusindinsurance.com, not reliancegeneral.co.in). The reliancegeneral.co.in COVID PDF is recorded because it is the only network-hospital-list document verifiably reachable from the original official reliancegeneral.co.in domain."
+    },
+    "royal-sundaram": {
+      "insurer_name": "Royal Sundaram",
+      "network_list_url": "https://www.royalsundaram.in/assets/mediassist-tpa-networklist.pdf",
+      "is_pdf": true,
+      "stated_count": null,
+      "source_quote": "Column headers and records extracted from the PDF: 'HospName HospAddr1 CityName StateName HospPincode Shree Leela Devi Hospital Ratlam Road Near Naugaon Bridge Dhar Dhar Madhya Pradesh 454001 ... Sabine Hospital & Research Centre Private Limited Xii/58, Pezhakkapilly P.O Ernakulam-Cochin Kerala 686673'",
+      "official_domain": true,
+      "verified_fetch": true,
+      "note": "Official Royal Sundaram Medi Assist TPA network hospital list, hosted on royalsundaram.in/assets. Downloaded and verified locally: valid PDF v1.5, 248 pages, 953,546 text-show tokens, structured hospital records (name/address/city/state/pincode) for pan-India network hospitals. Companion file mediassist also has paramount-health-services-networklist.pdf on the same /assets path. No explicit total hospital count printed in the document itself."
+    },
+    "sbi-general": {
+      "insurer_name": "SBI General Insurance",
+      "network_list_url": "https://content.sbigeneral.in/uploads/59df4f4ec5cd48ecb9fee1c702387553.pdf",
+      "is_pdf": true,
+      "stated_count": null,
+      "source_quote": "Search-result title for this exact PDF on SBI's official CDN: 'Sr. No. Hospital Name Address City State PIN Code Information as on Date' (the standard SBI General network-hospital-list column header)",
+      "official_domain": true,
+      "verified_fetch": true,
+      "note": "Official SBI General Insurance network/cashless hospital list PDF on content.sbigeneral.in (SBI's official document CDN, linked from sbigeneral.in/contact-us/cashless-hospitals-networks). Downloaded and confirmed valid PDF v1.7, 172 pages, 8.6 MB; WebFetch identified it as an SBI General cashless hospital network directory. Text uses CID-encoded fonts so plain-text strings/count could not be extracted, but the file is genuinely reachable and is a hospital network list. The official networks page itself carries no printed total count (states the list is dynamic; refer to TPA); SBI publicly markets '17,000+ network hospitals' on sbigeneral.in."
+    },
+    "star-health": {
+      "insurer_name": "Star Health and Allied Insurance",
+      "network_list_url": "https://www.starhealth.in/network-hospitals/",
+      "is_pdf": false,
+      "stated_count": 14000,
+      "source_quote": "Star Health and Allied Insurance has a network of over 14,000 hospitals across India",
+      "official_domain": true,
+      "verified_fetch": false,
+      "note": "Official Star Health network/cashless hospital list page on its own domain (starhealth.in/network-hospitals/), with companion live locator at starhealth.in/lookup/hospital/. Star Health is not distributed as a single downloadable PDF; the official list is the on-site searchable locator. Direct WebFetch of every starhealth.in URL returns HTTP 403 (server-side bot/Cloudflare protection on the whole domain) so the page body could not be retrieved by the fetch tool; however the page is Google-indexed and multiple independent search snippets quote its on-page text verbatim ('network of over 14,000 hospitals across India'). stated_count=14000 reflects the '14,000+' figure stated on the official page. URL is confirmed live (returns 403 from server, i.e. exists and is protected, not 404)."
+    },
+    "tata-aig": {
+      "insurer_name": "Tata AIG General Insurance",
+      "network_list_url": "https://www.tataaig.com/locator/cashless-network-hospitals",
+      "is_pdf": false,
+      "stated_count": 12000,
+      "source_quote": "Tata AIG offers cashless hospitalisation across 12,000+ large network of hospitals across India",
+      "official_domain": true,
+      "verified_fetch": true,
+      "note": "Official Tata AIG cashless network hospital locator/list page on tataaig.com (companion: tataaig.com/servicing/locator/hospital-locator). WebFetch succeeded and confirmed it is the official cashless hospital network page stating '12,000+ large network of hospitals across India'. Tata AIG does not publish a single consolidated all-India network-hospital PDF on its own domain (only an excluded/delisted-hospital PDF list and city/state filtering via the locator); the locator page is the canonical official network-hospital resource. stated_count=12000 reflects the '12,000+' figure on the page."
+    }
+  }
+}

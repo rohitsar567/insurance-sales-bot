@@ -79,8 +79,9 @@
   },
   "room_rent_capping": {
     "value": null,
+    "unit": "text",
     "source_pdf_path": "rag/corpus/tata-aig/wellsurance-family__cis.pdf",
-    "source_quote": "not stated in tata-aig__wellsurance-family__cis.pdf",
+    "source_quote": "no room-rent cap or room-category clause stated; Wellsurance Family is a lumpsum fixed-benefit special health policy that does not reimburse room rent (the terms 'room rent' and 'room category' do not appear at all in the Customer Information Sheet) so room-rent capping is not defined in any indexed chunk (checked all 5 indexed CIS chunks)",
     "_confidence": "low"
   },
   "pre_hospitalization_days": {
@@ -110,8 +111,9 @@
   },
   "sum_insured_options": {
     "value": null,
+    "unit": "INR",
     "source_pdf_path": "rag/corpus/tata-aig/wellsurance-family__cis.pdf",
-    "source_quote": "not stated in tata-aig__wellsurance-family__cis.pdf",
+    "source_quote": "no Sum Insured options stated; Wellsurance Family is a lumpsum fixed-benefit special health policy (the term 'Sum Insured' does not appear at all in the Customer Information Sheet) so an indemnity Sum Insured options list is not defined in any indexed chunk (checked all 5 indexed CIS chunks)",
     "_confidence": "low"
   },
   "claim_settlement_ratio": {

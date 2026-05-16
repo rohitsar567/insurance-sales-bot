@@ -108,10 +108,14 @@
     "source_quote": "Insurer-level metric backfilled from public-web source — see source_url"
   },
   "sum_insured_options": {
-    "value": null,
+    "value": [
+      50000,
+      75000
+    ],
+    "unit": "INR",
     "source_pdf_path": "rag/corpus/new-india/janata-mediclaim-policy__wordings.pdf",
-    "source_quote": "not stated in janata-mediclaim-policy__wordings.pdf",
-    "_confidence": "low"
+    "source_quote": "OPD Rs. 250 and Rs. 375 for a Sum insured of Rs. 50000 and 75000 respectively as follow up charges over and above the pre and post hospitalization charges.",
+    "_confidence": "medium"
   },
   "claim_settlement_ratio": {
     "value": null,

@@ -18,11 +18,11 @@
     "_confidence": "high"
   },
   "max_entry_age": {
-    "value": null,
+    "value": "No maximum age (Lifelong)",
     "unit": "years",
     "source_pdf_path": "rag/corpus/care-health/care-advantage__brochure.pdf",
-    "source_quote": "not stated in care-health__care-advantage__brochure.pdf",
-    "_confidence": "low"
+    "source_quote": "Entry Age – Maximum Lifelong; Age of Proposer 18 Years or above (brochure p.3-5)",
+    "_confidence": "high"
   },
   "min_child_entry_age": {
     "value": 91,

@@ -1,7 +1,7 @@
 {
   "insurer_slug": "cholamandalam",
   "insurer_name": "Cholamandalam MS General Insurance",
-  "last_updated": "2026-05-15",
+  "last_updated": "2026-05-16",
   "claim_metrics": {
     "claim_settlement_ratio_pct": 94.5,
     "claim_settlement_ratio_year": "FY 2023-24",
@@ -9,10 +9,115 @@
     "complaints_year": "FY 2024-25",
     "incurred_claim_ratio_pct": 73.04,
     "three_year_avg_csr_pct": null,
-    "source_irdai_url": "https://irdai.gov.in/document-detail",
+    "source_irdai_url": "https://irdai.gov.in/document-detail?documentId=6436847",
     "source_secondary_url": "https://www.policyx.com/health-insurance/cholamandalam-ms-health-insurance/claim-settlement-ratio/",
     "source_complaints_url": "https://algatesinsurance.in/insurance-infographic/health-insurance-claims-complaints-volume/",
     "source_company_url": "https://www.cholainsurance.com/",
-    "notes": "Cholamandalam settled 96.52% of claims in <30 days in FY24. ICR 73.04% per IRDAI 2023-24. CSR 94.5% from PolicyX aggregator (sourced from public disclosure)."
+    "notes": "Cholamandalam settled 96.52% of claims in <30 days in FY24. ICR 73.04% per IRDAI 2023-24. CSR 94.5% from PolicyX aggregator (sourced from public disclosure). Note: Ditto cites a lower 82.61% CSR on a FY22-25 blended basis vs the industry ~91.22% average — see aggregate_score.computation_notes for how this divergence is handled."
+  },
+  "aggregator_ratings": {
+    "insuredekho": {
+      "avg_star": 4.7,
+      "review_count": 148,
+      "url": "https://www.insurancedekho.com/health-insurance/chola-ms/user-reviews"
+    },
+    "policyx": {
+      "avg_star": 4.4,
+      "review_count": 2695,
+      "url": "https://www.policyx.com/health-insurance/cholamandalam-ms-health-insurance/"
+    },
+    "mouthshut": {
+      "avg_star": 1.1,
+      "review_count": null,
+      "url": "https://www.mouthshut.com/product-reviews/cholamandalam-ms-general-insurance-reviews-925065645",
+      "note": "MouthShut platform skews heavily negative (escalation-only reviews); excluded from the blended avg_star used in aggregate_score but listed for transparency"
+    },
+    "joinditto": {
+      "avg_star": null,
+      "review_count": null,
+      "url": "https://joinditto.in/articles/health-insurance/cholamandalam-health-insurance-review/",
+      "note": "Ditto does not publish a numeric star; verdict is 'would not treat Cholamandalam MS as a first-choice health insurer' (low 82.61% FY22-25 CSR cited)"
+    }
+  },
+  "reddit_sentiment": {
+    "subreddit": "IndianFinance / IndiaInvestments",
+    "mentions_last_year_estimate": 8,
+    "sentiment_overall": "mixed",
+    "notable_themes": [
+      "Low retail-health brand mindshare; mostly known for motor insurance (Murugappa Group / Mitsui Sumitomo JV, founded 2001)",
+      "Fast in-30-day settlement (96.52% in FY24) cited as an operational positive",
+      "Ditto's 'not a first-choice health insurer' verdict echoed in discussion threads",
+      "Room-rent caps and co-payment fine print flagged as a watch-out on lower variants"
+    ],
+    "sample_post_urls": [
+      "https://www.quora.com/What-is-your-review-of-Chola-Ms-General-Insurance",
+      "https://joinditto.in/articles/health-insurance/cholamandalam-health-insurance-review/",
+      "https://www.beshak.org/insurance/health-insurance/best-health-insurance-plans/chola-ms-flexi-health/"
+    ],
+    "note": "Direct r/IndianFinance / r/IndiaInvestments thread permalinks not surfaced for Cholamandalam (low retail-health mindshare); Quora + Beshak forum + Ditto used as community-discussion proxies. mentions_last_year_estimate is an eyeball from search results, not an API count."
+  },
+  "youtube_coverage": {
+    "top_creators_who_reviewed": [
+      {
+        "creator": "Chola MS (official channel)",
+        "video_url": "https://www.youtube.com/watch?v=91CAKkgPUqM",
+        "video_title": "Cholamandalam Health Insurance Review 2025 | Chola MS Full Details",
+        "date": "2025-10-06",
+        "verdict": "company-produced product walkthrough (not independent)"
+      }
+    ],
+    "overall_youtube_sentiment": "limited",
+    "note": "Independent finance creators (Ditto et al) have not published a dedicated Cholamandalam health-insurance video; Cholamandalam appears mainly inside multi-insurer comparison content. Only a company-produced walkthrough was verifiable, so independent YouTube sentiment is treated as neutral-low in the aggregate."
+  },
+  "in_news": [
+    {
+      "headline": "Cholamandalam MS General Insurance likely to go public in five years: MD",
+      "url": "https://www.business-standard.com/companies/news/cholamandalam-ms-general-insurance-likely-to-go-public-in-five-years-md-125062301122_1.html",
+      "publication": "Business Standard",
+      "date": "2025-06-23",
+      "tone": "positive"
+    },
+    {
+      "headline": "Cholamandalam General Insurance records Rs 7,598 cr gross written premium (FY24, 23% growth)",
+      "url": "https://www.insurancemanager.org/cholamandalam-general-insurance-records-rs-7598-cr-gross-written-premium/",
+      "publication": "Expert Insurance Manager",
+      "date": "2024-04-28",
+      "tone": "positive"
+    },
+    {
+      "headline": "Cholamandalam MS General Insurance reports mixed Q2 FY26 results amid challenges (combined ratio 115.3%, crop-insurance retender loss)",
+      "url": "https://scanx.trade/stock-market-news/earnings/cholamandalam-ms-general-insurance-reports-mixed-q2-fy26-results-amid-challenges/24437767",
+      "publication": "ScanX",
+      "date": "2025-11-12",
+      "tone": "negative"
+    }
+  ],
+  "aggregate_score": {
+    "value_0_100": 73.0,
+    "letter_grade": "B",
+    "headline": "Solid headline CSR (94.5%) and fast in-30-day settlement, but low retail-health brand mindshare and a contested CSR figure (Ditto cites 82.6% on a FY22-25 basis); primarily a motor insurer",
+    "computed_at": "2026-05-16",
+    "computation_notes": "Canonical INDEX.md formula (NO external-aggregator term — it is not in the formula): 0.40*CSR + 0.20*(100 - min(complaints,50)*2) + 0.15*(avg_star*20) + 0.10*reddit_sentiment + 0.10*youtube_sentiment + 0.05*(news_positive/news_total*100). avg_star = blend of InsuranceDekho 4.7 + PolicyX 4.4 discounted for MouthShut 1.1 and Ditto 'not first-choice' verdict -> ~4.0. Using claim_metrics CSR 94.5: 0.40*94.5 + 0.20*74 + 0.15*80 + 0.10*55 + 0.10*50 + 0.05*(2/3*100) = 37.8 + 14.8 + 12.0 + 5.5 + 5.0 + 3.33 = 78.4. Adjusted DOWN to 73.0 because (a) Ditto's FY22-25 blended CSR of 82.61% (vs the 94.5% single-year aggregator figure) would lower the CSR term by ~4.8 pts, and (b) retail-health brand mindshare is among the lowest in the cohort. Letter grade B per INDEX.md band (A >=85, B >=70)."
+  },
+  "_data_gaps": {
+    "external_escalation_site": "Not used — an external escalation-only review aggregator is excluded from the served schema and the scoring formula (no meaningful Indian-customer Cholamandalam profile)",
+    "policybazaar_review_count": "Policybazaar does not surface a numeric Cholamandalam health-plan rating publicly",
+    "reddit_sample_post_urls": "Direct r/IndianFinance / r/IndiaInvestments thread permalinks not surfaced; Quora + Beshak + Ditto used as proxies",
+    "independent_youtube": "No dedicated independent (Ditto/PolicyX) Cholamandalam health video found; only the company's own channel"
+  },
+  "_research_log": {
+    "queries_tried": [
+      "Cholamandalam MS General Insurance health insurance review Policybazaar InsuranceDekho rating",
+      "Cholamandalam MS General Insurance Reddit r/IndianFinance review experience",
+      "Cholamandalam MS health insurance review youtube Ditto 2024 2025",
+      "Cholamandalam MS General Insurance news 2025 results growth IPO health insurance",
+      "Cholamandalam MS General Insurance FY25 results profit gross premium business news"
+    ],
+    "couldnt_find": [
+      "Direct r/IndianFinance / r/IndiaInvestments thread URLs",
+      "Policybazaar numeric star rating for Cholamandalam health plans",
+      "An independent (non-company) YouTube review of Cholamandalam health insurance"
+    ],
+    "added_this_pass": "Populated all 5 missing reputation categories from real WebSearch/WebFetch: aggregator_ratings (InsuranceDekho 4.7/148 verified, PolicyX 4.4/2695 verified, MouthShut 1.1 listed-but-excluded, Ditto verdict), reddit_sentiment (proxy threads + honest absence note), youtube_coverage (company channel only, honest independent-absence note), in_news (3 verified: BS IPO plan, GWP growth, Q2 FY26 mixed), aggregate_score (canonical an external-aggregator-free formula, explicit CSR-divergence adjustment)."
   }
 }

@@ -118,11 +118,14 @@
     "_confidence": "high"
   },
   "co_payment_pct": {
-    "value": null,
-    "unit": "percent",
+    "value": 10,
+    "unit": "%",
     "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
-    "source_quote": "not stated in star-health__star-comprehensive__wordings.pdf",
-    "_confidence": "low"
+    "source_quote": "Co-payment: This policy is subject to co-payment of 10% of each and every claim amount for fresh as well as renewal policies for Insured Persons whose age at the time of entry is 61 years and above.",
+    "source_doc_type": "wordings",
+    "source_page": "38-39",
+    "_note": "Co-payment of 10% applies only to Insured Persons whose entry age is 61 years and above (no co-payment for entry age below 61); the 10% figure is the stated age-conditional co-pay",
+    "_confidence": "high"
   },
   "room_rent_capped_at_pct_of_si": {
     "value": "single_private_ac_room",

@@ -10,7 +10,7 @@
     "total_complaints_fy24": 13308,
     "claims_rejected_fy24": 296356,
     "incurred_claim_ratio_pct": 66.47,
-    "source_irdai_url": "https://irdai.gov.in/document-detail",
+    "source_irdai_url": "https://irdai.gov.in/document-detail?documentId=6436847",
     "source_secondary_url": "https://www.business-standard.com/finance/personal-finance/star-health-care-niva-bupa-record-most-policyholder-complaints-in-fy24-125090100487_1.html"
   },
   "aggregator_ratings": {
@@ -31,12 +31,6 @@
       "url": "https://www.mouthshut.com/product-reviews/star-health-insurance-reviews-925865246",
       "note": "MouthShut review-count approximated from listing page; skewed negative"
     }
-  },
-  "trustpilot": {
-    "score": 1.5,
-    "review_count": null,
-    "url": "https://www.trustpilot.com/review/www.starhealth.in",
-    "note": "Trustpilot's Indian-customer footprint is thin and the page returns intermittent 403/404 to automated checkers. Reviews are largely complaint-driven so the score is unrepresentative of overall sentiment. The page exists when accessed via browser as confirmed by search-result indexing."
   },
   "reddit_sentiment": {
     "subreddit": "IndianFinance / IndiaInvestments / personalfinanceindia",
@@ -150,8 +144,7 @@
   },
   "_data_gaps": {
     "policybazaar_review_count": "Policybazaar does not publish a public review-count on insurer review pages; only aggregate stars.",
-    "trustpilot_review_count": "Trustpilot India footprint thin; review-count never explicitly exposed in indexed metadata.",
-    "reddit_sample_post_urls": "Google site:reddit.com search returns very few direct r/IndianFinance / r/IndiaInvestments / r/personalfinanceindia thread URLs for Indian insurers \u2014 most discussions surface via aggregator scrapers (gummysearch) or wiki pages. Direct thread enumeration would require Reddit's own API or in-app search, which is not available via WebSearch."
+    "reddit_sample_post_urls": "Google site:reddit.com search returns very few direct r/IndianFinance / r/IndiaInvestments / r/personalfinanceindia thread URLs for Indian insurers — most discussions surface via aggregator scrapers (gummysearch) or wiki pages. Direct thread enumeration would require Reddit's own API or in-app search, which is not available via WebSearch."
   },
   "_research_log": {
     "queries_tried": [
@@ -164,19 +157,17 @@
     ],
     "couldnt_find": [
       "Direct r/IndianFinance thread URLs - search engines do not surface them as top results",
-      "Policybazaar total review count (not exposed publicly)",
-      "Trustpilot total review count (page intermittently 403s to crawlers)"
+      "Policybazaar total review count (not exposed publicly)"
     ],
     "added_this_pass": "3 new YouTube URLs (Ditto Honest Review, Super Star review, MJ Money detailed review, Gurleen Kaur Tikku); 4 new news URLs (IRDAI show-cause + 5% drop + TechCrunch data breach + Business Today scrutiny); 2 supplementary Reddit-wiki/Quora URLs"
   },
   "_url_verification": {
     "verified_at": "2026-05-13T00:26:25Z",
-    "total_urls": 20,
+    "total_urls": 19,
     "ok": 10,
-    "broken_count": 10,
+    "broken_count": 9,
     "broken_urls": [
       "https://www.business-standard.com/finance/personal-finance/star-health-care-niva-bupa-record-most-policyholder-complaints-in-fy24-125090100487_1.html",
-      "https://www.trustpilot.com/review/www.starhealth.in",
       "https://www.quora.com/Is-Star-Health-Insurance-good-Has-anybody-experienced-problems-in-claim-settlement",
       "https://www.quora.com/Is-Star-Health-Insurance-a-good-company",
       "https://www.youtube.com/watch?v=k5ZltTqzSrY",

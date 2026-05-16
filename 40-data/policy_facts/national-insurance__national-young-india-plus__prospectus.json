@@ -32,11 +32,16 @@
     "_confidence": "low"
   },
   "sum_insured_options": {
-    "value": null,
+    "value": [
+      500000,
+      1000000,
+      1500000,
+      2500000
+    ],
     "unit": "INR",
     "source_pdf_path": "rag/corpus/national-insurance/national-young-india-plus__prospectus.pdf",
-    "source_quote": "not stated in national-young-india-plus__prospectus.pdf",
-    "_confidence": "low"
+    "source_quote": "TABLE OF BENEFITS Name National Young India Mediclaim Plus Policy (NYIMPP) Sum Insured ₹ 5L, 10L, 15L, 25L (Basic SI)",
+    "_confidence": "high"
   },
   "grace_period": {
     "value": 30,

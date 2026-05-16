@@ -41,7 +41,7 @@ from backend.providers.groq_llm import GroqLLM
 # Usage log — append-only JSONL with cheap 1 MB rotation. Consumed by
 # GET /api/admin/usage for the admin control panel. Path is two parents up
 # from this file (backend/providers/nvidia_nim_llm.py → repo root / data).
-_USAGE_LOG_PATH = Path(__file__).resolve().parent.parent.parent / "40-data" / "llm_usage.jsonl"
+_USAGE_LOG_PATH = settings.DATA_DIR / "llm_usage.jsonl"
 _USAGE_LOG_MAX_BYTES = 1_000_000  # 1 MB cap — rotate to .bak when exceeded
 _usage_lock = asyncio.Lock()
 

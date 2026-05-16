@@ -12,7 +12,6 @@ Stack A providers (post-2026-05-14, D-019):
   - Sarvam Saarika STT — voice recognition
   - Local BGE embeddings (no network)
   - NVIDIA NIM brain — DeepSeek-V4-Pro
-  - NVIDIA NIM judge — Llama-4 Maverick
 """
 
 from __future__ import annotations
@@ -22,7 +21,7 @@ import traceback
 
 from backend.config import settings
 from backend.providers.base import ChatMessage
-from backend.providers.nvidia_nim_llm import get_brain_llm, get_judge_llm
+from backend.providers.nvidia_nim_llm import get_brain_llm
 from backend.providers.sarvam_llm import SarvamLLM
 from backend.providers.sarvam_stt import SarvamSTT
 from backend.providers.sarvam_tts import SarvamTTS
@@ -87,26 +86,6 @@ async def test_nim_brain():
         return False
 
 
-async def test_nim_judge():
-    print("\n--- NIM Llama-4 Maverick (faithfulness judge — Stack A grader) ---")
-    try:
-        client = get_judge_llm(language="en")
-        result = await client.chat(
-            messages=[
-                ChatMessage(role="system", content="You are a strict evaluator. Reply YES or NO only."),
-                ChatMessage(role="user", content="Is '24 months' semantically equivalent to '2 years'? YES or NO."),
-            ],
-            max_tokens=10,
-            temperature=0.0,
-        )
-        print(f"OK | model={result.model} | reply: {result.text!r}")
-        return True
-    except Exception as e:
-        print(f"FAIL | {type(e).__name__}: {e}")
-        traceback.print_exc()
-        return False
-
-
 async def test_sarvam_stt():
     """STT needs an audio file. We reuse the TTS output if it ran successfully."""
     print("\n--- Sarvam Saarika STT ---")
@@ -138,7 +117,6 @@ async def main():
 
     results = {}
     results["nim_brain"] = await test_nim_brain()
-    results["nim_judge"] = await test_nim_judge()
     results["sarvam_llm"] = await test_sarvam_llm()
     results["sarvam_tts"] = await test_sarvam_tts()
     results["sarvam_stt"] = await test_sarvam_stt()  # depends on TTS output

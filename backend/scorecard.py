@@ -93,11 +93,25 @@ class Scorecard:
     policy_name: str
     insurer_slug: str
     overall_score: int
-    grade: str  # A, B, C, D, F
+    grade: str  # A, B, C, D, F  — or "—" when insufficient_data is True
     one_liner: str
     sub_scores: list[SubScore]
     data_completeness_pct: float  # how many of the scoring fields actually have data
     methodology_link: str = "/70-docs/scorecard-methodology.md"
+    # True when the policy has too little structured data to produce an honest
+    # grade. The endpoint returns this as a DEFINED HTTP-200 response (not a
+    # 500 / generic Retry, and NOT a fabricated grade): grade is "—",
+    # overall_score 0, sub_scores empty, one_liner an honest message.
+    insufficient_data: bool = False
+
+
+# Below this data-completeness %, a grade would be fabricated from neutral
+# bases rather than the policy's real terms (an all-empty dict still scores a
+# confident "F"/52 purely from the recalibrated bases). The real catalogue
+# floor is 13.0% (~3 of 23 scored fields); this threshold sits well below it
+# so NO well-populated policy is ever down-graded to the honest-unknown state
+# — it only fires for the genuinely-bare case (fewer than ~2 of 23 fields).
+MIN_GRADEABLE_COMPLETENESS_PCT = 9.0
 
 
 # ---- helpers ----
@@ -844,14 +858,79 @@ def _is_fixed_benefit(policy: dict) -> bool:
     return bool(_FIXED_BENEFIT_RE.search(blob))
 
 
+def _safe_sub(fn, name: str, *args, **kwargs) -> SubScore:
+    """Run a sub-score function but NEVER let a malformed/unexpected input
+    crash the whole scorecard.
+
+    The helpers (_pick_alias / _int / _bool) already degrade missing values to
+    the neutral base — that is the intended N/A-reweight behaviour. This wrap
+    is the last line of defence for a genuinely unexpected input shape (e.g. a
+    curated field that is a list where a scalar is assumed): instead of the
+    endpoint 500-ing for a catalogued policy, the affected sub-score falls
+    back to its neutral base and the rest of the card still computes. This is
+    a degrade-to-unknown, consistent with the existing N/A design — it does
+    NOT invent data and does NOT change any well-populated policy's grade
+    (those never hit this path).
+    """
+    try:
+        return fn(*args, **kwargs)
+    except Exception as e:  # pragma: no cover - defensive; no current input hits it
+        return SubScore(name, NEUTRAL_BASE.get(name, 50), "Not enough data to assess",
+                         [f"− could not assess ({type(e).__name__})"])
+
+
+# Neutral base each sub-score falls back to so _safe_sub stays byte-faithful
+# to the recalibrated bases in the functions above.
+NEUTRAL_BASE = {
+    "Coverage Breadth": 40,
+    "Cost Predictability": 60,
+    "Waiting-Period Friction": 72,
+    "Claim Experience": 45,
+    "Renewal Protection": 50,
+    "Bonus & Loyalty": 38,
+}
+
+
 def build_scorecard(policy: dict, insurer_reviews: Optional[dict] = None, profile: Optional[dict] = None) -> Scorecard:
+    if not isinstance(policy, dict):
+        policy = {}
+    pid = policy.get("policy_id", "") or ""
+    pname = policy.get("policy_name", "") or ""
+    pslug = policy.get("insurer_slug", "") or ""
+
+    completeness = compute_data_completeness(policy)
+
+    # DEFINED insufficient-data path. A catalogued policy with near-zero
+    # structured data must NOT be handed a fabricated grade (an all-empty
+    # dict otherwise scores a confident "F"/52 from the neutral bases). We
+    # return an explicit, honest "not enough data to grade yet" Scorecard the
+    # endpoint surfaces as HTTP 200 + a clear flag — never a 500/Retry and
+    # never an invented grade. Well-populated policies (real floor 13.0%)
+    # never reach this branch, so no existing grade changes.
+    if completeness < MIN_GRADEABLE_COMPLETENESS_PCT:
+        return Scorecard(
+            policy_id=pid,
+            policy_name=pname,
+            insurer_slug=pslug,
+            overall_score=0,
+            grade="—",
+            one_liner=(
+                "Not enough of this policy's terms have been published yet to "
+                "grade it honestly. We don't guess — check back once the "
+                "official document is on file."
+            ),
+            sub_scores=[],
+            data_completeness_pct=completeness,
+            insufficient_data=True,
+        )
+
     subs = [
-        score_coverage_breadth(policy),
-        score_cost_predictability(policy),
-        score_waiting_friction(policy),
-        score_claim_experience(policy, insurer_reviews=insurer_reviews),
-        score_renewal_protection(policy),
-        score_bonuses(policy),
+        _safe_sub(score_coverage_breadth, "Coverage Breadth", policy),
+        _safe_sub(score_cost_predictability, "Cost Predictability", policy),
+        _safe_sub(score_waiting_friction, "Waiting-Period Friction", policy),
+        _safe_sub(score_claim_experience, "Claim Experience", policy, insurer_reviews=insurer_reviews),
+        _safe_sub(score_renewal_protection, "Renewal Protection", policy),
+        _safe_sub(score_bonuses, "Bonus & Loyalty", policy),
     ]
     weights = _profile_tuned_weights(profile)
     if _is_fixed_benefit(policy):
@@ -862,12 +941,12 @@ def build_scorecard(policy: dict, insurer_reviews: Optional[dict] = None, profil
         overall = clamp(sum(weights[s.name] * s.score for s in subs))
     letter, one_liner = grade_for(overall)
     return Scorecard(
-        policy_id=policy.get("policy_id", ""),
-        policy_name=policy.get("policy_name", ""),
-        insurer_slug=policy.get("insurer_slug", ""),
+        policy_id=pid,
+        policy_name=pname,
+        insurer_slug=pslug,
         overall_score=overall,
         grade=letter,
         one_liner=one_liner,
         sub_scores=subs,
-        data_completeness_pct=compute_data_completeness(policy),
+        data_completeness_pct=completeness,
     )

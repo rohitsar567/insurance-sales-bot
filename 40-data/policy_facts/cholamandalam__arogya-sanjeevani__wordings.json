@@ -203,10 +203,10 @@
     "_confidence": "high"
   },
   "maternity_coverage": {
-    "value": null,
+    "value": false,
     "unit": null,
     "source_pdf_path": "rag/corpus/cholamandalam/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "not stated in arogya-sanjeevani__wordings.pdf",
-    "_confidence": "low"
+    "source_quote": "7.15 Maternity Expenses: (Code-Excl 18): i. Medical treatment expenses traceable to childbirth (including complicated deliveries and caesarean sections incurred during hospitalisation) except ectopic pregnancy; ii. Expenses towards miscarriage (unless due to an accident) and lawful medical termination of pregnancy during the policy period. (wordings p.20-21)",
+    "_confidence": "high"
   }
 }

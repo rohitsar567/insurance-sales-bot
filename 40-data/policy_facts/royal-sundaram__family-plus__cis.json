@@ -11,17 +11,19 @@
     "_confidence": "high"
   },
   "min_entry_age": {
-    "value": null,
+    "value": 18,
     "unit": "years",
-    "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
-    "source_quote": "not stated in royal-sundaram__family-plus__cis.pdf",
-    "_confidence": "low"
+    "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__wordings.pdf",
+    "source_quote": "Entry age for adults is 18 years onwards and from 91 days to 21 years for children. New born children can be added to existing policies at renewal.",
+    "source_doc_type": "wordings",
+    "source_page": "56-58",
+    "_confidence": "high"
   },
   "max_entry_age": {
     "value": null,
     "unit": "years",
-    "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
-    "source_quote": "not stated in royal-sundaram__family-plus__cis.pdf",
+    "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__wordings.pdf",
+    "source_quote": "no maximum adult entry age stated in policy wording (Product Benefit Table states 'Entry age for adults is 18 years onwards'; child entry age 91 days to 21 years) (checked all indexed chunks)",
     "_confidence": "low"
   },
   "min_child_entry_age": {
@@ -32,11 +34,23 @@
     "_confidence": "medium"
   },
   "sum_insured_options": {
-    "value": null,
+    "value": [
+      200000,
+      300000,
+      500000,
+      1000000,
+      1500000,
+      2000000,
+      2500000,
+      5000000
+    ],
     "unit": "INR",
-    "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__cis.pdf",
-    "source_quote": "not stated in royal-sundaram__family-plus__cis.pdf",
-    "_confidence": "low"
+    "source_pdf_path": "rag/corpus/royal-sundaram/family-plus__wordings.pdf",
+    "source_quote": "PRODUCT BENEFIT TABLE Family Plus Family Plus(1)(2) Family Plus Sum Insured (Rs.) Individual Base Sum Insured: 2Lacs, 3Lacs, 5Lacs,10Lacs & 15Lacs per Insured Person Floater Sum Insured – (available on a floating basis over individual cover): 3Lacs, 4Lacs, 5Lacs, 10Lacs, 15Lacs, 20Lacs, 25 Lacs & 50lacs",
+    "source_doc_type": "wordings",
+    "source_page": "54-56",
+    "_note": "Union of Individual Base Sum Insured options (2,3,5,10,15 Lacs) and Floater Sum Insured options (3,4,5,10,15,20,25,50 Lacs)",
+    "_confidence": "high"
   },
   "grace_period": {
     "value": 30,

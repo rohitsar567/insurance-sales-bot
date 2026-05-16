@@ -3,9 +3,26 @@
 | Field | Value |
 | --- | --- |
 | Project | Insurance Sales Portfolio Expert |
-| Version | 0.1 |
-| Date | 2026-05-13 |
-| Status | Living document |
+| Version | 1.0 |
+| Date | 2026-05-17 |
+| Status | **Superseded as a present-state map — see banner below** |
+
+> ⚠️ **This document predates the single-brain rewrite and is NOT the current
+> safety architecture.** It describes a `backend/faithfulness.py` 4-gate
+> LLM-judge (Gate 1 retrieval floor → Gate 2 citation integrity → Gate 3
+> regex grounding → Gate 4 cross-family judge). **None of that exists** —
+> `faithfulness.py` and the separate judge were removed in the single-brain
+> consolidation.
+>
+> **Current safety model (authoritative: [`README.md`](../../README.md) §6):**
+> faithfulness is now **structural** — the single Gemini brain can only state
+> what `retrieve_policies` returned and must cite; recommendation fit is gated
+> in `backend/scorecard.py` / `retrieval_filters.py`. The hardened surface is
+> the **8-gate uploaded-PDF defence in `backend/security.py`** (file
+> mechanics, content quality, prompt-injection, per-session + per-IP rate
+> limits, encrypted-PDF, page-ceiling, hash-dedupe) plus per-session
+> quarantine isolation with a 24 h TTL. Retained below only as the historical
+> failure-modes analysis that informed today's design.
 
 ## 0. Purpose
 

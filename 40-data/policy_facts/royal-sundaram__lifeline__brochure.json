@@ -32,11 +32,28 @@
     "_confidence": "high"
   },
   "sum_insured_options": {
-    "value": null,
+    "value": [
+      200000,
+      300000,
+      400000,
+      500000,
+      750000,
+      1000000,
+      1500000,
+      2000000,
+      2500000,
+      3000000,
+      5000000,
+      10000000,
+      15000000
+    ],
     "unit": "INR",
     "source_pdf_path": "rag/corpus/royal-sundaram/lifeline__brochure.pdf",
-    "source_quote": "not stated in royal-sundaram__lifeline__brochure.pdf",
-    "_confidence": "low"
+    "source_quote": "LIFELINE PRODUCT BENEFITS LIFELINE LIFELINE LIFELINE HEALTH INSURANCE PLAN > ELITE HEALTH INSURANCE PLAN > SUPREME HEALTH INSURANCE PLAN > CLASSIC 5 lakhs | 7.5 lakhs | 10 lakhs | 15 lakhs | 20 lakhs | 25 lakhs SUM INSURED (SI) RUPEES 25 lakhs | 30 lakhs | 50 lakhs | 100 lakhs | 150 lakhs 2 lakhs | 3 lakhs | 4 lakhs 50 lakhs | 100 lakhs",
+    "source_doc_type": "brochure",
+    "source_page": "1-2",
+    "_note": "Union of all distinct Sum Insured options stated across the three Lifeline variants (Elite / Supreme / Classic) in the brochure product-benefits SI row",
+    "_confidence": "high"
   },
   "grace_period": {
     "value": 30,

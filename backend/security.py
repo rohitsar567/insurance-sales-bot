@@ -59,7 +59,6 @@ Every block is logged to logs/upload_blocks.jsonl with the reason.
 
 from __future__ import annotations
 
-import asyncio
 import hashlib
 import io
 import json
@@ -349,66 +348,12 @@ def gate_hash_dedupe(content: bytes, session_id: str) -> tuple[list[str], Option
     return ([], None)
 
 
-async def gate_llm_judge(text: str) -> list[str]:
-    """Gate 8 — LLM-judge audit. Strict yes/no on "is this a real Indian
-    health-insurance policy document?".
-
-    Fail-open: if the call itself fails (timeout, parse error, transport
-    issue), return [] — the regex + mechanics gates already catch the
-    obvious bad stuff, and we don't want a single transient LLM hiccup to
-    block legitimate uploads.
-
-    6s hard timeout via asyncio.wait_for; last gate in the pipeline since
-    it's the most expensive one.
-    """
-    try:
-        from backend.providers.nvidia_nim_llm import get_judge_llm
-        from backend.providers.base import ChatMessage
-
-        snippet = text[:2000]
-        prompt = (
-            "You are an audit gate. Determine if the following text is a real "
-            "Indian health-insurance policy document. Reply with strictly JSON: "
-            '{"is_policy": true|false, "reason": "<one short sentence>"}. '
-            "Be strict — generic finance docs, recipes, news articles, code, "
-            "manuals, books all FAIL."
-        )
-        messages = [
-            ChatMessage(role="system", content=prompt),
-            ChatMessage(role="user", content=snippet),
-        ]
-
-        judge = get_judge_llm()
-        result = await asyncio.wait_for(
-            judge.chat(
-                messages=messages,
-                temperature=0.0,
-                max_tokens=80,
-                response_format={"type": "json_object"},
-            ),
-            timeout=6.0,
-        )
-        raw = (result.text or "").strip()
-        if not raw:
-            return []
-        parsed = json.loads(raw)
-        is_policy = bool(parsed.get("is_policy", True))
-        reason = str(parsed.get("reason", "")).strip()[:200]
-        if not is_policy:
-            return [f"llm_judge_rejected: {reason}" if reason else "llm_judge_rejected"]
-        return []
-    except Exception:
-        # Fail-open — availability over precision for this gate.
-        return []
-
-
 async def check_upload(
     content: bytes,
     extracted_text: str,
     page_count: int,
     session_id: str = "anonymous",
     ip: str = "",
-    enable_llm_judge: bool = True,
 ) -> UploadVerdict:
     """Run all 8 gates. Return verdict with reasons (empty if accepted).
 
@@ -423,7 +368,6 @@ async def check_upload(
       6.  gate_content_quality      (extracted text + ≥3 page floor)
       7.  gate_page_count_ceiling   (≤200 page ceiling)
       8.  gate_prompt_injection     (regex sweep)
-      9.  gate_llm_judge            (LLM audit; only if everything above passed)
     """
     # 1. Hash dedupe first — accept-cache short-circuit avoids re-embedding.
     dedupe_reasons, cached_chunks = gate_hash_dedupe(content, session_id)
@@ -453,11 +397,6 @@ async def check_upload(
     reasons.extend(gate_content_quality(extracted_text, page_count))
     reasons.extend(gate_page_count_ceiling(page_count))
     reasons.extend(gate_prompt_injection(extracted_text))
-
-    # LLM judge runs LAST — only if every earlier gate passed. No point
-    # paying ~3s + an API call to grade something that already failed.
-    if enable_llm_judge and not reasons:
-        reasons.extend(await gate_llm_judge(extracted_text))
 
     verdict = UploadVerdict(
         accepted=(len(reasons) == 0),

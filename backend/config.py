@@ -67,11 +67,31 @@ class Settings:
     EXTRACTED_DIR: Path = ROOT / "rag" / "extracted"
     VECTORS_DIR: Path = ROOT / "rag" / "vectors"
     STRUCTURED_DB: Path = ROOT / "rag" / "policies.duckdb"
+    # Single source of truth for the curated-facts directory. Previously the
+    # literal "40-data" was hardcoded independently in ~13 runtime modules
+    # (admin/marketplace/scorecard/premium/profile/llm-health/brain-tools).
+    # Every one of those expressions resolved to <repo_root>/40-data, so this
+    # constant is a behaviour-preserving consolidation, not a path change.
+    # The directory name is intentionally kept (parallel to 70-docs/80-audit).
+    DATA_DIR: Path = ROOT / "40-data"
 
     # Tunables (overrideable via env vars so the hyperparameter sweep can iterate)
     CHUNK_TOKENS: int = int(os.environ.get("CHUNK_TOKENS", "800"))
     CHUNK_OVERLAP_TOKENS: int = int(os.environ.get("CHUNK_OVERLAP_TOKENS", "120"))
     RAG_TOP_K: int = int(os.environ.get("RAG_TOP_K", "5"))
+
+    # Quarantine TTL (2026-05-16) — user-uploaded PDFs live in the SEPARATE
+    # `user_uploads_quarantine` Chroma collection. They are NOT durable
+    # corpus; a session's upload is auto-purged after this many seconds of
+    # no further uploads from that session, so the quarantine index can't
+    # grow unbounded and stale private docs don't linger. Default 24h.
+    # The periodic purge task sweeps every QUARANTINE_PURGE_INTERVAL_SEC.
+    QUARANTINE_TTL_SECONDS: int = int(
+        os.environ.get("QUARANTINE_TTL_SECONDS", str(24 * 3600))
+    )
+    QUARANTINE_PURGE_INTERVAL_SEC: int = int(
+        os.environ.get("QUARANTINE_PURGE_INTERVAL_SEC", str(30 * 60))
+    )
 
     @classmethod
     def validate(cls) -> list[str]:

@@ -21,7 +21,7 @@
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/tata-aig/medicare__wordings.pdf",
-    "source_quote": "not stated in tata-aig__medicare__wordings.pdf",
+    "source_quote": "no adult maximum-entry-age clause present in the policy wording; an exhaustive search of all 31 indexed wordings chunks found no entry-age eligibility table (the eligibility/age table is contained in the prospectus, which is not indexed for this product) (checked all indexed chunks)",
     "_confidence": "low"
   },
   "min_child_entry_age": {
@@ -35,7 +35,7 @@
     "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/tata-aig/medicare__wordings.pdf",
-    "source_quote": "not stated in tata-aig__medicare__wordings.pdf",
+    "source_quote": "no enumerated Sum Insured options stated; the Sum Insured for MediCare is defined in the Policy Schedule and an exhaustive search of all 31 indexed wordings chunks found no Sum Insured options grid (checked all indexed chunks)",
     "_confidence": "low"
   },
   "grace_period": {
@@ -111,7 +111,7 @@
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/tata-aig/medicare__wordings.pdf",
-    "source_quote": "not stated in tata-aig__medicare__wordings.pdf",
+    "source_quote": "no fixed co-payment percentage stated; the wording defines the term 'Co-Payment' generically ('a cost sharing requirement under a health insurance policy that provides that the policyholder/insured will bear a specified percentage') with no mandatory percentage value in any of the 31 indexed wordings chunks (checked all indexed chunks)",
     "_confidence": "low"
   },
   "room_rent_capped_at_pct_of_si": {

@@ -84,6 +84,38 @@ YOUR JOB:
 REQUIRED slots before recommending: name, age, dependents, location_tier, income_band, primary_goal, health_conditions.
 
 ═══════════════════════════════════
+RULE 0 (HIGHEST PRIORITY) — ASK FOR THE NAME FIRST + NEVER MIS-FRAME A MISSING SLOT
+═══════════════════════════════════
+0a. NAME IS COLLECTED FIRST. `name` is a REQUIRED slot that gates every
+    recommendation. Ask for it EARLY — it must be the FIRST thing you ask
+    for. On your very first reply to a fresh user (no name captured yet,
+    not a returning user), open by asking their name (a one-line warm
+    greeting + "what should I call you?" is ideal). If the user volunteers
+    several facts at once but not their name, capture those facts AND ask
+    for the name in the same reply. NEVER leave `name` for last — asking
+    age/city/budget/health first and the name only at the very end (right
+    before recommending) is a RULE 0 violation.
+
+0b. A MISSING REQUIRED SLOT IS NOT A "NO MATCHES" / RETRIEVAL FAILURE.
+    `name` (and every other profile slot) has NOTHING to do with whether
+    policies match. When you are blocked ONLY because a required slot is
+    still missing, you MUST be honest and specific about WHICH slot you
+    need — you must NOT say, imply, or hint any of:
+      • "I couldn't find any policies matching all your criteria"
+      • "no policies match" / "nothing matches your criteria"
+      • "it seems I'm missing a few more details to proceed" (vague)
+      • anything that suggests you searched and failed, or that you can't
+        help, when in fact you simply have not collected a profile slot yet.
+    Correct shape when name is the only thing missing AFTER the user has
+    given substantive details:
+      "I've got everything I need except your name — what should I call
+       you? Then I'll pull your matches."
+    Correct shape for any other single missing slot: name the slot
+    plainly ("Just one more thing — roughly what's your annual household
+    income?"). Only say something matched/did-not-match AFTER you have
+    actually called retrieve_policies and seen its result.
+
+═══════════════════════════════════
 ABSOLUTE RULE — NO POLICY NAMES WITHOUT RETRIEVE
 ═══════════════════════════════════
 NEVER mention a policy name, UIN, insurer, or product (Star Health,
@@ -149,7 +181,7 @@ NEVER ask the user for a fact you can already extract from their last message. C
 ═══════════════════════════════════
 RULE 2 — retrieve_policies query MUST be profile-aware
 ═══════════════════════════════════
-Only call retrieve_policies AFTER all 7 required slots are saved AND the user has confirmed your recap.
+Only call retrieve_policies AFTER all 7 required slots are saved AND the user has confirmed your recap AND the RULE 2.5 pricing/family-history bundle has been either answered or explicitly skipped (a PARTIAL answer is not a skip — re-ask the missing items first; see RULE 2.5).
 
 Build the query string from the profile snapshot. The query MUST be profile+pricing aware — include both recommendation and pricing slots so retrieval scores reflect what the user actually needs.
 
@@ -203,7 +235,32 @@ When the user answers, call save_profile_field once per provided value:
 
 Gender hint: if the user mentions gender, keep it for conversational context only — Profile has no `gender` slot. Do NOT call save_profile_field(field="gender", ...) — it returns `field_not_on_profile_dataclass` and wastes a tool-call iteration.
 
-Then call retrieve_policies and INCLUDE the new inputs in the query (e.g., "...sum insured 10 lakh, budget 10-20K/year, existing employer cover 5L, parent age 68..."). If the user skips ("just show me options", "you decide"), proceed with retrieve_policies using profile defaults — DO NOT block. SOFT capture, not a hard gate.
+PARTIAL ANSWER → RE-ASK THE REST (Bug #108 — DO NOT SKIP THIS):
+If the user answers SOME of the bundle but not ALL (e.g. you asked sum
+insured / budget / co-pay / family history / smoking and they gave SI +
+budget + co-pay only), you MUST re-ask ONLY the still-unanswered items in
+ONE short follow-up before recommending — do NOT silently proceed to
+retrieve_policies with the unanswered slot blank. The single most-dropped
+item is FAMILY MEDICAL HISTORY (Bug #110): always confirm it is answered or
+skipped. Re-ask at most ONCE; if the user then skips, proceed.
+
+Then call retrieve_policies and INCLUDE the new inputs in the query (e.g., "...sum insured 10 lakh, budget 10-20K/year, existing employer cover 5L, parent age 68..."). If the user EXPLICITLY skips ("just show me options", "you decide", "skip the rest"), proceed with retrieve_policies using profile defaults — DO NOT block, DO NOT re-ask again. SOFT capture, not a hard gate — but a PARTIAL answer is NOT a skip: re-ask the missing items once (see above).
+
+═══════════════════════════════════
+RULE 2.6 — ONLY RECOMMEND PLANS THAT ARE GENUINELY STRONG FOR THIS USER
+═══════════════════════════════════
+When you present a shortlist, every plan you call a "recommendation" must
+be a genuinely strong fit for THIS user's profile, ranked best-first
+(strongest fit = #1). Do NOT pad the list to hit a count: if only one
+plan is genuinely strong, recommend ONE and say so honestly ("Only one
+plan is a strong fit for your profile right now — here it is."). If NONE
+are a strong fit, do NOT present a weak plan as a recommendation — say so
+plainly and offer to relax a criterion or broaden the search ("Nothing in
+our index is a strong fit for these exact criteria — want me to widen the
+sum insured / budget?"). A mediocre plan presented as a "recommendation"
+is worse than honestly presenting fewer. Never describe a clearly weak
+plan with recommendation language ("great pick", "top option") — be
+honest about where it falls short.
 
 ═══════════════════════════════════
 RULE 3 — Follow-ups + mark_recommendation
@@ -365,6 +422,15 @@ class TurnResult:
     blocked: bool = False
     profile_updates: dict = field(default_factory=dict)
     followup_policy_id: Optional[str] = None
+    # KI-RECALL-FIX (2026-05-16) — deterministic returning-user signal.
+    # Set True ONLY on the turn where the user explicitly affirmed a staged
+    # cross-session recall and `apply_pending_recall(confirmed=True)` merged
+    # their stored profile. main.py stamps ChatResponse.returning_user_recalled
+    # from this so the frontend "Welcome back" banner fires. Previously
+    # main.py inferred recall from a turn-1-only heuristic which the
+    # confirmation gate (recall resolves on a LATER turn) could never satisfy
+    # — the banner was unreachable even once recall worked.
+    returning_user_recalled: bool = False
 
 
 # ---------- function-calling DSL (Gemini JSON schema) -----------------------
@@ -382,7 +448,8 @@ TOOL_SCHEMAS: list[dict] = [
             "per field every time the user reveals something new (name, age, "
             "dependents, location_tier, income_band, primary_goal, "
             "health_conditions, existing_cover_inr, budget_band, "
-            "desired_sum_insured_inr, gender)."
+            "desired_sum_insured_inr, copay_pct, family_medical_history, "
+            "smoker, parents_age_max, gender)."
         ),
         "parameters": {
             "type": "OBJECT",
@@ -393,7 +460,9 @@ TOOL_SCHEMAS: list[dict] = [
                         "Field name. One of: name, age, dependents, "
                         "location_tier, income_band, primary_goal, "
                         "health_conditions, existing_cover_inr, budget_band, "
-                        "desired_sum_insured_inr, gender."
+                        "desired_sum_insured_inr, copay_pct, "
+                        "family_medical_history, smoker, parents_age_max, "
+                        "gender."
                     ),
                 },
                 "value": {
@@ -694,6 +763,34 @@ _FALLBACK_REQUIRED_SLOTS = (
 )
 
 
+# Bug #108 + #110 (2026-05-16) — explicit-skip detector for the post-recap
+# pricing & family-history bundle. When the user clearly declines the
+# pricing inputs, single_brain stamps session.pricing_bundle_skipped so
+# brain_tools.retrieve_policies' one-shot re-ask gate is BYPASSED (the user
+# asked us not to keep asking — SOFT capture means "skip" is honoured).
+# Phrase-level only (substring on a lowercased message) so it stays cheap +
+# deterministic; a partial answer ("10 lakh cover, skip the rest") still
+# counts as skip-the-rest, which is the desired behaviour.
+_PRICING_SKIP_PHRASES: tuple[str, ...] = (
+    "just show me", "just show options", "just recommend", "just give me",
+    "you decide", "you choose", "your call", "whatever you think",
+    "skip", "skip the rest", "skip those", "skip that", "no preference",
+    "don't have a preference", "dont have a preference", "doesn't matter",
+    "doesnt matter", "not sure", "no idea", "show me options",
+    "show me the options", "show options", "proceed", "go ahead",
+    "let's see options", "lets see options", "recommend now",
+)
+
+
+def _user_skipped_pricing_inputs(user_text: str) -> bool:
+    """True when the user's message explicitly declines the pricing /
+    family-history bundle (so the deterministic re-ask gate is bypassed)."""
+    t = (user_text or "").strip().lower()
+    if not t:
+        return False
+    return any(p in t for p in _PRICING_SKIP_PHRASES)
+
+
 def _synthesise_fallback(profile) -> str:
     """KI-Z6-NONE (2026-05-15): replace the legacy 'I lost my train of
     thought' reply with a useful next-question synthesised from the
@@ -702,13 +799,26 @@ def _synthesise_fallback(profile) -> str:
     confirmation. Never empty-string — always returns user-visible text.
     """
     try:
-        for slot in _FALLBACK_REQUIRED_SLOTS:
-            v = getattr(profile, slot, None)
-            if v in (None, "", []):
-                return _FALLBACK_SLOT_QUESTIONS.get(
-                    slot,
-                    f"Could you share your {slot.replace('_', ' ')}?",
+        missing = [
+            slot
+            for slot in _FALLBACK_REQUIRED_SLOTS
+            if getattr(profile, slot, None) in (None, "", [])
+        ]
+        if missing:
+            first = missing[0]
+            # Bug #69 (2026-05-16) — when `name` is the ONLY remaining gap
+            # and the user has already supplied substantive profile detail,
+            # be honest + specific. NEVER imply a search failed or that we
+            # can't help: name has nothing to do with policy matching.
+            if missing == ["name"]:
+                return (
+                    "I've got everything I need except your name — what "
+                    "should I call you? Then I'll pull your matches."
                 )
+            return _FALLBACK_SLOT_QUESTIONS.get(
+                first,
+                f"Could you share your {first.replace('_', ' ')}?",
+            )
         # All slots present — ask the user to confirm before recommending.
         return (
             "Let me confirm what I have before pulling up options — "
@@ -1035,6 +1145,76 @@ def _norm_policy_name(s: str) -> str:
     return "".join(out).strip()
 
 
+# Bug #71 (2026-05-16) — minimum-fit gate for the RECOMMENDED set.
+#
+# ROOT CAUSE: `_build_recommendation_citations` ranked the cited set by
+# gate order but applied NO minimum fit/grade floor. The retrieval pipeline
+# (retrieval_filters.rank_by_profile_fit) only RE-ORDERS — it never drops a
+# weak-but-best-available plan. So when the LLM cited a B/75 plan AND a
+# C/64 plan, BOTH were presented as "recommendations" (the live report:
+# HDFC ERGO my:Optima Secure B/75 + Star Family Health Optima C/64). A
+# C-graded 64/100 plan for the user's OWN profile is NOT a recommendation.
+#
+# FIX: a policy only qualifies as a genuine recommendation when its
+# scorecard fit clears a sensible floor — overall_score >= 70 (the
+# A/B↔C boundary; retrieval_filters._GRADE_POINTS pins B == 70.0), OR,
+# when no numeric overall was enriched, a letter grade of A or B. C / D /
+# F (or overall < 70) is weak-fit for THIS profile and is dropped from the
+# recommended set. We rank the survivors strictly best-first by
+# overall_score (gate_rank as the stable tiebreak). If FEWER than the
+# intended count clear the bar we cite fewer (or none) — never pad the
+# shortlist with a weak plan. We do NOT loosen the scorecard or fabricate;
+# we only stop presenting weak-fit plans AS recommendations.
+_MIN_RECOMMENDATION_OVERALL: float = 70.0
+_STRONG_RECOMMENDATION_GRADES: frozenset[str] = frozenset({"A", "B"})
+
+
+_KNOWN_WEAK_GRADES: frozenset[str] = frozenset({"C", "D", "E", "F"})
+
+
+def _recommendation_fit(chunk: dict) -> tuple[bool, Optional[float], str]:
+    """Return (is_strong_enough, overall_score_or_None, grade_letter).
+
+    A chunk is DROPPED from the recommended set ONLY when we have POSITIVE
+    evidence it is a weak fit for THIS profile:
+      • its enriched `_overall_score` is present AND < _MIN_RECOMMENDATION_
+        OVERALL (the A/B↔C boundary; retrieval_filters._GRADE_POINTS pins
+        B == 70.0), OR
+      • no numeric overall, but its `_grade` letter is a KNOWN-weak grade
+        (C / D / E / F) — the coarse degrade path when the scorecard could
+        not produce a numeric. This is the live Bug #71 case: a C/64 plan
+        cited as a recommendation.
+
+    FAIL OPEN on MISSING evidence. brain_tools._scorecard_signal is
+    explicitly best-effort ("scorecard optional; ranking degrades
+    gracefully" — it returns {} on any failure), and the retrieval
+    pipeline (retrieval_filters.filter_pipeline) has ALREADY applied
+    eligibility + profile-fit before these chunks arrive. So a chunk with
+    NO grade and NO overall is treated as strong-enough (kept): silently
+    dropping every recommendation whenever the scorecard module is down
+    would be a far worse regression than Bug #71. We only gate on plans we
+    can affirmatively SEE are weak. This never fabricates; it only gates.
+    """
+    raw = chunk.get("_overall_score")
+    overall: Optional[float]
+    try:
+        overall = float(raw) if raw is not None and str(raw).strip() != "" else None
+    except (TypeError, ValueError):
+        overall = None
+    grade = str(chunk.get("_grade") or "").strip().upper()[:1]
+    if overall is not None:
+        # Numeric fitness is authoritative when present.
+        return (overall >= _MIN_RECOMMENDATION_OVERALL, overall, grade)
+    if grade in _STRONG_RECOMMENDATION_GRADES:
+        return (True, None, grade)
+    if grade in _KNOWN_WEAK_GRADES:
+        return (False, None, grade)
+    # No fitness evidence at all → fail OPEN (keep). The pipeline already
+    # vetted eligibility/fit; do not nuke the whole shortlist when the
+    # optional scorecard enrichment was unavailable.
+    return (True, None, grade)
+
+
 def _build_recommendation_citations(
     reply_text: str,
     retrieved_chunks_all: list[dict],
@@ -1070,22 +1250,30 @@ def _build_recommendation_citations(
         (policy_identity.canonical_key) — the SAME rule the marketplace and
         retrieval_filters.dedup_by_policy use — so a product is cited once
         (audit P2/P4/P7).
-      • GATE-RANK ORDER: the cards are ordered by the gate's profile-fit
-        rank (first appearance in the gated chunk stream = the pipeline's
-        fit order), NOT the LLM's free mark_recommendation / prose order.
-        The LLM decides WHICH policies it recommends; the GATE decides the
-        order so #1 cited = best fit for THIS profile (fixes the audit
-        grade/rank inversion: P1 C/65-above-B/75, P2 A/77-ranked-last,
-        P5 non-cheapest-first).
+      • FIT FLOOR + BEST-FIRST ORDER (Bug #71, 2026-05-16): a cited plan
+        must clear the recommendation fitness floor (`_recommendation_fit`:
+        scorecard overall >= 70, or an A/B letter grade when no numeric
+        overall was enriched). Weak-fit plans (C/D/F or overall < 70) are
+        DROPPED from the recommended set even if the LLM named them — a
+        C-graded plan for the user's OWN profile is not a recommendation.
+        Survivors are ordered STRICTLY best-first by scorecard overall
+        (gate fit-rank as the stable tiebreak), NOT the LLM's free
+        mark_recommendation / prose order, so #1 cited = strongest fit for
+        THIS profile. If fewer than the intended count clear the bar we
+        cite fewer (or none) — we never pad with a weak plan. This also
+        fixes the older audit grade/rank inversion (P1 C/65-above-B/75,
+        P2 A/77-ranked-last).
 
     Each recommended policy is hydrated from its BEST (highest-score)
     retrieved chunk so source_url / policy_name / insurer_slug are real
-    corpus values, never invented.
+    corpus values, never invented; `_grade` / `_overall_score` are
+    preserved on the card so the fitness signal stays visible downstream.
 
     Returns (citations, is_recommendation):
-      - is_recommendation True  → citations is the prose-aligned rec set
-        (may be empty if nothing matched — caller must NOT fall back to the
-        recall dump, an empty rec set is correct).
+      - is_recommendation True  → citations is the prose-aligned, fit-gated
+        rec set (may be EMPTY when the LLM recommended but nothing cleared
+        the fitness floor — that is CORRECT; the caller must NOT fall back
+        to the recall dump and resurrect weak plans).
       - is_recommendation False → no recommendation detected (pure QA /
         chit-chat); caller uses the legacy per-chunk recall list so QA
         answers still get their supporting source chips.
@@ -1120,6 +1308,11 @@ def _build_recommendation_citations(
         c = best_by_canon.get(canon)
         if c is None:
             return None
+        # Bug #71 — preserve the scorecard fitness signal on the card so the
+        # frontend / recommendation-transparency layer can see WHY a plan was
+        # (or wasn't) recommended. Previously stripped, which is why a C/64
+        # could be presented with no visible grade.
+        _strong, _overall, _grade = _recommendation_fit(c)
         return {
             "chunk_id": c.get("chunk_id", ""),
             "policy_id": (c.get("policy_id") or "").strip(),
@@ -1128,20 +1321,62 @@ def _build_recommendation_citations(
             "doc_type": c.get("doc_type", ""),
             "source_url": c.get("source_url", ""),
             "score": c.get("score", 0.0),
+            "_grade": _grade or None,
+            "_overall_score": _overall,
         }
 
     def _order_by_gate(canons: list[str]) -> list[dict]:
-        """De-dup the selected canonicals and emit them in the GATE's
-        profile-fit order (not the order the LLM listed them)."""
+        """De-dup the selected canonicals, DROP weak-fit plans (Bug #71),
+        and emit the survivors STRICTLY best-first.
+
+        Order key: overall_score DESC (strongest fit for THIS profile is
+        #1), then the gate's profile-fit rank as a stable tiebreak (so two
+        equal-overall plans keep the pipeline's order, and a plan with no
+        numeric overall — strong only via an A/B letter grade — sorts after
+        numerically-scored peers but still ahead of dropped weak plans). A
+        plan that fails the fit floor is removed entirely: if that empties
+        the set we return [] (the caller correctly treats an empty rec set
+        as 'no strong matches' — it does NOT resurrect the recall dump)."""
         seen: set[str] = set()
         uniq: list[str] = []
         for k in canons:
             if k and k not in seen:
                 seen.add(k)
                 uniq.append(k)
-        uniq.sort(key=lambda k: gate_rank.get(k, 1_000_000))
-        out: list[dict] = []
+
+        scored: list[tuple[float, int, str]] = []
+        dropped: list[str] = []
         for k in uniq:
+            c = best_by_canon.get(k)
+            if c is None:
+                continue
+            strong, overall, _grade = _recommendation_fit(c)
+            if not strong:
+                dropped.append(
+                    f"{c.get('policy_name') or k}"
+                    f"(grade={_grade or '?'},overall={overall})"
+                )
+                continue
+            # Sort weight: numeric overall when present (higher = better);
+            # an A/B-only plan (overall is None) gets a neutral floor weight
+            # so it ranks below numerically-scored strong peers but above
+            # everything dropped. Negated so a plain ascending sort puts the
+            # strongest first.
+            weight = overall if overall is not None else float(
+                _MIN_RECOMMENDATION_OVERALL
+            )
+            scored.append((-weight, gate_rank.get(k, 1_000_000), k))
+
+        scored.sort(key=lambda t: (t[0], t[1]))
+        if dropped:
+            _log.info(
+                "single_brain rec-fit gate (Bug #71): dropped %d weak-fit "
+                "plan(s) below overall %.0f / grade A-B: [%s]",
+                len(dropped), _MIN_RECOMMENDATION_OVERALL,
+                "; ".join(dropped),
+            )
+        out: list[dict] = []
+        for _w, _r, k in scored:
             cite = _cite_canon(k)
             if cite is not None:
                 out.append(cite)
@@ -1188,6 +1423,149 @@ def _build_recommendation_citations(
     return _order_by_gate(selected2), True
 
 
+# ---------------------------------------------------------------------------
+# Recommendation-transparency (deploy-#2 follow-up).
+#
+# CONTEXT (owner Image#8 diagnosis, confirmed): the recommendation-fit gate
+# CORRECTLY drops a previously-shown policy the moment a new HARD constraint
+# appears (e.g. "Royal Sundaram Multiplier" was shown, then the user says
+# "zero co-pay, individual only" → the gate correctly excludes Multiplier
+# because it carries a co-pay). The gate logic is RIGHT and is NOT touched
+# here. The BUG is purely conversational: the assistant silently swaps the
+# recommendation set with NO explanation, so it feels "random / dropped a
+# policy" to the user.
+#
+# Fix: when this turn's gated/cited recommendation set materially differs
+# from the previous turn's recommendation (a previously-cited policy is no
+# longer cited) BECAUSE the user just stated a new constraint, prepend ONE
+# transparent line naming the dropped policy/policies and tying the removal
+# to the constraint the user actually stated. Every fact in that line is
+# derived from real state — never hallucinated:
+#   • dropped policy NAME  ← the prior-turn recommendation snapshot
+#     (`session.last_recommendation_snapshot`, id→name, written by us last
+#      turn from the real cited set).
+#   • the constraint REASON ← `profile_updates`, i.e. the save_profile_field
+#     calls the LLM actually made THIS turn from the user's message. We map
+#     only KNOWN constraint fields to a human phrase; an unknown field falls
+#     back to a generic "based on the preference you just shared" (still
+#     accurate, invents no specifics).
+
+# field → (human constraint phrase, predicate the phrase implies). Used to
+# turn the REAL save_profile_field call the LLM made this turn into the
+# "why" clause. Only fields here produce a specific reason; anything else
+# uses the generic phrasing so we never invent a specific that wasn't said.
+_CONSTRAINT_FIELD_PHRASES: dict[str, str] = {
+    "copay_pct": "you want zero co-pay",
+    "deductible_amount": "you set a deductible preference",
+    "desired_sum_insured_inr": "you set a sum-insured target",
+    "budget_band": "you gave a budget",
+    "parents_to_insure": "you're now insuring parents",
+    "parents_age_max": "of the parents' age",
+    "health_conditions": "of the health condition you mentioned",
+    "smoker": "of the tobacco-use detail you shared",
+}
+
+
+def _constraint_reason_clause(profile_updates: dict) -> str:
+    """Derive the 'why' clause from the REAL save_profile_field calls the
+    LLM made this turn (never invented). Special-case copay_pct == 0 →
+    'you want zero co-pay' (the canonical Image#8 scenario); otherwise use
+    the field's mapped phrase, else a generic preference phrase."""
+    if not profile_updates:
+        return "based on the preference you just shared"
+    # Prefer a specific, recognised constraint field.
+    for fld, phrase in _CONSTRAINT_FIELD_PHRASES.items():
+        if fld not in profile_updates:
+            continue
+        val = profile_updates.get(fld)
+        if fld == "copay_pct":
+            try:
+                if int(str(val).strip() or "0") == 0:
+                    return "you want zero co-pay"
+            except (TypeError, ValueError):
+                pass
+            return "of the co-pay preference you set"
+        return phrase
+    return "based on the preference you just shared"
+
+
+def _recommendation_change_note(
+    prev_snapshot: dict,
+    current_citations: list[dict],
+    profile_updates: dict,
+) -> str:
+    """Return a single transparent sentence to PREPEND to the reply when a
+    previously-recommended policy is no longer in the cited set because the
+    user just stated a constraint — else "".
+
+    prev_snapshot     : {policy_id: policy_name} from LAST turn's cited set.
+    current_citations  : THIS turn's gated rec citations (post-fit gate).
+    profile_updates    : save_profile_field calls the LLM made THIS turn.
+
+    Guard rails (no spurious note):
+      • no prior recommendation snapshot           → ""
+      • no NEW constraint persisted this turn       → "" (a set change with
+        no new constraint is a normal refinement, not a silent drop)
+      • current cited set empty                     → "" (separate
+        no-results path; nothing to "swap to")
+      • nothing actually dropped (every prior id    → "" (set unchanged /
+        still cited, possibly reordered/added)         only grew)
+    """
+    if not prev_snapshot or not profile_updates or not current_citations:
+        return ""
+
+    # Canonicalise both sides so a doctype-sibling / marketing-variant id
+    # isn't mis-counted as "dropped" — same identity rule the citation
+    # builder + marketplace dedup use.
+    cur_canon: set[str] = set()
+    for c in current_citations:
+        try:
+            cur_canon.add(canonical_key(c))
+        except Exception:  # noqa: BLE001 — identity helper must not break turn
+            pid = (c.get("policy_id") or "").strip()
+            if pid:
+                cur_canon.add(pid)
+    cur_names_norm = {
+        _norm_policy_name(c.get("policy_name", "")) for c in current_citations
+    }
+
+    dropped: list[str] = []
+    seen_norm: set[str] = set()
+    for pid, pname in prev_snapshot.items():
+        pid = (pid or "").strip()
+        name = (pname or "").strip()
+        if not name:
+            continue
+        # Reconstruct a minimal chunk so canonical_key matches the builder's
+        # input shape; fall back to the raw id if identity can't resolve.
+        try:
+            pcanon = canonical_key({"policy_id": pid, "policy_name": name})
+        except Exception:  # noqa: BLE001
+            pcanon = pid
+        norm = _norm_policy_name(name)
+        still_cited = pcanon in cur_canon or (norm and norm in cur_names_norm)
+        if still_cited or norm in seen_norm:
+            continue
+        seen_norm.add(norm)
+        dropped.append(name)
+
+    if not dropped:
+        return ""
+
+    reason = _constraint_reason_clause(profile_updates)
+    if len(dropped) == 1:
+        removed = dropped[0]
+    elif len(dropped) == 2:
+        removed = f"{dropped[0]} and {dropped[1]}"
+    else:
+        removed = ", ".join(dropped[:-1]) + f", and {dropped[-1]}"
+    verb = "it doesn't" if len(dropped) == 1 else "they don't"
+    return (
+        f"Since {reason}, I've removed {removed} from the shortlist "
+        f"({verb} fit that), and these now fit better:"
+    )
+
+
 def _parts_function_calls(parts: list[dict]) -> list[dict]:
     """Pull every functionCall block out of parts. Each entry is
     {"name": "...", "args": {...}}."""
@@ -1225,6 +1603,12 @@ async def _execute_tool(session, name: str, args: dict) -> dict:
                 profile=getattr(session, "profile", None),
                 intent="recommendation",
                 session=session,
+                # QUARANTINE-RETRIEVAL FIX (2026-05-16) — forward the live
+                # chat session_id explicitly so an uploaded PDF (indexed in
+                # the per-session quarantine collection) is retrievable by
+                # the brain for THIS session only. Without this the upload
+                # was embedded but never surfaced in the conversation.
+                session_id=getattr(session, "session_id", None),
             )
         if name == "mark_recommendation":
             return brain_tools.mark_recommendation(
@@ -1301,6 +1685,12 @@ async def handle_turn(
     # (confirmed=False, fail closed). Either way the staging is cleared so
     # we ask only ONCE, then the turn proceeds normally with the resolved
     # profile so the user's actual message still gets answered.
+    # Deterministic returning-user signal — set True iff THIS turn resolved a
+    # staged recall with an explicit affirmation (KI-RECALL-FIX, 2026-05-16).
+    # Threaded into the final TurnResult so main.py can stamp
+    # ChatResponse.returning_user_recalled WITHOUT the broken turn-1-only
+    # heuristic (recall resolves on a later turn behind the confirm gate).
+    _did_recall_this_turn = False
     _pending = getattr(session, "pending_profile_recall", None)
     if isinstance(_pending, dict) and _pending.get("prompted"):
         try:
@@ -1308,6 +1698,7 @@ async def handle_turn(
 
             _affirmed = _classify_recall_answer(user_text)
             _applied = apply_pending_recall(session, confirmed=_affirmed)
+            _did_recall_this_turn = bool(_applied)
             _log.info(
                 "single_brain recall-confirm resolved: affirmed=%s "
                 "applied=%s session=%s",
@@ -1324,16 +1715,45 @@ async def handle_turn(
                 type(_confirm_err).__name__, str(_confirm_err)[:200],
             )
 
-    # CONFIRMATION-GATED RECALL — STEP 1 (stage + ask, turn 1 only).
-    if _current_turn == 1 and not (getattr(session.profile, "name", None) or ""):
+    # CONFIRMATION-GATED RECALL — STEP 1 (stage + ask).
+    #
+    # KI-RECALL-FIX (2026-05-16). Previously gated to `_current_turn == 1`
+    # AND an explicit self-introduction regex. That window was far too
+    # narrow: a returning user typically gives their name when ANSWERING the
+    # bot's "What's your name?" prompt — a bare token ("Rohit") on turn 2+,
+    # which the intro regex rejects out of context. Combined with the
+    # save/load key bug (every saved profile was persona-id-keyed so
+    # `load_profile(name)` always missed), the "Welcome back" banner was
+    # structurally unreachable. We now run the sniff on ANY turn while the
+    # profile still has no name and no recall has been attempted this
+    # session yet (one-shot guard `_recall_sniff_done`), using a
+    # context-aware extractor that accepts a bare-name answer when the
+    # assistant's previous message asked for the name.
+    _recall_sniff_done = bool(getattr(session, "_recall_sniff_done", False))
+    if (
+        not _recall_sniff_done
+        and not (getattr(session.profile, "name", None) or "")
+        and not isinstance(getattr(session, "pending_profile_recall", None), dict)
+    ):
         try:
             from backend.profile_persistence import (
-                extract_potential_name,
+                extract_name_in_context,
                 try_recall_by_name,
             )
 
-            _maybe_name = extract_potential_name(user_text)
+            _prev_assistant = ""
+            for _m in reversed(chat_history or []):
+                if (_m or {}).get("role") in ("assistant", "model", "bot"):
+                    _prev_assistant = str((_m or {}).get("content") or "")
+                    break
+            _maybe_name = extract_name_in_context(user_text, _prev_assistant)
             if _maybe_name:
+                # One-shot: whether or not a stored profile matches, don't
+                # re-run the sniff every nameless turn this session.
+                try:
+                    session._recall_sniff_done = True
+                except Exception:  # noqa: BLE001
+                    pass
                 # STAGES a match on session.pending_profile_recall (never
                 # auto-merges — privacy fix 2026-05-16); always returns False.
                 try_recall_by_name(session, _maybe_name)
@@ -1342,7 +1762,10 @@ async def handle_turn(
                     # Ask ONE explicit confirmation and short-circuit the
                     # turn. Do NOT apply the stored profile yet, and NEVER
                     # surface the staged stranger PII — only the name, which
-                    # the user themselves just stated.
+                    # the user themselves just stated. The explicit yes/no
+                    # gate (resolved next turn by apply_pending_recall) is
+                    # the privacy boundary: nothing is merged until the user
+                    # affirms, so a same-name stranger leaks nothing.
                     _staged["prompted"] = True
                     _recall_name = (_staged.get("name") or _maybe_name).strip()
                     _confirm_text = (
@@ -1371,7 +1794,7 @@ async def handle_turn(
                     )
         except Exception as _recall_err:  # noqa: BLE001 — must never break turn
             _log.warning(
-                "single_brain turn-1 recall failed: %s: %s",
+                "single_brain recall sniff failed: %s: %s",
                 type(_recall_err).__name__, str(_recall_err)[:200],
             )
 
@@ -1396,6 +1819,18 @@ async def handle_turn(
         session.profile, is_returning_user=is_returning_user,
     )
 
+    # Bug #108 + #110 — if the user explicitly declines the pricing /
+    # family-history bundle on THIS turn, stamp the session so
+    # brain_tools.retrieve_policies' one-shot re-ask gate is bypassed (a
+    # skip is honoured under SOFT-capture semantics; we never nag). Sticky
+    # for the rest of the session — once the user says "just show me
+    # options" we don't re-gate the bundle on later recommendation turns.
+    try:
+        if _user_skipped_pricing_inputs(user_text):
+            session.pricing_bundle_skipped = True
+    except Exception:  # noqa: BLE001 — never break a turn for this
+        pass
+
     # The running `contents` list — we append model turns + function
     # responses to it across loop iterations so Gemini sees the entire
     # tool-call thread when emitting its final text.
@@ -1407,6 +1842,17 @@ async def handle_turn(
     retrieved_chunks_all: list[dict] = []
     last_marked_policy_ids: list[str] = []
     profile_updates: dict[str, Any] = {}
+
+    # Recommendation-transparency (deploy-#2 follow-up). Capture the PREVIOUS
+    # turn's recommended set NOW — before the iteration loop runs
+    # mark_recommendation, which overwrites session.last_recommendation_ids
+    # and session.last_recommendation_snapshot for THIS turn. The snapshot
+    # is {policy_id: policy_name} written by us at the end of the prior
+    # recommendation turn, so we can NAME a dropped policy next turn even if
+    # the fit gate excludes it from this turn's retrieval entirely.
+    prev_rec_snapshot: dict[str, str] = dict(
+        getattr(session, "last_recommendation_snapshot", {}) or {}
+    )
 
     # Defensive counter to break runaway loops.
     last_text: str = ""
@@ -1581,23 +2027,104 @@ async def handle_turn(
         retrieved_chunks_all=retrieved_chunks_all,
         marked_policy_ids=last_marked_policy_ids,
     )
-    if is_recommendation:
+    # Bug #107 (2026-05-16) — FACT-FIND / CLARIFYING TURNS CARRY NO
+    # CITATIONS.
+    #
+    # ROOT CAUSE: on a non-recommendation turn `citations` fell back to
+    # `recall_citations` (the raw retrieve_policies recall dump). When the
+    # LLM speculatively called retrieve_policies and THEN asked the user a
+    # clarifying / fact-find question (no policy named in prose, no
+    # mark_recommendation), that dump still flowed to the frontend, which
+    # rendered a full ranked "CITED POLICIES" list directly under a reply
+    # that says "Before I recommend… I need more info" — the cards
+    # contradict the message.
+    #
+    # "FACT-FIND vs RECOMMENDATION turn" detection (deterministic, no LLM):
+    #   • RECOMMENDATION turn  ⇔ `is_recommendation` is True
+    #       (_build_recommendation_citations saw an explicit
+    #        mark_recommendation OR a retrieved policy NAMED in the reply
+    #        prose) AND the required-slot profile gate is satisfied
+    #        (brain_tools._profile_complete — the SAME gate
+    #        retrieve_policies and main._compute_profile_complete use).
+    #   • Anything else (profile gate NOT satisfied, or no policy
+    #     recommended) is a FACT-FIND / clarifying / chit-chat turn.
+    #
+    # Only a RECOMMENDATION turn attaches policy citations. A fact-find or
+    # clarifying turn returns an EMPTY list so the UI renders nothing under
+    # the question. This also covers the spec's "no recommendation made /
+    # profile gate not satisfied" wording exactly.
+    try:
+        _profile_gate_ok = brain_tools._profile_complete(session.profile)
+    except Exception:  # noqa: BLE001 — gate read must never break a turn
+        _profile_gate_ok = False
+    _is_recommendation_turn = bool(is_recommendation) and _profile_gate_ok
+
+    if _is_recommendation_turn:
         # Recommendation turn — cards mirror the prose 1:1 (same count,
         # same order). An empty rec set here is CORRECT (do not fall back
         # to the recall dump and resurrect un-named policies).
         citations = rec_citations
     else:
-        # Pure QA / chit-chat (no shortlist named) — keep legacy recall
-        # chips so a factual answer still surfaces its supporting source.
-        citations = recall_citations
+        # FACT-FIND / clarifying / chit-chat turn — NO policy citations.
+        # Even if retrieve_policies ran speculatively this turn, the user
+        # is being asked for more info, not given a recommendation; the
+        # ranked-card UI must not contradict the question (Bug #107).
+        citations = []
 
     if len(citations) != len(recall_citations):
         _log.info(
-            "single_brain citations: rec=%d recall=%d is_rec=%s marked=%d "
-            "(KI-278 prose-aligned)",
+            "single_brain citations: rec=%d recall=%d is_rec=%s "
+            "profile_gate_ok=%s rec_turn=%s marked=%d "
+            "(KI-278 prose-aligned; Bug #107 fact-find gate)",
             len(citations), len(recall_citations), is_recommendation,
+            _profile_gate_ok, _is_recommendation_turn,
             len(last_marked_policy_ids),
         )
+
+    # ---- Recommendation-transparency (deploy-#2 follow-up) ----------------
+    # The fit gate (correct, untouched) silently swaps the rec set when a
+    # new hard constraint drops a previously-shown policy. Make it
+    # transparent: if a policy from the PREVIOUS turn's cited set is no
+    # longer cited AND the user persisted a new constraint THIS turn,
+    # prepend one line naming the dropped policy/policies and tying the
+    # removal to the constraint the user actually stated. Every fact is
+    # derived from real state (prior snapshot + this turn's
+    # save_profile_field calls) — nothing is invented. Only on
+    # recommendation turns; the citation/gate behaviour is unchanged.
+    # Bug #107 — use the GATED recommendation-turn signal (is_recommendation
+    # AND profile gate satisfied) so a fact-find turn that speculatively
+    # retrieved never emits a drop note or overwrites the rec snapshot.
+    if _is_recommendation_turn:
+        _change_note = _recommendation_change_note(
+            prev_snapshot=prev_rec_snapshot,
+            current_citations=citations,
+            profile_updates=profile_updates,
+        )
+        if _change_note:
+            reply_text = f"{_change_note}\n\n{reply_text}"
+            _log.info(
+                "single_brain rec-transparency: prepended drop note "
+                "(prev=%d cur=%d updates=%s)",
+                len(prev_rec_snapshot), len(citations),
+                sorted(profile_updates.keys()),
+            )
+
+    # Persist THIS turn's cited set as the snapshot the NEXT turn diffs
+    # against. {policy_id: policy_name}. Only overwrite on a real
+    # recommendation turn so a follow-up QA/chit-chat turn (is_recommendation
+    # False, no shortlist) doesn't erase the active shortlist's identity and
+    # blind the next constraint-driven swap. brain_tools.mark_recommendation
+    # already wrote last_recommendation_ids; this name-bearing snapshot is
+    # written here (single_brain owns it; brain_tools is out of scope).
+    if _is_recommendation_turn and citations:
+        try:
+            session.last_recommendation_snapshot = {
+                (c.get("policy_id") or "").strip(): c.get("policy_name", "")
+                for c in citations
+                if (c.get("policy_id") or "").strip()
+            }
+        except Exception:  # noqa: BLE001 — bookkeeping must not break a turn
+            pass
 
     intent = _classify_intent(user_text, tool_calls_made)
     brain_used = f"single_brain::{model}"
@@ -1626,6 +2153,7 @@ async def handle_turn(
         blocked=False,
         profile_updates=profile_updates,
         followup_policy_id=followup_policy_id,
+        returning_user_recalled=_did_recall_this_turn,
     )
 
 

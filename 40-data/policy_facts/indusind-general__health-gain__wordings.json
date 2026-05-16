@@ -209,5 +209,12 @@
     "source_pdf_path": "rag/corpus/indusind-general/health-gain__wordings.pdf",
     "source_quote": "not stated in indusind-general__health-gain__wordings.pdf",
     "_confidence": "low"
+  },
+  "no_claim_bonus_pct": {
+    "value": 33.33,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/indusind-general/health-gain__wordings.pdf",
+    "source_quote": "The Company shall provide 33.33 % (one third) of the Base Sum Insured as Cumulative Bonus at the end of each completed and continuous Policy Year, provided that no Claim has been made in the expiring Policy Year.",
+    "_confidence": "high"
   }
 }

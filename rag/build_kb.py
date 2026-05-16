@@ -643,7 +643,7 @@ def build_premiums_kb() -> str:
     rows.append("")
     rows.append("_Auto-generated from `40-data/premiums/illustrative_premiums.json`. Real PolicyBazaar / InsuranceDekho / rate-chart anchors plus derived scaling factors. NEVER a binding quote._")
     rows.append("")
-    pf = ROOT / "40-data" / "premiums" / "illustrative_premiums.json"
+    pf = settings.DATA_DIR / "premiums" / "illustrative_premiums.json"
     if not pf.exists():
         rows.append("_Premium data file not yet generated._")
         return "\n".join(rows)
@@ -876,7 +876,7 @@ def main():
     (CALCULATIONS_DIR / "extraction_quality_audit.md").write_text(build_calc_extraction_audit(policies))
 
     # Reviews KB
-    reviews_dir = ROOT / "40-data" / "reviews"
+    reviews_dir = settings.DATA_DIR / "reviews"
     all_reviews = []
     if reviews_dir.exists():
         for rf in sorted(reviews_dir.glob("*.json")):

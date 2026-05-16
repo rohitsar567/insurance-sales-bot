@@ -1,14 +1,31 @@
 """Run the gold Q&A eval against the local bot.
 
-Pipeline:
+⚠️ STATUS (2026-05-17): PENDING RE-PORT TO THE SINGLE-BRAIN ARCHITECTURE.
+This harness was written for the pre-2026-05-15 `orchestrator.handle_turn`,
+which is deleted. Two contracts changed and have no drop-in equivalent:
+  • `orchestrator.handle_turn(user_text=, chat_history=, user_profile=,
+    policy_filter_ids=)` → `single_brain.handle_turn(session, user_text,
+    chat_history)`. Per-policy retrieval scoping is no longer a forced
+    kwarg — the LLM chooses it as a `retrieve_policies` tool argument, so
+    the old "restrict retrieval to pair.policy_id" guarantee cannot be
+    reproduced without a redesign.
+  • The separate LLM judge was retired in the three-chain collapse; the
+    grader now reuses the brain chain (brain↔judge family separation no
+    longer holds — a known eval-validity caveat to revisit).
+Because `main()` overwrites eval/results.json (which the admin panel
+displays), running it un-ported would publish invalid, un-scoped scores.
+`main()` is therefore HARD-GUARDED until the re-port lands. Imports and the
+reusable scaffolding (gold loader, regex grader, EvalRecord, IO) are kept
+correct so the re-port is a focused change, not a rewrite.
+
+Intended pipeline (once re-ported):
   1. Load eval/gold_qa.json
-  2. For each pair: call backend.orchestrator.handle_turn (in-process — fast)
-     with policy_filter_ids=[pair.policy_id] to restrict retrieval to that policy
-  3. Grade each reply using Groq Llama as the LLM-judge (different family ->
-     non-circular eval; regex hard-facts grader runs alongside)
+  2. For each pair: drive a single-brain turn with retrieval scoped to
+     pair.policy_id (via the retrieve_policies tool path)
+  3. Grade each reply (regex hard-facts grader + LLM grader)
   4. Aggregate and write eval/results.md + eval/results.json
 
-Run:
+Run (after re-port):
   python -m eval.run                  # full eval
   python -m eval.run --limit 30       # smoke test on first 30
   python -m eval.run --policy <pid>   # just one policy
@@ -27,9 +44,9 @@ from pathlib import Path
 from typing import Optional
 
 from backend.config import settings
-from backend.orchestrator import handle_turn
+from backend.single_brain import handle_turn  # noqa: F401 — used post re-port (see module docstring)
 from backend.providers.base import ChatMessage
-from backend.providers.nvidia_nim_llm import get_judge_llm
+from backend.providers.nvidia_nim_llm import get_brain_llm
 
 ROOT = settings.CORPUS_DIR.parent.parent
 GOLD_FILE = ROOT / "eval" / "gold_qa.json"
@@ -80,12 +97,14 @@ class EvalRecord:
 
 _judge = None
 def get_judge():
-    """Returns the LLM judge — NIM Llama-4 Maverick (Stack A, D-019).
-    Different family from DeepSeek-V4 brain → non-circular eval. 40 req/min
-    with no daily cap, so sweep / eval volume is no longer constrained."""
+    """Returns the grader LLM. NOTE (2026-05-15 three-chain collapse): the
+    separate judge accessor was removed, so the grader now reuses the brain
+    chain (`get_brain_llm()`). Brain↔judge family separation no longer holds
+    — a known eval-circularity caveat to address in the re-port (see module
+    docstring). Kept import-correct; not exercised until the guard is lifted."""
     global _judge
     if _judge is None:
-        _judge = get_judge_llm(language="en")
+        _judge = get_brain_llm()
     return _judge
 
 
@@ -271,6 +290,16 @@ async def run_one(gold: dict, *, no_judge: bool = False) -> EvalRecord:
 
 
 async def main():
+    # HARD GUARD (2026-05-17) — see module docstring. This harness targets
+    # the deleted orchestrator API; running it un-ported would overwrite
+    # eval/results.json (shown in the admin panel) with invalid, un-scoped
+    # scores. Refuse loudly until the single-brain re-port lands.
+    raise SystemExit(
+        "eval/run.py is pending re-port to the single-brain architecture and "
+        "is intentionally disabled — see the module docstring. It must NOT "
+        "run un-ported (it would publish invalid scores to eval/results.json, "
+        "which the admin panel displays)."
+    )
     parser = argparse.ArgumentParser()
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--policy", default=None)

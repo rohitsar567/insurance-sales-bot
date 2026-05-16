@@ -52,7 +52,7 @@ from typing import Optional
 from backend.config import settings
 
 ROOT = settings.CORPUS_DIR.parent.parent
-PREMIUM_DATA = ROOT / "40-data" / "premiums" / "illustrative_premiums.json"
+PREMIUM_DATA = settings.DATA_DIR / "premiums" / "illustrative_premiums.json"
 
 
 @dataclass
@@ -64,6 +64,12 @@ class PremiumEstimate:
     base_sample_used: Optional[dict] = None
     methodology: str = ""
     sources: list[str] = None
+    # D2 (2026-05-16) — set ONLY when the policy publishes no corroborated
+    # Sum Insured and the estimate therefore had to price against a fallback
+    # cover (the user's desired_sum_insured_inr, else ₹10 L). The frontend
+    # renders this verbatim under the per-policy estimate so the user knows
+    # the SI is assumed, not the policy's own.
+    sum_insured_disclosure: Optional[str] = None
 
 
 # Fallback factors when no premium data file is available — used so the bot
@@ -810,9 +816,140 @@ _DEFAULT_BAND_POLICY_IDS: list[str] = [
 ]
 
 
+# ───────────────────────────────────────────────────────────────────────────
+# SI RECONCILIATION (KI-278, 2026-05-16) — single source of truth for the
+# sum-insured the header band AND the per-settings panel both price at.
+#
+# THE HEADER≠PANEL BUG: PremiumCalculatorPanel (page.tsx) seeds its SI slider
+# from `desired_sum_insured_inr ?? existing_cover_inr ?? 1_000_000`, but
+# estimate_premium_band() used to hard-code sum_insured_default=₹10L and
+# IGNORE the profile entirely. So a user who stated a ₹25L target saw the
+# header chip priced at ₹10L (₹6,500–₹26,500) while the panel priced the
+# same profile at ₹25L (point ₹19,100) — contradictory numbers for one
+# profile. Resolving BOTH surfaces' SI from this one function makes them
+# reconcile by construction: the panel's point estimate now falls inside
+# the header band because the header band is the SAME basket priced at the
+# SAME profile-resolved SI.
+#
+# Precedence MUST stay byte-identical to PremiumCalculatorPanel's
+# useState initialiser (frontend/src/app/page.tsx ~L2417) and
+# PolicyPremiumWidget's initialSumInsured contract:
+#   1. profile.desired_sum_insured_inr  (user's stated target SI)
+#   2. profile.existing_cover_inr       (closest available signal)
+#   3. fallback default                 (legacy ₹10L)
+# ───────────────────────────────────────────────────────────────────────────
+
+# SI RATIONALISATION (D2, 2026-05-16) — the global ₹5 L / ₹1 Cr clamp
+# (SI_FLOOR_INR / SI_CEILING_INR) was REMOVED. Pricing now respects each
+# policy's own real SI bounds and the user's actual stated target instead of
+# squashing every profile into one synthetic envelope. A ₹2 Cr aspiration
+# now prices at ₹2 Cr; a ₹1 L corporate top-up prices at ₹1 L. When a policy
+# has no published SI the caller prices against the user's
+# desired_sum_insured_inr (else ₹10 L default) and surfaces a disclosure.
+
+
+def resolve_profile_sum_insured(
+    profile: Optional[dict],
+    fallback_default: int = 1_000_000,
+) -> int:
+    """Resolve the sum-insured to price a profile at.
+
+    Single source of truth shared by estimate_premium_band() (header chip)
+    and — via the documented contract below — the per-settings panel /
+    PolicyPremiumWidget. Precedence is byte-identical to the panel's slider
+    seed so the header band and the panel price the SAME profile at the SAME
+    SI and therefore reconcile.
+
+    Accepts the raw profile dict (any SLOT_UNION-shaped mapping). Coerces
+    string/None gracefully and snaps to the nearest ₹50k so the resolved SI
+    lands on a representable slider stop.
+
+    D2 (2026-05-16) — the global ₹5 L / ₹1 Cr clamp was REMOVED: the user's
+    actual stated target is honoured (a ₹2 Cr aspiration prices at ₹2 Cr, a
+    ₹1 L top-up at ₹1 L) rather than squashed into a synthetic envelope.
+    """
+    profile = profile or {}
+
+    def _coerce(v) -> Optional[int]:
+        if v is None or v == "":
+            return None
+        try:
+            iv = int(float(v))
+        except (TypeError, ValueError):
+            return None
+        return iv if iv > 0 else None
+
+    si = (
+        _coerce(profile.get("desired_sum_insured_inr"))
+        or _coerce(profile.get("existing_cover_inr"))
+        or int(fallback_default)
+    )
+    # Snap to nearest ₹50k — keeps the band stable and on a slider stop.
+    # (No clamp — D2: price the SI the user actually stated.)
+    return int(round(si / 50_000) * 50_000)
+
+
+# D2 (2026-05-16) — fallback SI when a policy publishes no corroborated Sum
+# Insured. Precedence: the user's stated desired_sum_insured_inr, else ₹10 L.
+NO_SI_FALLBACK_DEFAULT_INR = 1_000_000
+
+
+def fallback_sum_insured_for_unpublished(
+    profile: Optional[dict],
+    default_inr: int = NO_SI_FALLBACK_DEFAULT_INR,
+) -> int:
+    """The SI to price a policy at when it publishes no corroborated SI:
+    the user's desired_sum_insured_inr if set, else ₹10 L (D2). No clamp."""
+    profile = profile or {}
+    v = profile.get("desired_sum_insured_inr")
+    try:
+        iv = int(float(v)) if v not in (None, "") else 0
+    except (TypeError, ValueError):
+        iv = 0
+    return iv if iv > 0 else int(default_inr)
+
+
+def _fmt_inr_cover(v: int) -> str:
+    """Human SI for the disclosure string: ₹10 L / ₹1.5 Cr (no stray .0)."""
+    if v >= 10_000_000:
+        return f"₹{v / 10_000_000:g} Cr"
+    return f"₹{v / 100_000:g} L"
+
+
+def unpublished_si_disclosure(sum_insured_inr: int) -> str:
+    """The exact, verbatim disclosure the frontend renders when a policy has
+    no published SI and the estimate was priced against a fallback cover."""
+    return (
+        f"Estimate shown for {_fmt_inr_cover(int(sum_insured_inr))} cover — "
+        "this policy's sum insured isn't published."
+    )
+
+
 def _round_to_500(x: float) -> int:
-    """Round to nearest ₹500 — band-display granularity (per spec)."""
+    """Round to nearest ₹500 — band-display granularity (per spec).
+
+    Retained for `median_inr` (the typical-plan anchor, where nearest is the
+    right rounding). The band EDGES use the directional rounders below so the
+    displayed [min, max] is always a true superset of every basket member —
+    otherwise nearest-rounding can pull max_inr *below* a real per-policy
+    point and re-introduce a header≠panel contradiction at the band edge.
+    """
     return int(round(float(x) / 500.0) * 500)
+
+
+def _floor_to_500(x: float) -> int:
+    """Round DOWN to ₹500 — used for min_inr so the band's lower edge never
+    sits above the cheapest basket member (the panel's number for that plan)."""
+    import math
+    return int(math.floor(float(x) / 500.0) * 500)
+
+
+def _ceil_to_500(x: float) -> int:
+    """Round UP to ₹500 — used for max_inr so the band's upper edge always
+    contains the priciest basket member, keeping the header band a strict
+    superset of any per-settings panel point for the same profile+SI."""
+    import math
+    return int(math.ceil(float(x) / 500.0) * 500)
 
 
 def _median(xs: list[int]) -> int:
@@ -833,16 +970,62 @@ def estimate_premium_band(
 ) -> dict:
     """Compute the user's predicted-premium BAND across a representative basket.
 
-    Returns: {min_inr, median_inr, max_inr, sample_size, assumed}. Rounded
-    to the nearest ₹500. `assumed` is True whenever ANY policy in the basket
-    used the heuristic fallback (which is effectively always for now).
+    ═══════════════════════════════════════════════════════════════════════
+    HEADER-CHIP DATA CONTRACT  (read this before wiring the chip in page.tsx)
+    ═══════════════════════════════════════════════════════════════════════
+    THIS is the single stable function the "Premium range" header chip MUST
+    derive its ₹min–₹max from. It is reached over HTTP via
+    GET /api/profile/predicted-premium-band?session_id=... →
+    PredictedPremiumBandResponse, surfaced in the frontend as
+    `getPredictedPremiumBand()` / the `premiumBand` state in page.tsx.
+
+    Contract guarantees (KI-278, 2026-05-16):
+      • The chip band = the SAME 26-policy basket priced at the SAME
+        profile-resolved SI the per-settings panel uses. The panel's point
+        estimate for the user's stated SI therefore lands INSIDE
+        [min_inr, max_inr] by construction (it's literally one member of
+        the basket the band aggregates), so the two surfaces can never
+        contradict the way they did pre-fix (header ₹6.5k–₹26.5k vs panel
+        ₹19.1k for one profile).
+      • SI precedence is resolved by `resolve_profile_sum_insured(profile)`
+        — byte-identical to PremiumCalculatorPanel's slider seed
+        (`desired_sum_insured_inr ?? existing_cover_inr ?? default`). The
+        page.tsx panel/PolicyPremiumWidget MUST seed their SI slider from
+        the same precedence (or call this function's resolved value via the
+        `sum_insured_used` field below) so they stay aligned.
+      • EVERY pricing-relevant SLOT_UNION field the caller puts in `profile`
+        is folded in (age, location_tier/city_tier, dependents/family_size,
+        smoker, copay_pct, family_medical_history, health_conditions,
+        existing_cover_inr, parents_age_max/parents_has_ped,
+        desired_sum_insured_inr). `smoker` adds the +25-40% tobacco load and
+        `family_medical_history` adds the +3-10% genetic-risk load on BOTH
+        the band path and the per-policy path (proven in
+        tests/test_premium_reconciliation.py).
+      • The chip should render `₹{min_inr}–₹{max_inr}/yr`. `median_inr` is
+        the typical-plan anchor; `sum_insured_used` is the SI both surfaces
+        priced at (display it so the user knows what SI the band reflects).
+
+    Returns: {min_inr, median_inr, max_inr, sample_size, assumed,
+              sum_insured_used}. Money values rounded to the nearest ₹500;
+    `assumed` is True whenever ANY policy in the basket used the heuristic
+    fallback (effectively always for now).
+    ═══════════════════════════════════════════════════════════════════════
     """
     profile = profile or {}
     pids = candidate_policy_ids or list(_DEFAULT_BAND_POLICY_IDS)
 
+    # KI-278 — resolve the SI from the profile with the EXACT precedence the
+    # per-settings panel uses, instead of hard-coding ₹10L. This is the core
+    # header≠panel reconciliation fix: both surfaces now price at the same
+    # profile-driven SI. `sum_insured_default` is only the floor fallback
+    # when the profile carries no SI signal at all.
+    resolved_si = resolve_profile_sum_insured(
+        profile, fallback_default=sum_insured_default
+    )
+
     # Reuse B2's bulk heuristic so the chip and the slider widget agree by
-    # construction. Default to ₹10L SI per policy unless the caller overrides.
-    overrides = {pid: {"sum_insured_inr": sum_insured_default} for pid in pids}
+    # construction. Price the WHOLE basket at the profile-resolved SI.
+    overrides = {pid: {"sum_insured_inr": resolved_si} for pid in pids}
     try:
         rows = bulk_estimate(policy_ids=pids, profile=profile, overrides=overrides)
     except Exception:
@@ -858,12 +1041,19 @@ def estimate_premium_band(
             "max_inr": 0,
             "sample_size": 0,
             "assumed": True,
+            "sum_insured_used": resolved_si,
         }
 
     return {
-        "min_inr": _round_to_500(min(premiums)),
+        # Directional rounding (KI-278) — floor the min / ceil the max so the
+        # displayed band is a strict superset of every basket member. This is
+        # what guarantees the per-settings panel's point estimate (one basket
+        # member at the same profile-resolved SI) always reads as INSIDE the
+        # header band the user sees.
+        "min_inr": _floor_to_500(min(premiums)),
         "median_inr": _round_to_500(_median(premiums)),
-        "max_inr": _round_to_500(max(premiums)),
+        "max_inr": _ceil_to_500(max(premiums)),
         "sample_size": len(premiums),
         "assumed": bool(any_assumed),
+        "sum_insured_used": resolved_si,
     }

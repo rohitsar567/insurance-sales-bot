@@ -110,11 +110,11 @@
     "_confidence": "high"
   },
   "co_payment_pct": {
-    "value": null,
-    "unit": "percent",
+    "value": 0,
+    "unit": null,
     "source_pdf_path": "rag/corpus/bajaj-allianz/tax-gain__cis.pdf",
-    "source_quote": "not stated in bajaj-allianz__tax-gain__cis.pdf",
-    "_confidence": "low"
+    "source_quote": "Co-payment (it is a specified amount /percentage of the admissible claim amount to be paid by policy holder/insured) - Not Applicable (cis p.3-4)",
+    "_confidence": "high"
   },
   "room_rent_capped_at_pct_of_si": {
     "value": null,

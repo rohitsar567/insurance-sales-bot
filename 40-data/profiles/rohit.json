@@ -1,0 +1,43 @@
+{
+  "name_display": "Rohit",
+  "name_slug": "rohit",
+  "persona_id": "93b74ab9ae9f",
+  "profile": {
+    "name": "Rohit",
+    "age": 34,
+    "dependents": "self+spouse+kids",
+    "income_band": "18L",
+    "existing_cover_inr": null,
+    "primary_goal": "first_buy",
+    "location_tier": "metro",
+    "parents_to_insure": null,
+    "parents_age_max": null,
+    "parents_has_ped": null,
+    "budget_band": null,
+    "desired_sum_insured_inr": null,
+    "health_conditions": [],
+    "copay_pct": null,
+    "family_medical_history": [],
+    "smoker": null,
+    "asked": [
+      "name",
+      "age",
+      "dependents",
+      "location_tier",
+      "income_band",
+      "primary_goal"
+    ],
+    "free_form_session": false,
+    "shown_policies": [],
+    "selected_policies": [],
+    "rejected_policies": []
+  },
+  "first_seen": "2026-05-16T06:41:30Z",
+  "last_seen": "2026-05-16T06:42:12Z",
+  "sessions": [
+    "sessA_7d9d11fb",
+    "sessB_595c9c88"
+  ],
+  "recall_pointer": true,
+  "points_to_persona_id": "93b74ab9ae9f"
+}

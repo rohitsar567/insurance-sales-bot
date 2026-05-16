@@ -17,6 +17,19 @@
  * (~₹18-25K) for the same profile. Tenure + deductible are still honoured —
  * the estimate endpoint now applies the bulk multipliers post-anchor.
  *
+ * KI-278 (2026-05-16) — header≠panel reconciliation. The widget now seeds
+ * its SI slider via resolveProfileSumInsured(profile) — the byte-identical
+ * client mirror of backend/premium_calculator.py::resolve_profile_sum_insured,
+ * the SAME precedence the header "Premium range" chip
+ * (estimate_premium_band) prices its basket at: desired_sum_insured_inr →
+ * existing_cover_inr → ₹10L default. Because the chip band aggregates this
+ * exact policy (one basket member) at the SAME profile-resolved SI, this
+ * widget's number is guaranteed to fall inside the header band the user saw
+ * — they can no longer contradict each other. `smoker` is forwarded to
+ * /api/premium/estimate (`profile?.smoker === true`) and applied by the
+ * backend estimate() loading chain; family-history is applied on the header
+ * band path (it consumes the full SLOT_UNION profile).
+ *
  * ── Visual system ─────────────────────────────────────────────────────
  * Re-grounded on the premium editorial-fintech landing (app/globals.css):
  * Fraunces display serif for the headline premium numeral, Plus Jakarta for
@@ -42,6 +55,11 @@ export type PolicyPremiumWidgetProps = {
   // exact object — it doubles as the predicted-premium-band profile. We map
   // its fields onto the estimate-endpoint contract internally.
   profile?: PremiumBulkProfile;
+  // When omitted, the widget resolves its starting SI from the profile with
+  // the SAME precedence the header-chip backend uses
+  // (resolveProfileSumInsured ↔ premium_calculator.resolve_profile_sum_insured)
+  // so the per-policy number reconciles with the header band. Pass an explicit
+  // value only to force a specific starting SI (overrides profile resolution).
   initialSumInsured?: number;
   initialTenureYears?: 1 | 2 | 3;
   initialDeductibleInr?: 0 | 25000 | 50000 | 100000;
@@ -65,6 +83,38 @@ const SUM_INSURED_MAX = 10_000_000;
 const SUM_INSURED_STEP = 500_000;
 const TENURE_CHOICES = [1, 2, 3] as const;
 const DEDUCTIBLE_CHOICES = [0, 25_000, 50_000, 100_000] as const;
+
+/**
+ * Client mirror of backend/premium_calculator.py::resolve_profile_sum_insured.
+ *
+ * KI-278 (2026-05-16) — header≠panel reconciliation. The header "Premium
+ * range" chip is produced by estimate_premium_band(), which now prices the
+ * basket at the profile-resolved SI (desired_sum_insured_inr →
+ * existing_cover_inr → ₹10L default). The per-policy widget MUST seed its SI
+ * slider with the SAME precedence, or it re-introduces the original bug
+ * (chip priced at one SI, widget at another → contradictory numbers for one
+ * profile). Precedence + clamp + ₹50k snap are byte-identical to the Python
+ * resolver so the two surfaces agree by construction. The user can still
+ * drag the slider to explore other SIs afterward.
+ */
+function resolveProfileSumInsured(
+  profile: PremiumBulkProfile | undefined,
+  fallbackDefault = 1_000_000,
+): number {
+  const coerce = (v: unknown): number | null => {
+    if (v === null || v === undefined || v === "") return null;
+    const n = Number(v);
+    if (!Number.isFinite(n) || n <= 0) return null;
+    return Math.trunc(n);
+  };
+  let si =
+    coerce(profile?.desired_sum_insured_inr) ??
+    coerce(profile?.existing_cover_inr) ??
+    fallbackDefault;
+  // Clamp to the slider domain, then snap to the nearest ₹50k slider stop.
+  si = Math.max(SUM_INSURED_MIN, Math.min(SUM_INSURED_MAX, si));
+  return Math.round(si / 50_000) * 50_000;
+}
 
 // Display serif + sans UI face, pulled from the landing's CSS vars so the
 // widget shares the exact type system as the rest of the app.
@@ -135,13 +185,23 @@ export default function PolicyPremiumWidget({
   policyId,
   policyName,
   profile,
-  initialSumInsured = 1_000_000,
+  initialSumInsured,
   initialTenureYears = 1,
   initialDeductibleInr = 0,
   onCalculated,
   aggregateBand,
 }: PolicyPremiumWidgetProps) {
-  const [sumInsured, setSumInsured] = useState<number>(initialSumInsured);
+  // KI-278 — seed the SI from the profile (same precedence as the header
+  // chip) unless the caller forced an explicit initialSumInsured. This is
+  // what makes the per-policy number land inside the header band.
+  const resolvedInitialSI = useMemo(
+    () =>
+      typeof initialSumInsured === "number"
+        ? initialSumInsured
+        : resolveProfileSumInsured(profile),
+    [initialSumInsured, profile],
+  );
+  const [sumInsured, setSumInsured] = useState<number>(resolvedInitialSI);
   const [tenureYears, setTenureYears] = useState<1 | 2 | 3>(initialTenureYears);
   const [deductibleInr, setDeductibleInr] = useState<0 | 25000 | 50000 | 100000>(
     initialDeductibleInr,
@@ -153,6 +213,24 @@ export default function PolicyPremiumWidget({
   // Stable string key so we can put `profile` in the effect dep list without
   // triggering refetches on every parent re-render (object identity changes).
   const profileKey = useMemo(() => JSON.stringify(profile ?? {}), [profile]);
+
+  // KI-278 — async-profile re-sync. The profile often arrives AFTER the
+  // widget mounts (the compare modal opens the instant data finishes
+  // fetching). Without this, the SI slider stays on the ₹10L fallback while
+  // the header chip already re-priced at the user's stated SI → the exact
+  // header≠panel contradiction we're fixing. We re-seed the SI from the
+  // resolved profile value ONLY while the user hasn't touched the slider
+  // (slider still equals the prior resolved value). Once the user drags it,
+  // their choice is sticky and profile updates no longer override it. Mirror
+  // of PremiumCalculatorPanel's snapshot-guard in page.tsx.
+  const lastResolvedSIRef = useRef<number>(resolvedInitialSI);
+  useEffect(() => {
+    if (sumInsured === lastResolvedSIRef.current && resolvedInitialSI !== sumInsured) {
+      setSumInsured(resolvedInitialSI);
+    }
+    lastResolvedSIRef.current = resolvedInitialSI;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resolvedInitialSI]);
 
   const onCalculatedRef = useRef(onCalculated);
   useEffect(() => {

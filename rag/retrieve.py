@@ -168,12 +168,23 @@ def _cache_key(
     top_k: int,
     policy_ids: Optional[list[str]],
     insurer_slugs: Optional[list[str]],
+    session_id: Optional[str] = None,
 ) -> tuple:
+    # QUARANTINE-ISOLATION FIX (2026-05-16) — session_id MUST be part of the
+    # cache key. The result set is session-dependent: when a session_id is
+    # supplied the quarantine boost pass prepends that session's uploaded
+    # PDF chunks. Without session_id in the key, a result computed for
+    # session A (carrying A's private uploaded chunks) would be served
+    # verbatim to session B for the same query string — a cross-session
+    # data leak — and a session query could be served a stale non-session
+    # result that silently drops the quarantine boost. Keying on session_id
+    # keeps each session's cache slice strictly its own.
     return (
         (query or "").strip().lower(),
         int(top_k),
         tuple(sorted(policy_ids)) if policy_ids else None,
         tuple(sorted(insurer_slugs)) if insurer_slugs else None,
+        (session_id or None),
     )
 
 
@@ -219,7 +230,10 @@ async def retrieve(
     profile boosting.
     """
     # KI-034 — short-circuit identical-query re-asks via the LRU cache.
-    cache_key = _cache_key(query, top_k, policy_ids, insurer_slugs)
+    # session_id is part of the key so one session's cached result (which
+    # may carry that session's private quarantine chunks) is never served
+    # to another session.
+    cache_key = _cache_key(query, top_k, policy_ids, insurer_slugs, session_id)
     cached = _cache_get(cache_key)
     if cached is not None:
         return cached

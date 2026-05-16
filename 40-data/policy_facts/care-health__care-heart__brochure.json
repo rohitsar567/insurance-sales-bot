@@ -14,10 +14,10 @@
     "_confidence": "high"
   },
   "max_entry_age": {
-    "value": null,
+    "value": "No maximum age",
     "source_pdf_path": "rag/corpus/care-health/care-heart__brochure.pdf",
-    "source_quote": "not stated in care-health__care-heart__brochure.pdf",
-    "_confidence": "low"
+    "source_quote": "Eligibility Criteria Entry Age Minimum 18 years; Entry Age Maximum No Maximum Age; Renewable Life long (brochure p.1-1)",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 24,
@@ -107,10 +107,15 @@
     "source_quote": "Insurer-level metric backfilled from public-web source — see source_url"
   },
   "sum_insured_options": {
-    "value": null,
+    "value": [
+      300000,
+      500000,
+      700000,
+      1000000
+    ],
     "source_pdf_path": "rag/corpus/care-health/care-heart__brochure.pdf",
-    "source_quote": "not stated in care-health__care-heart__brochure.pdf",
-    "_confidence": "low"
+    "source_quote": "SUM INSURED** ` 3 Lakh ` 5 Lakh ` 7 Lakh ` 10 Lakh  (** Other sum insured options are also available) (brochure p.1-2)",
+    "_confidence": "high"
   },
   "claim_settlement_ratio": {
     "value": null,

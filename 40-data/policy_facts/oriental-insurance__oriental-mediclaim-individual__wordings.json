@@ -32,11 +32,23 @@
     "_confidence": "high"
   },
   "sum_insured_options": {
-    "value": null,
+    "value": [
+      100000,
+      500000,
+      1000000,
+      1200000,
+      1500000,
+      1800000,
+      2000000,
+      2500000,
+      3000000,
+      4000000,
+      5000000
+    ],
     "unit": "INR",
     "source_pdf_path": "rag/corpus/oriental-insurance/oriental-mediclaim-individual__wordings.pdf",
-    "source_quote": "not stated in oriental-insurance__oriental-mediclaim-individual__wordings.pdf",
-    "_confidence": "low"
+    "source_quote": "5.30 SUM INSURED: Minimum sum insured is Rs 100,000 and in multiples of Rs 50,000 up to Rs5, 00,000. Beyond the Sum Insured of Rs. 5,00,000 in multiples of Rs. 1,00,000 Up to Rs 10,00,000. Thereafter the sum insured slabs available are Rs. 12, 15, 18, 20, 25, 30, 40 and 50 lakhs.",
+    "_confidence": "high"
   },
   "grace_period": {
     "value": 30,
@@ -212,6 +224,13 @@
     "unit": "text",
     "source_pdf_path": "rag/corpus/oriental-insurance/oriental-mediclaim-individual__wordings.pdf",
     "source_quote": "i. Room, Boarding and Nursing Expenses as provided by the Hospital /Nursing Home. Not exceeding 1 % of the Sum Insured per day",
+    "_confidence": "high"
+  },
+  "maternity_coverage": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/oriental-insurance/oriental-mediclaim-individual__wordings.pdf",
+    "source_quote": "4.18 Maternity- Code- ExcI18 i. Medical treatment expenses traceable to childbirth (including complicated deliveries and cesarean sections incurred during hospitalization) except ectopic pregnancy. ii. Expenses towards miscarriage (unless due to an accident) and",
     "_confidence": "high"
   },
   "_meta": {

@@ -40,4 +40,4 @@ TARGET_URL=http://localhost:8000 python tests/live_verify.py
 - Root `CLAUDE.md` § Routing invariants — the four lines this folder protects
 - `80-audit/ENTERPRISE_AUDIT.md` D-003 — full incident report for KI-018
 - [ADR-026](../70-docs/60-decisions/ADR-026-provider-load-balancing.md) — load-balance behaviour pinned by `TestProviderLoadBalancing`
-- `eval/run.py` — the broader 96-Q accuracy eval (different surface, same underlying orchestrator)
+- `eval/run.py` — the broader 96-Q accuracy eval. ⚠️ Pending re-port to the single-brain architecture (hard-guarded from running; see its module docstring).

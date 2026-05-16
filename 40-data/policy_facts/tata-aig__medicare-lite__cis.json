@@ -21,7 +21,7 @@
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "not stated in tata-aig__medicare-lite__cis.pdf",
+    "source_quote": "no adult maximum-entry-age stated; the Customer Information Sheet references entry age only for the age-linked co-payment trigger ('If the entry Age of the Insured Person is 61 years or above at the time of first coverage under this Policy, then such Insured Person shall bear 20% of each admissible claim'); the eligibility age table is not contained in the indexed document (only the CIS is indexed for this product; checked all 6 indexed chunks)",
     "_confidence": "low"
   },
   "min_child_entry_age": {
@@ -35,7 +35,7 @@
     "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/tata-aig/medicare-lite__cis.pdf",
-    "source_quote": "not stated in tata-aig__medicare-lite__cis.pdf",
+    "source_quote": "no enumerated Sum Insured options stated; the Customer Information Sheet states 'Sum Insured (Basis): As per Sum Insured mentioned in Policy Schedule' with no options grid in any indexed chunk (only the CIS is indexed for this product; checked all 6 indexed chunks)",
     "_confidence": "low"
   },
   "grace_period": {

@@ -21,7 +21,7 @@
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/tata-aig/medicare-premier__cis.pdf",
-    "source_quote": "not stated in tata-aig__medicare-premier__cis.pdf",
+    "source_quote": "no adult maximum-entry-age stated; an exhaustive search of all 38 indexed chunks (CIS + wordings siblings) found no entry-age eligibility table for MediCare Premier; the eligibility/age table is not contained in the indexed documents (checked all indexed chunks)",
     "_confidence": "low"
   },
   "min_child_entry_age": {
@@ -35,7 +35,7 @@
     "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/tata-aig/medicare-premier__cis.pdf",
-    "source_quote": "not stated in tata-aig__medicare-premier__cis.pdf",
+    "source_quote": "no enumerated Sum Insured options stated; the Customer Information Sheet states 'Sum Insured (Basis): <<Sum Insured Amount>> - As per Sum Insured mentioned in Policy Schedule' (and references 'Up to ₹50 Lakhs' only as a sub-limit basis, not an options list) with no options grid in any indexed chunk (checked all 38 indexed chunks across CIS and wordings siblings)",
     "_confidence": "low"
   },
   "grace_period": {
@@ -111,7 +111,7 @@
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/tata-aig/medicare-premier__cis.pdf",
-    "source_quote": "not stated in tata-aig__medicare-premier__cis.pdf",
+    "source_quote": "no fixed co-payment percentage stated; an exhaustive search of all 38 indexed chunks (CIS + wordings siblings) found no co-payment percentage clause for MediCare Premier (checked all indexed chunks)",
     "_confidence": "low"
   },
   "room_rent_capped_at_pct_of_si": {
@@ -119,6 +119,13 @@
     "unit": "percent",
     "source_pdf_path": "rag/corpus/tata-aig/medicare-premier__cis.pdf",
     "source_quote": "not stated in tata-aig__medicare-premier__cis.pdf",
+    "_confidence": "low"
+  },
+  "room_rent_capping": {
+    "value": null,
+    "unit": "text",
+    "source_pdf_path": "rag/corpus/tata-aig/medicare-premier__cis.pdf",
+    "source_quote": "no room-rent cap or room-category clause stated; the CIS lists in-patient room-rent as 'Up to Sum Insured' style cover with no room-rent sub-limit, and no percentage-of-SI cap appears in any of the 38 indexed chunks (CIS + wordings siblings) (checked all indexed chunks)",
     "_confidence": "low"
   },
   "policy_term_options_years": {

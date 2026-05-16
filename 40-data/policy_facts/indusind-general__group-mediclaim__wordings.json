@@ -191,5 +191,12 @@
     "source_pdf_path": "rag/corpus/indusind-general/group-mediclaim__wordings.pdf",
     "source_quote": "The Insured Person chooses a room category in which the room rent charges are more than the applicable Sum Insured sub-limit (in percentage or Rupee terms) on the room rent as per the Policy term",
     "_confidence": "medium"
+  },
+  "maternity_coverage": {
+    "value": false,
+    "unit": "boolean",
+    "source_pdf_path": "rag/corpus/indusind-general/group-mediclaim__wordings.pdf",
+    "source_quote": "Maternity: Code Excl18\ni. Medical treatment expenses traceable to childbirth (including complicated deliveries and caesarean sections incurred\nduring hospitalization) except ectopic pregnancy;",
+    "_confidence": "high"
   }
 }

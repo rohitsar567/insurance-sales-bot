@@ -109,9 +109,16 @@
     "source_quote": "Insurer-level metric backfilled from public-web source — see source_url"
   },
   "sum_insured_options": {
-    "value": null,
+    "value": [
+      100000,
+      400000,
+      600000,
+      700000,
+      1500000
+    ],
+    "unit": "INR",
     "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__brochure.pdf",
-    "source_quote": "You are free to choose any Sum Insured ranging from Rs. One Lakh to Fifteen Lakhs.",
+    "source_quote": "You are free to choose any Sum Insured ranging from Rs. One Lakh to Fifteen Lakhs. The Premium You pay depends upon Your Age and the Sum Insured chosen. You are free to choose any Sum Insured available in the range specified above. But it is in your own interest to choose the Sum Insured which could satisfy your present as well as future needs. Sum Insured of Rs. 4 lakhs, 6 lakhs and 7 lakhs are not available for a fresh Policy and is only available in case of renewal with same Sum insured.",
     "_confidence": "medium"
   },
   "claim_settlement_ratio": {

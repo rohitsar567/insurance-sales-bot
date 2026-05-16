@@ -10,62 +10,121 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Control Panel</title>
   <style>
+    /* ────────────────────────────────────────────────────────────────────
+     * Admin panel — restyled to the front-page editorial-fintech design
+     * system. Token values mirror frontend/src/app/globals.css :root
+     * exactly; font stacks mirror layout.tsx (Fraunces display serif +
+     * Plus Jakarta Sans body) with the same fallback chains as globals.css
+     * @theme inline. Self-contained (no CDN): the Google families are the
+     * preferred face, falling back to the identical system stack the front
+     * page declares. Legacy variable NAMES (--bg/--text/--blue/--green …)
+     * are kept so the existing render JS that references them is untouched
+     * — only their VALUES are remapped to the light/premium tokens.
+     * ──────────────────────────────────────────────────────────────────── */
     :root {
-      --bg: #0b0d12;
-      --card: #13171f;
-      --border: #222933;
-      --text: #e6edf3;
-      --muted: #8b95a4;
-      --green: #3fb950;
-      --yellow: #d29922;
-      --red: #f85149;
-      --blue: #58a6ff;
-      --primary: #58a6ff;
+      /* globals.css :root design tokens */
+      --background: #fafaf9;
+      --foreground: #1c1917;
+      --primary-token: #0f766e;          /* deep teal */
+      --primary-foreground: #ffffff;
+      --surface-muted: #f5f5f4;
+      --muted-foreground: #57534e;
+      --border-token: #e7e5e4;
+      --card-token: #ffffff;
+      --accent: #fef3c7;                 /* warm amber */
+      --error: #dc2626;
+
+      /* Font stacks — mirror globals.css @theme inline / layout.tsx */
+      --font-display: "Fraunces", ui-serif, Georgia, "Times New Roman", serif;
+      --font-body: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, monospace;
+
+      /* Legacy aliases (kept for the render JS) remapped to light tokens */
+      --bg: var(--background);
+      --card: var(--card-token);
+      --border: var(--border-token);
+      --text: var(--foreground);
+      --muted: var(--muted-foreground);
+      --green: #15803d;                  /* light-theme success */
+      --yellow: #b45309;                 /* light-theme amber */
+      --red: var(--error);
+      --blue: var(--primary-token);      /* teal stands in for legacy blue */
+      --primary: var(--primary-token);
+
+      /* Shared radii / shadow language from the front page */
+      --radius: 14px;
+      --radius-sm: 11px;
+      --shadow-card:
+        0 1px 2px color-mix(in srgb, var(--foreground) 4%, transparent),
+        0 18px 48px -34px color-mix(in srgb, var(--foreground) 30%, transparent);
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      padding: 24px;
-      background: var(--bg);
+      padding: 28px;
+      background:
+        radial-gradient(120% 60% at 50% -8%,
+          color-mix(in srgb, var(--primary) 8%, transparent) 0%,
+          transparent 60%),
+        linear-gradient(180deg,
+          color-mix(in srgb, var(--primary) 3%, var(--background)) 0%,
+          var(--background) 38%);
+      background-attachment: fixed;
       color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      font-family: var(--font-body);
       font-size: 14px;
-      line-height: 1.5;
+      line-height: 1.55;
       min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
     }
     .mono {
-      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, monospace;
+      font-family: var(--font-mono);
     }
     h1 {
       margin: 0 0 24px 0;
-      font-size: 22px;
+      font-family: var(--font-display);
+      font-optical-sizing: auto;
+      font-size: 26px;
       font-weight: 600;
-      letter-spacing: -0.01em;
+      letter-spacing: -0.014em;
+      color: var(--foreground);
     }
     h2 {
       margin: 0 0 16px 0;
-      font-size: 16px;
+      font-family: var(--font-display);
+      font-optical-sizing: auto;
+      font-size: 19px;
       font-weight: 600;
+      letter-spacing: -0.012em;
+      color: var(--foreground);
     }
     h3 {
       margin: 0 0 12px 0;
-      font-size: 14px;
+      font-family: var(--font-display);
+      font-size: 15px;
       font-weight: 600;
+      letter-spacing: -0.008em;
       color: var(--text);
     }
     .container {
       max-width: 1500px;
       margin: 0 auto;
+      padding: 0 8px;
     }
     @media (max-width: 1540px) {
       .container { max-width: 100%; }
     }
+    @media (max-width: 720px) {
+      body { padding: 16px; }
+      .container { padding: 0; }
+    }
     .card {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 20px;
-      margin-bottom: 20px;
+      border-radius: 22px;
+      padding: 24px;
+      margin-bottom: 22px;
+      box-shadow: var(--shadow-card);
     }
     .gate-card {
       max-width: 420px;
@@ -76,38 +135,57 @@
     input[type="password"], input[type="text"] {
       width: 100%;
       padding: 10px 12px;
-      background: #0b0d12;
+      background: var(--card);
       color: var(--text);
       border: 1px solid var(--border);
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       font-size: 14px;
       font-family: inherit;
+      transition: border-color 0.18s ease, box-shadow 0.18s ease;
     }
+    input[type="password"]::placeholder, input[type="text"]::placeholder { color: var(--muted-foreground); }
     input[type="password"]:focus, input[type="text"]:focus {
       outline: none;
-      border-color: var(--blue);
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 14%, transparent);
     }
+    input[type="checkbox"] { accent-color: var(--primary); }
     button {
-      padding: 8px 14px;
-      background: #1c2230;
+      padding: 8px 15px;
+      background: var(--card);
       color: var(--text);
       border: 1px solid var(--border);
-      border-radius: 6px;
+      border-radius: 10px;
       cursor: pointer;
       font-size: 13px;
+      font-weight: 500;
       font-family: inherit;
-      transition: background 0.12s ease, border-color 0.12s ease;
+      transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
     }
-    button:hover { background: #242b3a; border-color: #2e3645; }
+    button:hover {
+      border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
+      background: color-mix(in srgb, var(--primary) 5%, var(--card));
+    }
+    button:active { transform: scale(0.98); }
     button:disabled { opacity: 0.5; cursor: not-allowed; }
+    button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
     button.primary {
-      background: var(--blue);
-      color: #0b0d12;
-      border-color: var(--blue);
+      background: linear-gradient(150deg,
+        color-mix(in srgb, var(--primary) 94%, white) 0%,
+        var(--primary) 60%);
+      color: var(--primary-foreground);
+      border-color: var(--primary);
       font-weight: 600;
+      box-shadow: 0 8px 20px -10px color-mix(in srgb, var(--primary) 60%, transparent);
     }
-    button.primary:hover { background: #79b8ff; }
-    button.danger { color: var(--red); border-color: var(--red); }
+    button.primary:hover {
+      background: linear-gradient(150deg,
+        color-mix(in srgb, var(--primary) 98%, white) 0%,
+        color-mix(in srgb, var(--primary) 88%, black) 60%);
+      transform: translateY(-1px);
+    }
+    button.danger { color: var(--red); border-color: color-mix(in srgb, var(--red) 45%, var(--border)); }
+    button.danger:hover { background: color-mix(in srgb, var(--red) 7%, var(--card)); border-color: var(--red); }
     .icon-btn { padding: 4px 10px; font-size: 14px; line-height: 1; }
     .muted { color: var(--muted); }
     .small { font-size: 12px; }
@@ -124,26 +202,29 @@
       background: transparent;
       border: 1px solid transparent;
       border-bottom: none;
-      border-radius: 8px 8px 0 0;
-      padding: 10px 16px;
+      border-radius: 12px 12px 0 0;
+      padding: 11px 18px;
       color: var(--muted);
-      font-weight: 500;
+      font-weight: 600;
       font-size: 13px;
       margin-bottom: -1px;
       cursor: pointer;
-      transition: color 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+      transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
     }
     .tabnav button:hover {
-      color: var(--text);
-      background: rgba(88, 166, 255, 0.05);
+      color: var(--foreground);
+      background: color-mix(in srgb, var(--primary) 6%, var(--card));
+      border-color: color-mix(in srgb, var(--primary) 18%, var(--border));
+      transform: none;
     }
     .tabnav button.active {
-      color: var(--text);
-      border-color: var(--primary);
-      border-bottom-color: var(--bg);
+      color: var(--primary);
+      border-color: var(--border);
+      border-bottom-color: var(--card);
       background: var(--card);
-      outline: 1px solid var(--primary);
-      outline-offset: -1px;
+      box-shadow:
+        0 -1px 0 0 var(--primary) inset,
+        0 -2px 10px -6px color-mix(in srgb, var(--primary) 50%, transparent);
     }
     .tabpane { display: none; }
     .tabpane.active { display: block; }
@@ -154,11 +235,11 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 8px 12px;
-      background: #0b0d12;
+      padding: 9px 14px;
+      background: var(--surface-muted);
       border: 1px solid var(--border);
-      border-radius: 8px;
-      font-weight: 500;
+      border-radius: 12px;
+      font-weight: 600;
     }
     .counter .dot {
       width: 10px; height: 10px; border-radius: 50%;
@@ -179,39 +260,53 @@
       letter-spacing: 0.04em;
       border: 1px solid transparent;
     }
-    .status.healthy { background: rgba(63, 185, 80, 0.15); color: var(--green); border-color: rgba(63, 185, 80, 0.35); }
-    .status.degraded { background: rgba(210, 153, 34, 0.15); color: var(--yellow); border-color: rgba(210, 153, 34, 0.35); }
-    .status.down { background: rgba(248, 81, 73, 0.15); color: var(--red); border-color: rgba(248, 81, 73, 0.35); }
-    .status.unknown { background: rgba(139, 149, 164, 0.15); color: var(--muted); border-color: rgba(139, 149, 164, 0.35); }
+    .status.healthy { background: color-mix(in srgb, var(--green) 12%, var(--card)); color: var(--green); border-color: color-mix(in srgb, var(--green) 35%, var(--border)); }
+    .status.degraded { background: color-mix(in srgb, var(--yellow) 12%, var(--card)); color: var(--yellow); border-color: color-mix(in srgb, var(--yellow) 35%, var(--border)); }
+    .status.down { background: color-mix(in srgb, var(--red) 11%, var(--card)); color: var(--red); border-color: color-mix(in srgb, var(--red) 35%, var(--border)); }
+    .status.unknown { background: var(--surface-muted); color: var(--muted); border-color: var(--border); }
 
-    /* Tables */
+    /* Tables — wrapped in a horizontally-scrollable shell so narrow
+       viewports scroll the table, never the page. */
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--card);
+    }
+    .table-wrap::-webkit-scrollbar { height: 8px; }
+    .table-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    .table-wrap::-webkit-scrollbar-thumb:hover { background: var(--muted-foreground); }
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
     thead th {
       text-align: left;
-      padding: 10px 12px;
-      background: #0b0d12;
+      padding: 12px 14px;
+      background: var(--surface-muted);
       border-bottom: 1px solid var(--border);
       color: var(--muted);
-      font-weight: 600;
+      font-weight: 700;
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.05em;
+      white-space: nowrap;
     }
     tbody td {
-      padding: 10px 12px;
+      padding: 12px 14px;
       border-bottom: 1px solid var(--border);
       vertical-align: middle;
     }
     tbody tr:last-child td { border-bottom: none; }
-    tbody tr:hover td { background: rgba(88, 166, 255, 0.04); }
+    tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--surface-muted) 50%, var(--card)); }
+    tbody tr:hover td { background: color-mix(in srgb, var(--primary) 6%, var(--card)); }
 
     /* Sortable column header */
     thead th.sortable {
       cursor: pointer;
       user-select: none;
     }
-    thead th.sortable:hover { color: var(--text); }
-    thead th.sortable .sort-ind { margin-left: 4px; color: var(--blue); }
+    thead th.sortable:hover { color: var(--foreground); }
+    thead th.sortable .sort-ind { margin-left: 4px; color: var(--primary); }
 
     /* Chains */
     .chains-grid {
@@ -220,9 +315,9 @@
       gap: 20px;
     }
     .chain-card h2 .role-tag {
-      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, monospace;
+      font-family: var(--font-mono);
       font-size: 12px;
-      color: var(--blue);
+      color: var(--primary);
       margin-left: 6px;
     }
     .chain-list { display: flex; flex-direction: column; gap: 8px; margin: 12px 0 16px; }
@@ -230,14 +325,14 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 10px 12px;
-      background: #0b0d12;
+      padding: 11px 14px;
+      background: var(--surface-muted);
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 12px;
     }
     .chain-item .label {
       flex: 1;
-      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, monospace;
+      font-family: var(--font-mono);
       font-size: 13px;
       word-break: break-all;
     }
@@ -252,14 +347,17 @@
       position: fixed;
       bottom: 24px;
       right: 24px;
-      padding: 12px 16px;
-      border-radius: 8px;
-      background: var(--card);
+      padding: 13px 18px;
+      border-radius: var(--radius);
+      background: color-mix(in srgb, var(--card) 92%, transparent);
+      -webkit-backdrop-filter: saturate(180%) blur(10px);
+              backdrop-filter: saturate(180%) blur(10px);
       border: 1px solid var(--border);
       color: var(--text);
       font-size: 13px;
+      font-weight: 500;
       max-width: 360px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+      box-shadow: 0 18px 48px -24px color-mix(in srgb, var(--foreground) 40%, transparent);
       opacity: 0;
       transform: translateY(10px);
       transition: opacity 0.2s ease, transform 0.2s ease;
@@ -269,7 +367,7 @@
     #toast.show { opacity: 1; transform: translateY(0); }
     #toast.success { border-color: var(--green); }
     #toast.error { border-color: var(--red); }
-    #toast.info { border-color: var(--blue); }
+    #toast.info { border-color: var(--primary); }
 
     /* Role badge — colored pill (BRAIN) */
     .role-badge {
@@ -282,7 +380,7 @@
       color: #fff;
       vertical-align: middle;
       margin-right: 8px;
-      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, monospace;
+      font-family: var(--font-mono);
     }
 
     /* Compact summary blocks above the chain table */
@@ -293,10 +391,10 @@
       margin: 12px 0 16px;
     }
     .summary-block {
-      padding: 10px 12px;
-      background: #0b0d12;
+      padding: 12px 14px;
+      background: var(--surface-muted);
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 12px;
     }
     .summary-block .label {
       font-size: 10px;
@@ -306,7 +404,7 @@
       margin-bottom: 6px;
     }
     .summary-block .model-name {
-      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, monospace;
+      font-family: var(--font-mono);
       font-size: 13px;
       word-break: break-all;
       line-height: 1.35;
@@ -318,7 +416,7 @@
     }
     .summary-block .stats-line .sep {
       margin: 0 6px;
-      color: #3a4250;
+      color: color-mix(in srgb, var(--muted) 55%, transparent);
     }
     .primary-mark { color: var(--green); margin-right: 4px; }
 
@@ -326,11 +424,11 @@
     .chain-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 12px; }
     .chain-table thead th {
       text-align: left;
-      padding: 8px 8px;
-      background: #0b0d12;
+      padding: 9px 10px;
+      background: var(--surface-muted);
       border-bottom: 1px solid var(--border);
       color: var(--muted);
-      font-weight: 600;
+      font-weight: 700;
       font-size: 10px;
       text-transform: uppercase;
       letter-spacing: 0.05em;
@@ -342,32 +440,49 @@
     }
     .chain-table tbody tr:last-child td { border-bottom: none; }
     .chain-table .model-cell {
-      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, monospace;
+      font-family: var(--font-mono);
       word-break: break-all;
       max-width: 280px;
     }
     .chain-table .num-cell { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
     .chain-table .icon-btn { padding: 2px 7px; font-size: 12px; line-height: 1.2; }
-    .chain-table tbody tr.is-primary td { background: rgba(63, 185, 80, 0.05); }
+    .chain-table tbody tr.is-primary td { background: color-mix(in srgb, var(--green) 8%, var(--card)); }
 
     /* KI-162: simple 2-table layout for LLM Chain section (replaces legacy .llm-health-chains grid) */
     .llm-simple-tables { display: flex; flex-direction: column; gap: 18px; }
     .llm-simple-tables .simple-table-block h3 {
       margin: 0 0 8px;
-      font-size: 13px;
+      padding: 12px 14px 0;
+      font-family: var(--font-display);
+      font-size: 14px;
       font-weight: 600;
+      letter-spacing: -0.008em;
       color: var(--text);
     }
+    /* LLM Chain tables scroll horizontally on narrow viewports rather
+       than overflowing the page; carded to match the front-page system. */
+    .llm-simple-tables .simple-table-block {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--card);
+      box-shadow: 0 1px 2px color-mix(in srgb, var(--foreground) 4%, transparent);
+    }
+    .llm-simple-tables .simple-table-block::-webkit-scrollbar { height: 8px; }
+    .llm-simple-tables .simple-table-block::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
     .llm-simple-tables table {
       width: 100%;
+      min-width: 520px;
       border-collapse: collapse;
       font-size: 12px;
     }
     .llm-simple-tables thead th {
       text-align: left;
-      padding: 8px;
+      padding: 9px 10px;
+      background: var(--surface-muted);
       border-bottom: 1px solid var(--border);
-      font-weight: 600;
+      font-weight: 700;
       color: var(--muted);
       text-transform: uppercase;
       letter-spacing: 0.05em;
@@ -381,7 +496,7 @@
     .llm-simple-tables tbody tr:last-child td { border-bottom: none; }
     .llm-simple-tables td.model-name,
     .llm-simple-tables td.mono {
-      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, monospace;
+      font-family: var(--font-mono);
       word-break: break-all;
     }
     .llm-simple-tables td.use-label {
@@ -409,17 +524,17 @@
     .health-badge {
       display: inline-block;
       padding: 2px 8px;
-      border-radius: 4px;
+      border-radius: 6px;
       font-size: 11px;
-      font-weight: 600;
+      font-weight: 700;
       letter-spacing: 0.04em;
       vertical-align: middle;
-      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, monospace;
+      font-family: var(--font-mono);
     }
-    .health-badge.ok       { background: rgba(63, 185, 80, 0.15);  color: var(--green);  border: 1px solid rgba(63, 185, 80, 0.4); }
-    .health-badge.warn     { background: rgba(210, 153, 34, 0.15); color: var(--yellow); border: 1px solid rgba(210, 153, 34, 0.4); }
-    .health-badge.bad      { background: rgba(248, 81, 73, 0.15);  color: var(--red);    border: 1px solid rgba(248, 81, 73, 0.4); }
-    .health-badge.unknown  { background: rgba(139, 149, 164, 0.15);color: var(--muted);  border: 1px solid rgba(139, 149, 164, 0.4); }
+    .health-badge.ok       { background: color-mix(in srgb, var(--green) 12%, var(--card));  color: var(--green);  border: 1px solid color-mix(in srgb, var(--green) 38%, var(--border)); }
+    .health-badge.warn     { background: color-mix(in srgb, var(--yellow) 12%, var(--card)); color: var(--yellow); border: 1px solid color-mix(in srgb, var(--yellow) 38%, var(--border)); }
+    .health-badge.bad      { background: color-mix(in srgb, var(--red) 11%, var(--card));  color: var(--red);    border: 1px solid color-mix(in srgb, var(--red) 38%, var(--border)); }
+    .health-badge.unknown  { background: var(--surface-muted); color: var(--muted);  border: 1px solid var(--border); }
 
     /* Candidate health grid */
     .llm-health-candidates {
@@ -428,7 +543,7 @@
     .llm-health-candidates table { font-size: 12px; }
     .llm-health-candidates td.mono,
     .llm-health-candidates td.model-cell {
-      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, monospace;
+      font-family: var(--font-mono);
       word-break: break-all;
       max-width: 280px;
     }
@@ -438,7 +553,7 @@
       color: var(--muted);
     }
     .llm-health-candidates td.credits {
-      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, monospace;
+      font-family: var(--font-mono);
       font-size: 11px;
     }
 
@@ -446,7 +561,7 @@
     .llm-health-recent table { font-size: 12px; }
     .llm-health-recent td { vertical-align: middle; }
     .llm-health-recent td.mono {
-      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, monospace;
+      font-family: var(--font-mono);
       font-size: 11px;
       word-break: break-all;
       max-width: 240px;
@@ -461,10 +576,10 @@
       font-size: 10px;
       letter-spacing: 0.04em;
       text-transform: uppercase;
-      border-radius: 4px;
-      background: rgba(210, 153, 34, 0.18);
+      border-radius: 6px;
+      background: color-mix(in srgb, var(--yellow) 14%, var(--card));
       color: var(--yellow);
-      border: 1px solid rgba(210, 153, 34, 0.35);
+      border: 1px solid color-mix(in srgb, var(--yellow) 35%, var(--border));
     }
 
     .hidden { display: none !important; }
@@ -487,11 +602,16 @@
       margin-bottom: 16px;
     }
     .metric-tile {
-      padding: 12px 14px;
-      background: #0b0d12;
+      padding: 14px 16px;
+      background:
+        linear-gradient(180deg,
+          color-mix(in srgb, var(--primary) 4%, var(--card)) 0%,
+          var(--card) 60%);
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: var(--radius);
+      box-shadow: 0 1px 2px color-mix(in srgb, var(--foreground) 4%, transparent);
     }
+    .metric-tile .value { font-family: var(--font-display); }
     .metric-tile .label {
       font-size: 10px;
       text-transform: uppercase;
@@ -517,21 +637,28 @@
     .perf-sub:first-of-type { margin-top: 0; padding-top: 0; border-top: none; }
     /* Performance tab tables (gold by_brain / by_type breakdown + the
        Last-24h LLM-usage role table). Constrain width so they read well
-       in the widened container and let the role-name column wrap rather
-       than stretch the whole row. */
-    #performance-body table { max-width: 920px; }
-    #performance-body td { overflow-wrap: anywhere; }
+       in the widened container; the .table-wrap scrolls on narrow
+       viewports. overflow-wrap is intentionally normal so role / brain
+       names are never split mid-word. */
+    #performance-body .table-wrap { max-width: 920px; }
+    #performance-body table { width: 100%; min-width: 460px; }
+    #performance-body td { overflow-wrap: normal; word-break: normal; }
+    #performance-body td.mono { word-break: break-word; }
     #performance-body .metric-grid { max-width: 920px; }
     .empty-state {
-      padding: 24px;
+      padding: 28px 24px;
       text-align: center;
-      color: var(--muted);
+      color: var(--muted-foreground);
       font-size: 13px;
-      background: #0b0d12;
-      border: 1px dashed var(--border);
-      border-radius: 8px;
+      background:
+        linear-gradient(180deg,
+          color-mix(in srgb, var(--primary) 3%, var(--card)) 0%,
+          var(--card) 60%);
+      border: 1px dashed color-mix(in srgb, var(--primary) 22%, var(--border));
+      border-radius: var(--radius);
+      box-shadow: inset 0 1px 2px color-mix(in srgb, var(--foreground) 3%, transparent);
     }
-    .empty-state strong { color: var(--text); font-weight: 600; }
+    .empty-state strong { color: var(--foreground); font-weight: 600; }
     .perf-caption {
       color: var(--muted);
       font-size: 12px;
@@ -550,14 +677,15 @@
     .bar-row .bar-label { color: var(--text); }
     .bar-row .bar-track {
       height: 8px;
-      background: #0b0d12;
+      background: var(--surface-muted);
       border: 1px solid var(--border);
-      border-radius: 4px;
+      border-radius: 999px;
       overflow: hidden;
     }
     .bar-row .bar-fill {
       height: 100%;
-      background: var(--blue);
+      background: var(--primary);
+      border-radius: 999px;
     }
     .bar-row .bar-value {
       text-align: right;
@@ -565,7 +693,12 @@
       font-variant-numeric: tabular-nums;
     }
 
-    /* Profiles table */
+    /* Profiles / Named-visitors table — Image #14 sibling fix: a
+       min-width so on narrow viewports the .table-wrap scrolls
+       horizontally instead of crushing the columns. Full name / slug
+       remain in the title attr (set in JS) so the ellipsis never hides
+       data. */
+    .profile-table { min-width: 760px; }
     .profile-table td.name-cell {
       font-weight: 500;
       max-width: 200px;
@@ -574,7 +707,7 @@
       text-overflow: ellipsis;
     }
     .profile-table td.slug-cell {
-      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, monospace;
+      font-family: var(--font-mono);
       font-size: 12px;
       color: var(--muted);
       max-width: 140px;
@@ -601,26 +734,26 @@
     .stale-badge {
       display: inline-block;
       padding: 1px 7px;
-      border-radius: 4px;
+      border-radius: 6px;
       font-size: 10px;
       font-weight: 700;
       letter-spacing: 0.04em;
       vertical-align: middle;
-      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, monospace;
-      background: rgba(210, 153, 34, 0.18);
+      font-family: var(--font-mono);
+      background: color-mix(in srgb, var(--yellow) 14%, var(--card));
       color: var(--yellow);
-      border: 1px solid rgba(210, 153, 34, 0.40);
+      border: 1px solid color-mix(in srgb, var(--yellow) 38%, var(--border));
       margin-left: 6px;
     }
     .stale-badge.fresh {
-      background: rgba(63, 185, 80, 0.12);
+      background: color-mix(in srgb, var(--green) 11%, var(--card));
       color: var(--green);
-      border-color: rgba(63, 185, 80, 0.35);
+      border-color: color-mix(in srgb, var(--green) 35%, var(--border));
     }
     .stale-badge.down {
-      background: rgba(248, 81, 73, 0.18);
+      background: color-mix(in srgb, var(--red) 11%, var(--card));
       color: var(--red);
-      border-color: rgba(248, 81, 73, 0.40);
+      border-color: color-mix(in srgb, var(--red) 38%, var(--border));
     }
 
     /* KI-208 — consolidated LLM Health header row: heading + last refresh +
@@ -646,9 +779,11 @@
     /* A5 — Persona drift panel + recommendation history panel */
     .collapsible {
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: var(--radius);
       margin-top: 16px;
       background: var(--card);
+      box-shadow: var(--shadow-card);
+      overflow: hidden;
     }
     .collapsible > summary {
       list-style: none;
@@ -674,25 +809,53 @@
     .collapsible .panel-body {
       padding: 0 16px 16px;
     }
-    .drift-row-bad td { background: rgba(248, 81, 73, 0.08); }
-    /* Persona Drift table — give every column a sensible share of the
-       (now wider) container and let the comma-joined CAPTURED / MISSING
-       slot lists WRAP instead of clipping off the right edge. The orange
-       MISSING column was previously cut off because the .mono small cells
-       had no width budget and never wrapped. */
-    #drift-body table { table-layout: fixed; }
-    #drift-body th:nth-child(1), #drift-body td:nth-child(1) { width: 22%; }
-    #drift-body th:nth-child(2), #drift-body td:nth-child(2) { width: 14%; }
-    #drift-body th:nth-child(3), #drift-body td:nth-child(3) { width: 27%; }
-    #drift-body th:nth-child(4), #drift-body td:nth-child(4) { width: 27%; }
-    #drift-body th:nth-child(5), #drift-body td:nth-child(5) { width: 10%; }
-    #drift-body td.mono {
-      white-space: normal;
-      overflow-wrap: anywhere;
-      word-break: break-word;
-      line-height: 1.6;
+    .drift-row-bad td { background: color-mix(in srgb, var(--red) 7%, var(--card)) !important; }
+    /* Persona Drift table — Image #14 fix.
+       (1) The table sits inside .table-wrap so it scrolls horizontally on
+           narrow viewports instead of squashing columns / overflowing the
+           page.
+       (2) auto layout + sensible min-widths so COMPLETENESS (and its
+           header) is always fully visible and nothing is cramped.
+       (3) CAPTURED / MISSING render as wrapping chips (see .slot-list /
+           .slot-chip below) — overflow-wrap is NORMAL so a field like
+           "location_tier" can never split mid-word. */
+    #drift-body table { table-layout: auto; min-width: 880px; }
+    #drift-body th:nth-child(1), #drift-body td:nth-child(1) { min-width: 190px; }
+    #drift-body th:nth-child(2), #drift-body td:nth-child(2) { min-width: 130px; white-space: nowrap; }
+    #drift-body th:nth-child(3), #drift-body td:nth-child(3) { min-width: 230px; }
+    #drift-body th:nth-child(4), #drift-body td:nth-child(4) { min-width: 230px; }
+    #drift-body th:nth-child(5), #drift-body td:nth-child(5) { min-width: 130px; white-space: nowrap; }
+    #drift-body td.time-cell { white-space: nowrap; }
+
+    /* Token-wrapping slot lists for the CAPTURED / MISSING cells. Each
+       field name is its own chip; the flex row wraps between chips so a
+       name is NEVER broken across lines mid-word. Used by the Persona
+       Drift table (and any future slot-list cell). */
+    .slot-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px 6px;
+      overflow-wrap: normal;
+      word-break: normal;
     }
-    #drift-body td.time-cell { white-space: normal; }
+    .slot-chip {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      line-height: 1.5;
+      white-space: nowrap;
+      background: var(--surface-muted);
+      border: 1px solid var(--border);
+      color: var(--muted-foreground);
+    }
+    .slot-chip.miss {
+      background: color-mix(in srgb, var(--yellow) 12%, var(--card));
+      border-color: color-mix(in srgb, var(--yellow) 35%, var(--border));
+      color: var(--yellow);
+    }
+    .slot-list-empty { color: var(--muted-foreground); }
     .drift-pct {
       display: inline-block;
       min-width: 48px;
@@ -710,13 +873,13 @@
       font-size: 10px;
       font-weight: 700;
       letter-spacing: 0.04em;
-      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, monospace;
+      font-family: var(--font-mono);
     }
-    .outcome-pill.selected { background: rgba(63, 185, 80, 0.15); color: var(--green); border: 1px solid rgba(63, 185, 80, 0.35); }
-    .outcome-pill.rejected { background: rgba(248, 81, 73, 0.15); color: var(--red); border: 1px solid rgba(248, 81, 73, 0.35); }
-    .outcome-pill.shown    { background: rgba(88, 166, 255, 0.15); color: var(--blue); border: 1px solid rgba(88, 166, 255, 0.35); }
-    .outcome-pill.abandoned{ background: rgba(139, 149, 164, 0.15); color: var(--muted); border: 1px solid rgba(139, 149, 164, 0.35); }
-    .outcome-pill.error    { background: rgba(210, 153, 34, 0.15); color: var(--yellow); border: 1px solid rgba(210, 153, 34, 0.35); }
+    .outcome-pill.selected { background: color-mix(in srgb, var(--green) 12%, var(--card)); color: var(--green); border: 1px solid color-mix(in srgb, var(--green) 35%, var(--border)); }
+    .outcome-pill.rejected { background: color-mix(in srgb, var(--red) 11%, var(--card)); color: var(--red); border: 1px solid color-mix(in srgb, var(--red) 35%, var(--border)); }
+    .outcome-pill.shown    { background: color-mix(in srgb, var(--primary) 11%, var(--card)); color: var(--primary); border: 1px solid color-mix(in srgb, var(--primary) 35%, var(--border)); }
+    .outcome-pill.abandoned{ background: var(--surface-muted); color: var(--muted); border: 1px solid var(--border); }
+    .outcome-pill.error    { background: color-mix(in srgb, var(--yellow) 12%, var(--card)); color: var(--yellow); border: 1px solid color-mix(in srgb, var(--yellow) 35%, var(--border)); }
 
     /* Field completeness bar */
     .field-bar {
@@ -727,14 +890,15 @@
     .field-bar .track {
       width: 60px;
       height: 6px;
-      background: #0b0d12;
+      background: var(--surface-muted);
       border: 1px solid var(--border);
-      border-radius: 3px;
+      border-radius: 999px;
       overflow: hidden;
     }
     .field-bar .fill {
       height: 100%;
       background: var(--green);
+      border-radius: 999px;
     }
     .field-bar .field-count {
       font-size: 11px;
@@ -2285,7 +2449,9 @@
           tbody.appendChild(tr);
         });
         table.appendChild(tbody);
-        body.appendChild(table);
+        var profWrap = createEl('div', { className: 'table-wrap' });
+        profWrap.appendChild(table);
+        body.appendChild(profWrap);
       }
 
       // profile_complete_fields may be an integer or a list of field names
@@ -2518,7 +2684,9 @@
             });
           }
           table.appendChild(tbody);
-          usageSection.appendChild(table);
+          var usageWrap = createEl('div', { className: 'table-wrap' });
+          usageWrap.appendChild(table);
+          usageSection.appendChild(usageWrap);
         }
         body.appendChild(usageSection);
       }
@@ -2605,7 +2773,9 @@
           });
         }
         table.appendChild(tbody);
-        return table;
+        var bWrap = createEl('div', { className: 'table-wrap' });
+        bWrap.appendChild(table);
+        return bWrap;
       }
 
       // Render a horizontal-bar list for a count/share map.
@@ -2659,6 +2829,28 @@
         });
       }
 
+      // Image #14 fix — render a slot-name list as wrapping chips so a
+      // field like "location_tier" can never split mid-word. Pure
+      // presentation: same data (the slot arrays), just chips instead of
+      // a comma-joined string in a break-anywhere cell.
+      function slotListCell(slots, isMissing) {
+        var td = createEl('td');
+        var list = (slots || []);
+        if (!list.length) {
+          td.appendChild(createEl('span', { className: 'slot-list-empty', text: '—' }));
+          return td;
+        }
+        var wrap = createEl('div', { className: 'slot-list' });
+        list.forEach(function (s) {
+          wrap.appendChild(createEl('span', {
+            className: isMissing ? 'slot-chip miss' : 'slot-chip',
+            text: String(s)
+          }));
+        });
+        td.appendChild(wrap);
+        return td;
+      }
+
       function renderDrift() {
         var body = $('drift-body');
         var summary = $('drift-summary');
@@ -2706,12 +2898,8 @@
           nameCell.appendChild(idSpan);
           tr.appendChild(nameCell);
           tr.appendChild(createEl('td', { className: 'time-cell', text: fmtIST(r.last_seen) }));
-          tr.appendChild(createEl('td', { className: 'mono small',
-            text: (r.captured_slots || []).join(', ') || '—' }));
-          var missCell = createEl('td', { className: 'mono small',
-            text: (r.missing_slots || []).join(', ') || '—' });
-          if ((r.missing_slots || []).length) missCell.style.color = 'var(--yellow)';
-          tr.appendChild(missCell);
+          tr.appendChild(slotListCell(r.captured_slots, false));
+          tr.appendChild(slotListCell(r.missing_slots, true));
           var pctCell = createEl('td');
           pctCell.style.textAlign = 'right';
           var pctSpan = createEl('span', { className: 'drift-pct' });
@@ -2724,7 +2912,9 @@
           tbody.appendChild(tr);
         });
         table.appendChild(tbody);
-        body.appendChild(table);
+        var driftWrap = createEl('div', { className: 'table-wrap' });
+        driftWrap.appendChild(table);
+        body.appendChild(driftWrap);
       }
 
       function loadDrift(force) {
@@ -2818,7 +3008,9 @@
           tbody.appendChild(tr);
         });
         table.appendChild(tbody);
-        body.appendChild(table);
+        var recWrap = createEl('div', { className: 'table-wrap' });
+        recWrap.appendChild(table);
+        body.appendChild(recWrap);
       }
 
       function loadRecHistory(force) {

@@ -18,10 +18,10 @@
     "_confidence": "high"
   },
   "max_entry_age": {
-    "value": null,
+    "value": "No maximum entry age (any age entry)",
     "unit": "years",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-sampoorna-suraksha__brochure.pdf",
-    "source_quote": "Entry Age Base Cover: Proposer Adult Dependent Child/Children Minimum Entry Age – 18 Years Minimum Entry Age – 18 Years Minimum Entry Age – 91 days Maximum Entry Age – Lifetime Entry Maximum Entry Age – Lifetime Entry Maximum Entry Age - 25 years",
+    "source_quote": "Entry age Any age Entry Any age Entry Any age Entry Any age Entry Any age Entry Any age Entry",
     "_confidence": "high"
   },
   "min_child_entry_age": {
@@ -108,11 +108,11 @@
     "_confidence": "high"
   },
   "co_payment_pct": {
-    "value": null,
+    "value": 0,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-sampoorna-suraksha__brochure.pdf",
-    "source_quote": "not stated in hdfc-ergo__my-health-sampoorna-suraksha__brochure.pdf",
-    "_confidence": "low"
+    "source_quote": "treatment all over India without any co-payment.",
+    "_confidence": "medium"
   },
   "room_rent_capped_at_pct_of_si": {
     "value": null,

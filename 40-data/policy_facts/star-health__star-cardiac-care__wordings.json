@@ -56,11 +56,14 @@
     "_confidence": "high"
   },
   "initial_waiting_period_days": {
-    "value": null,
-    "unit": null,
+    "value": 30,
+    "unit": "days",
     "source_pdf_path": "rag/corpus/star-health/star-cardiac-care__wordings.pdf",
-    "source_quote": "not stated in star-health__star-cardiac-care__wordings.pdf",
-    "_confidence": "low"
+    "source_quote": "30-day waiting period - Code Excl 03 (Applicable for Section 1 for both plans) A. Expenses related to the treatment of any illness within 30 days from the first policy commencement date shall be excluded except claims arising due to an accident, provided the same are covered",
+    "source_doc_type": "wordings",
+    "source_page": "3-4",
+    "_note": "Source text is interleaved with the surrogacy-exclusion column in the wordings OCR; the 30-day initial-waiting clause (Code Excl 03) is verbatim-recoverable",
+    "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
     "value": 36,
@@ -122,6 +125,13 @@
     "unit": "percent",
     "source_pdf_path": "rag/corpus/star-health/star-cardiac-care__wordings.pdf",
     "source_quote": "not stated in star-health__star-cardiac-care__wordings.pdf",
+    "_confidence": "low"
+  },
+  "no_claim_bonus_pct": {
+    "value": null,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/star-health/star-cardiac-care__wordings.pdf",
+    "source_quote": "no No-Claim-Bonus / Cumulative-Bonus benefit percentage stated; 'cumulative bonus' appears only once in the generic renewal continuity clause ('all the accrued continuity benefits such as cumulative bonus, waiver of waiting period as per IRDAI guidelines'), with no NCB benefit percentage for this defined-benefit cardiac plan in any indexed chunk (checked all indexed chunks)",
     "_confidence": "low"
   },
   "policy_term_options_years": {

@@ -32,11 +32,21 @@
     "_confidence": "low"
   },
   "sum_insured_options": {
-    "value": null,
+    "value": [
+      300000,
+      500000,
+      700000,
+      1000000,
+      1500000,
+      2000000,
+      2500000
+    ],
     "unit": "INR",
-    "source_pdf_path": "rag/corpus/sbi-general/health-edge__cis.pdf",
-    "source_quote": "not stated in sbi-general__health-edge__cis.pdf",
-    "_confidence": "low"
+    "source_pdf_path": "rag/corpus/sbi-general/health-edge__wordings.pdf",
+    "source_quote": "Entry Age (Child) 91 days to 30 years Sum Insured (SI) 3L, 5L,7L,10L, 15L,20L and 25Lacs Base Covers",
+    "source_doc_type": "wordings",
+    "source_page": "31-32",
+    "_confidence": "high"
   },
   "grace_period": {
     "value": null,

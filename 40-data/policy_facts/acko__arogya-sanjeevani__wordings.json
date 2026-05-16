@@ -32,11 +32,32 @@
     "_confidence": "medium"
   },
   "sum_insured_options": {
-    "value": null,
+    "value": [
+      50000,
+      100000,
+      150000,
+      200000,
+      250000,
+      300000,
+      350000,
+      400000,
+      450000,
+      500000,
+      550000,
+      600000,
+      650000,
+      700000,
+      750000,
+      800000,
+      850000,
+      900000,
+      950000,
+      1000000
+    ],
     "unit": "INR",
     "source_pdf_path": "rag/corpus/acko/arogya-sanjeevani__wordings.pdf",
-    "source_quote": "not stated in acko__arogya-sanjeevani__wordings.pdf",
-    "_confidence": "low"
+    "source_quote": "Sum insured (₹) Lakhs 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10 (wordings p.23-25)",
+    "_confidence": "high"
   },
   "grace_period": {
     "value": 30,

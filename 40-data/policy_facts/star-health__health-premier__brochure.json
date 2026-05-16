@@ -21,8 +21,11 @@
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/star-health/health-premier__brochure.pdf",
-    "source_quote": "not stated in star-health__health-premier__brochure.pdf",
-    "_confidence": "low"
+    "source_quote": "Eligibility ● For Adults: Min - 50 years for primary member & Max - Up to Any Age (Oldest member will be consider as primary member)",
+    "source_doc_type": "brochure",
+    "source_page": "1-2",
+    "_note": "There is explicitly NO maximum adult entry age — the policy states 'Max - Up to Any Age'; value left null because no finite numeric cap exists (not because the data is missing)",
+    "_confidence": "high"
   },
   "min_child_entry_age": {
     "value": 91,

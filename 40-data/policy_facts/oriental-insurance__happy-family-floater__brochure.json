@@ -228,6 +228,13 @@
     "source_quote": "ii. Room, Boarding and Nursing Expenses as provided by the Hospital /Nursing Home. 1 % of the Sum Insured per day 1 % of the Sum Insured per day 1% of the Sum Insured per day 1% of the Sum Insured per day",
     "_confidence": "high"
   },
+  "no_claim_bonus_pct": {
+    "value": 0,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/oriental-insurance/happy-family-floater__brochure.pdf",
+    "source_quote": "6.33 NO CLAIM DISCOUNT /LOADING: This is a one-time benefit for those Insured Persons covered under Happy Family Floater Policy. Happy Family Floater Policy had the provision of No Claim Discount / Loading, which has been discontinued under Happy Family Floater Policy-2015.",
+    "_confidence": "high"
+  },
   "_meta": {
     "network_hospital_backfill_2026-05-15": "oriental-insurance insurer-wide count backfilled in targeted scrape pass"
   }

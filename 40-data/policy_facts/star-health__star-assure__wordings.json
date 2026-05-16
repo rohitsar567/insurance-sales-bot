@@ -21,7 +21,7 @@
     "value": null,
     "unit": "years",
     "source_pdf_path": "rag/corpus/star-health/star-assure__wordings.pdf",
-    "source_quote": "not stated in star-health__star-assure__wordings.pdf",
+    "source_quote": "no adult maximum-entry-age clause present in the policy wording; the wording references entry-age only for the co-payment trigger ('Co-payment ... Applicable only for Insured Persons aged 61 years and above at the time of entry') and the New Born continuity ('without any underwriting and the entry age criteria'); the eligibility/age table is not contained in the wordings document (checked all 46 indexed wordings chunks)",
     "_confidence": "low"
   },
   "min_child_entry_age": {

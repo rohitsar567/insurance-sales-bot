@@ -32,11 +32,14 @@
     "_confidence": "low"
   },
   "sum_insured_options": {
-    "value": null,
+    "value": [
+      30000,
+      50000
+    ],
     "unit": "INR",
     "source_pdf_path": "rag/corpus/national-insurance/universal-health__prospectus.pdf",
-    "source_quote": "not stated in universal-health__prospectus.pdf",
-    "_confidence": "low"
+    "source_quote": "TABLE OF BENEFITS Product Universal Health Insurance Policy Section I SI - ₹ 30,000 SI - ₹ 50,000",
+    "_confidence": "high"
   },
   "grace_period": {
     "value": 30,

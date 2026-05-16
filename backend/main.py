@@ -23,11 +23,12 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from backend.config import settings
 from backend import nim_fallback
 from backend import brain_tools  # KI-271 — SLOT_UNION-driven profile_dict in 3 endpoints
+from backend import sum_insured as _si  # SI rationalisation (D1/D3) — source-quote corroboration
 from backend.providers.sarvam_stt import SarvamSTT
 from backend.providers.sarvam_tts import SarvamTTS
 
@@ -243,6 +244,105 @@ class UploadResponse(BaseModel):
     elapsed_ms: int
 
 
+# ---------------------------------------------------------------------------
+# Quarantine TTL auto-purge (2026-05-16)
+#
+# User-uploaded PDFs land in the SEPARATE `user_uploads_quarantine` Chroma
+# collection, scoped per session_id. They are intentionally ephemeral — NOT
+# durable corpus. Two risks if they linger forever:
+#   1. The quarantine HNSW index grows unbounded across thousands of one-off
+#      uploads (a soft version of the 2026-05-14 link_lists.bin bloat).
+#   2. A user's private policy document stays queryable long after their
+#      session is over.
+#
+# Mechanism (mirrors the existing in-memory ledgers in security.py /
+# session_state.py — process-local, resets on restart, v2 → Redis):
+#   - `_quarantine_last_seen`: {session_id: epoch_seconds} updated on every
+#     successful upload via `_quarantine_touch`.
+#   - A periodic asyncio task (`_quarantine_purge_loop`) sweeps every
+#     settings.QUARANTINE_PURGE_INTERVAL_SEC and deletes all quarantine
+#     chunks whose session_id has had no upload for
+#     settings.QUARANTINE_TTL_SECONDS (default 24h).
+# Deletion is `where={"session_id": sid}` — strictly scoped, can never touch
+# the curated `policies` collection (different collection entirely).
+# ---------------------------------------------------------------------------
+
+_quarantine_last_seen: dict[str, float] = {}
+_quarantine_lock = asyncio.Lock()
+
+
+def _quarantine_touch(session_id: str, policy_id: str = "") -> None:
+    """Record that `session_id` just wrote to the quarantine collection.
+
+    Synchronous + best-effort: bookkeeping must never break an upload.
+    """
+    try:
+        if session_id:
+            _quarantine_last_seen[session_id] = time.time()
+    except Exception:  # noqa: BLE001 — bookkeeping never breaks the upload
+        pass
+
+
+def _purge_expired_quarantine(now: Optional[float] = None) -> int:
+    """Delete quarantine chunks for every session idle longer than the TTL.
+
+    Returns the number of sessions purged. Pure/synchronous so it can be
+    unit-tested directly and run via asyncio.to_thread (Chroma client is
+    blocking). Never raises — a Chroma hiccup must not crash the loop.
+    """
+    now = now if now is not None else time.time()
+    ttl = settings.QUARANTINE_TTL_SECONDS
+    expired = [
+        sid for sid, ts in list(_quarantine_last_seen.items())
+        if now - ts >= ttl
+    ]
+    if not expired:
+        return 0
+    purged = 0
+    try:
+        from rag.ingest import get_quarantine_collection
+        coll = get_quarantine_collection()
+    except Exception as e:  # noqa: BLE001
+        logging.warning(
+            "quarantine TTL: could not open quarantine collection (%s: %s)",
+            type(e).__name__, e,
+        )
+        return 0
+    for sid in expired:
+        try:
+            coll.delete(where={"session_id": sid})
+            _quarantine_last_seen.pop(sid, None)
+            purged += 1
+            logging.info(
+                "quarantine TTL: purged session %s (idle > %ds)",
+                sid[:12], ttl,
+            )
+        except Exception as e:  # noqa: BLE001 — one bad delete must not abort the sweep
+            logging.warning(
+                "quarantine TTL: delete(where session=%s) failed (%s: %s)",
+                sid[:12], type(e).__name__, e,
+            )
+    return purged
+
+
+async def _quarantine_purge_loop() -> None:
+    """Periodic background sweep — registered at startup. Mirrors the
+    llm_health.background_probe_loop pattern (sleep → work → repeat,
+    swallow all errors so the loop never dies)."""
+    interval = max(60, settings.QUARANTINE_PURGE_INTERVAL_SEC)
+    while True:
+        try:
+            await asyncio.sleep(interval)
+            await asyncio.to_thread(_purge_expired_quarantine)
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:  # noqa: BLE001 — loop must survive any error
+            logging.warning(
+                "quarantine TTL purge loop iteration failed (%s: %s)",
+                type(e).__name__, e,
+            )
+
+
 # Issue B (KI-Z6-PROFILECOMPLETE, 2026-05-15) — single source of truth for
 # "is this profile ready to recommend against". brain_tools._profile_complete
 # uses the same _REQUIRED_FOR_READY tuple; we mirror the call here instead of
@@ -375,7 +475,7 @@ async def _startup_load_admin_overrides():
     """Re-apply any persisted chain reorderings from the previous process."""
     import asyncio
     from pathlib import Path
-    override_path = Path(__file__).resolve().parent.parent / "40-data" / "admin_overrides.json"
+    override_path = settings.DATA_DIR / "admin_overrides.json"
     if override_path.exists():
         try:
             overrides = json.loads(override_path.read_text())
@@ -395,6 +495,18 @@ async def _startup_llm_health_probe():
     import asyncio
     from backend import llm_health
     asyncio.create_task(llm_health.background_probe_loop())
+
+
+@app.on_event("startup")
+async def _startup_quarantine_ttl_purge():
+    """Launch the periodic quarantine TTL sweep (2026-05-16).
+
+    Evicts user-uploaded PDF chunks whose session has been idle longer than
+    settings.QUARANTINE_TTL_SECONDS so the quarantine index can't grow
+    unbounded and stale private docs don't linger. Mirrors the
+    _startup_llm_health_probe fire-and-forget create_task pattern.
+    """
+    asyncio.create_task(_quarantine_purge_loop())
 
 
 @app.on_event("startup")
@@ -1155,32 +1267,45 @@ async def chat(req: ChatRequest, request: Request):
         # Frontend uses this flag to render the "Welcome back" banner.
         if USE_SINGLE_BRAIN:
             try:
-                _post_name = (
-                    getattr(_persist_session.profile, "name", None) or ""
-                ).strip()
-                _post_has_other_slots = any(
-                    getattr(_persist_session.profile, fld, None) not in (None, "", [])
-                    for fld in (
-                        "age", "dependents", "location_tier",
-                        "income_band", "primary_goal", "health_conditions",
-                    )
-                )
-                if (
-                    _pre_turn_idx == 0
-                    and not _pre_turn_name
-                    and _post_name
-                    and _post_has_other_slots
-                    # save_profile_field captures a NEW name on turn 1 too —
-                    # only flag as returning when prior slots came from the
-                    # recall path, NOT from in-this-turn extraction. The
-                    # profile_updates dict carries fields written THIS turn;
-                    # if EVERY filled slot is in profile_updates, it's a
-                    # first-time capture, NOT a recall.
-                    and not _every_filled_slot_was_set_this_turn(
-                        _persist_session.profile, turn.profile_updates,
-                    )
-                ):
+                # KI-RECALL-FIX (2026-05-16) — PREFER the deterministic signal
+                # single_brain sets on the turn where the user explicitly
+                # affirmed a staged cross-session recall (the confirmation
+                # gate resolves on a LATER turn, so the old turn-1-only
+                # heuristic below could NEVER fire for the real flow — the
+                # banner was unreachable even once recall worked).
+                if getattr(turn, "returning_user_recalled", False):
                     _returning_user_recalled = True
+                else:
+                    # Legacy heuristic — kept as a fallback for any
+                    # non-confirmation recall path (e.g. a direct hydrate via
+                    # the /api/profile/recall-by-name escape hatch) that
+                    # populates the profile on the first turn without a
+                    # confirm round-trip.
+                    _post_name = (
+                        getattr(_persist_session.profile, "name", None) or ""
+                    ).strip()
+                    _post_has_other_slots = any(
+                        getattr(_persist_session.profile, fld, None) not in (None, "", [])
+                        for fld in (
+                            "age", "dependents", "location_tier",
+                            "income_band", "primary_goal", "health_conditions",
+                        )
+                    )
+                    if (
+                        _pre_turn_idx == 0
+                        and not _pre_turn_name
+                        and _post_name
+                        and _post_has_other_slots
+                        # save_profile_field captures a NEW name on turn 1 too
+                        # — only flag as returning when prior slots came from
+                        # the recall path, NOT from in-this-turn extraction.
+                        # If EVERY filled slot is in profile_updates, it's a
+                        # first-time capture, NOT a recall.
+                        and not _every_filled_slot_was_set_this_turn(
+                            _persist_session.profile, turn.profile_updates,
+                        )
+                    ):
+                        _returning_user_recalled = True
             except Exception:  # noqa: BLE001
                 pass
     except Exception as _persist_err:  # noqa: BLE001
@@ -1548,19 +1673,24 @@ async def coverage():
         if url and (slug, name) not in policy_urls:
             policy_urls[(slug, name)] = url
 
+    # #80 — SINGLE SOURCE OF TRUTH. Derive the catalogue counts from the SAME
+    # de-duplicated marketplace the cards render from, so the header count can
+    # never drift from what the user actually sees (1 product = 1 card
+    # everywhere). The old parallel product_key tally double-counted the
+    # doctype-sibling permutations the marketplace collapses.
+    from collections import Counter as _Counter
+    _mp = await policies_all()
+    _pc = _Counter(p.insurer_slug for p in _mp.policies)
+
     insurers_out = []
-    total_policies = 0
     for slug, info in sorted(by_insurer.items()):
-        # KI-130 (2026-05-15) — regulatory is not an insurer; drop entirely
-        # from the marketplace response. IRDAI/NHA docs are still retrieved
-        # and cited in chat answers — they just don't show in the marketplace.
+        # KI-130 — regulatory is not an insurer; never a marketplace card.
         if slug == "regulatory":
             continue
-        # KI-135 — count by product_key set (matches /api/policies/all); use
-        # the names list for the sample display ordered by first occurrence.
-        product_count = len(info["products"])
+        product_count = _pc.get(slug, 0)
+        if product_count == 0:
+            continue
         sample_names = sorted(info["names"])[:8]
-        total_policies += product_count
         name, home_url = insurer_meta.get(slug, (slug, ""))
         sample_entries = [
             PolicyEntry(name=p, source_url=policy_urls.get((slug, p), ""))
@@ -1579,8 +1709,8 @@ async def coverage():
 
     return CoverageResponse(
         total_chunks=total,
-        total_policies=total_policies,
-        total_insurers=len(insurers_out),
+        total_policies=_mp.total,
+        total_insurers=_mp.insurers_indexed,
         insurers=insurers_out,
     )
 
@@ -1625,9 +1755,24 @@ async def upload_policy(
     out_path = user_dir / f"{slug}.pdf"
     out_path.write_bytes(contents)
 
+    # Orphan-file guard (2026-05-16) — the PDF is written to disk BEFORE the
+    # 8 security gates run (pdfplumber needs a path). On ANY non-success exit
+    # — security reject, empty-text reject, embed failure, bloat trip, the
+    # broad 500 catch — the file must NOT be left lying in rag/corpus/
+    # user-upload/. `indexed_ok` is flipped True only after a successful
+    # quarantine collection.add(); the finally block deletes the file unless
+    # it was actually indexed (or short-circuited via the dedupe accept
+    # cache, where the bytes are already represented by cached chunks).
+    indexed_ok = False
+
     # Ingest just this one file
     try:
-        from rag.ingest import chunk_pages, get_quarantine_collection, read_pdf_pages
+        from rag.ingest import (
+            _abort_if_hnsw_bloated,
+            chunk_pages,
+            get_quarantine_collection,
+            read_pdf_pages,
+        )
         from backend.providers.local_embeddings import LocalEmbeddings as _Emb
         from backend.security import check_upload, rate_limiter
 
@@ -1644,13 +1789,17 @@ async def upload_policy(
             ip=client_ip,
         )
         if not verdict.accepted:
-            out_path.unlink(missing_ok=True)
+            # File cleanup handled uniformly in the finally block (orphan
+            # guard) — no explicit unlink needed here.
             raise HTTPException(
                 400,
                 f"Upload rejected by security gates: {', '.join(verdict.reasons[:3])}",
             )
         # If the dedupe gate found this exact (hash, session) already indexed,
         # skip chunking + embedding entirely and return the cached chunk count.
+        # The bytes are already represented by the previously-indexed chunks,
+        # so this freshly-written duplicate file is redundant — let the
+        # finally block delete it (indexed_ok stays False).
         if verdict.cached_chunks is not None:
             return UploadResponse(
                 policy_id=policy_id,
@@ -1667,6 +1816,15 @@ async def upload_policy(
         chunks = list(chunk_pages(pages))
         if not chunks:
             raise HTTPException(400, "Could not extract any text from the PDF (scanned image-only?).")
+
+        # Quarantine HNSW bloat guard (2026-05-16) — fail fast BEFORE we
+        # spend an embed call if a prior ingest/upload already bloated the
+        # on-disk index. The guard scans ALL link_lists.bin under
+        # VECTORS_DIR, so it covers both `policies` and the
+        # `user_uploads_quarantine` collection. Raises RuntimeError on
+        # trip; the broad except below converts it to a clean HTTP 500
+        # rather than letting the index grow into a disk-fill incident.
+        _abort_if_hnsw_bloated()
 
         embedder = _Emb()
         texts = [c["text"] for c in chunks]
@@ -1695,6 +1853,18 @@ async def upload_policy(
         except Exception:
             pass
         collection.add(ids=ids, documents=texts, embeddings=vectors, metadatas=metadatas)
+        # Index write succeeded — the on-disk file is now legitimately
+        # referenced by chunk metadata.local_path; the finally block must
+        # NOT delete it.
+        indexed_ok = True
+        # Post-add bloat guard — catch a bloat THIS upload caused (e.g. a
+        # ChromaDB version / batch-size pathology). Mirrors ingest.py's
+        # _abort_if_hnsw_bloated() after collection.add().
+        _abort_if_hnsw_bloated()
+        # TTL bookkeeping — remember when this session last touched the
+        # quarantine collection so the periodic purge task can evict its
+        # chunks after the configured idle window (default 24h).
+        _quarantine_touch(sid, policy_id)
         # Update rate-limit ledger after successful index
         rate_limiter.record_upload(sid, len(chunks))
         # Cache this content hash → chunk count so an identical re-upload in
@@ -1708,6 +1878,17 @@ async def upload_policy(
         raise
     except Exception as e:
         raise HTTPException(500, f"Indexing failed: {type(e).__name__}: {e}")
+    finally:
+        # Orphan-file guard — delete the on-disk PDF unless it was actually
+        # indexed into the quarantine collection. Covers EVERY non-success
+        # exit (security reject, empty-text, dedupe short-circuit, embed
+        # failure, bloat trip, 500 catch). Best-effort: a cleanup failure
+        # must never mask the real response/exception.
+        if not indexed_ok:
+            try:
+                out_path.unlink(missing_ok=True)
+            except Exception:  # noqa: BLE001
+                pass
 
     return UploadResponse(
         policy_id=policy_id,
@@ -1983,6 +2164,13 @@ class ScorecardResponse(BaseModel):
     sub_scores: list[ScorecardSubScore]
     data_completeness_pct: float
     methodology_link: str
+    # True ⇒ this policy had too little structured data to grade honestly.
+    # The response is still a valid HTTP-200 ScorecardResponse (grade "—",
+    # overall_score 0, empty sub_scores, an honest one_liner) so the frontend
+    # renders a truthful "not enough data yet" state instead of the generic
+    # Retry fallback or a fabricated grade. Optional w/ default so the
+    # existing /api/policies/compare construction (no flag) stays valid.
+    insufficient_data: bool = False
 
 
 class CompareEntry(BaseModel):
@@ -2013,6 +2201,22 @@ class MarketplacePolicy(BaseModel):
     min_entry_age: Optional[int] = None
     max_entry_age: Optional[int] = None
     sum_insured_options: list[int] = Field(default_factory=list)
+    # #81 — cover presented as a RANGE (min – max), never a discrete ladder
+    # or a single deterministic number.
+    # SI RATIONALISATION (D1/D3) — sum_insured_options / _min / _max are now
+    # the SOURCE-QUOTE-CORROBORATED set only (backend/sum_insured.py). Values
+    # the field's own source_quote does not genuinely state are dropped, so
+    # the marketplace never shows an SI the policy document doesn't back.
+    #   • sum_insured_is_band — True only when the corroborated set is a
+    #     genuine continuous band (range language + wide min→max). The
+    #     frontend renders "₹X – ₹Y"; otherwise it lists the discrete tiers.
+    #   • sum_insured_tiers   — the corroborated discrete plan amounts
+    #     (== sum_insured_options; kept as an explicit, named field so the
+    #     display contract is unambiguous on the frontend).
+    sum_insured_min: Optional[int] = None
+    sum_insured_max: Optional[int] = None
+    sum_insured_is_band: bool = False
+    sum_insured_tiers: list[int] = Field(default_factory=list)
     pre_existing_disease_waiting_months: Optional[int] = None
     initial_waiting_period_days: Optional[int] = None
     maternity_waiting_months: Optional[int] = None
@@ -2023,6 +2227,74 @@ class MarketplacePolicy(BaseModel):
     maternity_coverage: Optional[bool] = None
     cashless_treatment_supported: Optional[bool] = None
     room_rent_capping: Optional[str] = None
+    # #86 — sourced insurer-level network: the official list URL + the
+    # official stated count (when the insurer publishes one). Replaces the
+    # web-backfilled per-policy network_hospital_count for display.
+    network_list_url: Optional[str] = None
+    network_count_official: Optional[int] = None
+    network_list_is_pdf: bool = False
+
+    # #73/#76 — the curated re-extraction legitimately writes non-numeric
+    # honest values (e.g. max_entry_age "No maximum age (Lifelong)", a
+    # fractional no_claim_bonus_pct). Previously these raised ValidationError
+    # and the ENTIRE policy was dropped from the marketplace. Coerce at the
+    # model so any construction path self-heals: keep a parseable number,
+    # else degrade that ONE field to None — never drop the policy.
+    @field_validator(
+        "min_entry_age", "max_entry_age", "pre_existing_disease_waiting_months",
+        "initial_waiting_period_days", "maternity_waiting_months",
+        "network_hospital_count", "no_claim_bonus_pct",
+        "network_count_official", mode="before",
+    )
+    @classmethod
+    def _coerce_optional_int(cls, v):
+        if v is None or isinstance(v, bool):
+            return None
+        if isinstance(v, int):
+            return v
+        try:
+            return int(round(float(str(v).replace(",", "").strip())))
+        except (ValueError, TypeError):
+            return None
+
+    @field_validator("copayment_pct", mode="before")
+    @classmethod
+    def _coerce_optional_float(cls, v):
+        if v is None or isinstance(v, bool):
+            return None
+        try:
+            return float(str(v).replace("%", "").replace(",", "").strip())
+        except (ValueError, TypeError):
+            return None
+
+    @field_validator("sum_insured_options", "sum_insured_tiers", mode="before")
+    @classmethod
+    def _coerce_int_list(cls, v):
+        if not isinstance(v, list):
+            return []
+        out = []
+        for x in v:
+            try:
+                out.append(int(round(float(str(x).replace(",", "").strip()))))
+            except (ValueError, TypeError):
+                continue
+        return out
+
+    @field_validator(
+        "ayush_coverage", "maternity_coverage", "cashless_treatment_supported",
+        mode="before",
+    )
+    @classmethod
+    def _coerce_optional_bool(cls, v):
+        if v is None or isinstance(v, bool):
+            return v
+        s = str(v).strip().lower()
+        if s in ("true", "yes", "covered", "y", "1"):
+            return True
+        if s in ("false", "no", "not covered", "excluded", "n", "0"):
+            return False
+        return None
+
     # KI-141 (2026-05-15) — marketing-rename aliases that share the same
     # source PDF (e.g. "Activ One" and "Activ Health" both point to the
     # activ-health-individual__wordings.pdf parent). Default empty list so
@@ -2043,22 +2315,39 @@ async def scorecard_methodology():
     consumer rationale, fields driving each sub-score, and regulatory anchors.
 
     Frontend renders this inside PolicyDetailModal so the user can see exactly
-    how the headline number is computed and which of the 48 HealthPolicy fields
-    feed into which criterion.
+    how the headline number is computed and which of the HealthPolicy schema
+    fields feed into which criterion. Both counts below are DERIVED (single
+    source of truth) — never hardcode them on the frontend; consume these.
     """
-    from backend.scorecard import METHODOLOGY_BLUEPRINT, WEIGHTS, SCORED_FIELDS
+    from backend.scorecard import (
+        METHODOLOGY_BLUEPRINT, WEIGHTS, SCORED_FIELDS, grade_for,
+    )
+    from rag.schema import HealthPolicy
+    # grade_thresholds DERIVED from grade_for() — the single source of truth
+    # for the frozen cutoffs (2026-05-16). Never restate the numbers here:
+    # the old hardcoded "≥85/70–84/…" had drifted out of sync with the
+    # recalibrated A≥76/B≥69/C≥61/D≥54/F<54 scoring, so the disclosed bands
+    # did not match how grades were actually assigned. Introspecting grade_for
+    # makes a future recalibration propagate automatically.
+    _band_lo: dict[str, int] = {}
+    _band_desc: dict[str, str] = {}
+    for _s in range(0, 101):
+        _g, _d = grade_for(_s)
+        if _g not in _band_lo:
+            _band_lo[_g] = _s
+            _band_desc[_g] = _d
+    _f_cut = min(v for k, v in _band_lo.items() if k != "F")
+    _grade_thresholds = {
+        g: (f"<{_f_cut} — {_band_desc[g]}" if g == "F"
+            else f"≥{_band_lo[g]} — {_band_desc[g]}")
+        for g in ("A", "B", "C", "D", "F")
+    }
     return {
         "weights": WEIGHTS,
         "scored_fields_count": len(SCORED_FIELDS),
-        "total_schema_fields": 48,
+        "total_schema_fields": len(HealthPolicy.model_fields),
         "criteria": METHODOLOGY_BLUEPRINT,
-        "grade_thresholds": {
-            "A": "≥85 — strong all-rounder",
-            "B": "70–84 — good with a few gaps",
-            "C": "55–69 — check trade-offs",
-            "D": "40–54 — material concerns",
-            "F": "<40 — significant gaps",
-        },
+        "grade_thresholds": _grade_thresholds,
         "scoring_approach": (
             "Rules-based (deterministic), no LLM-in-the-loop. Each criterion produces a "
             "0–100 sub-score from concrete schema fields; the overall score is the weighted "
@@ -2072,7 +2361,7 @@ def _build_corpus_url_index() -> dict[str, str]:
     backfill source_pdf_url when the LLM extraction didn't capture it."""
     import re as _re
     out: dict[str, str] = {}
-    md_path = settings.CORPUS_DIR.parent.parent / "40-data" / "corpus_urls.md"
+    md_path = settings.DATA_DIR / "corpus_urls.md"
     if not md_path.exists():
         return out
     for line in md_path.read_text().splitlines():
@@ -2128,7 +2417,7 @@ def _load_curated_facts() -> dict[str, dict]:
     import json as _json
     from collections import Counter
     facts: dict[str, dict] = {}
-    facts_dir = settings.CORPUS_DIR.parent.parent / "40-data" / "policy_facts"
+    facts_dir = settings.DATA_DIR / "policy_facts"
     if not facts_dir.exists():
         return facts
 
@@ -2198,13 +2487,79 @@ def _load_curated_facts() -> dict[str, dict]:
     # __doctype variant + each sibling's own stem + each sibling's
     # policy_id) point at the chosen flat dict so the source-of-truth wins
     # regardless of which key the caller looked up by.
+    #
+    # KI-251 (2026-05-16) — FIELD-LEVEL canonical precedence. The original
+    # KI-219 logic chose ONE entry (canonical) wholesale. That silently
+    # dropped real curated data whenever the canonical file had a field
+    # extracted as null (`{"value": null, ... "source_quote": "not stated
+    # in <pdf>"}`) while a doctype sibling had the genuine value. Concrete
+    # incident: `icici-lombard__health-elite-plus.json` (canonical, every
+    # field null) shadowed `icici-lombard__health-elite-plus__wordings.json`
+    # whose `sum_insured_options` is a real list — so the marketplace card
+    # rendered "COVER UP TO —" despite the value existing in the curated
+    # layer. Affected 8 products on sum_insured_options + 3 on entry-age.
+    #
+    # Fix: keep canonical precedence for every field the canonical populates
+    # (KI-219 preserved exactly — `hdfc-ergo__optima-secure` "No room rent
+    # cap" still wins over its sibling's "1%"), but for any field the
+    # canonical leaves null/empty, backfill from the highest-ranked sibling
+    # that has a genuine value. Doctype rank: wordings > prospectus > cis >
+    # brochure (most authoritative source first). This ONLY surfaces data
+    # that already exists verbatim in 40-data/policy_facts — nothing is
+    # fabricated; the per-field provenance pointer is backfilled too so the
+    # UI still shows the correct source quote for the borrowed field.
+    _SIB_FILL_RANK = {"__wordings": 0, "__prospectus": 1, "__cis": 2, "__brochure": 3}
+
+    def _is_empty(val) -> bool:
+        return val is None or val == "" or val == [] or val == {}
+
+    # Fields that are pure metadata / structural and must NOT be borrowed
+    # across siblings (they describe the chosen entry itself, not a fact).
+    _NON_FACT_KEYS = {
+        "policy_id", "policy_name", "insurer_slug",
+        "_facts_provenance", "_primary_source_pdf",
+    }
+
     for product_key, entries in siblings.items():
         canonical_entries = [s for s, c in entries if c]
         if canonical_entries:
             chosen_stem = canonical_entries[0]
         else:
             chosen_stem = sorted(s for s, _ in entries)[0]
-        chosen = by_stem[chosen_stem]
+        chosen = dict(by_stem[chosen_stem])
+
+        # Deterministic sibling order for field-level backfill: by doctype
+        # authority rank, then stem (stable tiebreak). The chosen stem is
+        # excluded — it is already the base.
+        def _rank(stem: str) -> tuple:
+            for suf, r in _SIB_FILL_RANK.items():
+                if stem.endswith(suf):
+                    return (r, stem)
+            return (99, stem)
+
+        fill_order = sorted(
+            (s for s, _ in entries if s != chosen_stem),
+            key=_rank,
+        )
+        if fill_order:
+            chosen_prov = dict(chosen.get("_facts_provenance") or {})
+            for sib_stem in fill_order:
+                sib = by_stem[sib_stem]
+                sib_prov = sib.get("_facts_provenance") or {}
+                for k, v in sib.items():
+                    if k in _NON_FACT_KEYS:
+                        continue
+                    # Canonical/base value wins whenever it is populated.
+                    if not _is_empty(chosen.get(k)):
+                        continue
+                    if _is_empty(v):
+                        continue
+                    chosen[k] = v
+                    # Carry the borrowed field's provenance so the UI still
+                    # shows the correct verbatim source quote for it.
+                    if k in sib_prov:
+                        chosen_prov[k] = sib_prov[k]
+            chosen["_facts_provenance"] = chosen_prov
 
         # Register the canonical product_key.
         facts[product_key] = chosen
@@ -2241,6 +2596,181 @@ def _source_pdf_to_policy_id(pdf_path: str | None) -> str | None:
     return s.replace("/", "__")
 
 
+_INSURER_NET: dict | None = None
+
+
+def _insurer_network(slug: str) -> dict:
+    """#86 — official insurer-level network source (40-data/insurer_network
+    .json): the official list URL + the official stated count where the
+    insurer publishes one. Sourced, not web-backfilled. Cached."""
+    global _INSURER_NET
+    if _INSURER_NET is None:
+        p = settings.DATA_DIR / "insurer_network.json"
+        try:
+            _INSURER_NET = (
+                json.loads(p.read_text()).get("insurers", {}) if p.exists() else {}
+            )
+        except Exception:
+            _INSURER_NET = {}
+    return _INSURER_NET.get(slug, {}) or {}
+
+
+def _recover_scorecard_facts(sc) -> dict:
+    """#48 — port of the frontend parseScorecardFacts. The detail-modal
+    snapshot recovers facts (co-pay, PED wait, network, cashless, …) from
+    the scorecard's signal strings when the flat policy field is null. The
+    marketplace CARD only had the flat fields, so it showed "—" where the
+    modal showed a real value. Recover the SAME facts server-side and
+    backfill `data` so card == modal everywhere, with no extra client call."""
+    import re as _re
+
+    f: dict = {}
+    sub = getattr(sc, "sub_scores", None) or []
+    for s in sub:
+        for raw in getattr(s, "signals", None) or []:
+            sig = str(raw).strip()
+            low = sig.lower()
+            m = _re.search(r"(\d+(?:\.\d+)?)%\s*copay", sig, _re.I)
+            if m:
+                f["copayment_pct"] = float(m.group(1))
+            elif _re.search(r"0% copayment", sig, _re.I):
+                f["copayment_pct"] = 0
+            m = _re.search(r"(\d+)\s*mo\s*PED\s*waiting", sig, _re.I)
+            if m:
+                f["pre_existing_disease_waiting_months"] = int(m.group(1))
+            m = _re.search(r"([\d,]+)\+?\s*network hospitals", sig, _re.I)
+            if m:
+                f["network_hospital_count"] = int(m.group(1).replace(",", ""))
+            if _re.search(r"cashless supported", low, _re.I):
+                f["cashless_treatment_supported"] = True
+            elif _re.search(r"no cashless", low, _re.I):
+                f["cashless_treatment_supported"] = False
+            if _re.search(r"ayush covered", low, _re.I):
+                f["ayush_coverage"] = True
+            elif _re.search(r"no ayush", low, _re.I):
+                f["ayush_coverage"] = False
+            if _re.search(r"maternity covered", low, _re.I):
+                f["maternity_coverage"] = True
+            if _re.search(r"no room rent cap", low, _re.I):
+                f["_room_no_cap"] = True
+            else:
+                rr = _re.search(r"room rent capped:\s*(.+)$", sig, _re.I)
+                if rr:
+                    f["_room_cap_text"] = rr.group(1).strip()
+            m = _re.search(r"entry up to\s*(\d+)", sig, _re.I)
+            if m:
+                f["max_entry_age"] = int(m.group(1))
+    return f
+
+
+_CORPUS_PDF_IDX: dict[str, str] | None = None
+
+
+def _corpus_pdf_index() -> dict[str, str]:
+    """Every policy in the catalogue exists ONLY because its source PDF was
+    downloaded into rag/corpus to build the vectors + policy_facts. This maps
+    each policy_id (full id, file stem, AND the #80 dedup-stripped id) to the
+    absolute corpus PDF that physically exists on disk — so the marketplace
+    can always link the real document even when no public origin URL was ever
+    recorded. Wordings/policy docs win over CIS/brochure/prospectus. Built
+    once and cached for the process lifetime."""
+    global _CORPUS_PDF_IDX
+    if _CORPUS_PDF_IDX is not None:
+        return _CORPUS_PDF_IDX
+    from collections import Counter
+
+    prio = {"wordings": 0, "policy": 1, "cis": 2, "prospectus": 3, "brochure": 4}
+
+    def _rank(path: str) -> int:
+        low = path.lower()
+        for k, v in prio.items():
+            if k in low:
+                return v
+        return 9
+
+    idx: dict[str, str] = {}
+    best: dict[str, int] = {}
+    root = settings.CORPUS_DIR.parent.parent
+    corpus_root = str(settings.CORPUS_DIR.resolve())
+    facts_dir = settings.DATA_DIR / "policy_facts"
+    if facts_dir.exists():
+        for fp in sorted(facts_dir.glob("*.json")):
+            try:
+                d = json.loads(fp.read_text())
+            except Exception:
+                continue
+            pid = d.get("policy_id") or fp.stem
+            paths = [
+                v.get("source_pdf_path")
+                for v in d.values()
+                if isinstance(v, dict) and v.get("source_pdf_path")
+            ]
+            if not paths:
+                continue
+            cand = Counter(paths).most_common(1)[0][0]
+            ap = (root / cand).resolve()
+            try:
+                ok = ap.is_file() and str(ap).startswith(corpus_root)
+            except Exception:
+                ok = False
+            if not ok:
+                continue
+            rank = _rank(cand)
+            keys = {pid, fp.stem}
+            for suff in ("__wordings", "__brochure", "__cis", "__prospectus", "__policy"):
+                if pid.endswith(suff):
+                    keys.add(pid[: -len(suff)])
+                    break
+            for k in keys:
+                if k not in idx or rank < best.get(k, 9):
+                    idx[k] = str(ap)
+                    best[k] = rank
+    _CORPUS_PDF_IDX = idx
+    return idx
+
+
+def _is_credible_pdf_url(u: str | None) -> bool:
+    """#87 — a recorded source_pdf_url is only trustworthy as the policy-PDF
+    link if it unambiguously points at a document, not an insurer homepage
+    or a generic section page (e.g. https://www.sbigeneral.in,
+    https://nationalinsurance.nic.co.in/en/health-insurance). When it isn't,
+    we prefer the local corpus PDF we definitively have for every policy."""
+    if not u:
+        return False
+    from urllib.parse import urlparse
+
+    try:
+        path = (urlparse(u).path or "").lower()
+    except Exception:
+        return False
+    if ".pdf" in path:
+        return True
+    return any(
+        m in path
+        for m in ("/documents/", "/dam/", "/download", "/sites/default/files/")
+    )
+
+
+@app.get("/api/policy-pdf/{policy_id}")
+def policy_pdf(policy_id: str):
+    """Serve the local corpus PDF for a policy — the exact document the
+    catalogue, vectors and facts were all built from. Guarantees every one
+    of the 148 cards has a working real-PDF link even when no public origin
+    URL was ever captured. Path is constrained to rag/corpus."""
+    idx = _corpus_pdf_index()
+    ap = idx.get(policy_id) or idx.get(policy_id.replace("/", "__"))
+    if not ap:
+        raise HTTPException(status_code=404, detail="No source PDF for this policy")
+    p = Path(ap).resolve()
+    if not (p.is_file() and str(p).startswith(str(settings.CORPUS_DIR.resolve()))):
+        raise HTTPException(status_code=404, detail="Source PDF not found")
+    return FileResponse(
+        str(p),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="{p.name}"'},
+    )
+
+
 def _merge_curated(extracted: dict, curated: dict | None) -> dict:
     """Curated facts override LLM extraction for every field they populate.
     LLM extraction fills the long tail. Provenance pointers survive in the
@@ -2252,6 +2782,66 @@ def _merge_curated(extracted: dict, curated: dict | None) -> dict:
         if v is not None and v != "" and v != []:
             merged[k] = v
     return merged
+
+
+def _si_source_quote(data: dict) -> str:
+    """The verbatim source_quote backing this policy's sum_insured_options.
+
+    Every real SI value in the catalogue comes from the curated
+    40-data/policy_facts layer (extracted SI is null across the board); the
+    flatten step in _load_curated_facts() stores its provenance at
+    data["_facts_provenance"]["sum_insured_options"]["source_quote"], which
+    _merge_curated() carries through onto the merged dict. We also accept the
+    wrapped `{value, source_quote}` shape defensively in case a future
+    extraction path leaves the field unflattened.
+    """
+    prov = (data.get("_facts_provenance") or {}).get("sum_insured_options")
+    if isinstance(prov, dict) and prov.get("source_quote"):
+        return str(prov["source_quote"])
+    raw = data.get("sum_insured_options")
+    if isinstance(raw, dict) and raw.get("source_quote"):
+        return str(raw["source_quote"])
+    return ""
+
+
+def _rationalise_si(data: dict, si_values: list[int]) -> "_si.SumInsuredView":
+    """Apply the deterministic D3 source-quote corroboration filter + D1
+    band-vs-tier classification to this policy's SI list. Returns a
+    SumInsuredView the marketplace serializer maps onto sum_insured_*.
+    """
+    return _si.rationalise(si_values, _si_source_quote(data))
+
+
+def _policy_corroborated_si(policy_id: str | None) -> "_si.SumInsuredView":
+    """The corroborated SI view for a single policy_id (D2/D3). Resolves the
+    same merged extracted+curated `data` the marketplace serializer sees,
+    then runs the source-quote corroboration filter. `kind == "none"` ⇒ the
+    policy publishes NO corroborated Sum Insured (drives the D2 disclosure).
+    """
+    if not policy_id:
+        return _si.SumInsuredView(kind="none", tiers=[], min_inr=None, max_inr=None)
+    import json as _json
+    try:
+        curated = _load_curated_facts()
+    except Exception:
+        curated = {}
+    data: dict = {}
+    ep = settings.EXTRACTED_DIR / f"{policy_id}.json"
+    if ep.exists():
+        try:
+            data = _json.loads(ep.read_text())
+        except Exception:
+            data = {}
+    cur = curated.get((data.get("policy_id") if data else None) or policy_id) \
+        or curated.get(policy_id)
+    data = _merge_curated(data, cur) if (data or cur) else {}
+    si = data.get("sum_insured_options") or []
+    if isinstance(si, list):
+        si = [int(x) for x in si
+              if isinstance(x, (int, float)) or (isinstance(x, str) and x.isdigit())]
+    else:
+        si = []
+    return _rationalise_si(data, si)
 
 
 # KI-145 (2026-05-15) — decision-critical fields used to distinguish a
@@ -2655,27 +3245,63 @@ async def policies_all(session_id: Optional[str] = None):
         # Get insurer reviews if available for the scorecard
         ir = None
         if slug:
-            rp = settings.CORPUS_DIR.parent.parent / "40-data" / "reviews" / f"{slug}.json"
+            rp = settings.DATA_DIR / "reviews" / f"{slug}.json"
             if rp.exists():
                 try: ir = _json.loads(rp.read_text())
                 except Exception: pass
         sc = build_scorecard(data, insurer_reviews=ir, profile=user_profile_dict)
+        # #48 — recover facts from the scorecard so the flat marketplace
+        # fields (hence the CARD) match the detail-modal snapshot. Only
+        # fill nulls; never overwrite a real extracted value.
+        _rf = _recover_scorecard_facts(sc)
+        for _dk in (
+            "pre_existing_disease_waiting_months", "copayment_pct",
+            "network_hospital_count", "cashless_treatment_supported",
+            "ayush_coverage", "maternity_coverage", "max_entry_age",
+        ):
+            if data.get(_dk) is None and _rf.get(_dk) is not None:
+                data[_dk] = _rf[_dk]
+        if not data.get("room_rent_capping"):
+            if _rf.get("_room_no_cap"):
+                data["room_rent_capping"] = "No room rent cap"
+            elif _rf.get("_room_cap_text"):
+                data["room_rent_capping"] = _rf["_room_cap_text"]
 
         si = data.get("sum_insured_options") or []
         if isinstance(si, list):
             si = [int(x) for x in si if isinstance(x, (int, float)) or (isinstance(x, str) and x.isdigit())]
         else:
             si = []
+        # D3 — drop every SI value the field's own source_quote does not
+        # genuinely state, then D1-classify the corroborated set as a
+        # continuous band or discrete tiers. sum_insured_options/_min/_max
+        # are now the CORROBORATED set (no fabrication), so the slider
+        # filter + range display stay honest by construction.
+        _siv = _rationalise_si(data, si)
+        si = _siv.tiers
 
         try:
             policy_id = data.get("policy_id", fp.stem)
             # Backfill source_pdf_url from corpus_urls.md when extraction didn't
             # populate it. Try exact policy_id match first, then key permutations.
-            source_pdf_url = (
+            # #87 — prefer a CREDIBLE public document URL; otherwise use the
+            # local corpus PDF we definitively have for every policy (served
+            # via /api/policy-pdf). A homepage/section URL is never trusted
+            # over the real document. Never an empty link.
+            _pidx = _corpus_pdf_index()
+            _cand = (
                 data.get("source_pdf_url")
                 or corpus_url_index.get(policy_id)
                 or corpus_url_index.get(fp.stem)
                 or ""
+            )
+            _local = (
+                f"/api/policy-pdf/{policy_id}"
+                if (_pidx.get(policy_id) or _pidx.get(fp.stem))
+                else ""
+            )
+            source_pdf_url = (
+                _cand if _is_credible_pdf_url(_cand) else (_local or _cand)
             )
             out.append(MarketplacePolicy(
                 policy_id=policy_id,
@@ -2691,6 +3317,10 @@ async def policies_all(session_id: Optional[str] = None):
                 min_entry_age=data.get("min_entry_age"),
                 max_entry_age=data.get("max_entry_age"),
                 sum_insured_options=si,
+                sum_insured_min=_siv.min_inr,
+                sum_insured_max=_siv.max_inr,
+                sum_insured_is_band=_siv.is_band,
+                sum_insured_tiers=si,
                 pre_existing_disease_waiting_months=data.get("pre_existing_disease_waiting_months"),
                 initial_waiting_period_days=data.get("initial_waiting_period_days"),
                 maternity_waiting_months=data.get("maternity_waiting_months"),
@@ -2701,6 +3331,9 @@ async def policies_all(session_id: Optional[str] = None):
                 maternity_coverage=_coerce_bool(data.get("maternity_coverage")),
                 cashless_treatment_supported=_coerce_bool(data.get("cashless_treatment_supported")),
                 room_rent_capping=data.get("room_rent_capping") if isinstance(data.get("room_rent_capping"), str) else None,
+                network_list_url=_insurer_network(slug).get("network_list_url"),
+                network_count_official=_insurer_network(slug).get("stated_count"),
+                network_list_is_pdf=bool(_insurer_network(slug).get("is_pdf")),
                 # KI-141 — merge marketing-rename curated entries onto this
                 # parent card. Sorted for deterministic output.
                 aliases=sorted(parent_pkey_aliases.get(product_key, [])),
@@ -2746,24 +3379,55 @@ async def policies_all(session_id: Optional[str] = None):
         # Insurer reviews for scorecard
         ir = None
         if slug:
-            rp = settings.CORPUS_DIR.parent.parent / "40-data" / "reviews" / f"{slug}.json"
+            rp = settings.DATA_DIR / "reviews" / f"{slug}.json"
             if rp.exists():
                 try:
                     ir = _json.loads(rp.read_text())
                 except Exception:
                     pass
         sc = build_scorecard(data, insurer_reviews=ir, profile=user_profile_dict)
+        # #48 — recover facts from the scorecard so the flat marketplace
+        # fields (hence the CARD) match the detail-modal snapshot. Only
+        # fill nulls; never overwrite a real extracted value.
+        _rf = _recover_scorecard_facts(sc)
+        for _dk in (
+            "pre_existing_disease_waiting_months", "copayment_pct",
+            "network_hospital_count", "cashless_treatment_supported",
+            "ayush_coverage", "maternity_coverage", "max_entry_age",
+        ):
+            if data.get(_dk) is None and _rf.get(_dk) is not None:
+                data[_dk] = _rf[_dk]
+        if not data.get("room_rent_capping"):
+            if _rf.get("_room_no_cap"):
+                data["room_rent_capping"] = "No room rent cap"
+            elif _rf.get("_room_cap_text"):
+                data["room_rent_capping"] = _rf["_room_cap_text"]
         si = data.get("sum_insured_options") or []
         if isinstance(si, list):
             si = [int(x) for x in si if isinstance(x, (int, float)) or (isinstance(x, str) and x.isdigit())]
         else:
             si = []
+        # D3/D1 — same source-quote corroboration + band/tier classification
+        # as pass 1 (curated-only products take this branch).
+        _siv = _rationalise_si(data, si)
+        si = _siv.tiers
         try:
-            source_pdf_url = (
+            # #87 — credible doc URL preferred, else the guaranteed-real
+            # local corpus PDF; a homepage/section URL is never trusted.
+            _pidx = _corpus_pdf_index()
+            _cand = (
                 data.get("source_pdf_url")
                 or corpus_url_index.get(curated_policy_id)
                 or corpus_url_index.get(f"{curated_policy_id}__wordings")
                 or ""
+            )
+            _local = (
+                f"/api/policy-pdf/{curated_policy_id}"
+                if _pidx.get(curated_policy_id)
+                else ""
+            )
+            source_pdf_url = (
+                _cand if _is_credible_pdf_url(_cand) else (_local or _cand)
             )
             out.append(MarketplacePolicy(
                 policy_id=curated_policy_id,
@@ -2779,6 +3443,10 @@ async def policies_all(session_id: Optional[str] = None):
                 min_entry_age=data.get("min_entry_age"),
                 max_entry_age=data.get("max_entry_age"),
                 sum_insured_options=si,
+                sum_insured_min=_siv.min_inr,
+                sum_insured_max=_siv.max_inr,
+                sum_insured_is_band=_siv.is_band,
+                sum_insured_tiers=si,
                 pre_existing_disease_waiting_months=data.get("pre_existing_disease_waiting_months"),
                 initial_waiting_period_days=data.get("initial_waiting_period_days"),
                 maternity_waiting_months=data.get("maternity_waiting_months"),
@@ -2789,6 +3457,9 @@ async def policies_all(session_id: Optional[str] = None):
                 maternity_coverage=_coerce_bool(data.get("maternity_coverage")),
                 cashless_treatment_supported=_coerce_bool(data.get("cashless_treatment_supported")),
                 room_rent_capping=data.get("room_rent_capping") if isinstance(data.get("room_rent_capping"), str) else None,
+                network_list_url=_insurer_network(slug).get("network_list_url"),
+                network_count_official=_insurer_network(slug).get("stated_count"),
+                network_list_is_pdf=bool(_insurer_network(slug).get("is_pdf")),
                 # KI-142 — curated entries can ALSO be UIN-claimants when no
                 # extracted parent owns their UIN. In that case their later
                 # curated siblings alias onto them and surface here.
@@ -2798,10 +3469,41 @@ async def policies_all(session_id: Optional[str] = None):
             print(f"[marketplace] skipping curated {curated_policy_id}: {type(e).__name__}: {str(e)[:120]}")
             continue
 
+    # #80 — final safety dedup. The UIN/PDF gate above can still leak the
+    # SAME logical product as both `insurer__product` and a doctype sibling
+    # (`insurer__product__wordings|brochure|cis|prospectus|policy`). Collapse
+    # to ONE card per product identity (richer entry wins; aliases merged) so
+    # the marketplace never shows a plan twice — 1 product = 1 card.
+    _DOCT = ("wordings", "brochure", "cis", "prospectus", "policy")
+
+    def _ident(pid: str) -> str:
+        for dt in _DOCT:
+            if pid.endswith(f"__{dt}"):
+                return pid[: -(len(dt) + 2)]
+        return pid
+
+    _best: dict[str, MarketplacePolicy] = {}
+    for p in out:
+        k = _ident(p.policy_id)
+        prev = _best.get(k)
+        if prev is None:
+            _best[k] = p
+            continue
+        s = (p.data_completeness_pct, len(p.sum_insured_options),
+             1 if p.policy_id == k else 0)
+        ps = (prev.data_completeness_pct, len(prev.sum_insured_options),
+              1 if prev.policy_id == k else 0)
+        if s > ps:
+            p.aliases = sorted(set(p.aliases) | set(prev.aliases))
+            _best[k] = p
+        else:
+            prev.aliases = sorted(set(prev.aliases) | set(p.aliases))
+    deduped = list(_best.values())
+
     return MarketplaceResponse(
-        policies=out,
-        total=len(out),
-        insurers_indexed=len({p.insurer_slug for p in out}),
+        policies=deduped,
+        total=len(deduped),
+        insurers_indexed=len({p.insurer_slug for p in deduped}),
     )
 
 
@@ -2831,7 +3533,7 @@ async def compare_policies(policy_ids: list[str] = None):
         slug = data.get("insurer_slug")
         ir = None
         if slug:
-            rp = settings.CORPUS_DIR.parent.parent / "40-data" / "reviews" / f"{slug}.json"
+            rp = settings.DATA_DIR / "reviews" / f"{slug}.json"
             if rp.exists():
                 try: ir = _json.loads(rp.read_text())
                 except Exception: pass
@@ -2884,26 +3586,57 @@ async def policy_scorecard(
 
     from backend.scorecard import build_scorecard
 
-    extracted_path = settings.EXTRACTED_DIR / f"{policy_id}.json"
-    if not extracted_path.exists():
-        raise HTTPException(404, f"No extracted data for policy_id={policy_id}")
-
-    try:
-        policy = _json.loads(extracted_path.read_text())
-    except Exception as e:
-        raise HTTPException(500, f"Could not load extracted policy: {e}")
-
-    # KI: same curated-override as /api/policies/all so the standalone
-    # scorecard reflects the corrected/verbatim 40-data/policy_facts.
+    # ROOT-CAUSE FIX (scorecard 404 for catalogued curated-only products):
+    # /api/policies/all catalogues a card for every extracted JSON AND every
+    # curated-facts product (40-data/policy_facts/<insurer>__<product>.json).
+    # Curated-only products (e.g. Tata AIG MediCare Lite → policy_id
+    # `tata-aig__medicare-lite`) have NO `rag/extracted/<policy_id>.json` —
+    # only doctype-suffixed extractions like `...__cis.json` — so the old
+    # `extracted_path.exists() → 404` made the scorecard hard-fail for ~77 of
+    # 170 catalogued policies, surfacing as the frontend's generic Retry
+    # fallback. The marketplace builds those cards' grades straight from the
+    # curated dict (policies_all Pass-2 `build_scorecard(data, ...)`); the
+    # scorecard endpoint must resolve the SAME way. A catalogued policy_id
+    # therefore resolves from extracted-with-curated-override OR, when no
+    # extracted file exists, from the curated layer alone — never a 404 for a
+    # catalogued product, never a fabricated grade.
     _curated = _load_curated_facts()
-    policy = _merge_curated(policy, _curated.get(policy.get("policy_id", policy_id)) or _curated.get(policy_id))
+    extracted_path = settings.EXTRACTED_DIR / f"{policy_id}.json"
+
+    if extracted_path.exists():
+        try:
+            policy = _json.loads(extracted_path.read_text())
+        except Exception as e:
+            raise HTTPException(500, f"Could not load extracted policy: {e}")
+        # KI: same curated-override as /api/policies/all so the standalone
+        # scorecard reflects the corrected/verbatim 40-data/policy_facts.
+        policy = _merge_curated(
+            policy,
+            _curated.get(policy.get("policy_id", policy_id)) or _curated.get(policy_id),
+        )
+    else:
+        # No LLM extraction for this product — fall back to the human-curated
+        # facts layer (mirrors /api/policies/all Pass 2). The curated dict
+        # also carries doctype-suffixed alias keys, so try both the canonical
+        # id and the raw lookup key.
+        policy = _curated.get(policy_id) or _curated.get(f"{policy_id}__cis") \
+            or _curated.get(f"{policy_id}__wordings") \
+            or _curated.get(f"{policy_id}__brochure") \
+            or _curated.get(f"{policy_id}__prospectus")
+        if not policy:
+            # Genuinely not in EITHER layer ⇒ this id is not a catalogued
+            # product at all (bad/typo id). 404 is the correct, honest
+            # response here — it is NOT a catalogued policy.
+            raise HTTPException(404, f"No data for policy_id={policy_id}")
+        policy = dict(policy)
+        policy.setdefault("policy_id", policy_id)
 
     # Load insurer reviews if present so the Claim Experience sub-score
     # uses authoritative IRDAI data, not just the (mostly-null) per-policy fields.
     insurer_reviews = None
     slug = policy.get("insurer_slug")
     if slug:
-        rp = settings.CORPUS_DIR.parent.parent / "40-data" / "reviews" / f"{slug}.json"
+        rp = settings.DATA_DIR / "reviews" / f"{slug}.json"
         if rp.exists():
             try:
                 insurer_reviews = _json.loads(rp.read_text())
@@ -2926,6 +3659,7 @@ async def policy_scorecard(
         sub_scores=[ScorecardSubScore(**s.__dict__) for s in sc.sub_scores],
         data_completeness_pct=sc.data_completeness_pct,
         methodology_link=sc.methodology_link,
+        insufficient_data=sc.insufficient_data,
     )
 
 
@@ -3147,7 +3881,7 @@ async def scorecard_bulk(req: BulkScorecardRequest):
         slug = policy.get("insurer_slug") or "?"
         if slug not in insurer_cache:
             insurer_cache[slug] = None
-            rp = settings.CORPUS_DIR.parent.parent / "40-data" / "reviews" / f"{slug}.json"
+            rp = settings.DATA_DIR / "reviews" / f"{slug}.json"
             if rp.exists():
                 try:
                     insurer_cache[slug] = _json.loads(rp.read_text())
@@ -3179,14 +3913,19 @@ async def scorecard_bulk(req: BulkScorecardRequest):
 class ReviewsResponse(BaseModel):
     insurer_slug: str
     insurer_name: str
-    aggregate_score: dict
-    claim_metrics: dict
-    aggregator_ratings: dict
-    reddit_sentiment: dict
-    youtube_coverage: dict
-    in_news: list
-    trustpilot: dict
-    last_updated: str
+    # #76 — these structured sub-objects are NOT present in every review
+    # file (e.g. acko.json has none); requiring them 500'd the endpoint and
+    # blanked the whole reputation panel even though real data existed.
+    # Default-empty so the endpoint always returns 200 with whatever real
+    # data the file does have (InsurerReviewsBlock already renders each
+    # sub-object conditionally).
+    aggregate_score: dict = Field(default_factory=dict)
+    claim_metrics: dict = Field(default_factory=dict)
+    aggregator_ratings: dict = Field(default_factory=dict)
+    reddit_sentiment: dict = Field(default_factory=dict)
+    youtube_coverage: dict = Field(default_factory=dict)
+    in_news: list = Field(default_factory=list)
+    last_updated: str = ""
 
 
 @app.get("/api/insurers/{insurer_slug}/reviews", response_model=ReviewsResponse)
@@ -3199,7 +3938,7 @@ async def get_reviews(insurer_slug: str):
     40-data/reviews/INDEX.md for leaderboard.
     """
     import json
-    p = settings.CORPUS_DIR.parent.parent / "40-data" / "reviews" / f"{insurer_slug}.json"
+    p = settings.DATA_DIR / "reviews" / f"{insurer_slug}.json"
     if not p.exists():
         raise HTTPException(404, f"No reviews for insurer={insurer_slug}")
     try:
@@ -3225,6 +3964,10 @@ class PremiumEstimateRequest(BaseModel):
     )
     # Voluntary co-payment % — reduces premium ~7% per 10pp of co-pay
     copayment_pct: float = Field(0.0, ge=0, le=40)
+    # Family medical history tokens (cancer / diabetes / heart_disease / …).
+    # Applies the same family_history_loading (1.0×–1.10×) the header band and
+    # bulk path use, so the per-policy panel reflects family history too (#52).
+    family_medical_history: Optional[list[str]] = None
     # B2 widget parity (KI-bugfix, 2026-05-15) — optional slider overrides so
     # PolicyPremiumWidget (compare modal) can use the same curated-anchored
     # estimate() pipeline as PremiumCalculatorPanel instead of the divergent
@@ -3256,6 +3999,11 @@ class PremiumEstimateResponse(BaseModel):
     # PolicyPremiumWidget uses this (instead of bulk_estimate's `assumed` flag)
     # to decide whether to show its "Estimate" badge.
     base_sample_used: bool = False
+    # D2 (2026-05-16) — non-null ONLY when the policy publishes no
+    # corroborated Sum Insured, so this estimate was priced against a
+    # fallback cover. The frontend renders it verbatim under the estimate:
+    # "Estimate shown for ₹X cover — this policy's sum insured isn't published."
+    sum_insured_disclosure: Optional[str] = None
 
 
 @app.post("/api/premium/estimate", response_model=PremiumEstimateResponse)
@@ -3275,6 +4023,7 @@ async def premium_estimate(req: PremiumEstimateRequest):
         policy_id=req.policy_id,
         pre_existing_conditions=req.pre_existing_conditions,
         copayment_pct=req.copayment_pct,
+        family_medical_history=req.family_medical_history,
     )
 
     # Snap incoming tenure / deductible to the nearest supported bucket so the
@@ -3303,6 +4052,21 @@ async def premium_estimate(req: PremiumEstimateRequest):
         low = int(round(low * ded_mult))
         high = int(round(high * ded_mult))
 
+    # D2 — when this policy publishes NO corroborated Sum Insured, the
+    # estimate was necessarily priced against a fallback cover (the SI the
+    # caller sent, which the per-policy estimator seeds from
+    # desired_sum_insured_inr ?? ₹10 L). Surface the verbatim disclosure so
+    # the user knows the SI is assumed, not the policy's own.
+    si_disclosure: Optional[str] = None
+    if req.policy_id:
+        try:
+            _siv = _policy_corroborated_si(req.policy_id)
+            if _siv.kind == "none":
+                from backend.premium_calculator import unpublished_si_disclosure
+                si_disclosure = unpublished_si_disclosure(req.sum_insured_inr)
+        except Exception:
+            si_disclosure = None
+
     return PremiumEstimateResponse(
         policy_id=e.policy_id,
         point_estimate_inr=point,
@@ -3313,6 +4077,7 @@ async def premium_estimate(req: PremiumEstimateRequest):
         tenure_years=effective_tenure,
         deductible_inr=effective_ded,
         base_sample_used=e.base_sample_used is not None,
+        sum_insured_disclosure=si_disclosure,
     )
 
 

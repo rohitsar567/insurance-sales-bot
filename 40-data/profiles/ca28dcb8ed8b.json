@@ -1,0 +1,81 @@
+{
+  "name_display": "Asha",
+  "name_slug": "asha",
+  "persona_id": "ca28dcb8ed8b",
+  "profile": {
+    "name": "Asha",
+    "age": 35,
+    "dependents": "self+spouse",
+    "income_band": "10L-25L",
+    "existing_cover_inr": null,
+    "primary_goal": "first_buy",
+    "location_tier": "metro",
+    "parents_to_insure": null,
+    "parents_age_max": null,
+    "parents_has_ped": null,
+    "budget_band": null,
+    "desired_sum_insured_inr": null,
+    "health_conditions": [
+      "none"
+    ],
+    "copay_pct": 0,
+    "family_medical_history": [],
+    "smoker": null,
+    "asked": [
+      "copay_pct"
+    ],
+    "free_form_session": false,
+    "shown_policies": [
+      {
+        "policy_slug": "royal-sundaram__multiplier",
+        "insurer": "royal-sundaram",
+        "event_at": "2026-05-16T19:57:41Z",
+        "session_id": "t_1541ede6",
+        "reason": "shown_in_recommendation",
+        "turn_idx": 1
+      },
+      {
+        "policy_slug": "niva-bupa__reassure-3",
+        "insurer": "niva-bupa",
+        "event_at": "2026-05-16T19:57:41Z",
+        "session_id": "t_1541ede6",
+        "reason": "shown_in_recommendation",
+        "turn_idx": 2
+      },
+      {
+        "policy_slug": "care__supreme",
+        "insurer": "care",
+        "event_at": "2026-05-16T19:57:41Z",
+        "session_id": "t_1541ede6",
+        "reason": "shown_in_recommendation",
+        "turn_idx": 2
+      }
+    ],
+    "selected_policies": [],
+    "rejected_policies": []
+  },
+  "first_seen": "2026-05-16T13:12:45Z",
+  "last_seen": "2026-05-16T19:57:41Z",
+  "sessions": [
+    "t_8f24225c",
+    "t_e9ffee10",
+    "t_a40eaba0",
+    "t_15bcbab1",
+    "t_ea2b6e61",
+    "t_f8bf16d3",
+    "t_02f7e949",
+    "t_3fa40ae8",
+    "t_3aa7f39f",
+    "t_5bcb0d4c",
+    "t_8874c358",
+    "t_3c159933",
+    "t_bfb35b97",
+    "t_a5549a35",
+    "t_6602f010",
+    "t_7f5224e7",
+    "t_a220f19b",
+    "t_fd487de1",
+    "t_29a9cb78",
+    "t_1541ede6"
+  ]
+}

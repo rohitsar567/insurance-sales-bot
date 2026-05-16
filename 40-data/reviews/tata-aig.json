@@ -8,7 +8,7 @@
     "complaints_per_10k_policies": 11,
     "complaints_year": "2023-24 (3-year avg ~10.65)",
     "incurred_claim_ratio_pct": 76.24,
-    "source_irdai_url": "https://irdai.gov.in/document-detail",
+    "source_irdai_url": "https://irdai.gov.in/document-detail?documentId=6436847",
     "source_secondary_url": "https://www.policyx.com/health-insurance/tata-aig-health-insurance/claim-settlement-ratio/",
     "source_tertiary_url": "https://joinditto.in/articles/health-insurance/tata-aig-health-insurance-claim-settlement-ratio/"
   },
@@ -29,12 +29,6 @@
       "review_count": null,
       "url": "https://joinditto.in/articles/health-insurance/tata-aig-health-insurance-claim-settlement-ratio/"
     }
-  },
-  "trustpilot": {
-    "score": null,
-    "review_count": null,
-    "url": null,
-    "note": "Tata AIG does not have a meaningful Trustpilot review profile. Indian general insurers concentrate review activity on Policybazaar / InsuranceDekho / MouthShut."
   },
   "reddit_sentiment": {
     "subreddit": "IndianFinance / IndiaInvestments",
@@ -138,7 +132,6 @@
     "computation_notes": "0.40*88.72 + 0.20*(100-22) + 0.15*(4.3*20) + 0.10*75 + 0.10*60 + 0.05*100 = 35.5 + 15.6 + 12.9 + 7.5 + 6 + 5 = 82.5. Adjusted to 75.6 reflecting below-industry CSR average comment."
   },
   "_data_gaps": {
-    "trustpilot": "No meaningful Trustpilot profile - documented",
     "policybazaar_review_count": "Not exposed publicly",
     "reddit_sample_post_urls": "Direct r/IndianFinance / r/IndiaInvestments thread permalinks not surfaced; community proxies used"
   },
@@ -150,7 +143,6 @@
     ],
     "couldnt_find": [
       "Direct r/IndianFinance / r/IndiaInvestments thread URLs",
-      "Trustpilot profile",
       "Aggregator review counts"
     ],
     "added_this_pass": "4 new YouTube URLs (Ditto Medicare Select first-look 2025, Insurance Impact pros/cons 2024, Gurleen Premier Ultimate 2024, MediCare 3-variant Maternity 2025); 3 new news URLs (Outlook Money Max cashless suspended, BS 3rd insurer Max exit, Outlook Business Supercharge launch); 2 community URLs (Ditto article, IndiaInvestments wiki)"

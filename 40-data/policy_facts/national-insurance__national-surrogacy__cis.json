@@ -108,11 +108,11 @@
     "_confidence": "high"
   },
   "co_payment_pct": {
-    "value": null,
+    "value": 0,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/national-insurance/national-surrogacy__cis.pdf",
-    "source_quote": "not stated in national-surrogacy__cis.pdf",
-    "_confidence": "low"
+    "source_quote": "ii. Co-payment None (It is a specified amount/percentage of the admissible claim amount to be paid by policyholder/insured).",
+    "_confidence": "high"
   },
   "room_rent_capped_at_pct_of_si": {
     "value": "Single AC/Non-AC base single room category; proportionate deduction if higher category; no cap in PPN packaged procedure",

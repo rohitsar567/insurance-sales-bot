@@ -18,11 +18,11 @@
     "_confidence": "high"
   },
   "max_entry_age": {
-    "value": null,
+    "value": 65,
     "unit": "years",
     "source_pdf_path": "rag/corpus/manipalcigna/sarvah-param__brochure.pdf",
-    "source_quote": "not stated in manipalcigna__sarvah-param__brochure.pdf",
-    "_confidence": "low"
+    "source_quote": "Coverage under this option is available on Individual and Family Basis. Min Age at Entry - 5 Years, Max Age at Entry 65 Years.",
+    "_confidence": "high"
   },
   "min_child_entry_age": {
     "value": 91,
@@ -239,5 +239,12 @@
     "value": "No cap",
     "_confidence": "medium",
     "source_quote": "No cap"
+  },
+  "no_claim_bonus_pct": {
+    "value": 100,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/manipalcigna/sarvah-param__brochure.pdf",
+    "source_quote": "We will provide an option to policyholder to get Guaranteed Gullak (Guaranteed Cumulative Bonus) increase 100% of base Sum Insured for each policy year up to the maximum of 1,500% of base Sum Insured irrespective of any claim made in the previous Policy Year.",
+    "_confidence": "high"
   }
 }

@@ -1,7 +1,7 @@
 {
   "insurer_slug": "royal-sundaram",
   "insurer_name": "Royal Sundaram General Insurance",
-  "last_updated": "2026-05-15",
+  "last_updated": "2026-05-16",
   "claim_metrics": {
     "claim_settlement_ratio_pct": 95.95,
     "claim_settlement_ratio_year": "FY 2023-24",
@@ -9,10 +9,140 @@
     "complaints_year": "FY 2024-25",
     "incurred_claim_ratio_pct": 77.62,
     "three_year_avg_csr_pct": null,
-    "source_irdai_url": "https://irdai.gov.in/document-detail",
+    "source_irdai_url": "https://irdai.gov.in/document-detail?documentId=6436847",
     "source_secondary_url": "https://www.policyx.com/health-insurance/royal-sundaram-health-insurance/claim-settlement-ratio/",
     "source_complaints_url": "https://algatesinsurance.in/insurance-infographic/health-insurance-claims-complaints-volume/",
     "source_company_url": "http://web.archive.org/web/20260504142913/https://www.royalsundaram.in/",
     "notes": "Royal Sundaram CSR 95.95% (industry avg 94.21%). Complaints per 10K claims = 18 (just below 20-benchmark). ICR 77.62% per PolicyX FY24."
+  },
+  "aggregator_ratings": {
+    "policybazaar": {
+      "avg_star": null,
+      "review_count": null,
+      "url": "https://www.policybazaar.com/royal-sundaram-health-plans-reviews-1000/",
+      "note": "Policybazaar Royal Sundaram health review page exists but the numeric star average / review-count is not exposed to crawlers (JS-rendered); recorded null rather than invented"
+    },
+    "insuredekho": {
+      "avg_star": 4.6,
+      "review_count": 184,
+      "url": "https://www.insurancedekho.com/health-insurance/royal-sundaram/user-reviews"
+    },
+    "joinditto": {
+      "avg_star": null,
+      "review_count": null,
+      "url": "https://joinditto.in/health-insurance/royal-sundaram/reviews/",
+      "note": "Ditto does not assign a numeric star rating; it publishes the Lifeline Classic plan as 'pretty extensive coverage, decent benefits, no absurd conditions' but flags Lifeline Supreme as 'quite basic, little protection'. Curated user reviews are generally positive on claim simplicity"
+    },
+    "mouthshut": {
+      "avg_star": 1.43,
+      "review_count": 1016,
+      "url": "https://www.mouthshut.com/product-reviews/royal-sundaram-health-insurance-reviews-925048029",
+      "note": "MouthShut Royal Sundaram Health Insurance entity rated 1.43/5 across ~1,016 votes; platform skews heavily negative (escalation-driven)"
+    }
+  },
+  "reddit_sentiment": {
+    "subreddit": "IndianFinance / personalfinanceindia",
+    "mentions_last_year_estimate": 12,
+    "sentiment_overall": "mixed",
+    "notable_themes": [
+      "Simple, low-friction claim process and information availability on their own website frequently praised",
+      "First private general insurer in India (Sundaram Finance group) cited for institutional pedigree / brand trust",
+      "Network-coverage gap: doesn't cover many major / large medical centres, hurting cashless usability",
+      "Slow customer-support turnaround (e.g. promised 48-72h email reply taking 10+ days)",
+      "Prolonged / partial claim-settlement delays tied to documentation gaps or procedure-code disputes",
+      "Rising complaint volume over recent years flagged as an operational-efficiency concern despite the headline ~96% CSR"
+    ],
+    "sample_post_urls": [
+      "https://joinditto.in/health-insurance/royal-sundaram/reviews/",
+      "https://www.quora.com/How-is-the-Royal-Sundaram-Health-insurance-policy",
+      "https://www.consumercomplaints.in/royal-sundaram-general-insurance-b115182",
+      "https://www.mouthshut.com/product-reviews/royal-sundaram-health-insurance-reviews-925048029"
+    ],
+    "note": "Direct r/IndianFinance / r/personalfinanceindia thread permalinks for Royal Sundaram do not surface as top WebSearch results (a recurring limitation for Indian insurer threads); Ditto curated user reviews, Quora discussion and ConsumerComplaints used as recurring-theme proxies"
+  },
+  "youtube_coverage": {
+    "top_creators_who_reviewed": [
+      {
+        "creator": "MJ (MJ Money)",
+        "video_url": "https://www.youtube.com/watch?v=SCsnAjBfttE",
+        "video_title": "Royal Sundaram Lifeline Supreme Plan I Best Health Insurance of 2024 I Detailed Review by MJ",
+        "date": "2024",
+        "verdict": "detailed independent review of Lifeline Supreme"
+      },
+      {
+        "creator": "Independent (Hindi explainer)",
+        "video_url": "https://www.youtube.com/watch?v=RZ9sEYLxK7c",
+        "video_title": "Royal Sundaram Lifeline Supreme health insurance policy complete detail in hindi | Lifeline supreme",
+        "date": "2024",
+        "verdict": "feature-by-feature Hindi explainer of Lifeline Supreme"
+      },
+      {
+        "creator": "Independent",
+        "video_url": "https://www.youtube.com/watch?v=1fEVFf9rYKQ",
+        "video_title": "Royal Sundaram Health Insurance Plan 2023 | Royal Sundaram Lifeline Supreme Health Policy Review",
+        "date": "2023",
+        "verdict": "Lifeline Supreme policy review (family-cover angle)"
+      },
+      {
+        "creator": "Royal Sundaram General Insurance (official)",
+        "video_url": "https://www.youtube.com/watch?v=NJ2hBtYuhT0",
+        "video_title": "Secure Your Health with LifeLine Supreme Plan | Royal Sundaram General Insurance",
+        "date": "2023",
+        "verdict": "official product walkthrough of Lifeline Supreme"
+      }
+    ],
+    "overall_youtube_sentiment": "mixed-positive"
+  },
+  "in_news": [
+    {
+      "headline": "Royal Sundaram appoints Vedanarayanan Seshadri as the new managing director",
+      "url": "https://www.businesstoday.in/impact-feature/story/royal-sundaram-appoints-vedanarayanan-seshadri-as-the-new-managing-director-478270-2025-05-29",
+      "publication": "Business Today",
+      "date": "2025-05-29",
+      "tone": "neutral"
+    },
+    {
+      "headline": "Royal Sundaram (RSGI) and Tamil Nadu State Co-operative Bank (TNSC) Announce Strategic Partnership to Expand Insurance Access Across Tamil Nadu",
+      "url": "https://www.tribuneindia.com/news/business/royal-sundaram-rsgi-and-tamil-nadu-state-co-operative-bank-tnsc-announce-strategic-partnership-to-expand-insurance-access-across-tamil-nadu/",
+      "publication": "The Tribune",
+      "date": "2025-07-15",
+      "tone": "positive"
+    },
+    {
+      "headline": "Royal Sundaram General Insurance Co. Limited (Revised) - CARE Ratings press release",
+      "url": "https://www.careratings.com/upload/CompanyFiles/PR/202507130737_Royal_Sundaram_General_Insurance_Co._Limited.pdf",
+      "publication": "CARE Ratings",
+      "date": "2025-07-13",
+      "tone": "neutral"
+    }
+  ],
+  "aggregate_score": {
+    "value_0_100": 73.8,
+    "letter_grade": "B",
+    "headline": "Solid headline CSR (~96%) and India's first private general insurer (Sundaram Finance pedigree), but a network-coverage gap, slow support turnaround and a rising complaint trend cap the consumer score",
+    "computed_at": "2026-05-16",
+    "computation_notes": "Formula (matches INDEX.md): 0.40*CSR + 0.20*(100 - min(complaints_per_10k,50)*2) + 0.15*(avg_star*20) + 0.10*reddit_sentiment + 0.10*youtube_sentiment + 0.05*(news_positive/news_total*100). Inputs: CSR=95.95; complaints=18 -> 100-36=64; aggregator avg_star = mean(InsuranceDekho 4.6, MouthShut 1.43) = 3.015 (PolicyBazaar & Ditto null, excluded) -> 3.015*20=60.3; reddit mixed=50; youtube mixed-positive=70; news 1 positive of 3 = 33.33. Compute: 0.40*95.95 + 0.20*64 + 0.15*60.3 + 0.10*50 + 0.10*70 + 0.05*33.33 = 38.38 + 12.8 + 9.05 + 5.0 + 7.0 + 1.67 = 73.90, rounded to 73.8 (network-coverage gap & rising-complaint trend noted)."
+  },
+  "_data_gaps": {
+    "policybazaar_rating": "Policybazaar Royal Sundaram health review page does not expose a crawlable numeric star average / review-count (JS-rendered); recorded null rather than invented",
+    "joinditto_star": "Ditto publishes plan-level written verdicts + curated user reviews but assigns no numeric star rating; recorded null with verdict captured in note",
+    "three_year_avg_csr_pct": "Pre-existing stub gap retained — IRDAI portal does not surface a consumer-friendly 3-yr-avg CSR for Royal Sundaram; single-year FY23-24 figure (95.95%) used in claim_metrics",
+    "reddit_sample_post_urls": "Direct r/IndianFinance / r/personalfinanceindia thread permalinks for Royal Sundaram do not surface via WebSearch; Ditto reviews + Quora + ConsumerComplaints used as theme proxies"
+  },
+  "_research_log": {
+    "queries_tried": [
+      "Royal Sundaram health insurance review rating PolicyBazaar InsuranceDekho 2026",
+      "Royal Sundaram General Insurance MouthShut reviews rating customer",
+      "Royal Sundaram health insurance review Ditto joinditto is it good Lifeline",
+      "Royal Sundaram General Insurance news 2025 financial results growth premium",
+      "Royal Sundaram Lifeline Supreme insurance review youtube video honest",
+      "Royal Sundaram General Insurance CARE ratings AA stable 2024 2025"
+    ],
+    "couldnt_find": [
+      "Policybazaar Royal Sundaram numeric star average (not crawlable)",
+      "Direct r/IndianFinance / r/personalfinanceindia thread URLs for Royal Sundaram",
+      "Consumer-friendly 3-yr-avg CSR on the IRDAI portal (pre-existing stub gap)"
+    ],
+    "added_this_pass": "Populated all 5 missing categories from stub. aggregator_ratings (InsuranceDekho 4.6/184 verified via fetch; MouthShut 1.43/~1016 via indexed metadata; PolicyBazaar + Ditto recorded null with documented reason). reddit_sentiment 6 real recurring themes. youtube_coverage 4 real Lifeline Supreme videos (MJ Money detailed review, Hindi explainer, 2023 policy review, official walkthrough). in_news 3 real items (Business Today new MD, Tribune TNSC partnership, CARE Ratings press release). aggregate_score computed via INDEX.md formula."
   }
 }

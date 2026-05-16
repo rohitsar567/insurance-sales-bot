@@ -32,11 +32,35 @@
     "_confidence": "high"
   },
   "sum_insured_options": {
-    "value": null,
+    "value": [
+      100000,
+      200000,
+      300000,
+      400000,
+      500000,
+      600000,
+      700000,
+      800000,
+      900000,
+      1000000,
+      1500000,
+      2000000,
+      2500000,
+      3000000,
+      3500000,
+      4000000,
+      4500000,
+      5000000,
+      5500000,
+      6000000,
+      6500000,
+      7000000,
+      7500000
+    ],
     "unit": "INR",
     "source_pdf_path": "rag/corpus/national-insurance/national-critical-illness__prospectus.pdf",
-    "source_quote": "not stated in national-critical-illness__prospectus.pdf",
-    "_confidence": "low"
+    "source_quote": "The SI available per insured person is INR 1/ 2/ 3/ 4/ 5/ 6/ 7/ 8/ 9/ 10/ 15/ 20/ 25/ 30/ 35/ 40/ 45/ 50/ 55/ 60/ 65/ 70/ 75 Lakh.",
+    "_confidence": "high"
   },
   "grace_period": {
     "value": 30,

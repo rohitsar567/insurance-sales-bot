@@ -1,18 +1,25 @@
-"""Render README.md → README.pdf.
+"""Render README.md → a polished, visually-engaging README PDF.
 
-Pure-Python: `markdown-pdf` package (pymupdf-backed) — no system deps like
-cairo/pango. Trade-off vs WeasyPrint: slightly less CSS-perfect output but
-renders all the README's tables, code fences, headings, and links cleanly
-without needing Homebrew or apt to install glib/pango libraries.
+Pure-Python: the `markdown-pdf` package (pymupdf-backed) — no system deps
+like cairo/pango, so it runs anywhere without Homebrew/apt.
+
+This builder does NOT alter the README's wording, ordering, details or
+context. It only changes presentation: it prepends a cover page, inserts
+an auto-generated clickable table of contents, starts every top-level
+("## ") section on a fresh page, and applies a refined typographic theme
+so the document reads like a professionally typeset report rather than a
+raw markdown dump.
 
 Run:
   uv pip install --python ~/.cache/uv-venvs/insurance-sales-bot/bin/python markdown-pdf
   python tools/build_readme_pdf.py
 
-Output: README.pdf in the repo root, ready to share / download from GitHub.
+Output: ~/Desktop/Insurance-Sales-Bot-README.pdf (sharable artifact;
+the HF Space repo rejects binaries, so it is never committed).
 """
 from __future__ import annotations
 
+import datetime as _dt
 import re
 from pathlib import Path
 
@@ -20,9 +27,6 @@ from markdown_pdf import MarkdownPdf, Section
 
 ROOT = Path(__file__).resolve().parent.parent
 README_PATH = ROOT / "README.md"
-# PDF is a sharable artifact, not a repo asset. Drop it on the Desktop so
-# the user can email / Slack / AirDrop it without digging into ~/Developer/.
-# HF Space also rejects binaries in the Space repo (Xet/LFS required).
 OUT_PATH = Path.home() / "Desktop" / "Insurance-Sales-Bot-README.pdf"
 
 
@@ -37,42 +41,110 @@ def strip_yaml_frontmatter(text: str) -> str:
 
 
 def strip_anchor_links(text: str) -> str:
-    """Convert `[Text](#anchor)` → `Text` so pymupdf doesn't blow up looking
-    for the link target. External `[Text](https://…)` links stay intact."""
+    """Convert in-page `[Text](#anchor)` → `Text` so the pymupdf backend does
+    not choke resolving local targets. External `[Text](https://…)` links and
+    the auto-generated TOC stay fully clickable."""
     return re.sub(r"\[([^\]]+)\]\(#[^)]+\)", r"\1", text)
 
 
+def extract_title(text: str) -> tuple[str, str]:
+    """Pull the first H1 as the cover title and the first non-empty line
+    after it as the subtitle, so the cover reflects the README verbatim
+    (no invented copy)."""
+    title, subtitle = "Insurance Sales Bot", ""
+    lines = text.splitlines()
+    for i, ln in enumerate(lines):
+        if ln.startswith("# "):
+            title = ln[2:].strip()
+            for nxt in lines[i + 1:]:
+                s = nxt.strip()
+                if s and not s.startswith("#"):
+                    subtitle = re.sub(r"[*_`]", "", s)
+                    break
+            break
+    return title, subtitle
+
+
+# Cover page is pure presentation; it restates the README's own H1/subtitle.
+COVER_TEMPLATE = """
+<div class="cover">
+  <div class="cover-kicker">PROJECT DOCUMENTATION</div>
+  <h1 class="cover-title">{title}</h1>
+  <div class="cover-sub">{subtitle}</div>
+  <div class="cover-rule"></div>
+  <div class="cover-meta">Author&nbsp;&nbsp;·&nbsp;&nbsp;Rohit Saraf</div>
+  <div class="cover-meta">Generated&nbsp;&nbsp;·&nbsp;&nbsp;{date}</div>
+  <div class="cover-foot">A faithful PDF rendering of README.md — same content, same order.</div>
+</div>
+"""
+
 CSS = """
-body { font-family: -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11pt; color: #1f2937; line-height: 1.55; }
-h1 { font-size: 22pt; color: #0f172a; margin-top: 0.5em; margin-bottom: 0.3em; border-bottom: 2px solid #0f766e; padding-bottom: 4px; }
-h2 { font-size: 16pt; color: #134e4a; margin-top: 1.4em; margin-bottom: 0.4em; border-bottom: 1px solid #94a3b8; padding-bottom: 3px; }
-h3 { font-size: 13pt; color: #0f766e; margin-top: 1.2em; margin-bottom: 0.3em; }
-h4 { font-size: 11.5pt; color: #1e3a8a; margin-top: 1em; margin-bottom: 0.3em; }
-p  { margin: 0.4em 0; }
+body { font-family: -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+       font-size: 10.8pt; color: #1f2937; line-height: 1.62; }
+
+/* ---- Cover page ---- */
+.cover { text-align: center; padding-top: 150px; page-break-after: always; }
+.cover-kicker { font-size: 11pt; letter-spacing: 5px; color: #0f766e; font-weight: 700; }
+.cover-title { font-size: 32pt; color: #0f172a; margin: 26px 40px 10px; border: none;
+               line-height: 1.18; }
+.cover-sub { font-size: 13.5pt; color: #475569; margin: 0 60px; font-style: italic; }
+.cover-rule { width: 90px; height: 4px; background: #0f766e; margin: 34px auto; border-radius: 2px; }
+.cover-meta { font-size: 11pt; color: #334155; margin: 4px 0; }
+.cover-foot { font-size: 9.5pt; color: #94a3b8; margin-top: 150px; }
+
+/* ---- Headings: each top-level section on its own page ---- */
+h1 { font-size: 21pt; color: #0f172a; margin: 0.4em 0 0.3em; border-bottom: 2px solid #0f766e;
+     padding-bottom: 5px; }
+h2 { font-size: 16pt; color: #134e4a; margin: 1.3em 0 0.45em; border-bottom: 1px solid #cbd5e1;
+     padding-bottom: 4px; page-break-before: always; }
+h3 { font-size: 12.8pt; color: #0f766e; margin: 1.15em 0 0.3em; }
+h4 { font-size: 11.2pt; color: #1e3a8a; margin: 0.95em 0 0.3em; }
+
+p  { margin: 0.5em 0; }
 a  { color: #0d6efd; text-decoration: none; }
-code { font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace; font-size: 9.5pt; background-color: #f1f5f9; padding: 1px 4px; border-radius: 3px; color: #b91c1c; }
-pre { font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace; font-size: 9.5pt; background-color: #f8fafc; border-left: 3px solid #0f766e; padding: 8px 10px; border-radius: 4px; line-height: 1.4; }
-pre code { background: transparent; padding: 0; color: #0f172a; }
-blockquote { border-left: 3px solid #94a3b8; margin: 0.8em 0; padding: 4px 12px; color: #475569; background: #f8fafc; }
-table { border-collapse: collapse; width: 100%; margin: 0.6em 0; font-size: 10pt; }
-th, td { border: 1px solid #cbd5e1; padding: 5px 8px; text-align: left; vertical-align: top; }
-th { background-color: #f1f5f9; font-weight: 600; color: #0f172a; }
-ul, ol { padding-left: 20px; margin: 0.4em 0; }
-li { margin: 0.2em 0; }
-hr { border: none; border-top: 1px solid #cbd5e1; margin: 1.5em 0; }
 strong { color: #0f172a; }
+em { color: #334155; }
+
+code { font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace; font-size: 9pt;
+       background: #f1f5f9; padding: 1px 4px; border-radius: 3px; color: #b91c1c; }
+pre  { font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace; font-size: 8.8pt;
+       background: #f8fafc; border: 1px solid #e2e8f0; border-left: 3px solid #0f766e;
+       padding: 10px 12px; border-radius: 4px; line-height: 1.45; }
+pre code { background: transparent; padding: 0; color: #0f172a; }
+
+blockquote { border-left: 3px solid #0f766e; margin: 0.9em 0; padding: 6px 14px;
+             color: #475569; background: #f0fdfa; border-radius: 0 4px 4px 0; }
+
+/* The README is pure markdown (no tables by design); style defensively anyway. */
+table { border-collapse: collapse; width: 100%; margin: 0.7em 0; font-size: 9.6pt; }
+th, td { border: 1px solid #cbd5e1; padding: 5px 8px; text-align: left; vertical-align: top; }
+th { background: #f1f5f9; font-weight: 600; color: #0f172a; }
+
+ul, ol { padding-left: 22px; margin: 0.45em 0; }
+li { margin: 0.28em 0; }
+hr { border: none; border-top: 1px solid #cbd5e1; margin: 1.6em 0; }
 """
 
 
 def main() -> None:
     raw = README_PATH.read_text(encoding="utf-8")
-    cleaned = strip_anchor_links(strip_yaml_frontmatter(raw))
+    body = strip_yaml_frontmatter(raw)
+    title, subtitle = extract_title(body)
+    cleaned = strip_anchor_links(body)
 
-    pdf = MarkdownPdf(toc_level=0, optimize=True)
-    pdf.meta["title"] = "Insurance Sales Portfolio Expert — README"
+    cover = COVER_TEMPLATE.format(
+        title=title,
+        subtitle=subtitle or "Voice-first AI advisor for Indian health insurance",
+        date=_dt.date.today().strftime("%d %B %Y"),
+    )
+
+    pdf = MarkdownPdf(toc_level=3, optimize=True)
+    pdf.meta["title"] = f"{title} — README"
     pdf.meta["author"] = "Rohit Saraf"
-    pdf.meta["subject"] = "Voice-first AI advisor for Indian health insurance — Sarvam AI takehome"
-    pdf.add_section(Section(cleaned, toc=False), user_css=CSS)
+    pdf.meta["subject"] = subtitle or "Insurance Sales Bot — documentation"
+    # Cover first (no TOC entry), then the README verbatim with a clickable TOC.
+    pdf.add_section(Section(cover, toc=False), user_css=CSS)
+    pdf.add_section(Section(cleaned, toc=True), user_css=CSS)
     pdf.save(str(OUT_PATH))
 
     size_kb = OUT_PATH.stat().st_size / 1024

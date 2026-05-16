@@ -133,6 +133,43 @@ const UTTERANCE_GRACE_MS = 1500;
 // afterwards. Keep dropping results for this many ms after TTS ends.
 const POST_TTS_DROP_MS = 300;
 
+// KI-285 (2026-05-16) — echo-suppression barge-in grace window.
+//
+// ROOT CAUSE this fixes: the bot's TTS reply was stopping a fraction of a
+// second after it started, with NO user having spoken. The reply audio is a
+// single <audio> blob (no chunking, `ended` fires once at true end), so the
+// premature stop could only come from triggerBargeIn() pausing the element.
+// The barge-in VAD floors its threshold at BARGE_IN_RMS_THRESHOLD (0.008)
+// when computeBotRms() returns 0 — which it ALWAYS does for the first frames
+// of playback (the per-element MediaElementSource analyser has no data yet)
+// and PERMANENTLY whenever createMediaElementSource() throws (Safari,
+// element already Web-Audio-routed, or autoplay-suspended ctx). Browser AEC
+// is imperfect on speaker (non-headphone) users; the bot's own voice echoes
+// back into the mic at ~0.001-0.02 RMS in the speech ZCR band — clearing the
+// 0.008 floor for 6 frames (~100ms) and self-triggering a "barge-in" on the
+// bot's OWN audio. No prior hysteresis guarded the playback-start window.
+//
+// FIX: do not treat ANY VAD energy as a barge-in until the bot's audio has
+// been playing for BARGE_IN_GRACE_MS. The first ~600ms of a reply is where
+// echo (not the user) is the energy source — the user has not yet had time
+// to hear enough of the reply to decide to interrupt, let alone produce
+// BARGE_IN_SUSTAINED_FRAMES of speech. Genuine barge-in is unaffected: a
+// real interruption is the user speaking *over* the bot for seconds, so the
+// sustained-energy gate is re-armed and fires the instant the grace window
+// elapses while the user is still talking. Only the bot's own start-of-reply
+// echo — which by definition cannot outlast a brief grace window without the
+// user actually speaking — is suppressed.
+const BARGE_IN_GRACE_MS = 600;
+// KI-285 (2026-05-16) — defence-in-depth. Even AFTER the grace window, when
+// computeBotRms() is unavailable (returns 0) we must not collapse the
+// barge-in threshold to the bare 0.008 static floor — that floor is BELOW
+// documented speaker echo bleed (up to ~0.02 RMS per KI-189/190 comments),
+// so echo alone clears it. When we have no usable bot-level reference, hold
+// the threshold at this echo-safe floor. Real user speech sits at
+// ~0.05-0.2 RMS (KI-189) and clears this comfortably; residual AEC echo
+// (~0.02 worst case on speakers) does not.
+const BARGE_IN_NO_BOTREF_FLOOR = 0.035;
+
 // Minimal types for the Web Speech API since lib.dom.d.ts ships them under
 // `webkitSpeechRecognition` only and the standard `SpeechRecognition` symbol
 // is still vendor-prefixed in most browsers as of 2026-05.
@@ -269,6 +306,12 @@ export function useStreamingVoice(
   // is to abort recognition while ANY <audio> in the DOM is playing.
   // Tracked via a MutationObserver + per-element play/pause/ended hooks.
   const isTtsPlayingRef = useRef(false);
+  // KI-285 (2026-05-16) — wall-clock timestamp of the moment the CURRENT
+  // bot TTS playback began (the false→true edge in updateTtsState). The
+  // barge-in tick refuses to trigger until BARGE_IN_GRACE_MS has elapsed
+  // since this instant, so the bot's own start-of-reply echo cannot
+  // self-trigger a barge-in. Reset to 0 whenever TTS is not playing.
+  const ttsPlaybackStartedAtRef = useRef<number>(0);
   const ttsAudioElementsRef = useRef<Set<HTMLAudioElement>>(new Set());
   // KI-203 (2026-05-15) — silently discard SpeechRecognition.onresult events
   // while this flag is true. Flipped on the instant TTS playback starts
@@ -586,7 +629,31 @@ export function useStreamingVoice(
           interim += alt.transcript;
         }
       }
-      const running = (finalsRef.current.join(" ") + " " + interim).trim();
+      // #68 — the composer must show the COMPLETE evolving transcript, not
+      // just the current recognition session's slice. continuous=false makes
+      // Web Speech end+restart on every sub-1.5s pause; each restart begins a
+      // fresh result list, and finals can also be skipped here during the
+      // TTS/text drop window above even though the audio (→ Sarvam) still has
+      // them. The authoritative running text the grace timer will submit is
+      // `pendingUtteranceRef` (earlier graced segments of THIS utterance) +
+      // the current session's NOT-YET-DRAINED finals + the live interim.
+      //
+      // Critical: finals already moved into pendingUtteranceRef on `onend`
+      // stay in finalsRef until submit (so a late isFinal isn't lost), and
+      // `finalsConsumedRef` is the cursor of how many were drained. Joining
+      // ALL of finalsRef would double-count those (segment shown twice). So
+      // we display pending + finalsRef.slice(consumed) + interim — the exact
+      // union with no duplication and no lag behind what was captured/sent.
+      const priorSegments = pendingUtteranceRef.current.trim();
+      const freshFinals = finalsRef.current
+        .slice(finalsConsumedRef.current)
+        .join(" ")
+        .trim();
+      const running = [priorSegments, freshFinals, interim]
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .join(" ")
+        .trim();
       onInterimRef.current(running);
     };
 
@@ -1399,8 +1466,20 @@ export function useStreamingVoice(
       // threshold so a noisy room (HVAC, café) doesn't cause false-positive
       // barge-ins on the original static 0.008 threshold.
       const botRms = computeBotRms();
+      // KI-285 (2026-05-16) — defence-in-depth for the post-grace window.
+      // computeBotRms() returns 0 not only for the first frames of playback
+      // but PERMANENTLY whenever createMediaElementSource() threw (Safari,
+      // element already Web-Audio-routed, autoplay-suspended ctx). In that
+      // state the `botRms * MULT + BASE` term collapses to 0.002 and the
+      // whole Math.max() falls back to the bare 0.008 static floor — which
+      // is BELOW documented speaker echo bleed (~0.02 RMS, KI-189/190). The
+      // bot's own voice then clears the gate and self-triggers a barge-in.
+      // When we have no usable bot-level reference, hold the threshold at an
+      // echo-safe floor: above worst-case AEC residual, well below the
+      // 0.05-0.2 RMS of real user speech, so genuine barge-in still fires.
+      const haveBotRef = botRms > 0;
       const adaptiveThreshold = Math.max(
-        BARGE_IN_RMS_THRESHOLD,
+        haveBotRef ? BARGE_IN_RMS_THRESHOLD : BARGE_IN_NO_BOTREF_FLOOR,
         noiseAdaptiveThreshold,
         botRms * BARGE_IN_BOT_RMS_MULTIPLIER + BARGE_IN_BASE_THRESHOLD,
       );
@@ -1409,6 +1488,31 @@ export function useStreamingVoice(
       // at 16 kHz it's ~7..83.
       const band = zcrBandRef.current;
       const isSpeechBand = zeroCrossings >= band.min && zeroCrossings <= band.max;
+
+      // KI-285 (2026-05-16) — echo-suppression grace window. For the first
+      // BARGE_IN_GRACE_MS of the bot's reply, the energy at the mic is the
+      // bot's OWN audio echoing back (browser AEC is imperfect on speaker
+      // users), NOT the user. Refuse to accumulate sustained frames or
+      // trigger during this window, but KEEP the rAF loop alive so the
+      // instant the window elapses — if the user is genuinely speaking over
+      // the bot — the sustained-energy gate re-arms and fires within
+      // BARGE_IN_SUSTAINED_FRAMES (~100ms). Hold sustainedFrames at 0 so an
+      // echo burst that straddles the grace boundary cannot carry partial
+      // credit past it. Real barge-in is the user talking for *seconds*, so
+      // it always survives a 600ms suppression; the bot's start-of-reply
+      // echo, which cannot outlast the window without the user speaking, is
+      // the only thing suppressed. `started === 0` means no active playback
+      // stamp (defensive): treat as still-in-grace so we never trigger on a
+      // stale/unknown timeline.
+      const started = ttsPlaybackStartedAtRef.current;
+      const inGraceWindow =
+        started === 0 || Date.now() - started < BARGE_IN_GRACE_MS;
+      if (inGraceWindow) {
+        sustainedFrames = 0;
+        rafId = requestAnimationFrame(bargeInTick);
+        return;
+      }
+
       if (rms >= adaptiveThreshold && isSpeechBand) {
         sustainedFrames += 1;
         if (sustainedFrames >= BARGE_IN_SUSTAINED_FRAMES) {
@@ -1500,6 +1604,12 @@ export function useStreamingVoice(
       if (anyPlaying && !wasPlaying) {
         // TTS just started — abort any in-flight recognition so it stops
         // transcribing the bot voice.
+        // KI-285 (2026-05-16) — stamp the playback-start instant so the
+        // barge-in tick can suppress detection during the BARGE_IN_GRACE_MS
+        // echo window. This is the ONLY false→true edge, so it captures the
+        // true start of the reply (not a per-chunk restart — the reply is a
+        // single <audio> blob; see BARGE_IN_GRACE_MS comment).
+        ttsPlaybackStartedAtRef.current = Date.now();
         console.debug("[useStreamingVoice] KI-188 TTS started — pausing recognition");
         // KI-203 (2026-05-15) — flip the result-drop flag the INSTANT TTS
         // starts. abort() below has a ~100-300ms tail during which onresult
@@ -1548,6 +1658,10 @@ export function useStreamingVoice(
       } else if (!anyPlaying && wasPlaying) {
         // TTS just ended — let the heartbeat/visibility listeners revive.
         // Trigger immediately too so the user doesn't wait ~4s.
+        // KI-285 (2026-05-16) — clear the playback-start stamp so a stale
+        // value can't accidentally satisfy the grace check on the next turn
+        // before updateTtsState re-stamps it.
+        ttsPlaybackStartedAtRef.current = 0;
         console.debug("[useStreamingVoice] KI-188 TTS ended — resuming recognition");
         // KI-203 (2026-05-15) — keep dropping recognition results for
         // POST_TTS_DROP_MS after TTS ends. The recognition pipeline we

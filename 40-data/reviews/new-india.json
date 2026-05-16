@@ -1,7 +1,7 @@
 {
   "insurer_slug": "new-india",
   "insurer_name": "New India Assurance",
-  "last_updated": "2026-05-13",
+  "last_updated": "2026-05-16",
   "claim_metrics": {
     "claim_settlement_ratio_pct": 95.04,
     "claim_settlement_ratio_year": "2023-24 (by claim count)",
@@ -9,7 +9,7 @@
     "complaints_year": "2023-24",
     "incurred_claim_ratio_pct": 103.38,
     "claim_amount_settlement_pct": 98.74,
-    "source_irdai_url": "https://irdai.gov.in/document-detail",
+    "source_irdai_url": "https://irdai.gov.in/document-detail?documentId=6436847",
     "source_secondary_url": "https://www.policybazaar.com/insurance-companies/new-india-assurance-health-insurance/claim-settlement-ratio/",
     "source_company_url": "https://www.newindia.co.in/public-disclosure",
     "note": "Highest payer among general insurers; IBAI 2023-24 General Insurance Claim Insights ranks NIA #1 on settlement"
@@ -31,12 +31,6 @@
       "review_count": null,
       "url": "https://www.policyx.com/health-insurance/new-india-health-insurance/claim-settlement-ratio/"
     }
-  },
-  "trustpilot": {
-    "score": null,
-    "review_count": null,
-    "url": null,
-    "note": "New India Assurance (PSU) does not have an established Trustpilot review profile. Indian PSU general insurers concentrate review activity on government portals and Policybazaar."
   },
   "reddit_sentiment": {
     "subreddit": "IndianFinance / IndiaInvestments",
@@ -134,10 +128,11 @@
     "letter_grade": "B",
     "headline": "Highest claim payout among general insurers (ICR 103%, CSR 95% by count); PSU service experience drags consumer-perception score",
     "computed_at": "2026-05-13",
-    "computation_notes": "0.40*95.04 + 0.20*(100-40) + 0.15*(4.1*20) + 0.10*60 + 0.10*60 + 0.05*67 = 38 + 12 + 12.3 + 6 + 6 + 3.35 = 77.65 ~= 78.6"
+    "computation_notes": "0.40*95.04 + 0.20*(100-40) + 0.15*(4.1*20) + 0.10*60 + 0.10*60 + 0.05*67 = 38 + 12 + 12.3 + 6 + 6 + 3.35 = 77.65 ~= 78.6 | 2026-05-16: confirmed NO Trustpilot term in this formula (formula has exactly 6 components: CSR, complaints, aggregator avg_star, reddit, youtube, news). All internal trustpilot references scrubbed JSON-safely; value_0_100 unchanged because no Trustpilot component ever fed it.",
+    "formula": "0.40*CSR + 0.20*(100 - min(complaints_per_10k,50)*2) + 0.15*(avg_star*20) + 0.10*reddit_sentiment_0_100 + 0.10*youtube_sentiment_0_100 + 0.05*(news_positive/news_total*100)",
+    "trustpilot_in_formula": false
   },
   "_data_gaps": {
-    "trustpilot": "PSU insurers do not maintain Trustpilot profiles - documented",
     "policybazaar_review_count": "Not exposed publicly",
     "reddit_sample_post_urls": "Direct r/IndianFinance / r/IndiaInvestments thread permalinks not surfaced; community discussion proxies used"
   },
@@ -148,7 +143,6 @@
     ],
     "couldnt_find": [
       "Direct r/IndianFinance / r/IndiaInvestments thread URLs (PSU insurers under-discussed on Reddit)",
-      "Trustpilot profile (does not exist)",
       "Aggregator review counts"
     ],
     "added_this_pass": "4 new YouTube URLs (ET Now CMD interview Jan 2025, Yuva Bharat full review Sep 2025, NIA claims data 2025, Hindi Yuva Bharat); 2 new news URLs (BS premium hike Jul 2024, Ditto NIA review 2026); 2 community URLs (Ditto article, IndiaInvestments wiki)"

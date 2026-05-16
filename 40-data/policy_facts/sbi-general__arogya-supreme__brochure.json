@@ -32,11 +32,20 @@
     "_confidence": "high"
   },
   "sum_insured_options": {
-    "value": null,
+    "value": [
+      300000,
+      500000,
+      600000,
+      2000000,
+      10000000
+    ],
     "unit": "INR",
     "source_pdf_path": "rag/corpus/sbi-general/arogya-supreme__brochure.pdf",
-    "source_quote": "not stated in sbi-general__arogya-supreme__brochure.pdf",
-    "_confidence": "low"
+    "source_quote": "Sum Insured Range `3 Lakhs to `5 Lakhs `6 Lakhs to `20 Lakhs Maximum Sum insured of ` 1 Crore",
+    "source_doc_type": "brochure",
+    "source_page": "6-8",
+    "_note": "Policy offers Sum Insured as a continuous range, not discrete tiers; the listed values are the verbatim-stated range band endpoints (3L, 5L, 6L, 20L) and the explicitly stated maximum Sum Insured (1 Crore)",
+    "_confidence": "medium"
   },
   "grace_period": {
     "value": 30,

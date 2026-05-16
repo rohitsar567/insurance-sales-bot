@@ -1,14 +1,14 @@
 {
   "insurer_slug": "niva-bupa",
   "insurer_name": "Niva Bupa Health Insurance",
-  "last_updated": "2026-05-13",
+  "last_updated": "2026-05-16",
   "claim_metrics": {
     "claim_settlement_ratio_pct": 91.62,
     "claim_settlement_ratio_year": "2023-24 (3-year avg through FY25)",
     "complaints_per_10k_policies": 43,
     "complaints_year": "2023-24",
     "incurred_claim_ratio_pct": 59.0,
-    "source_irdai_url": "https://irdai.gov.in/document-detail",
+    "source_irdai_url": "https://irdai.gov.in/document-detail?documentId=8375620",
     "source_secondary_url": "https://joinditto.in/articles/health-insurance/niva-bupa-health-insurance-claim-settlement-ratio/",
     "source_annual_report": "https://transactions.nivabupa.com/pages/doc/pub-dis/annual-reports/Annual-Report-FY-2023-24.pdf"
   },
@@ -35,12 +35,6 @@
       "review_count": 903,
       "url": "https://www.justdial.com/Mumbai/Niva-Bupa-Health-Insurance-Company-Ltd-Customer-Care/022PXX22-XX22-121222183516-A3L5_BZDET/reviews"
     }
-  },
-  "trustpilot": {
-    "score": 1.8,
-    "review_count": null,
-    "url": "https://www.mouthshut.com/product-reviews/niva-bupa-health-insurance-reviews-925608449",
-    "note": "Indian Trustpilot footprint is small; Niva Bupa page page returns 403/404 to automated crawlers but is reachable in-browser. Reviews skew to complaints around refunds and policy onboarding."
   },
   "reddit_sentiment": {
     "subreddit": "IndianFinance / IndiaInvestments / personalfinanceindia",
@@ -169,12 +163,13 @@
     "letter_grade": "B",
     "headline": "Strong CSR (91.6%) and growth post-IPO; complaints volume above industry average is the main drag",
     "computed_at": "2026-05-13",
-    "computation_notes": "0.40*91.62 + 0.20*(100-43*2) + 0.15*(4.0*20) + 0.10*60 + 0.10*90 + 0.05*50 = 36.6 + 2.8 + 12 + 6 + 9 + 2.5 = 68.9. Adjusted +6.9 for IPO success, Bupa global brand strength, and Ditto/YouTube favorability."
+    "computation_notes": "0.40*91.62 + 0.20*(100-43*2) + 0.15*(4.0*20) + 0.10*60 + 0.10*90 + 0.05*50 = 36.6 + 2.8 + 12 + 6 + 9 + 2.5 = 68.9. Adjusted +6.9 for IPO success, Bupa global brand strength, and Ditto/YouTube favorability. | 2026-05-16: confirmed NO Trustpilot term in this formula (formula has exactly 6 components: CSR, complaints, aggregator avg_star, reddit, youtube, news). All internal trustpilot references scrubbed JSON-safely; value_0_100 unchanged because no Trustpilot component ever fed it.",
+    "formula": "0.40*CSR + 0.20*(100 - min(complaints_per_10k,50)*2) + 0.15*(avg_star*20) + 0.10*reddit_sentiment_0_100 + 0.10*youtube_sentiment_0_100 + 0.05*(news_positive/news_total*100)",
+    "trustpilot_in_formula": false
   },
   "_data_gaps": {
     "policybazaar_review_count": "Not exposed publicly on Policybazaar insurer page",
     "mouthshut_review_count": "Niva Bupa MouthShut page does not surface count in indexable metadata",
-    "trustpilot_review_count": "Trustpilot intermittently 403s automated checkers",
     "reddit_sample_post_urls": "Google site:reddit.com search did not return r/IndianFinance / r/IndiaInvestments / r/personalfinanceindia thread permalinks as top results. Used Insurance Sabha, Beshak forum, Quora, and IndiaInvestments wiki as community-discussion proxies."
   },
   "_research_log": {

@@ -1,6 +1,6 @@
 # ADR-039 — Replace scripted fact_find_brain with LLM-driven sales_brain (KI-167)
 
-**Status:** Accepted — 2026-05-15
+**Status:** **Superseded by the single-brain rewrite** (accepted 2026-05-15, superseded shortly after). `backend/sales_brain.py` — this ADR's deliverable — was **removed**; `backend/single_brain.py` now handles every turn (fact-find + QA + recommendation) as one Gemini + function-calling call. Retained as the decision record that motivated the LLM-driven turn handler. **Present-state authority: [`README.md`](../../README.md) §4.**
 **Owner:** Rohit Saraf
 **Supersedes:** [ADR-027](ADR-027-fact-find-llm-paraphraser.md) (LLM paraphraser on top of `GRAPH`) and [ADR-030](ADR-030-llm-driven-fact-find.md) (one-call brain with `<FF>` trailer + canonical fallback). ADR-030's "schema-aware single LLM call per turn" intuition is preserved; the surface that implemented it (`fact_find_brain.py` + `<FF>...</FF>` trailer + `_canonical_fallback` greedy slot-walker + scripted `Question.prompt_en` prefixed with `"Got that — {slot}."`) is fully removed.
 **Related KIs:** KI-070 / KI-072 / KI-074 / KI-075 / KI-090 / KI-091 / KI-094 / KI-103 / KI-150 / KI-155 / KI-156 / KI-158 / KI-161 (all retired by KI-167), KI-167 (this rip-out), KI-160 / [ADR-038](ADR-038-nim-only-chains.md) (NIM-only chain pool — the substrate this ADR builds on).

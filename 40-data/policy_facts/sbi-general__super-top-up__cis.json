@@ -35,7 +35,7 @@
     "value": null,
     "unit": "INR",
     "source_pdf_path": "rag/corpus/sbi-general/super-top-up__cis.pdf",
-    "source_quote": "not stated in sbi-general__super-top-up__cis.pdf",
+    "source_quote": "no enumerated Sum Insured options stated; this is a super-top-up plan where the Sum Insured is set in the Policy Schedule (only illustrative example values such as 'Sum Insured (INR) 5 lakhs' / 'Deductible options INR 20 Lacs & above' appear, not an options grid) (checked all indexed chunks across CIS and wordings siblings)",
     "_confidence": "low"
   },
   "grace_period": {
@@ -111,7 +111,7 @@
     "value": null,
     "unit": "percent",
     "source_pdf_path": "rag/corpus/sbi-general/super-top-up__cis.pdf",
-    "source_quote": "not stated in sbi-general__super-top-up__cis.pdf",
+    "source_quote": "no co-payment percentage stated anywhere; an exhaustive search of all 80 indexed wordings chunks and the CIS found no co-payment percentage clause for this super-top-up plan (checked all indexed chunks)",
     "_confidence": "low"
   },
   "room_rent_capped_at_pct_of_si": {

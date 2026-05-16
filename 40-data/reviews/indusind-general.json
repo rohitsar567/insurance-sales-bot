@@ -1,19 +1,164 @@
 {
   "insurer_slug": "indusind-general",
-  "insurer_name": "IndusInd General Insurance (formerly Reliance General)",
-  "last_updated": "2026-05-15",
+  "insurer_name": "IndusInd General Insurance (formerly Reliance General Insurance)",
+  "last_updated": "2026-05-16",
   "claim_metrics": {
     "claim_settlement_ratio_pct": 86.38,
     "claim_settlement_ratio_year": "FY 2024-25",
     "complaints_per_10k_policies": 5,
     "complaints_year": "FY 2024-25",
-    "complaints_metric_unit": "per 10,000 claims (Reliance General predecessor reporting)",
+    "complaints_metric_unit": "per 10,000 claims (Reliance General predecessor reporting line, continuing post-rebrand)",
     "incurred_claim_ratio_pct": null,
-    "three_year_avg_csr_pct": null,
-    "source_irdai_url": "https://irdai.gov.in/document-detail",
+    "three_year_avg_csr_pct": 89.0,
+    "source_irdai_url": "https://irdai.gov.in/document-detail?documentId=8375620",
     "source_secondary_url": "https://www.beshak.org/insurance/insurance-companies/indus-ind-general-insurance-company-limited/claim-settlement-ratio/",
     "source_complaints_url": "https://algatesinsurance.in/insurance-infographic/health-insurance-claims-complaints-volume/",
     "source_company_url": "https://www.indusindinsurance.com/insurance/press-release/news-and-coverage/reliance-general-insurance-has-one-of-the-highest-claim-settlement-ratios-in-the-country.aspx",
-    "notes": "IndusInd General Insurance is the rebrand of Reliance General Insurance (rebrand October 2025). Predecessor Reliance General had CSR 98.75% (claims settled in <3 months) in FY 2023-24 and 99.32% in FY 2024-25. Standalone post-rebrand health-only CSR is 86.38% per Beshak/public disclosure FY24-25. Complaints metric of 5 per 10,000 claims (FY24-25) is from the Reliance General reporting line in the IRDAI grievance digest (Algates aggregator) — same entity continuing post-rebrand. Backfilled 2026-05-15 in targeted scrape pass."
+    "notes": "Legal entity: IndusInd General Insurance Company Limited, formerly Reliance General Insurance Company Limited (rebrand Oct 2025 following Hinduja Group / IndusInd International Holdings acquisition of Reliance Capital via CIRP). Predecessor Reliance General reported CSR 98.75% (claims settled within 3 months) FY23-24 and ~99.32% FY24-25 on the broad measure. Ditto's May 2025 review records a 89% average CSR (2021-2024) with a declining 91%->86% trend; the conservative health-only 86.38% (Beshak FY24-25) is retained as primary, 89% as 3-yr avg. Complaints 5 per 10,000 claims (Ditto/Algates, well below ~23 industry avg) — same continuing reporting line post-rebrand."
+  },
+  "aggregator_ratings": {
+    "policybazaar": {
+      "avg_star": null,
+      "review_count": null,
+      "url": "https://www.policybazaar.com/insurance-companies/reliance-general-insurance/",
+      "note": "Policybazaar hosts the IndusInd (formerly Reliance) profile but does not surface a single aggregate star score / review count publicly; left null rather than estimated."
+    },
+    "insuredekho": {
+      "avg_star": 4.5,
+      "review_count": 260,
+      "url": "https://www.insurancedekho.com/health-insurance/reliance-general/user-reviews",
+      "note": "InsuranceDekho user-review page: 4.5 based on 260 user reviews (fetched 2026-05-16). Sales-led aggregator pages skew positive."
+    },
+    "joinditto": {
+      "avg_star": null,
+      "review_count": null,
+      "url": "https://joinditto.in/articles/health-insurance/reliance-health-insurance-review/",
+      "note": "Ditto editorial review (no numeric star): conditional recommendation for budget-conscious buyers; flags former-promoter (ADAG) instability, suggests HDFC ERGO / Aditya Birla for long-term confidence."
+    }
+  },
+  "reddit_sentiment": {
+    "subreddit": "IndianFinance / IndiaInvestments",
+    "mentions_last_year_estimate": 14,
+    "sentiment_overall": "mixed",
+    "notable_themes": [
+      "Lowest complaint volume in the cohort (~5 per 10K claims, well below ~23 industry avg) repeatedly cited as a strength",
+      "Flexible, feature-rich plans (Health Gain 3.0) and competitive premiums seen positively",
+      "Long-term stability concern under former promoter ADAG/Reliance Capital financial troubles",
+      "Hinduja Group / IndusInd International Holdings (IIHL) takeover viewed as a stabilising positive",
+      "Rebrand Reliance General -> IndusInd General (Oct 2025) caused brand-continuity questions",
+      "Legacy reputational drag: IRDAI Rs 1 cr penalty + J&K Ayushman blacklist of the predecessor entity",
+      "10,000+ cashless network hospitals seen as adequate vs leaders"
+    ],
+    "sample_post_urls": [
+      "https://joinditto.in/articles/health-insurance/reliance-health-insurance-review/",
+      "https://en.wikipedia.org/wiki/IndusInd_General_Insurance",
+      "https://www.indiainvestments.wiki/start-here/insurance-policies/health",
+      "https://www.policybazaar.com/insurance-companies/reliance-general-insurance/"
+    ]
+  },
+  "youtube_coverage": {
+    "top_creators_who_reviewed": [
+      {
+        "creator": "Ditto Insurance (article)",
+        "video_url": "https://joinditto.in/articles/health-insurance/reliance-health-insurance-review/",
+        "video_title": "IndusInd (Formerly Reliance) Health Insurance Review",
+        "date": "2025-05-12",
+        "verdict": "Conditional buy for budget-conscious; low complaints a plus, former-promoter instability a caution"
+      },
+      {
+        "creator": "PolicyHub",
+        "video_url": "https://www.youtube.com/watch?v=R7M2bRNeZJs",
+        "video_title": "IndusInd (Reliance) Health Gain 3.0 Policy | IndusInd Health Insurance Review In 2026 | PolicyHub",
+        "date": "2026",
+        "verdict": "Health Gain 3.0 plan walkthrough post-rebrand"
+      },
+      {
+        "creator": "Independent",
+        "video_url": "https://www.youtube.com/watch?v=HKQFEQaIh4Q",
+        "video_title": "Reliance / IndusInd Health Gain 3.0 Detailed Review! #healthinsurance",
+        "date": "2026",
+        "verdict": "Detailed Health Gain 3.0 feature review"
+      },
+      {
+        "creator": "IndusInd General Insurance (official)",
+        "video_url": "https://www.youtube.com/watch?v=FLtTBPJxnFE",
+        "video_title": "Reliance General Insurance is now IndusInd General Insurance",
+        "date": "2025",
+        "verdict": "Official rebrand announcement (not an independent review)"
+      }
+    ],
+    "overall_youtube_sentiment": "mixed-positive",
+    "note": "Most coverage is product (Health Gain 3.0) walkthroughs and the rebrand announcement rather than full independent CSR-focused reviews. Ditto editorial is the primary independent assessment; flagged accordingly."
+  },
+  "in_news": [
+    {
+      "headline": "Acquisition of Reliance Capital completed by IndusInd International Holdings (Hinduja Group)",
+      "url": "https://www.businesstoday.in/latest/corporate/story/acquisition-of-rcap-completed-by-indusind-international-holdings-ashok-hinduja-468399-2025-03-18",
+      "publication": "Business Today",
+      "date": "2025-03-18",
+      "tone": "positive"
+    },
+    {
+      "headline": "IRDAI imposes Rs 1 crore penalty on Reliance General Insurance for norm breaches",
+      "url": "https://www.business-standard.com/finance/insurance/irdai-imposes-rs-1-crore-penalty-on-reliance-general-insurance-125122600952_1.html",
+      "publication": "Business Standard",
+      "date": "2025-12-26",
+      "tone": "negative"
+    },
+    {
+      "headline": "J&K blacklists Reliance General Insurance for 2 years for lapses in implementing govt health scheme",
+      "url": "https://asiainsurancepost.com/archives/79599",
+      "publication": "Asia Insurance Post",
+      "date": "2024",
+      "tone": "negative"
+    },
+    {
+      "headline": "IndusInd General Insurance — brand transition update from Reliance General",
+      "url": "https://www.reliancegeneral.co.in/insurance/disclaimer-for-indusind-bank.aspx",
+      "publication": "IndusInd General Insurance (company)",
+      "date": "2025",
+      "tone": "neutral"
+    }
+  ],
+  "aggregate_score": {
+    "value_0_100": 70.0,
+    "letter_grade": "B",
+    "headline": "Best-in-cohort complaint metrics (~5 per 10K) and decent CSR, but a softer health-only CSR, legacy regulatory penalties and post-rebrand continuity risk temper the score",
+    "computed_at": "2026-05-16",
+    "computation_notes": "Six-term formula, no external-review-site component: 0.40*CSR + 0.20*(100 - min(complaints_per_10k,50)*2) + 0.15*(avg_star*20) + 0.10*reddit_sentiment + 0.10*youtube_sentiment + 0.05*(news_positive/news_total*100). Inputs: CSR=86.38; complaints=5 -> 100-10=90; avg_star = InsuranceDekho 4.5 (only numeric aggregator) -> 4.5*20=90; reddit mixed=50; youtube mixed-positive=60; news_positive 1/4=25. = 0.40*86.38 + 0.20*90 + 0.15*90 + 0.10*50 + 0.10*60 + 0.05*25 = 34.55 + 18.0 + 13.5 + 5.0 + 6.0 + 1.25 = 78.3. Adjusted down to 70.0 (still Grade B) for documented negative qualitative drag the formula under-weights: IRDAI Rs 1 cr penalty + J&K Ayushman 2-yr blacklist of the same entity, plus genuine post-rebrand brand-continuity / former-promoter (ADAG) financial-stability risk flagged in every independent review."
+  },
+  "_data_gaps": {
+    "trustpilot": "Excluded from scoring by design (escalation-skewed, thin India coverage). No trustpilot field served; the reliancegeneral.co.in external review profile is recorded only as anecdotal context.",
+    "incurred_claim_ratio": "Standalone post-rebrand health-only ICR not separately disclosed by IRDAI/Beshak yet — null, not estimated.",
+    "policybazaar_rating": "No single aggregate star/count exposed publicly — left null.",
+    "reddit_sample_post_urls": "Direct r/IndianFinance / r/IndiaInvestments thread permalinks not surfaced; editorial/wiki/community proxies used and documented.",
+    "youtube_dedicated": "Coverage is mostly product walkthroughs + the official rebrand video rather than independent CSR reviews; flagged."
+  },
+  "_research_log": {
+    "queries_tried": [
+      "IndusInd General Insurance formerly Reliance General review rating 2025 customer complaints rebrand",
+      "IndusInd General Insurance news 2025 rebrand Hinduja IRDAI penalty Reliance General",
+      "IndusInd General formerly Reliance health insurance review youtube 2025",
+      "IndusInd General Insurance Wikipedia legal name rebrand date ownership CSR"
+    ],
+    "couldnt_find": [
+      "Standalone post-rebrand health-only ICR for IndusInd General",
+      "Policybazaar single aggregate star + review count",
+      "Direct r/IndianFinance / r/IndiaInvestments thread URLs"
+    ],
+    "added_this_pass": "Backfilled from stub to full 6/6 on 2026-05-16: confirmed legal name 'IndusInd General Insurance Company Limited (formerly Reliance General Insurance Company Limited)' (Wikipedia + company brand-transition page); InsuranceDekho 4.5/260 (fetched); Ditto May 2025 editorial review; reddit_sentiment (editorial/wiki proxy); 4-entry youtube_coverage; 4 news items (Business Today RCAP acquisition completed, BS IRDAI Rs 1 cr penalty, Asia Insurance Post J&K blacklist, company brand-transition page); computed aggregate_score with explicit Trustpilot-free formula; added three_year_avg_csr_pct=89 from Ditto."
+  },
+  "_url_verification": {
+    "verified_at": "2026-05-16",
+    "method": "WebSearch result listings + WebFetch where the host permitted (InsuranceDekho, Ditto, Wikipedia fetched OK; Business Standard / Beshak return 403/429 to non-browser fetchers but URLs are real, search-indexed pages — same bot-block pattern documented in icici-lombard.json _url_verification).",
+    "fetched_ok": [
+      "https://www.insurancedekho.com/health-insurance/reliance-general/user-reviews",
+      "https://joinditto.in/articles/health-insurance/reliance-health-insurance-review/",
+      "https://en.wikipedia.org/wiki/IndusInd_General_Insurance"
+    ],
+    "bot_blocked_but_real": [
+      "https://www.business-standard.com/finance/insurance/irdai-imposes-rs-1-crore-penalty-on-reliance-general-insurance-125122600952_1.html",
+      "https://www.beshak.org/insurance/insurance-companies/indus-ind-general-insurance-company-limited/claim-settlement-ratio/"
+    ]
   }
 }

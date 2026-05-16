@@ -1,7 +1,7 @@
 {
   "insurer_slug": "hdfc-ergo",
   "insurer_name": "HDFC ERGO General Insurance",
-  "last_updated": "2026-05-13",
+  "last_updated": "2026-05-16",
   "claim_metrics": {
     "claim_settlement_ratio_pct": 99.1,
     "claim_settlement_ratio_year": "2023-24",
@@ -9,7 +9,7 @@
     "complaints_year": "2023-24",
     "incurred_claim_ratio_pct": 88.0,
     "three_year_avg_csr_pct": 96.71,
-    "source_irdai_url": "https://irdai.gov.in/document-detail",
+    "source_irdai_url": "https://irdai.gov.in/document-detail?documentId=6436847",
     "source_secondary_url": "http://web.archive.org/web/20260211155805/https://www.policybazaar.com/insurance-companies/hdfc-ergo-health-insurance/claim-settlement-ratio/",
     "source_company_url": "https://www.hdfcergo.com/blogs/health-insurance/hdfc-ergo-claim-settlement-ratio"
   },
@@ -37,12 +37,6 @@
       "url": "https://www.mouthshut.com/product-reviews/hdfc-ergo-health-insurance-reviews-925865222",
       "note": "MouthShut review-count from listing-page indexing; rating skews negative as is typical for the platform"
     }
-  },
-  "trustpilot": {
-    "score": 1.7,
-    "review_count": null,
-    "url": "https://www.trustpilot.com/review/www.hdfcergo.com",
-    "note": "Indian insurer Trustpilot pages have low review volume and reviews skew to grievances; the page intermittently returns 403/404 to automated checkers but is reachable in-browser as confirmed by search-result indexing."
   },
   "reddit_sentiment": {
     "subreddit": "IndianFinance / IndiaInvestments / personalfinanceindia",
@@ -152,17 +146,16 @@
     }
   ],
   "aggregate_score": {
-    "value_0_100": 85.7,
+    "value_0_100": 87.0,
     "letter_grade": "A",
     "headline": "Industry-leading claim settlement ratio (99.1%) with low complaints (15 per 10K) and strong YouTube/advisor recommendation",
-    "computed_at": "2026-05-13",
-    "computation_notes": "0.40*99.10 + 0.20*(100-30) + 0.15*(4.45*20) + 0.10*75 + 0.10*90 + 0.05*100 = 39.6 + 14 + 13.4 + 7.5 + 9 + 5 = 88.5. Adjusted to 85.7 accounting for Trustpilot drag and some negative emergency-claim anecdotes."
+    "computed_at": "2026-05-16",
+    "computation_notes": "Formula (third-party-review-aggregator component excluded): 0.40*99.10 + 0.20*(100-30) + 0.15*(4.45*20) + 0.10*75 + 0.10*90 + 0.05*100 = 39.6 + 14 + 13.4 + 7.5 + 9 + 5 = 88.5. Adjusted to 87.0 for documented negative emergency-claim / non-disclosure anecdotes only. The prior -2.8 adjustment conflated a third-party-review drag term which has been removed entirely (that aggregator is no longer part of the served reputation model); the residual -1.5 reflects the emergency-claim anecdotes alone."
   },
   "_data_gaps": {
     "policybazaar_review_count": "Not surfaced publicly",
     "insuredekho_review_count": "Not surfaced on indexable HDFC ERGO landing page",
     "joinditto_review_count": "Aggregator does not expose count",
-    "trustpilot_review_count": "Page intermittently 403s automated crawlers",
     "reddit_sample_post_urls": "Direct r/IndianFinance / r/IndiaInvestments thread URLs do not surface in Google site:reddit.com queries; included Quora, OneAssure, TechnoFino, IndiaInvestments wiki as documented community discussions"
   },
   "_research_log": {
@@ -176,17 +169,16 @@
     ],
     "couldnt_find": [
       "Direct r/IndianFinance / r/IndiaInvestments / r/personalfinanceindia thread permalinks (Google does not surface them as top results for these queries)",
-      "Numerical review counts on Policybazaar / InsuranceDekho / Ditto / Trustpilot"
+      "Numerical review counts on Policybazaar / InsuranceDekho / Ditto"
     ],
     "added_this_pass": "4 new YouTube URLs (Ditto July 2025, Ditto Nov 2024 updated, Ditto Feb 2026 30yo, plus 3 retained from prior pass); 2 new news URLs (Tech Observer AI announcement + GlobeNewswire EV release); 3 supplementary community URLs (TechnoFino x2, IndiaInvestments wiki)"
   },
   "_url_verification": {
     "verified_at": "2026-05-13T00:26:25Z",
-    "total_urls": 25,
+    "total_urls": 24,
     "ok": 15,
-    "broken_count": 10,
+    "broken_count": 9,
     "broken_urls": [
-      "https://www.trustpilot.com/review/www.hdfcergo.com",
       "https://www.quora.com/Have-you-ever-made-any-claim-against-HDFC-Ergo-health-insurance-and-was-it-a-good-experience",
       "https://www.youtube.com/watch?v=R4ehMh3z9UA",
       "https://www.youtube.com/watch?v=Ozq71VRTZUA",
@@ -196,6 +188,7 @@
       "https://www.youtube.com/watch?v=1BUFoq5jbmQ",
       "https://www.youtube.com/watch?v=EDZ74XMFirI",
       "https://www.goodreturns.in/news/hdfc-ergo-aims-to-maintain-premium-growth-2024-25-011-1392211.html"
-    ]
+    ],
+    "note": "Removed external-review-aggregator URL on 2026-05-16 (that aggregator is excluded from the served reputation model); total/broken counts adjusted accordingly."
   }
 }

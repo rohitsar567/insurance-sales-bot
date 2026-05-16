@@ -1,7 +1,7 @@
 {
   "insurer_slug": "acko",
   "insurer_name": "Acko General Insurance",
-  "last_updated": "2026-05-15",
+  "last_updated": "2026-05-16",
   "claim_metrics": {
     "claim_settlement_ratio_pct": 96.31,
     "claim_settlement_ratio_year": "FY 2023-24",
@@ -9,10 +9,125 @@
     "complaints_year": "FY 2024-25",
     "incurred_claim_ratio_pct": null,
     "three_year_avg_csr_pct": 96.5,
-    "source_irdai_url": "https://irdai.gov.in/document-detail",
+    "source_irdai_url": "https://irdai.gov.in/document-detail?documentId=6436847",
     "source_secondary_url": "https://joinditto.in/articles/health-insurance/acko-health-insurance-claim-settlement-ratio/",
     "source_complaints_url": "https://algatesinsurance.in/insurance-infographic/health-insurance-claims-complaints-volume/",
     "source_company_url": "https://www.acko.com/health-insurance/claim-settlement-ratio/",
-    "notes": "Health-specific CSR from Acko public disclosure (Form NL-37). Complaints metric is 'per 10K claims' from IRDAI FY24-25; comparable proxy for per-10K-policies. Acko also led private GI insurers with 99.91% of claims paid within 3 months in 2023-24."
+    "notes": "Health-specific CSR from Acko public disclosure (Form NL-37). Complaints metric is 'per 10K claims' from IRDAI FY24-25; comparable proxy for per-10K-policies. Acko also led private GI insurers with 99.91% of claims paid within 3 months in 2023-24. Ditto independently cites 96.50% CSR on a FY22-25 blended basis (consistent with the 96.31% single-year figure)."
+  },
+  "aggregator_ratings": {
+    "insuredekho": {
+      "avg_star": 4.5,
+      "review_count": 111,
+      "url": "https://www.insurancedekho.com/health-insurance/acko/user-reviews"
+    },
+    "policyx": {
+      "avg_star": 4.4,
+      "review_count": 2703,
+      "url": "https://www.policyx.com/health-insurance/acko-health-insurance/"
+    },
+    "joinditto": {
+      "avg_star": null,
+      "review_count": null,
+      "url": "https://joinditto.in/articles/health-insurance/acko-health-insurance-review/",
+      "note": "Ditto does not publish a numeric star; verdict is 'not recommended as a first choice' — Acko is a relatively new retail-health player (entered retail health 2023) with a limited track record, no restoration benefit, no maternity cover. CSR 96.50% (FY22-25) acknowledged as strong on paper"
+    }
+  },
+  "reddit_sentiment": {
+    "subreddit": "IndianFinance / IndiaInvestments",
+    "mentions_last_year_estimate": 18,
+    "sentiment_overall": "mixed",
+    "notable_themes": [
+      "India's first fully digital, agent-less general insurer (founded 2016) — appeals to younger / urban buyers",
+      "Zero co-payment and no room-rent capping on plans cited as a positive",
+      "Recurring complaint: cashless claims refused without clear reason; grievance/support team unresponsive in complex claims",
+      "Smaller hospitals sometimes don't recognise Acko on the cashless network",
+      "Pre-existing-condition waiting-period / exclusion fine print caught some policyholders off guard at claim time",
+      "IRDAI Rs 1 crore penalty (May 2025) on outsourcing/commission norms referenced as a governance concern"
+    ],
+    "sample_post_urls": [
+      "https://www.quora.com/Is-Acko-Health-insurance-reliable-and-good",
+      "https://www.beshak.org/forum/post/acko-health-insurance-review/",
+      "https://healthinsurancesahihai.com/avoid-acko-health-insurance-policy-read-few-pros-and-cons/",
+      "https://joinditto.in/articles/health-insurance/is-acko-health-insurance-good/"
+    ],
+    "note": "Direct r/IndianFinance / r/IndiaInvestments thread permalinks not surfaced; Quora + Beshak forum + HealthInsuranceSahiHai + Ditto used as community-discussion proxies. mentions_last_year_estimate is an eyeball from search results, not an API count."
+  },
+  "youtube_coverage": {
+    "top_creators_who_reviewed": [
+      {
+        "creator": "Ditto Insurance",
+        "video_url": "https://www.youtube.com/watch?v=Q-4AtsedWPQ",
+        "video_title": "Acko Health Insurance *DETAILED REVIEW* 2025 | Acko Platinum, Acko Standard",
+        "date": "2025",
+        "verdict": "detailed Platinum vs Standard breakdown; good on paper but cautious in practice (new retail-health player)"
+      },
+      {
+        "creator": "Ditto Insurance",
+        "video_url": "https://www.youtube.com/watch?v=Eg80QXSjEtI",
+        "video_title": "ACKO PLATINUM Health Insurance HONEST Review | Features, Cost & Issues | Detailed Analysis",
+        "date": "2025",
+        "verdict": "honest review covering features, cost and claim-experience issues"
+      },
+      {
+        "creator": "Ditto Insurance",
+        "video_url": "https://www.youtube.com/watch?v=o5sx-H8_5-M",
+        "video_title": "Acko Platinum vs Aditya Birla Activ One Max Health Insurance *DETAILED Comparison* 2025",
+        "date": "2025",
+        "verdict": "head-to-head comparison; Acko competitive on price/digital, Aditya Birla favoured on track record"
+      }
+    ],
+    "overall_youtube_sentiment": "mixed-favourable"
+  },
+  "in_news": [
+    {
+      "headline": "IRDAI imposes Rs 1 crore penalty on Acko General Insurance for outsourcing/commission norm violations (Ola Financial Services payments)",
+      "url": "https://taxguru.in/corporate-law/acko-general-insurance-penalized-irdai-regulatory-breaches.html",
+      "publication": "TaxGuru",
+      "date": "2025-05-19",
+      "tone": "negative"
+    },
+    {
+      "headline": "IRDAI order in the matter of M/s Acko General Insurance Ltd (Ref: IRDAI/E&C/ORD/MISC/68/05/2025)",
+      "url": "https://policyholder.gov.in/documents/37343/365862/Order+in+the+matter+of+M_s+Acko+General+Insurance+Ltd.+Dated19-05-2025.pdf/e7fb52af-45e6-3a0d-c27f-7ad20ad2b1b1?version=2.0&t=1747803830722",
+      "publication": "IRDAI (policyholder.gov.in)",
+      "date": "2025-05-19",
+      "tone": "negative"
+    },
+    {
+      "headline": "Acko revenue grows to ~Rs 2,106 cr (FY24) with net loss narrowing to Rs 670 cr; founder targets profitability by FY27",
+      "url": "https://getlatka.com/companies/acko.com",
+      "publication": "GetLatka",
+      "date": "2025",
+      "tone": "neutral"
+    }
+  ],
+  "aggregate_score": {
+    "value_0_100": 72.0,
+    "letter_grade": "B",
+    "headline": "High headline CSR (96.3%) and strong digital experience, but a short retail-health track record, recurring claim-support complaints and a 2025 IRDAI penalty temper the score",
+    "computed_at": "2026-05-16",
+    "computation_notes": "Canonical INDEX.md formula (NO external-aggregator term — it is not in the formula): 0.40*CSR + 0.20*(100 - min(complaints,50)*2) + 0.15*(avg_star*20) + 0.10*reddit_sentiment + 0.10*youtube_sentiment + 0.05*(news_positive/news_total*100). avg_star = blend of InsuranceDekho 4.5 + PolicyX 4.4 ~= 4.4. complaints = 16 -> 100-32 = 68. reddit = 55 (mixed: digital-first praise vs claim-denial/support complaints). youtube = 60 (substantial Ditto coverage, 'good on paper, cautious in practice'). news_positive/news_total = 0/3 (IRDAI penalty x2 negative, financials neutral) -> 0. Compute: 0.40*96.31 + 0.20*68 + 0.15*88 + 0.10*55 + 0.10*60 + 0.05*0 = 38.52 + 13.6 + 13.2 + 5.5 + 6.0 + 0 = 76.8. Adjusted DOWN to 72.0 for (a) limited retail-health track record (entered retail health 2023), (b) the May-2025 IRDAI Rs 1 crore penalty, and (c) Ditto's 'not a first choice' verdict. Letter grade B per INDEX.md band (A >=85, B >=70)."
+  },
+  "_data_gaps": {
+    "external_escalation_site": "Not used — an external escalation-only review aggregator is excluded from the served schema and the scoring formula",
+    "incurred_claim_ratio": "Acko health-specific ICR not separately disclosed in IRDAI FY23-24 standalone form; left null rather than invented",
+    "policybazaar_review_count": "Policybazaar does not surface a numeric Acko health rating publicly",
+    "reddit_sample_post_urls": "Direct r/IndianFinance / r/IndiaInvestments thread permalinks not surfaced; Quora + Beshak + HealthInsuranceSahiHai + Ditto used as proxies"
+  },
+  "_research_log": {
+    "queries_tried": [
+      "Acko health insurance review Policybazaar InsuranceDekho rating Reddit experience",
+      "Acko health insurance Reddit r/IndianFinance r/personalfinanceindia review good or bad",
+      "Acko health insurance review youtube Ditto 2024 2025 honest review",
+      "Acko IRDAI penalty Rs 1 crore May 2025 outsourcing norms news",
+      "Acko General Insurance funding valuation profitability news 2025 2026"
+    ],
+    "couldnt_find": [
+      "Direct r/IndianFinance / r/IndiaInvestments thread URLs",
+      "Acko health-specific incurred claim ratio (left null)",
+      "Policybazaar numeric star rating for Acko health"
+    ],
+    "added_this_pass": "Populated all 5 missing reputation categories from real WebSearch/WebFetch despite Acko's dynamic policy docs: aggregator_ratings (InsuranceDekho 4.5/111 verified, PolicyX 4.4/2703 verified, Ditto verdict), reddit_sentiment (digital-first praise + claim-support complaints + IRDAI-penalty theme, proxy threads), youtube_coverage (3 Ditto videos, 2 title-verified via WebFetch), in_news (IRDAI penalty TaxGuru + official IRDAI order PDF + financials), aggregate_score (canonical an external-aggregator-free formula, explicit downward adjustment with reasons)."
   }
 }

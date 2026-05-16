@@ -1,5 +1,11 @@
 # Discovery Conversation Script
 
+> ⚠️ **Predates the single-brain rewrite — not the present-state map.** Some
+> implementation references here (orchestrator / `sales_brain` / 3-tier chain
+> / `faithfulness.py` judge) describe code that was removed. Present-state
+> authority: [`README.md`](../../README.md) §4. Retained for design intent /
+> historical record.
+
 The 10-turn fact-find that turns a stranger into a profiled buyer.
 
 **Design principles** (inspired by Even.in's tone + insurance-sector buyer-research norms):

@@ -110,10 +110,17 @@
     "source_quote": "Insurer-level metric backfilled from public-web source — see source_url"
   },
   "sum_insured_options": {
-    "value": null,
+    "value": [
+      500000,
+      1000000,
+      1500000,
+      2500000,
+      5000000
+    ],
+    "unit": "INR",
     "source_pdf_path": "rag/corpus/new-india/yuva-bharat-health-policy__wordings.pdf",
-    "source_quote": "not stated in yuva-bharat-health-policy__wordings.pdf",
-    "_confidence": "low"
+    "source_quote": "Sum insured of Rs. 5,00,000 /10,00,000/15,00,000 Single AC room Sum insured of Rs. 25,00,000 /50,00,000 Deluxe AC room",
+    "_confidence": "high"
   },
   "claim_settlement_ratio": {
     "value": null,

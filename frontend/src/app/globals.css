@@ -496,16 +496,29 @@ body {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
+  background: transparent;          /* track is drawn by the pseudo-elements
+                                       below — relying on the element bg broke
+                                       once .app-range-lg added padding +
+                                       background-clip:content-box (#58). */
+  outline: none;
+  cursor: pointer;
+}
+.app-range::-webkit-slider-runnable-track {
   height: 6px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--primary) 16%, var(--border));
-  outline: none;
+  background: color-mix(in srgb, var(--primary) 22%, var(--border));
+}
+.app-range::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary) 22%, var(--border));
 }
 .app-range::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   width: 18px;
   height: 18px;
+  margin-top: -6px;                 /* center the 18px thumb on the 6px track */
   border-radius: 999px;
   background: var(--primary);
   border: 3px solid var(--card);
@@ -631,4 +644,464 @@ body {
     animation: none !important;
   }
   .kicker .dot { animation: none !important; }
+}
+
+/* ────────────────────────────────────────────────────────────────────
+ * #44 — assistant markdown prose. Tight, readable defaults that inherit
+ * the chat bubble's type scale. Lists, bold policy names, paragraphs and
+ * line breaks all read cleanly instead of as a raw `**`/`1.` wall.
+ * ──────────────────────────────────────────────────────────────────── */
+.md-body { overflow-wrap: anywhere; word-break: break-word; }
+.md-body > *:first-child { margin-top: 0; }
+.md-body > *:last-child { margin-bottom: 0; }
+.md-body a { word-break: break-word; }
+.md-body ol, .md-body ul { padding-inline-start: 1.35rem; }
+.md-body li::marker { font-variant-numeric: tabular-nums; }
+.md-body code { white-space: pre-wrap; word-break: break-word; }
+
+/* #47 — larger continuous slider variant for the merged Profile &
+ * premium money fields. Bigger track + thumb so the touch target clears
+ * the 44px guideline on phones (the wrapper row + thumb hit-area). */
+/* Padding gives the ≥44px touch target; the track is now a pseudo-element
+ * so padding no longer hides it (the old height/background-clip hack did). */
+.app-range-lg { padding: 13px 0; }
+.app-range-lg::-webkit-slider-runnable-track { height: 8px; }
+.app-range-lg::-moz-range-track { height: 8px; }
+.app-range-lg::-webkit-slider-thumb {
+  width: 24px; height: 24px; margin-top: -8px; border-width: 4px;
+}
+.app-range-lg::-moz-range-thumb {
+  width: 22px; height: 22px; border-width: 4px;
+}
+.app-range:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; }
+
+/* ────────────────────────────────────────────────────────────────────
+ * #49 — full mobile optimization. Single-column stacks, ≥44px tap
+ * targets, no horizontal overflow, mobile-safe modals / sliders /
+ * sticky bars, readable type. Scoped so desktop is untouched.
+ * ──────────────────────────────────────────────────────────────────── */
+
+/* Hard stop on horizontal overflow anywhere in the app. */
+html, body { max-width: 100%; overflow-x: hidden; }
+
+@media (max-width: 640px) {
+  /* Generous tap targets for every interactive control on phones. */
+  .opt-pill { min-height: 40px; padding: 9px 15px; font-size: 12.5px; }
+  .chip-tile { min-height: 48px; }
+  .btn-primary { min-height: 44px; }
+
+  /* The header chip row scrolls horizontally instead of wrapping into a
+   * tall ragged stack — keeps the brand mark + chips on one tidy line a
+   * thumb can swipe. Hide the scrollbar; momentum scroll on iOS. */
+  .chip-row-scroll {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin-inline: -1rem;
+    padding-inline: 1rem;
+    scroll-snap-type: x proximity;
+  }
+  .chip-row-scroll::-webkit-scrollbar { display: none; }
+  .chip-row-scroll > * { scroll-snap-align: start; }
+
+  /* Slide-over app panels become a full-height sheet on phones (the chat
+   * lives above in the column flow; the panel gets the rest of the
+   * viewport and scrolls internally). Drops the desktop 80vh cap. */
+  .app-panel-mobile-full {
+    max-height: none !important;
+    min-height: 70vh;
+  }
+
+  /* Centered modals dock to the bottom as a full-width sheet — easier to
+   * reach one-handed, respects the home-indicator safe area. */
+  .modal-shell-mobile {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+  .modal-card-mobile {
+    max-width: 100% !important;
+    width: 100% !important;
+    max-height: 92dvh !important;
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    padding-bottom: env(safe-area-inset-bottom) !important;
+  }
+
+  /* Any 2-up grid inside a panel collapses to one column on phones. */
+  .stack-on-mobile { grid-template-columns: 1fr !important; }
+
+  /* Comparison table stays usable: allow horizontal scroll within its
+   * own container without blowing out the page width. */
+  .table-scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Slightly larger base type for chat prose on small screens. */
+  .md-body { font-size: 14.5px; line-height: 1.6; }
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+ * POLICY SNAPSHOT (#75 + #64) — the decision-ordered coverage lens shared
+ * by the marketplace detail modal and the in-chat compare card. Grounded
+ * on the landing's editorial system: hairline card, soft long shadow,
+ * Fraunces group title, a tinted accent rail per decision group, generous
+ * row rhythm. One look, two surfaces.
+ * ───────────────────────────────────────────────────────────────────── */
+.snap-stack { display: flex; flex-direction: column; gap: 12px; }
+
+.snap-group {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px 16px 8px 18px;
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--snap-accent, var(--primary)) 6%, var(--card)) 0%,
+      var(--card) 44%);
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--foreground) 4%, transparent),
+    0 18px 44px -34px color-mix(in srgb, var(--foreground) 26%, transparent);
+}
+.snap-group::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 14px; bottom: 14px;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--snap-accent, var(--primary));
+  opacity: .5;
+}
+.snap-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+.snap-dot {
+  width: 6px; height: 6px;
+  border-radius: 999px;
+  background: var(--snap-accent, var(--primary));
+  flex-shrink: 0;
+}
+.snap-title {
+  font-family: var(--font-serif);
+  font-optical-sizing: auto;
+  font-variation-settings: "SOFT" 40, "WONK" 0;
+  letter-spacing: -.011em;
+  font-weight: 600;
+  font-size: 14.5px;
+  color: var(--foreground);
+}
+.snap-sub {
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--muted-foreground);
+  margin: 0 0 9px;
+}
+.snap-rows { display: flex; flex-direction: column; }
+.snap-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 0;
+  border-top: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
+}
+.snap-row:first-child { border-top: 0; }
+.snap-row dt {
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--muted-foreground);
+  flex: 1;
+  min-width: 0;
+}
+.snap-row dd {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--foreground);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  max-width: 60%;
+  overflow-wrap: anywhere;
+}
+.snap-row[data-rel="true"] dd { color: var(--primary); }
+
+.snap-group--sit {
+  padding: 13px 16px;
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--primary) 4%, var(--card)) 0%,
+      var(--card) 60%);
+}
+.snap-group--sit::before { display: none; }
+.snap-sit-toggle {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+  text-align: left;
+}
+.snap-rel-pill {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--primary) 38%, transparent);
+  border-radius: 999px;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+.snap-chevron {
+  margin-left: auto;
+  font-size: 15px;
+  line-height: 1;
+  color: var(--muted-foreground);
+  transition: transform .2s ease;
+}
+.snap-chevron[data-open="true"] { transform: rotate(180deg); }
+.snap-rel-tag {
+  font-size: 8.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--primary);
+  margin-left: 7px;
+  vertical-align: middle;
+}
+
+/* In-chat / marketplace card stat tile (#47/#89) — equal-height tiles in a
+ * 2×2 grid. The label gets a fixed 2-line block so a 1-line label and a
+ * wrapping one ("Mandatory co-pay") line up, and the value is pinned to the
+ * bottom so all four value baselines align. overflow:visible so the
+ * hover "?" tooltip is never clipped by the tile. */
+.cs-tile {
+  display: flex;
+  flex-direction: column;
+  min-height: 64px;
+  background: color-mix(in srgb, var(--primary) 4%, var(--muted));
+  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+  border-radius: 10px;
+  padding: 8px 10px;
+  overflow: visible;
+}
+.cs-label {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: .045em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  line-height: 1.25;
+  min-height: 2.4em;            /* reserve 2 lines so every tile aligns */
+  display: flex;
+  align-items: flex-start;
+  overflow-wrap: anywhere;
+}
+.cs-value {
+  margin-top: auto;
+  padding-top: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--foreground);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+ * REPUTATION — one card per independent source (#82). Same editorial
+ * tokens as the snapshot: tinted card, hairline, soft lift on hover for
+ * the clickable ones. A lead "overall" synthesis sits above the grid.
+ * ───────────────────────────────────────────────────────────────────── */
+.rev-lead {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 13px 15px;
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--primary) 6%, var(--card)) 0%,
+      var(--card) 50%);
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--foreground) 4%, transparent),
+    0 18px 44px -34px color-mix(in srgb, var(--foreground) 26%, transparent);
+}
+.rev-grade {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 46px; height: 46px;
+  border-radius: 12px;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.rev-grade small { font-size: 9px; font-weight: 700; opacity: .9; margin-top: 2px; }
+.rev-lead-head { font-size: 12.5px; line-height: 1.45; color: var(--foreground); }
+.rev-lead-sub {
+  font-size: 10.5px;
+  line-height: 1.4;
+  color: var(--muted-foreground);
+  margin-top: 4px;
+}
+
+/* #90 — fixed 3×2 even grid (never ragged auto-fit). Equal-height rows so
+ * the six buckets are perfectly uniform regardless of content length. */
+.rev-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: 1fr;
+  gap: 10px;
+}
+@media (max-width: 900px) { .rev-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .rev-grid { grid-template-columns: 1fr; } }
+.rev-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 116px;
+  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+  border-radius: 12px;
+  padding: 12px 13px;
+  background: color-mix(in srgb, var(--primary) 4%, var(--card));
+  text-decoration: none;
+  color: inherit;
+}
+.rev-card--link { transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease; }
+.rev-card--link:hover {
+  border-color: color-mix(in srgb, var(--primary) 48%, var(--border));
+  box-shadow: 0 14px 30px -24px color-mix(in srgb, var(--foreground) 32%, transparent);
+  transform: translateY(-1px);
+}
+.rev-src {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+.rev-val {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--foreground);
+  margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+}
+.rev-verdict {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+.rev-sub {
+  font-size: 10.5px;
+  line-height: 1.4;
+  color: var(--muted-foreground);
+  margin-top: 3px;
+}
+.rev-go {
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 10px;
+}
+.rev-card--sum { padding: 12px 14px; }
+.rev-lines { display: flex; flex-direction: column; gap: 2px; margin-top: 7px; }
+.rev-line {
+  display: block;
+  font-size: 12px;
+  line-height: 1.5;
+  text-decoration: none;
+  color: var(--foreground);
+  padding: 3px 0;
+  border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+}
+.rev-lines .rev-line:first-child { border-top: 0; }
+.rev-line:hover .rev-line-name { color: var(--primary); }
+.rev-line-name { font-weight: 600; }
+.rev-line-verdict { color: var(--muted-foreground); }
+
+/* ─────────────────────────────────────────────────────────────────────
+ * GLOSSARY TIP (#64/#65/#98) — the ONE explainer used on snapshot rows
+ * AND card tiles. Hover/focus only (no click, no close). The popup is
+ * width-constrained and sits ABOVE the badge, centred, pointer-events-
+ * none, so it never blocks interaction or spills across cards. Editorial
+ * card chrome to match .snap-* / .rev-* (Fraunces-adjacent title, soft
+ * shadow, hairline border).
+ * ───────────────────────────────────────────────────────────────────── */
+.gtip { position: relative; display: inline-flex; vertical-align: middle; margin-left: 5px; }
+.gtip-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 14px; height: 14px; border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--muted-foreground) 55%, transparent);
+  color: var(--muted-foreground);
+  font-size: 9px; font-weight: 700; line-height: 1;
+  cursor: help; user-select: none; outline: none;
+  transition: color .15s ease, border-color .15s ease;
+}
+.gtip:hover .gtip-badge,
+.gtip:focus-within .gtip-badge {
+  color: var(--primary);
+  border-color: color-mix(in srgb, var(--primary) 60%, transparent);
+}
+.gtip-pop {
+  pointer-events: none;
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(3px);
+  width: min(20rem, 74vw);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--foreground) 5%, transparent),
+    0 18px 44px -22px color-mix(in srgb, var(--foreground) 32%, transparent);
+  padding: 11px 13px;
+  text-align: left;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .15s ease, transform .15s ease, visibility .15s;
+  z-index: 60;
+}
+.gtip:hover .gtip-pop,
+.gtip:focus-within .gtip-pop {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+.gtip-pop::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--card);
+}
+.gtip-title {
+  display: block;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 12.5px;
+  letter-spacing: -.01em;
+  color: var(--foreground);
+  margin-bottom: 4px;
+}
+.gtip-body {
+  display: block;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+  text-transform: none;
+  font-weight: 400;
+  letter-spacing: normal;
 }

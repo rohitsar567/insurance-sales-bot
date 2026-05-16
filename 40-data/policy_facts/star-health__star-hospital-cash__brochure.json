@@ -26,10 +26,14 @@
     "source_quote": "pre-existing diseases. 24 months"
   },
   "initial_waiting_period_days": {
-    "value": null,
+    "value": 30,
+    "unit": "days",
     "source_pdf_path": "rag/corpus/star-health/star-hospital-cash__brochure.pdf",
-    "source_quote": "not stated in star-health__star-hospital-cash__brochure.pdf",
-    "_confidence": "low"
+    "source_quote": "Basic Plan Enhanced Plan ... 30 days/ 60 days / 90 days / 30 days waiting period 30 days waiting period 90 days / 120 days / 180 days ... (Not applicable for accidents)",
+    "source_doc_type": "brochure",
+    "source_page": "2",
+    "_note": "Initial/illness waiting period is 30 days for both the Basic Plan and Enhanced Plan (not applicable for accidents); source text is interleaved with the cancellation-refund table in the brochure OCR but the 30-day figure is verbatim-recoverable",
+    "_confidence": "medium"
   },
   "maternity_coverage": {
     "value": true,
@@ -47,7 +51,7 @@
   "ayush_coverage": {
     "value": null,
     "source_pdf_path": "rag/corpus/star-health/star-hospital-cash__brochure.pdf",
-    "source_quote": "not stated in star-health__star-hospital-cash__brochure.pdf",
+    "source_quote": "no AYUSH coverage clause stated; this fixed-benefit daily Hospital Cash plan pays a flat daily cash amount on hospitalization and does not separately indemnify AYUSH treatment, so AYUSH coverage is not defined in any indexed chunk (checked all indexed brochure chunks)",
     "_confidence": "low"
   },
   "cashless_treatment_supported": {
@@ -58,13 +62,13 @@
   "copayment_pct": {
     "value": null,
     "source_pdf_path": "rag/corpus/star-health/star-hospital-cash__brochure.pdf",
-    "source_quote": "not stated in star-health__star-hospital-cash__brochure.pdf",
+    "source_quote": "no co-payment clause stated; this is a fixed-benefit daily Hospital Cash plan that pays a flat daily amount (not a percentage of hospitalization expenses), so a co-payment percentage is not defined anywhere in the indexed chunks (checked all indexed brochure chunks)",
     "_confidence": "low"
   },
   "no_claim_bonus_pct": {
     "value": null,
     "source_pdf_path": "rag/corpus/star-health/star-hospital-cash__brochure.pdf",
-    "source_quote": "not stated in star-health__star-hospital-cash__brochure.pdf",
+    "source_quote": "no No-Claim-Bonus / Cumulative-Bonus percentage stated; this fixed-benefit daily Hospital Cash plan defines no NCB benefit in any indexed chunk (checked all indexed brochure chunks)",
     "_confidence": "low"
   },
   "restoration_benefit": {
@@ -76,7 +80,7 @@
   "room_rent_capping": {
     "value": null,
     "source_pdf_path": "rag/corpus/star-health/star-hospital-cash__brochure.pdf",
-    "source_quote": "not stated in star-health__star-hospital-cash__brochure.pdf",
+    "source_quote": "no room-rent cap or room-category clause stated; this fixed-benefit daily Hospital Cash plan pays a flat daily cash amount and does not reimburse room rent, so room-rent capping is not defined anywhere in the indexed chunks (checked all indexed brochure chunks)",
     "_confidence": "low"
   },
   "pre_hospitalization_days": {
@@ -107,8 +111,9 @@
   },
   "sum_insured_options": {
     "value": null,
+    "unit": "INR",
     "source_pdf_path": "rag/corpus/star-health/star-hospital-cash__brochure.pdf",
-    "source_quote": "not stated in star-health__star-hospital-cash__brochure.pdf",
+    "source_quote": "no indemnity Sum Insured options list stated; this is a fixed-benefit daily Hospital Cash plan whose cover is a chosen 'Hospital Cash Amount (Per Day)' (the brochure references 'Hospital Cash Amount(Per Day) Options' but the option amounts are not enumerated in any indexed chunk; only the illustration value 'Chosen hospital cash amount of Rs.3000/-' appears) (checked all indexed brochure chunks)",
     "_confidence": "low"
   },
   "claim_settlement_ratio": {

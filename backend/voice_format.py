@@ -317,6 +317,46 @@ def _expand_acronyms(text: str, language: str = "en") -> str:
     return text
 
 
+_ONES = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight",
+         "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen",
+         "sixteen", "seventeen", "eighteen", "nineteen"]
+_TENS = ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy",
+         "eighty", "ninety"]
+
+
+def _int_to_words(n: int) -> str:
+    """Deterministic 0–99,999 → spoken English (no external dep). Covers ages,
+    counts, years. Money/lakh/crore is already handled by _normalize_money."""
+    if n < 20:
+        return _ONES[n]
+    if n < 100:
+        return _TENS[n // 10] + ("-" + _ONES[n % 10] if n % 10 else "")
+    if n < 1000:
+        return _ONES[n // 100] + " hundred" + (" " + _int_to_words(n % 100) if n % 100 else "")
+    if n < 100000:
+        return _int_to_words(n // 1000) + " thousand" + (" " + _int_to_words(n % 1000) if n % 1000 else "")
+    return str(n)
+
+
+def _normalize_numbers(text: str) -> str:
+    """#106 — Sarvam TTS spells bare numerals digit-by-digit ("29" → "two
+    nine") and chokes on en/em dashes ("29–year-old"). Run AFTER
+    _normalize_money (so lakh/crore is already words): neutralise –/— to a
+    space, then expand any remaining standalone integer ≤ 99,999 to words so
+    the spoken payload says "twenty-nine". Display text is untouched."""
+    text = re.sub(r"\s*[–—]\s*", " ", text)
+    def _sub(m: "re.Match[str]") -> str:
+        try:
+            return _int_to_words(int(m.group(0)))
+        except (ValueError, TypeError):
+            return m.group(0)
+    # standalone integers only — not glued to letters/decimals/version-ids
+    text = re.sub(r"(?<![\w.])\d{1,5}(?![\w.])", _sub, text)
+    # spoken "percent" so "ten%" isn't read as "ten" (symbol dropped)
+    text = re.sub(r"\s*%", " percent", text)
+    return text
+
+
 def _compress_whitespace(text: str) -> str:
     text = re.sub(r"\n{2,}", ". ", text)  # paragraph break → sentence break
     text = re.sub(r"\n", " ", text)
@@ -537,6 +577,10 @@ def tts_preprocess(text: str, language: str = "en", max_words: int = 60) -> str:
     # acronym handling so ₹5L becomes "5 lakhs" instead of getting caught
     # by the bare-L acronym path.
     cleaned = _normalize_money(cleaned)
+    # #106 — AFTER money (lakh/crore already words): expand remaining bare
+    # integers ("29" → "twenty-nine") + neutralise en/em dashes so Sarvam
+    # stops spelling numbers digit-by-digit ("two nine year old").
+    cleaned = _normalize_numbers(cleaned)
     cleaned = _expand_acronyms(cleaned, language=language)
     cleaned = _compress_whitespace(cleaned)
     cleaned = _truncate_for_voice(cleaned, max_words=max_words)

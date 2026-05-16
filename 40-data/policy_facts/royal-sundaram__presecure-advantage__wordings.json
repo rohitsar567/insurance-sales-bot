@@ -32,11 +32,28 @@
     "_confidence": "high"
   },
   "sum_insured_options": {
-    "value": null,
+    "value": [
+      100000,
+      200000,
+      300000,
+      400000,
+      500000
+    ],
     "unit": "INR",
     "source_pdf_path": "rag/corpus/royal-sundaram/presecure-advantage__wordings.pdf",
-    "source_quote": "not stated in royal-sundaram__presecure-advantage__wordings.pdf",
-    "_confidence": "low"
+    "source_quote": "Annexure 3 – Product Benefit Table Sr Feature Benefit No 1 Sum Insured 1 Lakh/ 2 Lakhs/ 3 Lakhs/ 4 Lakhs/ 5 lakhs",
+    "source_doc_type": "wordings",
+    "source_page": "30-34",
+    "_confidence": "high"
+  },
+  "no_claim_bonus_pct": {
+    "value": 10,
+    "unit": "%",
+    "source_pdf_path": "rag/corpus/royal-sundaram/presecure-advantage__wordings.pdf",
+    "source_quote": "Renewal benefit in case of no claim In case there are no claims paid/outstanding in the expiring Policy Year, the Insured Person shall have either of the following option to avail in the form of No Claim Bonus (NCB) or No Claim Discount (NCD) reward at the time of every renewal: i) No Claim Bonus Increase in Sum Insured by 10% of Base Sum Insured in the year subsequent to the policy year, if the Policy is renewed with Us.",
+    "source_doc_type": "wordings",
+    "source_page": "10-11",
+    "_confidence": "high"
   },
   "grace_period": {
     "value": 30,
