@@ -71,12 +71,13 @@ def run(selected: set[str], as_json: bool = False) -> int:
               f"{sum(1 for _,r in rows if r.status is Status.SKIP)} skip")
     return 1 if fails else 0
 
-def selftest() -> int:
+def selftest(only_tiers: set[str] | None = None) -> int:
     from audit.selftest_fixtures import FIXTURES
     if not CHECKS:
         _load_all_checks()
+    checks = CHECKS if only_tiers is None else [c for c in CHECKS if c.tier in only_tiers]
     bad = []
-    for c in CHECKS:
+    for c in checks:
         fx = FIXTURES.get(c.id)
         if fx is None:
             bad.append(f"{c.id}: NO selftest fixture")
@@ -89,5 +90,5 @@ def selftest() -> int:
         if r.status is not c.selftest_expect:
             bad.append(f"{c.id}: expected {c.selftest_expect.value} on broken fixture, got {r.status.value}")
     for b in bad: print(f"  FAIL {b}")
-    print(f"\n  selftest: {len(CHECKS)} checks · {len(bad)} not self-verifying")
+    print(f"\n  selftest: {len(checks)} checks · {len(bad)} not self-verifying")
     return 1 if bad else 0

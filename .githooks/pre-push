@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Opt-in: git config core.hooksPath .githooks
+set -e
+root="$(git rev-parse --show-toplevel)"
+"$root/tools/audit.sh" --build
+"$root/.venv/bin/python" -m audit --deploy
