@@ -2936,33 +2936,18 @@ def _ki145_material_diffs(curated: dict, extracted: dict) -> int:
     return diffs
 
 
-@app.get("/api/policies/all", response_model=MarketplaceResponse)
-async def policies_all(session_id: Optional[str] = None):
-    """The marketplace data feed — every extracted policy + scorecard + filterable fields.
+def _marketplace_catalogue(user_profile_dict):
+    """SINGLE SOURCE OF TRUTH for the marketplace card set (#40).
 
-    When session_id is provided AND the session has a profile populated to
-    ≥0.6 completeness, every policy is scored against THAT profile (dynamic
-    per-user grade). Otherwise we score with the generic baseline weights.
+    The recommendation path (brain_tools._scorecard_signal via
+    marketplace_grade) and /api/policies/all BOTH derive a policy's
+    grade from THIS one computation, so the cited-card grade can never
+    diverge from the marketplace card grade — including marketing-rename
+    alias / KI-145 variant cards. Body is the former inline endpoint
+    logic, moved verbatim; fully synchronous.
     """
     import json as _json
-    from backend.scorecard import build_scorecard, profile_completeness as _completeness
-    from backend.session_state import get_session as _get_sess
-
-    # Pull user profile if we have one
-    user_profile_dict: Optional[dict] = None
-    if session_id:
-        sess = _get_sess(session_id)
-        p = sess.profile
-        profile_dict = {
-            "age": p.age, "dependents": p.dependents, "income_band": p.income_band,
-            "existing_cover_inr": p.existing_cover_inr, "primary_goal": p.primary_goal,
-            "location_tier": p.location_tier, "parents_to_insure": p.parents_to_insure,
-            "parents_age_max": p.parents_age_max, "parents_has_ped": p.parents_has_ped,
-            "health_conditions": p.health_conditions, "budget_band": p.budget_band,
-        }
-        if _completeness(profile_dict) >= 0.6:
-            user_profile_dict = profile_dict
-
+    from backend.scorecard import build_scorecard
     corpus_url_index = _build_corpus_url_index()
     curated_facts = _load_curated_facts()
 
@@ -3485,7 +3470,36 @@ async def policies_all(session_id: Optional[str] = None):
         else:
             prev.aliases = sorted(set(prev.aliases) | set(p.aliases))
     deduped = list(_best.values())
+    return deduped
 
+@app.get("/api/policies/all", response_model=MarketplaceResponse)
+async def policies_all(session_id: Optional[str] = None):
+    """The marketplace data feed — every extracted policy + scorecard + filterable fields.
+
+    When session_id is provided AND the session has a profile populated to
+    ≥0.6 completeness, every policy is scored against THAT profile (dynamic
+    per-user grade). Otherwise we score with the generic baseline weights.
+    """
+    import json as _json
+    from backend.scorecard import build_scorecard, profile_completeness as _completeness
+    from backend.session_state import get_session as _get_sess
+
+    # Pull user profile if we have one
+    user_profile_dict: Optional[dict] = None
+    if session_id:
+        sess = _get_sess(session_id)
+        p = sess.profile
+        profile_dict = {
+            "age": p.age, "dependents": p.dependents, "income_band": p.income_band,
+            "existing_cover_inr": p.existing_cover_inr, "primary_goal": p.primary_goal,
+            "location_tier": p.location_tier, "parents_to_insure": p.parents_to_insure,
+            "parents_age_max": p.parents_age_max, "parents_has_ped": p.parents_has_ped,
+            "health_conditions": p.health_conditions, "budget_band": p.budget_band,
+        }
+        if _completeness(profile_dict) >= 0.6:
+            user_profile_dict = profile_dict
+
+    deduped = _marketplace_catalogue(user_profile_dict)
     return MarketplaceResponse(
         policies=deduped,
         total=len(deduped),
@@ -4294,3 +4308,117 @@ else:
             "docs": "/docs",
             "health": "/api/health",
         }
+
+
+# ---- #40 SSOT grade resolver ------------------------------------------------
+# marketplace_grade(policy_id) returns the SAME (grade, overall) the
+# marketplace card for that policy's canonical identity shows. The
+# recommendation path calls this instead of re-deriving a scorecard, so
+# rec-card grade == marketplace grade for ALL 148 by construction.
+
+import threading as _mg_threading
+
+_MG_LOCK = _mg_threading.Lock()
+_MG_CACHE: dict = {"sig": None, "index": None}
+
+
+def _mg_data_signature() -> tuple:
+    """Cheap fingerprint that changes when any grading input changes
+    (so an uploaded-PDF card or a curated edit invalidates the cache)."""
+    sig = []
+    for d in (settings.EXTRACTED_DIR, settings.DATA_DIR / "policy_facts",
+              settings.DATA_DIR / "reviews"):
+        try:
+            for fp in sorted(d.glob("*.json")):
+                st = fp.stat()
+                sig.append((fp.name, int(st.st_mtime), st.st_size))
+        except Exception:  # noqa: BLE001 — missing dir → empty contribution
+            continue
+    return tuple(sig)
+
+
+def _mg_norm_uin(raw) -> str:
+    try:
+        from backend.policy_identity import normalize_uin
+        return normalize_uin(raw)
+    except Exception:  # noqa: BLE001
+        return ""
+
+
+def _mg_build_index() -> dict:
+    """{lookup_key -> (grade, overall_score)} for every marketplace card,
+    keyed by policy_id, product_key, and normalised UIN so a variant /
+    alias id resolves to its canonical card's grade."""
+    cards = _marketplace_catalogue(None)
+    cur = _load_curated_facts()
+    idx: dict = {}
+
+    def _put(k, val):
+        if k:
+            idx.setdefault(k, val)
+
+    for c in cards:
+        val = (c.grade, c.overall_score)
+        pid = c.policy_id or ""
+        _put(f"id:{pid}", val)
+        try:
+            from backend.policy_identity import product_key as _pk
+            _put(f"pk:{_pk(pid)}", val)
+        except Exception:  # noqa: BLE001
+            pass
+        # UIN of the card's underlying data (curated wins, like the catalogue)
+        cdata = cur.get(pid) or {}
+        uin = _mg_norm_uin(cdata.get("uin_code") or cdata.get("uin"))
+        if not uin:
+            try:
+                ep = settings.EXTRACTED_DIR / f"{pid}.json"
+                if ep.exists():
+                    import json as _j
+                    uin = _mg_norm_uin(_j.loads(ep.read_text()).get("uin_code"))
+            except Exception:  # noqa: BLE001
+                uin = ""
+        _put(f"uin:{uin}" if uin else "", val)
+    return idx
+
+
+def _mg_index() -> dict:
+    sig = _mg_data_signature()
+    with _MG_LOCK:
+        if _MG_CACHE["sig"] != sig or _MG_CACHE["index"] is None:
+            _MG_CACHE["index"] = _mg_build_index()
+            _MG_CACHE["sig"] = sig
+        return _MG_CACHE["index"]
+
+
+def marketplace_grade(policy_id: str) -> dict:
+    """{"_grade", "_overall_score"} for policy_id, identical to its
+    marketplace card. Resolution order: exact id -> product_key -> UIN
+    (so a marketing-rename / variant id maps onto its canonical card).
+    Returns {} only when the policy is unknown to the marketplace."""
+    if not policy_id:
+        return {}
+    idx = _mg_index()
+    from backend.policy_identity import product_key as _pk
+    cur = _load_curated_facts()
+    pid = policy_id.strip()
+    keys = [f"id:{pid}", f"pk:{_pk(pid)}"]
+    cdata = cur.get(pid) or cur.get(_pk(pid)) or {}
+    uin = _mg_norm_uin(cdata.get("uin_code") or cdata.get("uin"))
+    if not uin:
+        try:
+            import json as _j
+            for cand in (pid, _pk(pid)):
+                ep = settings.EXTRACTED_DIR / f"{cand}.json"
+                if ep.exists():
+                    uin = _mg_norm_uin(_j.loads(ep.read_text()).get("uin_code"))
+                    if uin:
+                        break
+        except Exception:  # noqa: BLE001
+            uin = ""
+    if uin:
+        keys.append(f"uin:{uin}")
+    for k in keys:
+        if k in idx:
+            g, o = idx[k]
+            return {"_grade": g, "_overall_score": o}
+    return {}

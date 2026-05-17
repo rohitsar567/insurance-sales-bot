@@ -261,99 +261,33 @@ def _insurer_reviews(slug: str) -> Optional[dict]:
     return ir
 
 
-# Mirrors the LOCAL _DOCTYPE_RANK inside backend.main.policies_all — the
-# marketplace picks, per product, the extracted file with the best doctype
-# rank. _scorecard_signal MUST select the identical file or the cited-card
-# grade diverges from the marketplace card for multi-doctype products
-# (#40). Keep in sync with main.policies_all if that ever changes.
-_DOCTYPE_RANK = {"wordings": 0, "prospectus": 1, "cis": 2, "brochure": 3}
-
-
 def _scorecard_signal(policy_id: str, profile=None) -> dict:
-    """{_grade, _overall_score} from backend.scorecard using the same
-    inputs as the marketplace, so a policy's recommendation grade equals
-    its marketplace grade (asserted by tests/test_scorecard_parity.py).
-    Read-only; returns {} on any failure (ranking still works off co-pay
-    + SI headroom + cosine)."""
-    try:
-        cur = _curated_facts_all()
-        # PARITY-BY-CONSTRUCTION (#40, 2026-05-18): resolve the EXACT data
-        # the marketplace card grades. main.policies_all picks, per product
-        # key, the extracted file with the best doctype rank (wordings >
-        # prospectus > cis > brochure), then _merge_curated(extracted,
-        # curated[extracted.policy_id or pid] or curated[pid]). Taking the
-        # FIRST _candidate_stems hit instead graded the PASSED id's own
-        # doctype, so a __cis/__brochure recommendation id scored a
-        # different file than the marketplace's canonical __wordings card
-        # (royal-sundaram lifeline A↔C, sbi super-top-up B↔A,
-        # new-india-mediclaim C↔D). Mirror the marketplace selection so
-        # rec grade == marketplace grade for ALL 148 by construction.
-        pid = (policy_id or "").strip()
-        pkey = pid.rsplit("__", 1)[0] if "__" in pid else pid
-        best = None  # ((rank, stem), Path)
-        try:
-            for fp in settings.EXTRACTED_DIR.glob("*.json"):
-                st = fp.stem
-                fk = st.rsplit("__", 1)[0] if "__" in st else st
-                if fk != pkey:
-                    continue
-                dt = st.rsplit("__", 1)[1] if "__" in st else ""
-                rk = (_DOCTYPE_RANK.get(dt, 99), st)
-                if best is None or rk < best[0]:
-                    best = (rk, fp)
-        except Exception:  # noqa: BLE001 — glob must never break ranking
-            best = None
-        extracted = None
-        if best is not None:
-            try:
-                extracted = _json.loads(best[1].read_text())
-            except Exception:  # noqa: BLE001 — corrupt extract → curated-only
-                extracted = None
-        # Curated entry resolved EXACTLY as the marketplace merge does
-        # (curated[extracted.policy_id or pid] or curated[pid]); fall back
-        # to the candidate-stem scan only when there is no extracted file.
-        curated_entry = None
-        if extracted is not None:
-            curated_entry = cur.get(extracted.get("policy_id") or pid) or cur.get(pid)
-        if curated_entry is None:
-            for stem in _candidate_stems(pid):
-                if stem in cur:
-                    curated_entry = cur[stem]
-                    break
-        if extracted is not None:
-            from backend.main import _merge_curated  # lazy: avoids cycle
-            data = _merge_curated(extracted, curated_entry)
-        elif curated_entry:
-            data = curated_entry
-        else:
-            # Genuinely unknown policy → fail OPEN (no false weak signal;
-            # _recommendation_fit keeps chunks with no grade evidence).
-            return {}
-        from backend.scorecard import build_scorecard
+    """{_grade, _overall_score} for policy_id — the SAME grade its
+    marketplace card shows (#40 SINGLE SOURCE OF TRUTH, 2026-05-18).
 
-        slug = data.get("insurer_slug") or (
-            policy_id.split("__", 1)[0] if "__" in policy_id else ""
-        )
-        ir = _insurer_reviews(slug)
-        prof = None
-        if profile is not None:
-            prof = {
-                s: getattr(profile, s, None)
-                for s in (
-                    "age", "income_band", "primary_goal",
-                    "existing_cover_inr", "copay_pct",
-                )
+    Delegates to backend.main.marketplace_grade, which derives the grade
+    from the ONE marketplace catalogue computation
+    (backend.main._marketplace_catalogue) using UIN-canonical resolution:
+    a marketing-rename / KI-145 variant id resolves onto its canonical
+    card. There is no longer a parallel doctype-rank/_merge
+    re-implementation here, so the cited-card grade cannot drift from the
+    marketplace card grade — for ALL 148 by construction, asserted by
+    tests/test_scorecard_parity.py.
+
+    `profile` is accepted for call-site compatibility. The parity-relevant
+    grade LETTER (what _recommendation_fit gates on) is the profile-neutral
+    marketplace grade, identical to the /api/policies/all catalogue view.
+    Read-only; returns {} only when the policy is unknown to the
+    marketplace (ranking still works off co-pay + SI headroom + cosine)."""
+    try:
+        from backend.main import marketplace_grade  # lazy: avoids cycle
+        sig = marketplace_grade(policy_id)
+        if sig and sig.get("_grade"):
+            return {
+                "_grade": sig.get("_grade"),
+                "_overall_score": sig.get("_overall_score"),
             }
-        sc = build_scorecard(data, insurer_reviews=ir, profile=prof)
-        # Scorecard.overall_score is the numeric field; `overall` is a
-        # back-compat alias.
-        _overall = getattr(sc, "overall_score", None)
-        if _overall is None:
-            _overall = getattr(sc, "overall", None)
-        return {
-            "_grade": getattr(sc, "grade", None),
-            "_overall_score": _overall,
-        }
+        return {}
     except Exception:  # noqa: BLE001 — scorecard optional; ranking degrades gracefully
         return {}
 
@@ -765,6 +699,100 @@ def _quality_seed_candidates(profile, limit: int = 25) -> list[dict]:
     return out[:limit]
 
 
+# ---- uploaded-doc (quarantine) bypass helpers ------------------------------
+
+
+def _session_has_quarantine_docs(session_id: str) -> bool:
+    """True iff this session has at least one chunk in the SEPARATE
+    `user_uploads_quarantine` Chroma collection.
+
+    Strictly session-scoped (where={"session_id": session_id}); cheap
+    metadata-only `.get(limit=1)`. Never raises — a Chroma hiccup just
+    means "treat as no upload" so the normal profile-gate path runs.
+    """
+    if not session_id:
+        return False
+    try:
+        from rag.ingest import get_quarantine_collection
+
+        q = get_quarantine_collection().get(
+            where={"session_id": session_id},
+            limit=1,
+            include=[],
+        )
+        return bool(q and q.get("ids"))
+    except Exception as e:  # noqa: BLE001 — best-effort probe
+        _log.warning(
+            "quarantine presence probe failed (sid=%s): %s: %s",
+            session_id, type(e).__name__, str(e)[:160],
+        )
+        return False
+
+
+async def _retrieve_uploaded_only(
+    query: str, session_id: str, top_k: int
+) -> dict:
+    """Quarantine-scoped retrieval that returns ONLY this session's
+    uploaded-doc chunks, bypassing the recommendation profile-gate.
+
+    Reuses `rag.retrieve.retrieve(session_id=...)` (whose quarantine boost
+    pass already prepends this session's uploaded chunks), then filters the
+    result down to `doc_type == "user_upload"` so the bypass response can
+    NEVER contain general-corpus policy chunks against an incomplete
+    profile. Returns the same dict shape as `retrieve_policies`.
+    """
+    try:
+        from rag.retrieve import retrieve as _retrieve
+
+        chunks = await _retrieve(
+            query=query,
+            top_k=max(int(top_k) if top_k else 8, 3),
+            session_id=session_id,
+        )
+    except Exception as e:  # noqa: BLE001 — graceful empty
+        _log.warning(
+            "uploaded-only retrieve failed (sid=%s): %s: %s",
+            session_id, type(e).__name__, str(e)[:160],
+        )
+        return {"chunks": [], "count": 0, "error": f"{type(e).__name__}"}
+
+    uploaded = []
+    for c in chunks or []:
+        if (getattr(c, "doc_type", "") or "").lower() != "user_upload":
+            continue
+        # Triple-check session ownership before exposing the chunk —
+        # belt + suspenders on top of the where={"session_id"} filter.
+        if (getattr(c, "session_id", None) or session_id) != session_id and \
+                getattr(c, "session_id", None) not in (None, ""):
+            continue
+        uploaded.append({
+            "chunk_id": getattr(c, "chunk_id", ""),
+            "policy_id": getattr(c, "policy_id", ""),
+            "policy_name": getattr(c, "policy_name", ""),
+            "insurer_slug": getattr(c, "insurer_slug", "") or "user-upload",
+            "doc_type": "user_upload",
+            "source_url": getattr(c, "source_url", ""),
+            "chunk_text": (getattr(c, "text", "") or "")[:1200],
+            "score": float(getattr(c, "score", 0.0) or 0.0),
+        })
+    if not uploaded:
+        return {"chunks": [], "count": 0}
+    return {
+        "chunks": uploaded,
+        "count": len(uploaded),
+        "query": query,
+        "source": "uploaded_doc_quarantine",
+        "note": (
+            "These chunks come from the user's OWN uploaded policy PDF "
+            "(session-scoped quarantine). Answer the user's question "
+            "about THIS document directly. Do NOT treat this as a "
+            "general recommendation and do NOT block on profile "
+            "completeness — the user explicitly asked about their "
+            "uploaded file."
+        ),
+    }
+
+
 # ---- retrieve_policies -----------------------------------------------------
 
 async def retrieve_policies(
@@ -812,6 +840,38 @@ async def retrieve_policies(
         eff_session_id = None
     if not isinstance(query, str) or not query.strip():
         return {"chunks": [], "count": 0, "error": "empty_query"}
+
+    # UPLOADED-DOC BYPASS (2026-05-18) — the user is explicitly promised in
+    # the UI ("✓ Indexed … It's now searchable in this chat. Ask me about
+    # it.") that an uploaded policy PDF is immediately queryable. But the
+    # profile-complete gate below blocks ALL retrieval until the 7-slot
+    # fact-find is done (unless policy_filter_ids is set, which the LLM
+    # can't know for a freshly-uploaded doc). An uploaded doc is, by
+    # definition, a known-doc-FOR-THIS-SESSION — semantically identical to
+    # the policy_filter_ids follow-up branch that already legitimately
+    # bypasses the gate. So: when this session has chunks in the SEPARATE
+    # `user_uploads_quarantine` collection, run a quarantine-ONLY retrieval
+    # that bypasses the recommendation profile-gate. Strictly session-
+    # scoped (where={"session_id": eff_session_id}) so user A's upload
+    # never leaks into user B. The full recommendation flow (general
+    # corpus + eligibility + scorecard) still requires the complete
+    # profile — this bypass only surfaces the user's OWN uploaded doc.
+    if (
+        eff_session_id
+        and not policy_filter_ids
+        and _session_has_quarantine_docs(eff_session_id)
+    ):
+        up = await _retrieve_uploaded_only(query, eff_session_id, top_k)
+        # Only short-circuit if the gate would otherwise block (incomplete
+        # profile) AND we actually found uploaded chunks. If the profile is
+        # already complete we fall through so the upload is folded into the
+        # normal ranked recommendation pool by the quarantine boost pass.
+        _profile_incomplete = profile is not None and any(
+            getattr(profile, slot, None) in (None, "", [])
+            for slot in _REQUIRED_FOR_READY
+        )
+        if up.get("count", 0) > 0 and _profile_incomplete:
+            return up
 
     # Profile-complete gate (skip if caller supplied policy_filter_ids — that
     # branch is a known-policy follow-up). Defense-in-depth: even if the LLM

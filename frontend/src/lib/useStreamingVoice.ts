@@ -914,16 +914,44 @@ export function useStreamingVoice(
             // exponential-backoff retry (1s/2s/4s, max 3 attempts). The
             // accumulatedText (Web Speech fallback) and accumulated chunks
             // are already captured locally, so retries don't lose the
-            // partial transcript. Each attempt enforces its own 8s timeout
+            // partial transcript. Each attempt enforces its own timeout
             // via the controller signal passed in by retryPostTranscribe.
-            console.debug("[useStreamingVoice] POST /api/transcribe", { bytes: blob.size, mime: blob.type, lang: language });
+            //
+            // KI-302 (2026-05-18) — full-transcript fix. The backend now
+            // SPLITS audio over Sarvam's ~30s REST limit into multiple
+            // chunks and transcribes them sequentially (one Sarvam round
+            // trip per ~25s of speech) so a long utterance is no longer
+            // silently truncated to its first 30s. A fixed 8s client
+            // timeout would abort that legitimately-longer multi-chunk
+            // call mid-flight and force a fall back to the (also often
+            // truncated) Web Speech text — re-introducing the very bug we
+            // are fixing. Scale the per-attempt timeout with the audio
+            // size: an 8s floor for short clips plus a generous budget per
+            // estimated 25s chunk (browser webm/opus ≈ 4 KB/s ⇒ ~100 KB
+            // per 25s chunk; allow ~10s of Sarvam latency per chunk).
+            const APPROX_BYTES_PER_CHUNK = 100_000; // ~25s of webm/opus
+            const estChunks = Math.max(
+              1,
+              Math.ceil(blob.size / APPROX_BYTES_PER_CHUNK),
+            );
+            const attemptTimeoutMs = Math.min(
+              120_000, // hard ceiling — never wait > 2 min on one attempt
+              8_000 + estChunks * 12_000,
+            );
+            console.debug("[useStreamingVoice] POST /api/transcribe", {
+              bytes: blob.size,
+              mime: blob.type,
+              lang: language,
+              estChunks,
+              attemptTimeoutMs,
+            });
             const sarvam = await retryPostTranscribe(async (signal) => {
-              // Race per-attempt 8s timeout against the retry signal so a
+              // Race per-attempt timeout against the retry signal so a
               // hung connection still surfaces as an attempt failure (and
               // triggers the next backoff step) rather than blocking
               // forever. signal aborts when the OUTER retry loop is killed.
               const timeoutCtl = new AbortController();
-              const timer = setTimeout(() => timeoutCtl.abort(), 8000);
+              const timer = setTimeout(() => timeoutCtl.abort(), attemptTimeoutMs);
               const onOuterAbort = () => timeoutCtl.abort();
               signal.addEventListener("abort", onOuterAbort);
               try {

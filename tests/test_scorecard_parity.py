@@ -1,22 +1,32 @@
 """Regression guard — recommendation-path scorecard == marketplace scorecard.
 
-ROOT CAUSE THIS LOCKS DOWN (KI-FULLFACTS, 2026-05-17)
------------------------------------------------------
-`brain_tools._scorecard_signal` used to feed `build_scorecard` the 7-key
-eligibility subset (`_load_policy_facts`), which is below build_scorecard's
-data-completeness floor → every recommended policy came back grade "—" /
-overall 0 → the Bug #71 >=70 fitness gate dropped 100% of them → the
-recommendation `citations` array was always empty → CitedPolicyCards never
-rendered. Meanwhile /api/policies/all scored the SAME policies correctly
-(HDFC ERGO Optima Restore = A) because it feeds the FULL curated layer
-(main._load_curated_facts, KI-219/251 canonical precedence).
+ROOT CAUSE THIS LOCKS DOWN
+--------------------------
+1. KI-FULLFACTS (2026-05-17): `brain_tools._scorecard_signal` fed
+   `build_scorecard` the 7-key eligibility subset → every recommended
+   policy came back grade "—"/0 → the >=70 fitness gate dropped 100% →
+   empty `citations` → CitedPolicyCards never rendered.
 
-The fix makes `_scorecard_signal` reuse that EXACT function. This test makes
-the two paths *provably* unable to diverge again: for a representative
-spread of policies, the recommendation-path GRADE LETTER must equal the
-marketplace GRADE LETTER. (Overall scores may differ by a few points
-because the marketplace overlays EXTRACTED_DIR data on top; the LETTER —
-what _recommendation_fit gates on — must match.)
+2. #40 (2026-05-18): even after (1), `_scorecard_signal` kept its OWN
+   doctype-rank + `_merge_curated` re-implementation that *mirrored*
+   `/api/policies/all`. Two parallel implementations drift: marketing-
+   rename / KI-145 variant / multi-doctype ids graded a different file
+   than the marketplace card (e.g. `my:Optima Secure (older variant)`
+   recommended at one grade, marketplace card at another).
+
+THE FIX — SINGLE SOURCE OF TRUTH
+--------------------------------
+`backend.main._marketplace_catalogue()` is the ONE place a card set is
+computed. `backend.main.marketplace_grade(policy_id)` resolves a policy's
+canonical card (UIN-primary) from it. `_scorecard_signal` simply delegates
+to `marketplace_grade`. The two surfaces can no longer diverge because
+there is exactly one computation.
+
+This test makes that *provable*: for the ENTIRE id universe the
+recommender can cite — every marketplace card id, every curated id, every
+extracted stem incl. `__wordings/__brochure/__cis/__prospectus`
+permutations, and every alias name — the recommendation-path GRADE must
+equal the marketplace GRADE. 0 mismatches, by construction.
 """
 from __future__ import annotations
 
@@ -30,58 +40,70 @@ if str(_REPO_ROOT) not in sys.path:
 
 
 class TestScorecardParity(unittest.TestCase):
-    """Rec-path _scorecard_signal grade letter == marketplace grade letter."""
+    """Rec-path _scorecard_signal grade == marketplace grade, everywhere."""
 
     @classmethod
     def setUpClass(cls):
-        from backend.main import _load_curated_facts
-        from backend.scorecard import build_scorecard
-        from backend.brain_tools import _scorecard_signal, _insurer_reviews
+        import backend.main as M
+        from backend.brain_tools import _scorecard_signal
 
+        cls.M = M
         cls._scorecard_signal = staticmethod(_scorecard_signal)
-        cur = _load_curated_facts()
+        cls._cards = M._marketplace_catalogue(None)
+        cls._cur = M._load_curated_facts()
 
-        # Marketplace grade for a policy_id = build_scorecard on the SAME
-        # full curated dict + reviews the /api/policies/all path uses.
-        def _mkt_grade(pid: str):
-            data = cur.get(pid)
-            if not data:
-                return None
-            slug = data.get("insurer_slug") or (
-                pid.split("__", 1)[0] if "__" in pid else ""
-            )
-            sc = build_scorecard(
-                data, insurer_reviews=_insurer_reviews(slug), profile=None
-            )
-            return sc.grade
+    def test_full_id_universe_parity(self):
+        """The #40 oracle: rec grade == marketplace grade for EVERY id a
+        recommendation can surface (card ids + curated ids + extracted
+        stems + doctype permutations + aliases). Must be 0 mismatches."""
+        M = self.M
+        ids = {c.policy_id for c in self._cards}
+        ids |= set(self._cur.keys())
+        ids |= {p.stem for p in M.settings.EXTRACTED_DIR.glob("*.json")}
+        for c in self._cards:
+            ids |= set(c.aliases or [])
 
-        cls._mkt_grade = staticmethod(_mkt_grade)
-        # A representative spread across grade bands + insurers, incl. the
-        # user's own policy (HDFC ERGO Optima Restore — must be a strong A).
-        cls._sample = [
-            "hdfc-ergo__optima-restore",
-            "hdfc-ergo__my-health-sampoorna-suraksha",
-            "hdfc-ergo__my-optima-secure",
-            "oriental-insurance__happy-family-floater",
-            "star-health__family-health-optima",
-        ]
-
-    def test_rec_path_grade_matches_marketplace_grade(self):
         mismatches = []
-        for pid in self._sample:
-            mkt = self._mkt_grade(pid)
-            if mkt is None:
-                continue  # policy not in curated layer in this env — skip
-            rec = (self._scorecard_signal(pid, profile=None) or {}).get("_grade")
-            if rec != mkt:
-                mismatches.append(f"{pid}: rec={rec!r} marketplace={mkt!r}")
+        checked = 0
+        for pid in sorted(ids):
+            exp = M.marketplace_grade(pid).get("_grade")
+            if exp is None:
+                continue  # not a marketplace card (e.g. regulatory) — skip
+            checked += 1
+            rec = (self._scorecard_signal(pid) or {}).get("_grade")
+            if rec != exp:
+                mismatches.append(f"{pid}: rec={rec!r} marketplace={exp!r}")
+
+        self.assertGreater(checked, 140, "id universe collapsed — guard broke")
         self.assertEqual(
             mismatches, [],
-            "recommendation-path scorecard grade diverged from the "
-            "marketplace grade — the two paths must feed build_scorecard "
-            "the SAME curated facts (see KI-FULLFACTS):\n  "
-            + "\n  ".join(mismatches),
+            f"#40 PARITY BROKEN ({len(mismatches)}/{checked}): the "
+            "recommendation grade diverged from the marketplace grade. "
+            "Both MUST flow through backend.main.marketplace_grade (the "
+            "single source of truth); do not re-implement scoring in "
+            "brain_tools._scorecard_signal.\n  " + "\n  ".join(mismatches[:40]),
         )
+
+    def test_proven_alias_and_doctype_edges(self):
+        """The exact cases #40 used to break: a marketing-rename variant id
+        and doctype-permuted ids must each equal their canonical card."""
+        M = self.M
+        for pid in (
+            "hdfc-ergo__my-optima-secure-older-variant",
+            "hdfc-ergo__optima-restore__brochure",
+            "hdfc-ergo__optima-restore__cis",
+            "royal-sundaram__lifeline__cis",
+            "new-india__mediclaim-policy__brochure",
+        ):
+            mkt = M.marketplace_grade(pid).get("_grade")
+            if mkt is None:
+                continue  # absent in this env — skip, don't false-fail
+            rec = (self._scorecard_signal(pid) or {}).get("_grade")
+            self.assertEqual(
+                rec, mkt,
+                f"{pid}: rec grade {rec!r} != marketplace {mkt!r} "
+                "(alias/doctype canonicalisation regressed)",
+            )
 
     def test_optima_restore_is_a_strong_recommendable_grade(self):
         # The user's own policy — a genuinely strong plan. It must NOT come
