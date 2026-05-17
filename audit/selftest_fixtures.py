@@ -5,6 +5,7 @@ then fully restores in a `finally` so the repo is not left dirty.
 """
 from __future__ import annotations
 import contextlib
+import json
 import os
 from audit.core import REPO, sh
 
@@ -461,6 +462,136 @@ def _f_t4_e2e():
         m.sh = orig_sh
 
 
+# ---------------------------------------------------------------------------
+# Tier 5 fixtures.
+#
+# T5.1/T5.2/T5.4 are file/index-on-disk fixtures (the T1–T3 pattern): create an
+# obviously-temporary broken tracked state, yield, then fully restore so the
+# repo is byte-identical afterwards. T5.2 captures the Dockerfile's EXACT bytes
+# BEFORE any mutation and rewrites them UNCONDITIONALLY first in `finally`
+# (the T3.3/main.py critical-integrity pattern) — a corrupted Dockerfile would
+# break the deploy. T5.3 hits the HF Space API, so it monkeypatches the module
+# seam (`tier5_deploy.urllib.request.urlopen`) to return a controlled
+# non-RUNNING runtime; the patch is restored UNCONDITIONALLY in `finally`.
+# T5.3/T5.4's checks carry selftest_expect=Status.WARN, so their fixtures must
+# make the check RETURN Status.WARN (not raise).
+# ---------------------------------------------------------------------------
+
+
+@contextlib.contextmanager
+def _f_t5_1():
+    """Track _audit_st.parquet as a PLAIN blob (NOT an LFS pointer).
+
+    `.parquet` is in `.gitattributes` as `filter=lfs`, so a non-pointer
+    `.parquet` blob is exactly the "LFS-globbed but stored raw" state HF's
+    pre-push hook rejects -> T5.1 FAIL. We add it with the lfs clean/smudge
+    filters neutralised so git stores the raw bytes instead of a pointer, then
+    assert it is NOT in `git lfs ls-files`. Restored via `git rm --cached` +
+    unlink so the repo is byte-identical after.
+    """
+    rel = "_audit_st.parquet"
+    f = REPO / rel
+    f.write_bytes(b"PAR1_audit_selftest_not_a_pointer_PAR1\n")
+    # Empty ALL lfs filters (clean/smudge/process) and drop the `required`
+    # guard so `git add` stores the raw bytes instead of running the LFS
+    # clean filter (which, if only partially neutralised, aborts the add and
+    # silently leaves nothing staged — a false-PASS for T5.1).
+    sh(["git",
+        "-c", "filter.lfs.clean=",
+        "-c", "filter.lfs.smudge=",
+        "-c", "filter.lfs.process=",
+        "-c", "filter.lfs.required=false",
+        "add", "-f", rel])
+    # Sanity: it must be tracked AND NOT an LFS pointer for the fixture valid.
+    tracked = sh(["git", "ls-files"]).stdout.split()
+    tracked_lfs = sh(["git", "lfs", "ls-files", "-n"]).stdout.split()
+    if rel not in tracked or rel in tracked_lfs:
+        sh(["git", "rm", "--cached", "-qf", rel])
+        if f.exists():
+            f.unlink()
+        raise RuntimeError(
+            "T5.1 fixture: _audit_st.parquet not staged as a plain blob "
+            f"(tracked={rel in tracked} lfs={rel in tracked_lfs})")
+    try:
+        yield
+    finally:
+        # staged content differs from HEAD (file is new) -> needs -f.
+        sh(["git", "rm", "--cached", "-qf", rel])
+        if f.exists():
+            f.unlink()
+
+
+@contextlib.contextmanager
+def _f_t5_2():
+    """Append a `COPY <nonexistent> ./x` line to Dockerfile so T5.2 FAILs.
+
+    The Dockerfile's EXACT original bytes are captured BEFORE any mutation and
+    written back UNCONDITIONALLY as the FIRST statement in `finally` (even if
+    the check raises mid-way) — a corrupted Dockerfile is a deploy disaster, so
+    the restore is the verbatim captured bytes, not a re-render.
+    """
+    df = REPO / "Dockerfile"
+    original_bytes = df.read_bytes()  # capture EXACT bytes first
+    try:
+        df.write_bytes(
+            original_bytes
+            + b"\nCOPY _audit_st_nonexistent_dir ./x\n"
+        )
+        yield
+    finally:
+        # Restore Dockerfile byte-for-byte, unconditionally, FIRST.
+        df.write_bytes(original_bytes)
+
+
+@contextlib.contextmanager
+def _f_t5_3():
+    """Patch tier5_deploy.urllib.request.urlopen so SPACE_API runtime.stage is
+    BUILDING (not RUNNING) -> T5.3 returns Status.WARN.
+
+    The patched urlopen is captured BEFORE the yield and restored
+    UNCONDITIONALLY in `finally`. No repo files are touched.
+    """
+    import io
+    import audit.tier5_deploy as m
+    orig_urlopen = m.urllib.request.urlopen
+    payload = json.dumps({"runtime": {"stage": "BUILDING", "sha": "deadbeefcafe0000"}})
+
+    def _fake_urlopen(url, *a, **k):
+        # Only intercept the HF Space API call; anything else is unexpected
+        # here (the BUILDING branch returns before any LIVE smoke fetch).
+        return io.BytesIO(payload.encode())
+
+    m.urllib.request.urlopen = _fake_urlopen
+    try:
+        yield
+    finally:
+        m.urllib.request.urlopen = orig_urlopen
+
+
+@contextlib.contextmanager
+def _f_t5_4():
+    """Track 70-docs/_audit_st_stale.md containing both `Status | Live` and
+    `orchestrator.py` so T5.4's stale-present-state-doc tripwire -> WARN.
+
+    Restored via `git rm --cached` + unlink so the repo is byte-identical
+    after.
+    """
+    rel = "70-docs/_audit_st_stale.md"
+    f = REPO / rel
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.write_text(
+        "| Status | Live |\n\nReferences backend/orchestrator.py here.\n",
+        encoding="utf-8",
+    )
+    sh(["git", "add", "-f", rel])
+    try:
+        yield
+    finally:
+        sh(["git", "rm", "--cached", "-q", rel])
+        if f.exists():
+            f.unlink()
+
+
 FIXTURES.update({
     "T1.1": _f_t1_1,
     "T1.2": _f_t1_2,
@@ -482,4 +613,8 @@ FIXTURES.update({
     "T4.4": _f_t4_4,
     "T4.5": _f_t4_5,
     "T4.E2E": _f_t4_e2e,
+    "T5.1": _f_t5_1,
+    "T5.2": _f_t5_2,
+    "T5.3": _f_t5_3,
+    "T5.4": _f_t5_4,
 })

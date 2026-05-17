@@ -15,12 +15,13 @@ class Result:
 @dataclasses.dataclass
 class Check:
     id: str; tier: str; title: str; fn: Callable[[], "Result"]
+    selftest_expect: "Status" = Status.FAIL
 
 CHECKS: list[Check] = []
 
-def register(id: str, tier: str, title: str):
+def register(id: str, tier: str, title: str, selftest_expect: "Status" = Status.FAIL):
     def deco(fn):
-        CHECKS.append(Check(id, tier, title, fn)); return fn
+        CHECKS.append(Check(id, tier, title, fn, selftest_expect)); return fn
     return deco
 
 TIER_SETS = {
@@ -85,8 +86,8 @@ def selftest() -> int:
                 r = c.fn()
         except Exception as e:
             r = Result(c.id, Status.FAIL, f"raised {type(e).__name__}: {e}")
-        if r.status is not Status.FAIL:
-            bad.append(f"{c.id}: expected FAIL on broken fixture, got {r.status.value}")
+        if r.status is not c.selftest_expect:
+            bad.append(f"{c.id}: expected {c.selftest_expect.value} on broken fixture, got {r.status.value}")
     for b in bad: print(f"  FAIL {b}")
     print(f"\n  selftest: {len(CHECKS)} checks · {len(bad)} not self-verifying")
     return 1 if bad else 0
