@@ -311,6 +311,156 @@ def _f_t3_3():
             helper.unlink()
 
 
+# ---------------------------------------------------------------------------
+# Tier 4 fixtures.
+#
+# T4 checks hit a LIVE local backend / frontend / playwright runner, so a
+# file-on-disk fixture (the T1–T3 pattern) cannot force a deterministic FAIL.
+# Instead each fixture monkeypatches the *module seams* of
+# `audit.tier4_functional` (`_backend_up`, `_get`, `_post`, the module's
+# `urllib.request.urlopen`, `sh`) so the check exercises its real logic against
+# a controlled response and returns FAIL. Every patch is captured BEFORE the
+# yield and restored UNCONDITIONALLY in `finally` — even if the check raises —
+# so no module attr (and no file) is left mutated. No repo files are touched.
+# ---------------------------------------------------------------------------
+
+
+@contextlib.contextmanager
+def _f_t4_1():
+    """Backend 'up' but /api/health reports a non-ok status -> T4.1 FAIL."""
+    import audit.tier4_functional as m
+    orig_up, orig_get = m._backend_up, m._get
+    m._backend_up = lambda: True
+    m._get = lambda p, timeout=20: (200, '{"status":"bad"}')
+    try:
+        yield
+    finally:
+        m._backend_up, m._get = orig_up, orig_get
+
+
+@contextlib.contextmanager
+def _f_t4_2():
+    """Coverage counts far outside the sane window -> T4.2 FAIL."""
+    import audit.tier4_functional as m
+    orig_up, orig_get = m._backend_up, m._get
+    m._backend_up = lambda: True
+    m._get = lambda p, timeout=20: (
+        200,
+        '{"total_policies":1,"total_insurers":1,"total_chunks":1}',
+    )
+    try:
+        yield
+    finally:
+        m._backend_up, m._get = orig_up, orig_get
+
+
+@contextlib.contextmanager
+def _f_t4_3():
+    """Chat returns an empty reply_text -> T4.3 FAIL (empty reply)."""
+    import audit.tier4_functional as m
+    orig_up, orig_post = m._backend_up, m._post
+    m._backend_up = lambda: True
+    m._post = lambda p, payload, timeout=90: (
+        200,
+        '{"reply_text":"","brain_used":"x"}',
+    )
+    try:
+        yield
+    finally:
+        m._backend_up, m._post = orig_up, orig_post
+
+
+@contextlib.contextmanager
+def _f_t4_4():
+    """Make the junk-PDF upload POST 'succeed' (fake 200) -> T4.4 FAIL.
+
+    T4.4 calls `urllib.request.urlopen` directly (not via `_post`). A real junk
+    upload raises HTTPError(4xx) -> PASS. To force the FAIL branch we patch the
+    `urllib.request.urlopen` *as referenced inside tier4_functional* so the
+    POST returns a fake 200 response instead of raising — i.e. the app
+    'accepted junk', which T4.4 must report as FAIL.
+    """
+    import audit.tier4_functional as m
+    orig_up = m._backend_up
+    orig_urlopen = m.urllib.request.urlopen
+
+    class _FakeResp:
+        status = 200
+
+        def read(self):
+            return b"{}"
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    def _fake_urlopen(req, *a, **k):
+        return _FakeResp()
+
+    m._backend_up = lambda: True
+    m.urllib.request.urlopen = _fake_urlopen
+    try:
+        yield
+    finally:
+        m._backend_up = orig_up
+        m.urllib.request.urlopen = orig_urlopen
+
+
+@contextlib.contextmanager
+def _f_t4_5():
+    """Profile/session endpoints return HTTP 500 -> T4.5 FAIL."""
+    import audit.tier4_functional as m
+    orig_up, orig_get, orig_post = m._backend_up, m._get, m._post
+    m._backend_up = lambda: True
+    m._get = lambda p, timeout=20: (500, "err")
+    m._post = lambda p, payload, timeout=90: (500, "err")
+    try:
+        yield
+    finally:
+        m._backend_up, m._get, m._post = orig_up, orig_get, orig_post
+
+
+@contextlib.contextmanager
+def _f_t4_e2e():
+    """Frontend 'reachable' + e2e run reports a failed journey -> T4.E2E FAIL.
+
+    PW_RUN exists on this machine, so `os.path.exists(PW_RUN)` is already True.
+    We patch the module's `urllib.request.urlopen` so the FE :3000 reachability
+    probe 'passes' (fake 200) regardless of whether a dev server is up, and
+    patch the module's `sh` to return a fake CompletedProcess whose stdout is
+    `RJSON {"loads":false}` — a failing journey, which T4.E2E must report as
+    FAIL. No real browser/runner is spawned.
+    """
+    import subprocess
+    import audit.tier4_functional as m
+    orig_urlopen = m.urllib.request.urlopen
+    orig_sh = m.sh
+
+    class _FakeResp:
+        status = 200
+
+        def read(self):
+            return b"<html><h1>x</h1></html>"
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    m.urllib.request.urlopen = lambda req, *a, **k: _FakeResp()
+    m.sh = lambda cmd, timeout=120: subprocess.CompletedProcess(
+        cmd, 0, stdout='RJSON {"loads":false}\n', stderr=""
+    )
+    try:
+        yield
+    finally:
+        m.urllib.request.urlopen = orig_urlopen
+        m.sh = orig_sh
+
+
 FIXTURES.update({
     "T1.1": _f_t1_1,
     "T1.2": _f_t1_2,
@@ -326,4 +476,10 @@ FIXTURES.update({
     "T3.1": _f_t3_1,
     "T3.2": _f_t3_2,
     "T3.3": _f_t3_3,
+    "T4.1": _f_t4_1,
+    "T4.2": _f_t4_2,
+    "T4.3": _f_t4_3,
+    "T4.4": _f_t4_4,
+    "T4.5": _f_t4_5,
+    "T4.E2E": _f_t4_e2e,
 })
