@@ -310,10 +310,11 @@ async def main():
                              "Cap is NIM's 40 req/min (~2 calls per question); 6 workers gives ~5× "
                              "speedup before saturating. Drop to 1 to reproduce historical serial timing.")
     parser.add_argument("--no-extract", action="store_true",
-                        help="KI-053 — skip backend.profile_extractor LLM call in eval. Eval gold "
-                             "questions have empty user_profile so the extractor wastes a NIM call "
-                             "per question. Setting this env var makes orchestrator skip it. "
-                             "~25%% throughput gain; no impact on grading.")
+                        help="KI-053 (legacy) — skipped a now-removed pre-LLM "
+                             "profile-extraction call to save ~1 request/question. "
+                             "Dormant: the eval harness is pending re-port to the "
+                             "single-brain architecture (see module docstring). "
+                             "~25%% throughput gain; no grading impact.")
     args = parser.parse_args()
 
     # KI-053 — propagate the skip flag via env var so the deep-stack
