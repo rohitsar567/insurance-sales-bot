@@ -90,70 +90,87 @@ def _f_t1_5():
 
 @contextlib.contextmanager
 def _f_t2_1():
-    """Track a .py with a syntax error so T2.1 FAILs."""
-    f = REPO / "_audit_selftest_syntax.py"
-    f.write_text("def broken(:\n    pass\n", encoding="utf-8")
-    sh(["git", "add", "-f", "_audit_selftest_syntax.py"])
+    """Track backend/_audit_st_syntax.py with a SyntaxError so T2.1 FAILs."""
+    rel = "backend/_audit_st_syntax.py"
+    f = REPO / rel
+    f.write_text("def (:\n    pass\n", encoding="utf-8")
+    sh(["git", "add", "-f", rel])
     try:
         yield
     finally:
-        sh(["git", "rm", "--cached", "-q", "_audit_selftest_syntax.py"])
+        sh(["git", "rm", "--cached", "-q", rel])
         if f.exists():
             f.unlink()
 
 
 @contextlib.contextmanager
 def _f_t2_2():
-    """Track backend/_audit_selftest_mod.py that raises NameError at import."""
-    f = REPO / "backend" / "_audit_selftest_mod.py"
-    f.write_text("x = undefined_thing\n", encoding="utf-8")
-    sh(["git", "add", "-f", "backend/_audit_selftest_mod.py"])
+    """Track backend/_audit_st_import.py that raises ImportError at import time."""
+    rel = "backend/_audit_st_import.py"
+    f = REPO / rel
+    f.write_text('raise ImportError("audit selftest")\n', encoding="utf-8")
+    sh(["git", "add", "-f", rel])
     try:
         yield
     finally:
-        sh(["git", "rm", "--cached", "-q", "backend/_audit_selftest_mod.py"])
+        sh(["git", "rm", "--cached", "-q", rel])
         if f.exists():
             f.unlink()
 
 
 @contextlib.contextmanager
 def _f_t2_3():
-    """Track backend/_audit_selftest_dead.py with a code ref to a deleted module."""
-    f = REPO / "backend" / "_audit_selftest_dead.py"
+    """Track backend/_audit_st_dead.py with a CODE ref to a deleted module.
+
+    The line is a real import statement (not a comment/docstring) so T2.3 must
+    classify it as a code_hit and return FAIL, not WARN.
+    """
+    rel = "backend/_audit_st_dead.py"
+    f = REPO / rel
     f.write_text("from backend.orchestrator import handle_turn\n", encoding="utf-8")
-    sh(["git", "add", "-f", "backend/_audit_selftest_dead.py"])
+    sh(["git", "add", "-f", rel])
     try:
         yield
     finally:
-        sh(["git", "rm", "--cached", "-q", "backend/_audit_selftest_dead.py"])
+        sh(["git", "rm", "--cached", "-q", rel])
         if f.exists():
             f.unlink()
 
 
 @contextlib.contextmanager
 def _f_t2_4():
-    """Track a .css file with a nested */ inside a block comment so T2.4 FAILs."""
-    f = REPO / "_audit_selftest.css"
-    f.write_text("/* a */ b */\n.x { color: red; }\n", encoding="utf-8")
-    sh(["git", "add", "-f", "_audit_selftest.css"])
+    """Track frontend/_audit_st.css with an orphan */ so T2.4 FAILs.
+
+    `/* a */ b */` — the first `*/` legitimately closes the comment; the
+    trailing ` */` is then an orphan terminator outside any comment, which is
+    exactly the comment-terminator footgun T2.4's state machine flags.
+    """
+    rel = "frontend/_audit_st.css"
+    f = REPO / rel
+    f.write_text("/* a */ b */\n", encoding="utf-8")
+    sh(["git", "add", "-f", rel])
     try:
         yield
     finally:
-        sh(["git", "rm", "--cached", "-q", "_audit_selftest.css"])
+        sh(["git", "rm", "--cached", "-q", rel])
         if f.exists():
             f.unlink()
 
 
 @contextlib.contextmanager
 def _f_t2_5():
-    """Track backend/_audit_selftest_path.py with a hardcoded 40-data path."""
-    f = REPO / "backend" / "_audit_selftest_path.py"
-    f.write_text('x = something / "40-data" / "y"\n', encoding="utf-8")
-    sh(["git", "add", "-f", "backend/_audit_selftest_path.py"])
+    """Track backend/_audit_st_path.py with a hardcoded 40-data path so T2.5 FAILs."""
+    rel = "backend/_audit_st_path.py"
+    f = REPO / rel
+    f.write_text(
+        'x = settings.CORPUS_DIR.parent.parent / "40-data" / "y.json"\n',
+        encoding="utf-8",
+    )
+    sh(["git", "add", "-f", rel])
     try:
         yield
     finally:
-        sh(["git", "rm", "--cached", "-q", "backend/_audit_selftest_path.py"])
+        sh(["git", "rm", "--cached", "-q", rel])
         if f.exists():
             f.unlink()
 
@@ -170,12 +187,12 @@ def _tsc_available() -> bool:
 def _f_t2_6():
     """Force a lint/type failure so T2.6 FAILs.
 
-    Prefer ruff (a flagrant unused-import + bare-except .py under audit/). If
-    ruff is unavailable in this env T2.6 would SKIP (not FAIL) on a ruff-only
-    fixture, so fall back to forcing a tsc error via a broken .ts under
-    frontend/src/. If NEITHER ruff nor tsc is available this single fixture
-    cannot legitimately force a FAIL — raise a clear RuntimeError so selftest
-    surfaces it rather than reporting a false pass.
+    Prefer a tsc type error (a .ts under frontend/src/ that fails strict type
+    checking). If tsc is unavailable, fall back to a ruff-only fixture (a
+    flagrant unused-import + bare-except .py under audit/). If NEITHER ruff nor
+    tsc is available this single fixture cannot legitimately force a FAIL —
+    raise a clear RuntimeError; the hardened core.selftest treats that raise as
+    the check failing on the broken fixture, which is the acceptable outcome.
     """
     have_ruff = _ruff_available()
     have_tsc = _tsc_available()
@@ -184,17 +201,19 @@ def _f_t2_6():
 
     created = []
     try:
-        if have_ruff:
-            f = REPO / "audit" / "_audit_selftest_lint.py"
+        if have_tsc:
+            rel = "frontend/src/_audit_st_bad.ts"
+            f = REPO / rel
+            f.write_text('const x: number = "str";\n', encoding="utf-8")
+            sh(["git", "add", "-f", rel])
+            created.append(rel)
+        else:
+            rel = "audit/_audit_st_lint.py"
+            f = REPO / rel
             f.write_text("import os\ntry:\n    pass\nexcept:\n    pass\n",
                          encoding="utf-8")
-            sh(["git", "add", "-f", "audit/_audit_selftest_lint.py"])
-            created.append("audit/_audit_selftest_lint.py")
-        else:
-            f = REPO / "frontend" / "src" / "_audit_selftest_bad.ts"
-            f.write_text("export const x: number = ;\n", encoding="utf-8")
-            sh(["git", "add", "-f", "frontend/src/_audit_selftest_bad.ts"])
-            created.append("frontend/src/_audit_selftest_bad.ts")
+            sh(["git", "add", "-f", rel])
+            created.append(rel)
         yield
     finally:
         for rel in created:

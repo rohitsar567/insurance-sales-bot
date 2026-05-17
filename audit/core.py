@@ -78,9 +78,13 @@ def selftest() -> int:
     for c in CHECKS:
         fx = FIXTURES.get(c.id)
         if fx is None:
-            bad.append(f"{c.id}: NO selftest fixture"); continue
-        with fx():
-            r = c.fn()
+            bad.append(f"{c.id}: NO selftest fixture")
+            continue
+        try:
+            with fx():
+                r = c.fn()
+        except Exception as e:
+            r = Result(c.id, Status.FAIL, f"raised {type(e).__name__}: {e}")
         if r.status is not Status.FAIL:
             bad.append(f"{c.id}: expected FAIL on broken fixture, got {r.status.value}")
     for b in bad: print(f"  FAIL {b}")
