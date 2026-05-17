@@ -223,6 +223,94 @@ def _f_t2_6():
                 fp.unlink()
 
 
+@contextlib.contextmanager
+def _f_t3_1():
+    """Track a temp test that fails so `pytest -q` exits non-zero -> T3.1 FAIL.
+
+    The file lives under tests/ (testpaths=tests in pytest.ini) AND is named
+    `test_*.py` so pytest's default `python_files` glob actually collects it
+    — a bare `_audit_st_fail.py` is silently skipped from collection, leaving
+    the suite green and T3.1 a false PASS. Restored via `git rm --cached` +
+    unlink so the suite is green again and the repo is byte-identical after.
+    """
+    rel = "tests/test__audit_st_fail.py"
+    f = REPO / rel
+    f.write_text(
+        "def test_audit_selftest_intentional_fail():\n    assert False\n",
+        encoding="utf-8",
+    )
+    sh(["git", "add", "-f", rel])
+    try:
+        yield
+    finally:
+        sh(["git", "rm", "--cached", "-q", rel])
+        if f.exists():
+            f.unlink()
+
+
+@contextlib.contextmanager
+def _f_t3_2():
+    """Track a temp .tsx with a hard syntax error so `next build` fails.
+
+    The unbalanced/invalid TSX makes Next's compilation step error out fast,
+    so T3.2 FAILs without needing a green full build. Restored so the repo is
+    byte-identical after (this fixture's selftest is inherently a ~minute
+    real build attempt — that is expected).
+    """
+    rel = "frontend/src/app/_audit_st_bad.tsx"
+    f = REPO / rel
+    f.write_text(
+        "export default function(){ return <div> }\nconst x: = ;\n",
+        encoding="utf-8",
+    )
+    sh(["git", "add", "-f", rel])
+    try:
+        yield
+    finally:
+        sh(["git", "rm", "--cached", "-q", rel])
+        if f.exists():
+            f.unlink()
+
+
+@contextlib.contextmanager
+def _f_t3_3():
+    """Make `import backend.main` raise so T3.3 FAILs deterministically.
+
+    T3.3 PASSes only if `import backend.main` succeeds AND :8000 is healthy;
+    it SKIPs when no backend is up. To force a deterministic FAIL regardless
+    of whether a local backend is running, the only sound lever is to make
+    the `import backend.main` subprocess raise. We do that WITHOUT corrupting
+    real source: create a temp tracked module that raises on import, and
+    append a single import line to the END of backend/main.py.
+
+    The original backend/main.py bytes are captured verbatim BEFORE any
+    mutation and written back EXACTLY in `finally` — even if the check raises
+    mid-way — so backend/main.py is byte-for-byte identical afterwards. A
+    corrupted main.py would be a disaster, so the restore is unconditional
+    and uses the captured raw bytes (not a re-render).
+    """
+    helper_rel = "backend/_audit_st_importbreak.py"
+    helper = REPO / helper_rel
+    main_py = REPO / "backend" / "main.py"
+
+    original_bytes = main_py.read_bytes()  # capture EXACT bytes first
+    helper.write_text('raise SyntaxError("audit selftest import break")\n',
+                       encoding="utf-8")
+    sh(["git", "add", "-f", helper_rel])
+    try:
+        main_py.write_bytes(
+            original_bytes
+            + b"\nimport backend._audit_st_importbreak  # AUDIT-ST\n"
+        )
+        yield
+    finally:
+        # Restore backend/main.py byte-for-byte, unconditionally.
+        main_py.write_bytes(original_bytes)
+        sh(["git", "rm", "--cached", "-q", helper_rel])
+        if helper.exists():
+            helper.unlink()
+
+
 FIXTURES.update({
     "T1.1": _f_t1_1,
     "T1.2": _f_t1_2,
@@ -235,4 +323,7 @@ FIXTURES.update({
     "T2.4": _f_t2_4,
     "T2.5": _f_t2_5,
     "T2.6": _f_t2_6,
+    "T3.1": _f_t3_1,
+    "T3.2": _f_t3_2,
+    "T3.3": _f_t3_3,
 })
