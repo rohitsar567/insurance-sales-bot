@@ -57,7 +57,7 @@ from backend.providers.base import ChatMessage, LLMProvider, LLMResult
 
 GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 GEMINI_CACHE_URL = "https://generativelanguage.googleapis.com/v1beta/cachedContents"
-DEFAULT_MODEL = "gemini-2.5-flash-lite"  # KI-183 — gemini-2.0-flash retired for new accounts
+DEFAULT_MODEL = "gemini-2.5-flash"  # KI-183 retired gemini-2.0-flash → 2.5-flash (free-tier, brain-grade — see header). NOT the -lite tier: it silently broke single-brain tool-calling (save_profile_field) and caused the live fact-find regression.
 
 # ----------------------------------------------------------------------------
 # KI-199 — module-level cachedContents registry.

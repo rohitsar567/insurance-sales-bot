@@ -84,13 +84,11 @@ class SessionState:
     # fall through to the orchestrator — they emit a graceful retry
     # prompt so the session stays sticky on single_brain.
     single_brain_sticky: bool = False
-    # KI-RECALL-FIX (2026-05-16) — one-shot guard for the cross-session
-    # recall name sniff. Set True the first time single_brain attempts a
-    # name-based recall on this session (turn 1 OR a later turn where the
-    # user answers the bot's "what's your name?" prompt). Prevents
-    # re-prompting "are you the same <name>?" on every subsequent nameless
-    # turn. Independent of `pending_profile_recall` (which tracks an
-    # in-flight confirm), so a declined recall is not retried either.
+    # VESTIGIAL (2026-05-17): the deterministic in-conversation recall
+    # name-sniff that set this was REMOVED from single_brain (see the
+    # tombstone above single_brain._HONEST_EMPTY_REPLY). Field retained,
+    # not deleted, so previously-persisted SessionState payloads still
+    # deserialize cleanly; nothing reads or writes it any more.
     _recall_sniff_done: bool = False
     # Bug #108 + #110 (2026-05-16) — POST-RECAP pricing & family-history
     # bundle re-ask gate (brain_tools.retrieve_policies).

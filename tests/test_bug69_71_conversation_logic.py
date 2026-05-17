@@ -49,9 +49,9 @@ from backend.needs_finder import (  # noqa: E402
 )
 from backend.single_brain import (  # noqa: E402
     SYSTEM_PROMPT,
+    _HONEST_EMPTY_REPLY,
     _build_recommendation_citations,
     _recommendation_fit,
-    _synthesise_fallback,
 )
 
 # Phrases the advisor must NEVER use to surface a merely-missing slot.
@@ -79,7 +79,8 @@ def _run(coro):
 
 
 # ════════════════════════════════════════════════════════════════════════════
-# BUG #69 — deterministic surfaces (slot order + fallback + prompt rules)
+# BUG #69 — corrected design: canonical slot order (needs_finder UI hint) +
+# no RULE-0 determinism + honest empty-LLM error (no fabricated slot-question)
 # ════════════════════════════════════════════════════════════════════════════
 class TestBug69NameFirstDeterministic(unittest.TestCase):
     def test_canonical_slot_order_puts_name_first(self):
@@ -89,44 +90,23 @@ class TestBug69NameFirstDeterministic(unittest.TestCase):
             "first in the canonical fact-find order")
         self.assertEqual(next_question(Profile()), "name")
 
-    def test_system_prompt_mandates_name_first(self):
-        self.assertIn("RULE 0", SYSTEM_PROMPT)
-        self.assertIn("ASK FOR THE NAME FIRST", SYSTEM_PROMPT)
-        # The exact misleading sentence from the live transcript is named
-        # and explicitly forbidden in-prompt.
-        self.assertIn(
-            "I couldn't find any policies matching all your criteria",
-            SYSTEM_PROMPT)
-        self.assertIn(
-            "A MISSING REQUIRED SLOT IS NOT A", SYSTEM_PROMPT)
+    def test_system_prompt_has_no_rule0_determinism_keeps_rule1_capture(self):
+        # CORRECTED DESIGN (2026-05-17): the RULE-0 "ASK FOR THE NAME FIRST"
+        # overlay was a contradiction with RULE 1 ("save the name the user
+        # gave") and is REMOVED. Regression guard: the prompt must NOT
+        # reintroduce the RULE-0 determinism…
+        self.assertNotIn("RULE 0", SYSTEM_PROMPT)
+        self.assertNotIn("ASK FOR THE NAME FIRST", SYSTEM_PROMPT)
+        self.assertNotIn("NAME IS COLLECTED FIRST", SYSTEM_PROMPT)
+        # …and the single-LLM capture contract (RULE 1) must still mandate
+        # saving a stated name via the tool — the SOLE fact-find mechanism.
+        self.assertIn("RULE 1", SYSTEM_PROMPT)
+        self.assertIn('save_profile_field(field="name"', SYSTEM_PROMPT)
 
-    def test_fallback_asks_name_when_nothing_known(self):
-        msg = _synthesise_fallback(Profile())
-        self.assertIn("name", msg.lower())
-        _assert_not_misleading(self, msg)
-
-    def test_fallback_only_name_missing_is_honest_and_specific(self):
-        # User supplied every other substantive detail; only name is gone.
-        p = Profile(
-            age=39, dependents="self+spouse", location_tier="metro",
-            income_band="10L-25L", primary_goal="first_buy",
-            health_conditions=["none"],
-        )
-        msg = _synthesise_fallback(p)
-        self.assertIn("name", msg.lower())
-        # Honest + specific: it asks for the NAME, not a fake no-match.
-        _assert_not_misleading(self, msg)
-        self.assertIn("everything I need except your name", msg)
-
-    def test_fallback_other_single_missing_slot_names_that_slot(self):
-        # Only income missing → ask income plainly, never a no-match.
-        p = Profile(
-            name="Asha", age=39, dependents="self", location_tier="metro",
-            primary_goal="first_buy", health_conditions=["none"],
-        )
-        msg = _synthesise_fallback(p)
-        _assert_not_misleading(self, msg)
-        self.assertIn("income", msg.lower())
+    # The 3 `_synthesise_fallback` unit tests were removed with the
+    # deterministic slot-question generator (2026-05-17). Empty-LLM
+    # behaviour is now an HONEST error — covered by
+    # TestBug69EndToEnd.test_empty_llm_yields_honest_error.
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -146,7 +126,7 @@ def _tool_payload(parts):
 
 class _HandleTurnHarness(unittest.TestCase):
     """Drives single_brain.handle_turn for real with the two network seams
-    scripted. The fit gate + citation builder + fallback all run for real;
+    scripted. The fit gate + citation builder run for real;
     only Gemini and the vector store are stubbed."""
 
     def setUp(self):
@@ -269,11 +249,36 @@ class TestBug69EndToEnd(_HandleTurnHarness):
         self.assertEqual(sess.profile.name, "Rohit")
         _assert_not_misleading(self, r2.reply_text)
 
-    def test_fallback_path_when_name_only_missing_is_not_a_no_match(self):
-        # Force the deterministic safety net (Gemini emits no text and no
-        # tools across all iterations → _synthesise_fallback). The profile
-        # arrives with everything but the name. The synthesised reply must
-        # be the honest, specific name ask — never a fake no-match.
+    def test_no_in_chat_recall_confirm_short_circuit(self):
+        # CORRECTED DESIGN (2026-05-17): the deterministic in-conversation
+        # recall scaffolding (turn-1 name-sniff → "Welcome back — are you
+        # the same X? (yes/no)" short-circuit, intent="recall_confirm") was
+        # REMOVED. A self-introduction must flow straight through the single
+        # LLM — never a canned recall-confirm short-circuit. (Explicit
+        # returning-user recall now lives only in the separate
+        # POST /api/profile/recall-by-name endpoint.) Replaces the deleted
+        # tests/test_returning_user_recall.py as the regression guard.
+        sess = self._fresh_session()
+        self._gemini_script = [
+            _tool_payload([_fc_part("save_profile_field",
+                                    {"field": "name", "value": "Rohit"})]),
+            _text_payload("Hi Rohit! How can I help with health cover today?"),
+        ]
+        r = _run(single_brain.handle_turn(sess, "Hi, I'm Rohit"))
+        self.assertNotEqual(r.intent, "recall_confirm")
+        self.assertNotIn("recall_confirm", r.brain_used)
+        self.assertNotIn("are you the same", r.reply_text.lower())
+        self.assertNotIn("welcome back —", r.reply_text.lower())
+        # The single LLM drove the turn and captured the name via the tool.
+        self.assertEqual(sess.profile.name, "Rohit")
+        self.assertFalse(r.returning_user_recalled)
+
+    def test_empty_llm_yields_honest_error_not_fabricated_slot_question(self):
+        # CORRECTED DESIGN (2026-05-17): a genuine empty-LLM turn (Gemini
+        # emits no text and no tools across all iterations) must surface an
+        # HONEST retry message — NEVER the old deterministic
+        # `_synthesise_fallback` that fabricated a "What's your name?" /
+        # slot-question and simulated a fact-find that did not happen.
         sess = self._fresh_session()
         sess.profile = Profile(
             age=39, dependents="self+spouse", location_tier="metro",
@@ -282,8 +287,11 @@ class TestBug69EndToEnd(_HandleTurnHarness):
         )
         self._gemini_script = [_text_payload("") for _ in range(12)]
         r = _run(single_brain.handle_turn(sess, "what next?"))
+        self.assertEqual(r.reply_text, _HONEST_EMPTY_REPLY)
         _assert_not_misleading(self, r.reply_text)
-        self.assertIn("name", r.reply_text.lower())
+        # It must NOT fabricate a slot-question (the removed determinism).
+        self.assertNotIn("what's your name", r.reply_text.lower())
+        self.assertNotIn("your annual household income", r.reply_text.lower())
 
 
 # ════════════════════════════════════════════════════════════════════════════

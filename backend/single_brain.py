@@ -43,10 +43,13 @@ _log = logging.getLogger(__name__)
 # ---------- constants -------------------------------------------------------
 
 # Model resolution: prefer `SINGLE_BRAIN_MODEL`, else copy the same default
-# `google_gemini_llm.py` uses (DEFAULT_MODEL = "gemini-2.5-flash-lite"). We
+# `google_gemini_llm.py` uses (DEFAULT_MODEL = "gemini-2.5-flash"). We
 # import lazily inside _resolve_model so importing this module does not
 # require the provider to load (or its GOOGLE_API_KEY env var to be set).
-_FALLBACK_MODEL = "gemini-2.5-flash-lite"
+# NOTE: keep this in lock-step with google_gemini_llm.DEFAULT_MODEL — it is
+# only the fallback if that import fails. Must NOT be the weaker -lite tier
+# (that silently broke save_profile_field tool-calling → fact-find loop).
+_FALLBACK_MODEL = "gemini-2.5-flash"
 
 GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 
@@ -82,38 +85,6 @@ YOUR JOB:
 3. Help the customer choose one. Cite the UIN / policy_id for every claim about features, sums insured, or premiums.
 
 REQUIRED slots before recommending: name, age, dependents, location_tier, income_band, primary_goal, health_conditions.
-
-═══════════════════════════════════
-RULE 0 (HIGHEST PRIORITY) — ASK FOR THE NAME FIRST + NEVER MIS-FRAME A MISSING SLOT
-═══════════════════════════════════
-0a. NAME IS COLLECTED FIRST. `name` is a REQUIRED slot that gates every
-    recommendation. Ask for it EARLY — it must be the FIRST thing you ask
-    for. On your very first reply to a fresh user (no name captured yet,
-    not a returning user), open by asking their name (a one-line warm
-    greeting + "what should I call you?" is ideal). If the user volunteers
-    several facts at once but not their name, capture those facts AND ask
-    for the name in the same reply. NEVER leave `name` for last — asking
-    age/city/budget/health first and the name only at the very end (right
-    before recommending) is a RULE 0 violation.
-
-0b. A MISSING REQUIRED SLOT IS NOT A "NO MATCHES" / RETRIEVAL FAILURE.
-    `name` (and every other profile slot) has NOTHING to do with whether
-    policies match. When you are blocked ONLY because a required slot is
-    still missing, you MUST be honest and specific about WHICH slot you
-    need — you must NOT say, imply, or hint any of:
-      • "I couldn't find any policies matching all your criteria"
-      • "no policies match" / "nothing matches your criteria"
-      • "it seems I'm missing a few more details to proceed" (vague)
-      • anything that suggests you searched and failed, or that you can't
-        help, when in fact you simply have not collected a profile slot yet.
-    Correct shape when name is the only thing missing AFTER the user has
-    given substantive details:
-      "I've got everything I need except your name — what should I call
-       you? Then I'll pull your matches."
-    Correct shape for any other single missing slot: name the slot
-    plainly ("Just one more thing — roughly what's your annual household
-    income?"). Only say something matched/did-not-match AFTER you have
-    actually called retrieve_policies and seen its result.
 
 ═══════════════════════════════════
 ABSOLUTE RULE — NO POLICY NAMES WITHOUT RETRIEVE
@@ -422,14 +393,12 @@ class TurnResult:
     blocked: bool = False
     profile_updates: dict = field(default_factory=dict)
     followup_policy_id: Optional[str] = None
-    # KI-RECALL-FIX (2026-05-16) — deterministic returning-user signal.
-    # Set True ONLY on the turn where the user explicitly affirmed a staged
-    # cross-session recall and `apply_pending_recall(confirmed=True)` merged
-    # their stored profile. main.py stamps ChatResponse.returning_user_recalled
-    # from this so the frontend "Welcome back" banner fires. Previously
-    # main.py inferred recall from a turn-1-only heuristic which the
-    # confirmation gate (recall resolves on a LATER turn) could never satisfy
-    # — the banner was unreachable even once recall worked.
+    # main.py stamps ChatResponse.returning_user_recalled from this. The
+    # deterministic in-conversation recall that used to set it True was
+    # REMOVED 2026-05-17 (see the tombstone above _HONEST_EMPTY_REPLY), so
+    # handle_turn now always leaves this False; explicit returning-user
+    # recall is the separate POST /api/profile/recall-by-name endpoint.
+    # Field kept for ChatResponse / frontend compatibility.
     returning_user_recalled: bool = False
 
 
@@ -658,108 +627,25 @@ def _detect_language(user_text: str) -> str:
     return "en"
 
 
-# --- confirmation-gated cross-session recall (privacy fix, 2026-05-16) ------
-# When session_state.rehydrate_by_name STAGES a name match on
-# `session.pending_profile_recall`, single_brain asks the user a one-line
-# "are you the same <name>?" confirmation BEFORE any stored field is merged
-# (session_state.apply_pending_recall). These coarse yes/no detectors classify
-# the user's NEXT message. Anything that is not a clear affirmation is treated
-# as "not me / decline" (fail closed — never leak a stranger's profile).
-# Strong single-token affirmations only. Weak first-person tokens ("i'm",
-# "i am", "im") are deliberately EXCLUDED — they appear in denials too
-# ("I'm new", "I'm someone else") and would mis-classify a decline as a
-# yes (privacy: that would leak a stranger's profile).
-_RECALL_AFFIRM = (
-    "yes", "yep", "yeah", "yup", "ya", "yess", "haan", "haa",
-    "correct", "right", "indeed", "sure", "ok", "okay",
-    "affirmative", "true", "yedha",
-)
-# Multi-word affirmation phrases (checked as substrings).
-_RECALL_AFFIRM_PHRASES = (
-    "that's me", "thats me", "that is me", "it's me", "its me",
-    "that's right", "thats right", "that's correct", "thats correct",
-    "yes that's me", "same person", "the same",
-)
-_RECALL_DENY = (
-    "no", "nope", "nah", "nahi", "na", "wrong", "incorrect", "different",
-)
-_RECALL_DENY_PHRASES = (
-    "not me", "someone else", "different person", "first time",
-    "i'm new", "im new", "i am new", "new user", "not the same",
-    "not that", "wrong person",
-)
+# --- REMOVED 2026-05-17 — deterministic recall classifier + fallback -------
+# `_RECALL_AFFIRM*` / `_classify_recall_answer` (the staged-recall yes/no
+# detector) and `_FALLBACK_SLOT_QUESTIONS` / `_FALLBACK_REQUIRED_SLOTS` /
+# `_synthesise_fallback` (the deterministic "ask the next missing slot"
+# generator) were leftover rule-based scaffolding from the pre-Path-B
+# rule/3-brain/judge era. They masked the single LLM: when Gemini returned
+# no text the fallback injected a canned "What's your name?", simulating a
+# fact-find that wasn't happening → an infinite loop. The single LLM
+# (RULE 1 → save_profile_field) is the SOLE fact-find driver now; a genuine
+# empty-LLM turn surfaces an HONEST error (see end of handle_turn), never a
+# fabricated slot-question. Do NOT reintroduce deterministic fact-find.
 
-
-def _classify_recall_answer(user_text: str) -> bool:
-    """Coarse yes/no for the staged-recall confirm prompt.
-
-    Returns True ONLY for a clear affirmation that the user is the same
-    returning person. Explicit denials and anything ambiguous return False
-    so the staged stranger profile is DISCARDED (fail closed — privacy).
-    """
-    t = (user_text or "").strip().lower()
-    if not t:
-        return False
-    stripped = t.strip(" \t\r\n.,!?\"'()[]")
-    if not stripped:
-        return False
-
-    # 1) Explicit DENIAL anywhere wins — fail closed. Checked FIRST so
-    #    "no, that's me" / "I'm new" never get read as a yes.
-    if any(p in stripped for p in _RECALL_DENY_PHRASES):
-        return False
-    padded = f" {stripped} "
-    if any(f" {d} " in padded for d in _RECALL_DENY):
-        return False
-    # A leading deny token survives trailing punctuation ("no, that's me").
-    _toks = stripped.replace(",", " ").split()
-    if _toks and _toks[0] in _RECALL_DENY:
-        return False
-
-    # 2) Explicit AFFIRMATION phrase ("that's me", "it's me", "same person").
-    if any(p in stripped for p in _RECALL_AFFIRM_PHRASES):
-        return True
-
-    # 3) Exact / leading strong affirmation token ("yes", "yep, ...").
-    if stripped in _RECALL_AFFIRM:
-        return True
-    first = stripped.split()[0] if stripped.split() else ""
-    if first in _RECALL_AFFIRM:
-        return True
-
-    # 4) A strong affirmation token elsewhere ("oh yes please").
-    if any(f" {a} " in padded for a in _RECALL_AFFIRM):
-        return True
-
-    # 5) Anything else (questions, new facts, gibberish) → discard.
-    return False
-
-
-_FALLBACK_SLOT_QUESTIONS = {
-    "name": "What's your name?",
-    "age": "How old are you?",
-    "dependents": (
-        "Who would you like the cover to include — just you, "
-        "or spouse / kids / parents?"
-    ),
-    "location_tier": "Which city do you live in?",
-    "income_band": (
-        "Roughly what's your annual household income — under 10 lakh, "
-        "10-25 lakh, or above 25 lakh?"
-    ),
-    "primary_goal": (
-        "Is this your first health policy, an upgrade, for tax planning, "
-        "or to find a cheaper option?"
-    ),
-    "health_conditions": (
-        "Do you or your family have any pre-existing health conditions "
-        "like diabetes, BP, or thyroid? If none, just say no."
-    ),
-}
-
-_FALLBACK_REQUIRED_SLOTS = (
-    "name", "age", "dependents", "location_tier",
-    "income_band", "primary_goal", "health_conditions",
+# Honest reply for the rare genuine empty-LLM turn (should be near-zero now
+# that thinkingConfig is set so gemini-2.5-flash actually emits output). We
+# surface a transparent retry ask — NEVER a fabricated slot-question that
+# simulates a fact-find that did not happen.
+_HONEST_EMPTY_REPLY = (
+    "I'm having trouble generating a response right now — could you "
+    "rephrase that, or try again in a moment?"
 )
 
 
@@ -789,46 +675,6 @@ def _user_skipped_pricing_inputs(user_text: str) -> bool:
     if not t:
         return False
     return any(p in t for p in _PRICING_SKIP_PHRASES)
-
-
-def _synthesise_fallback(profile) -> str:
-    """KI-Z6-NONE (2026-05-15): replace the legacy 'I lost my train of
-    thought' reply with a useful next-question synthesised from the
-    profile snapshot. If a slot is still missing, ask for the first
-    missing one verbatim. If everything's captured, ask for a recap
-    confirmation. Never empty-string — always returns user-visible text.
-    """
-    try:
-        missing = [
-            slot
-            for slot in _FALLBACK_REQUIRED_SLOTS
-            if getattr(profile, slot, None) in (None, "", [])
-        ]
-        if missing:
-            first = missing[0]
-            # Bug #69 (2026-05-16) — when `name` is the ONLY remaining gap
-            # and the user has already supplied substantive profile detail,
-            # be honest + specific. NEVER imply a search failed or that we
-            # can't help: name has nothing to do with policy matching.
-            if missing == ["name"]:
-                return (
-                    "I've got everything I need except your name — what "
-                    "should I call you? Then I'll pull your matches."
-                )
-            return _FALLBACK_SLOT_QUESTIONS.get(
-                first,
-                f"Could you share your {first.replace('_', ' ')}?",
-            )
-        # All slots present — ask the user to confirm before recommending.
-        return (
-            "Let me confirm what I have before pulling up options — "
-            "does this look right, or anything to update?"
-        )
-    except Exception:  # noqa: BLE001 — never fail the fallback
-        return (
-            "Could you tell me a bit more about what you're looking for "
-            "so I can pull up the right options?"
-        )
 
 
 def _classify_intent(user_text: str, tool_calls_made: list[str]) -> str:
@@ -883,6 +729,18 @@ async def _gemini_call(
             # ⇒ 1680, rounded up to a safe power-of-two-ish 2048.
             "temperature": 0.4,
             "maxOutputTokens": 2048,
+            # CRITICAL (proven via A/B raw-payload test 2026-05-17):
+            # gemini-2.5-flash is a THINKING model; gemini-2.5-flash-lite /
+            # gemini-2.0-flash (what this bot historically ran) are NOT.
+            # With no thinkingConfig, gemini-2.5-flash returns an EMPTY
+            # completion (finishReason=STOP, content has no `parts`, zero
+            # candidate tokens) for tool-calling turns — so _synthesise_
+            # fallback injects the canned "What's your name?" and the
+            # fact-find loops forever (the live core-flow regression).
+            # thinkingBudget=0 disables thinking → the model behaves like
+            # the fast non-thinking frontier model it should be and emits
+            # the save_profile_field tool call correctly. Do NOT remove.
+            "thinkingConfig": {"thinkingBudget": 0},
         },
     }
     headers = {"Content-Type": "application/json"}
@@ -1651,152 +1509,31 @@ async def handle_turn(
     except Exception:  # noqa: BLE001 — never break a chat turn for bookkeeping
         pass
 
-    # NOTE (recall-confirm, 2026-05-16): the GOOGLE_API_KEY gate was moved
-    # BELOW the confirmation-gated recall block. STEP 1 emits a deterministic
-    # one-line "are you <name>?" prompt and short-circuits with NO Gemini
-    # call (it must not require an API key), and STEP 2 must resolve a staged
-    # recall (apply / discard) BEFORE the brain runs. The key is still
-    # asserted before any Gemini request is made (just before _build_contents
-    # / the iteration loop below).
+    # GOOGLE_API_KEY gate is asserted below, just before the Gemini call.
     model = _resolve_model()
     language = _detect_language(user_text)
 
     # KI-255 — detect "returning user" so RULE 4 (Welcome Back greeting)
-    # only fires when the profile was actually loaded from a prior
-    # session. Signal: session.turn_idx == 1 (we just incremented above,
-    # so this is the FIRST turn of this session_id) AND profile has any
-    # captured slot. If turn_idx > 1, slots were populated by prior
-    # save_profile_field calls within THIS conversation — not a
-    # returning user, do NOT trigger RULE 4 Welcome Back.
+    # only fires when the profile was actually loaded from a prior session.
+    # Signal: session.turn_idx == 1 (first turn of this session_id) AND the
+    # profile already has a captured slot (hydrated from prior persistence).
+    # turn_idx > 1 ⇒ slots filled by save_profile_field within THIS
+    # conversation — not a returning user.
     _current_turn = int(getattr(session, "turn_idx", 1) or 1)
 
-    # KI-Z7 (2026-05-15) — turn-1 name heuristic. If this is the first turn
-    # on this session AND the profile has no name captured yet, sniff a
-    # name out of `user_text` and try to load the named profile JSON. On a
-    # hit, session.profile is hydrated in-place so the KNOWN PROFILE block
-    # below already contains the recalled slots — RULE 4 (Welcome Back) then
-    # fires correctly on this same Gemini iteration. Best-effort: no error
-    # bubbles out.
-    # CONFIRMATION-GATED RECALL — STEP 2 (resolve a prior confirm prompt).
-    # If a cross-session match was STAGED and we already ASKED the user
-    # "are you the same <name>?" on a prior turn, this message is the
-    # answer. Affirm → apply_pending_recall(confirmed=True) (fills empty
-    # slots; live-conversation slots win). Anything else → discard
-    # (confirmed=False, fail closed). Either way the staging is cleared so
-    # we ask only ONCE, then the turn proceeds normally with the resolved
-    # profile so the user's actual message still gets answered.
-    # Deterministic returning-user signal — set True iff THIS turn resolved a
-    # staged recall with an explicit affirmation (KI-RECALL-FIX, 2026-05-16).
-    # Threaded into the final TurnResult so main.py can stamp
-    # ChatResponse.returning_user_recalled WITHOUT the broken turn-1-only
-    # heuristic (recall resolves on a later turn behind the confirm gate).
+    # 2026-05-17 — the deterministic in-conversation profile-recall
+    # scaffolding (the "Welcome back — are you the same <name>?" confirm
+    # short-circuit + STEP-1 name-sniff + STEP-2 apply/discard) was REMOVED.
+    # It was leftover rule-based scaffolding from the pre-Path-B
+    # rule/3-brain/judge era: it masked the single LLM, discarded the name
+    # the user gave, and produced an infinite fact-find loop. The single
+    # LLM (RULE 1 → save_profile_field) is now the SOLE fact-find driver.
+    # Explicit returning-user recall lives ONLY in the separate
+    # POST /api/profile/recall-by-name endpoint (an explicit user action,
+    # not a deterministic in-chat short-circuit). `_did_recall_this_turn`
+    # is kept as a constant False so the TurnResult.returning_user_recalled
+    # field (read by main.py) stays valid without the removed machinery.
     _did_recall_this_turn = False
-    _pending = getattr(session, "pending_profile_recall", None)
-    if isinstance(_pending, dict) and _pending.get("prompted"):
-        try:
-            from backend.session_state import apply_pending_recall
-
-            _affirmed = _classify_recall_answer(user_text)
-            _applied = apply_pending_recall(session, confirmed=_affirmed)
-            _did_recall_this_turn = bool(_applied)
-            _log.info(
-                "single_brain recall-confirm resolved: affirmed=%s "
-                "applied=%s session=%s",
-                _affirmed, _applied, getattr(session, "session_id", "?"),
-            )
-        except Exception as _confirm_err:  # noqa: BLE001 — never break turn
-            # On any failure, fail closed: discard the staging.
-            try:
-                session.pending_profile_recall = None
-            except Exception:  # noqa: BLE001
-                pass
-            _log.warning(
-                "single_brain recall-confirm failed (discarding): %s: %s",
-                type(_confirm_err).__name__, str(_confirm_err)[:200],
-            )
-
-    # CONFIRMATION-GATED RECALL — STEP 1 (stage + ask).
-    #
-    # KI-RECALL-FIX (2026-05-16). Previously gated to `_current_turn == 1`
-    # AND an explicit self-introduction regex. That window was far too
-    # narrow: a returning user typically gives their name when ANSWERING the
-    # bot's "What's your name?" prompt — a bare token ("Rohit") on turn 2+,
-    # which the intro regex rejects out of context. Combined with the
-    # save/load key bug (every saved profile was persona-id-keyed so
-    # `load_profile(name)` always missed), the "Welcome back" banner was
-    # structurally unreachable. We now run the sniff on ANY turn while the
-    # profile still has no name and no recall has been attempted this
-    # session yet (one-shot guard `_recall_sniff_done`), using a
-    # context-aware extractor that accepts a bare-name answer when the
-    # assistant's previous message asked for the name.
-    _recall_sniff_done = bool(getattr(session, "_recall_sniff_done", False))
-    if (
-        not _recall_sniff_done
-        and not (getattr(session.profile, "name", None) or "")
-        and not isinstance(getattr(session, "pending_profile_recall", None), dict)
-    ):
-        try:
-            from backend.profile_persistence import (
-                extract_name_in_context,
-                try_recall_by_name,
-            )
-
-            _prev_assistant = ""
-            for _m in reversed(chat_history or []):
-                if (_m or {}).get("role") in ("assistant", "model", "bot"):
-                    _prev_assistant = str((_m or {}).get("content") or "")
-                    break
-            _maybe_name = extract_name_in_context(user_text, _prev_assistant)
-            if _maybe_name:
-                # One-shot: whether or not a stored profile matches, don't
-                # re-run the sniff every nameless turn this session.
-                try:
-                    session._recall_sniff_done = True
-                except Exception:  # noqa: BLE001
-                    pass
-                # STAGES a match on session.pending_profile_recall (never
-                # auto-merges — privacy fix 2026-05-16); always returns False.
-                try_recall_by_name(session, _maybe_name)
-                _staged = getattr(session, "pending_profile_recall", None)
-                if isinstance(_staged, dict) and not _staged.get("prompted"):
-                    # Ask ONE explicit confirmation and short-circuit the
-                    # turn. Do NOT apply the stored profile yet, and NEVER
-                    # surface the staged stranger PII — only the name, which
-                    # the user themselves just stated. The explicit yes/no
-                    # gate (resolved next turn by apply_pending_recall) is
-                    # the privacy boundary: nothing is merged until the user
-                    # affirms, so a same-name stranger leaks nothing.
-                    _staged["prompted"] = True
-                    _recall_name = (_staged.get("name") or _maybe_name).strip()
-                    _confirm_text = (
-                        f"Welcome back — are you the same {_recall_name} "
-                        f"from before? (yes/no)"
-                    )
-                    _log.info(
-                        "single_brain recall-confirm prompt: name=%r "
-                        "staged; awaiting yes/no session=%s",
-                        _recall_name, getattr(session, "session_id", "?"),
-                    )
-                    return TurnResult(
-                        reply_text=_confirm_text,
-                        citations=[],
-                        retrieved_chunk_ids=[],
-                        brain_used=f"single_brain::{model}::recall_confirm",
-                        intent="recall_confirm",
-                        language=language,
-                        latency_ms=int((time.time() - t0) * 1000),
-                        raw_reply=_confirm_text,
-                        faithfulness_passed=True,
-                        faithfulness_reasons=[],
-                        blocked=False,
-                        profile_updates={},
-                        followup_policy_id=None,
-                    )
-        except Exception as _recall_err:  # noqa: BLE001 — must never break turn
-            _log.warning(
-                "single_brain recall sniff failed: %s: %s",
-                type(_recall_err).__name__, str(_recall_err)[:200],
-            )
 
     _has_prior_profile = any(
         getattr(session.profile, fld, None) not in (None, "", [])
@@ -1807,10 +1544,9 @@ async def handle_turn(
     )
     is_returning_user = (_current_turn == 1) and _has_prior_profile
 
-    # GOOGLE_API_KEY gate — asserted here (after the no-LLM recall-confirm
-    # block above, before anything that talks to Gemini). Moved down from the
-    # top of handle_turn so STEP 1's deterministic confirm prompt can
-    # short-circuit and STEP 2's apply/discard can resolve without a key.
+    # GOOGLE_API_KEY gate — asserted just before anything that talks to
+    # Gemini. (The deterministic no-LLM recall-confirm short-circuit that
+    # used to precede this was removed 2026-05-17.)
     api_key = os.environ.get("GOOGLE_API_KEY", "").strip()
     if not api_key:
         raise SingleBrainError("GOOGLE_API_KEY not set")
@@ -1975,15 +1711,17 @@ async def handle_turn(
         # tools or emit a final text reply.
         last_text = text  # in case loop hits MAX_ITERATIONS with no text
     else:
-        # Hit MAX_ITERATIONS without break — synthesise a defensive reply.
+        # Hit MAX_ITERATIONS without break — honest signal, not a
+        # fabricated slot-question.
         _log.warning(
             "single_brain hit MAX_ITERATIONS=%d (tool_calls=%s)",
             MAX_ITERATIONS, tool_calls_made,
         )
-        last_text = last_text or _synthesise_fallback(session.profile)
+        last_text = last_text or _HONEST_EMPTY_REPLY
 
-    # Build TurnResult.
-    reply_text = last_text or _synthesise_fallback(session.profile)
+    # Build TurnResult. An empty last_text here is a genuine LLM failure
+    # (near-zero with thinkingConfig set) — surface it honestly.
+    reply_text = last_text or _HONEST_EMPTY_REPLY
 
     # Bug C secondary defense — log a WARNING if the reply name-drops an
     # insurer/product brand even though no retrieve_policies result was
