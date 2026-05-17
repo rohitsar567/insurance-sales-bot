@@ -103,3 +103,5 @@ rag/extracted
 
 # local-only backup of pre-transparency logo originals
 _logo_originals_backup/
+tools/.pdf_text_cache
+*.tsbuildinfo
