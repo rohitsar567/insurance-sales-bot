@@ -2,8 +2,8 @@
 
 Run AFTER `.venv/bin/python -m rag.ingest` on the developer Mac. The Space's
 Dockerfile pulls rag/vectors/** at build time so the deployed container has a
-ready-to-serve index. As of 2026-05-14 the Space no longer auto-ingests on
-boot — see entrypoint.sh.
+ready-to-serve index; the Space does not auto-ingest on boot (see
+entrypoint.sh).
 """
 from __future__ import annotations
 import os

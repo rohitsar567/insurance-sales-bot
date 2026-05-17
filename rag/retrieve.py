@@ -31,25 +31,19 @@ def _safe_collection_get(
     where: Optional[dict] = None,
     include: Optional[list[str]] = None,
 ) -> Optional[dict]:
-    """KI-107 (2026-05-15) — defensive wrapper around `collection.get(...)`.
+    """Defensive wrapper around `collection.get(...)`.
 
-    C5 port-in persona logged 3× HTTP 500 "Error executing plan: Internal
-    error: Error finding id" against the live HF Space. Chroma's
-    `collection.get(ids=[...])` is documented to return empty lists when ids
-    miss — but the Rust-backed client can still raise on certain edge cases
-    (legacy schema rows, where-clause + missing-id combinations, transient
-    sqlite lock contention during HNSW compaction). The pre-KI-107 code
-    wrapped these calls in bare `except: pass`, which silently masked the
-    failure and let downstream callers index into None — producing the
-    confusing "Error finding id" plan-executor message instead of a
-    coherent retrieval fallback.
+    Chroma's `collection.get(ids=[...])` is documented to return empty
+    lists when ids miss, but the Rust-backed client can still raise on
+    certain edge cases (legacy schema rows, where-clause + missing-id
+    combinations, transient sqlite lock contention during HNSW
+    compaction).
 
     This helper:
       - Returns None on ANY exception (caller MUST treat None as "miss").
       - Returns the raw dict (may have empty lists) on success.
-      - Logs at WARNING level so the failure is observable in HF Space logs
-        instead of swallowed silently. Critical for post-mortem of similar
-        regressions.
+      - Logs at WARNING level so the failure is observable instead of
+        swallowed silently.
     """
     try:
         kwargs: dict = {}
@@ -149,7 +143,7 @@ def _build_chunk(cid: str, doc: str, meta: dict, score: float) -> RetrievedChunk
     )
 
 
-# KI-034 (2026-05-14) — in-process retrieval cache. Keyed by
+# In-process retrieval cache. Keyed by
 # (query_text, top_k, sorted policy_ids, sorted insurer_slugs). Caps at 256
 # entries with FIFO eviction so memory stays bounded across long sessions.
 # Within a single chat session, users frequently rephrase or follow up on the
@@ -170,8 +164,8 @@ def _cache_key(
     insurer_slugs: Optional[list[str]],
     session_id: Optional[str] = None,
 ) -> tuple:
-    # QUARANTINE-ISOLATION FIX (2026-05-16) — session_id MUST be part of the
-    # cache key. The result set is session-dependent: when a session_id is
+    # session_id MUST be part of the cache key (quarantine isolation).
+    # The result set is session-dependent: when a session_id is
     # supplied the quarantine boost pass prepends that session's uploaded
     # PDF chunks. Without session_id in the key, a result computed for
     # session A (carrying A's private uploaded chunks) would be served
@@ -223,13 +217,12 @@ async def retrieve(
     This ensures the brain sees regulatory ceilings even when policy
     chunks dominate raw cosine.
 
-    KI-118 (2026-05-15) — profile chunks are keyed by `profile_name_slug`
-    (canonical user name) instead of session_id. Only named users have a
-    profile chunk to boost. `session_id` is retained for the per-session
-    quarantine (user-uploaded PDF) lookup but is no longer used for
+    Profile chunks are keyed by `profile_name_slug` (canonical user name);
+    only named users have a profile chunk to boost. `session_id` is used
+    for the per-session quarantine (user-uploaded PDF) lookup, not for
     profile boosting.
     """
-    # KI-034 — short-circuit identical-query re-asks via the LRU cache.
+    # Short-circuit identical-query re-asks via the LRU cache.
     # session_id is part of the key so one session's cached result (which
     # may carry that session's private quarantine chunks) is never served
     # to another session.
@@ -238,15 +231,12 @@ async def retrieve(
     if cached is not None:
         return cached
 
-    # KI-049 (2026-05-14) — wider net for table-cell questions. The
-    # post-fix 96-Q eval surfaced 8 failures on room-rent / sub-limit /
-    # cap questions where the bot's reply omitted the room category
-    # ("Single Private", "Twin Sharing", "General Ward"). Root cause:
-    # the policy table with the cap structure is one chunk in Chroma,
-    # but at top_k=5 it can lose to other relevant prose chunks. For
-    # queries clearly asking about a structured cap, retrieve more
-    # candidates so the table chunk has a higher chance of landing in
-    # the LLM's context window.
+    # Wider net for table-cell questions. The policy table holding the
+    # cap structure (room-rent / sub-limit / room category) is one chunk
+    # in Chroma and at top_k=5 it can lose to other relevant prose
+    # chunks. For queries clearly asking about a structured cap, retrieve
+    # more candidates so the table chunk has a higher chance of landing
+    # in the LLM's context window.
     _TABLE_CELL_TRIGGERS = _re.compile(
         r"\b(room\s*rent|sub[\s\-]?limit|sub[\s\-]?limits|copay|co[\s\-]?pay|"
         r"cap\s+on|capped\s+at|sum\s+insured\s+limit|"
@@ -261,13 +251,12 @@ async def retrieve(
     embedder = embedder or VoyageEmbeddings()
     [query_vec] = await embedder.embed([query], input_type="query")
 
-    # KI-102 (2026-05-15) — privacy P0. The main retrieval pass MUST NEVER
-    # return chunks of doc_type='profile' because those chunks are scoped to a
-    # specific user's session_id. Profile chunks are exclusively surfaced via
-    # the explicit per-session collection.get(ids=[f"profile_{session_id}"])
-    # lookup below; allowing them through the cosine pass leaks another user's
-    # profile into the current session (live smoke test of 15 personas caught
-    # B4 retrieving profile chunks from smokeA_1, ki100_ve, smokeB_B2).
+    # Privacy invariant: the main retrieval pass MUST NEVER return chunks
+    # of doc_type='profile' because those chunks are scoped to a specific
+    # user. Profile chunks are exclusively surfaced via the explicit
+    # per-session collection.get(ids=[f"profile_{session_id}"]) lookup
+    # below; allowing them through the cosine pass would leak another
+    # user's profile into the current session.
     #
     # We translate this to Chroma's `where` DSL using $ne (not-equals) on
     # doc_type. Combined with optional policy_id / insurer_slug filters via
@@ -284,17 +273,13 @@ async def retrieve(
 
     collection = get_collection()
 
-    # Standard retrieval — KI-108 (2026-05-15) wraps collection.query() with
-    # the same defensive pattern as KI-107's _safe_collection_get. Live test
-    # post-KI-107 caught the bare query raising
-    # `chromadb.errors.InternalError: Error executing plan: Internal error:
-    # Error finding id` on EVERY user turn (HNSW index entry pointing to a
-    # missing doc — likely from a partial KI-102 profile-chunk write
-    # corrupting the collection state). KI-107 only wrapped .get(); .query()
-    # has the same failure mode. On error we degrade to empty retrieval:
-    # the brain still answers (acknowledging it can't access the catalog)
-    # instead of the user seeing KI-106's generic "something went wrong"
-    # fallback for every message.
+    # Standard retrieval — collection.query() is wrapped with the same
+    # defensive pattern as _safe_collection_get because .query() can raise
+    # `chromadb.errors.InternalError: Error executing plan` when an HNSW
+    # index entry points to a missing doc. On error we degrade to empty
+    # retrieval: the brain still answers (acknowledging it can't access
+    # the catalog) instead of the user seeing a generic "something went
+    # wrong" fallback for every message.
     out: list[RetrievedChunk] = []
     try:
         res = collection.query(
@@ -316,24 +301,20 @@ async def retrieve(
             effective_top_k, where, type(e).__name__, str(e)[:300],
         )
 
-    # Profile boost pass — KI-118 (2026-05-15). Profile chunks are now
-    # keyed by `profile_name_slug` (canonical user name), not session_id.
-    # The orchestrator passes the slug only when the live session has a
-    # known name; anonymous chats skip this branch entirely.
+    # Profile boost pass. Profile chunks are keyed by `profile_name_slug`
+    # (canonical user name), not session_id. The caller passes the slug
+    # only when the live session has a known name; anonymous chats skip
+    # this branch entirely.
     if profile_name_slug:
         profile_chunk_id = f"profile_{profile_name_slug}"
-        # KI-118 — filter by BOTH id AND name_slug metadata so any future
-        # ID collision (or migration-era chunk written under a shared id)
-        # still can't leak the wrong profile into this user's context.
+        # Filter by BOTH id AND name_slug metadata so any ID collision
+        # (or migration-era chunk written under a shared id) can't leak
+        # the wrong profile into this user's context.
         #
-        # KI-107 (2026-05-15) — route through _safe_collection_get because
-        # first-time named users (no profile saved yet) and certain transient
-        # Chroma sqlite states cause collection.get(ids=[missing_id]) to
-        # raise instead of returning empty lists. Before this fix the bare
-        # `except: pass` masked the failure, the orchestrator's plan-executor
-        # still saw an AttributeError on the swallowed-None path, and the
-        # user got HTTP 500 "Error executing plan: Internal error: Error
-        # finding id".
+        # Route through _safe_collection_get because first-time named
+        # users (no profile saved yet) and certain transient Chroma
+        # sqlite states cause collection.get(ids=[missing_id]) to raise
+        # instead of returning empty lists.
         prof_res = _safe_collection_get(
             collection,
             ids=[profile_chunk_id],
@@ -355,7 +336,7 @@ async def retrieve(
                 out = [profile_chunk] + [c for c in out if c.chunk_id != profile_chunk_id]
                 out = out[:top_k]
 
-    # Quarantine boost pass — when the orchestrator passes a session_id, also
+    # Quarantine boost pass — when the caller passes a session_id, also
     # query the SEPARATE quarantine collection (user-uploaded PDFs) scoped to
     # this session. Results get a ×1.1 score boost so the user's own uploaded
     # doc ranks above generic policies when relevant. Quarantine lives in a

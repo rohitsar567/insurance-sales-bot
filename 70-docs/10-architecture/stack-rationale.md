@@ -25,11 +25,15 @@ place so it cannot drift again:
 
 - **Frontend:** Next.js 16 (App Router), React 19, Tailwind v4, static export.
 - **Backend:** FastAPI + Pydantic; `uvicorn`, port 7860 on the HF Space.
-- **Brain:** Google **Gemini `gemini-2.5-flash-lite`** + function calling
-  (one call/turn) → **NVIDIA NIM** open-model fallback chain (health-elected,
-  fail-loud). No separate judge model (retired in the single-brain
-  consolidation).
-- **Retrieval:** Chroma + BGE-small-en-v1.5 (local CPU, 384-d).
+- **Brain:** Google **Gemini `gemini-2.5-flash`** + function-calling tools
+  (`save_profile_field` / `retrieve_policies` / `mark_recommendation`), one
+  call/turn handling fact-find, retrieval, QA, and recommendation. On a
+  transient Gemini error → small **NVIDIA NIM** fallback
+  (`backend/nim_fallback.py`) so the turn completes; fail-loud otherwise. No
+  separate judge model, no orchestrator, no sales/QA-brain split (all
+  retired in the single-LLM-with-tools consolidation).
+- **Retrieval:** structured + vector over Chroma + BGE-small-en-v1.5 (local
+  CPU, 384-d) with a profile-tuned scorecard.
 - **Voice:** Sarvam Saarika (STT) + Bulbul (TTS) + Sarvam-M (Indic).
 - **Hosting:** Hugging Face Space (Docker) + companion HF dataset for
   corpus/vectors; **not** Vercel/Render (that was the old plan).

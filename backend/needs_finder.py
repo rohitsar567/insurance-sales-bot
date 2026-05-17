@@ -1,13 +1,11 @@
 """User profile state + slot-order hint for the fact-find.
 
-KI-167 WS3 (2026-05-15) — the legacy rules-engine question GRAPH and the
-matching `Question` dataclass have been removed. Fact-find phrasing now
-lives in `backend/sales_brain.py` (the single-LLM-call brain); this module
-keeps only:
+Fact-find phrasing lives in `backend/single_brain.py` (the single-LLM-call
+brain); this module provides:
 
-  - `Profile`              — accumulated user state (still imported widely)
+  - `Profile`              — accumulated user state (imported widely)
   - `record_answer`        — slot-write helper used by session_state
-  - INR / budget / income parsers — used by `sales_brain_normalizer.py`
+  - INR / budget / income parsers — used by the brain tool layer
   - `is_field_set`         — local helper for record_answer + next_question
   - `next_question`        — returns the field NAME (str) of the next
                              missing slot in canonical order. Used by
@@ -63,11 +61,9 @@ class Profile:
 
 
 # ----------------------------------------------------------------------------
-# KI-149 (2026-05-15) — free-text INR amount parser for budget + income.
-# User said "I maximum 30000 I can pay" → bot re-asked budget because no
-# parser was attached to the budget Question and the LLM brain failed to
-# capture it. Bare digits ("30000"), "30 thousand", "30 grand", "₹30,000",
-# "1 lakh", "1.5L" must all map cleanly to a rupee amount.
+# Free-text INR amount parser for budget + income. Bare digits ("30000"),
+# "30 thousand", "30 grand", "₹30,000", "1 lakh", "1.5L" all map cleanly
+# to a rupee amount.
 # ----------------------------------------------------------------------------
 
 def _parse_inr_amount(text: str) -> Optional[int]:
@@ -82,13 +78,10 @@ def _parse_inr_amount(text: str) -> Optional[int]:
       - strips fluff: "maximum 30000", "I can pay 30000", "around 25000"
       - tolerates per-year qualifiers: "/year", "per year", "p.a."
 
-    KI-161 (2026-05-15) — REJECTS bare digits below ₹1000 (no plausible
-    annual health insurance budget/income falls there) and REJECTS any
-    text whose only number is in an age context ("29 years old", "age 29",
-    "I am 29"). Origin: user answered the age question with "I am 29
-    years old" and the parser wrote ₹29 into both budget_band and
-    income_band, leading the bot to claim it captured age + income + budget
-    from a single utterance.
+    Rejects bare digits below ₹1000 (no plausible annual health insurance
+    budget/income falls there) and rejects any text whose only number is
+    in an age context ("29 years old", "age 29", "I am 29"), so an age
+    answer is never misread as a rupee amount.
 
     Returns the integer rupee amount, or None if no number is recognisable
     or if the only numbers in the text are clearly not currency.
@@ -209,10 +202,10 @@ def _parse_income_band(text: str) -> Optional[str]:
 # Engine
 # ----------------------------------------------------------------------------
 
-# KI-167 WS3 (2026-05-15) — canonical slot order for the fact-find hint API.
-# The actual question phrasing lives in `sales_brain.py`; this list only
-# encodes which Profile attribute we want to fill next when nothing else
-# is driving the conversation.
+# Canonical slot order for the fact-find hint API. The actual question
+# phrasing lives in `single_brain.py`; this list only encodes which
+# Profile attribute to fill next when nothing else is driving the
+# conversation.
 _SLOT_ORDER: list[str] = [
     "name",
     "age",
@@ -238,11 +231,9 @@ def is_field_set(profile: Profile, field_name: str) -> bool:
 def next_question(profile: Profile) -> Optional[str]:
     """Return the field NAME of the next missing slot, or None if complete.
 
-    KI-167 WS3 (2026-05-15) — refactored from `Optional[Question]` to
-    `Optional[str]` after the rules-engine GRAPH was deleted. The caller in
-    `backend/main.py:/api/profile/completeness` uses this only to hint to the
-    frontend which slot to ask next; the actual question phrasing is now
-    produced by `sales_brain.py`.
+    The caller in `backend/main.py:/api/profile/completeness` uses this
+    only to hint to the frontend which slot to ask next; the actual
+    question phrasing is produced by `single_brain.py`.
 
     A free-form session (user driving free questions) returns None so the
     hint endpoint reports "nothing to ask".
@@ -256,10 +247,9 @@ def next_question(profile: Profile) -> Optional[str]:
     return None
 
 
-# Legacy GRAPH question-id → Profile field-name aliases. Some callers
-# (notably `session_state.record_answer` driven by `awaiting_question_id`)
-# still pass the old question IDs from the deleted GRAPH. Mapping them here
-# keeps that call path working without resurrecting the GRAPH.
+# Question-id → Profile field-name aliases. Some callers (notably
+# `session_state.record_answer` driven by `awaiting_question_id`) pass a
+# question ID rather than a Profile attribute name; this maps them.
 _QID_TO_FIELD: dict[str, str] = {
     "existing_cover": "existing_cover_inr",
     "location": "location_tier",
@@ -271,10 +261,9 @@ _QID_TO_FIELD: dict[str, str] = {
 def record_answer(profile: Profile, question_id: str, raw_answer: Any) -> Profile:
     """Mutate profile in place with a raw answer for a named slot.
 
-    KI-167 WS3 (2026-05-15) — parser dispatch used to live on `Question`
-    objects in the deleted GRAPH; with the GRAPH gone we apply the same
-    parser map inline. `question_id` may be either a Profile attribute name
-    (preferred) or one of the legacy GRAPH question IDs from `_QID_TO_FIELD`.
+    Applies the parser map inline. `question_id` may be either a Profile
+    attribute name (preferred) or one of the question IDs in
+    `_QID_TO_FIELD`.
     """
     field_name = _QID_TO_FIELD.get(question_id, question_id)
     if not hasattr(profile, field_name):

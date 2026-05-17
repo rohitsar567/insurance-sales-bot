@@ -74,39 +74,24 @@ class SessionState:
     # "Conversation turn" column in the admin Recommendation History panel
     # (previously showed "—" because no caller populated the field).
     turn_idx: int = 0
-    # Z2 fix — Issue 3 (brain election bouncing). Priya's session hopped
-    # sales_brain → single_brain → single_brain → sales_brain across 6
-    # turns even though USE_SINGLE_BRAIN=true; the Gemini 503 fallback
-    # (Z1 retry already softens) was dropping the session back onto the
-    # legacy orchestrator mid-stream. Belt-and-suspenders: main.py stamps
-    # this True after the FIRST successful single_brain turn, and
-    # subsequent SingleBrainError responses on the same session must NOT
-    # fall through to the orchestrator — they emit a graceful retry
-    # prompt so the session stays sticky on single_brain.
+    # Set True after the first successful single_brain turn; a later
+    # SingleBrainError on the same session then emits a graceful retry
+    # prompt instead of switching handlers, so the session stays on
+    # single_brain.
     single_brain_sticky: bool = False
-    # VESTIGIAL (2026-05-17): the deterministic in-conversation recall
-    # name-sniff that set this was REMOVED from single_brain (see the
-    # tombstone above single_brain._HONEST_EMPTY_REPLY). Field retained,
-    # not deleted, so previously-persisted SessionState payloads still
-    # deserialize cleanly; nothing reads or writes it any more.
-    _recall_sniff_done: bool = False
-    # Bug #108 + #110 (2026-05-16) — POST-RECAP pricing & family-history
-    # bundle re-ask gate (brain_tools.retrieve_policies).
-    #   pricing_bundle_reasked — one-shot guard. Set True the first time the
-    #     gate re-asks an unresolved bundle slot so the NEXT recommendation
-    #     retrieve proceeds even if the user skips (SOFT capture, no hard
-    #     loop).
+    # Post-recap pricing & family-history bundle re-ask gate
+    # (brain_tools.retrieve_policies):
+    #   pricing_bundle_reasked — one-shot guard; set True the first time
+    #     the gate re-asks an unresolved bundle slot so the next
+    #     recommendation retrieve proceeds even if the user skips.
     #   pricing_bundle_skipped — set True by single_brain when the user
-    #     explicitly declines the pricing inputs ("just show me options",
-    #     "you decide", "skip"). Bypasses the re-ask entirely.
+    #     explicitly declines the pricing inputs; bypasses the re-ask.
     pricing_bundle_reasked: bool = False
     pricing_bundle_skipped: bool = False
 
     def _flush(self) -> None:
-        """No-op since KI-118 (2026-05-15). Disk persistence was removed; the
-        in-memory dict is now the only store. We keep the method so existing
-        callers (orchestrator + fact_find_brain + tests) don't have to change
-        their write paths.
+        """No-op. Session state lives only in the in-memory dict; the
+        method is kept so callers' write paths don't have to change.
         """
         return None
 

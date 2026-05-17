@@ -1,16 +1,16 @@
 """Minimal NIM fallback for first-turn Gemini 503.
 
-Replaces the 5,219 LOC legacy orchestrator stack. Does ONE thing: when
-single_brain raises SingleBrainError on the first turn (no
-single_brain_sticky yet), give the user a working reply using NIM.
+Does ONE thing: when single_brain raises SingleBrainError on the first
+turn (no single_brain_sticky yet), give the user a working reply using
+NIM.
 
 No tools, no function-calling, no faithfulness gate, no normalizer —
 just a single NIM chat call with a tiny system prompt. The user gets a
 polite "let me think out loud while I reconnect" reply; the next turn,
 single_brain (Gemini) takes over and the session sticks.
 
-KI-155 / ADR-038: NIM-only. We elect via llm_health.get_primary("brain")
-which walks BRAIN_CHAIN in priority order over election-eligible models.
+NIM-only. We elect via llm_health.get_primary("brain") which walks
+BRAIN_CHAIN in priority order over election-eligible models.
 If the elector has nothing eligible, we fall back to BRAIN_CHAIN[0] as a
 last resort so the user still gets a reply.
 
@@ -96,9 +96,9 @@ def _pick_model() -> str:
 
 
 def _flatten_history(chat_history: Optional[list[dict]]) -> list[ChatMessage]:
-    """Translate the orchestrator-style chat_history ({role, content})
-    into the NIM `ChatMessage` shape. Roles other than user/assistant
-    are dropped; assistant aliases collapse to `assistant`.
+    """Translate the {role, content} chat_history into the NIM
+    `ChatMessage` shape. Roles other than user/assistant are dropped;
+    assistant aliases collapse to `assistant`.
     """
     out: list[ChatMessage] = []
     for msg in chat_history or []:

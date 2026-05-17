@@ -19,13 +19,15 @@ authority.
   `/api/coverage`, `/api/profile*`, `/api/scorecard`, `/api/session*`,
   `/api/admin/*`.
 - **Brain** — one LLM call per turn: Google Gemini
-  (`gemini-2.5-flash-lite`) + function-calling tools
-  (`backend/single_brain.py`, `backend/brain_tools.py`). On Gemini
-  failure / cold-start 503 → `backend/nim_fallback.py` (NVIDIA NIM chain,
-  health-probed sticky-primary election in `backend/llm_health.py`).
-  Fail-loud, never silently wrong. The legacy multi-pass design
-  (orchestrator / sales-brain / QA-brain / faithfulness-judge) was removed —
-  it does not exist in the codebase.
+  (`gemini-2.5-flash`) + function-calling tools
+  (`save_profile_field`, `retrieve_policies`, `mark_recommendation`) in
+  `backend/single_brain.py` / `backend/brain_tools.py`. A single call owns
+  the whole turn: fact-find, retrieval, QA, and recommendation. On a
+  transient Gemini error / cold-start 503 → small `backend/nim_fallback.py`
+  (NVIDIA NIM) so the turn still completes. Fail-loud, never silently wrong.
+  The legacy multi-pass design (orchestrator / sales-brain / QA-brain /
+  separate faithfulness judge / profile_extractor / tiered brain) was
+  removed — it does not exist in the codebase.
 - **Retrieval** — Chroma vector store, BGE-small-en-v1.5 local 384-d
   embeddings (`rag/retrieve.py`). Shared "policies" collection (~150 plans,
   ~7.3k chunks, 20 insurers) + a per-session "quarantine" collection for

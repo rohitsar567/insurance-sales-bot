@@ -14,8 +14,8 @@ Architectural answer to the "embed or JSON?" question:
     style questions. Embedding cost = once per update, not per query.
 
 Both layers stay in sync: when `save_profile()` is called here, the
-orchestrator also fires `profile_rag.upsert_profile_chunk()` so the
-Chroma side reflects the new state.
+save path also fires `profile_rag.upsert_profile_chunk()` so the Chroma
+side reflects the new state.
 
 Files live under `40-data/profiles/<normalised-name>.json`. Names are
 normalised to lowercase + alpha-only for the filename so "Rohit" and
@@ -48,8 +48,8 @@ def _normalise_name(name: str) -> str:
     return cleaned[:60]  # cap filename length
 
 
-# KI-062 (2026-05-15) — identity-defining fields used to disambiguate two
-# users with the same display name. Order matters for hash stability.
+# Identity-defining fields used to disambiguate two users with the same
+# display name. Order matters for hash stability.
 _PERSONA_ID_FIELDS: tuple[str, ...] = (
     "age", "dependents", "income_band", "location_tier", "parents_age_max",
 )
@@ -170,7 +170,7 @@ def load_profile(name: str, *, persona_id: Optional[str] = None) -> Optional[Pro
     p = _path_for(name)
     if p and p.exists():
         return _load_from_path(p)
-    # 3. (REMOVED) cross-identity display-name directory scan — leak vector.
+    # No cross-identity display-name directory scan (would be a leak vector).
     return None
 
 
@@ -266,10 +266,10 @@ def save_profile(name: str, profile: Profile, *, session_id: Optional[str] = Non
 
 
 # ---------------------------------------------------------------------------
-# KI-063 (2026-05-15) — per-user policy interaction tracking.
+# Per-user policy interaction tracking.
 #
 # Three event types are tracked on the Profile:
-#   shown    — auto-logged by orchestrator when a policy is cited in a
+#   shown    — auto-logged by the brain when a policy is cited in a
 #              recommendation / comparison turn that passed faithfulness.
 #   selected — user clicked "save / shortlist" on a policy card (frontend
 #              POSTs to /api/profile/select).

@@ -5,20 +5,18 @@ POST https://integrate.api.nvidia.com/v1/chat/completions.
 
 Why NIM:
   - Frontier open-weights models hosted free (no card, no daily cap, 40 req/min)
-  - Single provider replaces OpenRouter + DeepSeek-direct + Cerebras + Groq
+  - Single provider for the reasoning stack
   - Same Bearer-auth + OpenAI request shape — drop-in retry/backoff
 
-Role (collapsed 2026-05-15 — single brain only):
+Role:
   - Brain (every reasoning turn): one elected candidate from BRAIN_CHAIN.
       The chain is ordered Qwen 3-Next → Mistral Large 3 → Llama-4 Maverick
-      → Nemotron-Super (last resort). Election (KI-080) picks the actually
+      → Nemotron-Super (last resort). Election picks the actually
       healthy/fastest candidate per turn from background probe data.
 
-The FAST_BRAIN_CHAIN + JUDGE_CHAIN abstractions were removed in the
-three-chain collapse: voice fact-find now reuses BRAIN_CHAIN with its own
-budget, and the LLM-judge gate was retired in favour of in-process
-faithfulness checks. Sarvam stays for voice STT/TTS + Hindi/Hinglish/
-vernacular translation.
+BRAIN_CHAIN is the only chain: voice fact-find reuses it with its own
+budget, and faithfulness is enforced by in-process checks. Sarvam stays
+for voice STT/TTS + Hindi/Hinglish/vernacular translation.
 """
 
 from __future__ import annotations
@@ -74,18 +72,12 @@ async def _append_usage(record: dict) -> None:
         pass
 
 
-# KI-088 (2026-05-15) — Global outbound NIM concurrency cap.
+# Global outbound NIM concurrency cap.
 #
-# Live probe at commit 6a47549 measured 20% brain-turn success despite
-# KI-080 election + KI-085 credit gating + KI-087 NIM-first + KI-079
-# escalation all live. The architecture is correct; the binding constraint
-# is NIM's free-tier per-key concurrency (~3-5 slots).
-#
-# We have 5 sources of NIM traffic that all stack on the same key with no
-# global throttle: probe loop (6-slot parallel burst every 300s), admin
-# tab polling (every 30s), per-user chat turn (1-2 calls), concurrent
-# users (N × 1-2), and the inner 4-attempt retry loop (holds a slot up
-# to 15s on 429/5xx backoff).
+# The binding constraint is NIM's free-tier per-key concurrency (~3-5
+# slots). Multiple sources of NIM traffic stack on the same key with no
+# global throttle: the probe loop, admin tab polling, per-user chat turns
+# (1-2 calls), concurrent users (N × 1-2), and retry backoff.
 #
 # 6+ in-flight → queue → 15-25s response times → bot's 12s outer cap
 # fires → user sees fallback.
@@ -99,16 +91,11 @@ async def _append_usage(record: dict) -> None:
 _NIM_OUTBOUND_SEMAPHORE = asyncio.Semaphore(2)
 
 
-# A4 (2026-05-15) — Module-level httpx.AsyncClient singleton.
+# Module-level httpx.AsyncClient singleton.
 #
-# Pre-A4: every NvidiaNimLLM.chat() call did `async with httpx.AsyncClient(...)
-# as client: ...`, which constructed a fresh connection pool per request and
-# tore it down on exit. Under brain/judge concurrency this churned TCP
-# connections, dropped TLS sessions, and (per audit) leaked pool slots when
-# an outer wait_for cancellation interrupted the async-with __aexit__ before
-# the underlying transport finalised.
-#
-# Switch to a single shared client with explicit Limits so:
+# A single shared client (rather than a fresh pool per chat() call) avoids
+# churning TCP connections / dropping TLS sessions / leaking pool slots
+# under concurrency. Explicit Limits:
 #   - max_connections=10        caps total outbound (NIM + probes share)
 #   - max_keepalive_connections=5  keeps a warm pool for the hot path
 # The client is constructed lazily (first .chat() call) so cold imports
@@ -142,12 +129,6 @@ def _get_shared_nim_client() -> httpx.AsyncClient:
 
 
 NVIDIA_NIM_BASE_URL = "https://integrate.api.nvidia.com/v1"
-# 2026-05-14 brain swap (D-022): NIM's DeepSeek-V4 + Meta Llama inference pools
-# are repeatedly timing out (15-120s on chat completions, no response). Qwen
-# pool is consistently fast (2s response, clean structured output). Mistral
-# Large 3 (Reddit benchmark: 4.3s, works on free tier) is the cross-family
-# judge replacing the timing-out Llama-4 Maverick.
-#
 # Heavy brain (complex queries — comparison, recommendation, synthesis):
 # Qwen 3-Next 80B — 80B / 3B active MoE, frontier multilingual, very fast.
 NIM_BRAIN_MODEL = "qwen/qwen3-next-80b-a3b-instruct"
@@ -156,9 +137,9 @@ NIM_BRAIN_MODEL = "qwen/qwen3-next-80b-a3b-instruct"
 # different intents to the same pool. Tiered routing kept for forward-compat.
 NIM_FAST_BRAIN_MODEL = "qwen/qwen3-next-80b-a3b-instruct"
 # Judge: Mistral Large 3 — 675B dense, MIT license. Different family from
-# Qwen brain (Mistral vs Alibaba) so the judge sees the brain's output from
-# a genuinely different decision surface ("the brain doesn't mark its own
-# homework"). Reddit benchmark confirms ~4.3s response on NIM free tier.
+# the Qwen brain (Mistral vs Alibaba) so the judge sees the brain's output
+# from a genuinely different decision surface ("the brain doesn't mark its
+# own homework").
 NIM_JUDGE_MODEL = "mistralai/mistral-large-3-675b-instruct-2512"
 
 
@@ -196,8 +177,8 @@ class NvidiaNimLLM(LLMProvider):
             "max_tokens": max_tokens,
         }
         if response_format:
-            # A4 (2026-05-15) — NIM forwards OpenAI-shape response_format to
-            # the upstream model. For models that support `nvext.guided_json`
+            # NIM forwards OpenAI-shape response_format to the upstream
+            # model. For models that support `nvext.guided_json`
             # (NIM's stricter constrained-decoding surface), surface that
             # too when the caller passes a JSON schema (response_format
             # with `json_schema`). The plain `{"type": "json_object"}` flag
@@ -227,31 +208,22 @@ class NvidiaNimLLM(LLMProvider):
             write=2.0,
             pool=2.0,
         )
-        # KI-088 (2026-05-15) — drop the inner 4-attempt exponential
-        # backoff retry. The previous loop held a NIM concurrency slot
-        # for up to ~15s on 429/5xx while sleeping between attempts,
-        # which directly contributed to the queueing that the outer
-        # semaphore is now sized to prevent.
-        #
-        # Retry was a pre-KI-080 vestige that predated the chain
-        # election architecture. With KI-080 in place, NimChainLLM
-        # already handles 429/5xx failover by:
-        #   (1) catching the exception in _try(),
-        #   (2) calling report_failure() so the elector demotes the
-        #       slot-blocked candidate for ~30s, and
-        #   (3) falling through to the elected backup (cross-provider
-        #       by preference) within the same turn.
-        # KI-079 then provides one more bite via BRAIN_CHAIN if both
-        # elected models fail. Per-call retries inside this method
-        # would only re-queue against the same slot-starved pool,
-        # multiplying the queueing problem the semaphore fixes.
+        # No inner retry loop. 429/5xx failover is handled by NimChainLLM:
+        #   (1) the exception is caught in _try(),
+        #   (2) report_failure() demotes the slot-blocked candidate for
+        #       ~30s, and
+        #   (3) the elected backup (cross-provider by preference) is tried
+        #       within the same turn.
+        # If both elected models fail, BRAIN_CHAIN provides one more bite.
+        # Per-call retries inside this method would only re-queue against
+        # the same slot-starved pool, multiplying the queueing the
+        # semaphore prevents.
         #
         # The semaphore wraps ONLY the HTTP round-trip — not response
         # parsing or usage logging — so we cap concurrent network
         # traffic without serialising the rest of the pipeline.
-        # A4 (2026-05-15) — Use the module-level shared httpx.AsyncClient
-        # (singleton with bounded connection pool) instead of constructing
-        # a fresh client per request. Per-request timeout is applied at
+        # Use the module-level shared httpx.AsyncClient (singleton with a
+        # bounded connection pool). Per-request timeout is applied at
         # .post() call time so the shared pool serves both long-timeout
         # chat() and short-timeout probe() calls without contention.
         client = _get_shared_nim_client()
@@ -295,40 +267,32 @@ class NvidiaNimLLM(LLMProvider):
 # cross-family-grading invariant survives any failover.
 
 BRAIN_CHAIN = [
-    # KI-155 (2026-05-15) — NIM-ONLY ENFORCEMENT. Cross-provider (Groq /
-    # OpenRouter) fallbacks REMOVED. Groq's Llama-3.3-70B failed the `<FF>`
-    # trailer contract during a fact-find probe and silently flipped the
-    # entire pipeline to scripted prompts. Chain is now strictly NIM. Each
-    # NIM candidate's `<FF>` adherence has been verified or is structurally
-    # safer (different family / smaller routing surface). Pruned candidates
-    # that have been "down" for 48+ consecutive probes (qwen3.5-122b,
-    # gpt-oss-120b, deepseek-v4-pro) so the election pool only contains
-    # demonstrably-healthy NIM models.
-    # KI-175 (2026-05-15) — Nemotron demoted to LAST RESORT per operator
-    # preference: nemotron is the weakest practical NIM model and should
-    # only serve when every higher-quality model is simultaneously down.
-    # Primary: Qwen 3-Next 80B — 5/5 recent probes ok, clean JSON, multilingual
+    # NIM-only: the chain contains only NIM-hosted candidates whose `<FF>`
+    # trailer adherence is verified or structurally safer (different
+    # family / smaller routing surface). Nemotron is LAST RESORT — it is
+    # the weakest practical NIM model and only serves when every
+    # higher-quality model is simultaneously down.
+    # Primary: Qwen 3-Next 80B — clean JSON, multilingual.
     "qwen/qwen3-next-80b-a3b-instruct",
-    # 1st fallback: Mistral Large 3 675B — recent 3/3 probes ok, different
-    # family (mistral). Strongest fallback.
+    # 1st fallback: Mistral Large 3 675B — different family (mistral).
+    # Strongest fallback.
     "mistralai/mistral-large-3-675b-instruct-2512",
-    # 2nd fallback: Meta Llama-4 Maverick 17B — 5/5 probes ok, different
-    # family (meta), keeps the chain alive through Qwen+Mistral outage.
+    # 2nd fallback: Meta Llama-4 Maverick 17B — different family (meta),
+    # keeps the chain alive through a Qwen+Mistral outage.
     "meta/llama-4-maverick-17b-128e-instruct",
-    # 3rd / LAST RESORT: NVIDIA Nemotron-Super 49B — barely usable for
-    # worst-case scenarios. Only reached when Qwen + Mistral + Maverick
-    # are ALL down simultaneously. Kept in the pool for fail-loud > down.
+    # 3rd / LAST RESORT: NVIDIA Nemotron-Super 49B — only reached when
+    # Qwen + Mistral + Maverick are ALL down simultaneously. Kept in the
+    # pool for fail-loud > down.
     "nvidia/llama-3.3-nemotron-super-49b-v1.5",
 ]
 
-# Three-chain collapse (2026-05-15): FAST_BRAIN_CHAIN + JUDGE_CHAIN removed.
-# Every reasoning role now resolves to BRAIN_CHAIN above. Voice fact-find
-# reuses get_brain_llm() with a tighter outer wait_for cap; the LLM-judge
-# gate (Gate 4 / Hinglish drift) was retired in favour of in-process checks.
+# BRAIN_CHAIN is the only chain — every reasoning role resolves to it.
+# Voice fact-find reuses get_brain_llm() with a tighter outer wait_for
+# cap; faithfulness is enforced by in-process checks.
 
 
 def _classify_error(e: BaseException) -> str:
-    """KI-084 — classify a chat exception into a stable string passed to
+    """Classify a chat exception into a stable string passed to
     llm_health.report_failure(). The string drives degradation duration:
     rate-limit failures (HTTP 429) get a 1h sin-bin; everything else 30s.
 
@@ -338,7 +302,7 @@ def _classify_error(e: BaseException) -> str:
     carries `.response.status_code == 429` we tag it `"Status429"`; for
     other HTTP statuses we surface e.g. `"HTTPStatusError:503"`; for
     non-HTTP exceptions we keep the class name (`TimeoutException`,
-    `ReadTimeout`, etc.) — matching the pre-KI-084 contract.
+    `ReadTimeout`, etc.).
     """
     cls = type(e).__name__
     try:
@@ -354,32 +318,22 @@ def _classify_error(e: BaseException) -> str:
 
 
 class NimChainLLM(LLMProvider):
-    """KI-080 sticky-primary router across multiple candidate models.
+    """Sticky-primary router across multiple candidate models.
 
-    Architectural shift (KI-080, 2026-05-15):
-      PRE-KI-080: chat() iterated the full chain sequentially every turn.
-        Under NIM per-key concurrency throttling, the first 5 NIM-hosted
-        candidates queued together inside ONE turn and burned the 22s
-        budget before any cross-provider fallback was ever reached. The
-        10-turn live probe at commit 078ff45 showed 7/10 fact-find turns
-        timing out at exactly 26.6s.
+    A background probe loop ELECTS a primary + backup per chain based on
+    real probe latencies. chat() calls the elected primary ONCE per turn
+    (1 LLM call). On failure, it demotes the primary for ~30s and falls
+    through to the elected backup (2 LLM calls max). The chain list is
+    the CANDIDATE POOL for election, not a per-call sequence.
 
-      POST-KI-080: a background probe loop ELECTS a primary + cross-
-        provider backup per chain based on real probe latencies. chat()
-        calls the elected primary ONCE per turn (1 LLM call). On failure,
-        we demote the primary for ~30s and fall through to the elected
-        backup (still 2 LLM calls max). The chain list is now the
-        CANDIDATE POOL for election, not a per-call sequence.
-
-    Worst case per turn: 2 LLM calls (was 5-6). Plus a final filter_chain
-    refresh path is kept for the rare double-failure edge case so the
-    pre-KI-080 graceful-degradation behaviour is preserved.
+    Worst case per turn: 2 LLM calls. A final filter_chain refresh path
+    handles the rare double-failure edge case so the call still
+    degrades gracefully.
 
     `name` after a successful call reflects which model actually answered
-    so downstream callers (orchestrator brain_used tag, eval logs) can
-    audit which candidate produced the output. The KI-079 escalation in
-    fact_find_brain still applies — if primary+backup both fail inside
-    one turn, fact_find_brain gets one more bite via BRAIN_CHAIN.
+    so downstream callers (brain_used tag, eval logs) can audit which
+    candidate produced the output. If primary+backup both fail inside one
+    turn, fact_find_brain gets one more bite via BRAIN_CHAIN.
     """
     def __init__(self, chain: list[str], api_key: Optional[str] = None,
                  timeout: float = 30.0, per_model_attempts: int = 1,
@@ -389,15 +343,13 @@ class NimChainLLM(LLMProvider):
         self.chain = chain
         self.api_key = api_key or getattr(settings, "NVIDIA_NIM_API_KEY", "")
         self.timeout = timeout
-        # KI-021 (2026-05-14) — cumulative chain budget. If the chain has 8
-        # fallbacks at 30s each, worst-case wall-clock is 4 min per turn — that
-        # produced the p99 58s+ tail in the 100-persona audit. Default to a
-        # cumulative ceiling of ~2.5× the per-link timeout so a healthy primary
-        # always completes, but a cascading-failure chain bails fast.
-        #
-        # KI-080 — with election we only do 1-2 LLM calls per turn, so the
-        # budget is rarely the binding constraint anymore. Kept for the
-        # final filter_chain-refresh fallback path + cold-start edge cases.
+        # Cumulative chain budget. Without a ceiling, a chain of N
+        # fallbacks at 30s each could run for minutes per turn. Default
+        # to ~2.5× the per-link timeout so a healthy primary always
+        # completes but a cascading-failure chain bails fast. With
+        # election doing only 1-2 LLM calls per turn the budget is
+        # rarely binding; it still guards the final filter_chain-refresh
+        # fallback path + cold-start edge cases.
         self.total_budget_s = total_budget_s if total_budget_s is not None else max(timeout * 2.5, 30.0)
         self.per_model_attempts = per_model_attempts
         self.role = role  # 'brain' | 'unknown' — flows into usage log
@@ -424,17 +376,15 @@ class NimChainLLM(LLMProvider):
     def _get_worker_for(self, model_id: str, timeout: float) -> LLMProvider:
         """Dispatch a chain entry to the NIM provider client.
 
-        KI-155 (2026-05-15) — NIM-ONLY ENFORCEMENT. Cross-provider
-        (`openrouter:` / `groq:`) prefixes are explicitly rejected here even
-        though the chains no longer contain them. This is a defense-in-depth
-        short-circuit: if anyone (admin override, monkeypatch, future drift)
-        injects a non-NIM candidate into a chain, the dispatcher raises
-        rather than silently routing to a provider that has demonstrated
-        contract drift (Groq Llama-3.3-70B / `<FF>` trailer failure).
+        NIM-only: cross-provider (`openrouter:` / `groq:`) prefixes are
+        explicitly rejected here. This is a defense-in-depth short-circuit
+        — if anyone (admin override, monkeypatch, future drift) injects a
+        non-NIM candidate into a chain, the dispatcher raises rather than
+        routing to a provider outside the validated pool.
 
-        KI-085 — passes `chain_name=self._chain_name` so the credit
-        trackers in the provider clients route their response-header
-        signals to the right chain state.
+        Passes `chain_name=self._chain_name` so the credit trackers in the
+        provider clients route their response-header signals to the right
+        chain state.
         """
         if model_id.startswith(("openrouter:", "groq:", "or:")):
             raise RuntimeError(
@@ -454,17 +404,16 @@ class NimChainLLM(LLMProvider):
         'deepseek', 'moonshot', 'minimax', 'nvidia', 'nemotron', 'llama3',
         'google', 'unknown'.
 
-        A4 (2026-05-15) — EVERY model in BRAIN_CHAIN must map to a known
-        family. The `assert_family_coverage()` helper walks the chain on
-        demand (from tests / admin / probe loop) and raises if any
-        candidate falls through to "unknown".
+        EVERY model in BRAIN_CHAIN must map to a known family. The
+        `assert_family_coverage()` helper walks the chain on demand (from
+        tests / admin / probe loop) and raises if any candidate falls
+        through to "unknown".
         """
         m = (model_id or "").lower()
-        # KI-220 — recognise Google's Gemini family BEFORE prefix-stripping so
-        # ids like "google/gemini-2.5-flash" and bare "gemini-..." both land in
-        # the "google" bucket. Without this branch the family lookup fell
-        # through to "unknown", which meant the judge-vs-brain cross-family
-        # invariant couldn't exclude Gemini brains from a Gemini judge.
+        # Recognise Google's Gemini family BEFORE prefix-stripping so ids
+        # like "google/gemini-2.5-flash" and bare "gemini-..." both land
+        # in the "google" bucket, so the judge-vs-brain cross-family
+        # invariant can exclude a Gemini brain from a Gemini judge.
         if "gemini" in m or m.startswith("google/"):
             return "google"
         # Strip provider prefix first so 'groq:llama-3.3-70b' → 'meta' (it IS Meta Llama)
@@ -534,8 +483,8 @@ class NimChainLLM(LLMProvider):
         exclude_models: Optional[list[str]] = None,
         exclude_families: Optional[list[str]] = None,
     ) -> LLMResult:
-        """KI-080 — sticky primary election. Call ONE elected candidate per
-        turn, with at most ONE real-time fallback to the elected backup if
+        """Sticky primary election. Call ONE elected candidate per turn,
+        with at most ONE real-time fallback to the elected backup if
         primary fails. The chain list is the candidate POOL for election —
         NOT a per-call sequence.
 
@@ -546,8 +495,8 @@ class NimChainLLM(LLMProvider):
         the chain in order.
         Final fallback (both elected models fail): trigger a synchronous
         probe refresh + try whatever filter_chain now offers, walking the
-        chain in order. This path is the pre-KI-080 graceful-degradation
-        safety net for the double-failure edge case.
+        chain in order. This path is the graceful-degradation safety net
+        for the double-failure edge case.
         """
         from backend import llm_health
 
@@ -650,8 +599,8 @@ class NimChainLLM(LLMProvider):
                 llm_health.report_success(self._chain_name, model, latency_ms)
             except Exception:
                 pass
-            # KI-085 (2026-05-15) — NIM has no clean rate-limit header, so
-            # we maintain a local 60s rate-meter for every NIM-prefixed
+            # NIM has no clean rate-limit header, so we maintain a local
+            # 60s rate-meter for every NIM-prefixed
             # candidate (i.e. anything without an openrouter:/groq: prefix).
             # Groq + OpenRouter stamp credits from response headers inside
             # their own .chat() methods.
@@ -680,7 +629,7 @@ class NimChainLLM(LLMProvider):
         if res is not None:
             return res
 
-        # --- Backup attempt (KI-080 single real-time fallback) ---------------
+        # --- Backup attempt (single real-time fallback) ----------------------
         if elected_backup and elected_backup != elected_primary:
             res = await _try(elected_backup)
             if res is not None:
@@ -688,9 +637,9 @@ class NimChainLLM(LLMProvider):
 
         # --- Both elected failed — final safety net --------------------------
         # Trigger ONE synchronous probe refresh; whatever the refreshed
-        # filter_chain offers, walk it in order and try anything we haven't
-        # touched this turn. This is the pre-KI-080 graceful-degradation
-        # behaviour preserved for the (rare) double-failure case.
+        # filter_chain offers, walk it in order and try anything not yet
+        # touched this turn. Graceful-degradation path for the (rare)
+        # double-failure case.
         try:
             # KI-099 — bound the probe-refresh cost. On a hot user-facing turn, a
             # 60-80s probe walk through ~10 candidates is unacceptable. If we've
@@ -793,19 +742,15 @@ class NimChainLLM(LLMProvider):
         ) from last_err
 
 
-# KI-025 (2026-05-14) — provider load-balancing.
-# DEPRECATED 2026-05-15 by KI-080: primary election supersedes the 50/50
-# rotation. The probe loop now picks the actually-faster candidate
-# DYNAMICALLY (real probe latencies, not a coin flip), and the elected
-# backup is chosen with explicit cross-provider preference — both signals
-# the rotation was approximating heuristically. Kept around (not deleted)
-# because the regression suite still pins its statistical behaviour. The
-# get_*_llm factories no longer call it.
+# Provider load-balancing pure-function. Not wired into the chat hot path
+# (the probe-driven elector in backend.llm_health selects candidates);
+# retained because the routing regression suite pins its statistical
+# behaviour and it is a useful pure-function for ops / sim / overrides.
 import random as _random
 
 
 def _balanced_brain_chain(base: list[str], *, groq_first_probability: float = 0.5) -> list[str]:
-    """KI-025 — provider load-balancing (DEPRECATED 2026-05-15 by KI-080).
+    """Provider load-balancing pure-function.
 
     With `groq_first_probability` (default 50%), hoist the Groq Llama entry
     to the head of the chain so it serves as the primary instead of the
@@ -813,17 +758,14 @@ def _balanced_brain_chain(base: list[str], *, groq_first_probability: float = 0.
     fallback order — Groq calls that fail (rare; LPU is very reliable)
     still get the full NIM fallback chain.
 
-    SUPERSESSION NOTE (KI-080): the elector in `backend.llm_health` now
-    picks the actually-faster candidate dynamically from background probe
-    data, so this static-coin-flip rotation is no longer wired into the
-    chat hot path. Kept exported because:
-      (a) regression tests still pin its statistical behaviour, and
-      (b) it remains a useful pure-function for ops / sim / overrides
-          (e.g. wanting to force a non-elected order in a debug script).
+    Not wired into the chat hot path (the elector in `backend.llm_health`
+    picks candidates dynamically from background probe data). Retained
+    because the routing regression suite pins its statistical behaviour
+    and it is a useful pure-function for ops / sim / overrides (e.g.
+    forcing a non-elected order in a debug script).
 
-    Uses per-call `random.random()` so concurrent async workers (the
-    100-persona audit's 4 workers, the parallel 96-Q eval's 6 workers) each
-    flip independently — no shared mutable cycle state, no GIL races, fair
+    Uses per-call `random.random()` so concurrent async workers each flip
+    independently — no shared mutable cycle state, no GIL races, fair
     distribution in aggregate. `groq_first_probability` is overrideable
     primarily for testing."""
     if _random.random() >= groq_first_probability:
@@ -837,18 +779,16 @@ def _balanced_brain_chain(base: list[str], *, groq_first_probability: float = 0.
 
 
 def assert_family_coverage() -> dict[str, str]:
-    """A4 (2026-05-15) — Verify every model in BRAIN_CHAIN maps to a known
-    family (i.e. NOT 'unknown'). Returns a {model: family} dict on success;
-    raises RuntimeError listing any 'unknown'-mapped models on failure.
+    """Verify every model in BRAIN_CHAIN maps to a known family (i.e. NOT
+    'unknown'). Returns a {model: family} dict on success; raises
+    RuntimeError listing any 'unknown'-mapped models on failure.
 
-    KI-175 — also verifies nemotron is the TAIL (last entry) of BRAIN_CHAIN
-    so the last-resort ordering invariant survives any chain edit.
+    Also verifies nemotron is the TAIL (last entry) of BRAIN_CHAIN so the
+    last-resort ordering invariant survives any chain edit.
 
-    Three-chain collapse (2026-05-15): FAST_BRAIN_CHAIN + JUDGE_CHAIN have
-    been removed, so this helper now walks BRAIN_CHAIN only.
-
-    Call from admin diagnostics or tests; not invoked on import to keep
-    cold-start cheap. Safe to run from a probe loop tick.
+    Walks BRAIN_CHAIN (the only chain). Call from admin diagnostics or
+    tests; not invoked on import to keep cold-start cheap. Safe to run
+    from a probe loop tick.
     """
     coverage: dict[str, str] = {}
     unknown: list[str] = []
@@ -877,25 +817,19 @@ def assert_family_coverage() -> dict[str, str]:
 
 
 def get_brain_llm() -> NimChainLLM:
-    """Heavy brain — KI-080 sticky-primary election over BRAIN_CHAIN.
+    """Heavy brain — sticky-primary election over BRAIN_CHAIN.
 
-    Pre-KI-080: per-call _balanced_brain_chain rotation between NIM Qwen
-    and Groq Llama (KI-025 50/50 heuristic) → 5-6 LLM calls per turn
-    under degraded conditions.
+    The background probe loop in backend.llm_health elects the
+    actually-fastest candidate dynamically (probe-driven) plus a backup.
+    chat() calls 1-2 candidates max per turn. (The _balanced_brain_chain
+    rotation pure-function is available for overrides but not wired in
+    here.)
 
-    Post-KI-080: the background probe loop in backend.llm_health elects
-    the actually-fastest candidate dynamically (probe-driven, not coin-
-    flipped) and a cross-provider backup. chat() calls 1-2 candidates max
-    per turn. The rotation is preserved as a deprecated pure-function in
-    case overrides need it, but the factory no longer wires it in.
-
-    KI-021 — per-link 12s (KI-080 ELECTED_CALL_TIMEOUT_S), total chain
-    budget 35s (only binding for the final filter_chain-refresh safety net).
+    Per-link 20s timeout, total chain budget 35s (only binding for the
+    final filter_chain-refresh safety net).
     """
     return NimChainLLM(chain=BRAIN_CHAIN, timeout=20.0,
                        role="brain", total_budget_s=35.0)
 
 
-# Three-chain collapse (2026-05-15): get_fast_brain_llm + get_judge_llm
-# factories removed. Any straggler caller should import get_brain_llm()
-# directly. The FAST_BRAIN_CHAIN + JUDGE_CHAIN constants are also gone.
+# get_brain_llm() is the brain factory; BRAIN_CHAIN is the only chain.

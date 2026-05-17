@@ -3,19 +3,15 @@ spoken-language text for Sarvam Bulbul TTS.
 
 Why this exists: an unprocessed LLM reply with markdown bold, inline
 [Source: ...] tags, and acronyms reads like a screenshot when spoken. Users
-hear "asterisk asterisk bold asterisk asterisk A-Y-U-S-H pp dot 1 dash 2".
-That's a UX-killing bug — not a Sarvam limitation, a *us* bug.
+would otherwise hear "asterisk asterisk bold asterisk asterisk A-Y-U-S-H
+pp dot 1 dash 2".
 
-KI-104 (2026-05-15) — this module also exposes `strip_cot_preamble`, the
-chain-of-thought / instruction-echo stripper that runs on TEXT replies
-(not just TTS). Live smoke tests caught NIM reasoning models (e.g.,
-Qwen3-Next 80B) and the judge model leaking internal reasoning into
-`reply_text`. Examples: "We need to respond to user question…", "We must
-ground every factual claim…", "<think>...</think>The answer is X."
-`strip_cot_preamble` is called from `persona.strip_think_tags` so every
-reply path that already goes through the <think>-tag strip also gets the
-preamble strip — no orchestrator.py changes needed (that file is owned
-by another lane / KI-101).
+This module also exposes `strip_cot_preamble`, the chain-of-thought /
+instruction-echo stripper that runs on TEXT replies (not just TTS).
+Reasoning models can leak internal reasoning into `reply_text` — e.g.
+"We need to respond to user question…", "We must ground every factual
+claim…", "<think>...</think>The answer is X." `strip_cot_preamble`
+removes that preamble.
 
 The function turns text like:
 
@@ -73,15 +69,15 @@ ACRONYMS = {
     r"\bpp\.(\d+)": r"page \1",
 }
 
-# KI-066 (2026-05-15) — money / range shorthand that Sarvam Bulbul reads
-# letter-by-letter. The user said "₹25L+" was being spoken as "two five L
-# plus". Order in `_normalize_money` matters: handle RANGES first, then
-# PLUS-SUFFIXES, then bare unit-suffixes, then standalone "+".
+# Money / range shorthand that Sarvam Bulbul would otherwise read
+# letter-by-letter (e.g. "₹25L+" as "two five L plus"). Order in
+# `_normalize_money` matters: handle RANGES first, then PLUS-SUFFIXES,
+# then bare unit-suffixes, then standalone "+".
 #
-# KI-148 (2026-05-15) — extended to cover `k` (thousand), word-forms
-# (`1 lakh`, `1 crore`), `+` suffix → "above", and bare numerics like
-# `30000` → "30 thousand", `1,00,000` → "1 lakh". `k` is currency-gated to
-# avoid breaking "10K marathon".
+# Also covers `k` (thousand), word-forms (`1 lakh`, `1 crore`), `+`
+# suffix → "above", and bare numerics like `30000` → "30 thousand",
+# `1,00,000` → "1 lakh". `k` is currency-gated to avoid breaking
+# "10K marathon".
 _MONEY_RANGE_L = re.compile(
     r"₹?\s*(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)\s*L\b",
     re.IGNORECASE,
@@ -383,13 +379,13 @@ def _truncate_for_voice(text: str, max_words: int = 60) -> str:
 
 
 # ============================================================================
-# KI-104 (2026-05-15) — chain-of-thought / instruction-echo strip
+# Chain-of-thought / instruction-echo strip
 # ============================================================================
-# Live smoke test caught LLM brain replies leaking internal reasoning into
-# user-visible reply_text. Three failure modes:
-#   1. NIM reasoning models (Qwen3-Next 80B) emit a <think>...</think> block
-#      followed by the answer — the <think> tag was sometimes missing /
-#      malformed so the existing strip_think_tags in persona.py let it through.
+# LLM replies can leak internal reasoning into user-visible reply_text in
+# three modes:
+#   1. Reasoning models (Qwen3-Next 80B) emit a <think>...</think> block
+#      followed by the answer, sometimes with a missing / malformed
+#      <think> tag that a plain tag strip would let through.
 #   2. The faithfulness JUDGE model occasionally returns its own reasoning
 #      instead of a clean rescue reply.
 #   3. The brain model misunderstands the system prompt and echoes the
@@ -400,7 +396,7 @@ def _truncate_for_voice(text: str, max_words: int = 60) -> str:
 # lines / first 600 chars), so substantive mid-reply content like
 # "We have three options: A, B, C" is preserved.
 
-# ---- Sentence-level preamble patterns (KI-104) ----
+# ---- Sentence-level preamble patterns ----
 #
 # A CoT preamble can appear as:
 #   (a) a full line of its own: "We need to respond carefully.\n<answer>"
@@ -457,9 +453,9 @@ _BRACKET_INTERNAL = re.compile(
     flags=re.IGNORECASE | re.DOTALL,
 )
 
-# Stray, unbalanced <think> tags that persona.strip_think_tags doesn't
-# already handle (it requires both open and close in the same blob).
-# If we see an isolated </think> mid-reply, drop everything before it.
+# Stray, unbalanced <think> tags (a balanced-tag strip requires both open
+# and close in the same blob). If we see an isolated </think> mid-reply,
+# drop everything before it.
 _STRAY_CLOSE_THINK = re.compile(r"^.*?</think>", flags=re.DOTALL | re.IGNORECASE)
 
 # Maximum scan window for preamble. Beyond this, content is treated as
@@ -567,15 +563,14 @@ def tts_preprocess(text: str, language: str = "en", max_words: int = 60) -> str:
     """Public entry — turn an LLM reply into spoken-language text for TTS."""
     if not text:
         return ""
-    # KI-104 — defense in depth: even if the reply went through
-    # persona.strip_think_tags upstream, run the preamble strip again here
-    # in case it's called on a path that bypasses persona (e.g., direct
-    # TTS of a cached reply).
+    # Defense in depth: run the preamble strip again here in case this is
+    # called on a path that didn't already strip (e.g. direct TTS of a
+    # cached reply).
     cleaned = strip_cot_preamble(text)
     cleaned = _strip_markdown(cleaned)
-    # KI-066 (2026-05-15) — currency/range shorthand expansion before
-    # acronym handling so ₹5L becomes "5 lakhs" instead of getting caught
-    # by the bare-L acronym path.
+    # Currency/range shorthand expansion before acronym handling so ₹5L
+    # becomes "5 lakhs" instead of getting caught by the bare-L acronym
+    # path.
     cleaned = _normalize_money(cleaned)
     # #106 — AFTER money (lakh/crore already words): expand remaining bare
     # integers ("29" → "twenty-nine") + neutralise en/em dashes so Sarvam

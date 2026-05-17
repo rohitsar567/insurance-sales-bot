@@ -1,10 +1,11 @@
 # Scorecard Methodology — From 62 Schema Fields to a Single A-F Grade
 
-> ⚠️ **Predates the single-brain rewrite — not the present-state map.** Some
-> implementation references here (orchestrator / `sales_brain` / 3-tier chain
-> / `faithfulness.py` judge) describe code that was removed. Present-state
-> authority: [`README.md`](../../README.md) §4. Retained for design intent /
-> historical record.
+> ℹ️ **Methodology is current.** The scorecard is rules-based and
+> LLM-free; the grading logic below (`backend/scorecard.py`) is the
+> present-state design, including the profile-tuned weights used by the
+> single-LLM-with-tools handler when it recommends policies. The only
+> historical pointer is the one-off extraction pipeline noted in §1.
+> Present-state authority: [`README.md`](../../README.md) §4.
 
 | Field | Value |
 | --- | --- |
@@ -64,7 +65,7 @@ A small number of fields exist because they materially affect buyer outcomes eve
 
 ### How we did it (the actual code path)
 
-`rag/extract.py` calls the fast-brain chain (Nemotron Nano 30B primary, Qwen 80B / GPT-OSS / Groq fallbacks) with the full policy PDF text and the 62-field Pydantic schema as a structured-output target. The LLM extracts each field; if a field is not explicitly stated in the document, it is set to `null`. A self-critique pass scores per-field confidence (the `extraction_confidence_pct` field).
+`rag/extract.py` runs a one-time offline extraction: an LLM is given the full policy PDF text and the 62-field Pydantic schema as a structured-output target. The LLM extracts each field; if a field is not explicitly stated in the document, it is set to `null`. A self-critique pass scores per-field confidence (the `extraction_confidence_pct` field). This is a build-time pipeline, separate from the runtime single-LLM-with-tools handler.
 
 The full schema lives in `rag/schema.py` (see also `rag/SCHEMA.md` for groupings and gotchas).
 

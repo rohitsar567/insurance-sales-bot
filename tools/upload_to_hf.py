@@ -1,16 +1,16 @@
-"""One-shot uploader to Hugging Face Space (post-D-019 — code-only).
+"""One-shot code-only uploader to the Hugging Face Space.
 
 Pushes the code-only Space (minus build artifacts, .venv, node_modules, etc.) to
-huggingface.co/spaces/rohitsar567/InsuranceBot. Post-D-019 the large data
-(corpus PDFs + Chroma vectors + extracted JSONs) lives in the companion HF
+huggingface.co/spaces/rohitsar567/InsuranceBot. The large data (corpus
+PDFs + Chroma vectors + extracted JSONs) lives in the companion HF
 dataset rohitsar567/insurance-bot-data — the Space's Dockerfile pulls it via
 huggingface_hub.snapshot_download at image build time.
 
-KI-152 (2026-05-15): operates in SYNC mode. After `upload_folder` (add/replace),
-walks the local tree, lists the remote repo, and issues a second commit that
-DELETES any remote file that no longer exists locally. Prevents ghost files
-(renamed/deleted brochures) from lingering on the Space and being served by
-the Docker image after a rebuild. See KI-126 / KI-143 / KI-144 / KI-151.
+Operates in SYNC mode: after `upload_folder` (add/replace), walks the
+local tree, lists the remote repo, and issues a second commit that
+DELETES any remote file not present locally. Prevents ghost files
+(renamed/deleted brochures) from lingering on the Space and being served
+by the Docker image after a rebuild.
 
 Run:
   python tools/upload_to_hf.py            # full upload + sync delete
@@ -57,10 +57,9 @@ IGNORE = [
     "rag/corpus/**",
     "rag/vectors/**",
     "rag/extracted/**",
-    # KI-128 (2026-05-15): backup dir + LFS pointers were leaking into the
-    # Space push via the rag/corpus and rag/extracted symlinks, blowing the
-    # Space's 1 GB LFS storage quota (Repository storage limit reached on
-    # post_lfs_batch_info). The data path is HF Dataset, NOT the Space.
+    # Exclude the backup dir + LFS pointers: pushing them would blow the
+    # Space's 1 GB LFS storage quota. The data path is the HF Dataset,
+    # NOT the Space.
     "rag/_hf_dataset_backup/**",
     "**/_hf_dataset_backup/**",
     "rag/policies.duckdb",      # LFS-tracked, comes from dataset at build

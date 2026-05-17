@@ -16,29 +16,36 @@
 
 v1 is a **vertical slice**: 10 insurers × Health × ~80 policies × voice-first advisor. The architecture is built so v2 is a **data/config change, not a rebuild**. This document maps the path.
 
-## 0.1 Recently shipped (2026-05-15)
+## 0.1 Architecture history (pointers only)
 
-- **KI-167 / [ADR-039](../60-decisions/ADR-039-llm-driven-sales-brain.md)** — Ripped out `backend/fact_find_brain.py` + canonical_fallback + the `<FF>` trailer convention. Replaced with `backend/sales_brain.py` — one LLM call per turn using native provider JSON mode. No scripted prompts, multi-fact capture per turn, ~500 LOC deleted.
-- **KI-168** — Hybrid voice capture: Web Speech API streams interim transcripts for live UX feel while MediaRecorder runs in parallel; Sarvam STT is the authoritative transcript posted on browser silence-detect.
-- **KI-171** — Skip faithfulness judge on `fact_find` + `recommendation` intents (the judge has no retrieved context to grade against on those turns).
-- **KI-173 / KI-174** — Voice heartbeat + `visibilitychange` / `focus` revival hooks keep the mic alive across tab and app switches.
-- **KI-175 / KI-176** — NIM chain reorder (Nemotron 49B demoted to last resort), OpenRouter re-added as cross-provider diversity via `models: [...]` server-side fallback.
-- **KI-178 / KI-179 / [ADR-040](../60-decisions/ADR-040-google-gemini-primary.md)** — OpenRouter free-tier `response_format` audit; added Google AI Studio (Gemini 2.0 / 2.5 Flash, 1500 req/day free) as Tier 0 primary on Brain Fast + Brain Main.
+> The 2026-05-15 work below (KI-167…KI-179, ADR-039/040) was an
+> intermediate step that was itself **subsequently superseded** by the
+> single-LLM-with-tools rewrite (one Gemini 2.5-flash call per turn with
+> `save_profile_field` / `retrieve_policies` / `mark_recommendation`,
+> structured+vector retrieval, small `nim_fallback`). KI/ADR pointers are
+> kept as history-of-record. Present-state authority:
+> [`README.md`](../../README.md) §4.
+
+- **KI-167 / [ADR-039](../60-decisions/ADR-039-llm-driven-sales-brain.md)** — Removed the scripted fact-find renderer + `<FF>` trailer convention (history; the later single-LLM-with-tools handler is the present design).
+- **KI-168** — Hybrid voice capture: Web Speech API streams interim transcripts for live UX feel while MediaRecorder runs in parallel; Sarvam STT is the authoritative transcript posted on browser silence-detect. (Still current.)
+- **KI-171** — Skipping the separate faithfulness judge on no-context turns (the separate judge LLM was later removed entirely; faithfulness is now structural).
+- **KI-173 / KI-174** — Voice heartbeat + `visibilitychange` / `focus` revival hooks keep the mic alive across tab and app switches. (Still current.)
+- **KI-175 / KI-176 / KI-178 / KI-179 / [ADR-040](../60-decisions/ADR-040-google-gemini-primary.md)** — Provider/chain work from the multi-model era (history; the present brain is a single Gemini 2.5-flash call per turn with a small NIM fallback for transient errors).
 
 ## 1. What v1 ships
 
 **Working product:**
-- Voice-first chat advisor over a curated corpus of Indian health insurance policies (~76 PDFs from 10 insurers, ingested into Chroma + DuckDB)
+- Voice-first chat advisor over a curated corpus of Indian health insurance policies (~76 PDFs from 10 insurers, ingested into Chroma)
 - Multi-language: English + Hindi/Hinglish via Sarvam Saarika STT + Sarvam Bulbul TTS
-- 3-tier brain chain (ADR-040, KI-179): Brain Fast (`backend/sales_brain.py`, fact-find) leads with **Gemini 2.0 Flash** (Google AI Studio, 1500 req/day free, native JSON mode) → NIM Qwen 80B / Mistral Large 3 675B / Llama-4 Maverick → OpenRouter `:free` (Nemotron-3-Super 120B, Qwen 80B) → NIM Nemotron 49B last resort. Brain Main (synthesis / comparison / recommendation) leads with **Gemini 2.5 Flash** → NIM Mistral 675B / Maverick / Qwen 80B → OR Nemotron-3-Super → NIM Nemotron 49B. Judge primary stays on **NIM Mistral Large 3 675B** (different family from the Gemini brain — preserves the cross-family invariant). Sticky-primary election (KI-080) per chain. Sarvam scoped to Indic translation + voice only.
-- 4-gate hallucination defense + auditable refusal log
+- **Single-LLM-with-tools brain:** one **Gemini 2.5-flash** call per turn with function-calling tools (`save_profile_field` / `retrieve_policies` / `mark_recommendation`) handling fact-find, retrieval, QA, and recommendation. Small `backend/nim_fallback.py` (NVIDIA NIM) covers transient Gemini errors so the turn completes; fail-loud otherwise. Sarvam scoped to Indic translation + voice only.
+- Structural faithfulness (the LLM can only cite what `retrieve_policies` returned; recommendation fit gated in `scorecard.py` / `retrieval_filters.py`) + auditable refusal log
 - 62-field structured extraction per policy
 - Clean Next.js + Tailwind frontend
-- FastAPI backend deployed on Render; frontend on Vercel
+- FastAPI backend deployed as a Hugging Face Space (Docker, `uvicorn`)
 - 8 design / decision documents totaling ~30 pages
 
 **Eval signal:**
-- Gold Q&A harness (~300 pairs targeted) + automated grader (the JUDGE_CHAIN with NIM Mistral Large 3 675B primary — different family from the Gemini brain so grading stays non-circular)
+- Gold Q&A harness (~300 pairs targeted) + automated offline grader using a judge model from a different family than the runtime Gemini brain (non-circular grading; eval-only, not a runtime gate)
 - `eval/results.md` versioned table per run
 - Live audit log `logs/hallucinations.jsonl` for every blocked claim
 
@@ -133,10 +140,10 @@ v1 is a **vertical slice**: 10 insurers × Health × ~80 policies × voice-first
 The point of disciplined v1 architecture is that these things are **stable** across the transition:
 
 1. **62-field structured schema** (`rag/schema.py`) — data-only change to add v2 categories
-2. **Provider abstraction** (`backend/providers/base.py`) — swap STT/TTS/LLM via config
-3. **Faithfulness verifier** (`backend/faithfulness.py`) — same 4 gates, possibly more
-4. **Persona prompt + citation grammar** — same, refined
-5. **Eval methodology** (`70-docs/03-eval-plan.md`) — same harness, more gold data
+2. **Provider abstraction** — swap STT/TTS/LLM via config
+3. **Structural faithfulness** — the brain can only cite what `retrieve_policies` returned; recommendation fit gated in `scorecard.py` / `retrieval_filters.py`
+4. **System prompt + citation grammar** — same, refined
+5. **Eval methodology** (`70-docs/40-evaluation/eval-methodology.md`) — same harness, more gold data
 
 The "c-readiness commitments" in Doc 02 §7 are the contract. Every v2 feature is a commitment honored.
 
@@ -146,7 +153,7 @@ The "c-readiness commitments" in Doc 02 §7 are the contract. Every v2 feature i
 | --- | --- | --- |
 | Streamlit → Next.js mid-build | Production polish for a BFSI reviewer | 2 extra hours of scaffolding |
 | Voyage embeddings → BGE local | Voyage 3 RPM rate limit blocked ingestion | Slightly lower retrieval quality (~3pp) for full corpus access |
-| IRDAI corpus deferred | Akamai bot protection; 4-gate faithfulness already refuses regulatory questions cleanly | Bot can't ground answers in IRDAI text — refuses instead of citing |
+| IRDAI corpus deferred | Akamai bot protection; structural faithfulness already refuses regulatory questions cleanly (the brain can only cite what `retrieve_policies` returned, and there are no IRDAI chunks) | Bot can't ground answers in IRDAI text — refuses instead of citing |
 | Push-to-talk over streaming | Risk of broken realtime > demo latency | 2-3s perceived latency vs <1s |
 | No auth | Out of scope per Doc 01 | Single-user demo only |
 | Hand-curated 5-node fact-find | Auditable + testable | Less natural than LLM-driven |

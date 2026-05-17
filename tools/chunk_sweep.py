@@ -30,9 +30,9 @@ ROOT = Path(__file__).resolve().parent.parent
 RESULTS_JSON = ROOT / "eval" / "chunk_sweep_results.json"
 RESULTS_MD = ROOT / "kb" / "calculations" / "chunk_sweep_results.md"
 
-# Sweep grid. Range widened 2026-05-13 — prior narrow grid (600-1000) produced
-# identical scores across all cells because retrieval converges in that band.
-# This grid spans 6x range so chunk-boundary effects on retrieval are visible.
+# Sweep grid. Spans a ~6x range so chunk-boundary effects on retrieval
+# are visible (a narrow grid converges to identical scores because
+# retrieval is insensitive within a small band).
 GRID = [
     (400, 60),
     (600, 100),

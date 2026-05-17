@@ -104,8 +104,8 @@ class GroqLLM(LLMProvider):
                     continue
                 resp.raise_for_status()
                 break
-            # KI-085 (2026-05-15) — stamp credits_remaining from Groq's
-            # x-ratelimit-* headers BEFORE we drop the response. Groq is
+            # Stamp credits_remaining from Groq's x-ratelimit-* headers
+            # BEFORE we drop the response. Groq is
             # the highest-fidelity provider on this front: every successful
             # call returns the daily-tokens remaining, so we get a
             # continuously-updated election signal at zero extra cost.

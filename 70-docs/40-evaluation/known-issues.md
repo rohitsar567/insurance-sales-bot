@@ -1,5 +1,16 @@
 # Known Issues + Quality Sprint Log
 
+> ⚠️ **Historical defect log — not the present-state map.** Entries below
+> are dated incidents; many reference subsystems (`orchestrator`,
+> `faithfulness.py` judge, `fact_find_brain` / `sales_brain`,
+> `fact_find_normalizer`, the 3-tier Gemini/NIM/OpenRouter chain,
+> sticky-primary election) that were **subsequently removed** by the
+> single-LLM-with-tools rewrite (one Gemini 2.5-flash call per turn with
+> `save_profile_field` / `retrieve_policies` / `mark_recommendation`,
+> structured+vector retrieval, small `nim_fallback`). The log is retained
+> as the quality trajectory of record; KI/ADR cross-references stay valid as
+> history. Present-state authority: [`README.md`](../../README.md) §4.
+
 Living document. Every defect we find — whether via code review, eval audit,
 or production observation — lands here with severity, root cause, and the
 plan to fix it. Closed issues stay in the log with a `**FIXED in <sha>**`

@@ -817,35 +817,25 @@ _DEFAULT_BAND_POLICY_IDS: list[str] = [
 
 
 # ───────────────────────────────────────────────────────────────────────────
-# SI RECONCILIATION (KI-278, 2026-05-16) — single source of truth for the
-# sum-insured the header band AND the per-settings panel both price at.
-#
-# THE HEADER≠PANEL BUG: PremiumCalculatorPanel (page.tsx) seeds its SI slider
-# from `desired_sum_insured_inr ?? existing_cover_inr ?? 1_000_000`, but
-# estimate_premium_band() used to hard-code sum_insured_default=₹10L and
-# IGNORE the profile entirely. So a user who stated a ₹25L target saw the
-# header chip priced at ₹10L (₹6,500–₹26,500) while the panel priced the
-# same profile at ₹25L (point ₹19,100) — contradictory numbers for one
-# profile. Resolving BOTH surfaces' SI from this one function makes them
-# reconcile by construction: the panel's point estimate now falls inside
-# the header band because the header band is the SAME basket priced at the
-# SAME profile-resolved SI.
+# Single source of truth for the sum-insured the header band AND the
+# per-settings panel both price at. Resolving both surfaces' SI from this
+# one function makes them reconcile by construction: the panel's point
+# estimate falls inside the header band because the header band is the
+# SAME basket priced at the SAME profile-resolved SI.
 #
 # Precedence MUST stay byte-identical to PremiumCalculatorPanel's
 # useState initialiser (frontend/src/app/page.tsx ~L2417) and
 # PolicyPremiumWidget's initialSumInsured contract:
 #   1. profile.desired_sum_insured_inr  (user's stated target SI)
 #   2. profile.existing_cover_inr       (closest available signal)
-#   3. fallback default                 (legacy ₹10L)
+#   3. fallback default                 (₹10L)
 # ───────────────────────────────────────────────────────────────────────────
 
-# SI RATIONALISATION (D2, 2026-05-16) — the global ₹5 L / ₹1 Cr clamp
-# (SI_FLOOR_INR / SI_CEILING_INR) was REMOVED. Pricing now respects each
-# policy's own real SI bounds and the user's actual stated target instead of
-# squashing every profile into one synthetic envelope. A ₹2 Cr aspiration
-# now prices at ₹2 Cr; a ₹1 L corporate top-up prices at ₹1 L. When a policy
-# has no published SI the caller prices against the user's
-# desired_sum_insured_inr (else ₹10 L default) and surfaces a disclosure.
+# Pricing respects each policy's own real SI bounds and the user's actual
+# stated target rather than a global clamp: a ₹2 Cr aspiration prices at
+# ₹2 Cr; a ₹1 L corporate top-up prices at ₹1 L. When a policy has no
+# published SI the caller prices against the user's desired_sum_insured_inr
+# (else ₹10 L default) and surfaces a disclosure.
 
 
 def resolve_profile_sum_insured(
@@ -864,9 +854,9 @@ def resolve_profile_sum_insured(
     string/None gracefully and snaps to the nearest ₹50k so the resolved SI
     lands on a representable slider stop.
 
-    D2 (2026-05-16) — the global ₹5 L / ₹1 Cr clamp was REMOVED: the user's
-    actual stated target is honoured (a ₹2 Cr aspiration prices at ₹2 Cr, a
-    ₹1 L top-up at ₹1 L) rather than squashed into a synthetic envelope.
+    The user's actual stated target is honoured (a ₹2 Cr aspiration prices
+    at ₹2 Cr, a ₹1 L top-up at ₹1 L) rather than clamped to a synthetic
+    envelope.
     """
     profile = profile or {}
 

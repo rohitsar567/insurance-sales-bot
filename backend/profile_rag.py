@@ -1,11 +1,10 @@
 """Customer-profile-as-RAG layer.
 
-KI-118 (2026-05-15) — profile chunks are now keyed by `name_slug` (the
-canonicalised user name), NOT by session_id. Only NAMED users ever get
-embedded; anonymous sessions never write to Chroma. This eliminates the
-corruption surface that the session_id-keyed chunks introduced (a missing
-session_id metadata field on the legacy `profile_anonymous` row poisoned
-every subsequent retrieval query — see KI-117 boot cleanup).
+Profile chunks are keyed by `name_slug` (the canonicalised user name),
+NOT by session_id. Only NAMED users ever get embedded; anonymous sessions
+never write to Chroma. Keying by name_slug avoids the corruption surface
+of session_id-keyed chunks (an anonymous row missing a session_id
+metadata field could poison session_id-scoped retrieval queries).
 
 At retrieval time, `rag/retrieve.py::retrieve(..., profile_name_slug=...)`
 boosts the user's profile chunk so the LLM sees the user's context inline
@@ -39,9 +38,8 @@ _log = logging.getLogger(__name__)
 def profile_to_chunk_text(profile: dict) -> str:
     """Render the profile dict as a natural-language paragraph for the LLM.
 
-    The shape matches what build_messages() in the orchestrator expects so
-    when this chunk is retrieved alongside policy chunks, the LLM sees a
-    coherent "USER CONTEXT" block.
+    Rendered as a coherent "USER CONTEXT" block so that when this chunk is
+    retrieved alongside policy chunks, the LLM sees the user's facts inline.
     """
     parts: list[str] = ["USER CONTEXT — facts about the person asking this question:"]
 
@@ -124,10 +122,8 @@ def _get_collection():
 async def upsert_profile_chunk(name_slug: str, profile_dict: dict) -> None:
     """Embed the profile paragraph and store as a single chunk in Chroma.
 
-    KI-118 (2026-05-15) — keyed by `name_slug` (canonical user name) instead
-    of `session_id`. Only NAMED users ever get embedded — anonymous chats
-    never write to Chroma, which eliminates the corruption surface that the
-    session_id keying introduced.
+    Keyed by `name_slug` (canonical user name), not `session_id`. Only
+    NAMED users ever get embedded — anonymous chats never write to Chroma.
 
     Idempotent — calling this on every profile update is safe; existing
     chunks for the same name_slug get replaced.
@@ -138,14 +134,10 @@ async def upsert_profile_chunk(name_slug: str, profile_dict: dict) -> None:
     if not text or len(text) < 30:
         return
 
-    # KI-112 (2026-05-15) / KI-118 — input guard 1: name_slug must be a
-    # non-empty str. Pre-fix, a missing/empty key caused upsert under id
-    # "profile_" with `policy_id` colliding across all anonymous sessions;
-    # the initial KI-102 deploy wrote a `profile_anonymous` chunk WITHOUT a
-    # session_id metadata field that poisoned every subsequent query whose
-    # `where` clause referenced session_id. Anonymous users no longer reach
-    # this function at all (the orchestrator gates on
-    # `session.profile.name` before calling) — this guard is belt-and-braces.
+    # Input guard 1: name_slug must be a non-empty str. An empty key would
+    # upsert under id "profile_" and collide across anonymous sessions.
+    # Callers gate on `session.profile.name` before calling, so anonymous
+    # users do not reach this function; this guard is belt-and-braces.
     if not isinstance(name_slug, str) or not name_slug.strip():
         _log.warning(
             "profile_rag.upsert_profile_chunk: refusing to write — name_slug "
@@ -157,11 +149,11 @@ async def upsert_profile_chunk(name_slug: str, profile_dict: dict) -> None:
     embedder = LocalEmbeddings()
     [vec] = await embedder.embed([text], input_type="document")
 
-    # KI-112 (2026-05-15) — input guard 2: embedding must be a list of finite
-    # floats whose length matches the embedder's declared dimension. Pre-fix,
-    # an empty / None / mis-shaped embedding could be added to Chroma where it
-    # would silently corrupt HNSW (dangling pointer or shape mismatch). The
-    # corpus uses 384-dim BAAI/bge-small-en-v1.5; any other shape is a bug.
+    # Input guard 2: embedding must be a list of finite floats whose length
+    # matches the embedder's declared dimension. An empty / None / mis-shaped
+    # embedding added to Chroma would silently corrupt HNSW (dangling
+    # pointer or shape mismatch). The corpus uses 384-dim
+    # BAAI/bge-small-en-v1.5; any other shape is rejected.
     expected_dim = getattr(embedder, "dimension", None) or 384
     if (
         not isinstance(vec, (list, tuple))
@@ -184,20 +176,18 @@ async def upsert_profile_chunk(name_slug: str, profile_dict: dict) -> None:
     try:
         coll.delete(where={"policy_id": chunk_id})
     except Exception as e:
-        # Non-fatal: chunk may not exist yet. KI-107 — at least log so
-        # silent corruption of the profile store is observable.
+        # Non-fatal: chunk may not exist yet. Log so a silent failure of
+        # the profile store is observable.
         _log.debug(
             "profile_rag.upsert_profile_chunk: delete(where=policy_id=%s) "
             "non-fatal failure: %s: %s",
             chunk_id, type(e).__name__, str(e)[:200],
         )
 
-    # KI-107 (2026-05-15) — wrap coll.add() in try/except. C5 port-in saw
-    # 3× HTTP 500 "Error finding id" cascade; one possible vector is a
-    # transient Chroma sqlite lock during HNSW compaction when add()
-    # interleaves with the retrieve path's get(). Make upsert non-fatal so
-    # the chat reply still returns even if the profile-chunk write fails.
-    # On next upsert (next profile field change), the retry will succeed.
+    # Wrap coll.add() in try/except so upsert is non-fatal: a transient
+    # Chroma sqlite lock during HNSW compaction (add() interleaving with
+    # the retrieve path's get()) must not break the chat reply. The next
+    # upsert (next profile field change) retries the write.
     try:
         coll.add(
             ids=[chunk_id],
@@ -208,8 +198,8 @@ async def upsert_profile_chunk(name_slug: str, profile_dict: dict) -> None:
                 "insurer_slug": "profile",
                 "policy_name": f"User profile ({name_slug[:16]})",
                 "doc_type": "profile",
-                # KI-118 (2026-05-15) — stamp name_slug instead of session_id.
-                # The retrieve path filters profile chunks via this field.
+                # Stamp name_slug; the retrieve path filters profile
+                # chunks via this field.
                 "name_slug": name_slug,
                 "source_url": "",
                 "page_start": 0,
@@ -228,7 +218,7 @@ async def upsert_profile_chunk(name_slug: str, profile_dict: dict) -> None:
 
 
 def remove_profile_chunk(name_slug: str) -> None:
-    """Optional cleanup. KI-118 — keyed by name_slug."""
+    """Optional cleanup. Keyed by name_slug."""
     if not name_slug:
         return
     try:

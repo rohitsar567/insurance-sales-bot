@@ -1,20 +1,19 @@
-"""Single-brain conversation handler — Path B.
+"""Single-brain conversation handler.
 
-One Gemini Flash call per turn (with native function-calling) replaces
-the previous sales_brain + qa_brain split. The LLM decides on each
-iteration whether to:
+One Gemini Flash call per turn with native function-calling. The LLM
+decides on each iteration whether to:
   - call `save_profile_field` to persist captured slots,
   - call `retrieve_policies` to pull policy chunks from Chroma,
   - call `mark_recommendation` to flag the policies just pitched,
   - or emit a final text reply.
 
-The loop iterates up to `MAX_ITERATIONS` (default 5) so the LLM can chain
-multiple tool calls in a single user turn before responding. Beyond that
-cap we synthesise a defensive reply and return.
+The loop iterates up to `MAX_ITERATIONS` so the LLM can chain multiple
+tool calls in a single user turn before responding. Beyond that cap an
+honest retry message is returned.
 
-Wire-up:  /api/chat → main.py.chat() → if USE_SINGLE_BRAIN: single_brain.handle_turn(...)
-On any SingleBrainError, the API caller is expected to fall through to the
-legacy `orchestrator.handle_turn` so the user always gets a reply.
+Wire-up:  /api/chat → main.py.chat() → single_brain.handle_turn(...).
+On a SingleBrainError the caller falls through to nim_fallback so the
+user always gets a reply.
 
 We call the Gemini REST API directly (httpx, like google_gemini_llm.py)
 rather than using the `google.generativeai` SDK so we don't need to pin
@@ -57,13 +56,10 @@ GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 PER_CALL_TIMEOUT_SEC = 25.0
 
 # Max iterations of the tool-call loop. Prevents runaway tool-call cycles
-# where the LLM keeps calling save_profile_field on the same value.
-# KI-Z6-NONE (2026-05-15): bumped 5 → 8 after W1 Turn 3 live blocker.
-# The Z6 "no medical issues" path used to need: save(health=none) +
-# retrieve → profile_incomplete → save(health=none) + retrieve → loop
-# exhaust. Coercer fix in brain_tools resolves the primary cause; the
-# extra headroom protects against the next variant where Gemini chains
-# 3-4 saves + 2 retrieves on a long pre-recommendation user turn.
+# where the LLM keeps calling save_profile_field on the same value. Sized
+# so Gemini can chain a long pre-recommendation turn (several
+# save_profile_field calls + one or two retrieve_policies) within one
+# user turn.
 MAX_ITERATIONS = 8
 
 # Transient-error retry policy (2026-05-15 / KI-singlebrain-503).
@@ -393,12 +389,9 @@ class TurnResult:
     blocked: bool = False
     profile_updates: dict = field(default_factory=dict)
     followup_policy_id: Optional[str] = None
-    # main.py stamps ChatResponse.returning_user_recalled from this. The
-    # deterministic in-conversation recall that used to set it True was
-    # REMOVED 2026-05-17 (see the tombstone above _HONEST_EMPTY_REPLY), so
-    # handle_turn now always leaves this False; explicit returning-user
-    # recall is the separate POST /api/profile/recall-by-name endpoint.
-    # Field kept for ChatResponse / frontend compatibility.
+    # main.py stamps ChatResponse.returning_user_recalled from this.
+    # handle_turn leaves it False; explicit returning-user recall is the
+    # separate POST /api/profile/recall-by-name endpoint.
     returning_user_recalled: bool = False
 
 
@@ -627,22 +620,9 @@ def _detect_language(user_text: str) -> str:
     return "en"
 
 
-# --- REMOVED 2026-05-17 — deterministic recall classifier + fallback -------
-# `_RECALL_AFFIRM*` / `_classify_recall_answer` (the staged-recall yes/no
-# detector) and `_FALLBACK_SLOT_QUESTIONS` / `_FALLBACK_REQUIRED_SLOTS` /
-# `_synthesise_fallback` (the deterministic "ask the next missing slot"
-# generator) were leftover rule-based scaffolding from the pre-Path-B
-# rule/3-brain/judge era. They masked the single LLM: when Gemini returned
-# no text the fallback injected a canned "What's your name?", simulating a
-# fact-find that wasn't happening → an infinite loop. The single LLM
-# (RULE 1 → save_profile_field) is the SOLE fact-find driver now; a genuine
-# empty-LLM turn surfaces an HONEST error (see end of handle_turn), never a
-# fabricated slot-question. Do NOT reintroduce deterministic fact-find.
-
-# Honest reply for the rare genuine empty-LLM turn (should be near-zero now
-# that thinkingConfig is set so gemini-2.5-flash actually emits output). We
-# surface a transparent retry ask — NEVER a fabricated slot-question that
-# simulates a fact-find that did not happen.
+# Reply for a turn where the LLM returns no text and no tool calls — a
+# transparent retry ask. The single LLM is the only fact-find driver; we
+# never fabricate a slot-question.
 _HONEST_EMPTY_REPLY = (
     "I'm having trouble generating a response right now — could you "
     "rephrase that, or try again in a moment?"
@@ -718,28 +698,15 @@ async def _gemini_call(
         "tools": [{"functionDeclarations": tools}],
         "toolConfig": {"functionCallingConfig": {"mode": "AUTO"}},
         "generationConfig": {
-            # Z2 fix — Issue 1 (mid-session amnesia). Priya T3 + Vikram T2/T4
-            # came back with the "I lost my train of thought" template even
-            # though slot capture succeeded. Root cause matches KI-150
-            # (fact_find LLM, 420 → 700): when Gemini must emit prose AND a
-            # tool-call trailer in the same response, the model hits
-            # maxOutputTokens mid-emission, the trailer truncates, and the
-            # caller falls through to the defensive reply. Budget breakdown
-            # at p95: prose ~600 tok + tool-call JSON ~800 tok + 20% margin
-            # ⇒ 1680, rounded up to a safe power-of-two-ish 2048.
             "temperature": 0.4,
+            # Sized so a turn emitting prose plus a tool-call trailer does
+            # not truncate mid-emission (p95 ≈ prose 600 + tool JSON 800 +
+            # margin).
             "maxOutputTokens": 2048,
-            # CRITICAL (proven via A/B raw-payload test 2026-05-17):
-            # gemini-2.5-flash is a THINKING model; gemini-2.5-flash-lite /
-            # gemini-2.0-flash (what this bot historically ran) are NOT.
-            # With no thinkingConfig, gemini-2.5-flash returns an EMPTY
-            # completion (finishReason=STOP, content has no `parts`, zero
-            # candidate tokens) for tool-calling turns — so _synthesise_
-            # fallback injects the canned "What's your name?" and the
-            # fact-find loops forever (the live core-flow regression).
-            # thinkingBudget=0 disables thinking → the model behaves like
-            # the fast non-thinking frontier model it should be and emits
-            # the save_profile_field tool call correctly. Do NOT remove.
+            # gemini-2.5-flash is a thinking model; thinkingBudget=0
+            # disables the internal thinking phase so it emits the tool
+            # call / text directly (a non-zero budget can consume the
+            # output allowance and return an empty completion).
             "thinkingConfig": {"thinkingBudget": 0},
         },
     }
@@ -1080,25 +1047,16 @@ def _build_recommendation_citations(
 ) -> tuple[list[dict], bool]:
     """Single source of truth for the structured "CITED POLICIES" cards.
 
-    ROOT CAUSE this addresses (KI-278): the prose the user reads and the
-    citation cards were derived from two different sources. Prose = the
-    LLM's curated shortlist (free text). Cards used to be the raw
-    `retrieve_policies` recall dump deduped by chunk_id and rendered in
-    vector-score order — so the cards listed policies the LLM never named
-    and dropped ones it did.
-
-    This builds the citation set as EXACTLY the policies the assistant
-    actually recommended:
+    The cited-card set IS exactly the policies the assistant recommended,
+    gated by the same fitness logic as the prose:
 
       1. If the LLM called `mark_recommendation(policy_ids=[...])`, those
-         ids are the SELECTION (which policies the assistant chose).
-      2. Otherwise (Gemini skips mark_recommendation on ~70% of rec turns
-         per KI-254), parse the reply prose: every retrieved policy whose
+         ids are the selection.
+      2. Otherwise, parse the reply prose: every retrieved policy whose
          name appears in `reply_text` is selected.
 
-    KI-280 — the cited-card list and the advisory prose must be gated by
-    the SAME fitness logic. Two refinements over the KI-278 builder so the
-    cards ARE the gated, fit-ranked set:
+    The cited-card list and the advisory prose are gated by the SAME
+    fitness logic, with:
 
       • CANONICAL DEDUP: `retrieved_chunks_all` is the union of every
         retrieve_policies result this turn. Each result is already gated +
@@ -1521,18 +1479,10 @@ async def handle_turn(
     # conversation — not a returning user.
     _current_turn = int(getattr(session, "turn_idx", 1) or 1)
 
-    # 2026-05-17 — the deterministic in-conversation profile-recall
-    # scaffolding (the "Welcome back — are you the same <name>?" confirm
-    # short-circuit + STEP-1 name-sniff + STEP-2 apply/discard) was REMOVED.
-    # It was leftover rule-based scaffolding from the pre-Path-B
-    # rule/3-brain/judge era: it masked the single LLM, discarded the name
-    # the user gave, and produced an infinite fact-find loop. The single
-    # LLM (RULE 1 → save_profile_field) is now the SOLE fact-find driver.
-    # Explicit returning-user recall lives ONLY in the separate
-    # POST /api/profile/recall-by-name endpoint (an explicit user action,
-    # not a deterministic in-chat short-circuit). `_did_recall_this_turn`
-    # is kept as a constant False so the TurnResult.returning_user_recalled
-    # field (read by main.py) stays valid without the removed machinery.
+    # The single LLM (RULE 1 → save_profile_field) is the sole fact-find
+    # driver. Explicit returning-user recall is the separate
+    # POST /api/profile/recall-by-name endpoint, so handle_turn never sets
+    # returning_user_recalled True.
     _did_recall_this_turn = False
 
     _has_prior_profile = any(
@@ -1545,8 +1495,7 @@ async def handle_turn(
     is_returning_user = (_current_turn == 1) and _has_prior_profile
 
     # GOOGLE_API_KEY gate — asserted just before anything that talks to
-    # Gemini. (The deterministic no-LLM recall-confirm short-circuit that
-    # used to precede this was removed 2026-05-17.)
+    # Gemini.
     api_key = os.environ.get("GOOGLE_API_KEY", "").strip()
     if not api_key:
         raise SingleBrainError("GOOGLE_API_KEY not set")

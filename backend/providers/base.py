@@ -7,7 +7,7 @@ The interfaces are deliberately narrow:
 - An embeddings provider takes a list of strings and returns vectors.
 
 Concrete implementations live in sibling modules (sarvam_*, groq_*, voyage_*,
-openrouter_*). The orchestrator imports these by interface, never by concrete
+openrouter_*). Callers import these by interface, never by concrete
 class — so swapping providers is a config change.
 """
 

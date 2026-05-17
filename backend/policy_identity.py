@@ -1,20 +1,18 @@
-"""Canonical policy identity + dedup — SINGLE SOURCE OF TRUTH (KI-280).
+"""Canonical policy identity + dedup — SINGLE SOURCE OF TRUTH.
 
-The marketplace endpoint `main.py /api/policies/all` already established the
-canonical-identity rule (KI-133 / KI-141 / KI-142 / KI-145):
+The canonical-identity rule:
 
     1 unique IRDAI UIN  =  1 unique product (UIN-primary invariant).
     When no UIN is present, the product_key = the policy_id with any
     trailing doctype suffix (`__wordings` / `__brochure` / `__cis` /
     `__prospectus`) stripped.
 
-The recommendation-fit gate (retrieval_filters.dedup_by_policy) used to key
-ONLY on the exact `policy_id`, so two chunks for the SAME product but with
-different ids — a marketing rename ("my:Optima Secure" vs
-"my:Optima Secure (older variant)") or two doctype siblings
-(`...__wordings` vs `...__brochure`) — were both emitted as separate CITED
-cards (audit personas P2/P4/P7). The marketplace and the recommender
-disagreed on what "the same policy" means.
+Both the marketplace endpoint (`main.py /api/policies/all`) and the
+recommendation-fit gate (retrieval_filters.dedup_by_policy) key on this
+rule, so two chunks for the SAME product with different ids — a marketing
+rename ("my:Optima Secure" vs "my:Optima Secure (older variant)") or two
+doctype siblings (`...__wordings` vs `...__brochure`) — collapse to one
+identity and the two surfaces agree on what "the same policy" means.
 
 This module factors that one rule so BOTH surfaces share it. It is
 deliberately dependency-free (no FastAPI / Chroma import) so

@@ -791,17 +791,14 @@ def _profile_tuned_weights(profile: Optional[dict]) -> dict[str, float]:
 def profile_completeness(profile: Optional[dict]) -> float:
     """0.0–1.0 measure of how much we know about the buyer.
 
-    KI-252 (2026-05-15): aligned with Path B's `_REQUIRED_FOR_READY` 7-slot
-    list (see brain_tools.py + single_brain.py). Previously this checked 9
-    weighted fields including budget_band / existing_cover_inr /
-    parents_age_max which Path B doesn't gather, causing the UI bar to read
-    70% while Path B already considered the profile "ready to recommend".
+    Aligned with the `_REQUIRED_FOR_READY` 7-slot list (see brain_tools.py
+    + single_brain.py) so this measure agrees with the brain's "ready to
+    recommend" gate.
 
     The 7 slots: name, age, dependents, location_tier, income_band,
     primary_goal, health_conditions. `name` is the identifier; the other 6
     are decision-critical for retrieval. Existing-cover and budget-band are
-    captured opportunistically (Rajesh provided existing_cover_inr in turn 1)
-    but are NOT required to recommend.
+    captured opportunistically but are NOT required to recommend.
 
     Used by the frontend to GATE the personalized scorecard view — until
     completeness >= 0.6, we show insurer-level metrics (CSR, complaints —

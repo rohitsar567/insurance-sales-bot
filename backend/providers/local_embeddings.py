@@ -7,8 +7,8 @@ Default model: BAAI/bge-small-en-v1.5 — 384-dim, ~110MB, top-of-class on
 MTEB English benchmark for its size. Faster than 1024-dim cloud models on
 CPU and trivially small on GPU.
 
-The interface matches EmbeddingsProvider exactly, so the orchestrator and
-RAG pipeline don't change — just the import in ingest/retrieve.
+The interface matches EmbeddingsProvider exactly, so the RAG pipeline
+doesn't change — only the import in ingest/retrieve.
 """
 
 from __future__ import annotations
@@ -73,10 +73,10 @@ class LocalEmbeddings(EmbeddingsProvider):
             texts = [f"Represent this sentence for searching relevant passages: {t}" for t in texts]
         # Batch size scales by device: MPS / CUDA throughput benefits from
         # bigger batches; CPU prefers smaller to avoid memory pressure on M1.
-        # KI-125 (2026-05-15): bumped MPS 64→128 to halve the number of GPU
-        # kernel launches during bulk re-ingest. 800-token chunks at 128 ≈
-        # 100 MB per batch — still well within Mac M-series unified memory.
-        # CPU stays at 32 to keep peak RSS bounded on machines without a GPU.
+        # MPS/CUDA use batch 128 to minimise GPU kernel launches during
+        # bulk re-ingest (800-token chunks at 128 ≈ 100 MB per batch, well
+        # within Mac M-series unified memory). CPU stays at 32 to keep peak
+        # RSS bounded on machines without a GPU.
         batch = 128 if self.device in ("mps", "cuda") else 32
         vectors = self.model.encode(
             texts,

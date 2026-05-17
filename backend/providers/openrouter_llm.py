@@ -40,7 +40,7 @@ OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 DEFAULT_MODEL = "openai/gpt-oss-120b"
 
 
-# A4 (2026-05-15) — OpenRouter free-pool helpers.
+# OpenRouter free-pool helpers.
 #
 # `:free` suffix is OpenRouter's documented marker for zero-cost models.
 # We use this both to:
@@ -61,8 +61,8 @@ def is_free_model(model_id: str) -> bool:
 
 
 def order_free_pool(models: list[str]) -> list[str]:
-    """A4 (2026-05-15) — Return `models` in a STABLE, deterministic order
-    suitable for OpenRouter's `models=[...]` server-side fallback list.
+    """Return `models` in a STABLE, deterministic order suitable for
+    OpenRouter's `models=[...]` server-side fallback list.
 
     Sort key: (length-of-id ascending, id ascending). Shorter ids tend to
     correlate with smaller / cheaper models on OpenRouter's catalogue
@@ -77,7 +77,7 @@ def order_free_pool(models: list[str]) -> list[str]:
 
 
 def enforce_free_pool(models: list[str]) -> list[str]:
-    """A4 (2026-05-15) — Cost guard: reject paid models in a free-pool call.
+    """Cost guard: reject paid models in a free-pool call.
 
     Raises ValueError listing any non-`:free` entries. Returns the
     deterministically-ordered free pool on success.
@@ -131,7 +131,7 @@ class OpenRouterLLM(LLMProvider):
         routing; if `models` is omitted the lone `model` field is used).
         Reference: https://openrouter.ai/docs/features/model-routing
 
-        A4 (2026-05-15) — `free_only=True` activates the cost guard:
+        `free_only=True` activates the cost guard:
           - rejects any non-`:free` model in `models` (raises ValueError)
           - reorders the survivors via `order_free_pool` for stable, smaller-
             first preference. The single-model `self.model` is checked too
@@ -196,8 +196,8 @@ class OpenRouterLLM(LLMProvider):
                     continue
                 resp.raise_for_status()
                 break
-            # KI-085 (2026-05-15) — opportunistic between-poll signal from
-            # OpenRouter response headers. The authoritative truth (usd_balance)
+            # Opportunistic between-poll signal from OpenRouter response
+            # headers. The authoritative truth (usd_balance)
             # comes from poll_openrouter_credits() every 10 min; this is a
             # finer-grained per-call backup that catches per-minute bucket
             # exhaustion before the next poll tick.
@@ -232,16 +232,9 @@ class OpenRouterLLM(LLMProvider):
 # a sane single-model default; callers that want server-side fallback should
 # pass `models=[...]` to `chat()`.
 #
-# Model IDs verified against the LIVE OpenRouter catalog
-# (GET /api/v1/models, 2026-05-15). The model IDs from the KI-176 brief
-# (gemini-2.0-flash-exp:free, llama-3.3-70b-instruct:free,
-# hermes-3-llama-3.1-405b:free) were checked:
-#   - gemini-2.0-flash-exp:free                 — NOT in catalog
-#   - llama-3.3-70b-instruct:free               — PRESENT but no response_format
-#   - hermes-3-llama-3.1-405b:free              — PRESENT but no response_format
-# So those would silently lose JSON mode. The IDs below are the actual
-# free-tier set that declare `response_format` (and most also
-# `structured_outputs`) in their `supported_parameters`:
+# The free-tier model IDs below are the set that declare `response_format`
+# (and most also `structured_outputs`) in their `supported_parameters`,
+# so JSON mode is preserved:
 #   - nvidia/nemotron-3-super-120b-a12b:free    (120B, structured_outputs)
 #   - qwen/qwen3-next-80b-a3b-instruct:free     (80B,  structured_outputs)
 #   - google/gemma-4-31b-it:free                (31B,  response_format)
@@ -259,7 +252,7 @@ def get_openrouter_llm(
     model: str = DEFAULT_FREE_BRAIN_MODEL,
     timeout: float = 60.0,
 ) -> "OpenRouterLLM":
-    """Return a fresh OpenRouterLLM ready for sales_brain.
+    """Return a fresh OpenRouterLLM client.
 
     The returned client is single-use-shaped (one chat() call per turn) and
     intended to be passed `models=[primary, fallback1, fallback2]` so the

@@ -19,12 +19,9 @@ class Settings:
     # Provider keys
     SARVAM_API_KEY: str = os.environ.get("SARVAM_API_KEY", "")
     VOYAGE_API_KEY: str = os.environ.get("VOYAGE_API_KEY", "")
-    # NVIDIA NIM — single provider hosting the entire reasoning stack:
-    #   Brain  = meta/llama-3.3-70b-instruct
-    #   Judge  = meta/llama-4-maverick-17b-128e-instruct (different arch from brain)
-    # Free tier: 40 req/min, no daily cap, no card. Replaces OpenRouter +
-    # direct DeepSeek + Cerebras + Groq (four legacy providers retired
-    # 2026-05-14 in favor of single-provider consolidation — see D-019).
+    # NVIDIA NIM — single provider hosting the reasoning stack (brain +
+    # judge; concrete model IDs are set on NVIDIA_NIM_*_MODEL below).
+    # Free tier: 40 req/min, no daily cap, no card.
     NVIDIA_NIM_API_KEY: str = os.environ.get("NVIDIA_NIM_API_KEY", "")
 
     # CROSS-PROVIDER FALLBACKS — last-resort entries appended to BRAIN_CHAIN +
@@ -38,7 +35,7 @@ class Settings:
     OPENROUTER_API_KEY: str = os.environ.get("OPENROUTER_API_KEY", "")
     GROQ_API_KEY: str = os.environ.get("GROQ_API_KEY", "")
 
-    # Sarvam endpoints (voice STT/TTS + Indic translation only — not brain anymore)
+    # Sarvam endpoints (voice STT/TTS + Indic translation only)
     SARVAM_BASE_URL: str = "https://api.sarvam.ai"
     SARVAM_STT_PATH: str = "/speech-to-text"
     SARVAM_TTS_PATH: str = "/text-to-speech"
@@ -48,15 +45,15 @@ class Settings:
     SARVAM_STT_MODEL: str = "saarika:v2.5"
     SARVAM_TTS_MODEL: str = "bulbul:v2"
     SARVAM_TTS_SPEAKER: str = "anushka"  # natural female advisor voice
-    SARVAM_LLM_MODEL: str = "sarvam-m"  # used by translator.py for Indic translation
+    SARVAM_LLM_MODEL: str = "sarvam-m"  # Sarvam model for Indic translation
 
-    # Voyage (legacy — embeddings now via local BGE; kept for back-compat with extracted/ artifacts)
+    # Voyage — embeddings run on local BGE; this is kept for back-compat
+    # with existing extracted/ artifacts.
     VOYAGE_MODEL: str = "voyage-3"
 
-    # NVIDIA NIM (single source of truth for brain + judge — tiered routing)
-    # 2026-05-14 brain swap (D-022): DeepSeek-V4 + Meta Llama NIM pools time out
-    # repeatedly. Qwen 3-Next 80B + Mistral Large 3 are the working production
-    # models on NIM free tier as of 2026-05-14.
+    # NVIDIA NIM (single source of truth for brain + judge — tiered
+    # routing). Qwen 3-Next 80B + Mistral Large 3 are the production
+    # models on NIM free tier.
     NVIDIA_NIM_BASE_URL: str = "https://integrate.api.nvidia.com/v1"
     NVIDIA_NIM_BRAIN_MODEL: str = "qwen/qwen3-next-80b-a3b-instruct"
     NVIDIA_NIM_FAST_BRAIN_MODEL: str = "qwen/qwen3-next-80b-a3b-instruct"
@@ -67,12 +64,9 @@ class Settings:
     EXTRACTED_DIR: Path = ROOT / "rag" / "extracted"
     VECTORS_DIR: Path = ROOT / "rag" / "vectors"
     STRUCTURED_DB: Path = ROOT / "rag" / "policies.duckdb"
-    # Single source of truth for the curated-facts directory. Previously the
-    # literal "40-data" was hardcoded independently in ~13 runtime modules
-    # (admin/marketplace/scorecard/premium/profile/llm-health/brain-tools).
-    # Every one of those expressions resolved to <repo_root>/40-data, so this
-    # constant is a behaviour-preserving consolidation, not a path change.
-    # The directory name is intentionally kept (parallel to 70-docs/80-audit).
+    # Single source of truth for the curated-facts directory. Resolves to
+    # <repo_root>/40-data; the directory name is intentionally kept
+    # (parallel to 70-docs/80-audit).
     DATA_DIR: Path = ROOT / "40-data"
 
     # Tunables (overrideable via env vars so the hyperparameter sweep can iterate)
@@ -80,7 +74,7 @@ class Settings:
     CHUNK_OVERLAP_TOKENS: int = int(os.environ.get("CHUNK_OVERLAP_TOKENS", "120"))
     RAG_TOP_K: int = int(os.environ.get("RAG_TOP_K", "5"))
 
-    # Quarantine TTL (2026-05-16) — user-uploaded PDFs live in the SEPARATE
+    # Quarantine TTL — user-uploaded PDFs live in the SEPARATE
     # `user_uploads_quarantine` Chroma collection. They are NOT durable
     # corpus; a session's upload is auto-purged after this many seconds of
     # no further uploads from that session, so the quarantine index can't

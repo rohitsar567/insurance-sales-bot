@@ -1,19 +1,12 @@
-"""Live NIM model health monitor — OpenRouter-style availability filter
-+ KI-080 sticky primary/backup election.
+"""Live NIM model health monitor — availability filter + sticky
+primary/backup election.
 
-Architectural shift (KI-080, 2026-05-15):
-==========================================
-Pre-KI-080 the chain was iterated EVERY chat turn — primary, fallback 1,
-fallback 2, ... until one succeeded. Under NIM per-key concurrency throttling,
-the first 5 NIM-hosted candidates queued together inside a single turn,
-burning the 22s budget before the cross-provider fallback links (Groq /
-OpenRouter) were ever reached. The 10-turn live probe at commit 078ff45
-showed 7/10 fact-find turns timing out at exactly 26.6s.
-
-KI-080 inverts the model: the background probe loop ELECTS a primary +
-backup per chain based on real probe latencies; chat() calls the elected
-primary ONCE per turn, with at most ONE real-time fallback to the elected
-backup. Worst case per turn drops from 5-6 LLM calls to 1-2.
+The background probe loop ELECTS a primary + backup per chain; chat()
+calls the elected primary ONCE per turn, with at most ONE real-time
+fallback to the elected backup (worst case 1-2 LLM calls per turn).
+Electing out-of-band, rather than iterating the whole chain on every
+turn, keeps a single turn from queuing many NIM-hosted candidates under
+per-key concurrency throttling and burning the turn budget.
 
 Probes every PROBE_INTERVAL_SEC tick (300s) with a tiny ping ("Reply with
 exactly: ok"), `max_tokens=1` so probe-driven token spend is negligible.
@@ -27,24 +20,23 @@ Records per model:
   - probe_history:    last PROBE_HISTORY_LEN (ok, latency_ms) tuples; powers
                       the success_rate signal in the election score.
 
-Election (KI-201, 2026-05-15 — supersedes KI-080/KI-087 score-based election):
-  - Walk the chain definition (BRAIN_CHAIN — the only chain after the
-    three-chain collapse on 2026-05-15) in priority order.
+Election:
+  - Walk the chain definition (BRAIN_CHAIN — the only chain) in priority
+    order.
     CURRENT_PRIMARY = first election-eligible model.
     CURRENT_BACKUP  = next election-eligible model after primary.
   - Chain hierarchy IS the truth — nemotron-49b is LAST in BRAIN_CHAIN so
     it only serves when qwen + mistral + maverick are all unavailable.
-  - Latency / success_rate still gate ELIGIBILITY (probe-fresh, not in
-    sin-bin, credits above water) but no longer drive ORDERING. Pre-KI-201
-    the (1/latency)×success_rate score let a chain-#3 model beat chain-#0
-    on a faster probe, violating the operator-defined hierarchy.
+  - Latency / success_rate gate ELIGIBILITY (probe-fresh, not in
+    sin-bin, credits above water) but do not drive ORDERING, so a faster
+    lower-priority model never beats a higher-priority one.
   - DEGRADED window: when chat() calls report_failure(model), that model is
     sidelined for either DEGRADED_WINDOW_SEC (transient, 30s) or
-    DEGRADE_DURATION_LONG_S (rate-limit / HTTP 429, 1h — KI-084) so the
-    same turn's failure doesn't recycle to the same broken primary on the
-    next turn. The next probe tick reconsiders the model normally for the
-    short window; rate-limit demotions persist past several probe ticks
-    so the elector doesn't keep bouncing back to a quota-exhausted model.
+    DEGRADE_DURATION_LONG_S (rate-limit / HTTP 429, 1h) so the same turn's
+    failure doesn't recycle to the same broken primary on the next turn.
+    The next probe tick reconsiders the model normally for the short
+    window; rate-limit demotions persist past several probe ticks so the
+    elector doesn't keep bouncing back to a quota-exhausted model.
 
 Persistence: 40-data/llm_health.json (atomic write via temp+rename).
 
@@ -87,57 +79,49 @@ ROOT = Path(__file__).resolve().parent.parent
 HEALTH_FILE = settings.DATA_DIR / "llm_health.json"
 HEALTH_FILE.parent.mkdir(parents=True, exist_ok=True)
 
-# KI-084 (2026-05-15) — probe cadence raised 60s → 300s. With ~25
-# candidates per tick × 4 token round-trip each (prompt "Reply with
-# exactly: ok" plus a 1-token completion), the prior 60s cadence burned
-# ~30-50K tokens/day on Groq alone — enough to push the brain to HTTP 429
-# on Groq's 100K free-tier TPD cap and elect a degraded provider for
-# every chat call. 300s cadence keeps election responsive within 5 min
-# of a pool degradation (more than fast enough at our chat volume) and
-# drops probe-driven Groq spend to ~3K/day baseline (well inside quota).
+# Probe cadence 300s. With ~25 candidates per tick × a 4-token round-trip
+# each, a tighter cadence would burn enough tokens/day on Groq to push the
+# brain to HTTP 429 on Groq's free-tier TPD cap. 300s keeps election
+# responsive within 5 min of a pool degradation (fast enough at our chat
+# volume) and keeps probe-driven Groq spend well inside quota.
 PROBE_INTERVAL_SEC = 300
-# A4 (2026-05-15) — cadence audit: 300s for steady-state probes is comfortably
-# above the audit's 90s minimum for non-failing providers. The post-failure
-# tighter cadence is implemented OUT-OF-BAND in `report_failure()`, which
-# schedules a `_reprobe_one()` immediately after every chat failure (effective
-# 0s after-failure cadence on the loop, not 30s). The 300s cadence then
-# resumes for the long-run probe stream so the steady state stays cheap.
-PROBE_INTERVAL_SEC_FAILING = 30   # A4 — documented post-failure cadence ceiling
-# KI-084 — completion size on probes cut from 5 → 1. The probe only
-# needs a non-empty 200 response to mark a candidate healthy; we never
-# parse the body content. max_tokens=1 keeps the same response shape +
-# ~50× less token spend per probe.
+# 300s for steady-state probes. The post-failure tighter cadence is
+# implemented OUT-OF-BAND in `report_failure()`, which schedules a
+# `_reprobe_one()` immediately after every chat failure (effective 0s
+# after-failure cadence on the loop). The 300s cadence then resumes for
+# the long-run probe stream so the steady state stays cheap.
+PROBE_INTERVAL_SEC_FAILING = 30   # post-failure cadence ceiling
+# The probe only needs a non-empty 200 response to mark a candidate
+# healthy; the body content is never parsed. max_tokens=1 keeps the same
+# response shape with minimal token spend per probe.
 PROBE_MAX_TOKENS = 1
 PROBE_TIMEOUT_SEC = 8             # per-probe HTTP timeout
 DOWN_AFTER_CONSECUTIVE_FAILS = 3  # 3 fails in a row = mark down
 PROBE_HISTORY_LEN = 5             # rolling window for success_rate signal
-HEALTHY_PROBE_AGE_SEC = 600       # KI-084 — election candidates need a probe
-                                  # within the last 600s (tracks 300s cadence
-                                  # plus headroom for one missed tick).
-# A4 (2026-05-15) — explicit STALE window. If a candidate hasn't been probed
-# in >STALE_AGE_SEC, its on-record status is rewritten to "stale" so the
-# router treats it as untested rather than trusting the last-known
+HEALTHY_PROBE_AGE_SEC = 600       # election candidates need a probe within
+                                  # the last 600s (tracks 300s cadence plus
+                                  # headroom for one missed tick).
+# Explicit STALE window. If a candidate hasn't been probed in
+# >STALE_AGE_SEC, its on-record status is rewritten to "stale" so the
+# router treats it as untested rather than trusting a last-known
 # "healthy"/"unhealthy" verdict from minutes/hours ago.
 STALE_AGE_SEC = HEALTHY_PROBE_AGE_SEC  # alias for clarity; same threshold.
 DEGRADED_WINDOW_SEC = 30          # report_failure sidelines a model this long
                                   # for transient failures (timeout / 5xx).
 
-# Three-chain collapse (2026-05-15) — collapsed FAST_BRAIN_CHAIN + JUDGE_CHAIN
-# out of the architecture. "brain" is now the sole election role; every
-# consumer that used to iterate ("brain", "fast_brain", "judge") now iterates
-# ROLES so we only have one place to add a future role.
+# "brain" is the sole election role; consumers iterate ROLES so a future
+# role only needs to be added in one place.
 ROLES: tuple[str, ...] = ("brain",)
-# KI-084 — rate-limit failures (HTTP 429 + provider 'RateLimit' bodies) are
+# Rate-limit failures (HTTP 429 + provider 'RateLimit' bodies) are
 # almost always the daily quota on free tiers (Groq TPD, etc.) — they do
 # NOT reset in 30s. Demote the model from election for an hour so the
 # elector falls through to a non-rate-limited provider instead of
 # bouncing back to the dead candidate on every chat turn.
 DEGRADE_DURATION_LONG_S = 3600.0
 
-# KI-085 (2026-05-15) — proactive credit tracking. KI-084 demotes a candidate
-# for 1h AFTER a 429 hits; that costs one user-facing failure per dead quota.
-# KI-085 promotes llm_health to liveness+credits so election excludes
-# quota-exhausted candidates BEFORE the user gets stuck behind a 429.
+# Proactive credit tracking: election excludes quota-exhausted candidates
+# BEFORE the user gets stuck behind a 429 (rather than only demoting a
+# candidate for 1h after a 429 hits).
 #
 # Three signal sources:
 #   1) GROQ — response headers (x-ratelimit-remaining-tokens-day etc.) on
@@ -203,8 +187,8 @@ def _headers_for(model_id: str, api_key: str) -> dict[str, str]:
     return h
 
 
-# KI-202 (2026-05-15) — categorize a `last_error` string + optional HTTP
-# status code into the short operator-facing reason rendered by the admin
+# Categorize a `last_error` string + optional HTTP status code into the
+# short operator-facing reason rendered by the admin
 # Health columns. Centralised here so backend and any other consumer agree
 # on the same vocabulary ("network issue" / "rate limit (429)" / etc.).
 # Use lookbehind/lookahead on non-digit so we still match e.g. "Status429",
@@ -309,8 +293,8 @@ def provider_of(model_id: str) -> str:
 @dataclass
 class ModelHealth:
     model: str
-    # A4 (2026-05-15) — 'stale' added. Set by `effective_status()` when a
-    # row hasn't been pinged in > STALE_AGE_SEC; the router then treats it
+    # 'stale' is set by `effective_status()` when a row hasn't been pinged
+    # in > STALE_AGE_SEC; the router then treats it
     # as untested instead of trusting a last-known healthy/unhealthy verdict
     # from minutes/hours ago. Persisted records may still carry the older
     # status — the elector calls effective_status() at decision time.
@@ -318,8 +302,8 @@ class ModelHealth:
     last_success_at: Optional[str] = None
     last_failure_at: Optional[str] = None
     last_error: Optional[str] = None
-    # KI-202 (2026-05-15) — explicit HTTP status code from the most recent
-    # failed probe / chat call. `last_error` is a free-form string ("timeout",
+    # Explicit HTTP status code from the most recent failed probe / chat
+    # call. `last_error` is a free-form string ("timeout",
     # "http_429", "net: TimeoutException: ..."); `last_status_code` is the
     # parsed integer (or None when the failure wasn't HTTP-shaped). Surfaced
     # in admin Health columns so the operator can see "Off — rate limit (429)"
@@ -335,7 +319,7 @@ class ModelHealth:
     # KI-080 — set by report_failure(); model is excluded from election
     # while monotonic time < degraded_until_monotonic.
     degraded_until_monotonic: float = 0.0
-    # KI-085 (2026-05-15) — proactive credit tracking. Stamped by
+    # Proactive credit tracking. Stamped by
     # update_credits_from_groq / update_credits_from_openrouter (response
     # headers + account endpoint) and by the NIM local rate-meter. The
     # elector gates on `credits_remaining is None OR > credits_low_water`
@@ -364,8 +348,7 @@ def _iso_age_seconds(iso_ts: Optional[str]) -> Optional[float]:
 
 
 def _all_known_models() -> list[str]:
-    """Pull every model name from BRAIN_CHAIN (the only remaining chain
-    after the three-chain collapse on 2026-05-15)."""
+    """Pull every model name from BRAIN_CHAIN (the only chain)."""
     from backend.providers.nvidia_nim_llm import BRAIN_CHAIN
     seen: list[str] = []
     for m in BRAIN_CHAIN:
@@ -378,9 +361,8 @@ def _chain_for(chain_name: str) -> list[str]:
     """Resolve a chain name → live chain list. Reads off the module so
     runtime admin reorderings are respected by the elector.
 
-    Three-chain collapse (2026-05-15): "brain" is the only valid role.
-    Any other input is coerced to "brain" for back-compat with stragglers
-    that still pass "fast_brain"/"judge" (CLEAN1 nim_fallback callers etc.).
+    "brain" is the only valid role. Any other input is coerced to "brain"
+    for back-compat with callers that pass another role name.
     """
     from backend.providers import nvidia_nim_llm as nim
     return list(getattr(nim, "BRAIN_CHAIN", []))
@@ -408,9 +390,9 @@ def _load_into_memory() -> None:
             try:
                 raw = json.loads(HEALTH_FILE.read_text())
                 for k, v in raw.get("models", {}).items():
-                    # Tolerate older schema (pre-KI-080 records missing
-                    # probe_history / degraded_until_monotonic; pre-KI-085
-                    # records missing the five credits_* fields).
+                    # Tolerate older on-disk schema: records may be missing
+                    # probe_history / degraded_until_monotonic or the five
+                    # credits_* fields.
                     v.setdefault("probe_history", [])
                     v.setdefault("degraded_until_monotonic", 0.0)
                     v.setdefault("last_status_code", None)
@@ -437,7 +419,7 @@ def save(state: Optional[dict[str, ModelHealth]] = None) -> None:
     """Atomic write — temp file then rename so concurrent readers never see partial.
 
     If `state` is None, persists the in-memory _STATE. The optional arg is
-    kept for backward compatibility with the pre-KI-080 call sites in admin.py."""
+    kept for backward compatibility with call sites in admin.py."""
     if state is None:
         _load_into_memory()
         with _STATE_LOCK:
@@ -452,7 +434,7 @@ def save(state: Optional[dict[str, ModelHealth]] = None) -> None:
 
 
 # ---------------------------------------------------------------------------
-# KI-080 — public API: primary/backup election + failure/success reporting
+# Public API: primary/backup election + failure/success reporting
 # ---------------------------------------------------------------------------
 
 def _success_rate(h: ModelHealth) -> float:
@@ -478,8 +460,8 @@ def _score(h: ModelHealth) -> float:
 
 
 def effective_status(h: ModelHealth) -> str:
-    """A4 (2026-05-15) — Return the routing-relevant status, applying the
-    STALE_AGE_SEC override at read time.
+    """Return the routing-relevant status, applying the STALE_AGE_SEC
+    override at read time.
 
     A stored `status` of "healthy" can mean "the last probe N hours ago
     said this was healthy" — which the router must NOT trust. When
@@ -501,11 +483,10 @@ def _is_election_eligible(h: ModelHealth, now_mono: float) -> bool:
       - status is healthy (or degraded with a recent success)
       - last probe was within HEALTHY_PROBE_AGE_SEC
       - it is NOT currently in the degraded-window sin-bin
-      - KI-085 (2026-05-15): it has credits remaining above its low-water
-        mark, OR no credit signal yet (cold-start = permissive).
-      - A4 (2026-05-15): effective_status != "stale" (catches the case
-        where status field is 'healthy' but the probe is older than
-        STALE_AGE_SEC).
+      - it has credits remaining above its low-water mark, OR no credit
+        signal yet (cold-start = permissive).
+      - effective_status != "stale" (catches the case where the status
+        field is 'healthy' but the probe is older than STALE_AGE_SEC).
     """
     if h.degraded_until_monotonic > now_mono:
         return False
@@ -528,7 +509,7 @@ def _is_election_eligible(h: ModelHealth, now_mono: float) -> bool:
 
 
 def _has_credits(h: ModelHealth, now_mono: float) -> bool:
-    """KI-085 — credit-gate predicate for election eligibility.
+    """Credit-gate predicate for election eligibility.
 
     Rules:
       - If `credits_reset_at` has elapsed, treat the signal as stale and
@@ -565,7 +546,7 @@ def _ranked_candidates(chain_name: str) -> list[ModelHealth]:
     return [h for _, h in eligible]
 
 
-# A4 (2026-05-15) — Election event log. Tracks the last elected primary/
+# Election event log. Tracks the last elected primary/
 # backup per chain so we can emit a structured promotion/demotion log line
 # when the elected model changes. Stored in-memory only (cheap; resets on
 # process restart, which is fine — first post-restart election re-emits).
@@ -575,8 +556,8 @@ _LAST_ELECTION: dict[str, dict[str, Optional[str]]] = {}
 
 def _emit_election_event(chain_name: str, role: str, from_m: Optional[str],
                           to_m: Optional[str], reason: str) -> None:
-    """A4 (2026-05-15) — Structured log line for every primary/backup
-    promotion or demotion. Format matches the audit brief:
+    """Structured log line for every primary/backup promotion or
+    demotion. Format:
         {event, chain, role, from, to, reason, ts}
     The router / admin UI / log-shipper can grep on `event=election` to
     rebuild the timeline of who served what when.
@@ -617,28 +598,22 @@ def _record_election(chain_name: str, role: str, new_model: Optional[str],
 
 
 def get_primary(chain_name: str) -> Optional[str]:
-    """KI-201 (2026-05-15) — elect by CHAIN ORDER, not latency score.
+    """Elect by CHAIN ORDER, not latency score.
 
     Walk the chain definition in priority order. Return the first model
     that's election-eligible. Chain hierarchy IS the truth — e.g. in
     BRAIN_CHAIN, nemotron-49b is LAST so it only serves when every
-    higher-priority model is unavailable (KI-175 last-resort rule).
+    higher-priority model is unavailable (last-resort rule).
 
-    Pre-KI-201 the elector picked by (1/latency) × success_rate, which
-    meant a chain-#3 model (maverick) could beat chain-#0 (qwen) on a
-    faster probe. Live evidence: all 4 NIM models healthy but elector
-    picked maverick over qwen. User-stated spec: "If a model is not
-    already in use, but at the backend everything is live, then it
-    should always suggest it according to our set hierarchy."
+    Latency is not used for primary/backup selection — eligibility
+    filtering uses the rolling probe state, but ordering is purely
+    chain-positional, so the hierarchy is always honoured when models
+    are live.
 
-    Latency is no longer used for primary/backup selection — eligibility
-    filtering still uses the rolling probe state, but ordering is
-    purely chain-positional.
-
-    A4 (2026-05-15) — emits a structured `event=election` log line via
-    `_record_election` whenever the elected primary changes for this
-    chain, so the operator/admin/log-shipper can rebuild the promotion/
-    demotion timeline. No log emit when the value is unchanged.
+    Emits a structured `event=election` log line via `_record_election`
+    whenever the elected primary changes for this chain, so the
+    operator/admin/log-shipper can rebuild the promotion/demotion
+    timeline. No log emit when the value is unchanged.
     """
     chain = _chain_for(chain_name)
     if not chain:
@@ -657,19 +632,18 @@ def get_primary(chain_name: str) -> Optional[str]:
 
 
 def get_backup(chain_name: str) -> Optional[str]:
-    """KI-201 (2026-05-15) — backup is the SECOND eligible model in chain
-    order, skipping the elected primary.
+    """Backup is the SECOND eligible model in chain order, skipping the
+    elected primary.
 
     Walks the chain definition in priority order, skips the elected
     primary, and returns the next eligible model. Same chain-as-truth
-    philosophy as get_primary: the chains in nvidia_nim_llm.py were
-    designed with family/provider diversity baked in (Qwen → Mistral →
-    Meta → NVIDIA), so walking past the primary in chain order naturally
-    preserves the cross-family backup invariant KI-087 used to enforce
-    via provider_of().
+    philosophy as get_primary: the chains in nvidia_nim_llm.py are
+    designed with family/provider diversity (Qwen → Mistral → Meta →
+    NVIDIA), so walking past the primary in chain order naturally keeps
+    the backup on a different family from the primary.
 
-    A4 (2026-05-15) — emits a structured `event=election` log line via
-    `_record_election` whenever the elected backup changes.
+    Emits a structured `event=election` log line via `_record_election`
+    whenever the elected backup changes.
     """
     chain = _chain_for(chain_name)
     if not chain:
@@ -875,7 +849,7 @@ def update_credits_from_groq(chain_name: str, model: str, headers: dict) -> None
     Called from GroqLLM.chat() after a successful HTTP response. The
     `headers` dict is the response's headers (case-insensitive via httpx).
     We prefer the DAILY tokens signal (`x-ratelimit-remaining-tokens-day`)
-    because Groq's free-tier daily TPD cap is what bit us in KI-084.
+    because Groq's free-tier daily TPD cap is the binding limit.
 
     Missing header → no-op. Malformed value → log warning + no-op.
     """
@@ -1097,8 +1071,8 @@ async def poll_openrouter_credits() -> Optional[dict]:
 
 
 # ---------------------------------------------------------------------------
-# Probing (mostly unchanged from pre-KI-080 — extended to record
-# probe_history + skip degraded-window models on the regular tick).
+# Probing — records probe_history + skips degraded-window models on the
+# regular tick.
 # ---------------------------------------------------------------------------
 
 async def probe_one(client: httpx.AsyncClient, model: str, api_key: str) -> tuple[bool, str, Optional[int]]:
@@ -1198,29 +1172,19 @@ async def probe_all() -> dict[str, ModelHealth]:
     """One-shot probe of every known model. Updates persisted state + returns it."""
     _load_into_memory()
     models = _all_known_models()
-    # Per-provider keys are resolved inside probe_one(); we no longer
-    # gate the whole loop on the NIM key (KI-080) — cross-provider
-    # candidates must keep getting probed even when NVIDIA_NIM_API_KEY
-    # is missing.
+    # Per-provider keys are resolved inside probe_one(); the loop is not
+    # gated on the NIM key so cross-provider candidates keep getting
+    # probed even when NVIDIA_NIM_API_KEY is missing.
 
-    # KI-088 (2026-05-15) — Probe candidates serially, not in parallel.
+    # Probe candidates serially, not in parallel. Candidates share the
+    # same per-API-key concurrency quota (~3-5 slots free-tier), so a
+    # parallel burst every 300s would queue inside NIM and steal slots
+    # from in-flight user turns. A serial loop is simple to reason about
+    # and naturally yields control to user traffic between candidates.
     #
-    # Pre-KI-088: `asyncio.gather(*probe_one(m) for m in models)` fired
-    # all candidates simultaneously. Even though they hit different NIM
-    # *model pools*, they all share the same per-API-key concurrency
-    # quota (~3-5 slots free-tier). A 6-candidate parallel burst every
-    # 300s would queue inside NIM and steal slots from in-flight user
-    # turns — exactly the saturation pattern the global outbound
-    # semaphore in nvidia_nim_llm.py is sized to prevent.
-    #
-    # With KI-088's semaphore in place, parallel gather would still
-    # be hard-capped at 2 in-flight but introduce no benefit over a
-    # serial loop. Serial is simpler, easier to reason about, and
-    # naturally yields control to user-traffic between candidates.
-    #
-    # Cost: 6 NIM candidates × ~2s healthy probe = ~12s, well under
-    # the 300s probe cadence. No sleep between candidates — the
-    # outbound semaphore handles pacing.
+    # Cost: ~6 NIM candidates × ~2s healthy probe = ~12s, well under the
+    # 300s probe cadence. No sleep between candidates — the outbound
+    # semaphore handles pacing.
     async with httpx.AsyncClient() as client:
         results = []
         for m in models:
@@ -1260,8 +1224,8 @@ def status_summary() -> dict:
     state = load()
     summary = {"updated_at": None, "by_status": {"healthy": 0, "degraded": 0, "down": 0, "stale": 0, "unknown": 0}, "models": []}
     for m, h in state.items():
-        # A4 (2026-05-15) — `effective_status` applies the STALE_AGE_SEC
-        # override at read time so the admin UI / router see "stale" for
+        # `effective_status` applies the STALE_AGE_SEC override at read
+        # time so the admin UI / router see "stale" for
         # rows whose stored 'healthy' verdict is older than STALE_AGE_SEC.
         eff = effective_status(h)
         summary["by_status"][eff] = summary["by_status"].get(eff, 0) + 1
@@ -1294,9 +1258,9 @@ def status_summary() -> dict:
     summary["models"].sort(key=lambda x: (x["status"] != "healthy", x["model"]))
     if summary["models"]:
         summary["updated_at"] = max((m.get("tested_at") or "") for m in summary["models"])
-    # KI-080 — surface currently-elected primary/backup per chain for the
-    # admin UI. Cheap (a couple of dict lookups + sort over <=10 entries).
-    # Three-chain collapse (2026-05-15) — "brain" is the only remaining role.
+    # Surface currently-elected primary/backup per chain for the admin UI.
+    # Cheap (a couple of dict lookups + sort over <=10 entries). "brain"
+    # is the only role.
     summary["elections"] = {
         role: {"primary": get_primary(role), "backup": get_backup(role)}
         for role in ROLES
@@ -1305,14 +1269,14 @@ def status_summary() -> dict:
 
 
 async def background_probe_loop() -> None:
-    """Long-running task — probes every PROBE_INTERVAL_SEC (300s; KI-084).
+    """Long-running task — probes every PROBE_INTERVAL_SEC (300s).
     Started from main.py.
 
-    KI-085 (2026-05-15) — also polls OpenRouter's account-level credits
-    endpoint every OPENROUTER_CREDITS_POLL_EVERY_N_TICKS ticks (10 min by
-    default at the 300s probe cadence). Groq + NIM signals come from the
-    chat hot path (response headers + local rate-meter respectively) so
-    only OpenRouter needs an out-of-band poll.
+    Also polls OpenRouter's account-level credits endpoint every
+    OPENROUTER_CREDITS_POLL_EVERY_N_TICKS ticks (10 min by default at the
+    300s probe cadence). Groq + NIM signals come from the chat hot path
+    (response headers + local rate-meter respectively) so only OpenRouter
+    needs an out-of-band poll.
     """
     tick = 0
     # Initial credits poll on startup so the elector has a non-None

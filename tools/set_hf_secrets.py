@@ -1,10 +1,9 @@
 """Programmatically set HF Space secrets via the official HF API.
 
 No browser needed. Reads keys from local .env and pushes them as Space
-secrets so the deployed app can authenticate. Post-D-019 (Stack A
-consolidation): only Sarvam + Voyage + NVIDIA NIM keys are required.
-Legacy GROQ/OPENROUTER/CEREBRAS/DEEPSEEK keys are deleted from the Space
-to prevent confusion (they are no longer referenced by the code).
+secrets so the deployed app can authenticate. Only the keys in
+SECRETS_TO_SET below are pushed; any other provider keys are deleted
+from the Space to prevent confusion.
 
 Run:
   python tools/set_hf_secrets.py
@@ -23,15 +22,15 @@ ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(ROOT / ".env")
 
 REPO_ID = "rohitsar567/InsuranceBot"
-# Active secrets read by the running code (post-D-022 + admin panel):
-#   - SARVAM / NIM = the live providers
-#   - VOYAGE       = legacy (kept for back-compat with old extracted artifacts)
-#   - OPENROUTER / GROQ = optional cross-provider fallbacks (re-added 2026-05-14)
-#   - ADMIN_*      = control-panel gate (IP allowlist + password)
+# Active secrets read by the running code:
+#   - SARVAM / NIM / GOOGLE = the live providers
+#   - VOYAGE                = kept for back-compat with extracted artifacts
+#   - OPENROUTER / GROQ     = optional cross-provider fallbacks
+#   - ADMIN_*               = control-panel gate
 SECRETS_TO_SET = [
     "SARVAM_API_KEY", "VOYAGE_API_KEY", "NVIDIA_NIM_API_KEY",
     "OPENROUTER_API_KEY", "GROQ_API_KEY",
-    "GOOGLE_API_KEY",  # KI-179 (2026-05-15) — Gemini Flash via Google AI Studio
+    "GOOGLE_API_KEY",  # Gemini Flash via Google AI Studio
     "ADMIN_IP_ALLOWLIST", "ADMIN_PASSWORD",
 ]
 # Truly retired providers — delete from Space to prevent confusion.

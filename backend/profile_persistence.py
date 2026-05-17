@@ -230,13 +230,6 @@ def extract_potential_name(text: str) -> Optional[str]:
     return raw
 
 
-# NOTE 2026-05-17: `extract_name_in_context` + its `_ASSISTANT_ASKED_NAME_RE`
-# / `_BARE_NAME_ANSWER_RE` regexes (b87bd2d, KI-RECALL-FIX) were REMOVED with
-# the deterministic in-conversation recall scaffolding. `extract_potential_name`
-# (above) and `try_recall_by_name` (below) remain — they back the explicit
-# POST /api/profile/recall-by-name endpoint, not an in-chat short-circuit.
-
-
 def try_recall_by_name(session, name: str) -> bool:
     """Look up a stored profile by name and STAGE it for confirmation.
 

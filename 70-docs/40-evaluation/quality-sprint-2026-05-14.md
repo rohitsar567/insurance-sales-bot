@@ -1,5 +1,15 @@
 # Quality Sprint — 2026-05-14
 
+> ⚠️ **Historical sprint log — not the present-state map.** This records
+> dated quality work; the architecture described mid-log (`sales_brain` /
+> `fact_find_brain` / orchestrator / separate faithfulness judge / 3-tier
+> Gemini-2.0/2.5 + NIM/OpenRouter chain / sticky-primary election) was
+> subsequently superseded by the single-LLM-with-tools rewrite (one Gemini
+> 2.5-flash call per turn with `save_profile_field` / `retrieve_policies` /
+> `mark_recommendation`, structured+vector retrieval, small `nim_fallback`).
+> KI/ADR pointers below remain valid as history-of-record. Present-state
+> authority: [`README.md`](../../README.md) §4.
+
 One-day sprint focused on hardening the non-speech parts of the bot via
 code review, large-scale audit simulation, and real user-testing
 feedback. Every defect found in the same day shipped a fix in the same

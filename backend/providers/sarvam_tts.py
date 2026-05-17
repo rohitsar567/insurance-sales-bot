@@ -29,8 +29,8 @@ from backend.providers.base import TTSProvider
 
 logger = logging.getLogger(__name__)
 
-# X8 (2026-05-15) — frontend now sends `X-Preferred-Codec: audio/{wav,mp4,webm}`
-# header so the chat endpoint can return audio in the codec the user's browser
+# The frontend sends an `X-Preferred-Codec: audio/{wav,mp4,webm}` header
+# so the chat endpoint can return audio in the codec the user's browser
 # decodes natively. Sarvam Bulbul's text-to-speech API itself does NOT support
 # codec negotiation in the request body (response is always base64 WAV), so we
 # transcode locally with pydub (already in requirements.txt; the Dockerfile
@@ -48,14 +48,11 @@ except Exception:  # pragma: no cover — pydub missing in dev shell
 _SUPPORTED_CODECS = {"audio/wav", "audio/mp4", "audio/webm"}
 
 
-# KI-278 (2026-05-16) — voice-OUTPUT error vocabulary. Mirrors the STT
-# closed-enum contract (sarvam_stt.STT_ERROR_*) so the chat endpoint can
-# surface a structured tts_error_code instead of swallowing the exception
-# and returning audio_base64=None with zero signal to the client. Bug
-# origin: Sarvam account ran out of credits → /text-to-speech returned
-# HTTP 429 {"code":"insufficient_quota_error"} → resp.raise_for_status()
-# raised → chat endpoint logged it to turns.jsonl and returned a text-only
-# reply with NO voice and NO explanation ("no voice in reply. wtf?").
+# Voice-OUTPUT error vocabulary. Mirrors the STT closed-enum contract
+# (sarvam_stt.STT_ERROR_*) so the chat endpoint can surface a structured
+# tts_error_code instead of returning audio_base64=None with zero signal
+# to the client (e.g. when Sarvam returns HTTP 429
+# {"code":"insufficient_quota_error"}).
 TTS_ERROR_RATE_LIMIT = "rate_limit"
 TTS_ERROR_SERVICE = "service_unavailable"
 TTS_ERROR_NETWORK = "network"

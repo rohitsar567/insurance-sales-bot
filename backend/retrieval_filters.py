@@ -3,8 +3,7 @@
 This module is a SIDECAR to the retrieval path (`rag/retrieve.py` and the
 single-brain tool layer in `backend/brain_tools.py`). It is deliberately a
 separate file so retrieval-correctness work stays isolated from the
-turn-handling code. (Historically it also shielded the now-removed
-`backend/orchestrator.py`, deleted in the 2026-05-15 single-brain rewrite.)
+turn-handling code.
 
 Public API:
     apply_profile_filter(chunks, profile)       -> list[RetrievedChunk]
@@ -34,8 +33,8 @@ Public API:
     dedup_by_policy(chunks)                      -> list[RetrievedChunk]
         Within a top-K, keep highest-score chunk per policy_id.
 
-All functions are pure / side-effect-free; safe to call from the orchestrator
-or from rag/retrieve.py without import-cycle risk.
+All functions are pure / side-effect-free; safe to call from the
+single-brain tool layer or from rag/retrieve.py without import-cycle risk.
 """
 
 from __future__ import annotations
@@ -43,7 +42,7 @@ from __future__ import annotations
 import re
 from typing import Any, Iterable, Optional
 
-# KI-280 (2026-05-16) — shared canonical-identity / dedup rule. The same
+# Shared canonical-identity / dedup rule. The same
 # UIN-primary + product_key invariant the marketplace endpoint uses
 # (main.py /api/policies/all). Imported (not reimplemented) so the
 # recommender and the marketplace agree on "the same policy". The module
@@ -90,7 +89,7 @@ MATERNITY_NAME_RE = re.compile(
 )
 
 # ---------------------------------------------------------------------------
-# KI-278 — Eligibility / profile-fit tunables (2026-05-16)
+# Eligibility / profile-fit tunables
 # ---------------------------------------------------------------------------
 # A plan is a TOP-UP / SUPER-TOP-UP (only useful ALONGSIDE an existing base
 # policy or above a large out-of-pocket deductible) when ANY of these hold:
@@ -150,8 +149,7 @@ UIN_RE = re.compile(
 )
 
 # ---------------------------------------------------------------------------
-# KI-279 — fixed-benefit exclusion for comprehensive-indemnity intent
-# (2026-05-16)
+# Fixed-benefit exclusion for comprehensive-indemnity intent
 # ---------------------------------------------------------------------------
 # A FIXED-BENEFIT product (hospital daily cash, personal accident, critical
 # illness, cancer / other defined-benefit) pays a fixed lump-sum / per-day
@@ -200,13 +198,12 @@ _COMPREHENSIVE_GOAL_TOKENS = (
 )
 
 # ---------------------------------------------------------------------------
-# KI-280 — UNIFIED recommendation-fit gate tunables (2026-05-16)
+# Unified recommendation-fit gate tunables
 # ---------------------------------------------------------------------------
-# The audit proved recommendation-fit is SYSTEMIC: the cited-card list and
-# the advisory prose must be gated by the SAME fitness logic. These add the
-# two missing hard gates (entry-age for the INSURED person; required
-# feature = maternity/newborn) and the ranking signals that fix the
-# grade/rank inversion + the cost-objective lead.
+# Recommendation-fit is SYSTEMIC: the cited-card list and the advisory prose
+# are gated by the SAME fitness logic. Two hard gates (entry-age for the
+# INSURED person; required feature = maternity/newborn) plus ranking signals
+# for grade/rank ordering and the cost-objective lead.
 
 # Entry-age grace. The catalog's max_entry_age is the regulator-filed entry
 # age; underwriters allow a small grace band (mirrors PROFILE_AGE_TOLERANCE).
@@ -348,15 +345,14 @@ def apply_profile_filter(chunks: Iterable[Any], profile: Any) -> list[Any]:
     if not chunks_list:
         return chunks_list
 
-    # KI-280 — the demographic gates (numeric age-range, senior-only,
-    # adult-only) must reason about the age of the person the policy
-    # actually INSURES, not the payer's. When the policy covers parents
-    # (~70), using the paying child's age (e.g. 36) made the senior-only
-    # rule wrongly DROP a senior-citizen plan ("min_entry_age>=60 AND
-    # payer<50") and the numeric range wrongly KEEP a max-entry-65 plan —
-    # the exact P7 live-audit failure. `_oldest_insured_age` returns the
-    # eldest parent's age when insuring parents, else the profile's own
-    # age. Falls back to the raw profile age if no resolved signal.
+    # The demographic gates (numeric age-range, senior-only, adult-only)
+    # reason about the age of the person the policy actually INSURES, not
+    # the payer's. When the policy covers parents (~70), using the paying
+    # child's age (e.g. 36) would wrongly DROP a senior-citizen plan
+    # ("min_entry_age>=60 AND payer<50") and wrongly KEEP a max-entry-65
+    # plan. `_oldest_insured_age` returns the eldest parent's age when
+    # insuring parents, else the profile's own age. Falls back to the raw
+    # profile age if no resolved signal.
     _resolved_age = _oldest_insured_age(profile)
     if _resolved_age is None:
         _resolved_age = _profile_get(profile, "age")
@@ -713,13 +709,12 @@ def apply_eligibility_filter(chunks: Iterable[Any], profile: Any) -> list[Any]:
          expenses, so they are a wrong PRIMARY recommendation. They are
          NEVER dropped for a user who explicitly wants a supplement.
 
-      5. ENTRY-AGE GATE (KI-280) — drop a plan whose max entry age cannot
-         accept the OLDEST person the policy must insure. When the profile
-         covers parents (~70), the gate uses the parents' age, not the
-         paying child's — the demographic pre-filter only sees the payer's
-         age, which is exactly why a max-entry-65 plan reached a 70yo-
-         parents profile in the live audit (P7). Conservative: fires only
-         when both the insured age AND the policy fact are present.
+      5. ENTRY-AGE GATE — drop a plan whose max entry age cannot accept
+         the OLDEST person the policy must insure. When the profile covers
+         parents (~70), the gate uses the parents' age, not the paying
+         child's (the demographic pre-filter only sees the payer's age).
+         Conservative: fires only when both the insured age AND the policy
+         fact are present.
 
     Conservative on missing data: a rule only fires when BOTH the profile
     signal AND the policy fact are present. A chunk with no enriched facts
@@ -755,14 +750,14 @@ def apply_eligibility_filter(chunks: Iterable[Any], profile: Any) -> list[Any]:
         if wants_comprehensive and _is_fixed_benefit_chunk(m):
             continue
 
-        # Rule 5 (KI-280) — HARD ELIGIBILITY: a plan whose max entry age
-        # cannot accept the oldest insured person is structurally unusable.
-        # This is the audit-P7 fix: a 70yo parent cannot be enrolled in a
-        # plan whose max_entry_age is 65. We only fire when BOTH the age and
-        # the policy fact are present (conservative on missing data) and
-        # only when the profile actually insures someone whose age we know
-        # (the demographic apply_profile_filter uses the *payer's* age and
-        # never sees the parents' age — that is precisely why P7 slipped).
+        # Rule 5 — HARD ELIGIBILITY: a plan whose max entry age cannot
+        # accept the oldest insured person is structurally unusable (e.g. a
+        # 70yo parent cannot be enrolled in a plan whose max_entry_age is
+        # 65). Fires only when BOTH the age and the policy fact are present
+        # (conservative on missing data) and only when the profile actually
+        # insures someone whose age we know (the demographic
+        # apply_profile_filter uses the *payer's* age and never sees the
+        # parents' age).
         if oldest_age is not None:
             maxe = _as_int(m.get("max_entry_age"))
             if maxe is not None and maxe + ENTRY_AGE_TOLERANCE < oldest_age:
@@ -1044,10 +1039,8 @@ def enforce_citation_grounding(chunks: Iterable[Any]) -> list[Any]:
     INFORMATIONAL only — it is not required for citation grounding because
     upstream call sites (e.g. brain_tools.retrieve_policies) build pruned
     dicts that intentionally omit it, and the brain cites by policy
-    identity, not by chunk offset. Z2 live test (2026-05-15) showed 15/15
-    retrieve_policies calls returning 0 chunks because we required an
-    offset that the upstream builder never included → every chunk dropped
-    here even though raw retrieval was healthy.
+    identity, not by chunk offset. Requiring an offset here would drop
+    every chunk built by those pruned-dict call sites.
     """
     kept: list[Any] = []
     for ch in chunks:
@@ -1071,16 +1064,15 @@ def dedup_by_policy(chunks: Iterable[Any]) -> list[Any]:
     duplicates to one chunk, keeping the highest-scoring chunk. Preserves
     the order of first appearance of each kept product.
 
-    KI-280: keying is by the SHARED canonical identity
+    Keying is by the SHARED canonical identity
     (policy_identity.canonical_key) — UIN-primary, product_key fallback —
-    NOT the raw policy_id. The live audit cited the SAME product twice
-    because the two chunks had different policy_ids: a marketing rename
-    ("my:Optima Secure" vs "my:Optima Secure (older variant)" — same UIN)
-    or two doctype siblings ("...__wordings" vs "...__brochure" — same
-    product_key). policy_id-only dedup let both through (P2 New National
-    Parivar ×2, P4 Advanced Top Up ×2, P7 Chola ×2). This reuses the exact
-    rule the marketplace endpoint uses so the recommender and the
-    marketplace agree on "the same policy".
+    NOT the raw policy_id. The same product can appear under different
+    policy_ids: a marketing rename ("my:Optima Secure" vs "my:Optima
+    Secure (older variant)" — same UIN) or two doctype siblings
+    ("...__wordings" vs "...__brochure" — same product_key). policy_id-only
+    dedup would let both through; canonical-identity keying collapses them.
+    This reuses the exact rule the marketplace endpoint uses so the
+    recommender and the marketplace agree on "the same policy".
     """
     best: dict[str, Any] = {}
     order: list[str] = []

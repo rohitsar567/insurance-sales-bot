@@ -2,11 +2,9 @@
 
 For each PDF in rag/corpus/:
   1. Read full text via pdfplumber (already have per-page text from ingest)
-  2. Pass to LLM (NIM DeepSeek-V4-Pro primary, V4-Flash fallback) with the
-     Pydantic schema as a structured-output target. Sarvam-M is NOT in the
-     reasoning path per D-019 (it lives in Indic translation only — its
-     2048-token <think> reasoning + output cap was truncating JSON mid-stream
-     when used as extraction fallback, causing ~20 extraction failures).
+  2. Pass to the brain LLM (get_brain_llm) with the Pydantic schema as a
+     structured-output target. Sarvam-M is not in the reasoning path (it
+     is used for Indic translation only).
   3. Self-critique pass — LLM scores per-field confidence vs source text
   4. Validate via Pydantic
   5. Upsert into DuckDB `policies` table
@@ -73,13 +71,11 @@ EXTRACT_SYSTEM = """You extract structured fields from Indian health insurance p
 
 
 def build_extract_prompt(policy_text: str, schema_excerpt: str, policy_id: str) -> str:
-    # Sarvam-M rejects prompts >~25k chars with HTTP 400 even though docs say
-    # 32k tokens — undocumented stricter limit. DeepSeek-V4-Pro on NIM handles
-    # 1M context but the schema fits comfortably in 12k chars. 12k chars
-    # (~3k tokens) captures Schedule + Key Definitions + Benefits front-matter
-    # where the structured fields live. Exclusions section (the back half)
-    # doesn't yield many structured fields, just policy_exclusions list which
-    # is mostly noise.
+    # The policy text is capped at 12k chars (~3k tokens): that captures
+    # the Schedule + Key Definitions + Benefits front-matter where the
+    # structured fields live. The Exclusions section (the back half)
+    # doesn't yield many structured fields, just the policy_exclusions
+    # list which is mostly noise.
     MAX_CHARS = 12_000
     if len(policy_text) > MAX_CHARS:
         # Front-bias: schedules, definitions, waiting periods, UIN, sum-insured
@@ -143,8 +139,8 @@ def load_manifest() -> dict:
 def json_from_llm_text(text: str) -> dict:
     """Strip code fences and <think> blocks, extract the first balanced {...} block."""
     text = text.strip()
-    # Sarvam-M reasoning model emits <think>...</think> before the JSON; strip
-    # them (handles both closed and unterminated think blocks when output is
+    # Reasoning models emit <think>...</think> before the JSON; strip them
+    # (handles both closed and unterminated think blocks when output is
     # truncated mid-thought).
     text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
     text = re.sub(r"<think>.*", "", text, flags=re.DOTALL)
@@ -265,10 +261,8 @@ async def extract_one(pdf_path: Path, manifest_entry: dict, llm_primary, llm_fal
     for attempt, llm in enumerate([llm_primary, llm_fallback]):
         try:
             # Hard per-attempt timeout so a hung TCP connection in httpx
-            # pooling can't stall the whole sweep. NIM DeepSeek-V4-Pro has its
-            # own 4-step backoff retry loop that can use up to ~5min on 429s,
-            # so give it 120s ceiling. Sarvam (fallback) has no retries; 60s
-            # is plenty.
+            # pooling can't stall the whole sweep. The primary gets a larger
+            # ceiling than the fallback.
             attempt_timeout = 180 if llm is llm_primary else 120
             res = await asyncio.wait_for(
                 llm.chat(messages=messages, temperature=0.0, max_tokens=2048),
@@ -328,19 +322,8 @@ async def main():
     if args.limit:
         pdfs = pdfs[: args.limit]
 
-    # Provider matrix (2026-05-14, Stack A consolidation per D-019):
-    #   - NIM DeepSeek-V4-Pro: 1M ctx, frontier MoE, MIT-licensed, free tier
-    #     40 req/min with no daily cap. Clean JSON output, no <think> verbosity.
-    #     Used as primary because of the bigger reasoning budget.
-    #   - NIM DeepSeek-V4-Flash: 284B/13B MoE, ~3× faster than V4-Pro, same
-    #     clean JSON discipline. Used as fallback on V4-Pro ReadTimeout —
-    #     different MoE routing path so a Pro timeout doesn't always reproduce
-    #     in Flash. Sarvam-M was the old fallback but its <think> tags ate the
-    #     2048 output cap before reaching JSON, causing ~20 truncation failures.
-    # Three-chain collapse (2026-05-15): the separate FAST_BRAIN_CHAIN /
-    # get_fast_brain_llm accessor was removed. One brain chain (get_brain_llm)
-    # whose NimChainLLM already does internal multi-candidate fallback;
-    # primary/fallback both resolve to it.
+    # get_brain_llm() returns a NimChainLLM that already does internal
+    # multi-candidate fallback, so primary and fallback both resolve to it.
     primary = get_brain_llm()
     fallback = get_brain_llm()
 

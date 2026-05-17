@@ -15,14 +15,20 @@
 > consolidation.
 >
 > **Current safety model (authoritative: [`README.md`](../../README.md) §6):**
-> faithfulness is now **structural** — the single Gemini brain can only state
-> what `retrieve_policies` returned and must cite; recommendation fit is gated
-> in `backend/scorecard.py` / `retrieval_filters.py`. The hardened surface is
-> the **8-gate uploaded-PDF defence in `backend/security.py`** (file
-> mechanics, content quality, prompt-injection, per-session + per-IP rate
-> limits, encrypted-PDF, page-ceiling, hash-dedupe) plus per-session
-> quarantine isolation with a 24 h TTL. Retained below only as the historical
-> failure-modes analysis that informed today's design.
+> faithfulness is now **structural** — the single Gemini 2.5-flash brain
+> (one call/turn with `save_profile_field` / `retrieve_policies` /
+> `mark_recommendation`) can only state what `retrieve_policies` returned
+> and must cite it; recommendation fit is gated in `backend/scorecard.py` /
+> `retrieval_filters.py`. There is **no separate faithfulness-judge LLM**,
+> no `orchestrator`, and no Brain-Fast/Brain-Main split. The hardened
+> surface is the **8-gate uploaded-PDF defence in `backend/security.py`**
+> (file mechanics, content quality, prompt-injection, per-session + per-IP
+> rate limits, encrypted-PDF, page-ceiling, hash-dedupe) plus per-session
+> quarantine isolation with a 24 h TTL. A small `backend/nim_fallback.py`
+> (NVIDIA NIM) only covers transient Gemini errors so the turn still
+> completes. **Everything below this banner is the historical failure-modes
+> analysis that informed today's design — the per-mode "Status: Live"
+> lines describe the pre-rewrite system, not the present one.**
 
 ## 0. Purpose
 
@@ -207,5 +213,5 @@ Run-time. Auditable. Tested.
 | M-07 | Nightly synthetic eval cron | Infra | v2 |
 | M-08 | Live-traffic spot grading | Eval | v2 |
 | M-09 | 3-judge consensus for grader | Eval | v2 |
-| M-10 | Sarvam-M no longer brain — Gemini 2.0 / 2.5 Flash primary on Brain Fast / Brain Main, NIM fallback | Orchestrator (ADR-040) | Live ✅ |
-| M-11 | Faithfulness 4-gate verifier | Orchestrator | Live ✅ |
+| M-10 | Sarvam-M scoped to Indic translation only; brain is one Gemini 2.5-flash call/turn with tools, small `nim_fallback` for transient errors | single_brain | Live ✅ |
+| M-11 | Structural faithfulness (LLM can only cite what `retrieve_policies` returned; recommendation fit gated in `scorecard.py` / `retrieval_filters.py`) — the separate 4-gate judge was removed | single_brain | Live ✅ (superseded the 4-gate judge) |

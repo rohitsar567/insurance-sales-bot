@@ -32,21 +32,22 @@ from backend import sum_insured as _si  # SI rationalisation (D1/D3) — source-
 from backend.providers.sarvam_stt import SarvamSTT
 from backend.providers.sarvam_tts import SarvamTTS
 
-# Path B — opt-in single-LLM brain. Off by default; flip via env var.
-# When on we replace orchestrator.handle_turn with single_brain.handle_turn
-# for the /api/chat hot path and fall back to nim_fallback.handle_turn_fallback
-# on any SingleBrainError (so users always get a reply).
+# Single-LLM brain toggle. Off by default; flip via env var. When on, the
+# /api/chat hot path runs single_brain.handle_turn and falls back to
+# nim_fallback.handle_turn_fallback on any SingleBrainError (so users
+# always get a reply). When off, /api/chat routes directly through
+# nim_fallback.handle_turn_fallback.
 import os as _os  # local alias to avoid stomping any later `import os`
 
 USE_SINGLE_BRAIN = _os.environ.get("USE_SINGLE_BRAIN", "false").lower() in (
     "1", "true", "yes", "on",
 )
 
-# U1 Test 9 — safety net for RULE 7. If Gemini forgets to call
-# mark_recommendation when the user clearly commits to a policy ("I'll go
-# with that one", "let's do #2", "buy this"), the post-turn detector below
-# auto-calls mark_recommendation against session.last_recommendation_ids[:1]
-# so the closure event is recorded for analytics even when the LLM whiffs.
+# Safety net for RULE 7. If Gemini does not call mark_recommendation when
+# the user clearly commits to a policy ("I'll go with that one", "let's do
+# #2", "buy this"), the post-turn detector below auto-calls
+# mark_recommendation against session.last_recommendation_ids[:1] so the
+# closure event is recorded for analytics.
 # Word-boundary anchored; case-insensitive at match-time.
 _CLOSER_KEYWORD_RE = re.compile(
     r"\b(go with|i'?ll take|i will take|let'?s do|let me get|sign me up|"
@@ -144,15 +145,10 @@ class ChatResponse(BaseModel):
     session_id: str
     audio_base64: Optional[str] = None
     audio_mime: Optional[str] = None  # X8 — "audio/wav" | "audio/mp4" | "audio/webm"
-    # KI-278 (2026-05-16) — TTS voice-output failures used to be SWALLOWED
-    # silently: the chat endpoint caught the Sarvam exception, logged it to
-    # turns.jsonl, and returned audio_base64=None with NO signal to the
-    # client. The user saw a text reply with no voice and no explanation
-    # ("no voice in reply. wtf?"). These two fields make the failure LOUD:
-    # the frontend renders a small inline "voice unavailable" notice under
-    # the bot bubble (text reply is unaffected). tts_error_code is a closed
-    # enum mirroring the STT path's contract so the client never parses raw
-    # httpx text:
+    # TTS voice-output failures are surfaced to the client (text reply is
+    # unaffected): the frontend renders a small inline "voice unavailable"
+    # notice under the bot bubble. tts_error_code is a closed enum mirroring
+    # the STT path's contract so the client never parses raw httpx text:
     #   rate_limit          — Sarvam 429 / insufficient_quota / no credits
     #   service_unavailable  — Sarvam 5xx / 503
     #   auth                 — Sarvam 401/403 / missing SARVAM_API_KEY
@@ -171,13 +167,12 @@ class ChatResponse(BaseModel):
             "flash an acknowledgment + refresh the completeness panel."
         ),
     )
-    # Issue B (KI-Z6-PROFILECOMPLETE, 2026-05-15) — frontend was making a
-    # second roundtrip to /api/profile/completeness after every chat turn to
-    # learn whether the 7 required slots are now captured. Surface it in the
+    # Whether the 7 required profile slots are captured. Surfaced in the
     # primary chat response so the UI can flip to 100% in the same render
-    # cycle. Computed via brain_tools._REQUIRED_FOR_READY (same slot list
-    # used by retrieve_policies' profile-complete gate) so client + server
-    # never disagree.
+    # cycle without a second roundtrip to /api/profile/completeness.
+    # Computed via brain_tools._REQUIRED_FOR_READY (same slot list used by
+    # retrieve_policies' profile-complete gate) so client + server never
+    # disagree.
     profile_complete: bool = Field(
         False,
         description=(
@@ -343,13 +338,12 @@ async def _quarantine_purge_loop() -> None:
             )
 
 
-# Issue B (KI-Z6-PROFILECOMPLETE, 2026-05-15) — single source of truth for
-# "is this profile ready to recommend against". brain_tools._profile_complete
-# uses the same _REQUIRED_FOR_READY tuple; we mirror the call here instead of
-# duplicating the slot list so a future addition (e.g. risk_appetite) only
-# needs to be applied in brain_tools.
-# KI-Z7 (2026-05-15) — Feature B helper. Distinguishes "first-time capture
-# on turn 1" from "stored profile recalled on turn 1". Both end with a
+# Single source of truth for "is this profile ready to recommend against".
+# brain_tools._profile_complete uses the same _REQUIRED_FOR_READY tuple; we
+# mirror the call here instead of duplicating the slot list so a future
+# addition (e.g. risk_appetite) only needs to be applied in brain_tools.
+# Distinguishes "first-time capture on turn 1" from "stored profile
+# recalled on turn 1". Both end with a
 # non-empty Profile on the session; only the latter should flip
 # returning_user_recalled. Heuristic: if EVERY currently-filled slot was
 # written THIS turn (i.e. lives in `profile_updates`), the user just typed
@@ -461,11 +455,10 @@ async def _validation_exception_handler(request: Request, exc: RequestValidation
 
 
 # ---------- Admin panel + LLM health background loop ----------
-# Mount the password-gated admin endpoints (KI-097). Unauthorized callers
-# get 401 Unauthorized. The earlier IP allowlist gate (ADMIN_IP_ALLOWLIST +
-# 404-to-hide-existence) was removed in KI-097 — operationally it locked
-# the operator out when switching networks without adding real security
-# beyond a strong password.
+# Mount the password-gated admin endpoints. Unauthorized callers get
+# 401 Unauthorized. Access is gated by a strong password only (no IP
+# allowlist, which would lock the operator out when switching networks
+# without adding real security).
 from backend import admin as _admin_router_module
 app.include_router(_admin_router_module.router)
 
@@ -797,24 +790,21 @@ async def chat(req: ChatRequest, request: Request):
     if preferred_codec not in _allowed_codecs:
         preferred_codec = "audio/wav"
     t_chat0 = time.time()
-    # KI-Z7 (2026-05-15) — pre-turn snapshot for the returning-user-recall
-    # detector below. Defaults match the "no session yet" case so the
-    # detector simply doesn't fire on the legacy orchestrator path.
+    # Pre-turn snapshot for the returning-user-recall detector below.
+    # Defaults match the "no session yet" case.
     _pre_turn_name: str = ""
     _pre_turn_idx: int = 0
-    # KI-106 — never let an inner TimeoutError / unhandled exception bubble out
-    # of handle_turn as a 500. C4 NRI persona saw 5× HTTP 500s with
-    # "Orchestrator failed: TimeoutError" because the outer non-fact-find
-    # brain call propagated asyncio.TimeoutError from KI-099/100 wait_for
-    # wrappers. We also wrap the whole call in an outer 45s budget so even a
-    # pathological hang inside handle_turn surfaces as a graceful reply,
-    # not a connection-reset to the user. 45s is generous but tighter than
-    # HF Space's gateway timeout, so the user always gets a response.
+    # Never let an inner TimeoutError / unhandled exception bubble out of
+    # handle_turn as a 500. The whole call is wrapped in an outer 45s
+    # budget so even a pathological hang inside handle_turn surfaces as a
+    # graceful reply, not a connection-reset to the user. 45s is generous
+    # but tighter than HF Space's gateway timeout, so the user always gets
+    # a response.
     try:
         if USE_SINGLE_BRAIN:
-            # Path B — one Gemini call per turn with native function-calling.
-            # Falls back to the legacy orchestrator on SingleBrainError so a
-            # missing GOOGLE_API_KEY / model outage never breaks the chat.
+            # One Gemini call per turn with native function-calling.
+            # Falls back to nim_fallback on SingleBrainError so a missing
+            # GOOGLE_API_KEY / model outage never breaks the chat.
             from backend import single_brain
             from backend.session_state import get_session
 
@@ -826,13 +816,11 @@ async def chat(req: ChatRequest, request: Request):
                 getattr(_sb_session.profile, "name", None) or ""
             ).strip()
             _pre_turn_idx = int(getattr(_sb_session, "turn_idx", 0) or 0)
-            # Z2 fix — Issue 3 (brain election bouncing). Once a session
-            # has had ANY successful single_brain turn, it must stay on
-            # single_brain for the rest of its lifetime. Falling back to
-            # the legacy orchestrator mid-stream (which is what Priya saw
-            # 6 turns in a row) discards everything single_brain captured
-            # in last_recommendation_ids / last_retrieved_chunks /
-            # slug_to_insurer and confuses the user. Sticky check below.
+            # Once a session has had ANY successful single_brain turn, it
+            # must stay on single_brain for the rest of its lifetime.
+            # Switching brains mid-stream would discard everything
+            # single_brain captured in last_recommendation_ids /
+            # last_retrieved_chunks / slug_to_insurer. Sticky check below.
             _sb_was_sticky = getattr(_sb_session, "single_brain_sticky", False)
             try:
                 turn = await asyncio.wait_for(
@@ -851,14 +839,13 @@ async def chat(req: ChatRequest, request: Request):
                     pass
             except single_brain.SingleBrainError as _sb_err:
                 if _sb_was_sticky:
-                    # Z2 belt+suspenders — session already had a clean
-                    # single_brain turn. Do NOT cross-fade to the legacy
-                    # orchestrator (loses turn state + frontend sees the
-                    # brain hop). Emit a graceful retry prompt instead.
+                    # Session already had a clean single_brain turn. Do NOT
+                    # cross-fade to the fallback brain (loses turn state +
+                    # frontend sees the brain hop). Emit a graceful retry
+                    # prompt instead.
                     logging.warning(
                         "single_brain failed on STICKY session (session=%s); "
-                        "emitting graceful retry, NOT falling back to "
-                        "orchestrator: %s",
+                        "emitting graceful retry, NOT falling back: %s",
                         session_id, _sb_err,
                     )
                     turn = single_brain.TurnResult(
@@ -893,9 +880,8 @@ async def chat(req: ChatRequest, request: Request):
                         timeout=20.0,
                     )
         else:
-            # Legacy orchestrator path is gone (CLEAN2 deletion). When
-            # USE_SINGLE_BRAIN is off, route directly through the minimal
-            # NIM fallback so the bot still serves a reply.
+            # When USE_SINGLE_BRAIN is off, route directly through the
+            # minimal NIM fallback so the bot still serves a reply.
             from backend.session_state import get_session as _get_session
             turn = await asyncio.wait_for(
                 nim_fallback.handle_turn_fallback(
@@ -962,7 +948,7 @@ async def chat(req: ChatRequest, request: Request):
             profile_complete=_compute_profile_complete(session_id),
         )
 
-    # U1 Test 9 — server-side closer-keyword safety net for RULE 7.
+    # Server-side closer-keyword safety net for RULE 7.
     # If the user clearly committed to a policy this turn but Gemini did
     # NOT call mark_recommendation (single_brain stamps "mark_recommendation"
     # into turn.brain_used when the tool fires — see single_brain.py:1052),
@@ -1172,11 +1158,11 @@ async def chat(req: ChatRequest, request: Request):
 
     audio_b64 = None
     audio_mime: Optional[str] = None
-    # KI-278 (2026-05-16) — when TTS fails we now propagate a STRUCTURED,
-    # user-facing notice instead of silently dropping the audio. The text
-    # reply is still returned in full; the frontend renders a small inline
-    # "voice unavailable" line under the bot bubble so the user understands
-    # WHY there's no voice (root cause this fixed: Sarvam 429 / no credits).
+    # When TTS fails we propagate a STRUCTURED, user-facing notice instead
+    # of silently dropping the audio. The text reply is still returned in
+    # full; the frontend renders a small inline "voice unavailable" line
+    # under the bot bubble so the user understands why there's no voice
+    # (e.g. Sarvam 429 / no credits).
     tts_error_code: Optional[str] = None
     tts_user_message: Optional[str] = None
     if req.return_audio and turn.reply_text:
@@ -1932,9 +1918,9 @@ class ProfileUpdateRequest(BaseModel):
     parents_has_ped: Optional[bool] = None
     health_conditions: Optional[list[str]] = None
     budget_band: Optional[str] = None
-    # KI — profile-builder UI now collects these 4; they exist on the Profile
-    # dataclass + chat-path save_profile_field but were being silently dropped
-    # from POST /api/profile because they weren't whitelisted here.
+    # Collected by the profile-builder UI; also present on the Profile
+    # dataclass + chat-path save_profile_field. Whitelisted here so
+    # POST /api/profile accepts them.
     desired_sum_insured_inr: Optional[int] = None
     copay_pct: Optional[int] = None
     family_medical_history: Optional[list[str]] = None
@@ -1971,8 +1957,8 @@ async def session_clear(req: SessionClearRequest):
     The on-disk profile JSON under `40-data/profiles/` is intentionally NOT
     touched — it remains durable user data keyed by persona_id / name slug.
     The next time the user volunteers their name in conversation, the
-    confirmation-gated recall flow (see orchestrator's `pending_profile_recall`)
-    will ask before merging the prior captures.
+    confirmation-gated recall flow (see session_state's
+    `pending_profile_recall`) will ask before merging the prior captures.
 
     Body : {session_id: str}
     Reply: {cleared: bool, new_session_id: str}
@@ -2136,9 +2122,9 @@ async def profile_completeness_view(session_id: Optional[str] = None):
     missing = [k for k, v in profile_dict.items() if k not in answered or v in (None, "", [])]
     hint = None
     try:
-        # KI-167 WS3 (2026-05-15) — next_question now returns the field name
-        # (str) of the next missing slot, not a Question object. Frontend uses
-        # this as a slot-hint; the actual phrasing is generated by sales_brain.
+        # next_question returns the field name (str) of the next missing
+        # slot. The frontend uses it as a slot-hint; the actual phrasing
+        # is generated by the single-brain LLM.
         hint = next_question(p)
     except Exception:
         pass
@@ -2844,12 +2830,12 @@ def _policy_corroborated_si(policy_id: str | None) -> "_si.SumInsuredView":
     return _rationalise_si(data, si)
 
 
-# KI-145 (2026-05-15) — decision-critical fields used to distinguish a
-# RENAME (curated entry folds onto extracted parent) from a VARIANT (same
-# UIN but materially different product — must stay as its own card).
-# Same UIN ≠ same product: regulators file one "wordings" PDF that covers
-# multiple marketed variants (e.g. ProHealth Prime vs ProHealth Protect
-# both filed under MCIHLIP24011V072324; copay/PED/maternity/NCB differ).
+# Decision-critical fields that distinguish a RENAME (curated entry folds
+# onto extracted parent) from a VARIANT (same UIN but materially different
+# product — must stay as its own card). Same UIN ≠ same product:
+# regulators file one "wordings" PDF that covers multiple marketed variants
+# (e.g. ProHealth Prime vs ProHealth Protect both filed under
+# MCIHLIP24011V072324; copay/PED/maternity/NCB differ).
 _KI145_DIFF_FIELDS: tuple[str, ...] = (
     "copayment_pct",
     "pre_existing_disease_waiting_months",
@@ -3229,14 +3215,14 @@ async def policies_all(session_id: Optional[str] = None):
         data = _merge_curated(data, curated_for_this)
         seen_policy_ids.add(policy_id_local)
         slug = data.get("insurer_slug", "")
-        # KI-132 (2026-05-15) — regulatory is not an insurer; drop entirely
-        # from the marketplace. IRDAI/NHA docs are still retrieved and cited
-        # in chat answers, they just don't appear as marketplace cards.
+        # Regulatory is not an insurer; drop entirely from the marketplace.
+        # IRDAI/NHA docs are still retrieved and cited in chat answers, they
+        # just don't appear as marketplace cards.
         if slug == "regulatory":
             continue
-        # KI-133 (2026-05-15) — dedup by product (insurer__product), so the
-        # wordings PDF wins and the brochure/cis variants don't generate
-        # duplicate cards. Pass-1 sort order guarantees wordings comes first.
+        # Dedup by product (insurer__product), so the wordings PDF wins and
+        # the brochure/cis variants don't generate duplicate cards. Pass-1
+        # sort order guarantees wordings comes first.
         product_key = _product_key_of(policy_id_local)
         if product_key in seen_product_keys:
             continue
@@ -4254,10 +4240,10 @@ class RecallByNameRequest(BaseModel):
 
 class RecallByNameResponse(BaseModel):
     found: bool
-    # PRIVACY FIX (2026-05-16, audit). The endpoint no longer hydrates the
-    # session off a bare name (weak/shared key → stranger-PII leak). When a
-    # stored profile matches, the response asks the UI to confirm identity
-    # FIRST. `profile`/`predicted_band` are never returned pre-confirmation.
+    # The endpoint does not hydrate the session off a bare name (weak/shared
+    # key → stranger-PII leak). When a stored profile matches, the response
+    # asks the UI to confirm identity FIRST. `profile`/`predicted_band` are
+    # never returned pre-confirmation.
     requires_confirmation: bool = False
     name: Optional[str] = None          # stored display name, for the prompt
     summary: Optional[dict] = None      # non-PII identity hints, for the prompt
@@ -4270,16 +4256,15 @@ class RecallByNameResponse(BaseModel):
 async def recall_profile_by_name(req: RecallByNameRequest):
     """Stage a stored named-profile match for `session_id` (if any).
 
-    PRIVACY FIX (2026-05-16, audit). A bare name is a weak, shared,
-    guessable key. This endpoint NO LONGER auto-hydrates the session — a
-    second user on a shared browser/IP, or anyone stating a common first
-    name, must not be silently served a stranger's stored profile. When a
-    match exists the response carries `found=True, requires_confirmation=
-    True, name, summary` so the UI renders an explicit "are you <name>?"
-    prompt. The stored fields are applied to the session only after the
-    user confirms (handled on the chat affirmation path via
-    session_state.apply_pending_recall). Returns `found=False` when the
-    slug doesn't resolve to a stored file.
+    A bare name is a weak, shared, guessable key, so this endpoint does not
+    auto-hydrate the session — a second user on a shared browser/IP, or
+    anyone stating a common first name, must not be silently served a
+    stranger's stored profile. When a match exists the response carries
+    `found=True, requires_confirmation=True, name, summary` so the UI
+    renders an explicit "are you <name>?" prompt. The stored fields are
+    applied to the session only after the user confirms (handled on the
+    chat affirmation path via session_state.apply_pending_recall). Returns
+    `found=False` when the slug doesn't resolve to a stored file.
     """
     from backend.profile_persistence import recall_by_name_payload
 

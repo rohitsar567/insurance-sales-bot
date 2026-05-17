@@ -88,41 +88,28 @@ _log = logging.getLogger(__name__)
 
 _FACTS_DIR = settings.DATA_DIR / "policy_facts"
 _DOCTYPE_SUFFIXES = ("__wordings", "__brochure", "__cis", "__prospectus")
-# KI-RECALL-POOL (2026-05-17) — width of the Chroma candidate pool pulled
-# BEFORE eligibility + scorecard-aware ranking. Must be wide enough that a
-# genuinely-strong A/B policy that is cosine-rank ~15-30 for a profile
-# query still enters contention (so the quality-aware filter_pipeline can
-# surface it). The LLM still only ever sees the top-k best-fit survivors.
+# Width of the Chroma candidate pool pulled before eligibility +
+# scorecard-aware ranking — wide enough that a strong policy ranked only
+# mid-cosine for a generic query still enters contention. The LLM still
+# only sees the top-k best-fit survivors.
 _RECALL_POOL = 40
 _FACT_KEYS = (
     "policy_type_indemnity_or_fixed",
-    # KI-279 (2026-05-16) — the raw catalog type key. Some curated files
-    # (e.g. star-health__star-hospital-cash__brochure.json) carry the
-    # product type ONLY under `policy_type` ("hospital_cash") and have NO
-    # `policy_type_indemnity_or_fixed` key. Without surfacing this, the
-    # retrieval_filters fixed-benefit gate is blind and a daily-cash plan
-    # ranks #1 for a comprehensive-indemnity buyer. Read-only; STABLE key.
+    # Raw catalog type key — some curated files carry the product type
+    # only under `policy_type` (e.g. "hospital_cash") with no
+    # `policy_type_indemnity_or_fixed`; the fixed-benefit gate needs it.
     "policy_type",
     "deductible_amount",
     "co_payment_pct",
     "sum_insured_options",
-    # KI-280 (2026-05-16) — UNIFIED recommendation-fit gate. The eligibility
-    # gate needs these STABLE policy_facts keys (read-only):
+    # Eligibility-gate keys (read-only):
     #   uin_code            → canonical dedup identity (1 UIN = 1 product;
-    #                          collapses marketing-rename / doctype-sibling
-    #                          duplicate CITED cards — audit P2/P4/P7).
-    #   max_entry_age       → hard eligibility for the INSURED person. When
-    #                          the profile insures parents (~70), a plan
-    #                          whose max entry age is 65 cannot accept them
-    #                          (audit P7). The chunk already carries
-    #                          max_entry_age from Chroma metadata, but the
-    #                          curated facts file is the authoritative value
-    #                          and overrides a missing/None chunk field.
+    #                          collapses doctype-sibling/rename duplicates).
+    #   max_entry_age       → hard eligibility for the insured person; the
+    #                          curated value is authoritative and overrides
+    #                          a missing/None Chroma chunk field.
     #   maternity_coverage  → required-feature gate: an explicit maternity /
-    #   newborn_coverage      newborn need must rank confirmed plans above
-    #                          unconfirmed ones (audit P3).
-    # max_renewal_age is intentionally NOT read — it was removed from the
-    # scorecard (lifelong renewal is the IRDAI norm; scorecard.py:606).
+    #   newborn_coverage      newborn need ranks confirmed plans first.
     "uin_code",
     "max_entry_age",
     "maternity_coverage",
@@ -214,21 +201,12 @@ _reviews_cache: dict = {}
 
 
 def _curated_facts_all() -> dict:
-    """The FULL curated-facts layer, EXACTLY as the marketplace uses it.
-
-    KI-FULLFACTS (2026-05-17) — root cause of empty recommendation cards:
-    `_scorecard_signal` used to feed build_scorecard the 7-key eligibility
-    subset (`_load_policy_facts`), which is BELOW build_scorecard's
-    data-completeness floor → every recommended policy returned grade "—"
-    / overall 0 → the Bug #71 ≥70 gate dropped 100% of them → no cards.
-    Meanwhile /api/policies/all scored the SAME policies correctly
-    (HDFC Ergo Optima Restore = A/78) because it feeds the FULL curated
-    dict from main._load_curated_facts (KI-219/251 canonical precedence).
-    We now reuse that EXACT function (lazy import — main is loaded at
-    request time; dodges the import cycle) so a policy's recommendation
-    grade is identical to its marketplace grade by construction. The
-    7-key `_load_policy_facts` stays as-is — it is the correct input for
-    the eligibility/dedup gate, NOT for grading."""
+    """The full curated-facts layer — the same source the marketplace
+    scores from (main._load_curated_facts, KI-219/251 canonical
+    precedence; lazy import since main is loaded at request time). Using
+    it here makes a policy's recommendation grade identical to its
+    marketplace grade. The 7-key `_load_policy_facts` is the input for the
+    eligibility/dedup gate, not for grading."""
     if "d" not in _curated_all_cache:
         from backend.main import _load_curated_facts  # lazy: avoids cycle
         _curated_all_cache["d"] = _load_curated_facts()
@@ -236,9 +214,9 @@ def _curated_facts_all() -> dict:
 
 
 def _insurer_reviews(slug: str) -> Optional[dict]:
-    """Same reviews source the marketplace passes to build_scorecard
-    (40-data/reviews/<slug>.json) — drives the claim-experience sub-score.
-    Without it the rec-path grade would drift below the marketplace's."""
+    """Insurer reviews (40-data/reviews/<slug>.json) passed to
+    build_scorecard — drives the claim-experience sub-score; the same
+    source the marketplace uses."""
     if not slug:
         return None
     if slug in _reviews_cache:
@@ -255,12 +233,11 @@ def _insurer_reviews(slug: str) -> Optional[dict]:
 
 
 def _scorecard_signal(policy_id: str, profile=None) -> dict:
-    """Best-effort {_grade, _overall_score} from backend.scorecard, using
-    the IDENTICAL inputs as the marketplace (/api/policies/all) so a
-    policy's recommendation grade == its marketplace grade by construction
-    (parity is asserted by tests/test_scorecard_parity.py). READ-ONLY;
-    degrades silently to {} on any failure (ranking still works off
-    co-pay + SI headroom + cosine)."""
+    """{_grade, _overall_score} from backend.scorecard using the same
+    inputs as the marketplace, so a policy's recommendation grade equals
+    its marketplace grade (asserted by tests/test_scorecard_parity.py).
+    Read-only; returns {} on any failure (ranking still works off co-pay
+    + SI headroom + cosine)."""
     try:
         cur = _curated_facts_all()
         data = None
@@ -288,15 +265,8 @@ def _scorecard_signal(policy_id: str, profile=None) -> dict:
                 )
             }
         sc = build_scorecard(data, insurer_reviews=ir, profile=prof)
-        # KI-280 (2026-05-16) — the Scorecard dataclass field is
-        # `overall_score` (scorecard.py:95), NOT `overall`. The previous
-        # getattr(sc, "overall", ...) ALWAYS returned None, so every
-        # enriched chunk reached retrieval_filters with _overall_score=None
-        # and _fit_score fell back to the coarse letter-grade table where
-        # every "B" == 70.0 exactly. Within-grade order then collapsed to
-        # raw cosine — the live audit's grade/rank inversion (P1 C/65 above
-        # B/75, P2 A/77 ranked LAST). Read the real numeric field; keep a
-        # belt-and-braces `overall` alias for forward-compat.
+        # Scorecard.overall_score is the numeric field; `overall` is a
+        # back-compat alias.
         _overall = getattr(sc, "overall_score", None)
         if _overall is None:
             _overall = getattr(sc, "overall", None)
@@ -647,18 +617,12 @@ _qseed_cache: dict = {}  # (profile_sig) -> [seed chunk dicts]
 
 
 def _quality_seed_candidates(profile, limit: int = 25) -> list[dict]:
-    """KI-QUALITY-SEED (2026-05-17). Cosine retrieval is quality-blind: a
-    genuinely-best policy whose document wording isn't cosine-similar to a
-    generic profile query never enters the candidate pool, so the
-    (audit-verified-correct) profile-tuned scorecard + filter_pipeline never
-    get the chance to surface it. This deterministically seeds the pool with
-    the catalogue's top policies by the PROFILE-TUNED scorecard overall.
-    filter_pipeline still does precise eligibility + profile-fit ranking on
-    the union (proven: it eligibility-passes + ranks a present A-policy #1),
-    so this ONLY guarantees CANDIDACY — it never bypasses eligibility or
-    fabricates a recommendation. Pure logic layer: no re-ingest, no vector
-    DB change. Cached per profile-signature (the catalogue + a fixed profile
-    yield a fixed ranking)."""
+    """Seed the candidate pool with the catalogue's top policies by the
+    profile-tuned scorecard overall, so a strong policy that isn't
+    cosine-similar to a generic query still enters contention. This only
+    ADDS candidates — filter_pipeline still applies precise eligibility +
+    profile-fit ranking on the union; it never bypasses eligibility or
+    fabricates a recommendation. Cached per profile-signature."""
     out: list[dict] = []
     try:
         prof_sig = repr(sorted(
@@ -882,18 +846,11 @@ async def retrieve_policies(
     try:
         from rag.retrieve import retrieve as _retrieve
 
-        # KI-RECALL-POOL (2026-05-17) — DECOUPLE the Chroma recall pool from
-        # the caller's top_k. Cosine-only Chroma ranking is quality-blind: a
-        # mediocre C/D policy whose wording matches the query out-ranks a
-        # genuinely-better A/B policy that IS in the corpus. At top_k=8 the
-        # A-grade policies never even enter the candidate set, so the
-        # downstream quality-aware filter_pipeline (_fit_score, now fed REAL
-        # scorecard grades after KI-FULLFACTS) can't surface them — it can
-        # only re-order what was retrieved. Fix: retrieve a WIDE pool, let
-        # eligibility + scorecard-aware ranking choose, then return the
-        # top-k best-fit survivors (truncation happens after filter_pipeline
-        # below). For an explicit known-policy follow-up (policy_filter_ids)
-        # the caller already knows the policy — keep the narrow top_k.
+        # Decouple the Chroma recall pool from the caller's top_k: pull a
+        # wide pool so eligibility + scorecard-aware ranking choose from a
+        # broad set, then return the top-k best-fit survivors (truncated
+        # after filter_pipeline below). For an explicit known-policy
+        # follow-up (policy_filter_ids) keep the narrow top_k.
         _recall_pool = (
             (int(top_k) if top_k else 8)
             if policy_filter_ids
@@ -953,13 +910,12 @@ async def retrieve_policies(
     guard_signal = None
     filtered = raw
     if not policy_filter_ids:
-        # KI-QUALITY-SEED — union the cosine pool with the catalogue's
-        # top profile-graded policies so a genuinely-best policy that
-        # isn't cosine-similar to a generic needs-query still enters
-        # contention. filter_pipeline then does precise eligibility +
-        # profile-fit ranking on the union (it eligibility-passes + ranks
-        # a present A-policy #1, proven). Cosine chunk wins on dup (it
-        # carries real retrieved text); seeds only ADD missing candidates.
+        # Union the cosine pool with the catalogue's top profile-graded
+        # policies so a strong policy that isn't cosine-similar to a
+        # generic needs-query still enters contention. filter_pipeline
+        # then applies eligibility + profile-fit ranking on the union. A
+        # cosine chunk wins on a dup (it carries real retrieved text);
+        # seeds only add missing candidates.
         if profile is not None:
             _seen_pids = {
                 (c.get("policy_id") or "").strip() for c in raw
@@ -978,28 +934,23 @@ async def retrieve_policies(
             _log.warning("retrieval_filters.filter_pipeline failed: %s", e)
             filtered = raw
 
-        # KI-RECALL-POOL — filter_pipeline has now eligibility-filtered +
-        # ranked the WIDE pool best-fit-first (scorecard-aware, deduped to
-        # ~1 chunk/policy). Return only the top-N best-fit survivors: enough
-        # for the LLM to pick 2-4 strong recommendations AND for the
-        # citation builder to select from, without dumping the 40-wide tail
-        # as context. This is the ONLY truncation — done AFTER quality
-        # ranking, so the genuinely-best eligible policies (e.g. SBI Super
-        # Health A/87) are what the LLM and the cards both see. Set on the
-        # session cache too so prose ⇄ cited cards are gated on the SAME set.
+        # filter_pipeline has eligibility-filtered + ranked the wide pool
+        # best-fit-first (scorecard-aware, deduped to ~1 chunk/policy).
+        # Return only the top-N best-fit survivors — enough for the LLM to
+        # pick 2-4 recommendations and for the citation builder to select
+        # from, without the wide tail as context. This is the only
+        # truncation, done after quality ranking, so the LLM and the cards
+        # see the same best-fit set.
         filtered = filtered[: max((int(top_k) if top_k else 8), 12)]
 
-        # KI-PROSE-CARD-1to1 (2026-05-17) — user requirement: "can't have a
-        # situation where it suggests something in chat but won't generate a
-        # card." For a RECOMMENDATION turn, apply the SAME fitness floor the
-        # citation builder uses (_recommendation_fit) HERE, so the LLM only
-        # ever SEES cardable policies → prose ⇄ cards are 1:1 by
-        # construction (it cannot name a policy it won't card because it
-        # never receives one). If nothing clears the floor we return none —
-        # the LLM then honestly says "no strong match" rather than padding
-        # with a sub-floor policy (also the requirement). qa / follow-up
-        # intents are untouched: they legitimately cite supporting source
-        # chunks regardless of recommendation grade.
+        # For a recommendation turn, apply the same fitness floor the
+        # citation builder uses (_recommendation_fit) here, so the LLM only
+        # sees cardable policies — prose and cards stay 1:1 (it cannot name
+        # a policy it won't card). If nothing clears the floor the set is
+        # empty and the LLM says there is no strong match rather than
+        # padding with a sub-floor policy. qa / follow-up intents are
+        # untouched (they cite supporting source chunks regardless of
+        # recommendation grade).
         if (intent or "").lower() == "recommendation" and filtered:
             try:
                 from backend.single_brain import _recommendation_fit

@@ -1,9 +1,9 @@
-"""Google Gemini — primary LLM tier for sales_brain + orchestrator brain (KI-179).
+"""Google Gemini — primary LLM tier for the single-brain stack.
 
-Google AI Studio's free tier on `gemini-2.0-flash` and `gemini-2.5-flash` gives
-1500 req/day with native JSON mode (`responseMimeType: "application/json"`).
-This is best-in-class free quality for conversation and beats every model in
-NIM or OpenRouter free tiers.
+Google AI Studio's free tier on `gemini-2.5-flash` gives 1500 req/day
+with native JSON mode (`responseMimeType: "application/json"`). This is
+best-in-class free quality for conversation and beats every model in NIM
+or OpenRouter free tiers.
 
 Wire-shape: REST API direct via httpx (no SDK dependency — matches the pattern
 of nvidia_nim_llm.py and openrouter_llm.py).
@@ -35,9 +35,8 @@ JSON mode:
     response_format == {"type": "json_object"}  →
         generationConfig.responseMimeType = "application/json"
 
-The provider matches the existing `LLMProvider` interface so it slots
-straight into both sales_brain.py (Tier 0) and the orchestrator brain main
-path (Tier 0, via TieredBrainLLM wrapper).
+The provider matches the `LLMProvider` interface so it slots straight
+into the single-brain stack (single_brain.py) as the primary tier.
 """
 
 from __future__ import annotations
@@ -57,13 +56,13 @@ from backend.providers.base import ChatMessage, LLMProvider, LLMResult
 
 GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 GEMINI_CACHE_URL = "https://generativelanguage.googleapis.com/v1beta/cachedContents"
-DEFAULT_MODEL = "gemini-2.5-flash"  # KI-183 retired gemini-2.0-flash → 2.5-flash (free-tier, brain-grade — see header). NOT the -lite tier: it silently broke single-brain tool-calling (save_profile_field) and caused the live fact-find regression.
+DEFAULT_MODEL = "gemini-2.5-flash"  # free-tier, brain-grade. NOT the -lite tier: it does not reliably support single-brain tool-calling (save_profile_field).
 
 # ----------------------------------------------------------------------------
-# KI-199 — module-level cachedContents registry.
+# Module-level cachedContents registry.
 #
 # Keyed by `(model, sha256(system_text))` so the same base preamble shared
-# across sales_brain calls deduplicates onto one cache. Each value is a small
+# across brain calls deduplicates onto one cache. Each value is a small
 # dict with the cache `name` (the server-side resource id used in subsequent
 # generateContent bodies as `cachedContent`) and the local-clock `expires_at`
 # wall-time so we can self-evict before issuing a guaranteed-miss request.
@@ -77,7 +76,7 @@ DEFAULT_MODEL = "gemini-2.5-flash"  # KI-183 retired gemini-2.0-flash → 2.5-fl
 _CACHE_REGISTRY: dict[tuple[str, str, str], dict] = {}
 _CACHE_REGISTRY_LOCK = threading.Lock()
 
-# A4 (2026-05-15) — Gemini cachedContents server-side TTL ceiling. Google's
+# Gemini cachedContents server-side TTL ceiling. Google's
 # `cachedContents` resources live up to ~60min on free tier; we refresh
 # before that ceiling so an in-flight call never lands on an expired cache.
 # `CACHE_REFRESH_AGE_SEC` is the wall-clock age at which we proactively
@@ -89,11 +88,11 @@ CACHE_REFRESH_AGE_SEC = 50 * 60  # 50min — refresh BEFORE 60min server ceiling
 def _cache_key(model: str, system_text: str, dynamic_prefix: str = "") -> tuple[str, str, str]:
     """Build the registry key for a (model, system_text, dynamic_prefix) tuple.
 
-    A4 (2026-05-15) — Cache key collision fix: SHA256 of preamble alone is
-    insufficient when `_dynamic_profile_block` varies per persona. The key
-    now partitions on a separate `dynamic_prefix` hash so per-persona
-    caches don't collide on the same static preamble hash. `dynamic_prefix`
-    defaults to "" so existing callers retain prior behaviour.
+    The key partitions on a separate `dynamic_prefix` hash (in addition to
+    the preamble SHA256) so per-persona caches don't collide on the same
+    static preamble hash when `_dynamic_profile_block` varies per persona.
+    `dynamic_prefix` defaults to "" so callers that don't pass it get the
+    preamble-only key.
 
     Hashing inputs rather than storing the raw string keeps the registry
     footprint tiny even when the preamble is multi-KB.
@@ -104,18 +103,18 @@ def _cache_key(model: str, system_text: str, dynamic_prefix: str = "") -> tuple[
 
 
 # ---------------------------------------------------------------------------
-# A4 (2026-05-15) — Normalized provider error class.
+# Normalized provider error class.
 #
 # Gemini's REST surface returns different error shapes for different failure
 # modes (429 rate-limit, 400 BlockedReason / SafetyRating, 404 cache not
-# found, 500/503 server errors). The tier wrapper needs a stable contract:
+# found, 500/503 server errors). The brain tier needs a stable contract:
 # `BrainProviderError(retryable=bool)` where `retryable=True` signals the
 # tier should fall through to the next provider, and `retryable=False`
 # signals a hard error (auth / content blocked) that should surface to the
 # caller without burning fallback budget.
 # ---------------------------------------------------------------------------
 class BrainProviderError(RuntimeError):
-    """Stable provider-error envelope consumed by TieredBrainLLM.
+    """Stable provider-error envelope consumed by the brain tier.
 
     Attributes:
       provider:   short name ("gemini" / "nim" / ...)
@@ -142,7 +141,7 @@ class BrainProviderError(RuntimeError):
 def _classify_gemini_error(status_code: int, detail: str) -> BrainProviderError:
     """Map a Gemini REST response into BrainProviderError(retryable=bool).
 
-    Routing rules (matches TieredBrainLLM expectations):
+    Routing rules (the brain tier's expectations):
       - 429 (rate-limit / quota)              → retryable (next tier)
       - 5xx (server errors)                   → retryable (next tier)
       - 408 / 504 (timeout)                   → retryable
@@ -184,9 +183,9 @@ def invalidate_cache(model: str, system_text: str, dynamic_prefix: str = "") -> 
     alive (it will lapse on TTL), but our reference is gone so the next
     chat() call provisions a fresh one.
 
-    A4 (2026-05-15) — `dynamic_prefix` is an optional partition arg; defaults
-    to "" so existing callers retain prior behaviour. When supplied, only the
-    matching (model, system_text, dynamic_prefix) entry is dropped.
+    `dynamic_prefix` is an optional partition arg; defaults to "". When
+    supplied, only the matching (model, system_text, dynamic_prefix)
+    entry is dropped.
     """
     key = _cache_key(model, system_text, dynamic_prefix)
     with _CACHE_REGISTRY_LOCK:
@@ -270,8 +269,7 @@ class GoogleGeminiLLM(LLMProvider):
         Re-uses an existing live cache from the module registry when the
         (model, system_text) pair matches AND the local `expires_at` is still
         in the future. Cache misses + creation failures are silent (logged at
-        INFO) so a caching outage never breaks the main path — KI-199 brief
-        requires fail-safe behaviour.
+        INFO) so a caching outage never breaks the main path (fail-safe).
         """
         if not self.api_key or not system_text:
             return None
@@ -280,8 +278,8 @@ class GoogleGeminiLLM(LLMProvider):
         now = time.time()
         with _CACHE_REGISTRY_LOCK:
             entry = _CACHE_REGISTRY.get(key)
-            # A4 (2026-05-15) — TWO-stage refresh:
-            #   (a) self-evict ~10s before LOCAL expires_at (was already here).
+            # TWO-stage refresh:
+            #   (a) self-evict ~10s before LOCAL expires_at.
             #   (b) PROACTIVELY refresh if the entry is older than
             #       CACHE_REFRESH_AGE_SEC (50min) regardless of expires_at —
             #       guards against server-side TTL drift on long-lived
@@ -349,8 +347,8 @@ class GoogleGeminiLLM(LLMProvider):
                 # truth, but we shadow it locally so we self-evict before
                 # the inevitable 4xx on an expired reference.
                 "expires_at": now_create + ttl_seconds,
-                # A4 (2026-05-15) — created_at lets us proactively refresh
-                # entries that have lived past CACHE_REFRESH_AGE_SEC even
+                # created_at lets us proactively refresh entries that have
+                # lived past CACHE_REFRESH_AGE_SEC even
                 # when caller set a longer TTL than Google honours.
                 "created_at": now_create,
             }
@@ -410,12 +408,11 @@ class GoogleGeminiLLM(LLMProvider):
         # connection releases its slot on its own deadline rather than holding
         # past the outer wait_for cancellation.
         #
-        # A4 (2026-05-15) — Timeout binding: bind the SDK/httpx read timeout
-        # to `self.timeout - 2.0` so the underlying connection times out
-        # ~2s BEFORE the tier-wrapper's outer wait_for cancellation. This
-        # surfaces a clean BrainProviderError(retryable=True) instead of
-        # asyncio.CancelledError leaking up through the cancellation chain
-        # (which the tier wrapper has historically misclassified).
+        # Timeout binding: bind the httpx read timeout to
+        # `self.timeout - 2.0` so the underlying connection times out ~2s
+        # BEFORE the outer wait_for cancellation. This surfaces a clean
+        # BrainProviderError(retryable=True) instead of an
+        # asyncio.CancelledError leaking up through the cancellation chain.
         read_timeout = max(2.0, self.timeout - 2.0)
         client_timeout = httpx.Timeout(
             connect=2.0,
@@ -430,9 +427,9 @@ class GoogleGeminiLLM(LLMProvider):
             except (asyncio.CancelledError, KeyboardInterrupt, SystemExit):
                 raise
             except httpx.TimeoutException as e:
-                # A4 (2026-05-15) — TimeoutException → retryable
-                # BrainProviderError so the tier wrapper falls through
-                # cleanly instead of seeing asyncio.CancelledError.
+                # TimeoutException → retryable BrainProviderError so the
+                # tier falls through cleanly instead of seeing
+                # asyncio.CancelledError.
                 raise BrainProviderError(
                     f"Gemini timeout after {read_timeout:.1f}s (model={self.model})",
                     provider="gemini", retryable=True, status=None,
@@ -443,7 +440,7 @@ class GoogleGeminiLLM(LLMProvider):
                     f"Gemini transport error ({type(e).__name__}): {str(e)[:200]}",
                     provider="gemini", retryable=True, status=None,
                 ) from e
-            # KI-199 — graceful fallback when a cache reference is stale.
+            # Graceful fallback when a cache reference is stale.
             # Symptoms: 400/404 with body mentioning "cachedContent" /
             # "cache" / "not found". Strip the reference, re-add the inline
             # systemInstruction, drop the registry entry, retry once.
@@ -484,8 +481,8 @@ class GoogleGeminiLLM(LLMProvider):
                         provider="gemini", retryable=True, status=None,
                     ) from e
             if resp.status_code >= 400:
-                # A4 (2026-05-15) — Normalize the error into BrainProviderError
-                # so the tier wrapper sees a stable contract:
+                # Normalize the error into BrainProviderError so the tier
+                # sees a stable contract:
                 #   retryable=True  → fall through to next tier
                 #   retryable=False → surface to caller (auth/content-block)
                 # The original httpx.HTTPStatusError is preserved as __cause__
@@ -542,13 +539,12 @@ def get_gemini_llm(
 ) -> GoogleGeminiLLM:
     """Return a fresh GoogleGeminiLLM client.
 
-    25s timeout matches the KI-179 brief — Gemini Flash typically responds in
-    1-3s so 25s is a generous outer bound that still bails fast on a quota /
-    network stall.
+    Gemini Flash typically responds in 1-3s so the 25s default timeout is
+    a generous outer bound that still bails fast on a quota / network
+    stall.
 
     Common models:
-      - "gemini-2.0-flash"   → fast, conversational, sales_brain Tier 0
-      - "gemini-2.5-flash"   → slightly heavier reasoning, brain main Tier 0
+      - "gemini-2.5-flash"   → conversational brain tier (default)
     """
     return GoogleGeminiLLM(model=model, timeout=timeout)
 

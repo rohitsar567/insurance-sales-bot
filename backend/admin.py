@@ -13,10 +13,10 @@ Setup:
   Add to Space secrets (Settings → Variables and secrets):
     ADMIN_PASSWORD = your-strong-password-here
 
-Returns 401 Unauthorized on bad/missing password. The earlier IP allowlist
-gate (ADMIN_IP_ALLOWLIST + 404-to-hide-existence) was removed in KI-097
-because it added operational complexity (changing networks → locked out)
-without meaningful additional security beyond a strong password.
+Returns 401 Unauthorized on bad/missing password. Access is gated by a
+strong password only; there is no IP allowlist (it would add operational
+complexity — changing networks would lock the operator out — without
+meaningful additional security).
 """
 from __future__ import annotations
 
@@ -67,18 +67,15 @@ def _password_ok(supplied: Optional[str]) -> bool:
 
 
 def _check_admin(request: Request, password: Optional[str]) -> None:
-    """KI-097 — password-only gate. Raises 401 on bad/missing password.
+    """Password-only gate. Raises 401 on bad/missing password.
 
-    `request` is kept in the signature so callsites don't churn, but the
-    function no longer inspects the client IP. Earlier dual-gate behavior
-    (IP allowlist + 404-to-hide-existence) was removed in KI-097.
+    `request` is kept in the signature so callsites don't churn; the
+    function does not inspect the client IP.
     """
-    # TODO: enforce IP allowlist for hardening — verified 2026-05-15 that
-    # ADMIN_IP_ALLOWLIST is not configured on the HF Space (rohitsar567/
-    # InsuranceBot). Gate is password-only, which is acceptable for the
-    # current threat model per KI-097, but a future hardening pass should
-    # re-introduce an IP allowlist as a second factor (with a documented
-    # break-glass procedure so a network change doesn't lock ops out).
+    # TODO: enforce an IP allowlist as a second factor for hardening (with
+    # a documented break-glass procedure so a network change doesn't lock
+    # ops out). The gate is password-only, acceptable for the current
+    # threat model.
     if not _password_ok(password):
         raise HTTPException(status_code=401, detail="Unauthorized")
 
@@ -547,14 +544,12 @@ def _read_usage_24h() -> Optional[dict]:
     last USAGE_TAIL_LINES rows (typically covers ≈24h of activity at current
     traffic). Keeping the name aligns with the admin UI label.
 
-    ADR-039/040 + Path B (2026-05-15): the multi-brain split (fast_brain /
-    judge) and the standalone profile_extractor / paraphraser passes were
-    DELETED. The only role the live stack now emits is `brain` (see
-    providers.nvidia_nim_llm.get_brain_llm + llm_health.ROLES). The append-
-    only llm_usage.jsonl still contains pre-rewrite legacy rows tagged with
-    the retired roles, so we filter to the canonical role set — exactly as
-    /api/admin/usage already does via its `chains` dict — instead of blindly
-    surfacing every historical role value. llm_health.ROLES is the single
+    The live stack emits the `brain` role (see
+    providers.nvidia_nim_llm.get_brain_llm + llm_health.ROLES). The
+    append-only llm_usage.jsonl can contain rows tagged with non-canonical
+    role values, so we filter to the canonical role set — the same way
+    /api/admin/usage does via its `chains` dict — instead of surfacing
+    every role value present in the file. llm_health.ROLES is the single
     source of truth (also used as _LLM_HEALTH_CHAIN_ROLES below).
     """
     usage_path = settings.DATA_DIR / "llm_usage.jsonl"
@@ -633,9 +628,9 @@ _LLM_HEALTH_CHAIN_ROLES = llm_health.ROLES
 
 
 def _chain_names_map() -> dict[str, list[str]]:
-    """Live (post-admin-override) chain config — read off the module so admin
-    reorders applied earlier in the same process are reflected immediately.
-    Three-chain collapse (2026-05-15) — only the brain role remains."""
+    """Live (post-admin-override) chain config — read off the module so
+    admin reorders applied earlier in the same process are reflected
+    immediately. Only the brain role is present."""
     from backend.providers import nvidia_nim_llm as nim
     return {
         "brain": list(getattr(nim, "BRAIN_CHAIN", [])),
@@ -758,20 +753,20 @@ def _candidate_available_for_calls(h, now_mono: float) -> bool:
 
 
 def _candidate_credit_exhausted_strict(h, now_mono: float) -> bool:
-    """KI-122 — STRICT credit-exhausted rule for a single candidate.
+    """STRICT credit-exhausted rule for a single candidate.
 
     True ONLY when ALL three hold:
       (1) credits_remaining is NOT None (we have a real signal)
       (2) credits_remaining <= credits_low_water
       (3) credits_reset_at is set AND in the FUTURE (we're inside an
           active gating window — stale or absent reset means the
-          snapshot is no longer authoritative).
+          snapshot is not authoritative).
 
     This is intentionally stricter than `not _has_credits()` because the
     banner is louder than the elector. The elector falls through cheaply
-    on a single bad candidate; the banner falsely scaring the operator
-    when one quota-exhausted backup co-exists with a perfectly healthy
-    primary is the bug we're fixing here."""
+    on a single bad candidate; this strictness avoids falsely scaring the
+    operator when one quota-exhausted backup co-exists with a perfectly
+    healthy primary."""
     if h is None:
         return False
     if h.credits_remaining is None:
@@ -987,13 +982,11 @@ async def admin_llm_health(
 # ---------------------------------------------------------------------------
 
 # The seven canonical "ready-to-recommend" fact-find slots. Mirrors
-# single_brain._FALLBACK_REQUIRED_SLOTS (the live single-brain stack's
-# required set after the ADR-039/040 Path B rewrite) and needs_finder.
-# Profile's persisted fields. `dependents` was previously missing here even
-# though it is a required slot and is persisted on every profile JSON —
-# adding/removing a slot must stay in sync with that required set. Health is
-# captured as a list (empty list counts as "asked but no conditions" → still
-# a valid captured signal once the `asked` array contains the field name).
+# brain_tools._REQUIRED_FOR_READY (the recommendation-ready required set)
+# and needs_finder.Profile's persisted fields. Adding/removing a slot must
+# stay in sync with that required set. Health is captured as a list (empty
+# list counts as "asked but no conditions" → still a valid captured signal
+# once the `asked` array contains the field name).
 _PERSONA_DRIFT_SLOTS = ("name", "age", "dependents", "location_tier",
                         "income_band", "primary_goal", "health_conditions")
 
