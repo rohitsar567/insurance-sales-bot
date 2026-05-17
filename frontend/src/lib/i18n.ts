@@ -95,7 +95,7 @@ export const UI_STRINGS = {
     "detail.cashless": "Cashless",
     "detail.room_rent": "Room rent",
     "detail.generic_grade_title": "This is the generic grade for an average buyer.",
-    "detail.generic_grade_body": "Tell me about yourself (age, dependents, conditions, budget) and I'll re-score this policy for your situation. The same policy can be a B for a 30-year-old and a D for a 60-year-old with diabetes — context changes everything.",
+    "detail.generic_grade_body": "Tell me your age, dependents, health conditions and budget, and I'll re-score this plan for your situation. The same plan can grade B for a healthy 30-year-old but D for a 60-year-old with diabetes.",
     "detail.personalized_label": "Personalized for you · profile",
     "detail.profile_complete": "complete",
     "detail.methodology_q": "How is this score decided?",
@@ -122,7 +122,7 @@ export const UI_STRINGS = {
     // Grade one-liners (mirror backend/scorecard.py::grade_for)
     "grade.a": "Strong all-rounder — solid pick for the buyer.",
     "grade.b": "Good policy with a few notable gaps.",
-    "grade.c": "Decent baseline; check the trade-offs before signing.",
+    "grade.c": "A decent baseline — review the trade-offs before you decide.",
     "grade.d": "Material concerns — only suitable for specific use-cases.",
     "grade.f": "Significant gaps — alternative options are likely better.",
 
@@ -210,7 +210,7 @@ export const UI_STRINGS = {
     "detail.cashless": "कैशलेस",
     "detail.room_rent": "Room rent",
     "detail.generic_grade_title": "यह औसत खरीदार के लिए सामान्य ग्रेड है।",
-    "detail.generic_grade_body": "अपने बारे में बताइए (उम्र, dependents, conditions, budget) और मैं इस policy को आपके लिए re-score करूंगा। एक ही पॉलिसी 30 साल वाले के लिए B हो सकती है और 60 साल वाले diabetic के लिए D — context से सब बदलता है।",
+    "detail.generic_grade_body": "अपनी उम्र, dependents, health conditions और budget बताइए, और मैं इस plan को आपके लिए re-score करूंगा। एक ही plan एक स्वस्थ 30 साल वाले के लिए B और 60 साल वाले diabetic के लिए D हो सकता है।",
     "detail.personalized_label": "आपके लिए personalized · profile",
     "detail.profile_complete": "complete",
     "detail.methodology_q": "यह स्कोर कैसे तय हुआ?",
@@ -233,7 +233,7 @@ export const UI_STRINGS = {
 
     "grade.a": "मजबूत all-rounder — खरीदार के लिए ठोस विकल्प।",
     "grade.b": "अच्छी policy, कुछ notable gaps के साथ।",
-    "grade.c": "ठीक-ठाक baseline; sign करने से पहले trade-offs जाँचें।",
+    "grade.c": "एक ठीक-ठाक baseline — फैसला करने से पहले trade-offs जाँचें।",
     "grade.d": "गंभीर concerns — सिर्फ specific use-case के लिए ठीक।",
     "grade.f": "बड़े gaps — alternative options बेहतर होंगे।",
 

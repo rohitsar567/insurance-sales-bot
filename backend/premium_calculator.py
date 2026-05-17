@@ -75,9 +75,9 @@ class PremiumEstimate:
 # Fallback factors when no premium data file is available — used so the bot
 # can still calculate plausible numbers in dev / cold-start.
 FALLBACK_BASE_INR = 8500  # age 30, SI ₹5L, metro, non-smoker, individual
-FALLBACK_AGE = {
-    "18-25": 0.85, "26-35": 1.0, "36-45": 1.4,
-    "46-55": 2.1, "56-65": 3.2, "65+": 4.5,
+FALLBACK_AGE = {  # keys MUST match _age_bucket() AND the data file
+    "18-25": 0.85, "26-35": 1.0, "36-45": 1.4, "46-55": 2.1,
+    "56-65": 3.2, "66-75": 4.5, "75+": 5.8,
 }
 FALLBACK_SI = {
     "500000": 1.0, "1000000": 1.7, "1500000": 2.2,
@@ -303,7 +303,13 @@ def _age_bucket(age: int) -> str:
     if age <= 45: return "36-45"
     if age <= 55: return "46-55"
     if age <= 65: return "56-65"
-    return "65+"
+    # BUGFIX 2026-05-18: the data file's scaling_factors.age_multipliers
+    # uses keys "66-75"/"75+" (NOT "65+"). Returning "65+" made
+    # age_mults.get(..., 1.0) silently default to 1.0 for every elderly
+    # user → premium COLLAPSED above 65 (Star FHO ₹41,700→₹13,000;
+    # 1,428 mono_age violations). Keys MUST match the multiplier table.
+    if age <= 75: return "66-75"
+    return "75+"
 
 
 def _si_bucket(si: int) -> str:
@@ -322,21 +328,318 @@ def _load_data() -> dict:
         return {}
 
 
-def _interpolate_from_samples(samples: list[dict], age: int, sum_insured: int) -> Optional[int]:
-    """Pick or interpolate the closest two samples by (age, sum_insured) and
-    return the closest premium. Simple — not statistically principled, but
-    'directionally right' is the bar (D-007)."""
+_SAMPLE_DOCTYPE_SUFFIXES = (
+    "__wordings", "__cis", "__brochure", "__prospectus", "__policy",
+)
+
+
+# Curated sample ENTRIES proven bad by the 2026-05-18 reference-normalized
+# audit — positive evidence, not heuristic. sbi-general__arogya-supreme:
+# low-trust `brochure_extract` from a bare-homepage URL, ~3x inflated
+# (₹38,903 for a ₹5L floater; produced ₹146,600 at couple/20L). A per-lakh
+# ceiling can't catch uniformly-inflated data, so this specific entry is
+# quarantined → it ALWAYS uses the model (sane) until Task B research
+# replaces it with an evidenced quote (then remove it here + add samples).
+# (Niva Bupa ReAssure / Star Senior Red Carpet were also flagged but
+# REVIEWED and RETAINED — high-but-plausible premium / senior pricing;
+# discarding real data on a borderline threshold would be over-correction.)
+# sbi-general__arogya-supreme was UNQUARANTINED 2026-05-18 — its bad
+# brochure-extract samples were physically REPLACED with 2 real official
+# SBI rate-chart figures (UIN SBIHLIP21043V012122) by the research harvest,
+# so it now grades off real data. The mechanism is retained (empty) for any
+# future proven-bad entry; the input ₹/lakh sanity guard + output ceiling
+# remain as the general defence.
+_KNOWN_BAD_SAMPLE_KEYS: frozenset[str] = frozenset()
+
+
+def _canonical_sample_key(policy_id: Optional[str], base_premiums: dict) -> Optional[str]:
+    """Resolve a recommended/marketplace policy_id to its base_premiums key.
+
+    base_premiums keys are clean ``insurer__product`` (e.g.
+    ``sbi-general__arogya-supreme``), but incoming ids may carry a
+    ``__brochure`` / ``__cis`` / ``__wordings`` doctype suffix
+    (``sbi-general__arogya-supreme__brochure``) or be the single-hyphen
+    ``stored_policy_id`` form (``sbi-general-arogya-supreme``). The old
+    ``policy_id in base_premiums`` exact match silently missed all of
+    those, so policies that DO have a real curated sample fell to the
+    policy-blind fallback (the ₹33,700 collision the user saw for SBI
+    Arogya Supreme / Aditya Birla Group Activ Health, which both have real
+    samples). This routes the 28 REAL curated samples to every variant —
+    pure correctness, no new/fabricated data.
+    """
+    if not policy_id:
+        return None
+    pid = policy_id.strip()
+    cands = [pid]
+    base = pid
+    for suf in _SAMPLE_DOCTYPE_SUFFIXES:
+        if base.endswith(suf):
+            base = base[: -len(suf)]
+            break
+    if base != pid:
+        cands.append(base)
+    # also the single-hyphen stored_policy_id form (insurer-product)
+    for c in list(cands):
+        cands.append(c.replace("__", "-"))
+    for c in cands:
+        if c in base_premiums:
+            return None if c in _KNOWN_BAD_SAMPLE_KEYS else c
+    cset = set(cands)
+    for k, v in base_premiums.items():
+        sid = (v.get("policy_id") or "")
+        if sid and (sid in cset or sid.replace("-", "__", 1) in cset):
+            return None if k in _KNOWN_BAD_SAMPLE_KEYS else k
+    return None
+
+
+def _per_lakh_band(policy_id: str) -> tuple[float, float]:
+    """Sane annual ₹-per-₹1L-SI band by product TYPE. Comprehensive
+    indemnity sits ~₹250–6500/L; TOP-UPs are legitimately ~15x cheaper
+    per lakh (high deductible — they only pay above it), so a flat band
+    would wrongly reject correct top-up data; benefit-based plans
+    (hospital-cash / fixed-benefit / cancer / critical-illness) aren't
+    per-lakh priced at all, so don't range-check them."""
+    t = _policy_product_type(policy_id)
+    if t == "topup":
+        return (3.0, 1100.0)
+    if t == "cash":
+        # FINITE ceiling (was inf) so the absolute cap actually applies —
+        # an inf ceiling skipped the cap and let hospital-cash plans
+        # out-price comprehensive (audit P7, seeds 11/23/37).
+        return (50.0, 1800.0)
+    if t == "disease":
+        return (3.0, 3500.0)         # single-disease — cheap, bounded
+    if t == "sanjeevani":
+        return (150.0, 9000.0)       # standardised indemnity — comprehensive-
+                                     # class band (matches the audit oracle's
+                                     # arogya-sanjeevani = comprehensive)
+    return (150.0, 9000.0)           # comprehensive indemnity (matches the
+                                     # audit oracle band; conservative ceiling)
+
+
+_ptype_cache: dict = {}
+
+
+# Traceable overrides for genuinely-ambiguous IRDAI products the generic
+# signals get wrong — each tied to the real product structure:
+#  • hdfc-ergo Energy = a COMPREHENSIVE indemnity plan FOR diabetics /
+#    hypertensives; its curated policy_type='critical_illness' is wrong.
+#  • iffco-tokio Health Protector PLUS = a Top-Up / Super-Top-Up — that
+#    status is only in the display name, never the policy_id or facts.
+_PRODUCT_TYPE_OVERRIDE: dict[str, str] = {
+    "hdfc-ergo__energy": "comprehensive",
+    "iffco-tokio__health-protector-plus": "topup",
+}
+
+
+def _policy_product_type(policy_id: Optional[str]) -> str:
+    """Real product type — 'topup' | 'cash' | 'disease' | 'sanjeevani' |
+    'comprehensive'. Derived from the curated/extracted FACTS we already
+    have (policy_type / deductible_amount), NOT id substrings: products
+    like `optima-enhance`, `care-supreme-enhance`, `bajaj extra care` are
+    top-ups whose id lacks "top-up", so substring detection mis-priced
+    them at the comprehensive cap (audit P7/P8 root cause). Falls back to
+    id keywords only when facts are unavailable. Cached."""
+    pid = (policy_id or "").strip()
+    if not pid:
+        return "comprehensive"
+    if pid in _ptype_cache:
+        return _ptype_cache[pid]
+    t = "comprehensive"
+    s = pid.lower()
+    for _ok, _ov in _PRODUCT_TYPE_OVERRIDE.items():
+        if _ok in s:
+            _ptype_cache[pid] = _ov
+            return _ov
+    _DISEASE_KW = (
+        "cancer", "critical illness", "critical-illness", "critical_illness",
+        "criti", "cardiac care", "cardiac-care",
+    )
+    try:
+        from backend.brain_tools import _load_policy_facts  # lazy: no cycle
+
+        f = _load_policy_facts(pid) or {}
+        pt = str(f.get("policy_type") or f.get("policy_type_indemnity_or_fixed") or "").lower()
+        ded = f.get("deductible_amount")
+        try:
+            ded = float(ded) if ded not in (None, "", []) else 0.0
+        except (TypeError, ValueError):
+            ded = 0.0
+        if "sanjeevani" in s or "sanjeevani" in pt:
+            t = "sanjeevani"
+        elif any(k in pt for k in ("top up", "top-up", "topup", "super top")) or ded >= 200_000:
+            # Only a HIGH deductible (≥₹2L — true top-up/super-top-up scale)
+            # implies a top-up. Comprehensive plans routinely offer a small
+            # VOLUNTARY deductible (e.g. Bajaj Health Guard ded ₹50k,
+            # policy_type=family_floater) — that is NOT a top-up. The old
+            # `ded > 0` mislabelled such flagships as cheap top-ups.
+            t = "topup"
+        elif any(k in s or k in pt for k in _DISEASE_KW):
+            # DISEASE before CASH: a critical-illness / cancer / cardiac
+            # plan is structurally fixed-benefit, but it is a DISEASE
+            # product — not generic hospital-cash (Criti Care was wrongly
+            # 'cash', Criti Medicare wrongly 'comprehensive').
+            t = "disease"
+        elif any(k in pt for k in ("hospital cash", "daily cash", "fixed benefit", "fixed_benefit", "hospi cash")):
+            t = "cash"
+    except Exception:  # noqa: BLE001 — facts optional; fall back to id keywords
+        t = "comprehensive"
+    if t == "comprehensive":  # id-keyword fallback / reinforcement
+        if "sanjeevani" in s:
+            t = "sanjeevani"
+        elif any(k in s for k in ("super-top", "top-up", "topup", "top_up", "enhance", "booster", "extra-care", "super-secure")):
+            t = "topup"
+        elif any(k in s for k in _DISEASE_KW):
+            t = "disease"
+        elif any(k in s for k in ("hospital-cash", "daily-cash", "fixed-benefit", "hospi-care", "hospi-cash")):
+            t = "cash"
+    _ptype_cache[pid] = t
+    return t
+
+
+def _type_rel_cap(policy_id: Optional[str]) -> float:
+    """Max fraction of the comprehensive-equivalent a non-comprehensive
+    product may cost at the SAME profile. A cancer / top-up / hospital-cash
+    plan must never out-price a full indemnity plan (audit P7). 1.0 ⇒ no
+    relative cap (comprehensive itself)."""
+    return {
+        "topup": 0.50,
+        "cash": 0.40,
+        "disease": 0.55,
+        # Arogya Sanjeevani is the IRDAI-standardised BASIC indemnity plan
+        # (capped SI, mandatory 5% co-pay, room caps) — deliberately a
+        # cut-down, cheaper product, so it MUST price below a full
+        # comprehensive plan. Its ₹/lakh sanity band overlaps comprehensive
+        # (handled in _per_lakh_band), but its TOTAL must stay under
+        # comprehensive (audit P7). 0.85 = "noticeably cheaper than full
+        # comprehensive" — restored after an earlier wrong declassification.
+        "sanjeevani": 0.85,
+    }.get(_policy_product_type(policy_id), 1.0)
+
+
+def _attribute_base_factor(policy_id: Optional[str]) -> float:
+    """Policy-TYPE base multiplier for the NO-curated-sample path (#36-B /
+    Task C) so a top-up / hospital-cash / disease-specific plan is not
+    priced identically to a comprehensive indemnity plan (the identical-₹
+    collision). Comprehensive indemnity = 1.0 — keeps the already-calibrated
+    baseline, so the dominant type does NOT regress and stays consistent
+    with the sample-anchored policies' level. The discounts are directional
+    and domain-grounded (the real Royal Sundaram Advanced Top-Up curated
+    sample empirically shows ~0.3x of comprehensive), NOT fabricated
+    precision. Two structurally-similar plans may still get the same
+    number — that is honest, and such estimates are labelled 'modelled,
+    not a quote' (#37b). No data I/O — deterministic on the id."""
+    return {
+        "topup": 0.32,
+        "cash": 0.30,
+        "disease": 0.50,
+        "sanjeevani": 0.70,
+    }.get(_policy_product_type(policy_id), 1.0)
+
+
+def _plausible_samples(samples: list[dict], policy_id: str) -> list[dict]:
+    """Quarantine curated samples whose implied ₹/lakh is impossible for
+    the policy's product type. A bad sample (e.g. the SBI Arogya Supreme
+    ``brochure_extract`` at ₹7,781/L) must NEVER emit an absurd premium;
+    such a policy falls back to the model instead. Legit cheap top-ups
+    pass their own (low) band. No fabrication — this only DROPS data that
+    is provably wrong, never invents."""
+    lo, hi = _per_lakh_band(policy_id)
+    out: list[dict] = []
+    for s in samples or []:
+        si = s.get("sum_insured_inr") or 0
+        pr = s.get("annual_premium_inr") or 0
+        if si <= 0 or pr <= 0:
+            continue
+        per_lakh = pr / (si / 100_000.0)
+        if lo <= per_lakh <= hi:
+            out.append(s)
+    return out
+
+
+def _best_sample(samples: list[dict], age: int, sum_insured: int) -> Optional[dict]:
+    """The single closest sample by distance in (age, log SI) space. The
+    SAME sample MUST drive BOTH the base premium AND the sample→user
+    normalization (#38). Selecting the base from one sample but
+    normalizing with a different sample's age/SI buckets catastrophically
+    mis-scales — a ₹25L premium normalized as if it were a ₹5L sample
+    blew Star Comprehensive up to ₹116,800."""
     if not samples:
         return None
-    # Score each sample by distance in (age, log(SI)) space
     import math
+
     def dist(s):
         return (
             (s["age"] - age) ** 2
             + (math.log(max(1, s["sum_insured_inr"])) - math.log(max(1, sum_insured))) ** 2 * 50
         )
-    best = min(samples, key=dist)
-    return best.get("annual_premium_inr")
+
+    return min(samples, key=dist)
+
+
+def _interpolate_from_samples(samples: list[dict], age: int, sum_insured: int) -> Optional[int]:
+    """Back-compat shim — annual premium of the single best sample (see
+    _best_sample). Retained so external / test callers keep working."""
+    s = _best_sample(samples, age, sum_insured)
+    return s.get("annual_premium_inr") if s else None
+
+
+_AGE_BUCKET_ORD = {"18-25": 0, "26-35": 1, "36-45": 2, "46-55": 3, "56-65": 4, "65+": 5}
+
+
+def _anchor_too_far(sample: dict, age: int, sum_insured: int) -> bool:
+    """A sample is only a trustworthy anchor WITHIN its measured regime.
+    Stretching one far outside it (e.g. a ₹5L sample priced up to ₹50L,
+    or any sample to 60+/multi-PED) compounds the bucketed age/SI/floater
+    multipliers into absurd absolutes that a per-lakh ceiling can't catch
+    (Star Comprehensive ₹162,100 @ ₹50L; Star Cancer ₹119,200 @ 60+PED).
+    Outside the trust region we use the calibrated, bounded type model
+    instead of an unreliable extrapolation. Trust region: SI within 3x and
+    age within 1 bucket of the sample."""
+    try:
+        s_si = float(sample.get("sum_insured_inr") or 0)
+        if s_si <= 0:
+            return True
+        si_ratio = max(sum_insured, s_si) / max(1.0, min(sum_insured, s_si))
+        if si_ratio > 3.0:
+            return True
+        gap = abs(
+            _AGE_BUCKET_ORD.get(_age_bucket(int(sample.get("age") or age)), 1)
+            - _AGE_BUCKET_ORD.get(_age_bucket(age), 1)
+        )
+        return gap >= 2
+    except Exception:  # noqa: BLE001 — never break pricing on a guard
+        return False
+
+
+# Representative real comprehensive policies (sample-anchored flagships)
+# used as the P7 reference set: a cheap-type plan is capped below the
+# CHEAPEST real comprehensive at the SAME profile — not a synthetic
+# FALLBACK figure (audit P7 root cause, seeds 11/23/37/83: the phantom
+# comp-equiv exceeded real low-anchored comprehensives).
+_COMP_REF_BASKET: tuple[str, ...] = (
+    "hdfc-ergo__optima-secure",
+    "care-health__care-supreme",
+    "icici-lombard__elevate",
+    "niva-bupa__reassure",
+    "star-health__family-health-optima",
+    "aditya-birla__activ-assure-diamond",
+    "bajaj-allianz__health-guard",
+    "tata-aig__medicare",
+)
+
+_comp_ref_cache: list = []
+
+
+def _comp_ref_ids() -> list:
+    """The P7 reference set, filtered to genuinely COMPREHENSIVE-classified
+    members (defence-in-depth: a misclassified member would otherwise let a
+    topup-capped low price masquerade as 'cheapest comprehensive' and
+    manufacture phantom P7 violations). Cached; never empty."""
+    if not _comp_ref_cache:
+        keep = [m for m in _COMP_REF_BASKET if _policy_product_type(m) == "comprehensive"]
+        _comp_ref_cache.extend(keep or list(_COMP_REF_BASKET))
+    return _comp_ref_cache
 
 
 def estimate(
@@ -358,6 +661,9 @@ def estimate(
     # D2 additions (2026-05-15) — copay_pct + family_medical_history.
     copay_pct: Optional[int] = None,
     family_medical_history: Optional[list] = None,
+    _ref: bool = False,  # internal: True when pricing a comprehensive
+                         # reference-basket member (P7) — skips the
+                         # relative cap so there is no recursion.
 ) -> PremiumEstimate:
     data = _load_data()
     base_premiums = data.get("base_premiums", {})
@@ -372,45 +678,63 @@ def estimate(
 
     sources = []
     sample_used = None
-    base = FALLBACK_BASE_INR
 
-    # Try policy-specific sample first
-    if policy_id and policy_id in base_premiums:
-        entry = base_premiums[policy_id]
-        samples = entry.get("samples", [])
-        guess = _interpolate_from_samples(samples, age, sum_insured_inr)
-        if guess is not None:
-            base = guess
-            sample_used = min(samples, key=lambda s: abs(s["age"] - age) + abs(s["sum_insured_inr"] - sum_insured_inr) / 100000)
-            if sample_used.get("source_url"):
-                sources.append(sample_used["source_url"])
-            # The sample's age/SI may differ from user's — adjust via ratios from base
-            sample_age_bucket = _age_bucket(sample_used["age"])
-            user_age_bucket = _age_bucket(age)
-            base *= age_mults.get(user_age_bucket, 1.0) / age_mults.get(sample_age_bucket, 1.0)
-            sample_si_bucket = _si_bucket(sample_used["sum_insured_inr"])
-            user_si_bucket = _si_bucket(sum_insured_inr)
-            base *= si_mults.get(user_si_bucket, 1.0) / si_mults.get(sample_si_bucket, 1.0)
-        else:
-            # No samples for this policy — use generic base
-            base = FALLBACK_BASE_INR * age_mults.get(_age_bucket(age), 1.0) * si_mults.get(_si_bucket(sum_insured_inr), 1.0)
+    # ── STABLE per-policy BASE (rebuilt 2026-05-18, #44) ───────────────────
+    # The old nearest-neighbour SNAP (_best_sample → normalize with THAT
+    # one sample's buckets) made adjacent (age,SI) queries jump to wildly
+    # different anchors → age/SI curves FOLDED (audit P3/P4/P6, 3,316
+    # violations). New method: normalize EVERY plausible sample back to a
+    # common basis (age 30 / ₹5L / individual / metro) by dividing out its
+    # OWN bucket multipliers, take the robust MEDIAN → one stable base that
+    # uses ALL the real data and never snaps. The user's profile is then
+    # applied ONCE below, so the price is a monotone function of the
+    # profile BY CONSTRUCTION. No sample → the type-aware model base.
+    sample_key = _canonical_sample_key(policy_id, base_premiums)
+    samples = (
+        _plausible_samples(base_premiums[sample_key].get("samples", []), policy_id)
+        if sample_key else []
+    )
+    norm_bases: list[float] = []
+    for s in samples:
+        try:
+            b = float(s["annual_premium_inr"])
+            b /= age_mults.get(_age_bucket(int(s.get("age") or 30)), 1.0)
+            b /= si_mults.get(_si_bucket(int(s.get("sum_insured_inr") or 500000)), 1.0)
+            b /= floater_mults.get(max(0, int(s.get("family_size") or 1) - 1), 1.0)
+            b /= city_mults.get(s.get("city_tier") or "metro", 1.0)
+            if b > 0:
+                norm_bases.append(b)
+        except Exception:  # noqa: BLE001 — a single bad sample must not break pricing
+            continue
+    if norm_bases:
+        norm_bases.sort()
+        m = len(norm_bases)
+        base = (
+            norm_bases[m // 2]
+            if m % 2
+            else (norm_bases[m // 2 - 1] + norm_bases[m // 2]) / 2.0
+        )
+        sample_used = min(
+            samples,
+            key=lambda s: abs(int(s.get("age") or 30) - age)
+            + abs(int(s.get("sum_insured_inr") or 0) - sum_insured_inr) / 1e5,
+        )
+        if sample_used.get("source_url"):
+            sources.append(sample_used["source_url"])
     else:
-        # No policy specified or no data — generic
-        base = FALLBACK_BASE_INR * age_mults.get(_age_bucket(age), 1.0) * si_mults.get(_si_bucket(sum_insured_inr), 1.0)
+        # No usable sample → type-aware model base (comprehensive = 1.0×,
+        # so the dominant type keeps its calibrated level / no regression).
+        base = FALLBACK_BASE_INR * _attribute_base_factor(policy_id)
 
-    # City + smoker + family floater modifiers always apply
+    # ── Apply the USER profile ONCE — monotone non-decreasing factors ─────
+    base *= age_mults.get(_age_bucket(age), 1.0)
+    base *= si_mults.get(_si_bucket(sum_insured_inr), 1.0)
     base *= city_mults.get(city_tier, 1.0)
     if smoker:
         base *= smoker_mult
     base *= floater_mults.get(family_size, 1.0)
-    # PED load — diabetes/hypertension/heart raise premiums materially
     base *= ped_mults.get(pre_existing_conditions, 1.0)
-    # Co-pay discount — opting into co-payment lowers premium
     base *= _copay_multiplier(copayment_pct)
-
-    # B6 loadings — health, existing cover, parents-on-cover. Each is
-    # 1.0× when the corresponding SLOT_UNION field is absent so legacy
-    # callers see no change in output.
     health_mult, health_label = _health_loading(health_conditions)
     base *= health_mult
     ec_mult, ec_label = _existing_cover_loading(existing_cover_inr)
@@ -419,16 +743,64 @@ def estimate(
         dependents, parents_age_max, parents_has_ped
     )
     base *= parents_mult
-
-    # D2 — copay_pct discount + family_medical_history loading. Each is 1.0×
-    # when the corresponding SLOT_UNION field is None / empty, so legacy
-    # callers see no change.
     copay_mult, copay_label = _copay_discount(copay_pct)
     base *= copay_mult
     fam_mult, fam_label = _family_history_loading(family_medical_history)
     base *= fam_mult
 
+    # ── Type-aware caps, applied LAST as order-preserving min() ───────────
+    # min(monotone curve, monotone ceiling) stays monotone — fixes the
+    # absurd tails (P8) and disease/top-up out-pricing comprehensive (P7)
+    # WITHOUT reintroducing folds or smoker/PED inversions (P1/P2).
+    si_lakhs = max(1.0, sum_insured_inr / 100_000.0)
+    _lo_per_lakh, _hi_per_lakh = _per_lakh_band(policy_id or "")
+    if _hi_per_lakh != float("inf"):
+        base = min(base, _hi_per_lakh * si_lakhs)            # P8 absolute (high)
+    rel = _type_rel_cap(policy_id)
+    _p7_cap: Optional[float] = None
+    if rel < 1.0 and not _ref:                               # P7 relative
+        # Cap below the CHEAPEST REAL comprehensive at THIS exact profile —
+        # NOT a synthetic FALLBACK figure (the phantom comp-equiv exceeded
+        # real low-anchored comprehensives → cheap-types out-priced them;
+        # audit P7 seeds 11/23/37/83). Each basket member is priced at the
+        # identical profile with _ref=True, which skips this cap so there
+        # is no recursion.
+        _pf = dict(
+            age=age, sum_insured_inr=sum_insured_inr, city_tier=city_tier,
+            smoker=smoker, family_size=family_size,
+            pre_existing_conditions=pre_existing_conditions,
+            copayment_pct=copayment_pct, health_conditions=health_conditions,
+            existing_cover_inr=existing_cover_inr, dependents=dependents,
+            parents_age_max=parents_age_max, parents_has_ped=parents_has_ped,
+            copay_pct=copay_pct, family_medical_history=family_medical_history,
+        )
+        _comp_prices = []
+        for _cp in _comp_ref_ids():
+            try:
+                _comp_prices.append(
+                    estimate(policy_id=_cp, _ref=True, **_pf).point_estimate_inr
+                )
+            except Exception:  # noqa: BLE001 — a bad ref member must not break pricing
+                continue
+        if _comp_prices:
+            _p7_cap = rel * min(_comp_prices)
+
+    # P8 LOW-side floor — symmetric, order-preserving (max of a monotone
+    # curve with a monotone floor stays monotone, P6 unaffected). Without
+    # it, tiny-SI mass-scheme samples extrapolated to high SI collapsed to
+    # ~₹20-113/L, far below the type floor (audit P8, seeds 23/37/59).
+    if _lo_per_lakh > 0:
+        base = max(base, _lo_per_lakh * si_lakhs)
+
+    # P7 is the FINAL clamp — applied AFTER the low-floor so the floor can
+    # never lift a cheap-type back above the cheapest REAL comprehensive at
+    # an extreme profile (the strict all-148 residual the harness's looser
+    # comparison missed). min(monotone, monotone) stays monotone (P6 safe).
+    if _p7_cap is not None:
+        base = min(base, _p7_cap)
+
     point = int(round(base / 100) * 100)  # round to nearest ₹100
+
     return PremiumEstimate(
         policy_id=policy_id or "generic",
         point_estimate_inr=point,
@@ -436,8 +808,18 @@ def estimate(
         high_inr=int(point * 1.15),
         base_sample_used=sample_used,
         methodology=(
-            "Rules-based estimate from curated public quote samples; ±15% band "
-            "to reflect underwriting variance. NOT a binding quote."
+            (
+                "Anchored to a public quote we collected for this plan and "
+                "adjusted to your profile. The ±15% band reflects underwriting "
+                "variance. This is an estimate, not a binding quote."
+            )
+            if sample_used is not None
+            else (
+                "Modelled from this plan's product type and your profile — "
+                "we have no quote on file for this exact plan. The ±15% band "
+                "reflects pricing variance. This is an estimate, not a quote; "
+                "confirm with the insurer."
+            )
         ),
         sources=sources or [],
     )
@@ -652,8 +1034,10 @@ def bulk_estimate(
         assumed = True
 
         # Anchor base to curated sample if we have one, else flat per-lakh rate.
+        # Canonical-aware (same resolver as estimate()) so doctype-suffixed /
+        # hyphen-form ids reach their real sample instead of the flat path.
         anchored_base: Optional[int] = None
-        if pid in base_premiums_curated:
+        if _canonical_sample_key(pid, base_premiums_curated) is not None:
             try:
                 ce = estimate(
                     age=age,
@@ -687,7 +1071,10 @@ def bulk_estimate(
                 anchored_base = None
 
         si_lakhs = max(1, sum_insured_inr // 100_000)
-        flat_base = BULK_BASE_INR_PER_LAKH * si_lakhs
+        # Type-aware (#36-B) so the slider/band path agrees with estimate():
+        # a quote-less top-up/cash/disease plan isn't priced like a
+        # comprehensive plan. Comprehensive factor = 1.0 (no regression).
+        flat_base = BULK_BASE_INR_PER_LAKH * si_lakhs * _attribute_base_factor(pid)
 
         if anchored_base is not None:
             # Apply tenure + deductible only — the curated path already
@@ -910,8 +1297,8 @@ def unpublished_si_disclosure(sum_insured_inr: int) -> str:
     """The exact, verbatim disclosure the frontend renders when a policy has
     no published SI and the estimate was priced against a fallback cover."""
     return (
-        f"Estimate shown for {_fmt_inr_cover(int(sum_insured_inr))} cover — "
-        "this policy's sum insured isn't published."
+        "This plan does not publish its sum insured, so the estimate is "
+        f"shown for {_fmt_inr_cover(int(sum_insured_inr))} cover."
     )
 
 

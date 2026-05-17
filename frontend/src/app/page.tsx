@@ -5747,7 +5747,7 @@ function PolicyDetailModal({ policy, onClose }: { policy: MarketplacePolicy; onC
                   <div className="mb-3 bg-[var(--accent)] border border-[var(--primary)] rounded-lg p-3 text-xs">
                     <div className="font-semibold text-[var(--primary)] mb-1">This is the generic grade for an average buyer.</div>
                     <p className="text-[var(--muted-foreground)] leading-snug">
-                      Tell me about yourself (age, dependents, conditions, budget) and I&apos;ll re-score this policy for <strong className="text-[var(--foreground)]">your</strong> situation. The same policy can be a B for a 30-year-old and a D for a 60-year-old with diabetes — context changes everything.
+                      Tell me your age, dependents, health conditions and budget, and I&apos;ll re-score this plan for <strong className="text-[var(--foreground)]">your</strong> situation. The same plan can grade B for a healthy 30-year-old but D for a 60-year-old with diabetes.
                       {completeness && completeness.completeness_pct > 0 && (
                         <span className="block mt-1">Your profile is {completeness.completeness_pct}% complete. {completeness.next_question_hint && <em className="not-italic">Next: {completeness.next_question_hint.slice(0, 80)}…</em>}</span>
                       )}

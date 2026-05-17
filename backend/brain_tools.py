@@ -261,6 +261,14 @@ def _insurer_reviews(slug: str) -> Optional[dict]:
     return ir
 
 
+# Mirrors the LOCAL _DOCTYPE_RANK inside backend.main.policies_all — the
+# marketplace picks, per product, the extracted file with the best doctype
+# rank. _scorecard_signal MUST select the identical file or the cited-card
+# grade diverges from the marketplace card for multi-doctype products
+# (#40). Keep in sync with main.policies_all if that ever changes.
+_DOCTYPE_RANK = {"wordings": 0, "prospectus": 1, "cis": 2, "brochure": 3}
+
+
 def _scorecard_signal(policy_id: str, profile=None) -> dict:
     """{_grade, _overall_score} from backend.scorecard using the same
     inputs as the marketplace, so a policy's recommendation grade equals
@@ -269,12 +277,55 @@ def _scorecard_signal(policy_id: str, profile=None) -> dict:
     + SI headroom + cosine)."""
     try:
         cur = _curated_facts_all()
-        data = None
-        for stem in _candidate_stems(policy_id):
-            if stem in cur:
-                data = cur[stem]
-                break
-        if not data:
+        # PARITY-BY-CONSTRUCTION (#40, 2026-05-18): resolve the EXACT data
+        # the marketplace card grades. main.policies_all picks, per product
+        # key, the extracted file with the best doctype rank (wordings >
+        # prospectus > cis > brochure), then _merge_curated(extracted,
+        # curated[extracted.policy_id or pid] or curated[pid]). Taking the
+        # FIRST _candidate_stems hit instead graded the PASSED id's own
+        # doctype, so a __cis/__brochure recommendation id scored a
+        # different file than the marketplace's canonical __wordings card
+        # (royal-sundaram lifeline A↔C, sbi super-top-up B↔A,
+        # new-india-mediclaim C↔D). Mirror the marketplace selection so
+        # rec grade == marketplace grade for ALL 148 by construction.
+        pid = (policy_id or "").strip()
+        pkey = pid.rsplit("__", 1)[0] if "__" in pid else pid
+        best = None  # ((rank, stem), Path)
+        try:
+            for fp in settings.EXTRACTED_DIR.glob("*.json"):
+                st = fp.stem
+                fk = st.rsplit("__", 1)[0] if "__" in st else st
+                if fk != pkey:
+                    continue
+                dt = st.rsplit("__", 1)[1] if "__" in st else ""
+                rk = (_DOCTYPE_RANK.get(dt, 99), st)
+                if best is None or rk < best[0]:
+                    best = (rk, fp)
+        except Exception:  # noqa: BLE001 — glob must never break ranking
+            best = None
+        extracted = None
+        if best is not None:
+            try:
+                extracted = _json.loads(best[1].read_text())
+            except Exception:  # noqa: BLE001 — corrupt extract → curated-only
+                extracted = None
+        # Curated entry resolved EXACTLY as the marketplace merge does
+        # (curated[extracted.policy_id or pid] or curated[pid]); fall back
+        # to the candidate-stem scan only when there is no extracted file.
+        curated_entry = None
+        if extracted is not None:
+            curated_entry = cur.get(extracted.get("policy_id") or pid) or cur.get(pid)
+        if curated_entry is None:
+            for stem in _candidate_stems(pid):
+                if stem in cur:
+                    curated_entry = cur[stem]
+                    break
+        if extracted is not None:
+            from backend.main import _merge_curated  # lazy: avoids cycle
+            data = _merge_curated(extracted, curated_entry)
+        elif curated_entry:
+            data = curated_entry
+        else:
             # Genuinely unknown policy → fail OPEN (no false weak signal;
             # _recommendation_fit keeps chunks with no grade evidence).
             return {}

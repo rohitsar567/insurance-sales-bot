@@ -601,7 +601,7 @@ def grade_for(score: int) -> tuple[str, str]:
     """
     if score >= 76: return "A", "Strong all-rounder — solid pick for the buyer."
     if score >= 69: return "B", "Good policy with a few notable gaps."
-    if score >= 61: return "C", "Decent baseline; check the trade-offs before signing."
+    if score >= 61: return "C", "A decent baseline — review the trade-offs before you decide."
     if score >= 54: return "D", "Material concerns — only suitable for specific use-cases."
     return "F", "Significant gaps — alternative options are likely better."
 
@@ -913,8 +913,8 @@ def build_scorecard(policy: dict, insurer_reviews: Optional[dict] = None, profil
             grade="—",
             one_liner=(
                 "Not enough of this policy's terms have been published yet to "
-                "grade it honestly. We don't guess — check back once the "
-                "official document is on file."
+                "grade it fairly. Check back once the official document is "
+                "available."
             ),
             sub_scores=[],
             data_completeness_pct=completeness,

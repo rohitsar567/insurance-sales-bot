@@ -251,6 +251,7 @@ export default function PolicyPremiumWidget({
         onCalculatedRef.current?.(r.point_estimate_inr);
       } catch (e) {
         if (signal.aborted) return;
+        console.error("Premium estimate failed:", e);
         setError(e instanceof Error ? e.message : String(e));
       } finally {
         if (!signal.aborted) setLoading(false);
@@ -398,7 +399,7 @@ export default function PolicyPremiumWidget({
 
       <div style={resultBoxStyle} aria-live="polite">
         {error ? (
-          <div style={errorTextStyle}>Failed: {error}</div>
+          <div style={errorTextStyle}>Couldn&apos;t calculate this estimate. Try again in a moment.</div>
         ) : loading && !resp ? (
           <div style={calculatingStyle}>
             <span aria-hidden style={dotPulseStyle} />

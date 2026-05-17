@@ -366,6 +366,7 @@ GROUND RULES
 - NEVER invent policies, UINs, premiums, or sums insured. Only cite what retrieve_policies returns.
 - If retrieve_policies returns zero chunks after both attempts, ask the user one clarifying question.
 - Be concise: 2-3 sentence turns. No emoji unless the user used one first.
+- Recommendations: present each option as a numbered item — one line of plain prose (max ~20 words) then the citation. No em-dash chains (max one dash per sentence). No nested clauses. A reader scanning only item N must understand it without re-reading item N-1.
 - Indian context: use lakh / crore, ₹, IRDAI, Section 80D. NEVER say "dollars" / "$".
 """
 
@@ -962,6 +963,45 @@ def _scan_for_brand_hallucinations(reply_text: str, session) -> None:
         pass
 
 
+def _verify_prose_grounding(
+    reply_text: str, retrieved_chunks_all: list[dict]
+) -> tuple[bool, list[str]]:
+    """No-invented-numbers guard for REPLY PROSE. Cited cards are grounded
+    by construction (hydrated from retrieved chunks); the LLM's prose is
+    NOT independently checked since the Path-B rewrite deleted the
+    faithfulness validator (faithfulness_passed was hard-coded True). An
+    IRDAI UIN is an exact regulator string that can only come from real
+    retrieved data — so a UIN written in prose that appears in NO retrieved
+    chunk is a fabrication / wrong attribution. Detect + flag only (never
+    fabricate, never destructively rewrite). Returns (passed, reasons)."""
+    try:
+        import re
+
+        if not reply_text:
+            return True, []
+        uin_re = re.compile(r"\b[A-Z]{3,}[A-Z0-9]{2,}V\d{5,7}\b")
+        emitted = set(uin_re.findall(reply_text.upper()))
+        if not emitted:
+            return True, []
+        grounded: set[str] = set()
+        for c in retrieved_chunks_all or []:
+            for v in (
+                c.get("uin_code"), c.get("policy_id"), c.get("policy_name"),
+                c.get("chunk_text"), c.get("source_url"),
+            ):
+                if v:
+                    grounded.update(uin_re.findall(str(v).upper()))
+        ungrounded = sorted(u for u in emitted if u not in grounded)
+        if ungrounded:
+            return False, [
+                f"reply prose cites UIN(s) absent from every retrieved "
+                f"chunk: {ungrounded}"
+            ]
+        return True, []
+    except Exception:  # noqa: BLE001 — guard must never break a turn
+        return True, []
+
+
 def _norm_policy_name(s: str) -> str:
     """Lowercase + collapse punctuation/whitespace for fuzzy prose↔chunk
     name matching. 'my:health Suraksha' / 'my health suraksha' / 'My-Health
@@ -1144,13 +1184,40 @@ def _build_recommendation_citations(
         # (or wasn't) recommended. Previously stripped, which is why a C/64
         # could be presented with no visible grade.
         _strong, _overall, _grade = _recommendation_fit(c)
+        _pid = (c.get("policy_id") or "").strip()
+        # Link-integrity audit A.3 — the marketplace `policies_all` backfills
+        # an empty/non-credible origin source_pdf_url with the local corpus
+        # PDF (`/api/policy-pdf/{policy_id}`) we definitively have for every
+        # indexed policy, but the citation path historically did not, so 8
+        # real policy cards rendered with an empty `source_url` (no PDF chip:
+        # `page.tsx` guards on `c.source_url &&`). Mirror the marketplace
+        # fallback EXACTLY (main._corpus_pdf_index + main._is_credible_pdf_url,
+        # `_cand if credible else (_local or _cand)`) so a cited card never
+        # has an empty source_url when a local/marketplace PDF exists. Lazy
+        # import: main.py imports single_brain (circular at module scope).
+        _src = c.get("source_url", "") or ""
+        try:
+            from backend.main import (
+                _corpus_pdf_index as _cpi,
+                _is_credible_pdf_url as _credible,
+            )
+
+            _pidx = _cpi()
+            _local = (
+                f"/api/policy-pdf/{_pid}"
+                if (_pid and _pidx.get(_pid))
+                else ""
+            )
+            _src = _src if _credible(_src) else (_local or _src)
+        except Exception:  # noqa: BLE001 — fallback must never break citing
+            pass
         return {
             "chunk_id": c.get("chunk_id", ""),
-            "policy_id": (c.get("policy_id") or "").strip(),
+            "policy_id": _pid,
             "policy_name": c.get("policy_name", ""),
             "insurer_slug": c.get("insurer_slug", ""),
             "doc_type": c.get("doc_type", ""),
-            "source_url": c.get("source_url", ""),
+            "source_url": _src,
             "score": c.get("score", 0.0),
             "_grade": _grade or None,
             "_overall_score": _overall,
@@ -1851,6 +1918,27 @@ async def handle_turn(
         else None
     )
 
+    # Prose-faithfulness guard (no-invented-numbers). Cited cards are safe
+    # by construction; this catches a UIN written in PROSE that no
+    # retrieved chunk supports. Flag + transparent caveat — never fabricate
+    # or silently delete.
+    _faith_ok, _faith_reasons = _verify_prose_grounding(
+        reply_text, retrieved_chunks_all
+    )
+    if not _faith_ok:
+        _log.warning(
+            "single_brain prose-faithfulness FAIL — %s | session=%s "
+            "snippet=%r",
+            _faith_reasons,
+            getattr(session, "session_id", "?"),
+            reply_text[:200],
+        )
+        reply_text += (
+            "\n\n⚠️ One or more policy identifiers above could not be "
+            "verified against our records — please confirm the UIN with "
+            "the insurer before relying on it."
+        )
+
     return TurnResult(
         reply_text=reply_text,
         citations=citations,
@@ -1860,8 +1948,8 @@ async def handle_turn(
         language=language,
         latency_ms=int((time.time() - t0) * 1000),
         raw_reply=json.dumps(last_payload)[:4000] if last_payload else reply_text,
-        faithfulness_passed=True,
-        faithfulness_reasons=[],
+        faithfulness_passed=_faith_ok,
+        faithfulness_reasons=_faith_reasons,
         blocked=False,
         profile_updates=profile_updates,
         followup_policy_id=followup_policy_id,

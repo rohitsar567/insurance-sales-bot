@@ -129,13 +129,13 @@ def test_unpublished_si_fallback_precedence():
 
 def test_disclosure_string_is_verbatim():
     assert unpublished_si_disclosure(1_000_000) == (
-        "Estimate shown for ₹10 L cover — this policy's sum insured isn't published."
+        "This plan does not publish its sum insured, so the estimate is shown for ₹10 L cover."
     )
     assert unpublished_si_disclosure(2_500_000) == (
-        "Estimate shown for ₹25 L cover — this policy's sum insured isn't published."
+        "This plan does not publish its sum insured, so the estimate is shown for ₹25 L cover."
     )
     assert unpublished_si_disclosure(15_000_000) == (
-        "Estimate shown for ₹1.5 Cr cover — this policy's sum insured isn't published."
+        "This plan does not publish its sum insured, so the estimate is shown for ₹1.5 Cr cover."
     )
 
 
