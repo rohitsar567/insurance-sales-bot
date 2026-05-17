@@ -989,6 +989,24 @@ async def retrieve_policies(
         # session cache too so prose ⇄ cited cards are gated on the SAME set.
         filtered = filtered[: max((int(top_k) if top_k else 8), 12)]
 
+        # KI-PROSE-CARD-1to1 (2026-05-17) — user requirement: "can't have a
+        # situation where it suggests something in chat but won't generate a
+        # card." For a RECOMMENDATION turn, apply the SAME fitness floor the
+        # citation builder uses (_recommendation_fit) HERE, so the LLM only
+        # ever SEES cardable policies → prose ⇄ cards are 1:1 by
+        # construction (it cannot name a policy it won't card because it
+        # never receives one). If nothing clears the floor we return none —
+        # the LLM then honestly says "no strong match" rather than padding
+        # with a sub-floor policy (also the requirement). qa / follow-up
+        # intents are untouched: they legitimately cite supporting source
+        # chunks regardless of recommendation grade.
+        if (intent or "").lower() == "recommendation" and filtered:
+            try:
+                from backend.single_brain import _recommendation_fit
+                filtered = [c for c in filtered if _recommendation_fit(c)[0]]
+            except Exception as e:  # noqa: BLE001 — never break retrieval
+                _log.warning("rec-fit 1:1 gate failed: %s", e)
+
     # X7 — cache slug→insurer lookups on session so a subsequent
     # mark_recommendation call (same turn) can stamp the right insurer on the
     # shown_policies event. Each retrieve_policies call MERGES into the cache
