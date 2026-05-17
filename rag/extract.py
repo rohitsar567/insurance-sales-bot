@@ -37,7 +37,6 @@ from backend.providers.base import ChatMessage
 from backend.providers.nvidia_nim_llm import (
     NvidiaNimLLM,
     get_brain_llm,
-    get_fast_brain_llm,
 )
 from rag.ingest import policy_id_for
 from rag.schema import HealthPolicy
@@ -338,10 +337,14 @@ async def main():
     #     different MoE routing path so a Pro timeout doesn't always reproduce
     #     in Flash. Sarvam-M was the old fallback but its <think> tags ate the
     #     2048 output cap before reaching JSON, causing ~20 truncation failures.
-    primary = get_brain_llm()       # BRAIN_CHAIN — Qwen 3-Next 80B primary (D-022)
-    fallback = get_fast_brain_llm() # FAST_BRAIN_CHAIN — Nemotron Nano 30B primary (D-022)
+    # Three-chain collapse (2026-05-15): the separate FAST_BRAIN_CHAIN /
+    # get_fast_brain_llm accessor was removed. One brain chain (get_brain_llm)
+    # whose NimChainLLM already does internal multi-candidate fallback;
+    # primary/fallback both resolve to it.
+    primary = get_brain_llm()
+    fallback = get_brain_llm()
 
-    print(f"Extracting {len(pdfs)} policies. Primary=BRAIN_CHAIN (Qwen 80B), Fallback=FAST_BRAIN_CHAIN (Nemotron 30B).\n")
+    print(f"Extracting {len(pdfs)} policies. via the brain chain (get_brain_llm, internal fallback).\n")
     t0 = time.time()
     ok = 0
     for i, pdf in enumerate(pdfs, 1):

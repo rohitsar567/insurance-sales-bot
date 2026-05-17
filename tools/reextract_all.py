@@ -26,7 +26,7 @@ from rag.extract import (
     EXTRACTED_DIR, ROOT,
 )
 from rag.ingest import policy_id_for
-from backend.providers.nvidia_nim_llm import get_brain_llm, get_fast_brain_llm
+from backend.providers.nvidia_nim_llm import get_brain_llm
 
 
 async def run_one(pdf: Path, manifest: dict, primary, fallback, sem, idx: int, total: int) -> tuple[str, Path, float]:
@@ -61,10 +61,10 @@ async def main():
     manifest = load_manifest()
 
     primary = get_brain_llm()
-    fallback = get_fast_brain_llm()
+    fallback = get_brain_llm()
     sem = asyncio.Semaphore(3)
 
-    print(f"Re-extracting {len(pdfs)} insurer PDFs. Primary=V4-Pro, Fallback=V4-Flash, concurrency=3.\n")
+    print(f"Re-extracting {len(pdfs)} insurer PDFs. via the brain chain (internal fallback), concurrency=3.\n")
     t_start = time.time()
     tasks = [
         run_one(pdf, manifest, primary, fallback, sem, i + 1, len(pdfs))

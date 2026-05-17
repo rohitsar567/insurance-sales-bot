@@ -13,7 +13,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from rag.extract import extract_one, find_pdfs, load_manifest, init_db, EXTRACTED_DIR, ROOT
 from rag.ingest import policy_id_for
-from backend.providers.nvidia_nim_llm import get_brain_llm, get_fast_brain_llm, NvidiaNimLLM
+from backend.providers.nvidia_nim_llm import get_brain_llm, NvidiaNimLLM
 
 
 async def run_one(pdf, manifest, primary, fallback, sem, idx, total):
