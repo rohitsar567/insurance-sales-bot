@@ -203,19 +203,75 @@ def _load_policy_facts(policy_id: str) -> dict:
     return out
 
 
-def _scorecard_signal(policy_id: str, profile=None) -> dict:
-    """Best-effort {_grade, _overall_score} from backend.scorecard. The
-    scorecard module's scoring math is being repaired concurrently — we
-    call it READ-ONLY and degrade silently (the ranking still works off
-    co-pay + SI headroom + cosine without it)."""
+_curated_all_cache: dict = {}  # single-slot cache for the full curated layer
+_reviews_cache: dict = {}
+
+
+def _curated_facts_all() -> dict:
+    """The FULL curated-facts layer, EXACTLY as the marketplace uses it.
+
+    KI-FULLFACTS (2026-05-17) — root cause of empty recommendation cards:
+    `_scorecard_signal` used to feed build_scorecard the 7-key eligibility
+    subset (`_load_policy_facts`), which is BELOW build_scorecard's
+    data-completeness floor → every recommended policy returned grade "—"
+    / overall 0 → the Bug #71 ≥70 gate dropped 100% of them → no cards.
+    Meanwhile /api/policies/all scored the SAME policies correctly
+    (HDFC Ergo Optima Restore = A/78) because it feeds the FULL curated
+    dict from main._load_curated_facts (KI-219/251 canonical precedence).
+    We now reuse that EXACT function (lazy import — main is loaded at
+    request time; dodges the import cycle) so a policy's recommendation
+    grade is identical to its marketplace grade by construction. The
+    7-key `_load_policy_facts` stays as-is — it is the correct input for
+    the eligibility/dedup gate, NOT for grading."""
+    if "d" not in _curated_all_cache:
+        from backend.main import _load_curated_facts  # lazy: avoids cycle
+        _curated_all_cache["d"] = _load_curated_facts()
+    return _curated_all_cache["d"]
+
+
+def _insurer_reviews(slug: str) -> Optional[dict]:
+    """Same reviews source the marketplace passes to build_scorecard
+    (40-data/reviews/<slug>.json) — drives the claim-experience sub-score.
+    Without it the rec-path grade would drift below the marketplace's."""
+    if not slug:
+        return None
+    if slug in _reviews_cache:
+        return _reviews_cache[slug]
+    ir = None
     try:
-        facts = _load_policy_facts(policy_id)
-        if not facts:
-            # Need the full curated dict for a real grade; fall back to a
-            # minimal dict so build_scorecard at least sees co-pay/SI.
-            facts = {}
+        rp = settings.DATA_DIR / "reviews" / f"{slug}.json"
+        if rp.exists():
+            ir = _json.loads(rp.read_text())
+    except Exception:  # noqa: BLE001 — reviews optional
+        ir = None
+    _reviews_cache[slug] = ir
+    return ir
+
+
+def _scorecard_signal(policy_id: str, profile=None) -> dict:
+    """Best-effort {_grade, _overall_score} from backend.scorecard, using
+    the IDENTICAL inputs as the marketplace (/api/policies/all) so a
+    policy's recommendation grade == its marketplace grade by construction
+    (parity is asserted by tests/test_scorecard_parity.py). READ-ONLY;
+    degrades silently to {} on any failure (ranking still works off
+    co-pay + SI headroom + cosine)."""
+    try:
+        cur = _curated_facts_all()
+        data = None
+        for stem in _candidate_stems(policy_id):
+            if stem in cur:
+                data = cur[stem]
+                break
+        if not data:
+            # Genuinely unknown policy → fail OPEN (no false weak signal;
+            # _recommendation_fit keeps chunks with no grade evidence).
+            return {}
         from backend.scorecard import build_scorecard
 
+        slug = data.get("insurer_slug") or (
+            policy_id.split("__", 1)[0] if "__" in policy_id else ""
+        )
+        ir = _insurer_reviews(slug)
         prof = None
         if profile is not None:
             prof = {
@@ -225,7 +281,7 @@ def _scorecard_signal(policy_id: str, profile=None) -> dict:
                     "existing_cover_inr", "copay_pct",
                 )
             }
-        sc = build_scorecard(facts or {"policy_id": policy_id}, profile=prof)
+        sc = build_scorecard(data, insurer_reviews=ir, profile=prof)
         # KI-280 (2026-05-16) — the Scorecard dataclass field is
         # `overall_score` (scorecard.py:95), NOT `overall`. The previous
         # getattr(sc, "overall", ...) ALWAYS returned None, so every
