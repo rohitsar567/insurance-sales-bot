@@ -64,18 +64,6 @@ export type PolicyPremiumWidgetProps = {
   initialTenureYears?: 1 | 2 | 3;
   initialDeductibleInr?: 0 | 25000 | 50000 | 100000;
   onCalculated?: (premium: number) => void;
-  // User's profile-level predicted premium band (the same number rendered in
-  // the header chip / `getPredictedPremiumBand`). Surfaced as the indicative
-  // reference when the backend reports `base_sample_used: false` (i.e. no
-  // curated quote sample for this specific policy). Threaded down from
-  // PolicyCompareModal so we don't refetch per-column.
-  aggregateBand?: {
-    min_inr: number;
-    max_inr: number;
-    median_inr: number;
-    sample_size?: number;
-    assumed?: boolean;
-  } | null;
 };
 
 const SUM_INSURED_MIN = 500_000;
@@ -189,7 +177,6 @@ export default function PolicyPremiumWidget({
   initialTenureYears = 1,
   initialDeductibleInr = 0,
   onCalculated,
-  aggregateBand,
 }: PolicyPremiumWidgetProps) {
   // KI-278 — seed the SI from the profile (same precedence as the header
   // chip) unless the caller forced an explicit initialSumInsured. This is
@@ -286,20 +273,12 @@ export default function PolicyPremiumWidget({
 
   const profileSummary = summariseProfile(profile);
 
-  // Option B+: when the backend has no curated quote sample for this policy,
-  // hide the slider widget entirely and surface the user's aggregate band
-  // (same number rendered in the header chip) as the indicative reference.
-  // We wait for the first response before deciding so we don't flash the
-  // notice while loading. Loading + error states fall through to the slider
-  // widget below (which renders its own loading/error UI).
-  if (resp && resp.base_sample_used === false) {
-    return (
-      <NonCuratedPricingNotice
-        policyName={policyName}
-        aggregateBand={aggregateBand ?? null}
-      />
-    );
-  }
+  // Every recommended policy renders the SAME per-policy estimate block
+  // below (point + ±15% band + methodology). When the backend has no
+  // curated quote sample, the `methodology` string itself states it is a
+  // rules-based estimate — we no longer substitute the wide profile-level
+  // basket band for some policies (that produced an identical, 4-5x-wide
+  // "no verified quote" panel on every non-curated card).
 
   // Compact, profile-only breakdown — the estimate endpoint doesn't expose
   // a multiplicative chain so we surface the active overrides + methodology
@@ -337,10 +316,9 @@ export default function PolicyPremiumWidget({
         >
           {policyName}
         </div>
-        {/* Curated-only branch: by the time we render this widget,
-            base_sample_used is guaranteed not false (the !== false branch
-            short-circuits to NonCuratedPricingNotice above). No "Estimate"
-            badge needed here — the number is anchored to a real quote sample. */}
+        {/* The methodology line under the estimate states whether the
+            number is anchored to a curated quote sample or a rules-based
+            formula — so no separate badge is needed here. */}
       </header>
 
       {profileSummary && (
@@ -456,81 +434,6 @@ export default function PolicyPremiumWidget({
           </>
         ) : null}
       </div>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* NonCuratedPricingNotice — rendered in place of the slider widget   */
-/* when /api/premium/estimate reports base_sample_used: false. Shows  */
-/* the user's aggregate predicted-premium band (threaded down from    */
-/* PolicyCompareModal) as the indicative reference + a clear pricing- */
-/* note explaining we don't have a policy-specific quote.             */
-/* ------------------------------------------------------------------ */
-
-function NonCuratedPricingNotice({
-  policyName,
-  aggregateBand,
-}: {
-  policyName: string;
-  aggregateBand: {
-    min_inr: number;
-    max_inr: number;
-    median_inr: number;
-    sample_size?: number;
-    assumed?: boolean;
-  } | null;
-}) {
-  const hasBand = !!aggregateBand;
-  return (
-    <div style={noticeWidgetStyle} role="note" aria-label="Pricing note">
-      <header style={noticeHeaderStyle}>
-        <span style={noticeIconStyle} aria-hidden="true">
-          {/* info icon — pure SVG so we don't pull a new dependency */}
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="8" x2="12" y2="8" />
-            <line x1="12" y1="12" x2="12" y2="16" />
-          </svg>
-        </span>
-        <span style={noticeBadgeStyle}>Pricing note</span>
-      </header>
-
-      <p style={noticeBodyStyle}>
-        We don&apos;t have a verified quote for <strong>{policyName}</strong> yet,
-        so we can&apos;t show a plan-specific estimate. Based on your profile,
-        plans in this category typically cost:
-      </p>
-
-      <div style={noticeBandBoxStyle}>
-        {hasBand ? (
-          <>
-            <div style={noticeBandHeadlineStyle}>
-              ₹{formatInr(aggregateBand!.min_inr)}–₹{formatInr(aggregateBand!.max_inr)}
-              <span style={noticeBandSuffixStyle}>&nbsp;/ year</span>
-            </div>
-            <div style={noticeBandMedianStyle}>
-              Median ₹{formatInr(aggregateBand!.median_inr)}/year
-              {typeof aggregateBand!.sample_size === "number" &&
-                aggregateBand!.sample_size > 0 && (
-                  <> · across {aggregateBand!.sample_size} similar profiles</>
-                )}
-            </div>
-          </>
-        ) : (
-          <div style={noticeBandFallbackStyle}>
-            Profile-level band not available yet — complete your profile to see
-            an indicative range.
-          </div>
-        )}
-      </div>
-
-      <p style={noticeFootnoteStyle}>
-        This is an indicative range — the actual premium depends on the
-        insurer&apos;s underwriting + your final disclosures. To get an exact
-        quote, request one from the insurer directly or via
-        PolicyBazaar / InsuranceDekho.
-      </p>
     </div>
   );
 }
@@ -780,102 +683,6 @@ const noteStyle: React.CSSProperties = {
   paddingTop: 2,
 };
 
-/* ---------------- NonCuratedPricingNotice styles ------------------- */
-/* Same outer card framing as the slider widget (border + radius + bg) */
-/* but with a brand-teal informational accent rail so users instantly  */
-/* distinguish "indicative range" from a "calculated estimate".        */
-
-const noticeWidgetStyle: React.CSSProperties = {
-  border: "1px solid color-mix(in srgb, var(--primary) 22%, var(--border))",
-  borderLeft: "3px solid var(--primary)",
-  borderRadius: 18,
-  padding: 18,
-  background: "color-mix(in srgb, var(--primary) 4%, var(--card))",
-  display: "flex",
-  flexDirection: "column",
-  gap: 11,
-  fontFamily: SANS,
-  boxShadow:
-    "0 1px 2px color-mix(in srgb, var(--foreground) 4%, transparent), 0 16px 40px -32px color-mix(in srgb, var(--foreground) 28%, transparent)",
-};
-
-const noticeHeaderStyle: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: 8,
-};
-
-const noticeIconStyle: React.CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  width: 22,
-  height: 22,
-  borderRadius: 999,
-  color: "var(--primary)",
-  background: "color-mix(in srgb, var(--primary) 12%, var(--card))",
-  border: "1px solid color-mix(in srgb, var(--primary) 22%, var(--border))",
-};
-
-const noticeBadgeStyle: React.CSSProperties = {
-  fontSize: 10,
-  fontWeight: 700,
-  letterSpacing: "0.12em",
-  textTransform: "uppercase",
-  color: "color-mix(in srgb, var(--primary) 78%, var(--foreground))",
-};
-
-const noticeBodyStyle: React.CSSProperties = {
-  margin: 0,
-  fontSize: 12.5,
-  lineHeight: 1.55,
-  color: "var(--foreground)",
-};
-
-const noticeBandBoxStyle: React.CSSProperties = {
-  background: "var(--card)",
-  border: "1px solid color-mix(in srgb, var(--primary) 16%, var(--border))",
-  borderRadius: 12,
-  padding: "12px 14px",
-  display: "flex",
-  flexDirection: "column",
-  gap: 3,
-};
-
-const noticeBandHeadlineStyle: React.CSSProperties = {
-  fontFamily: SERIF,
-  fontOpticalSizing: "auto",
-  fontSize: 21,
-  fontWeight: 600,
-  color: "var(--foreground)",
-  letterSpacing: "-0.02em",
-  fontVariantNumeric: "tabular-nums",
-};
-
-const noticeBandSuffixStyle: React.CSSProperties = {
-  fontFamily: SANS,
-  fontSize: 12,
-  fontWeight: 500,
-  color: "var(--muted-foreground)",
-};
-
-const noticeBandMedianStyle: React.CSSProperties = {
-  fontSize: 11.5,
-  color: "var(--muted-foreground)",
-  fontVariantNumeric: "tabular-nums",
-};
-
-const noticeBandFallbackStyle: React.CSSProperties = {
-  fontSize: 12,
-  color: "#855316",
-  fontStyle: "italic",
-  lineHeight: 1.5,
-};
-
-const noticeFootnoteStyle: React.CSSProperties = {
-  margin: 0,
-  fontSize: 11,
-  lineHeight: 1.5,
-  color: "var(--muted-foreground)",
-  fontStyle: "italic",
-};
+/* (NonCuratedPricingNotice + its styles removed — every policy now
+   renders the unified per-policy estimate block; the methodology line
+   states when the number is rules-based vs curated-sample anchored.) */

@@ -150,6 +150,35 @@ def _candidate_stems(policy_id: str) -> list[str]:
     return stems
 
 
+_extraction_cache: dict = {}
+
+
+def _has_extraction(policy_id: str) -> bool:
+    """True iff this policy has an LLM-extracted corpus file — the EXACT
+    renderability rule the marketplace uses (main builds its card set from
+    settings.EXTRACTED_DIR/*.json). A policy with curated facts but no
+    extracted file renders as a BROKEN card: raw policy_id as the title,
+    grade "N/A", "No extraction available for this policy.", "Data not
+    indexed" (/api/bulk-scorecard). Such a policy must NEVER be quality-
+    seeded or cited. Canonical-stem aware (doctype siblings count); cached
+    incl. negatives."""
+    pid = (policy_id or "").strip()
+    if not pid:
+        return False
+    if pid in _extraction_cache:
+        return _extraction_cache[pid]
+    ok = False
+    try:
+        for stem in _candidate_stems(pid):
+            if (settings.EXTRACTED_DIR / f"{stem}.json").exists():
+                ok = True
+                break
+    except Exception:  # noqa: BLE001 — predicate must never break retrieval
+        ok = False
+    _extraction_cache[pid] = ok
+    return ok
+
+
 def _load_policy_facts(policy_id: str) -> dict:
     """Return {fact_key: value} for a policy_id, or {} when no facts file
     exists / is unreadable. Cached per policy_id (incl. negative cache)."""
@@ -646,6 +675,11 @@ def _quality_seed_candidates(profile, limit: int = 25) -> list[dict]:
             if not pid or pid in seen:
                 continue
             seen.add(pid)
+            if not _has_extraction(pid):
+                # Curated-graded but no extracted corpus → its card would
+                # render as N/A / "No extraction available for this policy"
+                # / "Data not indexed". Never seed a non-renderable policy.
+                continue
             sig = _scorecard_signal(pid, profile=profile)
             ov = sig.get("_overall_score")
             if ov is None:

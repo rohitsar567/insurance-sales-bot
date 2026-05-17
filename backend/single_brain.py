@@ -77,10 +77,20 @@ SYSTEM_PROMPT = """You are an Indian health-insurance advisor speaking with a cu
 
 YOUR JOB:
 1. Have a natural conversation to learn the customer's profile.
-2. Once you have ALL required slots, summarise + confirm, then call retrieve_policies, then recommend 2-4 options with policy citations.
+2. Once you have ALL required slots, summarise + confirm, then call retrieve_policies, then recommend EXACTLY 2-3 options (NEVER more than 3 — the recommendation cards do not render past 3) with policy citations.
 3. Help the customer choose one. Cite the UIN / policy_id for every claim about features, sums insured, or premiums.
 
 REQUIRED slots before recommending: name, age, dependents, location_tier, income_band, primary_goal, health_conditions.
+
+PRE-EXISTING CONDITIONS ARE MANDATORY — you MUST explicitly ASK the
+customer this question (do not skip it, do not infer it): "Do you have
+any pre-existing conditions — diabetes, BP / hypertension, thyroid,
+heart, asthma, or a cancer history — or none?" Then call
+save_profile_field(field="health_conditions", value=...) with their
+answer (use value="none" when they have none). NEVER call
+retrieve_policies or recommend any policy until health_conditions has
+been captured this way — it materially changes eligibility, pricing
+and the recommendation.
 
 ═══════════════════════════════════
 ABSOLUTE RULE — NO POLICY NAMES WITHOUT RETRIEVE
@@ -991,6 +1001,11 @@ def _norm_policy_name(s: str) -> str:
 # shortlist with a weak plan. We do NOT loosen the scorecard or fabricate;
 # we only stop presenting weak-fit plans AS recommendations.
 _MIN_RECOMMENDATION_OVERALL: float = 70.0
+# Hard ceiling on cited recommendations. The CitedPolicyCards layout
+# collapses (names wrap to one character per line) past 3 cards, so the
+# recommended set is capped at 3 regardless of how many clear the fitness
+# floor — best-first, so the 3 strongest are the ones kept.
+_MAX_RECOMMENDATIONS: int = 3
 _STRONG_RECOMMENDATION_GRADES: frozenset[str] = frozenset({"A", "B"})
 
 
@@ -1166,6 +1181,14 @@ def _build_recommendation_citations(
             c = best_by_canon.get(k)
             if c is None:
                 continue
+            if not brain_tools._has_extraction(c.get("policy_id") or ""):
+                # No extracted corpus → the card renders as N/A /
+                # "No extraction available for this policy" / "Data not
+                # indexed". Drop it from the recommended set even if the
+                # LLM named it; only renderable, data-backed policies are
+                # ever cited.
+                dropped.append(f"{c.get('policy_name') or k}(no-extraction)")
+                continue
             strong, overall, _grade = _recommendation_fit(c)
             if not strong:
                 dropped.append(
@@ -1196,6 +1219,8 @@ def _build_recommendation_citations(
             cite = _cite_canon(k)
             if cite is not None:
                 out.append(cite)
+            if len(out) >= _MAX_RECOMMENDATIONS:
+                break  # hard ≤3 cap — keep the 3 strongest (best-first)
         return out
 
     # ---- Path 1: explicit mark_recommendation selection -------------------

@@ -4041,13 +4041,11 @@ function CitedPolicyCards({
           onClose={() => setCompareOpen(false)}
           profile={profile}
           policyDataFor={(id) => policyById[id]}
-          aggregateBand={premiumBand}
           renderPremiumFor={(policyId, policyName) => (
             <PolicyPremiumWidget
               policyId={policyId}
               policyName={policyName}
               profile={premiumProfile}
-              aggregateBand={premiumBand}
             />
           )}
           renderScorecardFor={(policyId, policyName) => (

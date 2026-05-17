@@ -14,13 +14,20 @@ desired_sum_insured_inr → existing_cover_inr → ₹10L. A user who stated a
 
 Fix: estimate_premium_band() resolves SI via resolve_profile_sum_insured()
 (the single source of truth shared with the panel/widget), prices the whole
-basket at that SI, and rounds the band edges DIRECTIONALLY (floor min / ceil
-max) so the displayed band is a strict superset of every basket member —
-making the per-settings panel point ALWAYS land inside the header band.
+basket at that SI, and reports the p25–p75 INTERQUARTILE of the basket as
+the band (directionally rounded) — the honest "what similar profiles
+typically pay" range. Raw min–max across the heterogeneous basket spans
+~4-5x and renders as a useless, broken-looking band (KI broken-band fix);
+a specific plan's per-settings panel point may sit inside or just outside
+this typical band, which is expected and correct.
 """
 
 from backend.premium_calculator import (
     _DEFAULT_BAND_POLICY_IDS,
+    _ceil_to_500,
+    _floor_to_500,
+    _median,
+    _percentile,
     bulk_estimate,
     estimate,
     estimate_premium_band,
@@ -100,15 +107,30 @@ import pytest
           "parents_age_max": 72, "parents_has_ped": True}, "parents-on-cover"),
     ],
 )
-def test_header_band_is_superset_of_every_panel_point(profile, label):
+def test_header_band_is_p25_p75_interquartile(profile, label):
     band = estimate_premium_band(dict(profile))
-    points = _panel_points_for(profile)
+    points = _panel_points_for(profile)  # sorted basket points
     assert points, f"no basket points for {label}"
-    for p in points:
-        assert band["min_inr"] <= p <= band["max_inr"], (
-            f"{label}: panel point ₹{p:,} fell OUTSIDE header band "
-            f"₹{band['min_inr']:,}–₹{band['max_inr']:,} — header≠panel regression"
-        )
+    # New contract: the band edges ARE the directionally-rounded p25 / p75
+    # of the basket — the interquartile "typical range", NOT raw min-max.
+    assert band["min_inr"] == _floor_to_500(_percentile(points, 25)), label
+    assert band["max_inr"] == _ceil_to_500(_percentile(points, 75)), label
+    # min ≤ median ≤ max, all positive.
+    assert 0 < band["min_inr"] <= band["median_inr"] <= band["max_inr"], label
+    # The typical (median) plan lies inside the band.
+    med = _median(points)
+    assert band["min_inr"] <= med <= band["max_inr"], (
+        f"{label}: median basket point ₹{med:,} fell outside the typical "
+        f"band ₹{band['min_inr']:,}–₹{band['max_inr']:,}"
+    )
+    # And it is materially TIGHTER than the raw min-max envelope — the
+    # entire point of the fix (the heterogeneous basket's raw spread is
+    # ~4-5x; the interquartile band must be a strict subset of it).
+    raw_lo = _floor_to_500(min(points))
+    raw_hi = _ceil_to_500(max(points))
+    assert band["min_inr"] >= raw_lo, label
+    assert band["max_inr"] <= raw_hi, label
+    assert (band["max_inr"] - band["min_inr"]) <= (raw_hi - raw_lo), label
 
 
 def test_band_exposes_resolved_si_for_panel_alignment():

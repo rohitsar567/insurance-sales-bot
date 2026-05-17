@@ -20,8 +20,9 @@ THE CONTRACT THIS PINS:
   `_build_recommendation_citations` returns a citation list that is exactly
   the recommended policies — via explicit mark_recommendation ordering when
   present, else by the policy names actually written in the reply prose —
-  with NO score-order fallback that resurrects un-named policies, and NO
-  count cap.
+  with NO score-order fallback that resurrects un-named policies, and a
+  HARD CAP of 3 (the recommendation cards do not render past 3 — #28; the
+  3 kept are the strongest, best-first by the gate's fit rank).
 
 Run:
     cd /Users/rohitsar/Developer/Insurance\\ Sales\\ Bot
@@ -94,8 +95,8 @@ class TestProseNameNormalisation(unittest.TestCase):
 
 
 class TestMarkRecommendationPath(unittest.TestCase):
-    """When the LLM calls mark_recommendation, those ordered ids ARE the
-    citation set — exactly, in order, no cap."""
+    """When the LLM calls mark_recommendation, those ids ARE the citation
+    set — best-first by gate rank, hard-capped at the 3 strongest (#28)."""
 
     def test_exact_set_and_order_from_marked_ids(self) -> None:
         marked = ["rs-multiplier", "rs-advtopup", "hdfc-myhealth", "star-fho"]
@@ -105,7 +106,13 @@ class TestMarkRecommendationPath(unittest.TestCase):
             marked_policy_ids=marked,
         )
         self.assertTrue(is_rec)
-        self.assertEqual([c["policy_id"] for c in cites], marked)
+        # Hard ≤3 cap — the 3 strongest, best-first by gate rank; the 4th
+        # marked id (star-fho) is dropped by the cap.
+        self.assertEqual(
+            [c["policy_id"] for c in cites],
+            ["rs-multiplier", "rs-advtopup", "hdfc-myhealth"],
+        )
+        self.assertLessEqual(len(cites), 3)
         # The un-recommended high-scorer must NOT appear.
         self.assertNotIn(
             "star-hospcash", [c["policy_id"] for c in cites]
@@ -139,18 +146,18 @@ class TestProseMatchingPath(unittest.TestCase):
         )
         self.assertTrue(is_rec)
         ids = [c["policy_id"] for c in cites]
-        # EXACTLY the 4 named in prose, in prose order.
+        # 4 policies are named in prose, but the cards hard-cap at the 3
+        # strongest (best-first by gate rank); star-fho (4th) is dropped.
         self.assertEqual(
-            ids,
-            ["rs-multiplier", "rs-advtopup", "hdfc-myhealth", "star-fho"],
+            ids, ["rs-multiplier", "rs-advtopup", "hdfc-myhealth"]
         )
-        # 4 named in prose ⇒ 4 cards (the original bug was 4 → 3).
-        self.assertEqual(len(cites), 4)
+        self.assertEqual(len(cites), 3)
         # The false positive from the screenshot is gone.
         self.assertNotIn("star-hospcash", ids)
 
-    def test_no_count_cap(self) -> None:
-        """A 5-policy shortlist must yield 5 cards, not 3."""
+    def test_count_hard_capped_at_3(self) -> None:
+        """A 5-policy shortlist yields EXACTLY 3 cards (best-first) — the
+        recommendation cards do not render past 3 (#28)."""
         chunks = [
             _chunk(f"p{i}", f"Policy Alpha {i}", "ins", 0.9 - i * 0.05, f"k{i}")
             for i in range(5)
@@ -165,10 +172,9 @@ class TestProseMatchingPath(unittest.TestCase):
             marked_policy_ids=[],
         )
         self.assertTrue(is_rec)
-        self.assertEqual(len(cites), 5)
+        self.assertEqual(len(cites), 3)
         self.assertEqual(
-            [c["policy_id"] for c in cites],
-            ["p0", "p1", "p2", "p3", "p4"],
+            [c["policy_id"] for c in cites], ["p0", "p1", "p2"]
         )
 
 

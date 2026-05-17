@@ -953,6 +953,25 @@ def _median(xs: list[int]) -> int:
     return int((s[mid - 1] + s[mid]) / 2)
 
 
+def _percentile(xs: list[int], q: float) -> int:
+    """Linear-interpolated q-th percentile (q in 0..100). Used for the
+    predicted-premium BAND edges. The basket mixes cheap fixed-benefit
+    plans with premium indemnity plans, so absolute min/max sit ~4-5x
+    apart — a band that wide renders as a useless, broken-looking range
+    ("₹44,000-₹1,96,000"). The interquartile p25-p75 is the honest
+    "what similar profiles typically pay" range."""
+    if not xs:
+        return 0
+    s = sorted(xs)
+    if len(s) == 1:
+        return int(s[0])
+    pos = (q / 100.0) * (len(s) - 1)
+    lo = int(pos)
+    hi = min(lo + 1, len(s) - 1)
+    frac = pos - lo
+    return int(round(s[lo] + (s[hi] - s[lo]) * frac))
+
+
 def estimate_premium_band(
     profile: Optional[dict] = None,
     candidate_policy_ids: Optional[list[str]] = None,
@@ -970,13 +989,17 @@ def estimate_premium_band(
     `getPredictedPremiumBand()` / the `premiumBand` state in page.tsx.
 
     Contract guarantees (KI-278, 2026-05-16):
-      • The chip band = the SAME 26-policy basket priced at the SAME
-        profile-resolved SI the per-settings panel uses. The panel's point
-        estimate for the user's stated SI therefore lands INSIDE
-        [min_inr, max_inr] by construction (it's literally one member of
-        the basket the band aggregates), so the two surfaces can never
-        contradict the way they did pre-fix (header ₹6.5k–₹26.5k vs panel
-        ₹19.1k for one profile).
+      • The chip band = the p25-p75 INTERQUARTILE of the 26-policy basket
+        priced at the profile-resolved SI — the "what similar profiles
+        typically pay" range, NOT the raw min-max envelope (the basket
+        mixes fixed-benefit and premium indemnity plans whose absolute
+        spread is ~4-5x and renders as a useless, broken-looking band).
+        The per-settings panel shows ONE specific plan's point estimate,
+        which may sit inside or just outside this typical band — that is
+        expected and correct (a specific plan can be cheaper or pricier
+        than the typical cohort); the surfaces no longer contradict
+        because the band is explicitly a "typical range", not an
+        absolute envelope.
       • SI precedence is resolved by `resolve_profile_sum_insured(profile)`
         — byte-identical to PremiumCalculatorPanel's slider seed
         (`desired_sum_insured_inr ?? existing_cover_inr ?? default`). The
@@ -1035,14 +1058,15 @@ def estimate_premium_band(
         }
 
     return {
-        # Directional rounding (KI-278) — floor the min / ceil the max so the
-        # displayed band is a strict superset of every basket member. This is
-        # what guarantees the per-settings panel's point estimate (one basket
-        # member at the same profile-resolved SI) always reads as INSIDE the
-        # header band the user sees.
-        "min_inr": _floor_to_500(min(premiums)),
+        # INTERQUARTILE band (p25-p75), NOT raw min-max. The basket mixes
+        # cheap fixed-benefit and premium indemnity plans whose absolute
+        # min/max sit ~4-5x apart — a band that wide ("₹44,000-₹1,96,000")
+        # is useless and reads as broken. p25-p75 is the honest "what
+        # similar profiles typically pay" range; median is the typical
+        # anchor. Edges still directionally rounded for clean display.
+        "min_inr": _floor_to_500(_percentile(premiums, 25)),
         "median_inr": _round_to_500(_median(premiums)),
-        "max_inr": _ceil_to_500(max(premiums)),
+        "max_inr": _ceil_to_500(_percentile(premiums, 75)),
         "sample_size": len(premiums),
         "assumed": bool(any_assumed),
         "sum_insured_used": resolved_si,
