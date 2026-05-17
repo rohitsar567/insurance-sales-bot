@@ -662,8 +662,8 @@ body {
 /* #47 — larger continuous slider variant for the merged Profile &
  * premium money fields. Bigger track + thumb so the touch target clears
  * the 44px guideline on phones (the wrapper row + thumb hit-area). */
-/* Padding gives the ≥44px touch target; the track is now a pseudo-element
- * so padding no longer hides it (the old height/background-clip hack did). */
+/* Padding gives the ≥44px touch target; the track is a pseudo-element so
+ * the padding does not hide it. */
 .app-range-lg { padding: 13px 0; }
 .app-range-lg::-webkit-slider-runnable-track { height: 8px; }
 .app-range-lg::-moz-range-track { height: 8px; }

@@ -4316,10 +4316,9 @@ function SafeLink({ href, children, className, fallbackClassName }: {
 
 // Jargon — inline component that wraps a term and shows an info popover
 // on click with a plain-language explanation. Bilingual via uiLang.
-// #50 — the "?" explainer is HOVER-only (and keyboard-focus for a11y):
-// it appears while you hover/focus the badge and disappears when you stop.
-// No click, no × close (clicking several used to leave them all stuck open,
-// overflowing across cards). The tooltip is width-constrained, sits ABOVE
+// The "?" explainer is HOVER-only (and keyboard-focus for a11y): it
+// appears while you hover/focus the badge and disappears when you stop.
+// No click, no × close. The tooltip is width-constrained, sits ABOVE
 // the badge centered, and is pointer-events-none so it never blocks or
 // thrashes. Scoped group/jg so only the badge — not the whole label —
 // triggers it.
@@ -5723,9 +5722,8 @@ function PolicyDetailModal({ policy, onClose }: { policy: MarketplacePolicy; onC
           </div>
 
           {/* 2 — SCORE (always rendered in this position; tri-state so a
-              slow/failed scorecard fetch shows loading/Retry, never a silent
-              gap where the whole "how this score was calculated" section
-              used to disappear). */}
+              slow/failed scorecard fetch shows loading/Retry, never a
+              silent gap). */}
           <div className="pt-5 border-t border-[var(--border)]">
             <PanelEyebrow>How this policy scores {isPersonalized ? "for you" : "(generic buyer)"}</PanelEyebrow>
             {sc === undefined && (

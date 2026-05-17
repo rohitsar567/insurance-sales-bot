@@ -31,12 +31,9 @@ export type ChatResponse = {
   // frontend uses this when constructing the playback Blob URL so Safari
   // doesn't refuse to play an mp4 payload labelled as wav.
   audio_mime?: string | null;
-  // KI-278 (2026-05-16) — voice-OUTPUT (TTS) failures used to be silent:
-  // the bot returned a text reply with audio_base64=null and NO signal,
-  // so the user saw a voice-less answer with zero explanation ("no voice
-  // in reply. wtf?"). The backend now classifies the failure (closed enum,
-  // same contract as the STT path) and ships a user-facing message the
-  // chat UI renders inline under the bubble. Absent on the success path.
+  // Closed-enum TTS failure code. When voice output fails the backend
+  // classifies it (same contract as the STT path) and ships a user-facing
+  // message the chat UI renders inline under the bubble. Absent on success.
   tts_error_code?:
     | "rate_limit"
     | "service_unavailable"
