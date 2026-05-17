@@ -88,6 +88,12 @@ _log = logging.getLogger(__name__)
 
 _FACTS_DIR = settings.DATA_DIR / "policy_facts"
 _DOCTYPE_SUFFIXES = ("__wordings", "__brochure", "__cis", "__prospectus")
+# KI-RECALL-POOL (2026-05-17) — width of the Chroma candidate pool pulled
+# BEFORE eligibility + scorecard-aware ranking. Must be wide enough that a
+# genuinely-strong A/B policy that is cosine-rank ~15-30 for a profile
+# query still enters contention (so the quality-aware filter_pipeline can
+# surface it). The LLM still only ever sees the top-k best-fit survivors.
+_RECALL_POOL = 40
 _FACT_KEYS = (
     "policy_type_indemnity_or_fixed",
     # KI-279 (2026-05-16) — the raw catalog type key. Some curated files
@@ -637,6 +643,79 @@ def save_profile_field(session, field: str, value: Any) -> dict:
     }
 
 
+_qseed_cache: dict = {}  # (profile_sig) -> [seed chunk dicts]
+
+
+def _quality_seed_candidates(profile, limit: int = 25) -> list[dict]:
+    """KI-QUALITY-SEED (2026-05-17). Cosine retrieval is quality-blind: a
+    genuinely-best policy whose document wording isn't cosine-similar to a
+    generic profile query never enters the candidate pool, so the
+    (audit-verified-correct) profile-tuned scorecard + filter_pipeline never
+    get the chance to surface it. This deterministically seeds the pool with
+    the catalogue's top policies by the PROFILE-TUNED scorecard overall.
+    filter_pipeline still does precise eligibility + profile-fit ranking on
+    the union (proven: it eligibility-passes + ranks a present A-policy #1),
+    so this ONLY guarantees CANDIDACY — it never bypasses eligibility or
+    fabricates a recommendation. Pure logic layer: no re-ingest, no vector
+    DB change. Cached per profile-signature (the catalogue + a fixed profile
+    yield a fixed ranking)."""
+    out: list[dict] = []
+    try:
+        prof_sig = repr(sorted(
+            (s, getattr(profile, s, None))
+            for s in (
+                "age", "income_band", "primary_goal", "existing_cover_inr",
+                "copay_pct", "dependents", "health_conditions",
+                "budget_band", "location_tier", "parents_to_insure",
+                "parents_age_max",
+            )
+        )) if profile is not None else "none"
+        if prof_sig in _qseed_cache:
+            return _qseed_cache[prof_sig][:limit]
+        cur = _curated_facts_all()
+        scored: list[tuple[float, str, dict, dict]] = []
+        seen: set[str] = set()
+        for key, data in cur.items():
+            if not isinstance(data, dict):
+                continue
+            pid = (data.get("policy_id") or key or "").strip()
+            if not pid or pid in seen:
+                continue
+            seen.add(pid)
+            sig = _scorecard_signal(pid, profile=profile)
+            ov = sig.get("_overall_score")
+            if ov is None:
+                continue
+            try:
+                ovf = float(ov)
+            except (TypeError, ValueError):
+                continue
+            scored.append((ovf, pid, data, sig))
+        scored.sort(key=lambda t: -t[0])
+        for ovf, pid, data, sig in scored[: max(limit, 25)]:
+            ch = {
+                "chunk_id": f"{pid}__qseed",
+                "policy_id": pid,
+                "policy_name": data.get("policy_name", pid),
+                "insurer_slug": data.get("insurer_slug")
+                or (pid.split("__", 1)[0] if "__" in pid else ""),
+                "doc_type": "policy",
+                "source_url": data.get("_primary_source_pdf") or "",
+                # No cosine text — filter_pipeline ranks the union by
+                # _fit_score (scorecard grade + profile fit), not cosine,
+                # so a 0.0 cosine score does not bury a seeded A-policy.
+                "chunk_text": "",
+                "score": 0.0,
+            }
+            ch.update(_load_policy_facts(pid))
+            ch.update(sig)
+            out.append(ch)
+        _qseed_cache[prof_sig] = out
+    except Exception as e:  # noqa: BLE001 — seeding must never break retrieval
+        _log.warning("quality-seed failed: %s", e)
+    return out[:limit]
+
+
 # ---- retrieve_policies -----------------------------------------------------
 
 async def retrieve_policies(
@@ -803,9 +882,26 @@ async def retrieve_policies(
     try:
         from rag.retrieve import retrieve as _retrieve
 
+        # KI-RECALL-POOL (2026-05-17) — DECOUPLE the Chroma recall pool from
+        # the caller's top_k. Cosine-only Chroma ranking is quality-blind: a
+        # mediocre C/D policy whose wording matches the query out-ranks a
+        # genuinely-better A/B policy that IS in the corpus. At top_k=8 the
+        # A-grade policies never even enter the candidate set, so the
+        # downstream quality-aware filter_pipeline (_fit_score, now fed REAL
+        # scorecard grades after KI-FULLFACTS) can't surface them — it can
+        # only re-order what was retrieved. Fix: retrieve a WIDE pool, let
+        # eligibility + scorecard-aware ranking choose, then return the
+        # top-k best-fit survivors (truncation happens after filter_pipeline
+        # below). For an explicit known-policy follow-up (policy_filter_ids)
+        # the caller already knows the policy — keep the narrow top_k.
+        _recall_pool = (
+            (int(top_k) if top_k else 8)
+            if policy_filter_ids
+            else _RECALL_POOL
+        )
         chunks = await _retrieve(
             query=query,
-            top_k=int(top_k) if top_k else 8,
+            top_k=_recall_pool,
             policy_ids=policy_filter_ids or None,
             session_id=eff_session_id,
         )
@@ -857,6 +953,22 @@ async def retrieve_policies(
     guard_signal = None
     filtered = raw
     if not policy_filter_ids:
+        # KI-QUALITY-SEED — union the cosine pool with the catalogue's
+        # top profile-graded policies so a genuinely-best policy that
+        # isn't cosine-similar to a generic needs-query still enters
+        # contention. filter_pipeline then does precise eligibility +
+        # profile-fit ranking on the union (it eligibility-passes + ranks
+        # a present A-policy #1, proven). Cosine chunk wins on dup (it
+        # carries real retrieved text); seeds only ADD missing candidates.
+        if profile is not None:
+            _seen_pids = {
+                (c.get("policy_id") or "").strip() for c in raw
+            }
+            for _seed in _quality_seed_candidates(profile, limit=25):
+                _sp = (_seed.get("policy_id") or "").strip()
+                if _sp and _sp not in _seen_pids:
+                    _seen_pids.add(_sp)
+                    raw.append(_seed)
         try:
             from backend.retrieval_filters import filter_pipeline
             filtered, guard_signal = filter_pipeline(
@@ -865,6 +977,17 @@ async def retrieve_policies(
         except Exception as e:  # noqa: BLE001 — pipeline must never break retrieval
             _log.warning("retrieval_filters.filter_pipeline failed: %s", e)
             filtered = raw
+
+        # KI-RECALL-POOL — filter_pipeline has now eligibility-filtered +
+        # ranked the WIDE pool best-fit-first (scorecard-aware, deduped to
+        # ~1 chunk/policy). Return only the top-N best-fit survivors: enough
+        # for the LLM to pick 2-4 strong recommendations AND for the
+        # citation builder to select from, without dumping the 40-wide tail
+        # as context. This is the ONLY truncation — done AFTER quality
+        # ranking, so the genuinely-best eligible policies (e.g. SBI Super
+        # Health A/87) are what the LLM and the cards both see. Set on the
+        # session cache too so prose ⇄ cited cards are gated on the SAME set.
+        filtered = filtered[: max((int(top_k) if top_k else 8), 12)]
 
     # X7 — cache slug→insurer lookups on session so a subsequent
     # mark_recommendation call (same turn) can stamp the right insurer on the
