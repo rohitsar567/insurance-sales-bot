@@ -170,6 +170,136 @@ const BARGE_IN_GRACE_MS = 600;
 // (~0.02 worst case on speakers) does not.
 const BARGE_IN_NO_BOTREF_FLOOR = 0.035;
 
+// =========================================================================
+// #53 / #54 (2026-05-18) — push-to-talk head-clipping + start-latency fix.
+//
+// ROOT CAUSE (verified):
+//   page.tsx's push-to-talk path cold-starts the mic on every SPACE press:
+//     page.tsx:1350-1361  onKeyDown(SPACE) → startRecordingRef.current()
+//     page.tsx:1004-1019  startRecording() → navigator.mediaDevices
+//                          .getUserMedia(...)  [COLD — 200-700ms on HF Space]
+//     page.tsx:1021       new MediaRecorder(stream)
+//     page.tsx:1213       recorder.start()    [capture truly begins HERE]
+//   Every word the user speaks between the keydown and recorder.start()
+//   firing is *never captured* → the leading word is lost/garbled (#53,
+//   transcribed "S A R" for "Sir."). The same cold-start is the multi-second
+//   delay the user feels before recording begins (#54). There is NO pre-roll
+//   buffer and NO warm/pre-armed stream anywhere in the codebase.
+//
+// FIX (this hook, since page.tsx is owned by another writer and its PTT path
+// is fully self-contained):
+//   - Keep ONE mic stream + MediaRecorder + AudioContext WARM for the hook's
+//     entire armed lifetime (acquired once after the user opts into voice,
+//     never torn down per-press, survives the Live↔PTT toggle). A persistent
+//     open audio device means the OS mic is already hot, so page.tsx's own
+//     per-press getUserMedia resolves in ~10-50ms instead of cold-starting
+//     (200-700ms) — that alone removes the felt multi-second start delay.
+//   - The warm MediaRecorder runs with a short timeslice, feeding a rolling
+//     PRE-ROLL ring buffer that always holds the last ~PRE_ROLL_MS of audio.
+//   - The PTT API (beginPushToTalk/endPushToTalk) prepends the pre-roll to
+//     the captured utterance, so the FIRST WORD — spoken in the cold-start
+//     gap — is always in the blob even though page.tsx's recorder missed it.
+//   - A DELIBERATE-HOLD gate: beginPushToTalk arms instantly but the capture
+//     only "engages" after HOLD_THRESHOLD_MS; a sub-threshold tap (key
+//     bounce, accidental press) is discarded and produces no submission.
+//   - AudioContext.resume() is kept warm WHILE armed (not lazily on first
+//     press), and warm-stream / permission / worklet failures are surfaced
+//     via onVoiceError — never silent.
+//
+// The pure pre-roll ring-buffer + hold-gate logic is exported (PreRollRing,
+// evaluateHoldGate) so it is self-contained and independently exercised by
+// the regression test.
+// =========================================================================
+
+// Size of the rolling pre-roll buffer. Must comfortably cover the worst-case
+// page.tsx cold-start gap (getUserMedia 200-700ms + MediaRecorder spin-up +
+// the optional 400ms Live-teardown wait at page.tsx:994). 800ms gives margin
+// without bloating the blob (browser webm/opus ≈ 4 KB/s ⇒ ~3.2 KB of lead-in).
+export const PRE_ROLL_MS = 800;
+// Warm MediaRecorder timeslice. Small enough that the pre-roll ring has fine
+// granularity (we never drop more than one slice of lead-in when trimming the
+// ring to PRE_ROLL_MS), large enough not to thrash ondataavailable.
+export const WARM_TIMESLICE_MS = 200;
+// Deliberate-hold threshold (#54). The hold must be intentional so an
+// accidental tap / key-bounce doesn't fire a turn, but it must feel instant
+// on a real hold — 200ms sits in the requested 150-250ms band.
+export const HOLD_THRESHOLD_MS = 200;
+
+/**
+ * PreRollRing — a rolling, time-bounded ring buffer of MediaRecorder Blob
+ * slices. `push` appends a freshly-emitted slice (each slice represents
+ * ~WARM_TIMESLICE_MS of audio); the ring evicts the oldest slices once the
+ * retained wall-clock duration exceeds `windowMs`, so it always holds *at
+ * least* the last `windowMs` of audio (it may hold up to one extra slice so
+ * a head word that started just before `windowMs` ago is never trimmed).
+ *
+ * Pure + framework-free so the regression test can drive it directly without
+ * a browser. `drain()` returns the retained slices oldest-first and clears
+ * the ring (used at PTT-engage to seed the utterance with the lead-in).
+ */
+export class PreRollRing {
+  private slices: Array<{ blob: Blob; ms: number }> = [];
+  private retainedMs = 0;
+  private readonly windowMs: number;
+  constructor(windowMs: number = PRE_ROLL_MS) {
+    this.windowMs = windowMs;
+  }
+
+  push(blob: Blob, sliceMs: number = WARM_TIMESLICE_MS): void {
+    if (!blob || blob.size <= 0) return;
+    this.slices.push({ blob, ms: sliceMs });
+    this.retainedMs += sliceMs;
+    // Evict from the front while doing so still leaves >= windowMs retained
+    // (keep one extra slice of slack so a word that began just before the
+    // window boundary survives — never trim into the requested lead-in).
+    while (
+      this.slices.length > 1 &&
+      this.retainedMs - this.slices[0].ms >= this.windowMs
+    ) {
+      const dropped = this.slices.shift();
+      if (dropped) this.retainedMs -= dropped.ms;
+    }
+  }
+
+  /** Retained lead-in slices oldest-first; clears the ring. */
+  drain(): Blob[] {
+    const out = this.slices.map((s) => s.blob);
+    this.slices = [];
+    this.retainedMs = 0;
+    return out;
+  }
+
+  /** Approximate retained wall-clock duration (ms). */
+  retainedDurationMs(): number {
+    return this.retainedMs;
+  }
+
+  clear(): void {
+    this.slices = [];
+    this.retainedMs = 0;
+  }
+}
+
+/**
+ * evaluateHoldGate — pure decision for the deliberate-hold threshold (#54).
+ *
+ * Given when the user engaged (pressed) and released, decide whether the
+ * press was a DELIBERATE hold (capture should be submitted) or a sub-threshold
+ * TAP (discard — accidental press / key bounce). Kept pure so the regression
+ * test can assert the boundary exactly without timers.
+ *
+ *   heldMs >= thresholdMs  → { deliberate: true  }  (engage + submit)
+ *   heldMs <  thresholdMs  → { deliberate: false }  (discard, no submit)
+ */
+export function evaluateHoldGate(
+  pressedAt: number,
+  releasedAt: number,
+  thresholdMs: number = HOLD_THRESHOLD_MS,
+): { deliberate: boolean; heldMs: number } {
+  const heldMs = Math.max(0, releasedAt - pressedAt);
+  return { deliberate: heldMs >= thresholdMs, heldMs };
+}
+
 // Minimal types for the Web Speech API since lib.dom.d.ts ships them under
 // `webkitSpeechRecognition` only and the standard `SpeechRecognition` symbol
 // is still vendor-prefixed in most browsers as of 2026-05.
@@ -242,6 +372,54 @@ export interface UseStreamingVoiceReturn {
    *     send() is in flight.
    */
   consumeBargeInSignal: () => boolean;
+
+  // ----------------------------------------------------------------------
+  // #53 / #54 — warm-stream + pre-roll push-to-talk API.
+  //
+  // This is the minimal API the push-to-talk UI integrates with. Even
+  // without an explicit call, `armWarmStream()` is invoked autonomously by
+  // the hook once voice has been enabled, so the OS mic device is kept hot
+  // for the rest of the session — that removes the per-press cold-start that
+  // page.tsx's own getUserMedia otherwise pays (the felt multi-second delay,
+  // #54) and continuously fills the pre-roll ring so the leading word spoken
+  // in the cold-start gap survives (#53).
+  // ----------------------------------------------------------------------
+
+  /** True once the warm mic stream + recorder + AudioContext are live and
+   *  the pre-roll ring is filling. */
+  isWarm: boolean;
+
+  /** Pre-arm (or re-arm) the persistent warm stream. Idempotent; safe to
+   *  call repeatedly. Resolves true when the warm stream is recording. */
+  armWarmStream: () => Promise<boolean>;
+
+  /** Release the warm stream + recorder + AudioContext (mic indicator off).
+   *  Called on unmount; callers may call it to fully relinquish the mic. */
+  disarmWarmStream: () => void;
+
+  /**
+   * Engage a push-to-talk capture. Call on hold-start (e.g. SPACE keydown).
+   * Returns immediately. The capture *engages* only after HOLD_THRESHOLD_MS
+   * so a sub-threshold tap is ignored; the engaged utterance is seeded with
+   * the pre-roll ring so the first word (spoken during the cold-start gap)
+   * is always included.
+   */
+  beginPushToTalk: () => void;
+
+  /**
+   * End a push-to-talk capture. Call on hold-release (e.g. SPACE keyup).
+   * If the hold was deliberate (>= HOLD_THRESHOLD_MS) the assembled blob
+   * (pre-roll + live capture) is transcribed and delivered via
+   * onFinalTranscript; a sub-threshold tap resolves to null and submits
+   * nothing. Resolves with the final transcript, or null when discarded /
+   * empty.
+   */
+  endPushToTalk: () => Promise<string | null>;
+
+  /** Snapshot+drain the current pre-roll ring (oldest-first). Exposed for
+   *  the regression test and any caller that wants to splice the lead-in
+   *  into its own recorder blob. */
+  consumePreRollChunks: () => Blob[];
 }
 
 function resolveCtor(): SpeechRecognitionCtor | null {
@@ -365,6 +543,45 @@ export function useStreamingVoice(
   // Promise resolved on the recorder's next `stop` event so we can wait
   // for the final ondataavailable chunk before building the blob.
   const recorderStopWaiterRef = useRef<(() => void) | null>(null);
+
+  // ----------------------------------------------------------------------
+  // #53 / #54 — warm-stream + pre-roll push-to-talk state.
+  //
+  // SEPARATE from the Live-mode mediaStream/mediaRecorder above. The Live
+  // recorder is acquired/torn-down per utterance and is gated on the
+  // `enabled` prop (which page.tsx flips OFF during push-to-talk). This warm
+  // stream is the OPPOSITE lifecycle: opened once after the user opts into
+  // voice, kept alive across the Live↔PTT toggle for the hook's mounted
+  // lifetime, never closed per-press. Holding a persistent open audio device
+  // keeps the OS mic hot so any per-press getUserMedia (Live's OR page.tsx's
+  // PTT) resolves near-instantly instead of cold-starting.
+  // ----------------------------------------------------------------------
+  const warmStreamRef = useRef<MediaStream | null>(null);
+  const warmRecorderRef = useRef<MediaRecorder | null>(null);
+  const warmCtxRef = useRef<AudioContext | null>(null);
+  const warmMimeRef = useRef<string>("audio/webm");
+  // The rolling pre-roll ring — always holds ~PRE_ROLL_MS of the most recent
+  // audio so a PTT engage can prepend the lead-in the user spoke during the
+  // cold-start gap.
+  const preRollRef = useRef<PreRollRing>(new PreRollRing(PRE_ROLL_MS));
+  // Live capture slices accumulated between PTT engage and release. The
+  // submitted blob is preRoll.drain() (lead-in) ++ these (live capture).
+  const pttCaptureRef = useRef<Blob[]>([]);
+  // True between a deliberate engage and the matching release — the warm
+  // recorder's ondataavailable routes slices to pttCaptureRef instead of
+  // (only) the pre-roll ring while this is set.
+  const pttEngagedRef = useRef<boolean>(false);
+  // wall-clock ms of the current hold's keydown (0 when not pressed). Used
+  // by evaluateHoldGate to classify deliberate hold vs sub-threshold tap.
+  const pttPressedAtRef = useRef<number>(0);
+  // setTimeout id for the deliberate-hold engage. Fires HOLD_THRESHOLD_MS
+  // after press; if release beats it, the press was a tap and is discarded.
+  const pttHoldTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // True once the user has opted into voice at least once. Latches the warm
+  // stream ON for the rest of the hook's mounted lifetime so it survives the
+  // Live↔PTT toggle (page.tsx flips `enabled` false for pure PTT).
+  const voiceEverEnabledRef = useRef<boolean>(false);
+  const [isWarm, setIsWarm] = useState<boolean>(false);
 
   const [isSupported] = useState<boolean>(() => resolveCtor() !== null);
 
@@ -586,6 +803,282 @@ export function useStreamingVoice(
       return false;
     }
   }, [pickRecorderMime]);
+
+  // ======================================================================
+  // #53 / #54 — warm-stream + pre-roll push-to-talk engine.
+  // ======================================================================
+
+  const disarmWarmStream = useCallback(() => {
+    if (pttHoldTimerRef.current !== null) {
+      clearTimeout(pttHoldTimerRef.current);
+      pttHoldTimerRef.current = null;
+    }
+    pttEngagedRef.current = false;
+    pttPressedAtRef.current = 0;
+    pttCaptureRef.current = [];
+    preRollRef.current.clear();
+    const rec = warmRecorderRef.current;
+    if (rec) {
+      try {
+        rec.ondataavailable = null;
+        rec.onerror = null;
+        rec.onstop = null;
+        if (rec.state !== "inactive") rec.stop();
+      } catch {
+        /* ignore */
+      }
+    }
+    warmRecorderRef.current = null;
+    const stream = warmStreamRef.current;
+    if (stream) {
+      stream.getTracks().forEach((t) => {
+        try { t.stop(); } catch { /* ignore */ }
+      });
+    }
+    warmStreamRef.current = null;
+    const ctx = warmCtxRef.current;
+    if (ctx) {
+      warmCtxRef.current = null;
+      try { void ctx.close(); } catch { /* ignore */ }
+    }
+    setIsWarm(false);
+  }, []);
+
+  // Acquire (or re-acquire) the persistent warm stream. Idempotent: a
+  // healthy recording warm recorder short-circuits. On failure routes
+  // through the SAME onVoiceError("mic_permission_denied") contract the
+  // Live path uses — never a silent failure.
+  const armWarmStream = useCallback(async (): Promise<boolean> => {
+    voiceEverEnabledRef.current = true;
+    const existing = warmRecorderRef.current;
+    if (existing && existing.state === "recording" && warmStreamRef.current) {
+      return true;
+    }
+    if (typeof navigator === "undefined" || !navigator.mediaDevices) return false;
+    if (typeof MediaRecorder === "undefined") return false;
+    // Tear down any half-built prior attempt before re-acquiring.
+    if (existing || warmStreamRef.current) disarmWarmStream();
+    try {
+      // Same AEC/NS/AGC constraints as the Live + PTT paths (KI-185) so the
+      // pre-roll is echo-cancelled identically to the rest of the capture.
+      // W2-style 2s stall watchdog so a hung getUserMedia surfaces a banner
+      // instead of pinning the warm state forever.
+      const stream: MediaStream = await Promise.race([
+        navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+        }),
+        new Promise<MediaStream>((_, reject) => {
+          setTimeout(() => {
+            const e = new Error("warm getUserMedia stalled >2s") as Error & { name: string };
+            e.name = "StallTimeout";
+            reject(e);
+          }, 2000);
+        }),
+      ]);
+      const mime = pickRecorderMime();
+      warmMimeRef.current = mime || "audio/webm";
+      const recorder = mime
+        ? new MediaRecorder(stream, { mimeType: mime })
+        : new MediaRecorder(stream);
+      preRollRef.current = new PreRollRing(PRE_ROLL_MS);
+      pttCaptureRef.current = [];
+      pttEngagedRef.current = false;
+      recorder.ondataavailable = (ev: BlobEvent) => {
+        if (!ev.data || ev.data.size <= 0) return;
+        // Always feed the rolling pre-roll ring so the lead-in is ready the
+        // instant a PTT engage fires (the word spoken in the cold-start gap
+        // is in here). When a PTT capture is engaged, ALSO accumulate the
+        // slice into the live capture buffer — the submitted blob is
+        // preRoll.drain() (lead-in) ++ pttCaptureRef (live), so the first
+        // word is never lost AND no chunk is dropped.
+        preRollRef.current.push(ev.data, WARM_TIMESLICE_MS);
+        if (pttEngagedRef.current) {
+          pttCaptureRef.current.push(ev.data);
+        }
+      };
+      recorder.onerror = (ev: Event) => {
+        console.debug("[useStreamingVoice] warm MediaRecorder error", ev);
+        try { onVoiceErrorRef.current("stream_stale"); } catch { /* ignore */ }
+      };
+      recorder.onstop = () => {
+        // The warm recorder should never stop on its own while armed; if it
+        // does (device unplug, OS interruption) surface it and let the
+        // re-arm effect / next press recover.
+        console.debug("[useStreamingVoice] warm MediaRecorder stopped");
+      };
+      warmStreamRef.current = stream;
+      warmRecorderRef.current = recorder;
+      recorder.start(WARM_TIMESLICE_MS);
+      if (recorder.state !== "recording") {
+        try { stream.getTracks().forEach((t) => t.stop()); } catch { /* ignore */ }
+        warmStreamRef.current = null;
+        warmRecorderRef.current = null;
+        throw Object.assign(
+          new Error(`warm MediaRecorder not recording (got ${recorder.state})`),
+          { name: "RecorderNotRecording" },
+        );
+      }
+      // Keep an AudioContext warm + RUNNING so it never has to be resumed
+      // lazily on first press (a suspended ctx is one of the documented
+      // first-word-loss vectors). resume() needs a user gesture on some
+      // browsers; armWarmStream is always called from one (voice toggle).
+      try {
+        const Ctor = (window.AudioContext
+          || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext);
+        if (Ctor) {
+          if (!warmCtxRef.current || warmCtxRef.current.state === "closed") {
+            warmCtxRef.current = new Ctor();
+          }
+          if (warmCtxRef.current.state === "suspended") {
+            void warmCtxRef.current.resume().catch((err) => {
+              console.debug("[useStreamingVoice] warm AudioContext.resume failed", err);
+              try { onVoiceErrorRef.current("audio_context_suspended"); } catch { /* ignore */ }
+            });
+          }
+        }
+      } catch {
+        /* AudioContext is best-effort for warmth; capture still works */
+      }
+      setIsWarm(true);
+      console.debug("[useStreamingVoice] warm stream armed", {
+        mime: warmMimeRef.current,
+        preRollMs: PRE_ROLL_MS,
+        timesliceMs: WARM_TIMESLICE_MS,
+      });
+      return true;
+    } catch (err) {
+      const name = (err as { name?: string } | null)?.name ?? "Error";
+      console.debug("[useStreamingVoice] warm stream arm failed", { name, err });
+      setIsWarm(false);
+      try {
+        onVoiceErrorRef.current("mic_permission_denied" as VoiceError);
+      } catch {
+        /* never let a user callback crash the hook */
+      }
+      return false;
+    }
+  }, [pickRecorderMime, disarmWarmStream]);
+
+  const consumePreRollChunks = useCallback((): Blob[] => {
+    return preRollRef.current.drain();
+  }, []);
+
+  // Submit an assembled PTT blob through the SAME Sarvam-with-retry path the
+  // Live grace-timer uses (KI-226/302), then deliver via onFinalTranscript.
+  // Returns the authoritative transcript or null.
+  const submitPttBlob = useCallback(
+    async (chunks: Blob[]): Promise<string | null> => {
+      if (chunks.length === 0) return null;
+      const blob = new Blob(chunks, { type: warmMimeRef.current || "audio/webm" });
+      // ~3 KB empirical noise floor (same as the Live path / PTT KI-134).
+      const MIN_BLOB_BYTES = 3000;
+      if (blob.size < MIN_BLOB_BYTES) {
+        console.debug("[useStreamingVoice] PTT blob below noise floor — discard", {
+          bytes: blob.size,
+        });
+        return null;
+      }
+      await waitForTextClear();
+      const APPROX_BYTES_PER_CHUNK = 100_000; // ~25s of webm/opus
+      const estChunks = Math.max(1, Math.ceil(blob.size / APPROX_BYTES_PER_CHUNK));
+      const attemptTimeoutMs = Math.min(120_000, 8_000 + estChunks * 12_000);
+      let authoritative: string | null = null;
+      const sarvam = await retryPostTranscribe(async (signal) => {
+        const timeoutCtl = new AbortController();
+        const timer = setTimeout(() => timeoutCtl.abort(), attemptTimeoutMs);
+        const onOuterAbort = () => timeoutCtl.abort();
+        signal.addEventListener("abort", onOuterAbort);
+        try {
+          return await postTranscribe(blob, language, timeoutCtl.signal);
+        } finally {
+          clearTimeout(timer);
+          signal.removeEventListener("abort", onOuterAbort);
+        }
+      });
+      if (sarvam) {
+        const t = (sarvam.text || "").trim();
+        if (t) authoritative = t;
+      } else {
+        try { onVoiceErrorRef.current("transcribe_failed"); } catch { /* ignore */ }
+      }
+      if (authoritative) {
+        await waitForTextClear();
+        onFinalRef.current(authoritative);
+      }
+      return authoritative;
+    },
+    [language, waitForTextClear],
+  );
+
+  // PTT engage — called HOLD_THRESHOLD_MS after a deliberate press. Snapshots
+  // the pre-roll (lead-in spoken during the cold-start gap) into the live
+  // capture buffer and flips the recorder's slice routing to also accumulate.
+  const engagePtt = useCallback(() => {
+    pttEngagedRef.current = true;
+    // Seed the capture with the pre-roll lead-in FIRST so the first word
+    // (which page.tsx's cold-started recorder would have missed) is at the
+    // head of the submitted blob.
+    const leadIn = preRollRef.current.drain();
+    pttCaptureRef.current = [...leadIn];
+    console.debug("[useStreamingVoice] PTT engaged", {
+      leadInSlices: leadIn.length,
+    });
+  }, []);
+
+  const beginPushToTalk = useCallback(() => {
+    pttPressedAtRef.current = Date.now();
+    pttCaptureRef.current = [];
+    pttEngagedRef.current = false;
+    // Make sure the warm stream is up so the pre-roll is actually filling.
+    // armWarmStream is idempotent + fast when already warm.
+    void armWarmStream();
+    if (pttHoldTimerRef.current !== null) {
+      clearTimeout(pttHoldTimerRef.current);
+    }
+    // Deliberate-hold gate: engage only after the threshold so a sub-150ms
+    // tap does nothing. The capture still feels instant because the pre-roll
+    // ring already holds the audio spoken during these HOLD_THRESHOLD_MS.
+    pttHoldTimerRef.current = setTimeout(() => {
+      pttHoldTimerRef.current = null;
+      // Re-check the press is still held (release clears pttPressedAtRef).
+      if (pttPressedAtRef.current !== 0) engagePtt();
+    }, HOLD_THRESHOLD_MS);
+  }, [armWarmStream, engagePtt]);
+
+  const endPushToTalk = useCallback(async (): Promise<string | null> => {
+    const pressedAt = pttPressedAtRef.current;
+    const releasedAt = Date.now();
+    pttPressedAtRef.current = 0;
+    if (pttHoldTimerRef.current !== null) {
+      clearTimeout(pttHoldTimerRef.current);
+      pttHoldTimerRef.current = null;
+    }
+    const { deliberate, heldMs } = evaluateHoldGate(
+      pressedAt || releasedAt,
+      releasedAt,
+      HOLD_THRESHOLD_MS,
+    );
+    const wasEngaged = pttEngagedRef.current;
+    pttEngagedRef.current = false;
+    if (!deliberate || !wasEngaged) {
+      // Sub-threshold tap (or release before engage fired): discard. The
+      // pre-roll ring keeps rolling for the warm stream; nothing submitted.
+      console.debug("[useStreamingVoice] PTT discarded (tap)", {
+        heldMs,
+        deliberate,
+        wasEngaged,
+      });
+      pttCaptureRef.current = [];
+      return null;
+    }
+    const captured = pttCaptureRef.current;
+    pttCaptureRef.current = [];
+    return submitPttBlob(captured);
+  }, [submitPttBlob]);
 
   const buildRecognition = useCallback((): SpeechRecognitionInstance | null => {
     const Ctor = resolveCtor();
@@ -1106,6 +1599,51 @@ export function useStreamingVoice(
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled]);
+
+  // #53 / #54 — warm-stream lifecycle. The warm stream's lifecycle is
+  // DELIBERATELY decoupled from `enabled` (which page.tsx flips OFF for pure
+  // push-to-talk — see page.tsx:986 `live.setLive(false)` inside
+  // startRecording). The user opting into voice latches the warm stream ON
+  // for the rest of the hook's mounted lifetime so:
+  //   (a) the pre-roll ring is ALWAYS filling whenever the user might press
+  //       SPACE — including in pure-PTT mode when `enabled` is false — so the
+  //       first word spoken in page.tsx's cold-start gap survives (#53);
+  //   (b) a persistent open audio device keeps the OS mic hot so page.tsx's
+  //       own per-press getUserMedia resolves in ~10-50ms instead of
+  //       cold-starting (200-700ms), removing the felt start delay (#54).
+  // Armed on the rising edge of `enabled` (the only voice-opt-in signal the
+  // hook receives) and kept armed thereafter; fully released on unmount.
+  useEffect(() => {
+    if (!isSupported) return;
+    if (enabled) {
+      voiceEverEnabledRef.current = true;
+    }
+    if (enabled || voiceEverEnabledRef.current) {
+      void armWarmStream();
+    }
+    // No teardown on `enabled` going false — the warm stream must survive
+    // the Live↔PTT toggle. Final release happens in the unmount cleanup.
+  }, [enabled, isSupported, armWarmStream]);
+
+  // #53 / #54 — warm-stream health watchdog. The OS can silently drop a
+  // long-lived capture (device sleep, USB mic unplug, OS audio interruption,
+  // tab backgrounding on some browsers) WITHOUT firing recorder.onerror. If
+  // that happens the pre-roll ring goes stale and the very bug we fixed
+  // returns. Every 4s, while voice has been opted into and we're not in the
+  // middle of a PTT capture, re-assert the warm stream (armWarmStream is a
+  // no-op when the recorder is healthily "recording").
+  useEffect(() => {
+    if (!isSupported) return;
+    const tick = setInterval(() => {
+      if (!voiceEverEnabledRef.current) return;
+      if (pttEngagedRef.current) return; // don't disturb an in-flight capture
+      const rec = warmRecorderRef.current;
+      if (!rec || rec.state !== "recording" || !warmStreamRef.current) {
+        void armWarmStream();
+      }
+    }, 4000);
+    return () => clearInterval(tick);
+  }, [isSupported, armWarmStream]);
 
   // KI-173 (2026-05-15) — heartbeat watchdog. Browser SpeechRecognition
   // occasionally enters a stopped state without `onend` firing (certain
@@ -1874,8 +2412,11 @@ export function useStreamingVoice(
       }
       pendingUtteranceRef.current = "";
       pendingChunksRef.current = [];
+      // #53 / #54 — release the warm stream + recorder + AudioContext on
+      // unmount so the OS mic indicator goes off when the app is torn down.
+      disarmWarmStream();
     };
-  }, [clearRestartTimer, teardownAudio]);
+  }, [clearRestartTimer, teardownAudio, disarmWarmStream]);
 
   // FIX 3 (HIGH) — one-shot read-and-clear of the barge-in flag. Returns
   // true exactly once after triggerBargeIn fires; subsequent calls return
@@ -1888,5 +2429,17 @@ export function useStreamingVoice(
     return false;
   }, []);
 
-  return { start, stop, isSupported, consumeBargeInSignal };
+  return {
+    start,
+    stop,
+    isSupported,
+    consumeBargeInSignal,
+    // #53 / #54 — warm-stream + pre-roll push-to-talk API.
+    isWarm,
+    armWarmStream,
+    disarmWarmStream,
+    beginPushToTalk,
+    endPushToTalk,
+    consumePreRollChunks,
+  };
 }

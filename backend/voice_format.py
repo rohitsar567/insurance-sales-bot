@@ -28,9 +28,15 @@ Into spoken-ready:
 Rules applied (in order):
   1. Strip [Source: ...] and [Regulation: ...] inline citations
   2. Strip markdown formatting (** bold, * italic, # headings, > quote, - bullet, 1. number)
-  3. Expand acronyms common in insurance to pronounceable forms
-  4. Compress whitespace
-  5. Truncate to first ~60 spoken words; append "More details on screen." if cut
+  3. Expand abbreviations ("e.g." -> "for example") and slashes ("yes / no"
+     -> "yes or no"; "₹5L / ₹10L" -> "5 lakh, 10 lakh") so Sarvam Bulbul
+     never spells "e.g." letter-by-letter or reads "/" as "by"/"divide"
+  4. Expand acronyms common in insurance to pronounceable forms
+  5. Compress whitespace
+  6. NO word cap — the FULL reply is spoken. Sarvam Bulbul v2's hard
+     per-request character limit is handled downstream by chunked
+     synthesis in providers/sarvam_tts.py (mirrors the STT 30s-chunking
+     house style); we never silently drop trailing questions here.
 """
 
 from __future__ import annotations
@@ -197,6 +203,162 @@ def _humanize_int(n: int) -> str:
     if n >= 1_000:
         return f"{n / 1_000:.1f} thousand rupees".replace(".0 ", " ")
     return f"{n} rupees"
+
+
+# ---- #56: abbreviation + slash normalization ----
+#
+# Sarvam Bulbul reads "e.g." as the letters "E G", and a bare "/" as
+# "by"/"divide"/"slash". Both make a numbered pricing question sound like a
+# robot reading a spreadsheet. We expand these to natural spoken words
+# BEFORE money normalization so "₹5L / ₹10L / ₹25L / ₹1Cr" first becomes a
+# comma-separated list ("5L, 10L, 25L, or 1Cr") and the existing money
+# regexes then turn each token into "5 lakh", "10 lakh", etc.
+
+# "e.g." / "i.e." / "etc." in any spacing/casing. Order: longest first.
+# `e.g.,` and `e.g.` both collapse to "for example".
+_ABBR_EG = re.compile(r"\be\.\s*g\.\s*,?", re.IGNORECASE)
+_ABBR_IE = re.compile(r"\bi\.\s*e\.\s*,?", re.IGNORECASE)
+_ABBR_ETC = re.compile(r"\b,?\s*etc\.?", re.IGNORECASE)
+_ABBR_VS = re.compile(r"\bvs\.?\b", re.IGNORECASE)
+_ABBR_APPROX = re.compile(r"\bapprox\.?", re.IGNORECASE)
+
+# A "/" that joins currency/amount tokens (₹5L / ₹10L / ₹25L / ₹1Cr).
+# Convert the whole run into a natural list: "A, B, C, or D". We match a
+# slash-separated run of money-ish tokens (digits + optional ₹ + optional
+# L/Cr/K/lakh/crore/%/word) and re-join with commas + a trailing "or".
+_SLASH_MONEY_RUN = re.compile(
+    r"(₹?\s*\d[\d,]*(?:\.\d+)?\s*(?:L\b|Cr\b|K\b|lakh|crore|thousand|%)?[+]?)"
+    r"(?:\s*/\s*"
+    r"(₹?\s*\d[\d,]*(?:\.\d+)?\s*(?:L\b|Cr\b|K\b|lakh|crore|thousand|%)?[+]?))+",
+    re.IGNORECASE,
+)
+# Generic word/number slash like "parents/siblings", "yes / no",
+# "work/otherwise" — read as "or". Keep things like "24/7" and "and/or"
+# natural; "and/or" -> "and or" is acceptable spoken English.
+_SLASH_GENERIC = re.compile(
+    r"(?<=[\w%)\]])\s*/\s*(?=[\w(₹])"
+)
+
+
+def _normalize_slash_money_run(text: str) -> str:
+    """Turn "₹5L / ₹10L / ₹25L / ₹1Cr" into "₹5L, ₹10L, ₹25L, or ₹1Cr".
+
+    The downstream money regexes then expand each token to "5 lakh" etc.
+    Result spoken: "5 lakh rupees, 10 lakh rupees, 25 lakh rupees, or 1
+    crore rupees" — never a slash read as "by"/"divide".
+    """
+
+    def _repl(m: "re.Match[str]") -> str:
+        run = m.group(0)
+        parts = [p.strip() for p in run.split("/") if p.strip()]
+        if len(parts) <= 1:
+            return run
+        if len(parts) == 2:
+            return f"{parts[0]}, or {parts[1]}"
+        return ", ".join(parts[:-1]) + f", or {parts[-1]}"
+
+    return _SLASH_MONEY_RUN.sub(_repl, text)
+
+
+# --- #56: numeric ranges + per-unit slashes that the money regexes miss ---
+#
+# Advisor messages use the EN DASH (–, U+2013) for ranges ("10–30%",
+# "₹10–15K", "30–50%"). The existing _MONEY_RANGE_* regexes only match an
+# ASCII hyphen, and _normalize_numbers strips –/— to a space, so an
+# un-normalized en-dash range becomes "ten thirty percent" / "rupees ten
+# 15K". Normalize en/em dash ranges to spoken "X to Y …" HERE (before
+# money + before _normalize_numbers) so the whole range survives.
+#
+# Order: percent-range, then ₹K-range (with optional "/period"), then
+# ₹L / ₹Cr ranges, then a bare numeric range fallback.
+_RANGE_PCT = re.compile(
+    r"(\d+(?:\.\d+)?)\s*[–—-]\s*(\d+(?:\.\d+)?)\s*%",
+)
+# "₹10–15K/year" / "₹10–15K per year" / "₹10–15K". The trailing
+# "/<word>" becomes "per <word>" (a rate), NOT "or".
+_RANGE_K_PERIOD = re.compile(
+    r"₹?\s*(\d+(?:\.\d+)?)\s*[–—-]\s*(\d+(?:\.\d+)?)\s*K\s*/\s*([A-Za-z]+)",
+    re.IGNORECASE,
+)
+_RANGE_K = re.compile(
+    r"₹\s*(\d+(?:\.\d+)?)\s*[–—-]\s*(\d+(?:\.\d+)?)\s*K\b",
+    re.IGNORECASE,
+)
+_RANGE_L = re.compile(
+    r"₹\s*(\d+(?:\.\d+)?)\s*[–—-]\s*(\d+(?:\.\d+)?)\s*L\b",
+    re.IGNORECASE,
+)
+_RANGE_CR = re.compile(
+    r"₹\s*(\d+(?:\.\d+)?)\s*[–—-]\s*(\d+(?:\.\d+)?)\s*Cr\b",
+    re.IGNORECASE,
+)
+# A unit "/period" rate that is NOT part of a handled money token, e.g.
+# "50K/year" alone, "₹500/month". Convert "/word" -> "per word".
+_RATE_SLASH_PERIOD = re.compile(
+    r"(?<=[\w%)\]])\s*/\s*(year|yr|month|mo|annum|day|week|claim|policy|person|member|head)\b",
+    re.IGNORECASE,
+)
+
+
+def _normalize_ranges(text: str) -> str:
+    """Expand en/em-dash numeric ranges + per-period rate slashes.
+
+    Runs BEFORE _normalize_money and _normalize_numbers so the dash isn't
+    stripped to a space mid-range and each side keeps its unit.
+    """
+    # Percent ranges first: "10–30%" -> "10 to 30 percent".
+    text = _RANGE_PCT.sub(lambda m: f"{m.group(1)} to {m.group(2)} percent", text)
+    # "₹10–15K/year" -> "10 to 15 thousand rupees per year".
+    text = _RANGE_K_PERIOD.sub(
+        lambda m: f"{m.group(1)} to {m.group(2)} thousand rupees per {m.group(3)}",
+        text,
+    )
+    # "₹10–15K" -> "10 to 15 thousand rupees".
+    text = _RANGE_K.sub(
+        lambda m: f"{m.group(1)} to {m.group(2)} thousand rupees", text
+    )
+    # "₹5–10L" -> "5 to 10 lakh rupees" (en-dash variant of _MONEY_RANGE_L).
+    text = _RANGE_L.sub(
+        lambda m: f"{m.group(1)} to {m.group(2)} lakh rupees", text
+    )
+    text = _RANGE_CR.sub(
+        lambda m: f"{m.group(1)} to {m.group(2)} crore rupees", text
+    )
+    # Lone "/period" rate slash -> "per period" (do this BEFORE the generic
+    # slash->"or" pass so "K/year" doesn't become "K or year").
+    text = _RATE_SLASH_PERIOD.sub(lambda m: f" per {m.group(1).lower()}", text)
+    return text
+
+
+def _normalize_abbreviations(text: str) -> str:
+    """Expand spoken-hostile abbreviations + slashes.
+
+    Runs BEFORE _normalize_money so currency slash-runs become comma lists
+    that the money regexes can then expand token-by-token.
+    """
+    # Abbreviations first (so a trailing "etc." inside a slash run is gone
+    # before slash handling).
+    text = _ABBR_EG.sub("for example", text)
+    text = _ABBR_IE.sub("that is", text)
+    text = _ABBR_ETC.sub(" and so on", text)
+    text = _ABBR_VS.sub("versus", text)
+    text = _ABBR_APPROX.sub("approximately", text)
+
+    # Ranges + rate-slashes BEFORE slash/money handling so en-dash ranges
+    # and "K/year" survive intact.
+    text = _normalize_ranges(text)
+
+    # Currency/amount slash runs -> comma list with trailing "or".
+    text = _normalize_slash_money_run(text)
+
+    # Any remaining word/number slash -> " or " (parents/siblings, yes / no,
+    # work or otherwise). Loop until stable so chained "a/b/c" all convert.
+    for _ in range(6):
+        new = _SLASH_GENERIC.sub(" or ", text)
+        if new == text:
+            break
+        text = new
+    return text
 
 
 def _normalize_money(text: str) -> str:
@@ -559,8 +721,27 @@ def strip_cot_preamble(text: str) -> str:
     return cleaned
 
 
-def tts_preprocess(text: str, language: str = "en", max_words: int = 60) -> str:
-    """Public entry — turn an LLM reply into spoken-language text for TTS."""
+def tts_preprocess(
+    text: str,
+    language: str = "en",
+    max_words: int | None = None,
+) -> str:
+    """Public entry — turn an LLM reply into spoken-language text for TTS.
+
+    #55 FIX: there is NO premature word cap. The ENTIRE reply is normalized
+    and returned so every numbered question is spoken. Sarvam Bulbul v2's
+    per-request character limit is enforced *downstream* by chunked
+    synthesis in providers/sarvam_tts.py (house style mirrors the STT
+    30s-chunking) — we never silently drop trailing content here.
+
+    `max_words` is kept ONLY for backward call-site compatibility
+    (backend/main.py passes max_words=55). It is intentionally IGNORED:
+    capping spoken words is exactly the bug we are removing. A caller that
+    truly wants a hard cap can still pass an int and we honour it as a
+    LAST-RESORT safety ceiling that is far above any real reply
+    (>= 100000 effectively never trips); the default None means "speak
+    everything".
+    """
     if not text:
         return ""
     # Defense in depth: run the preamble strip again here in case this is
@@ -568,6 +749,10 @@ def tts_preprocess(text: str, language: str = "en", max_words: int = 60) -> str:
     # cached reply).
     cleaned = strip_cot_preamble(text)
     cleaned = _strip_markdown(cleaned)
+    # #56 — abbreviations ("e.g." -> "for example") and slashes
+    # ("₹5L / ₹10L" -> list; "yes / no" -> "yes or no") BEFORE money so
+    # currency slash-runs become comma lists the money regexes can expand.
+    cleaned = _normalize_abbreviations(cleaned)
     # Currency/range shorthand expansion before acronym handling so ₹5L
     # becomes "5 lakhs" instead of getting caught by the bare-L acronym
     # path.
@@ -578,5 +763,9 @@ def tts_preprocess(text: str, language: str = "en", max_words: int = 60) -> str:
     cleaned = _normalize_numbers(cleaned)
     cleaned = _expand_acronyms(cleaned, language=language)
     cleaned = _compress_whitespace(cleaned)
-    cleaned = _truncate_for_voice(cleaned, max_words=max_words)
+    # #55 — DO NOT truncate by default. Only honour an explicit, sane
+    # last-resort ceiling if a caller deliberately passes one (we ignore
+    # the legacy 55/60 values — those ARE the bug).
+    if max_words is not None and max_words >= 100_000:
+        cleaned = _truncate_for_voice(cleaned, max_words=max_words)
     return cleaned
