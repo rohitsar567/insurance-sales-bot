@@ -945,18 +945,27 @@ async def retrieve_policies(
     # NAMED-POLICY Q&A BYPASS (#61, 2026-05-18) — a direct factual question
     # about a SPECIFIC catalogue policy ("what is the PED waiting period for
     # HDFC ERGO Optima Restore?") must be answerable on a cold /
-    # incomplete-profile session. single_brain's prompt tells the LLM to
-    # query such questions with policy_filter_ids=None, but the
-    # profile-complete gate below blocks ALL policy_filter_ids=None
-    # retrieval until the 7-slot fact-find is done — so the bot replied
-    # "I couldn't find that policy" for policies that ARE indexed (#26/#28).
-    # The gate exists to not RECOMMEND before fact-find, not to refuse a
-    # factual lookup. When this is NOT a recommendation call and the query
+    # incomplete-profile session. The profile-complete gate below blocks
+    # ALL policy_filter_ids=None retrieval until the 7-slot fact-find is
+    # done — so the bot replied "I couldn't find that policy" for policies
+    # that ARE indexed (#26/#28). The gate exists to not RECOMMEND before
+    # fact-find, not to refuse a factual lookup. When the query
     # unambiguously names a known policy, resolve it and reuse the existing
     # TRUSTED known-policy path (legitimately gate-bypassing + getting the
-    # #61 canonical-family $in expansion in rag/retrieve.py). Broad
-    # "recommend me a plan" queries name no policy → no match → still gated.
-    if not policy_filter_ids and (intent or "").lower() != "recommendation":
+    # #61 canonical-family $in expansion in rag/retrieve.py).
+    #
+    # NOT gated on `intent`: single_brain._execute_tool HARDCODES
+    # intent="recommendation" for EVERY tool call (single_brain.py:1529),
+    # so an intent-conditioned bypass is dead code on the live path — the
+    # proven (2026-05-18) #61 root cause: every named-policy Q&A arrived
+    # with intent="recommendation" → the bypass never fired → the gate
+    # blocked → "I couldn't find that policy". Safety is the RESOLVER's
+    # conservatism, not the intent: a broad "recommend me a plan" / generic
+    # profile request names NO specific policy → _resolve_named_policy
+    # returns None → still fully gated (verified). Only an explicit,
+    # unambiguous name (>=2 significant tokens, >=60% coverage,
+    # version-aware, top strictly ahead of runner-up) triggers it.
+    if not policy_filter_ids:
         _np = _resolve_named_policy(query)
         if _np:
             policy_filter_ids = [_np]
