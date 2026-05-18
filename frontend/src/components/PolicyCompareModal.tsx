@@ -888,6 +888,11 @@ export type SnapProfile = {
   primary_goal?: string | null;
   age?: number | null;
   health_conditions?: string[] | null;
+  // #76 — the customer's stated/selected cover. When a plan doesn't
+  // publish fixed SI tiers we price at THIS and must show it, not the
+  // dismissive "As per policy schedule" (which looks like their input
+  // was ignored).
+  desired_sum_insured_inr?: number | null;
 } | null;
 
 export function buildSnapshot(
@@ -937,7 +942,20 @@ export function buildSnapshot(
 
   // 1 — WHAT YOU GET
   const get: SnapRow[] = [];
-  get.push({ label: "Cover amount", value: fmtSumInsured(policy), term: "cover" });
+  // #76 — when the plan publishes no fixed SI ("As per policy schedule")
+  // BUT the customer stated/selected a cover, the premium IS priced at
+  // their cover — so show it, with a clear label, instead of the
+  // dismissive placeholder that reads as if their input was discarded.
+  let _coverVal = fmtSumInsured(policy);
+  const _custSI = profile?.desired_sum_insured_inr;
+  if (_coverVal === "As per policy schedule" && _custSI && _custSI > 0) {
+    const _c =
+      _custSI >= 10_000_000
+        ? `${+(_custSI / 10_000_000).toFixed(1)} Cr`
+        : `${+(_custSI / 100_000).toFixed(1)} L`;
+    _coverVal = `₹${_c} (your chosen cover)`;
+  }
+  get.push({ label: "Cover amount", value: _coverVal, term: "cover" });
   push(
     get,
     "No-claim bonus",
