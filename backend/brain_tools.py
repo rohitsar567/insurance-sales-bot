@@ -829,6 +829,53 @@ async def _retrieve_uploaded_only(
 
 # ---- retrieve_policies -----------------------------------------------------
 
+_NP_STOP = {
+    "health", "insurance", "insurances", "policy", "policies", "plan",
+    "plans", "the", "and", "of", "for", "cover", "covers", "coverage",
+    "india", "general", "life", "assurance", "co", "ltd", "limited",
+    "company", "scheme", "what", "is", "are", "tell", "me", "about",
+    "detail", "details", "benefit", "benefits",
+}
+
+
+def _resolve_named_policy(query: str) -> Optional[str]:
+    """#61 — if the question UNAMBIGUOUSLY names a specific catalogue
+    policy, return its policy_id so a factual Q&A can retrieve it without
+    being blocked by the recommendation profile-gate. Conservative: >=2
+    significant name tokens present, >=60% of the policy_name's significant
+    tokens in the query, and the top match strictly ahead of the runner-up
+    (no ambiguous grab). Returns None otherwise. Best-effort; never raises."""
+    import re as _re
+    try:
+        q = " " + _re.sub(r"[^a-z0-9 ]", " ", (query or "").lower()) + " "
+        if len(q) < 8:
+            return None
+        from backend.main import _marketplace_catalogue  # lazy: avoids cycle
+        scored: list[tuple[int, float, str]] = []
+        for c in _marketplace_catalogue(None):
+            name = (getattr(c, "policy_name", "") or "").lower()
+            toks = {
+                t for t in _re.sub(r"[^a-z0-9 ]", " ", name).split()
+                if len(t) > 2 and t not in _NP_STOP
+            }
+            if len(toks) < 2:
+                continue
+            hit = sum(1 for t in toks if f" {t} " in q)
+            cov = hit / len(toks)
+            if hit >= 2 and cov >= 0.6:
+                pid = getattr(c, "policy_id", None)
+                if pid:
+                    scored.append((hit, cov, pid))
+        if not scored:
+            return None
+        scored.sort(key=lambda s: (s[0], s[1]), reverse=True)
+        if len(scored) == 1 or scored[0][0] > scored[1][0]:
+            return scored[0][2]
+    except Exception:  # noqa: BLE001 — name resolution is best-effort
+        pass
+    return None
+
+
 async def retrieve_policies(
     query: str,
     top_k: int = 8,
@@ -874,6 +921,25 @@ async def retrieve_policies(
         eff_session_id = None
     if not isinstance(query, str) or not query.strip():
         return {"chunks": [], "count": 0, "error": "empty_query"}
+
+    # NAMED-POLICY Q&A BYPASS (#61, 2026-05-18) — a direct factual question
+    # about a SPECIFIC catalogue policy ("what is the PED waiting period for
+    # HDFC ERGO Optima Restore?") must be answerable on a cold /
+    # incomplete-profile session. single_brain's prompt tells the LLM to
+    # query such questions with policy_filter_ids=None, but the
+    # profile-complete gate below blocks ALL policy_filter_ids=None
+    # retrieval until the 7-slot fact-find is done — so the bot replied
+    # "I couldn't find that policy" for policies that ARE indexed (#26/#28).
+    # The gate exists to not RECOMMEND before fact-find, not to refuse a
+    # factual lookup. When this is NOT a recommendation call and the query
+    # unambiguously names a known policy, resolve it and reuse the existing
+    # TRUSTED known-policy path (legitimately gate-bypassing + getting the
+    # #61 canonical-family $in expansion in rag/retrieve.py). Broad
+    # "recommend me a plan" queries name no policy → no match → still gated.
+    if not policy_filter_ids and (intent or "").lower() != "recommendation":
+        _np = _resolve_named_policy(query)
+        if _np:
+            policy_filter_ids = [_np]
 
     # UPLOADED-DOC BYPASS (2026-05-18) — the user is explicitly promised in
     # the UI ("✓ Indexed … It's now searchable in this chat. Ask me about
