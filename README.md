@@ -195,9 +195,13 @@ The browser shows a live interim transcript via the Web Speech API while
 `MediaRecorder` captures the authoritative audio, which is sent to
 `/api/transcribe` (**Sarvam Saarika** STT). Replies are synthesised by
 **Sarvam Bulbul** TTS, with money/Indic shorthand normalised in
-`backend/voice_format.py` before synthesis, and played through an in-DOM
-`<audio>` element (so barge-in can stop it). On touch devices voice is
-tap-to-talk; on desktop, push-to-talk (the hold-SPACE shortcut was removed).
+`backend/voice_format.py` before synthesis (long replies are chunked at
+sentence boundaries so the full answer is spoken, not just the first
+sentence), and played through an in-DOM `<audio>` element. Speaking over
+the bot (barge-in) pauses that audio **and** aborts the in-flight
+`/api/chat` request. On touch devices voice is tap-to-talk; on desktop,
+push-to-talk (the hold-SPACE shortcut was removed); the live interim
+transcript accumulates the full utterance while you speak.
 
 ### 4.6 Profile & personalisation
 
@@ -270,9 +274,13 @@ TTL.
 
 ### 6.2 Answer faithfulness
 
-Faithfulness is structural, not bolt-on: the brain answers from what
-`retrieve_policies` returned, must cite, and is instructed to refuse when
-retrieval is weak. Recommendation fit is gated (`backend/scorecard.py`,
+Faithfulness is structural, not bolt-on: the brain answers only from what
+its tools returned — `retrieve_policies` (policy-wording chunks) and
+`get_policy_facts` (claim-settlement ratio, complaints, scorecard and
+insurer-review data) — must cite, and is instructed to refuse when that
+grounding is weak. A prose-grounding guard verifies any policy / UIN named
+in the reply against both tools' returned policies before it is sent.
+Recommendation fit is gated (`backend/scorecard.py`,
 `retrieval_filters.py`) so plans that structurally don't fit the user's stated
 constraints are dropped, with the reason surfaced.
 
