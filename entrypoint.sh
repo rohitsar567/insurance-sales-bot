@@ -40,18 +40,6 @@ if [ -d "/data" ] && [ -w "/data" ]; then
     fi
     rm -f /app/rag/policies.duckdb
     ln -sf /data/policies.duckdb /app/rag/policies.duckdb
-
-    # #52 — PERSIST user-uploaded policy docs across Space rebuilds.
-    #
-    # Unlike rag/vectors (intentionally ephemeral — KI-119), an uploaded
-    # policy that became a marketplace card MUST survive a restart. We point
-    # backend.config.settings.UPLOADED_DOCS_DIR at the persistent /data disk;
-    # the FastAPI startup handler (_startup_reingest_uploaded_docs) re-embeds
-    # the persisted chunks into the fresh Chroma snapshot on boot, and
-    # _load_curated_facts merges the persisted JSON records so the cards
-    # reappear. Locally (no /data) the same code uses 40-data/uploaded_docs.
-    export UPLOADED_DOCS_DIR="/data/uploaded_docs"
-    mkdir -p /data/uploaded_docs
     # Vectors stay at /app/rag/vectors — read from the fresh dataset
     # snapshot. The previous /data/vectors symlink is intentionally removed.
     if [ -L "/app/rag/vectors" ]; then
