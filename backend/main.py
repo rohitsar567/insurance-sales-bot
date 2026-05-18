@@ -4243,6 +4243,12 @@ class PredictedPremiumBandResponse(BaseModel):
     max_inr: int
     sample_size: int
     assumed: bool
+    # #63 — the SI the band was priced at. estimate_premium_band's KI-278
+    # contract already returns this; the model dropped it, so the pill
+    # couldn't tell the user the band is the TYPICAL cohort range at this
+    # cover (vs the per-plan LIVE PREMIUM, which is one specific plan and
+    # may sit outside the typical band — expected, not a contradiction).
+    sum_insured_used: int = 0
 
 
 @app.get(
@@ -4260,6 +4266,7 @@ async def predicted_premium_band(session_id: Optional[str] = None):
     if not session_id:
         return PredictedPremiumBandResponse(
             min_inr=0, median_inr=0, max_inr=0, sample_size=0, assumed=True,
+            sum_insured_used=0,
         )
 
     sess = get_session(session_id)

@@ -521,6 +521,7 @@ export type PredictedPremiumBandResponse = {
   max_inr: number;
   sample_size: number;
   assumed: boolean;
+  sum_insured_used?: number;  // #63 — SI the typical-cohort band priced at
 };
 
 export async function getPredictedPremiumBand(

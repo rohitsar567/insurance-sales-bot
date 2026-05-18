@@ -1635,7 +1635,9 @@ export default function Page() {
                 className={`chip-tile group relative overflow-hidden rounded-xl shadow-sm transition-all hover:shadow-md ${
                   showProfile ? "ring-2 ring-[var(--primary)]" : ""
                 }`}
-                title={uiLang === "hi" ? "आपकी profile + सभी eligible plans का live premium range — एक ही merged view." : "Your profile + the live premium range across all eligible plans — one merged view."}
+                title={uiLang === "hi"
+                  ? `आपकी profile + similar buyers जो typically pay करते हैं वो range${premiumBand?.sum_insured_used ? ` (₹${premiumBand.sum_insured_used.toLocaleString("en-IN")} cover पर)` : ""}. किसी एक specific plan का live premium इस typical range से ऊपर/नीचे हो सकता है — ये सामान्य है।`
+                  : `Your profile + the TYPICAL range similar buyers pay${premiumBand?.sum_insured_used ? ` (priced at ₹${premiumBand.sum_insured_used.toLocaleString("en-IN")} cover)` : ""}. A specific plan's live premium can sit above or below this typical range — that's expected, not a contradiction.`}
               >
                 <div className="relative flex items-stretch text-white">
                   {/* Profile segment */}
@@ -1671,7 +1673,7 @@ export default function Page() {
                       </div>
                       <div className="text-[12px] leading-tight whitespace-nowrap opacity-90 mt-1">
                         {hasMeaningfulBand
-                          ? `₹${premiumBand!.min_inr.toLocaleString("en-IN")}–₹${premiumBand!.max_inr.toLocaleString("en-IN")}/yr`
+                          ? `${uiLang === "hi" ? "आम तौर पर" : "Typically"} ₹${premiumBand!.min_inr.toLocaleString("en-IN")}–₹${premiumBand!.max_inr.toLocaleString("en-IN")}/yr`
                           : (uiLang === "hi" ? "अनुमान देखें" : "Tap to estimate")}
                       </div>
                     </div>
