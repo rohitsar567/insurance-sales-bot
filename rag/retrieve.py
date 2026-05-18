@@ -263,7 +263,33 @@ async def retrieve(
     # $and so the existing comparison + per-policy Q&A flows still work.
     _filter_clauses: list[dict] = [{"doc_type": {"$ne": "profile"}}]
     if policy_ids:
-        _filter_clauses.append({"policy_id": {"$in": policy_ids}})
+        # #61 — chunks are stored under the EXTRACTION stem (often
+        # doctype-suffixed, e.g. `niva-bupa__health-companion-v2022__brochure`)
+        # but the recommendation cites the marketplace card's canonical id
+        # (e.g. `niva-bupa__health-companion-v2022`). An exact `$in` on
+        # policy_id then matched ZERO chunks → the bot apologised it "was
+        # unable to retrieve specific details" about a policy it had just
+        # recommended. Expand each requested id to its canonical family:
+        # the id itself, its doctype-stripped product_key, and every
+        # doctype-suffixed sibling — a strict superset, so this can only add
+        # correct matches, never drop or cross-contaminate a policy.
+        try:
+            from backend.policy_identity import product_key as _pk
+        except Exception:  # noqa: BLE001 — never break retrieval on import
+            _pk = None
+        _expanded: set[str] = set()
+        for _pid in policy_ids:
+            if not _pid:
+                continue
+            _expanded.add(_pid)
+            _base = _pk(_pid) if _pk else _pid
+            if _base:
+                _expanded.add(_base)
+                for _suf in ("__wordings", "__brochure", "__cis", "__prospectus"):
+                    _expanded.add(_base + _suf)
+        _filter_clauses.append(
+            {"policy_id": {"$in": sorted(_expanded) if _expanded else policy_ids}}
+        )
     if insurer_slugs:
         _filter_clauses.append({"insurer_slug": {"$in": insurer_slugs}})
     if len(_filter_clauses) == 1:
