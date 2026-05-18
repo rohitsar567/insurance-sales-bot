@@ -3877,14 +3877,44 @@ function CitedPolicyCards({
   // same 4-stat grid + highlights that the marketplace cards show. When the
   // marketplace hasn't loaded yet (or a cited policy isn't in the corpus),
   // the modal's PolicyHighlights section silently skips.
+  // Canonical-resolving index (#57/#58/#59 root cause): the compare modal
+  // looks up the marketplace row by the CITED policy_id. A recommendation
+  // can cite a doctype/variant/alias id that is not byte-equal to the
+  // marketplace card's policy_id (same canonical-identity class #40 solved
+  // for grades). An exact-only map then returns undefined → the card loses
+  // its Hospitals link, SI falls back to "As per policy schedule", and it
+  // renders fewer fields (asymmetric). So we also register weaker canonical
+  // keys: the doctype-stripped product_key, the normalised policy_name, and
+  // every alias name — without ever overwriting a real exact-id hit.
+  const _DOCT_RE = /__(wordings|brochure|cis|prospectus)$/;
+  const _pkOf = (s: string) => (s || "").replace(_DOCT_RE, "");
+  const _nmKey = (s: string) =>
+    "nm:" + (s || "").trim().toLowerCase().replace(/\s+/g, " ");
   const policyById: Record<string, MarketplacePolicy> = (() => {
     const out: Record<string, MarketplacePolicy> = {};
     if (!marketplace) return out;
+    // Pass 1 — exact policy_id is the strongest key; set first.
+    for (const p of marketplace.policies) out[p.policy_id] = p;
+    // Pass 2 — weaker canonical keys, only when not already a real id hit.
     for (const p of marketplace.policies) {
-      out[p.policy_id] = p;
+      const k = _pkOf(p.policy_id);
+      if (k && !(k in out)) out[k] = p;
+      const nk = _nmKey(p.policy_name);
+      if (nk !== "nm:" && !(nk in out)) out[nk] = p;
+      for (const a of p.aliases ?? []) {
+        const ak = _nmKey(a);
+        if (ak !== "nm:" && !(ak in out)) out[ak] = p;
+      }
     }
     return out;
   })();
+  const _resolvePolicy = (
+    id: string,
+    name?: string,
+  ): MarketplacePolicy | undefined =>
+    policyById[id] ??
+    policyById[_pkOf(id)] ??
+    (name ? policyById[_nmKey(name)] : undefined);
 
   // Translate the live UserProfile (chat-side) into the shapes the
   // premium-bulk and scorecard-bulk endpoints expect. These two shapes are
@@ -4040,7 +4070,7 @@ function CitedPolicyCards({
           policies={topPolicies}
           onClose={() => setCompareOpen(false)}
           profile={profile}
-          policyDataFor={(id) => policyById[id]}
+          policyDataFor={(id, name) => _resolvePolicy(id, name)}
           renderPremiumFor={(policyId, policyName) => (
             <PolicyPremiumWidget
               policyId={policyId}

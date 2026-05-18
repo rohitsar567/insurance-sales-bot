@@ -241,7 +241,15 @@ export type PolicyCompareModalProps = {
   // Optional resolver returning the marketplace MarketplacePolicy row for a
   // citation. Powers the new "POLICY HIGHLIGHTS" section (4-stat grid +
   // bullets). When undefined, the highlights section is skipped.
-  policyDataFor?: (policyId: string) => MarketplacePolicy | undefined;
+  // Resolve by cited policy_id; policyName is a canonical fallback so a
+  // doctype/variant/alias id (e.g. recommended `hdfc-ergo__optima-restore`
+  // vs marketplace card `..__brochure`) still resolves to its card —
+  // otherwise the card silently degrades (no Hospitals link, SI falls back
+  // to "As per policy schedule", fewer fields → asymmetric). #57/#58/#59.
+  policyDataFor?: (
+    policyId: string,
+    policyName?: string,
+  ) => MarketplacePolicy | undefined;
   // Hook for "Open in full marketplace" — defaults to no-op + closes modal.
   onOpenMarketplace?: () => void;
 };
@@ -428,7 +436,7 @@ export default function PolicyCompareModal({
                     c.policy_id,
                     c.policy_name,
                   )}
-                  marketplacePolicy={policyDataFor?.(c.policy_id)}
+                  marketplacePolicy={policyDataFor?.(c.policy_id, c.policy_name)}
                   profile={_profile as SnapProfile}
                 />
               </div>
