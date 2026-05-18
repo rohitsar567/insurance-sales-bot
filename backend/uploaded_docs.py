@@ -60,6 +60,7 @@ import hashlib
 import json
 import logging
 import re
+import shutil
 import time
 from pathlib import Path
 from typing import Any, Optional
@@ -97,6 +98,46 @@ def _doc_dir(policy_id: str) -> Path:
     # user-upload__<sid12>__<fileslug>) but defend against path traversal.
     safe = re.sub(r"[^a-zA-Z0-9_.\-]+", "-", policy_id).strip("-") or "user-upload"
     return uploaded_docs_dir() / safe
+
+
+def prune_persisted_upload(
+    policy_id: Optional[str] = None, *, prefix: Optional[str] = None
+) -> dict:
+    """Operator/abuse prune of persisted uploaded doc(s) (#52 residual #5,
+    #77). Pass an exact `policy_id` OR a `prefix` (e.g.
+    'user-upload__e2e-verify' to bulk-remove test/abuse cards).
+
+    HARD GUARDRAIL: only ever removes a directory that is a DIRECT CHILD of
+    UPLOADED_DOCS_DIR — it can never touch rag/corpus, 40-data, or any
+    curated/extracted data. A path-safety violation RAISES (must surface;
+    a silent no-op here would be forbidden by the no-silent-failure rule).
+    Returns {removed:[ids], skipped:[ids-not-present], root}.
+    """
+    root = uploaded_docs_dir().resolve()
+    targets: list[str] = []
+    if policy_id:
+        targets.append(policy_id)
+    if prefix is not None:
+        pfx = re.sub(r"[^a-zA-Z0-9_.\-]+", "-", prefix).strip("-")
+        if not pfx:
+            raise RuntimeError("prune prefix is empty after sanitisation")
+        for d in sorted(root.glob("*")):
+            if d.is_dir() and d.name.startswith(pfx):
+                targets.append(d.name)
+    removed: list[str] = []
+    skipped: list[str] = []
+    for pid in dict.fromkeys(targets):  # dedupe, preserve order
+        ddir = _doc_dir(pid).resolve()
+        if ddir == root or root not in ddir.parents:
+            raise RuntimeError(
+                f"refusing to prune outside uploaded-docs root: {pid!r}"
+            )
+        if not ddir.exists():
+            skipped.append(pid)
+            continue
+        shutil.rmtree(ddir)
+        removed.append(pid)
+    return {"removed": removed, "skipped": skipped, "root": str(root)}
 
 
 # ---------------------------------------------------------------------------

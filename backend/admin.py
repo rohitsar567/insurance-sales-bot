@@ -1139,3 +1139,60 @@ async def admin_recommendation_history(
         "total":       len(events),
         "snapshot_ts": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
+
+
+# ---------------------------------------------------------------------------
+# #77 / #52-residual-5 — operator prune of persisted uploaded marketplace
+# docs. Persisted uploads have NO TTL by design (they are public catalogue
+# cards); this is the sanctioned way to remove a test/abuse upload. Removes
+# the persisted dir (path-safety-guarded in backend.uploaded_docs) + the
+# doc's chunks from the GLOBAL policies collection + busts the marketplace
+# grade / corpus-pdf caches so /api/policies/all drops the card at once.
+# ---------------------------------------------------------------------------
+class UploadedDocPruneRequest(BaseModel):
+    policy_id: Optional[str] = None
+    prefix: Optional[str] = None  # e.g. "user-upload__e2e-verify" — bulk
+
+
+@router.post("/api/admin/uploaded-docs/prune")
+async def admin_prune_uploaded_docs(
+    body: UploadedDocPruneRequest,
+    request: Request,
+    x_admin_password: Optional[str] = Header(default=None, alias="X-Admin-Password"),
+):
+    _check_admin(request, x_admin_password)
+    if not body.policy_id and body.prefix is None:
+        raise HTTPException(status_code=400, detail="provide policy_id or prefix")
+    from backend import uploaded_docs as _udocs
+
+    res = _udocs.prune_persisted_upload(body.policy_id, prefix=body.prefix)
+    chroma_deleted: list[str] = []
+    chroma_errors: list[str] = []
+    if res.get("removed"):
+        try:
+            from rag.ingest import get_chroma_collection
+            _col = get_chroma_collection()
+            for pid in res["removed"]:
+                try:
+                    _col.delete(where={"policy_id": pid})
+                    chroma_deleted.append(pid)
+                except Exception as e:  # noqa: BLE001 — surface, don't swallow
+                    chroma_errors.append(f"{pid}: {type(e).__name__}: {e}")
+        except Exception as e:  # noqa: BLE001
+            chroma_errors.append(f"collection: {type(e).__name__}: {e}")
+    cache_bust = "ok"
+    try:
+        import backend.main as _m
+        _m._CORPUS_PDF_IDX = None
+        _mg = getattr(_m, "_MG_CACHE", None)
+        if isinstance(_mg, dict):
+            _mg["sig"] = None
+            _mg["index"] = None
+    except Exception as e:  # noqa: BLE001
+        cache_bust = f"{type(e).__name__}: {e}"
+    return {
+        **res,
+        "chroma_deleted": chroma_deleted,
+        "chroma_errors": chroma_errors,
+        "cache_bust": cache_bust,
+    }
