@@ -4140,6 +4140,28 @@ function CitedPolicyCards({
                       Loading rating…
                     </div>
                   )}
+                  {/* #65 — surface the claim-experience (insurer
+                      claim-settlement) signal on the inline card too; the
+                      full modal had it but these cards omitted it, which
+                      the user flagged. Only when the scorecard is loaded
+                      and a claim sub-score exists. */}
+                  {sc &&
+                    (() => {
+                      const ce = sc.sub_scores?.find((s) =>
+                        /claim/i.test(s.name),
+                      );
+                      if (!ce) return null;
+                      const sig = ce.signals && ce.signals[0];
+                      return (
+                        <div className="text-[10.5px] text-[var(--muted-foreground)] mt-1 line-clamp-2">
+                          <span className="font-semibold text-[var(--foreground)]">
+                            Claim experience:
+                          </span>{" "}
+                          {ce.score}/100
+                          {sig ? ` · ${sig}` : ""}
+                        </div>
+                      );
+                    })()}
                 </div>
                 {sc && (
                   <div
