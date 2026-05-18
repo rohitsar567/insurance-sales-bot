@@ -1306,6 +1306,93 @@ export default function Page() {
   }
   function stopRecording() { mediaRecorderRef.current?.stop(); }
 
+  // #53 (head-clip) / #54 (PTT start latency) — the SPACE-hold path now
+  // DELEGATES to useStreamingVoice's warm-stream + pre-roll API instead of
+  // cold-starting its own getUserMedia + MediaRecorder per press. The hook
+  // keeps the OS mic hot and a rolling 800ms pre-roll, so the first word
+  // ("Sir." that previously transcribed as "S A R") is always at the head of
+  // the blob and there is no multi-second per-press start delay.
+  //
+  // Why delegation (not "prepend pre-roll blobs to page.tsx's recorder"):
+  // splicing slices from two independent MediaRecorder streams produces a
+  // corrupt webm container. The hook owns the single recorder that captured
+  // BOTH the pre-roll and the held utterance, so only it can assemble a valid
+  // blob. `endPushToTalk()` already runs the exact Sarvam submit+retry path
+  // and, on success, delivers the transcript via the hook's onFinalTranscript
+  // callback — which page.tsx wires (see useStreamingVoice config above) to
+  // `voiceSubmitRef.current` → `send()`, i.e. the IDENTICAL downstream path a
+  // successful /api/transcribe result used in recorder.onstop. We therefore
+  // MUST NOT re-submit the returned string here (that would double-fire); the
+  // returned value is used only to distinguish a deliberate hold from a
+  // sub-threshold tap (null) for clean state reset.
+  const spaceHoldPttInFlightRef = useRef<boolean>(false);
+  async function startSpaceHoldPTT() {
+    // Re-entrancy guard: a second SPACE keydown while a delegated PTT capture
+    // (or its in-flight transcription) is still resolving must be ignored,
+    // mirroring the original recordingRef/busyRef "don't start twice" intent.
+    if (spaceHoldPttInFlightRef.current) return;
+    spaceHoldPttInFlightRef.current = true;
+    // Preserve recorder.onstop / startRecording semantics: silence any prior
+    // bot TTS the instant the user starts talking (KI-222 FIX 1 / V3 FIX 2).
+    try { interruptBotAudio("ptt-start"); } catch { /* ignore */ }
+    // STT-in-flight UX: the original path flipped voicePhase to "transcribing"
+    // while Sarvam ran. endPushToTalk() runs that same Sarvam call internally,
+    // so set the phase here. NOTE: we deliberately do NOT setBusy(true) — the
+    // hook's onFinalTranscript → voiceSubmitRef → send() owns busy, and send()
+    // early-returns if busy is already true (would silently drop the turn).
+    setVoicePhase("transcribing"); // KI-038 — STT in flight on PTT
+    try {
+      streamingVoice.beginPushToTalk();
+    } catch (e) {
+      // beginPushToTalk itself is non-throwing by contract, but stay defensive
+      // and route any unexpected failure to the same red banner the cold path
+      // used. Warm-stream / permission failures surface via the hook's
+      // onVoiceError → setVoiceErrorBanner (mic_permission_denied) already.
+      console.error(e);
+      spaceHoldPttInFlightRef.current = false;
+      setVoicePhase(null);
+      setSpaceHoldActive(false);
+      setVoiceErrorBanner({ type: "mic_permission_denied", ts: Date.now() });
+    }
+  }
+  async function stopSpaceHoldPTT() {
+    if (!spaceHoldPttInFlightRef.current) return;
+    // KI-028 — resume Live ONLY if the user's persistent preference is still
+    // "on" (matches the original recorder.onstop maybeResumeLive semantics).
+    const maybeResumeLive = () => { if (userPrefersLive) live.setLive(true); };
+    try {
+      // endPushToTalk(): on a deliberate hold it transcribes (pre-roll + held
+      // utterance) AND delivers via onFinalTranscript → voiceSubmitRef →
+      // send() — the EXACT downstream path the old recorder.onstop success
+      // branch used. On a sub-threshold tap / empty capture it resolves to
+      // null and submits nothing. All transport / Sarvam failures surface via
+      // the hook's onVoiceError (transcribe_failed banner) — never silent.
+      const text = await streamingVoice.endPushToTalk();
+      if (text === null) {
+        // Sub-threshold tap or nothing captured: clean no-op. No empty submit;
+        // just clear the cosmetic "transcribing" phase we set on keydown.
+        setVoicePhase(null);
+        maybeResumeLive();
+      } else {
+        // Deliberate hold: the hook has ALREADY pushed `text` through
+        // onFinalTranscript → send(). send() owns busy + flips voicePhase to
+        // "thinking" and clears both in its own finally, so we must NOT reset
+        // voicePhase here (that would stomp send()'s "thinking") and must NOT
+        // re-submit. Just resume Live per the user's preference.
+        maybeResumeLive();
+      }
+    } catch (e) {
+      // endPushToTalk's internal Sarvam path swallows its own errors and
+      // surfaces them via onVoiceError; reaching here means an unexpected
+      // throw. Reset cosmetic state so the UI doesn't stick in "transcribing".
+      console.error(e);
+      setVoicePhase(null);
+      maybeResumeLive();
+    } finally {
+      spaceHoldPttInFlightRef.current = false;
+    }
+  }
+
   // KI-258 — Hold-SPACE-to-talk. Fixes from KI-257 first ship:
   //   (a) textarea ALWAYS had focus → isInputFocused() was always true →
   //       SPACE never fired. Fix: allow SPACE-hold when the textarea is
@@ -1314,14 +1401,20 @@ export default function Page() {
   //       handlers mid-press, splitting keydown/keyup across closures
   //       with stale values. Fix: read all state via refs; deps reduced
   //       to [voiceMasterOn] so handlers bind once.
+  // #53/#54 — these refs now point at the DELEGATED SPACE-hold handlers
+  // (startSpaceHoldPTT / stopSpaceHoldPTT), which route through the hook's
+  // warm-stream + pre-roll API. The on-screen Push-to-talk *button* still
+  // uses startRecording/stopRecording directly (separate onClick handler,
+  // intentionally untouched — it does not share this code path), so the
+  // legacy recorder path is preserved for that control.
   const startRecordingRef = useRef<(() => Promise<void>) | null>(null);
-  const stopRecordingRef = useRef<(() => void) | null>(null);
+  const stopRecordingRef = useRef<(() => Promise<void>) | null>(null);
   const recordingRef = useRef<boolean>(recording);
   const busyRef = useRef<boolean>(busy);
   const spaceHoldOwnsRecRef = useRef<boolean>(false);
   useEffect(() => {
-    startRecordingRef.current = startRecording;
-    stopRecordingRef.current = stopRecording;
+    startRecordingRef.current = startSpaceHoldPTT;
+    stopRecordingRef.current = stopSpaceHoldPTT;
     recordingRef.current = recording;
     busyRef.current = busy;
   });
@@ -1368,7 +1461,13 @@ export default function Page() {
       spaceHoldOwnsRecRef.current = false;
       setSpaceHoldActive(false);
       const sp = stopRecordingRef.current;
-      if (sp && recordingRef.current) sp();
+      // Original guard was `recordingRef.current` (the legacy `recording`
+      // state). The delegated path doesn't drive `recording` (the hook owns
+      // capture state), so gate on the delegated in-flight flag instead — the
+      // exact equivalent of "a capture this keydown started is still active".
+      // Still resolve a deliberate hold even on a sub-threshold tap:
+      // stopSpaceHoldPTT is a clean no-op when nothing is in flight.
+      if (sp && spaceHoldPttInFlightRef.current) void sp();
     };
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
