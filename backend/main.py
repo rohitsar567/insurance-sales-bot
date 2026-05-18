@@ -3850,7 +3850,43 @@ async def scorecard_bulk(req: BulkScorecardRequest):
 
     for pid in req.policy_ids:
         extracted_path = settings.EXTRACTED_DIR / f"{pid}.json"
-        if not extracted_path.exists():
+        policy = None
+        if extracted_path.exists():
+            try:
+                policy = _json.loads(extracted_path.read_text())
+            except Exception as e:
+                out[pid] = BulkScorecardEntry(
+                    policy_id=pid, policy_name=pid, insurer_slug="?",
+                    overall_grade="N/A", overall_score=0, sub_scores={},
+                    profile_rationale=[f"Data unreadable: {e}"],
+                    data_completeness_pct=0.0,
+                    one_liner="Extraction file is corrupted.",
+                    signals={},
+                )
+                continue
+            policy = _merge_curated(
+                policy, _curated.get(policy.get("policy_id", pid)) or _curated.get(pid)
+            )
+        else:
+            # ROOT-CAUSE FIX #60 (2026-05-18): curated-only catalogued
+            # products (e.g. star-health__star-comprehensive, UIN
+            # SHAHLIP26044V092526) have NO rag/extracted/<pid>.json — only
+            # doctype-suffixed extractions. The marketplace + the single
+            # /api/scorecard endpoint already resolve these from the curated
+            # layer (policies_all Pass-2 / lines ~3617). The BULK endpoint
+            # did not, so it emitted the N/A "No extraction available" /
+            # "Data not indexed" sentinel — the broken-card defect the user
+            # saw for Star Comprehensive. Mirror that curated fallback here;
+            # the curated dict also carries doctype-suffixed alias keys.
+            policy = (
+                _curated.get(pid)
+                or _curated.get(f"{pid}__wordings")
+                or _curated.get(f"{pid}__cis")
+                or _curated.get(f"{pid}__brochure")
+                or _curated.get(f"{pid}__prospectus")
+            )
+        if not policy:
+            # Genuinely absent from BOTH layers ⇒ not a catalogued product.
             out[pid] = BulkScorecardEntry(
                 policy_id=pid,
                 policy_name=pid,
@@ -3864,19 +3900,6 @@ async def scorecard_bulk(req: BulkScorecardRequest):
                 signals={},
             )
             continue
-        try:
-            policy = _json.loads(extracted_path.read_text())
-        except Exception as e:
-            out[pid] = BulkScorecardEntry(
-                policy_id=pid, policy_name=pid, insurer_slug="?",
-                overall_grade="N/A", overall_score=0, sub_scores={},
-                profile_rationale=[f"Data unreadable: {e}"],
-                data_completeness_pct=0.0,
-                one_liner="Extraction file is corrupted.",
-                signals={},
-            )
-            continue
-        policy = _merge_curated(policy, _curated.get(policy.get("policy_id", pid)) or _curated.get(pid))
 
         slug = policy.get("insurer_slug") or "?"
         if slug not in insurer_cache:

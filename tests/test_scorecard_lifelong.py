@@ -50,7 +50,13 @@ def test_entry_age_is_the_sole_driver():
 def test_lifelong_shown_as_informational_signal_not_scored():
     sc = score_renewal_protection({})
     assert sc.name == "Renewal Protection"
-    assert any("lifelong" in s.lower() and "not scored" in s.lower() for s in sc.signals)
+    # The signal must surface lifelong renewability as an informational
+    # bullet — but in CLEAN user-facing copy. The internal "(IRDAI norm —
+    # not scored)" scaffolding must NOT leak to the UI (#62). That it is
+    # genuinely not scored is enforced by the score-invariance tests above.
+    assert any("lifelong renewab" in s.lower() for s in sc.signals)
+    assert not any("not scored" in s.lower() or "irdai norm" in s.lower()
+                   for s in sc.signals), "internal scoring jargon leaked into UI signal"
 
 
 def test_completeness_ignores_max_renewal_age():

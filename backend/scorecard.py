@@ -378,7 +378,7 @@ def score_renewal_protection(p: dict) -> SubScore:
     maximum *entry* age — how late a first-time buyer can take the policy —
     so that is the sole driver of this sub-score.
     """
-    signals: list[str] = ["lifelong renewable (IRDAI norm — not scored)"]
+    signals: list[str] = ["Lifelong renewability guaranteed"]
     s = 50  # true-neutral base (was 60 — recalibrated for real spread)
 
     maxe = _int(p, "max_entry_age")
