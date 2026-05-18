@@ -679,7 +679,7 @@ function CompareColumn({
       </Section>
 
       {/* POLICY DETAILS expandable */}
-      <PolicyDetails citation={citation} />
+      <PolicyDetails citation={citation} policy={marketplacePolicy} />
     </div>
   );
 }
@@ -1409,7 +1409,13 @@ function ScorecardFallback({ policyId }: { policyId: string }) {
   );
 }
 
-function PolicyDetails({ citation }: { citation: Citation }) {
+function PolicyDetails({
+  citation,
+  policy,
+}: {
+  citation: Citation;
+  policy?: MarketplacePolicy;
+}) {
   const [open, setOpen] = useState(false);
   const hasSource = !!citation.source_url && citation.source_url.startsWith("http");
   const pageRange =
@@ -1484,6 +1490,54 @@ function PolicyDetails({ citation }: { citation: Citation }) {
             value={citation.insurer_slug.replace(/-/g, " ")}
           />
           {pageRange && <DetailRow label="Cited" value={pageRange} />}
+          {/* #66 — enrich the sparse expander with the key decision facts
+              already on the resolved marketplace row (was just name +
+              insurer + PDF, which the user flagged as pointless). */}
+          {policy &&
+            (() => {
+              const rows: [string, string][] = [];
+              const cov = fmtSumInsured(policy);
+              if (cov) rows.push(["Cover", cov]);
+              if (policy.grade)
+                rows.push([
+                  "Grade",
+                  `${policy.grade} · ${policy.overall_score}/100`,
+                ]);
+              if (policy.no_claim_bonus_pct != null)
+                rows.push([
+                  "No-claim bonus",
+                  `+${policy.no_claim_bonus_pct}% per claim-free year`,
+                ]);
+              if (policy.pre_existing_disease_waiting_months != null)
+                rows.push([
+                  "Pre-existing wait",
+                  `${policy.pre_existing_disease_waiting_months} months`,
+                ]);
+              if (policy.initial_waiting_period_days != null)
+                rows.push([
+                  "Initial wait",
+                  `${policy.initial_waiting_period_days} days`,
+                ]);
+              if (policy.room_rent_capping)
+                rows.push(["Room rent", policy.room_rent_capping]);
+              if (policy.copayment_pct != null)
+                rows.push([
+                  "Co-pay",
+                  policy.copayment_pct ? `${policy.copayment_pct}%` : "None",
+                ]);
+              if (policy.network_count_official != null)
+                rows.push([
+                  "Network",
+                  `${policy.network_count_official.toLocaleString(
+                    "en-IN",
+                  )}+ cashless hospitals`,
+                ]);
+              if (policy.max_entry_age != null)
+                rows.push(["Max entry age", `${policy.max_entry_age} yrs`]);
+              return rows.map(([l, v]) => (
+                <DetailRow key={l} label={l} value={v} />
+              ));
+            })()}
           {hasSource ? (
             <a
               href={citation.source_url}
