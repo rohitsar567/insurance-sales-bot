@@ -3524,11 +3524,36 @@ async def compare_policies(policy_ids: list[str] = None):
     # reflects the corrected/verbatim 40-data/policy_facts, not stale extract.
     _curated = _load_curated_facts()
     for pid in policy_ids:
-        p = settings.EXTRACTED_DIR / f"{pid}.json"
-        if not p.exists():
-            raise HTTPException(404, f"No extraction for {pid}")
-        data = _json.loads(p.read_text())
-        data = _merge_curated(data, _curated.get(data.get("policy_id", pid)) or _curated.get(pid))
+        ep = settings.EXTRACTED_DIR / f"{pid}.json"
+        data: Optional[dict] = None
+        if ep.exists():
+            try:
+                data = _json.loads(ep.read_text())
+            except Exception:
+                data = None
+            if data is not None:
+                data = _merge_curated(
+                    data,
+                    _curated.get(data.get("policy_id", pid)) or _curated.get(pid),
+                )
+        if data is None:
+            # #75 (2026-05-18) — curated-only catalogued products (e.g.
+            # star-health__star-comprehensive, UIN SHAHLIP26044V092526) have
+            # NO rag/extracted/<pid>.json. The marketplace, single
+            # /api/scorecard, and bulk scorecard endpoints all resolve these
+            # from the curated layer; compare_policies alone still 404'd,
+            # breaking "Compare all" for those policies. Mirror the same
+            # curated fallback (curated dict also carries doctype-suffixed
+            # alias keys) instead of raising.
+            data = (
+                _curated.get(pid)
+                or _curated.get(f"{pid}__wordings")
+                or _curated.get(f"{pid}__cis")
+                or _curated.get(f"{pid}__brochure")
+                or _curated.get(f"{pid}__prospectus")
+            )
+        if not data:
+            raise HTTPException(404, f"No data for {pid}")
         # Insurer reviews for scorecard
         slug = data.get("insurer_slug")
         ir = None
