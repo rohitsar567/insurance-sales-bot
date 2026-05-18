@@ -38,6 +38,9 @@ class Profile:
     parents_age_max: Optional[int] = None  # if parents_to_insure
     parents_has_ped: Optional[bool] = None  # if parents_to_insure
     budget_band: Optional[str] = None  # "under_15k", "15k_30k", "30k_60k", "60k+"
+    budget_inr: Optional[int] = None  # #64 — EXACT ₹/yr the user stated/slid;
+    # preserved losslessly so the UI shows what they said (₹15,000), not a
+    # 4-band representative (₹12k). budget_band is still derived for pricing.
     desired_sum_insured_inr: Optional[int] = None  # SOFT pricing input (post-recap)
     health_conditions: Optional[list[str]] = field(default_factory=list)  # ["diabetes", "hypertension", ...]
     # D2 (2026-05-15) — co-pay tolerance + family medical history. Coupled

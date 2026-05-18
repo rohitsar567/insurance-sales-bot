@@ -308,6 +308,7 @@ _ACCEPTED_FIELDS = {
     "health_conditions",
     "existing_cover_inr",
     "budget_band",
+    "budget_inr",  # #64 — exact ₹/yr; set as a side-effect of budget_band
     "desired_sum_insured_inr",  # SOFT capture (pricing input, post-recap)
     # Family-detail pricing inputs (B6) — already on the Profile dataclass
     # via needs_finder.Profile (parents_to_insure / parents_age_max /
@@ -454,6 +455,7 @@ SLOT_UNION: tuple[str, ...] = (
     "health_conditions",
     # Pricing slots (B5 + B6 additions)
     "budget_band",
+    "budget_inr",  # #64 — exact ₹/yr (lossless companion to budget_band)
     "desired_sum_insured_inr",
     "existing_cover_inr",
     # Family-detail slots (used by pricing if applicable)
@@ -611,6 +613,38 @@ def save_profile_field(session, field: str, value: Any) -> dict:
         }
 
     setattr(profile, fld, normalized)
+    # #64 — when the user states a budget, ALSO preserve the EXACT ₹ amount
+    # losslessly (not just the 4-bucket band) so the slider shows what they
+    # actually said ("₹15,000"), never a band representative ("₹12k"). The
+    # band stays the pricing contract; budget_inr is the display truth.
+    if fld == "budget_band":
+        try:
+            if isinstance(value, bool):
+                _exact = None
+            elif isinstance(value, (int, float)):
+                _exact = int(value)
+            else:
+                from backend.needs_finder import _parse_inr_amount as _pinr
+                import re as _re2
+                # Strip per-annum qualifiers FIRST — same KI-161 guard
+                # _coerce_budget_band handles, so "₹15,000/yr" / "15000 a
+                # year" / "more than 15000 a year" yield the exact ₹, not
+                # None (the parser otherwise reads "year" as age context).
+                _s = str(value)
+                _cleaned = _re2.sub(
+                    r"\b(?:per\s*(?:year|annum)|p\.?\s*a\.?|/\s*(?:yr|year|"
+                    r"annum)|a\s*year|annually|yearly|/\s*yr)\b",
+                    " ",
+                    _s,
+                    flags=_re2.IGNORECASE,
+                )
+                _exact = _pinr(_cleaned) or _pinr(_s)
+            if _exact and _exact > 0 and hasattr(profile, "budget_inr"):
+                profile.budget_inr = int(_exact)
+                if "budget_inr" not in getattr(profile, "asked", []):
+                    profile.asked.append("budget_inr")
+        except Exception:  # noqa: BLE001 — exact ₹ is best-effort; band still saved
+            pass
     # Track that the brain has "asked" this field so the rest of the
     # codebase's helpers (which inspect profile.asked) stay in sync.
     try:

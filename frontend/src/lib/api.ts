@@ -284,6 +284,7 @@ export type BulkScorecardProfile = {
   location_tier?: string;
   income_band?: string;
   budget_band?: string;
+  budget_inr?: number | null;  // #64 — exact ₹/yr (lossless; UI prefers this)
   existing_cover_inr?: number;
   parents_to_insure?: boolean;
   parents_age_max?: number;
@@ -477,6 +478,7 @@ export type UserProfile = {
   parents_has_ped?: boolean | null;
   health_conditions?: string[] | null;
   budget_band?: string | null;
+  budget_inr?: number | null;  // #64 — exact ₹/yr (lossless; UI prefers this)
   // KI-258 (B5, 2026-05-15) — Desired sum insured slot. Backend's pricing
   // endpoint + retrieve_policies query both read this; frontend pre-fills
   // the PremiumCalculatorPanel SI slider from it when present.

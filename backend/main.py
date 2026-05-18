@@ -1918,6 +1918,7 @@ class ProfileUpdateRequest(BaseModel):
     parents_has_ped: Optional[bool] = None
     health_conditions: Optional[list[str]] = None
     budget_band: Optional[str] = None
+    budget_inr: Optional[int] = None  # #64 — exact ₹/yr from the slider
     # Collected by the profile-builder UI; also present on the Profile
     # dataclass + chat-path save_profile_field. Whitelisted here so
     # POST /api/profile accepts them.
@@ -2018,7 +2019,7 @@ async def profile_update(req: ProfileUpdateRequest):
         "name",  # KI-077 — accept name updates from the profile-builder UI
         "age", "dependents", "income_band", "existing_cover_inr", "primary_goal",
         "location_tier", "parents_to_insure", "parents_age_max", "parents_has_ped",
-        "health_conditions", "budget_band",
+        "health_conditions", "budget_band", "budget_inr",
         "desired_sum_insured_inr", "copay_pct", "family_medical_history", "smoker",
     ):
         v = getattr(req, field_name, None)

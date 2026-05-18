@@ -2350,7 +2350,12 @@ function ProfileBuilderPanel({
   // persisted: handleSave derives `budget_band` (the backend contract field)
   // from this number via budgetInrToBand so the profile save round-trips it.
   const [budgetInr, setBudgetInr] = useState<number | null>(
-    initialProfile.budget_band ? budgetBandToInr(initialProfile.budget_band) : null,
+    // #64 — prefer the EXACT ₹ the user stated/slid; only fall back to the
+    // lossy 4-band representative when no exact value was ever captured.
+    initialProfile.budget_inr ??
+      (initialProfile.budget_band
+        ? budgetBandToInr(initialProfile.budget_band)
+        : null),
   );
   const [income, setIncome] = useState<string>(initialProfile.income_band ?? "");
   const [city, setCity] = useState<string>(initialProfile.location_tier ?? "");
@@ -2378,7 +2383,14 @@ function ProfileBuilderPanel({
     if (initialProfile.name && !name) setName(initialProfile.name);
     if (initialProfile.age != null && age == null) setAge(initialProfile.age);
     if (initialProfile.dependents && dependents === "self") setDependents(initialProfile.dependents);
-    if (initialProfile.budget_band && budgetInr == null) setBudgetInr(budgetBandToInr(initialProfile.budget_band));
+    if (budgetInr == null) {
+      const _seed =
+        initialProfile.budget_inr ??
+        (initialProfile.budget_band
+          ? budgetBandToInr(initialProfile.budget_band)
+          : null);
+      if (_seed != null) setBudgetInr(_seed);
+    }
     if (initialProfile.income_band && !income) setIncome(initialProfile.income_band);
     if (initialProfile.location_tier && !city) setCity(initialProfile.location_tier);
     if (initialProfile.health_conditions?.length && !conditions.length) setConditions(initialProfile.health_conditions);
@@ -2433,6 +2445,9 @@ function ProfileBuilderPanel({
         // #47b — persist the numeric annual-premium budget by mapping it
         // onto the backend's documented `budget_band` contract field.
         budget_band: budgetInr != null ? budgetInrToBand(budgetInr) : undefined,
+        // #64 — also persist the EXACT ₹ so the slider round-trips to the
+        // precise value next load (not the band representative).
+        budget_inr: budgetInr ?? undefined,
         income_band: income || undefined,
         location_tier: city || undefined,
         health_conditions: conditions.length ? conditions : undefined,
