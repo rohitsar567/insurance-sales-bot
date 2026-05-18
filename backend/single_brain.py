@@ -264,6 +264,28 @@ RULE 3 — Follow-ups + mark_recommendation
 - For "tell me about #2" / "second one" follow-ups, call retrieve_policies(query, policy_filter_ids=[policy_id_of_#2]) to narrow to that policy.
 
 ═══════════════════════════════════
+RULE 3.5 — Claims / denials / complaints / reputation / comparison → get_policy_facts (NEVER refuse)
+═══════════════════════════════════
+If the user asks ANYTHING about claim settlement ratio, claim
+denials/rejections, complaints, incurred-claim ratio, insurer
+reputation/track record, "how good is their claims process", or a
+side-by-side COMPARISON of policies on the ACTIVE SHORTLIST (or names one
+of them):
+  1. Call get_policy_facts(policy_ids=[...]) — resolve the ids EXACTLY
+     like RULE 7 ("#1"→shortlist[0], "the HDFC one"→matching insurer,
+     "compare the two you showed"→the whole shortlist; omit policy_ids to
+     use the entire shortlist).
+  2. Answer DIRECTLY from the returned numbers (claim_settlement_ratio_pct,
+     three_year_avg_csr_pct, complaints_per_10k_policies,
+     claims_rejected_fy24, incurred_claim_ratio_pct, scorecard_grade).
+  3. Cite as [Source: <insurer> claim data (IRDAI), <claim_data_source_url>].
+You MUST NOT reply "I don't have enough information" / "I can't tell you
+the claim ratio" / "claim data is only at insurer level so I can't help"
+when the ACTIVE SHORTLIST is non-empty — that data IS available via
+get_policy_facts. retrieve_policies returns policy WORDING only; it does
+NOT contain claim/complaint/denial data — use get_policy_facts for those.
+
+═══════════════════════════════════
 RULE 4 — Returning-user greeting (pre-populated profile)
 ═══════════════════════════════════
 If the KNOWN PROFILE block below is non-empty AT TURN 1 (no chat history,
@@ -320,14 +342,20 @@ RULE 5 — Comparison view ("compare #1 and #3")
 When the user asks to compare two or more shortlisted policies ("compare
 #1 and #3", "what's the difference between Plan A and Plan B",
 "#2 vs #4"):
-  1. Call retrieve_policies(policy_filter_ids=[id_of_A, id_of_B], top_k=4)
-     in ONE call so both policies' chunks come back together.
+  1. Call get_policy_facts(policy_ids=[id_of_A, id_of_B]) for the claim
+     record / scorecard / reputation columns (claim settlement ratio,
+     complaints, denials, grade), AND retrieve_policies(
+     policy_filter_ids=[id_of_A, id_of_B], top_k=4) in ONE call for the
+     wording columns (sum insured, room rent, PED wait, exclusions).
   2. Produce an explicit side-by-side comparison — markdown table with
      columns | Feature | Policy A | Policy B | OR paired bullets
      ("Sum insured: A = ₹10L, B = ₹15L"). Cover at minimum: sum insured,
-     premium, room rent, PED waiting period, key exclusions.
-  3. Cite each cell with [Source: ..., UIN]. Do NOT just dump retrieved
-     text — explicitly contrast.
+     premium, room rent, PED waiting period, key exclusions, AND
+     claim-settlement ratio + complaints (from get_policy_facts).
+  3. Cite each cell with [Source: ..., UIN] for wording and
+     [Source: <insurer> claim data (IRDAI), <url>] for claim metrics. Do
+     NOT just dump retrieved text — explicitly contrast. NEVER say you
+     can't compare claim records — get_policy_facts provides them.
 
 ═══════════════════════════════════
 RULE 6 — Out-of-scope refusal (non-health products)
@@ -533,6 +561,38 @@ TOOL_SCHEMAS: list[dict] = [
             "required": ["policy_ids"],
         },
     },
+    {
+        "name": "get_policy_facts",
+        "description": (
+            "Fetch AUTHORITATIVE claim-settlement ratio, 3-year average "
+            "CSR, complaints per 10k policies, claim denials/rejections, "
+            "incurred-claim ratio, scorecard grade, insurer reputation, "
+            "and key coverage facts for one or more policy_ids. Use this "
+            "for ANY follow-up about claims, claim settlement, denials, "
+            "rejections, complaints, insurer track record/reputation, or "
+            "to COMPARE policies the user already saw. This data IS "
+            "available (IRDAI + scorecard) — you must NEVER say you lack "
+            "claim/denial/complaint information without calling this tool "
+            "first. retrieve_policies returns policy WORDING only and does "
+            "NOT contain claim metrics. Resolve '#1/#2/the HDFC one' to "
+            "policy_ids via the ACTIVE SHORTLIST in the system prompt; if "
+            "policy_ids is omitted the whole current shortlist is used."
+        ),
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "policy_ids": {
+                    "type": "ARRAY",
+                    "items": {"type": "STRING"},
+                    "description": (
+                        "policy_ids to fetch facts for. Empty = use the "
+                        "entire active shortlist (last recommended set)."
+                    ),
+                },
+            },
+            "required": [],
+        },
+    },
 ]
 
 
@@ -596,7 +656,9 @@ def _build_contents(
     return out
 
 
-def _system_instruction(profile, is_returning_user: bool = False) -> dict:
+def _system_instruction(
+    profile, is_returning_user: bool = False, shortlist_block: str = ""
+) -> dict:
     """Bake the profile snapshot into the system prompt so each turn the
     LLM knows what's already captured. Returned in Gemini's expected
     `systemInstruction` shape.
@@ -632,7 +694,7 @@ def _system_instruction(profile, is_returning_user: bool = False) -> dict:
                 "say 'Welcome back'):\n"
                 + json.dumps(snapshot, ensure_ascii=False, sort_keys=True)
             )
-    text = SYSTEM_PROMPT + extra
+    text = SYSTEM_PROMPT + extra + (shortlist_block or "")
     return {"parts": [{"text": text}]}
 
 
@@ -1542,6 +1604,11 @@ async def _execute_tool(session, name: str, args: dict) -> dict:
                 policy_ids=args.get("policy_ids") or [],
                 is_final=bool(args.get("is_final") or False),
             )
+        if name == "get_policy_facts":
+            return brain_tools.get_policy_facts(
+                session,
+                policy_ids=args.get("policy_ids") or None,
+            )
         return {"ok": False, "error": f"unknown_tool:{name}"}
     except Exception as e:  # noqa: BLE001 — never crash the loop
         _log.warning(
@@ -1610,8 +1677,43 @@ async def handle_turn(
     if not api_key:
         raise SingleBrainError("GOOGLE_API_KEY not set")
 
+    # ACTIVE SHORTLIST — the policies recommended on a prior turn. RULE 7 /
+    # RULE 3.5 / RULE 5 reference session.last_recommendation_ids, but the
+    # model was never actually SHOWN it (root cause, 2026-05-18): without
+    # this block "compare #1 and #2" / "claim ratio of the HDFC one" could
+    # not resolve to policy_ids, so the model refused. Surface id + name +
+    # insurer so the model can pass exact policy_ids to get_policy_facts /
+    # retrieve_policies.
+    _shortlist_block = ""
+    try:
+        _sl_ids = list(getattr(session, "last_recommendation_ids", []) or [])
+        if _sl_ids:
+            _snap = dict(
+                getattr(session, "last_recommendation_snapshot", {}) or {}
+            )
+            _s2i = dict(getattr(session, "slug_to_insurer", {}) or {})
+            _lines = []
+            for _i, _pid in enumerate(_sl_ids, 1):
+                _nm = _snap.get(_pid) or _pid
+                _ins = _s2i.get(_pid) or ""
+                _lines.append(
+                    f"  #{_i}  policy_id={_pid}  |  {_nm}"
+                    + (f"  ({_ins})" if _ins else "")
+                )
+            _shortlist_block = (
+                "\n\n═══════════════════════════════════\n"
+                "ACTIVE SHORTLIST (policies you recommended this session — "
+                "resolve \"#1/#2/the X one/the two you showed\" to THESE "
+                "policy_ids and pass them to get_policy_facts / "
+                "retrieve_policies):\n" + "\n".join(_lines)
+            )
+    except Exception:  # noqa: BLE001 — bookkeeping must not break a turn
+        _shortlist_block = ""
+
     system_instruction = _system_instruction(
-        session.profile, is_returning_user=is_returning_user,
+        session.profile,
+        is_returning_user=is_returning_user,
+        shortlist_block=_shortlist_block,
     )
 
     # Bug #108 + #110 — if the user explicitly declines the pricing /
@@ -1686,8 +1788,22 @@ async def handle_turn(
         # CASE A — no function calls: this is the final text reply.
         # Includes the "Gemini just chats on turn 1" path the spec
         # called out — completely valid, return immediately.
+        #
+        # BUGFIX (2026-05-18) — same destructive-overwrite class as the
+        # CASE-B site below. When the FINAL iteration carries no function
+        # calls AND an empty text part (the documented near-zero "LLM
+        # returned nothing" tail referenced at the reply_text fallback
+        # comment), an unconditional `last_text = text` here wiped prose
+        # captured in a PRIOR tool-call iteration → reply_text fell through
+        # to _HONEST_EMPTY_REPLY → main.py skipped TTS (bot went SILENT
+        # after profile completion / policy presentation). Only adopt this
+        # iteration's text when it actually produced prose; an empty final
+        # text now falls back to the earlier spoken prose instead of
+        # destroying it. A non-empty final text still replaces it (the
+        # normal "model's last word wins" path is unchanged).
         if not function_calls:
-            last_text = text
+            if text:
+                last_text = text
             _log.info(
                 "single_brain iter=%d gemini=%.2fs tools=%.2fs "
                 "tool_calls=[] final_text=True",
@@ -1768,7 +1884,22 @@ async def handle_turn(
         contents.append({"role": "user", "parts": response_parts})
         # And loop — Gemini gets another shot to either call more
         # tools or emit a final text reply.
-        last_text = text  # in case loop hits MAX_ITERATIONS with no text
+        #
+        # BUGFIX (2026-05-18) — only update last_text when THIS iteration
+        # actually produced prose. An unconditional `last_text = text` here
+        # erased prose captured in a PRIOR iteration whenever a later
+        # iteration returned only function calls (text == ""): e.g. iter 1
+        # "Great, your profile is complete! …" + save_profile_field, then
+        # iter 2 retrieve_policies + mark_recommendation with NO text →
+        # last_text became "" → reply_text fell through to
+        # _HONEST_EMPTY_REPLY → main.py skipped TTS (bot went SILENT right
+        # after profile completion / policy presentation). The original
+        # intent — keep the latest prose so a MAX_ITERATIONS exit still has
+        # a non-empty reply — is preserved: a non-empty text on any
+        # iteration still updates last_text; an empty one is now a no-op
+        # instead of a destructive overwrite.
+        if text:
+            last_text = text
     else:
         # Hit MAX_ITERATIONS without break — honest signal, not a
         # fabricated slot-question.

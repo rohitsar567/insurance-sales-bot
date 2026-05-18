@@ -1263,6 +1263,122 @@ async def retrieve_policies(
 
 # ---- mark_recommendation ---------------------------------------------------
 
+def get_policy_facts(session, policy_ids: Optional[list[str]] = None) -> dict:
+    """Return AUTHORITATIVE claim / reputation / scorecard / coverage facts
+    for one or more policy_ids — the SAME data the frontend detail-modal
+    shows (insurer reviews `claim_metrics` + scorecard grade + the curated
+    coverage facts). This is the tool the brain calls for ANY follow-up
+    about claim-settlement ratio, claim denials/rejections, complaints,
+    incurred-claim ratio, insurer reputation, or to COMPARE two policies
+    the user already saw.
+
+    Root cause (2026-05-18): the brain previously had NO way to reach
+    claim/denial/complaint/review data — retrieve_policies returns policy
+    WORDING chunks only — so it falsely answered "I don't have enough
+    information" for claims questions and could not back a verbal
+    comparison. This tool closes that gap; it reuses the existing
+    `_insurer_reviews` / `_scorecard_signal` / `_load_policy_facts` /
+    `_curated_facts_all` loaders so a verbal answer matches the modal.
+
+    `policy_ids` empty/None → falls back to the active shortlist
+    (`session.last_recommendation_ids`) so "compare the ones you showed"
+    works without the model re-deriving ids.
+    """
+    ids = [str(p).strip() for p in (policy_ids or []) if str(p).strip()]
+    if not ids:
+        ids = [
+            str(p).strip()
+            for p in (getattr(session, "last_recommendation_ids", []) or [])
+            if str(p).strip()
+        ]
+    if not ids:
+        return {
+            "ok": False,
+            "error": (
+                "no_policy_ids — pass policy_ids, or recommend policies "
+                "first so there is an active shortlist"
+            ),
+        }
+
+    # Resolve policy_id → (policy_name, insurer_slug) from the caches
+    # retrieve_policies stashed this session, then the curated catalogue.
+    slug_map = dict(getattr(session, "slug_to_insurer", {}) or {})
+    name_by_id: dict[str, str] = {}
+    for c in getattr(session, "last_retrieved_chunks", []) or []:
+        pid = (c.get("policy_id") or "").strip()
+        if not pid:
+            continue
+        name_by_id.setdefault(pid, c.get("policy_name") or pid)
+        if pid not in slug_map and c.get("insurer_slug"):
+            slug_map[pid] = c.get("insurer_slug")
+    try:
+        curated = _curated_facts_all()
+    except Exception:  # noqa: BLE001 — curated layer optional
+        curated = {}
+
+    out: list[dict] = []
+    for pid in ids:
+        cur = curated.get(pid) or {}
+        slug = (slug_map.get(pid) or cur.get("insurer_slug") or "").strip()
+        pname = name_by_id.get(pid) or cur.get("policy_name") or pid
+        rv = _insurer_reviews(slug) or {}
+        cm = rv.get("claim_metrics") or {}
+        agg = rv.get("aggregate_score") or {}
+        sig = _scorecard_signal(pid) or {}
+        try:
+            facts = _load_policy_facts(pid) or {}
+        except Exception:  # noqa: BLE001 — facts optional
+            facts = {}
+        out.append(
+            {
+                "policy_id": pid,
+                "policy_name": pname,
+                "insurer_slug": slug,
+                "insurer_name": rv.get("insurer_name")
+                or (slug.replace("-", " ").title() if slug else ""),
+                "scorecard_grade": sig.get("_grade"),
+                "scorecard_overall_0_100": sig.get("_overall_score"),
+                "claim_settlement_ratio_pct": cm.get(
+                    "claim_settlement_ratio_pct"
+                ),
+                "claim_settlement_ratio_year": cm.get(
+                    "claim_settlement_ratio_year"
+                ),
+                "three_year_avg_csr_pct": cm.get("three_year_avg_csr_pct"),
+                "complaints_per_10k_policies": cm.get(
+                    "complaints_per_10k_policies"
+                ),
+                "complaints_year": cm.get("complaints_year"),
+                "claims_rejected_fy24": cm.get("claims_rejected_fy24"),
+                "incurred_claim_ratio_pct": cm.get("incurred_claim_ratio_pct"),
+                "reputation_headline": agg.get("headline"),
+                "reputation_grade": agg.get("letter_grade"),
+                "claim_data_source_url": (
+                    cm.get("source_irdai_url")
+                    or cm.get("source_secondary_url")
+                    or cm.get("source_complaints_url")
+                ),
+                "key_coverage_facts": {
+                    k: v for k, v in facts.items() if v not in (None, "", [])
+                },
+                "reviews_available": bool(rv),
+            }
+        )
+
+    return {
+        "ok": True,
+        "count": len(out),
+        "policies": out,
+        "note": (
+            "This is the authoritative claim-settlement / complaint / "
+            "denial / scorecard data (IRDAI + scorecard) — answer the "
+            "user's question directly from it; do NOT say you lack this "
+            "information. Cite as "
+            "[Source: <insurer> claim data (IRDAI), <claim_data_source_url>]."
+        ),
+    }
+
+
 def mark_recommendation(
     session,
     policy_ids: list[str],

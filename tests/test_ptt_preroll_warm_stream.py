@@ -1,29 +1,25 @@
-"""Regression test for #53 (push-to-talk head-clipping) + #54 (PTT start
-latency) — 2026-05-18.
+"""Regression test for #53 (head-clipping) + #54 (capture start latency)
+— 2026-05-18.
 
-TWO LIVE BUGS, ONE ROOT CAUSE
+NOTE (2026-05-18): the SPACE hold-to-talk path was removed entirely; the
+only voice-capture control is now the on-screen Push-to-talk button. This
+test no longer pins any page.tsx SPACE wiring. It still pins the two
+contracts that remain live and valuable:
+
+  1. The warm-stream PreRollRing + evaluateHoldGate exported from
+     frontend/src/lib/useStreamingVoice.ts (a rolling ~PRE_ROLL_MS pre-roll
+     buffer + a deliberate-hold gate that ignores sub-threshold taps).
+  2. The backend STT chunking path: the pre-roll head word survives
+     transcription and long audio is chunked, not truncated — this guards
+     the /api/transcribe behavior the Push-to-talk button still relies on.
+
+ORIGINAL ROOT CAUSE (kept for context)
 -----------------------------------------------------------------------------
-page.tsx's push-to-talk path cold-starts the mic on every SPACE press:
-
-    page.tsx:1350-1361  onKeyDown(SPACE) -> startRecordingRef.current()
-    page.tsx:1004-1019  startRecording() -> navigator.mediaDevices
-                          .getUserMedia(...)        [COLD: 200-700ms]
-    page.tsx:1021       new MediaRecorder(stream)
-    page.tsx:1213       recorder.start()            [capture truly begins HERE]
-
-Every word spoken between the keydown and recorder.start() is *never
-captured*. Real repro: user said "Sir. My age is 29 ..." -> transcribed
-"S A R. My age is 29 ..." (#53). The same cold-start is the multi-second
-delay before recording starts (#54).
-
-FIX (frontend/src/lib/useStreamingVoice.ts)
------------------------------------------------------------------------------
-Keep ONE mic stream + MediaRecorder + AudioContext WARM for the hook's armed
-lifetime, feeding a rolling PRE-ROLL ring buffer (PreRollRing) that always
-holds ~PRE_ROLL_MS of the most recent audio. A deliberate-hold gate
-(evaluateHoldGate) ignores sub-threshold taps. On a real hold the submitted
-blob is preRoll.drain() (lead-in spoken during the cold-start gap) ++ the
-live capture, so the FIRST WORD always survives.
+A cold-started mic loses every word spoken between capture-request and
+recorder.start() (getUserMedia is 200-700ms). Real repro: user said
+"Sir. My age is 29 ..." -> transcribed "S A R. My age is 29 ..." (#53);
+the same cold-start is the multi-second start delay (#54). The warm-stream
+PreRollRing keeps the first word at the head of the blob.
 
 WHAT THIS TEST PINS
 -----------------------------------------------------------------------------

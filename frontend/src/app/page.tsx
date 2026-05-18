@@ -62,7 +62,7 @@ export default function Page() {
   const [busy, setBusy] = useState(false);
   // Voice-display fix — the composer <textarea> must grow as the live
   // interim voice transcript accumulates so the user sees their FULL
-  // spoken sentence (not just the first line) while holding SPACE / PTT.
+  // spoken sentence (not just the first line) while using Push-to-talk.
   // The textarea has resize-none + a small min-height, so without this
   // it stays clamped to one line and the transcript visually truncates
   // even though capture/submit are correct. We size height to scrollHeight
@@ -83,25 +83,18 @@ export default function Page() {
   const [returnAudio] = useState(true);
   const [ttsLang] = useState<"en-IN" | "hi-IN">("en-IN");
   // KI-257 — master Voice toggle. When OFF, the chat input shows only
-  // textarea + Send. When ON, reveals Live (BETA) option, Push-to-talk
-  // button. Hold-SPACE-to-talk is always active while Voice is on
-  // (no separate toggle) so the user can just press space whenever the
-  // textarea isn't focused. Persisted via localStorage.
+  // textarea + Send. When ON, reveals the Live (BETA) option and the
+  // Push-to-talk button. Persisted via localStorage.
   const [voiceMasterOn, setVoiceMasterOn] = useState(false);
-  // KI-257 — true while the user is holding SPACE (drives the visual
-  // "ready to take audio" indicator near the PTT button).
-  const [spaceHoldActive, setSpaceHoldActive] = useState(false);
-  // #3 mobile — touch devices have no SPACE key, so SPACE-centric voice
-  // copy reads as "voice is broken" on a phone (tap-to-talk DOES work via
-  // the button's onClick + VAD auto-stop). Shared SSR-safe hook.
+  // #3 mobile — touch vs pointer changes the voice copy ("tap" vs
+  // "click" the mic). Shared SSR-safe hook.
   const isTouch = useIsTouch();
   // Live (BETA) risk-confirmation gate. Opening Live always-on must surface
   // a clear, styled WARNING modal listing the real failure modes EVERY time
   // (no localStorage "seen once" bypass — the old window.confirm gate let
   // production users skip the warning entirely after one ack, or whenever
   // the browser suppressed the native dialog). The live session only starts
-  // on explicit Confirm; Cancel reverts the toggle. PTT / Hold-SPACE are
-  // never gated.
+  // on explicit Confirm; Cancel reverts the toggle. PTT is never gated.
   const [showLiveGate, setShowLiveGate] = useState(false);
   // Visual UI language — same source as ttsLang so the toggle controls both
   const uiLang: UILang = ttsLang === "hi-IN" ? "hi" : "en";
@@ -485,7 +478,7 @@ export default function Page() {
   useEffect(() => {
     const ta = composerRef.current;
     if (!ta) return;
-    // While capturing voice (PTT click, hold-SPACE, or Live), give the box
+    // While capturing voice (PTT click or Live), give the box
     // far more room so the entire accumulated interim transcript is on
     // screen. Idle/typed flow keeps a calmer cap. Both are well above one
     // line — the previous max-h-32 (128px) was the perceived "truncation".
@@ -494,7 +487,7 @@ export default function Page() {
     // "couldn't see the whole transcript even though it was all captured".
     // While capturing, grow up to ~half the viewport so the full utterance
     // is visible; only the genuinely huge tail still scrolls.
-    const isCapturing = recording || spaceHoldActive || live.recording;
+    const isCapturing = recording || live.recording;
     const vh = typeof window !== "undefined" ? window.innerHeight : 800;
     const maxH = isCapturing ? Math.min(Math.round(vh * 0.5), 520) : 160;
     // Collapse first so shrinking text (word-erase / send-clear) recomputes
@@ -512,7 +505,7 @@ export default function Page() {
     } else {
       ta.style.overflowY = "hidden";
     }
-  }, [input, recording, spaceHoldActive, live.recording]);
+  }, [input, recording, live.recording]);
 
   // Voice-display fix — keep the PTT interim strip pinned to its newest
   // text. The strip now wraps + caps its height + scrolls internally, so
@@ -1306,178 +1299,6 @@ export default function Page() {
   }
   function stopRecording() { mediaRecorderRef.current?.stop(); }
 
-  // #53 (head-clip) / #54 (PTT start latency) — the SPACE-hold path now
-  // DELEGATES to useStreamingVoice's warm-stream + pre-roll API instead of
-  // cold-starting its own getUserMedia + MediaRecorder per press. The hook
-  // keeps the OS mic hot and a rolling 800ms pre-roll, so the first word
-  // ("Sir." that previously transcribed as "S A R") is always at the head of
-  // the blob and there is no multi-second per-press start delay.
-  //
-  // Why delegation (not "prepend pre-roll blobs to page.tsx's recorder"):
-  // splicing slices from two independent MediaRecorder streams produces a
-  // corrupt webm container. The hook owns the single recorder that captured
-  // BOTH the pre-roll and the held utterance, so only it can assemble a valid
-  // blob. `endPushToTalk()` already runs the exact Sarvam submit+retry path
-  // and, on success, delivers the transcript via the hook's onFinalTranscript
-  // callback — which page.tsx wires (see useStreamingVoice config above) to
-  // `voiceSubmitRef.current` → `send()`, i.e. the IDENTICAL downstream path a
-  // successful /api/transcribe result used in recorder.onstop. We therefore
-  // MUST NOT re-submit the returned string here (that would double-fire); the
-  // returned value is used only to distinguish a deliberate hold from a
-  // sub-threshold tap (null) for clean state reset.
-  const spaceHoldPttInFlightRef = useRef<boolean>(false);
-  async function startSpaceHoldPTT() {
-    // Re-entrancy guard: a second SPACE keydown while a delegated PTT capture
-    // (or its in-flight transcription) is still resolving must be ignored,
-    // mirroring the original recordingRef/busyRef "don't start twice" intent.
-    if (spaceHoldPttInFlightRef.current) return;
-    spaceHoldPttInFlightRef.current = true;
-    // Preserve recorder.onstop / startRecording semantics: silence any prior
-    // bot TTS the instant the user starts talking (KI-222 FIX 1 / V3 FIX 2).
-    try { interruptBotAudio("ptt-start"); } catch { /* ignore */ }
-    // STT-in-flight UX: the original path flipped voicePhase to "transcribing"
-    // while Sarvam ran. endPushToTalk() runs that same Sarvam call internally,
-    // so set the phase here. NOTE: we deliberately do NOT setBusy(true) — the
-    // hook's onFinalTranscript → voiceSubmitRef → send() owns busy, and send()
-    // early-returns if busy is already true (would silently drop the turn).
-    setVoicePhase("transcribing"); // KI-038 — STT in flight on PTT
-    try {
-      streamingVoice.beginPushToTalk();
-    } catch (e) {
-      // beginPushToTalk itself is non-throwing by contract, but stay defensive
-      // and route any unexpected failure to the same red banner the cold path
-      // used. Warm-stream / permission failures surface via the hook's
-      // onVoiceError → setVoiceErrorBanner (mic_permission_denied) already.
-      console.error(e);
-      spaceHoldPttInFlightRef.current = false;
-      setVoicePhase(null);
-      setSpaceHoldActive(false);
-      setVoiceErrorBanner({ type: "mic_permission_denied", ts: Date.now() });
-    }
-  }
-  async function stopSpaceHoldPTT() {
-    if (!spaceHoldPttInFlightRef.current) return;
-    // KI-028 — resume Live ONLY if the user's persistent preference is still
-    // "on" (matches the original recorder.onstop maybeResumeLive semantics).
-    const maybeResumeLive = () => { if (userPrefersLive) live.setLive(true); };
-    try {
-      // endPushToTalk(): on a deliberate hold it transcribes (pre-roll + held
-      // utterance) AND delivers via onFinalTranscript → voiceSubmitRef →
-      // send() — the EXACT downstream path the old recorder.onstop success
-      // branch used. On a sub-threshold tap / empty capture it resolves to
-      // null and submits nothing. All transport / Sarvam failures surface via
-      // the hook's onVoiceError (transcribe_failed banner) — never silent.
-      const text = await streamingVoice.endPushToTalk();
-      if (text === null) {
-        // Sub-threshold tap or nothing captured: clean no-op. No empty submit;
-        // just clear the cosmetic "transcribing" phase we set on keydown.
-        setVoicePhase(null);
-        maybeResumeLive();
-      } else {
-        // Deliberate hold: the hook has ALREADY pushed `text` through
-        // onFinalTranscript → send(). send() owns busy + flips voicePhase to
-        // "thinking" and clears both in its own finally, so we must NOT reset
-        // voicePhase here (that would stomp send()'s "thinking") and must NOT
-        // re-submit. Just resume Live per the user's preference.
-        maybeResumeLive();
-      }
-    } catch (e) {
-      // endPushToTalk's internal Sarvam path swallows its own errors and
-      // surfaces them via onVoiceError; reaching here means an unexpected
-      // throw. Reset cosmetic state so the UI doesn't stick in "transcribing".
-      console.error(e);
-      setVoicePhase(null);
-      maybeResumeLive();
-    } finally {
-      spaceHoldPttInFlightRef.current = false;
-    }
-  }
-
-  // KI-258 — Hold-SPACE-to-talk. Fixes from KI-257 first ship:
-  //   (a) textarea ALWAYS had focus → isInputFocused() was always true →
-  //       SPACE never fired. Fix: allow SPACE-hold when the textarea is
-  //       focused-AND-empty; only block when it has user-typed text.
-  //   (b) `recording`/`spaceHoldActive` in the effect deps recreated
-  //       handlers mid-press, splitting keydown/keyup across closures
-  //       with stale values. Fix: read all state via refs; deps reduced
-  //       to [voiceMasterOn] so handlers bind once.
-  // #53/#54 — these refs now point at the DELEGATED SPACE-hold handlers
-  // (startSpaceHoldPTT / stopSpaceHoldPTT), which route through the hook's
-  // warm-stream + pre-roll API. The on-screen Push-to-talk *button* still
-  // uses startRecording/stopRecording directly (separate onClick handler,
-  // intentionally untouched — it does not share this code path), so the
-  // legacy recorder path is preserved for that control.
-  const startRecordingRef = useRef<(() => Promise<void>) | null>(null);
-  const stopRecordingRef = useRef<(() => Promise<void>) | null>(null);
-  const recordingRef = useRef<boolean>(recording);
-  const busyRef = useRef<boolean>(busy);
-  const spaceHoldOwnsRecRef = useRef<boolean>(false);
-  useEffect(() => {
-    startRecordingRef.current = startSpaceHoldPTT;
-    stopRecordingRef.current = stopSpaceHoldPTT;
-    recordingRef.current = recording;
-    busyRef.current = busy;
-  });
-  useEffect(() => {
-    if (!voiceMasterOn) return;
-    if (typeof window === "undefined") return;
-    // SPACE-hold is suppressed only when the user is mid-edit in an
-    // input/textarea WITH content. An EMPTY textarea (the common case
-    // for a fresh chat with focus on the composer) still triggers
-    // hold-to-talk; preventDefault stops a stray space from typing.
-    const shouldSuppressSpace = () => {
-      const ae = document.activeElement as HTMLElement | null;
-      if (!ae) return false;
-      const tag = ae.tagName;
-      if (tag === "INPUT") {
-        const ip = ae as HTMLInputElement;
-        return (ip.value || "").length > 0;
-      }
-      if (tag === "TEXTAREA") {
-        const ta = ae as HTMLTextAreaElement;
-        return (ta.value || "").length > 0;
-      }
-      if (ae.isContentEditable) return (ae.textContent || "").length > 0;
-      return false;
-    };
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== " " && e.code !== "Space") return;
-      if (e.repeat) return;
-      if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
-      if (shouldSuppressSpace()) return;
-      e.preventDefault();
-      if (recordingRef.current || busyRef.current) return;
-      spaceHoldOwnsRecRef.current = true;
-      setSpaceHoldActive(true);
-      const sr = startRecordingRef.current;
-      if (sr) void sr();
-    };
-    const onKeyUp = (e: KeyboardEvent) => {
-      if (e.key !== " " && e.code !== "Space") return;
-      // Only react if THIS keydown started the recording; otherwise the
-      // textarea may have been the legitimate target and we'd nuke it.
-      if (!spaceHoldOwnsRecRef.current) return;
-      e.preventDefault();
-      spaceHoldOwnsRecRef.current = false;
-      setSpaceHoldActive(false);
-      const sp = stopRecordingRef.current;
-      // Original guard was `recordingRef.current` (the legacy `recording`
-      // state). The delegated path doesn't drive `recording` (the hook owns
-      // capture state), so gate on the delegated in-flight flag instead — the
-      // exact equivalent of "a capture this keydown started is still active".
-      // Still resolve a deliberate hold even on a sub-threshold tap:
-      // stopSpaceHoldPTT is a clean no-op when nothing is in flight.
-      if (sp && spaceHoldPttInFlightRef.current) void sp();
-    };
-    window.addEventListener("keydown", onKeyDown);
-    window.addEventListener("keyup", onKeyUp);
-    return () => {
-      window.removeEventListener("keydown", onKeyDown);
-      window.removeEventListener("keyup", onKeyUp);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [voiceMasterOn]);
-
   async function handleFile(ev: React.ChangeEvent<HTMLInputElement>) {
     const f = ev.target.files?.[0];
     if (!f) return;
@@ -1998,7 +1819,7 @@ export default function Page() {
                 </span>
               )}
 
-              {/* Push-to-talk button — click OR hold SPACE */}
+              {/* Push-to-talk button */}
               <button
                 type="button"
                 onClick={recording ? stopRecording : startRecording}
@@ -2006,32 +1827,27 @@ export default function Page() {
                 className={`h-9 px-3 rounded-full flex items-center gap-1.5 text-xs font-medium transition-all ${
                   recording
                     ? "bg-[var(--error)] text-white animate-record-pulse"
-                    : spaceHoldActive
-                      ? "bg-emerald-700 text-white ring-2 ring-emerald-300"
-                      : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-md ring-2 ring-emerald-300 dark:ring-emerald-700"
+                    : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-md ring-2 ring-emerald-300 dark:ring-emerald-700"
                 } disabled:opacity-40`}
                 title={recording
                   ? (isTouch
                       ? "Recording… tap to stop and send"
-                      : "Recording… click to stop and submit (or release SPACE)")
+                      : "Recording… click to stop and submit")
                   : (isTouch
                       ? "Tap to talk; tap again to stop. A pause auto-sends."
-                      : "Push-to-talk: click to start, click again to stop. Or hold SPACE.")}
+                      : "Push-to-talk: click to start, click again to stop.")}
               >
                 {recording ? <StopIcon /> : <MicIcon />}
                 <span>{recording ? "Stop & send" : "Push-to-talk"}</span>
               </button>
 
-              {/* Hold SPACE helper — shows "ready to take audio" when
-                  user holds SPACE without yet recording. */}
+              {/* PTT status hint. */}
               <span className="text-xs text-[var(--muted-foreground)] italic">
-                {recording && spaceHoldActive
-                  ? "Listening… release SPACE to submit"
-                  : recording
-                    ? (isTouch ? "Listening… tap Stop to send" : "Listening… click Stop to submit")
-                    : (isTouch
-                        ? "Tap Push-to-talk, then pause — it sends itself"
-                        : "or hold SPACE to talk · release to submit")}
+                {recording
+                  ? (isTouch ? "Listening… tap Stop to send" : "Listening… click Stop to submit")
+                  : (isTouch
+                      ? "Tap Push-to-talk, then pause — it sends itself"
+                      : "Click Push-to-talk, then pause — it sends itself")}
               </span>
             </div>
           )}
@@ -3011,9 +2827,6 @@ function EmptyState({
 }) {
   const isHi = uiLang === "hi";
   const L = (en: string, hi: string) => (isHi ? hi : en);
-  // #3 mobile — drop the SPACE-only mode on touch; the Push-to-talk tile
-  // already gives phone users the correct ("tap the green mic") path.
-  const isTouch = useIsTouch();
 
   // Coverage facts, rendered as one-line bullets (never a wrapping blob).
   const policyCount = coverage ? coverage.total_policies : 169;
@@ -3142,13 +2955,6 @@ function EmptyState({
               title={L("Push-to-talk", "Push-to-talk")}
               body={L("Tap the green mic for one turn", "हरे mic पर tap करें")}
             />
-            {!isTouch && (
-              <ModeRow
-                icon="space"
-                title={L("Hold SPACE", "SPACE दबाएं")}
-                body={L("Hold to talk, release to send", "दबाकर बोलें, छोड़ने पर send")}
-              />
-            )}
             <ModeRow
               icon="wave"
               title={L("Live (BETA)", "Live (BETA)")}
@@ -3347,7 +3153,7 @@ function ModeRow({
   title,
   body,
 }: {
-  icon: "keyboard" | "mic" | "space" | "wave";
+  icon: "keyboard" | "mic" | "wave";
   title: string;
   body: string;
 }) {
@@ -3459,7 +3265,7 @@ function SectionIcon({ kind }: { kind: "lightbulb" | "mic" | "shield" }) {
 }
 
 // ModeIcon — small icons next to each input mode.
-function ModeIcon({ kind }: { kind: "keyboard" | "mic" | "space" | "wave" }) {
+function ModeIcon({ kind }: { kind: "keyboard" | "mic" | "wave" }) {
   const common = {
     width: 18,
     height: 18,
@@ -3484,14 +3290,6 @@ function ModeIcon({ kind }: { kind: "keyboard" | "mic" | "space" | "wave" }) {
         <rect x="9" y="2" width="6" height="12" rx="3" />
         <path d="M5 10a7 7 0 0 0 14 0" />
         <path d="M12 17v4" />
-      </svg>
-    );
-  }
-  if (kind === "space") {
-    return (
-      <svg {...common}>
-        <rect x="3" y="8" width="18" height="9" rx="2" />
-        <path d="M7 13h10" />
       </svg>
     );
   }
@@ -3987,6 +3785,9 @@ function CitedPolicyCards({
   onOpenMarketplace?: () => void;
 }) {
   const [cards, setCards] = useState<Record<string, ScorecardResponse | null>>({});
+  // Keyed by insurer_slug (reviews are per-insurer, not per-policy) so
+  // several cited policies from the same insurer share one fetch/result.
+  const [reviews, setReviews] = useState<Record<string, InsurerReviews | null>>({});
   const [compareOpen, setCompareOpen] = useState(false);
 
   // Build a policy_id → MarketplacePolicy lookup so the modal can render the
@@ -4095,6 +3896,20 @@ function CitedPolicyCards({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [citations.map((c) => c.policy_id).join("|")]);
 
+  // Insurer reputation / reviews. The full detail modal shows a reviews
+  // section; the inline cited cards omitted it (user-flagged — same class
+  // as #65's claim-experience gap). Fetch once per DISTINCT insurer_slug.
+  useEffect(() => {
+    const slugs = Array.from(new Set(topPolicies.map((c) => c.insurer_slug)));
+    for (const slug of slugs) {
+      if (!slug || reviews[slug] !== undefined) continue;
+      getInsurerReviews(slug)
+        .then((r) => setReviews((p) => ({ ...p, [slug]: r })))
+        .catch(() => setReviews((p) => ({ ...p, [slug]: null })));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [topPolicies.map((c) => c.insurer_slug).join("|")]);
+
   if (topPolicies.length === 0) return null;
 
   return (
@@ -4164,6 +3979,42 @@ function CitedPolicyCards({
                         </div>
                       );
                     })()}
+                  {/* Reviews — the full detail modal renders an insurer
+                      reputation/reviews section; these inline cards
+                      omitted it (user-flagged). Mirrors the #65
+                      claim-experience pattern + the #76 rule: ALWAYS
+                      render the labelled line, never silently vanish
+                      when the fetch is slow / null. */}
+                  {(() => {
+                    const rv = reviews[c.insurer_slug];
+                    const lbl = (
+                      <span className="font-semibold text-[var(--foreground)]">
+                        Reviews:
+                      </span>
+                    );
+                    if (rv) {
+                      const s = rv.aggregate_score || {};
+                      const csr = rv.claim_metrics?.claim_settlement_ratio_pct;
+                      const bits: string[] = [];
+                      if (s.letter_grade) bits.push(s.letter_grade);
+                      if (s.value_0_100 != null) bits.push(`${s.value_0_100}/100`);
+                      if (csr != null) bits.push(`${csr}% claims settled`);
+                      return (
+                        <div className="text-[10.5px] text-[var(--muted-foreground)] mt-1 line-clamp-2">
+                          {lbl} {bits.join(" · ")}
+                          {s.headline ? ` — ${s.headline}` : ""}
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="text-[10.5px] text-[var(--muted-foreground)] italic mt-1">
+                        {lbl}{" "}
+                        {rv === null
+                          ? "reputation data being compiled"
+                          : "loading reputation…"}
+                      </div>
+                    );
+                  })()}
                 </div>
                 {sc && (
                   <div
@@ -5462,7 +5313,6 @@ function LiveBetaGateModal({
   onCancel: () => void;
 }) {
   const L = (en: string, hi: string) => (hindi ? hi : en);
-  const isTouch = useIsTouch();
   const dialogRef = useRef<HTMLDivElement | null>(null);
 
   // Escape cancels (treated as "did not confirm"); move focus into the
@@ -5614,15 +5464,10 @@ function LiveBetaGateModal({
           </ul>
 
           <p className="mt-4 text-[12.5px] leading-relaxed text-[var(--muted-foreground)]">
-            {isTouch
-              ? L(
-                  "Prefer Push-to-talk — it's stable and uses Sarvam STT (handles Hindi / Indic correctly).",
-                  "Push-to-talk बेहतर है — यह स्थिर है और Sarvam STT वापरता है (हिन्दी / Indic सही संभालता है)।"
-                )
-              : L(
-                  "Prefer Push-to-talk or hold-SPACE — both are stable and use Sarvam STT (handles Hindi / Indic correctly).",
-                  "Push-to-talk या SPACE दबाकर बोलना बेहतर है — दोनों स्थिर हैं और Sarvam STT वापरते हैं (हिन्दी / Indic सही संभालता है)।"
-                )}
+            {L(
+              "Prefer Push-to-talk — it's stable and uses Sarvam STT (handles Hindi / Indic correctly).",
+              "Push-to-talk बेहतर है — यह स्थिर है और Sarvam STT वापरता है (हिन्दी / Indic सही संभालता है)।"
+            )}
           </p>
 
           {/* Confirm / Cancel. Cancel is the safe default (autofocused). */}
