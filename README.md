@@ -285,6 +285,31 @@ its module docstring. The automated test suite (`tests/`, run with `pytest`)
 is the current green gate and covers routing, scoring, premium, recall, the
 upload security gates, and conversation logic.
 
+### 6.4 Known limitations (honest)
+
+These are real and stated up front rather than buried:
+
+- **Uploaded-doc persistence is within-session, not across restarts.**
+  Upload → graded marketplace card → grounded Q&A about the PDF all work
+  live within a running container. But the Hugging Face Space's working
+  filesystem is ephemeral by design (a fresh Chroma snapshot is pulled on
+  every rebuild — see §10), and in practice an uploaded doc does **not**
+  survive a Space rebuild/restart: the marketplace reverts to its
+  curated/extracted baseline. Treat uploads as session-scoped. An
+  operator/abuse prune endpoint exists (`POST /api/admin/uploaded-docs/
+  prune`, password-gated) to remove a persisted upload by id or prefix.
+- **Uploaded-PDF field extraction is deterministic-heuristic, not LLM.**
+  A standard IRDAI-format wording yields a real (non-sentinel) grade; a
+  scanned-image or non-standard PDF with little extractable text honestly
+  shows the data-starved sentinel rather than a fabricated grade.
+- **Live (BETA) voice mode** uses the browser's in-built speech
+  recognition and is labelled unstable; **push-to-talk** is the reliable
+  path (warm-armed mic + pre-roll so the first word is never clipped, and
+  long answers are chunked so nothing is truncated).
+- **Recommendation vs. factual lookup.** A factual question that names a
+  specific policy is answerable on a cold session; broad "recommend me a
+  plan" requests still require the short fact-find first (by design).
+
 ---
 
 ## 7. Tech stack & key decisions
