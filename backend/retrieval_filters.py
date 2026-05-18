@@ -367,8 +367,14 @@ def apply_profile_filter(chunks: Iterable[Any], profile: Any) -> list[Any]:
     for ch in chunks_list:
         m = _meta(ch)
         doc_type = (m.get("doc_type") or "").lower()
-        # Never drop non-policy chunks via demographic filter
-        if doc_type in ("profile", "regulatory", "review"):
+        # Never drop non-policy chunks via demographic filter.
+        # #52 — `user_upload` is a globally-visible uploaded marketplace
+        # doc: a Q&A TARGET, not a demographically-ranked recommendable
+        # corpus policy. Exempt it exactly like regulatory/review so a
+        # question literally about the uploaded document isn't dropped
+        # because the (often anonymous) asker's age/eligibility doesn't
+        # match the uploaded plan.
+        if doc_type in ("profile", "regulatory", "review", "user_upload"):
             kept.append(ch)
             continue
 
@@ -736,7 +742,9 @@ def apply_eligibility_filter(chunks: Iterable[Any], profile: Any) -> list[Any]:
     for ch in chunks_list:
         m = _meta_full(ch)
         doc_type = (m.get("doc_type") or "").lower()
-        if doc_type in ("profile", "regulatory", "review"):
+        # #52 — uploaded marketplace docs are Q&A targets; never hard-drop
+        # them on eligibility (same class as regulatory/review).
+        if doc_type in ("profile", "regulatory", "review", "user_upload"):
             kept.append(ch)
             continue
 
@@ -910,7 +918,11 @@ def rank_by_profile_fit(chunks: Iterable[Any], profile: Any) -> list[Any]:
     policy: list[Any] = []
     for ch in chunks_list:
         dt = (_meta_full(ch).get("doc_type") or "").lower()
-        (non_policy if dt in ("profile", "regulatory", "review") else policy).append(ch)
+        # #52 — keep uploaded marketplace docs in the non-policy lane so
+        # profile-fit re-ranking can't bury them below recommendable corpus
+        # policies when the user asked about the uploaded doc itself.
+        (non_policy if dt in ("profile", "regulatory", "review", "user_upload")
+         else policy).append(ch)
 
     # Decorate-sort-undecorate with original index as the stable tiebreaker.
     decorated = [
