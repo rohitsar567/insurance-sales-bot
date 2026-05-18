@@ -297,7 +297,8 @@ export default function Page() {
   // call inside send(). triggerBargeIn() (or any code path that wants to
   // cancel a pending bot turn) can fire a `barge-in-abort` window event and
   // the useEffect below will call .abort() on this controller. The signal
-  // is not yet plumbed through postChat()/api.ts — see TODO below in send().
+  // IS threaded through postChat() → api.ts → fetch (see send()), so the
+  // abort genuinely cancels the in-flight /api/chat request.
   const currentSendAbortRef = useRef<AbortController | null>(null);
 
   // Compatibility surface: the rest of the component (PTT path, UI pill, mic
@@ -785,11 +786,11 @@ export default function Page() {
     // in-flight /api/chat call. The controller is exposed on
     // currentSendAbortRef; a window-level "barge-in-abort" event listener
     // (see useEffect below) calls .abort() on it.
-    // TODO: thread `signal: controller.signal` through postChat() →
-    // frontend/src/lib/api.ts so the abort actually reaches fetch. Until
-    // then, the controller is wired up but the abort() call has no effect
-    // on the in-flight request — the infrastructure is in place for the
-    // follow-up fix.
+    // controller.signal is passed to postChat() below → api.ts
+    // _fetchWithRetry forwards it to fetch(), so a `barge-in-abort`
+    // event genuinely cancels the in-flight /api/chat call; the catch
+    // block treats the resulting AbortError as an intentional cancel
+    // (stays silent, no error bubble).
     const controller = new AbortController();
     currentSendAbortRef.current = controller;
     // KI-165 (2026-05-15) — flip the text-in-flight flag so the voice hook
@@ -847,6 +848,10 @@ export default function Page() {
         return_audio: returnAudio,
         tts_language_code: ttsLang,
         preferred_codec: preferredCodec,
+        // KI-222 FIX 2 — thread the abort signal so a barge-in / external
+        // cancel actually aborts the in-flight fetch (AbortError is caught
+        // below and treated as an intentional, silent cancel).
+        signal: controller.signal,
         view_context: {
           active_view,
           active_policy_id: openPolicy?.policy_id,
