@@ -50,11 +50,21 @@ logger = logging.getLogger(__name__)
 # Ceiling is set below the documented cap so per-language preprocessing
 # expansion + minor jitter never pushes a chunk back over Sarvam's real
 # limit.
+# BUG #19 (2026-05-19): Sarvam bulbul:v2 silently returns HTTP 200 but
+# voices ONLY THE FIRST SENTENCE of any single request over its REAL
+# (small) limit — far below the 1500-char documented cap. A normal
+# 370–720-char recommendation reply was sent whole, so the user heard
+# only "Thanks for providing all those details, Rohit!" (~2s) and never
+# the policy list. The documented cap is NOT the operative limit; lower
+# the per-model ceiling so the existing sentence-seam chunker engages for
+# normal replies (effective v2 ceiling = 500 - 200 = 300 → a 370–720
+# char reply splits into 2–3 chunks, each synthesized and concatenated by
+# the already-correct `_concat_wav_bytes`).
 _TTS_CHAR_LIMIT_BY_MODEL = {
-    "bulbul:v2": 1500,
-    "bulbul:v3": 2500,
+    "bulbul:v2": 500,
+    "bulbul:v3": 1500,
 }
-_TTS_CHAR_LIMIT_DEFAULT = 1500  # safest assumption for unknown models
+_TTS_CHAR_LIMIT_DEFAULT = 500   # safest assumption for unknown models
 _TTS_SAFETY_MARGIN = 200        # headroom under the documented hard cap
 
 
@@ -394,7 +404,10 @@ class SarvamTTS(TTSProvider):
             "target_language_code": language_code,
             "speaker": speaker or self.default_speaker,
             "model": self.model,
-            "enable_preprocessing": True,
+            # BUG #19: `enable_preprocessing` is NOT in Sarvam's documented
+            # TTS schema; it triggers undocumented server-side first-sentence
+            # segmentation (HTTP 200 + only the first sentence voiced).
+            # Removed so the full chunk text is synthesized.
             "speech_sample_rate": 22050,
             "pitch": 0.0,
             "pace": 1.0,
@@ -413,7 +426,29 @@ class SarvamTTS(TTSProvider):
         if not audios:
             raise RuntimeError(f"Sarvam TTS returned no audio: {payload}")
         # Sarvam returns base64-encoded WAV in `audios[0]`
-        return base64.b64decode(audios[0])
+        wav_bytes = base64.b64decode(audios[0])
+
+        # BUG #19 — defensive truncation guard. Sarvam can return HTTP 200
+        # with audio that voices only the FIRST SENTENCE (the silent-
+        # truncation symptom). Decode the WAV and, if the playback duration
+        # is confidently too short for the text we sent (~30ms/char floor),
+        # raise so `classify_tts_exception` surfaces it LOUDLY instead of
+        # silently shipping a ~2s clip. The wave decode is wrapped so a
+        # decode failure (unexpected container) never masks the real audio;
+        # we ONLY raise on a confidently-short, successfully-decoded result.
+        try:
+            with wave.open(io.BytesIO(wav_bytes), "rb") as w:
+                framerate = w.getframerate()
+                n_frames = w.getnframes()
+            duration_s = (n_frames / framerate) if framerate else None
+        except Exception:  # pragma: no cover — never raise on decode failure
+            duration_s = None
+        if duration_s is not None and duration_s < 0.030 * len(text):
+            raise RuntimeError(
+                f"sarvam tts returned truncated audio: {duration_s:.2f}s "
+                f"for {len(text)} chars"
+            )
+        return wav_bytes
 
     async def synthesize_with_mime(
         self,

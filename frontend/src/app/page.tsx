@@ -258,6 +258,27 @@ export default function Page() {
   type PTTSpeechRecognitionCtor = new () => PTTSpeechRecognitionInstance;
   const pttRecognitionRef = useRef<PTTSpeechRecognitionInstance | null>(null);
   const pttFinalTranscriptRef = useRef<string>("");
+  // FIX #17 (A) — accumulator of finalized SR segments across the WHOLE PTT
+  // cycle (continuous=false makes Web Speech end+restart on every <1.5s
+  // pause; each restart begins a fresh `ev.results` list). Without this the
+  // running display rebuilt from only the current session's results loses
+  // every earlier finalized word. Mirrors useStreamingVoice's finalsRef.
+  const pttFinalSegmentsRef = useRef<string[]>([]);
+  // FIX #17 (A) — per-session cursor of how many of THIS recognition
+  // session's finals we've already pushed onto pttFinalSegmentsRef, so a
+  // re-fired onresult for the same session doesn't double-push the same
+  // final index. Reset to 0 on every onstart (new session). Mirrors the
+  // hook's finalsConsumedRef intent at session granularity.
+  const pttSessionFinalsConsumedRef = useRef<number>(0);
+  // FIX #17 (B) — intent flag mirroring useStreamingVoice's wantRunningRef.
+  // `true` from just-before rec.start() until any teardown / abort / error
+  // early-return. The onend auto-restart and the heartbeat both gate on it
+  // so recognition only restarts while we genuinely still want it running.
+  const pttSrWantRunningRef = useRef(false);
+  // FIX #17 (B) — KI-173-style heartbeat interval handle. Browser
+  // SpeechRecognition occasionally enters a stopped state without onend
+  // firing; this 3s watchdog re-issues rec.start() while we still want it.
+  const pttSrHeartbeatRef = useRef<number | null>(null);
 
   // KI-168 (2026-05-15) — streaming-voice path replaces the legacy
   // useLiveConversation full-duplex VAD machinery. Interim transcript shows
@@ -1022,6 +1043,11 @@ export default function Page() {
       // the user speaks). Best-effort: if SR is unsupported or start() throws
       // we silently continue with the existing Sarvam-only flow.
       pttFinalTranscriptRef.current = "";
+      // FIX #17 (A) — reset the cross-session final accumulator + session
+      // cursor at the start of every PTT cycle alongside pttFinalTranscriptRef
+      // so finalized words from a previous utterance don't leak forward.
+      pttFinalSegmentsRef.current = [];
+      pttSessionFinalsConsumedRef.current = 0;
       // V4 FIX 1 / FIX 3 — reset both the visible interim strip AND the
       // throttle ref each new PTT cycle so a stale gray-italic transcript
       // from the previous turn doesn't leak through.
@@ -1046,28 +1072,55 @@ export default function Page() {
           // default fallback per the spec.
           rec.lang = ttsLang || "en-IN";
           rec.onresult = (ev: PTTSpeechRecognitionEventLike) => {
-            // Assemble interim transcript from ALL results (finals + currently
-            // in-progress interim). Mirror useStreamingVoice's pattern.
+            // FIX #17 (A) — accumulate finals across the WHOLE PTT cycle.
+            // continuous=false ends+restarts SR on every <1.5s pause, and
+            // each restart begins a fresh `ev.results` list. The old code
+            // rebuilt the display from ONLY the current session's results
+            // and OVERWROTE pttFinalTranscriptRef with `final`, so every
+            // earlier finalized word was lost. Mirror useStreamingVoice:
+            // walk this session's results, push NOT-YET-CONSUMED finals
+            // onto the cross-session accumulator (tracking a per-session
+            // cursor so a re-fired onresult can't double-push), and build
+            // the display from accumulator + live interim.
             let interim = "";
-            let final = "";
+            let sessionFinalCount = 0;
             for (let i = 0; i < ev.results.length; i++) {
               const r = ev.results[i];
               const alt = r[0];
               if (!alt) continue;
-              if (r.isFinal) final += alt.transcript;
-              else interim += alt.transcript;
-            }
-            // V4 FIX 2 — dedup repeated finals within 500ms.
-            if (final) {
-              const trimmedFinal = final.trim();
-              const { text: prevText, at: prevAt } = lastFinalTextRef.current;
-              const now = Date.now();
-              if (trimmedFinal && (trimmedFinal !== prevText || now - prevAt > 500)) {
-                pttFinalTranscriptRef.current = final;
-                lastFinalTextRef.current = { text: trimmedFinal, at: now };
+              if (r.isFinal) {
+                // The i-th final result of THIS session. Only push it once:
+                // sessionFinalCount counts finals seen so far in this event;
+                // pttSessionFinalsConsumedRef is how many of this session's
+                // finals are already in the accumulator.
+                if (sessionFinalCount >= pttSessionFinalsConsumedRef.current) {
+                  const t = alt.transcript.trim();
+                  if (t) pttFinalSegmentsRef.current.push(t);
+                  pttSessionFinalsConsumedRef.current = sessionFinalCount + 1;
+                }
+                sessionFinalCount += 1;
+              } else {
+                interim += alt.transcript;
               }
             }
-            const display = (final + interim).trim();
+            const accumulated = pttFinalSegmentsRef.current.join(" ").trim();
+            // V4 FIX 2 — dedup repeated finals within 500ms (kept for the
+            // Safari double-final quirk; now compares the ACCUMULATED text
+            // rather than only the last session's final).
+            if (accumulated) {
+              const { text: prevText, at: prevAt } = lastFinalTextRef.current;
+              const now = Date.now();
+              if (accumulated !== prevText || now - prevAt > 500) {
+                lastFinalTextRef.current = { text: accumulated, at: now };
+              }
+              // FIX #17 (A) — Sarvam fallback transcript is the ACCUMULATED
+              // text (all finalized words this cycle), not last-session-only.
+              pttFinalTranscriptRef.current = accumulated;
+            }
+            const display = [accumulated, interim.trim()]
+              .filter(Boolean)
+              .join(" ")
+              .trim();
             // V4 FIX 4 — interim transcript flows into the input as a
             // transcript-sourced fragment so Backspace can word-erase.
             if (display) setInputFromTranscript(display);
@@ -1082,10 +1135,55 @@ export default function Page() {
               }, 200);
             }
           };
-          rec.onerror = () => { /* best-effort — Sarvam is the source of truth */ };
-          rec.onend = () => { /* nothing — recorder.onstop drives the submit */ };
+          // FIX #17 (A) — each recognition session restarts with a fresh
+          // `ev.results` list, so the per-session consumed cursor must reset
+          // to 0 at the start of every session (mirrors the hook resetting
+          // its session view on restart). The cross-session accumulator
+          // (pttFinalSegmentsRef) is NOT reset here — only on PTT-cycle start.
+          rec.onstart = () => { pttSessionFinalsConsumedRef.current = 0; };
+          rec.onerror = (ev: PTTSpeechRecognitionErrorEventLike) => {
+            // FIX #17 (B) — on a terminal permission/device error, stop
+            // wanting to run so the onend auto-restart + heartbeat don't
+            // fight a dead device. `no-speech` / `aborted` are routine in
+            // continuous=false restart mode — keep wanting, onend revives.
+            const code = ev.error;
+            if (code === "not-allowed" || code === "service-not-allowed" || code === "audio-capture") {
+              pttSrWantRunningRef.current = false;
+            }
+            /* otherwise best-effort — Sarvam remains the source of truth */
+          };
+          // FIX #17 (B) — continuous=false makes Web Speech END after the
+          // first ~1.5s pause. The old no-op onend meant recognition was
+          // NEVER restarted, so the live interim froze mid-utterance. Port
+          // useStreamingVoice's restart contract: only restart while we
+          // still WANT to be running; swallow InvalidStateError (already
+          // running) since the heartbeat covers genuinely-dead states.
+          rec.onend = () => {
+            if (!pttSrWantRunningRef.current) return;
+            try { rec.start(); } catch { /* InvalidState — heartbeat covers */ }
+          };
           pttRecognitionRef.current = rec;
+          // FIX #17 (B) — declare intent to be running BEFORE start() so a
+          // synchronous onend (some engines) sees want=true and restarts.
+          pttSrWantRunningRef.current = true;
           rec.start();
+          // FIX #17 (B) — KI-173-style 3s heartbeat. SpeechRecognition can
+          // enter a stopped state without onend firing (transient OS audio
+          // interruption, tab visibility edge cases); the onend restart
+          // never gets a chance to run and the mic stays silently dead.
+          // While we're recording AND still want SR running, re-issue
+          // start() unconditionally — InvalidStateError (already running)
+          // is swallowed, otherwise this revives the dead state.
+          if (pttSrHeartbeatRef.current !== null) {
+            clearInterval(pttSrHeartbeatRef.current);
+            pttSrHeartbeatRef.current = null;
+          }
+          pttSrHeartbeatRef.current = window.setInterval(() => {
+            if (!pttSrWantRunningRef.current) return;
+            const r = pttRecognitionRef.current;
+            if (!r) return;
+            try { r.start(); } catch { /* already running — fine */ }
+          }, 3000);
         }
       } catch {
         // SR unavailable or already running — fall through, Sarvam still works.
@@ -1099,11 +1197,26 @@ export default function Page() {
         // event firing AFTER we've already set the input to the Sarvam
         // transcript (which would clobber it). The final transcript captured
         // so far is preserved in pttFinalTranscriptRef as a Sarvam fallback.
+        // FIX #17 (B) — stop WANTING recognition to run BEFORE abort() so
+        // the onend auto-restart (which fires on abort) and the heartbeat
+        // both no-op instead of reviving a recognition we're tearing down.
+        pttSrWantRunningRef.current = false;
+        if (pttSrHeartbeatRef.current !== null) {
+          clearInterval(pttSrHeartbeatRef.current);
+          pttSrHeartbeatRef.current = null;
+        }
         const sr = pttRecognitionRef.current;
         pttRecognitionRef.current = null;
         if (sr) {
           try { sr.abort(); } catch { /* already stopped */ }
         }
+        // FIX #17 (C) — trailing flush. The 200ms throttle only SCHEDULES a
+        // setPttInterim when no timer is pending; the last burst of words
+        // arriving while a timer is still pending (or right at release) was
+        // dropped because the block below clears it. Flush the latest value
+        // once more so the final spoken words are visible until the Sarvam
+        // authoritative transcript replaces them.
+        const lastInterim = pttInterimLatestRef.current;
         // V4 FIX 3 — atomically clear the interim ghost text (both the
         // pending throttled update AND any visible state). Without this,
         // the gray-italic strip below the mic can keep showing the last
@@ -1113,6 +1226,11 @@ export default function Page() {
           pttInterimTimerRef.current = null;
         }
         pttInterimLatestRef.current = "";
+        // FIX #17 (C) — push the last burst into the input as a
+        // transcript-sourced fragment (Backspace word-erase still works)
+        // so it isn't lost; it is replaced by the Sarvam authoritative
+        // text below the moment transcription completes.
+        if (lastInterim) setInputFromTranscript(lastInterim);
         setPttInterim("");
         const srFallback = pttFinalTranscriptRef.current.trim();
         const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType || "audio/webm" });
@@ -1276,6 +1394,20 @@ export default function Page() {
       }
     } catch (e) {
       console.error(e);
+      // FIX #17 (B) — if we threw AFTER wiring up the parallel SR (e.g. the
+      // W2 `recorder.state !== "recording"` hard-fail), the SR + 3s
+      // heartbeat were already started. Stop wanting it, clear the
+      // heartbeat, and abort recognition so the mic doesn't stay silently
+      // alive behind a failed recorder.
+      pttSrWantRunningRef.current = false;
+      if (pttSrHeartbeatRef.current !== null) {
+        clearInterval(pttSrHeartbeatRef.current);
+        pttSrHeartbeatRef.current = null;
+      }
+      if (pttRecognitionRef.current) {
+        try { pttRecognitionRef.current.abort(); } catch { /* already stopped */ }
+        pttRecognitionRef.current = null;
+      }
       // W2 (2026-05-15) — route to the structured banner the same way the
       // live-voice path does, so PTT denials / stalls / fake-stream failures
       // surface in the same red banner (not just an in-chat assistant
@@ -3358,6 +3490,15 @@ function parseInline(src: string): MdInlineToken[] {
   };
   while (i < src.length) {
     const rest = src.slice(i);
+    // FIX #22 — unescape the `\.` emitted by sanitizeStrayNumberedLines so
+    // a guarded sentence-final number renders as a normal "15." with no
+    // visible backslash. Scoped to `\.` only (the single escape we emit)
+    // so we don't accidentally swallow legitimate backslashes elsewhere.
+    if (rest.startsWith("\\.")) {
+      buf += ".";
+      i += 2;
+      continue;
+    }
     // Links: [label](http(s)://… or relative). Only http/https/mailto or
     // root-relative hrefs are kept; anything else (javascript:, data:) is
     // rendered as plain text so there's no injection vector.
@@ -3442,6 +3583,82 @@ function renderInline(tokens: MdInlineToken[], keyPrefix: string): React.ReactNo
   });
 }
 
+// FIX #22 — sentence-final number guard. A bot reply like
+//   "...complaints per 10,000 policies are low at 15. Niva Bupa is..."
+// has "15." followed by whitespace + more prose. parseBlocks' run-on
+// splitter (`/\s(?=\d{1,2}\.\s)/ → "\n"`) turns the space before "15."
+// into a hard break, then the ol matcher `/^(\d{1,2})[.)]\s+/` renders
+// it as `<ol start=15>` — breaking the sentence into a bogus list item
+// ("15." / "43." / "52." were the live repros).
+//
+// A GENUINE recommendation list is small sequential numbers (1, 2, 3)
+// each at the START of its own line / preceded by blank or list context.
+// So the SAFE rule: a number is NOT an intended list marker when EITHER
+//   (a) the number is >= 10  (recommendation lists never start at 10+;
+//       they enumerate 1,2,3…), OR
+//   (b) it appears MID-LINE after sentence prose (text precedes it on the
+//       same physical line) — that is unambiguously a sentence wrapping.
+// In those cases we escape the dot as `\.` so neither the run-on splitter
+// nor the ol matcher fires; renderInline unescapes `\.`→`.` so the user
+// still sees a normal "15." with no backslash. Single small digits at a
+// real line start (a true "1. …" / "2. …" list) are left untouched.
+function sanitizeStrayNumberedLines(src: string): string {
+  // Walk physical lines so we never touch a number that legitimately
+  // starts its own line as item 1..9 of a real list.
+  const lines = src.replace(/\r\n?/g, "\n").split("\n");
+  const isListLine = (s: string) =>
+    /^\s*(\d+)[.)]\s+/.test(s) || /^\s*[-*•]\s+/.test(s);
+  let prevNonEmpty = "";
+  // A run-on list the model streamed on ONE physical line looks like
+  // "...: 1. A 2. B 3. C" — small SEQUENTIAL numbers. parseBlocks already
+  // splits those into a real <ol> via its `/\s(?=\d{1,2}\.\s)/→"\n"` rule,
+  // so we must NOT escape them. We treat a line as a run-on list when it
+  // contains a "1." AND a "2." marker (sequential small markers); only
+  // then do we leave its small-number dots alone.
+  const looksLikeRunOnList = (s: string) =>
+    /(^|\s)1\.\s/.test(s) && /(^|\s)2\.\s/.test(s);
+  return lines
+    .map((rawLine) => {
+      const runOn = looksLikeRunOnList(rawLine);
+      // (b) MID-LINE: a "<digits>. " with non-space text before it on the
+      // same line is a wrapped sentence ("...are low at 15. Niva..."),
+      // NOT a list. Escape it so the run-on splitter + ol matcher skip it.
+      // Scope: numbers >= 10 are ALWAYS a wrapped sentence here (a real
+      // list never enumerates a bare 10+ mid-line); numbers 1-9 are only
+      // escaped when the line is NOT a streamed run-on list (so a genuine
+      // "Options: 1. A 2. B 3. C" still becomes a real <ol>). Negative
+      // lookbehind for `\` so we don't double-escape on a re-run.
+      let out = rawLine.replace(
+        /(\S[^\n]*?)(?<!\\)\b(\d+)\.(\s)/g,
+        (_m, pre: string, num: string, ws: string) => {
+          const n = parseInt(num, 10);
+          if (n >= 10) return `${pre}${num}\\.${ws}`;
+          if (runOn) return _m; // genuine streamed list marker — keep
+          return `${pre}${num}\\.${ws}`;
+        },
+      );
+      // (a) LINE-START with a number >= 10 (e.g. a hard-wrapped "15." that
+      // landed at column 0 after the model wrapped a sentence). A real
+      // recommendation list enumerates 1,2,3… so it only reaches 10+ when
+      // the IMMEDIATELY-PRECEDING non-empty line is itself a list item
+      // (a genuine long list). If the previous line is prose / blank /
+      // absent, a leading 10+ is a wrapped sentence number → escape it.
+      // Small line-start digits (1-9) are always left as a real list.
+      out = out.replace(
+        /^(\s*)(\d+)\.(\s)/,
+        (m, lead: string, num: string, ws: string) => {
+          const n = parseInt(num, 10);
+          if (n < 10) return m; // genuine list item 1..9 — never touch
+          const prevIsListContext = isListLine(prevNonEmpty);
+          return prevIsListContext ? m : `${lead}${num}\\.${ws}`;
+        },
+      );
+      if (rawLine.trim()) prevNonEmpty = rawLine;
+      return out;
+    })
+    .join("\n");
+}
+
 // Block-level grouping: paragraphs, ordered lists, unordered lists,
 // headings. Consecutive list lines coalesce into one <ol>/<ul> so a
 // "1. … 2. … 3. …" run renders as a real numbered list, not a wall.
@@ -3452,10 +3669,15 @@ type MdBlock =
   | { t: "h"; level: number; text: string };
 
 function parseBlocks(src: string): MdBlock[] {
+  // FIX #22 — neutralise sentence-final / wrapped numbers ("...at 15.")
+  // BEFORE the run-on splitter below converts the space before them into a
+  // hard break and the ol matcher list-ifies them. Genuine 1./2./3.
+  // recommendation lists are untouched (see sanitizeStrayNumberedLines).
+  const guarded = sanitizeStrayNumberedLines(src);
   // Normalise newlines; also break a run-on "1. a 2. b 3. c" that arrived
   // on a single physical line into separate list lines so it still renders
   // as an ordered list (the model sometimes streams without hard breaks).
-  const normalised = src
+  const normalised = guarded
     .replace(/\r\n?/g, "\n")
     .replace(/\s(?=\d{1,2}\.\s)/g, "\n")
     .replace(/\s(?=[•]\s)/g, "\n");
@@ -3761,6 +3983,145 @@ function gradeColor(grade: string): string {
     F: "bg-red-500 text-white",
   };
   return map[grade] || "bg-stone-400 text-white";
+}
+
+// FIX #21 — Reviews / claim-settlement cell for the in-chat COMPARE modal.
+// The compare modal previously showed POLICY DETAILS + premium but NO
+// reviews; the earlier Bug-3 fix only added the inline-card "Reviews:"
+// line. This cell is wired into PolicyCompareModal via renderReviewsFor
+// and reuses the SAME getInsurerReviews fetch + fields as the inline card
+// (letter_grade / value_0_100 / claim_settlement_ratio_pct / headline) so
+// the two surfaces stay consistent. Keyed per insurer_slug; one fetch per
+// column. ALWAYS renders a labelled state — loading / compiled / data —
+// never silently vanishes (#76 rule).
+function CompareReviewsCell({ insurerSlug }: { insurerSlug: string }) {
+  // Keyed-by-slug result map (mirrors CitedPolicyCards' `reviews[slug]`
+  // pattern, which is the lint-clean shape used elsewhere in this file):
+  // the effect ONLY calls the setter from inside the async .then/.catch
+  // callbacks — never synchronously in the effect body — so it does not
+  // trip `react-hooks/set-state-in-effect`. The displayed state for the
+  // current slug is derived from the map at render time.
+  const [byslug, setBySlug] = useState<
+    Record<string, InsurerReviews | null>
+  >({});
+  useEffect(() => {
+    let alive = true;
+    if (!insurerSlug) return;
+    if (insurerSlug in byslug) return;
+    getInsurerReviews(insurerSlug)
+      .then((r) => {
+        if (alive) setBySlug((p) => ({ ...p, [insurerSlug]: r }));
+      })
+      .catch(() => {
+        if (alive) setBySlug((p) => ({ ...p, [insurerSlug]: null }));
+      });
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [insurerSlug]);
+
+  // undefined → not yet fetched (loading); null → fetched-but-empty;
+  // object → data. Empty slug is treated as null (graceful missing).
+  const rv: InsurerReviews | null | undefined = !insurerSlug
+    ? null
+    : insurerSlug in byslug
+      ? byslug[insurerSlug]
+      : undefined;
+
+  if (rv === undefined) {
+    return (
+      <div
+        style={{
+          fontSize: 12,
+          color: "var(--muted-foreground)",
+          fontStyle: "italic",
+        }}
+      >
+        Loading insurer reputation…
+      </div>
+    );
+  }
+  if (rv === null) {
+    return (
+      <div
+        style={{
+          fontSize: 12,
+          color: "var(--muted-foreground)",
+          fontStyle: "italic",
+        }}
+      >
+        Reputation data being compiled for this insurer.
+      </div>
+    );
+  }
+  const s = rv.aggregate_score || {};
+  const cm = rv.claim_metrics || {};
+  const csr = cm.claim_settlement_ratio_pct;
+  const bits: string[] = [];
+  if (s.letter_grade) bits.push(s.letter_grade);
+  if (s.value_0_100 != null) bits.push(`${s.value_0_100}/100`);
+  if (csr != null) bits.push(`${csr}% claims settled`);
+  // If the reviews payload came back but every headline metric is empty,
+  // still say so explicitly rather than rendering a blank box.
+  if (bits.length === 0 && !s.headline) {
+    return (
+      <div
+        style={{
+          fontSize: 12,
+          color: "var(--muted-foreground)",
+          fontStyle: "italic",
+        }}
+      >
+        No published reputation metrics for this insurer yet.
+      </div>
+    );
+  }
+  return (
+    <div style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--foreground)" }}>
+      {bits.length > 0 && (
+        <div style={{ fontWeight: 600 }}>{bits.join(" · ")}</div>
+      )}
+      {s.headline && (
+        <div
+          style={{
+            marginTop: bits.length > 0 ? 4 : 0,
+            color: "var(--muted-foreground)",
+          }}
+        >
+          {s.headline}
+        </div>
+      )}
+      {csr != null && cm.claim_settlement_ratio_year && (
+        <div
+          style={{
+            marginTop: 4,
+            fontSize: 11,
+            color: "var(--muted-foreground)",
+          }}
+        >
+          Claim settlement ratio · FY {cm.claim_settlement_ratio_year}
+          {cm.source_irdai_url ? (
+            <>
+              {" · "}
+              <a
+                href={cm.source_irdai_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  color: "var(--primary)",
+                  textDecoration: "underline",
+                  textUnderlineOffset: 2,
+                }}
+              >
+                IRDAI source
+              </a>
+            </>
+          ) : null}
+        </div>
+      )}
+    </div>
+  );
 }
 
 // CitedPolicyCards — structured per-policy cards rendered BELOW the
@@ -4073,6 +4434,9 @@ function CitedPolicyCards({
               policyName={policyName}
               profile={scorecardProfile}
             />
+          )}
+          renderReviewsFor={(insurerSlug) => (
+            <CompareReviewsCell insurerSlug={insurerSlug} />
           )}
           onOpenMarketplace={onOpenMarketplace}
         />

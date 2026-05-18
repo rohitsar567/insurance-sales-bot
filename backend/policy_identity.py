@@ -28,6 +28,15 @@ Public API:
     normalize_uin(raw) -> str
         Upper-cased, whitespace/punctuation-collapsed UIN, or "" when the
         value is absent / not a plausible UIN.
+    clean_display_policy_name(name) -> str
+        Display-only cleanup of the user-facing product name (BUG #24).
+        Strips the typo-looking lowercase `my:` prefix from HDFC ERGO's
+        Optima family ("my:Optima Secure (older variant)" ->
+        "Optima Secure (older variant)") and a duplicated leading
+        "HDFC ERGO " insurer label (the card shows the insurer
+        separately). TARGETED — `my:health Suraksha` etc. are legitimate
+        HDFC ERGO brand names and are left untouched. Never alters the
+        policy_id / UIN / dedup key (name is display-only).
 """
 
 from __future__ import annotations
@@ -123,4 +132,65 @@ def canonical_key(chunk_or_meta: Any) -> str:
     return f"nm:{name}" if name else "pk:"
 
 
-__all__ = ["canonical_key", "product_key", "normalize_uin"]
+# BUG #24 — display-name cleanup. The user-facing name for HDFC ERGO's
+# Optima Secure carries a typo-looking lowercase `my:` prefix
+# ("my:Optima Secure (older variant)") that reads as a formatting error.
+# It originates in the corpus manifest / extracted JSON / curated facts
+# and flows to every surface (marketplace card, chat citations,
+# get_policy_facts, scorecard, retrieve_policies chunks). We normalise it
+# once, centrally, at every user-facing surface.
+#
+# TARGETED — NOT a blanket `my:` strip:
+#   * `my:Optima ...`  -> `Optima ...`            (the BUG — fixed)
+#   * `my:health Suraksha` / `my:health Medisure Prime` / ...
+#                       -> UNCHANGED              (legitimate HDFC ERGO
+#                                                  brand names — KEEP)
+# We also drop a duplicated leading "HDFC ERGO " insurer label because
+# the card/citation shows the insurer separately
+# ("HDFC ERGO my:Optima Secure" -> "Optima Secure").
+#
+# The "(older variant)" suffix is an intentional KI-145 dedup
+# disambiguator (1 IRDAI UIN = 1 card) and is preserved verbatim.
+#
+# This is display-only: policy_id / UIN / canonical_key are never derived
+# from the cleaned name, so dedup + policy_id resolution are unchanged.
+
+# Only the leading "<duplicate insurer> " prefix on THIS product family is
+# stripped — scoped so we never touch an insurer token inside another
+# insurer's product name.
+_DUP_INSURER_PREFIX_RE = re.compile(
+    r"^\s*HDFC\s*ERGO\s+(?=my:\s*Optima\b|Optima\s+Secure\b)",
+    re.IGNORECASE,
+)
+# `my:Optima` (any case, optional space after the colon) -> `Optima`.
+# Bounded to the literal word "Optima" so `my:health ...` never matches.
+_MY_OPTIMA_PREFIX_RE = re.compile(r"\bmy:\s*(?=Optima\b)", re.IGNORECASE)
+
+
+def clean_display_policy_name(name: Any) -> str:
+    """Return the user-facing product name with the BUG #24 typo-looking
+    `my:` prefix removed for the HDFC ERGO Optima family ONLY, plus any
+    duplicated leading "HDFC ERGO " insurer label stripped.
+
+    Conservative and idempotent: a name with no `my:Optima` / leading
+    "HDFC ERGO " is returned unchanged (so `my:health Suraksha`,
+    `Optima Secure (older variant)`, every non-HDFC name pass through
+    untouched). Never mutates identity — callers pass the display string
+    only; policy_id / UIN / dedup keys are computed elsewhere from the
+    raw id, not from this value.
+    """
+    if not isinstance(name, str):
+        return name if name is not None else ""
+    out = _DUP_INSURER_PREFIX_RE.sub("", name)
+    out = _MY_OPTIMA_PREFIX_RE.sub("", out)
+    # Collapse any double space the prefix removals may have left and trim.
+    out = re.sub(r"\s{2,}", " ", out).strip()
+    return out or name
+
+
+__all__ = [
+    "canonical_key",
+    "product_key",
+    "normalize_uin",
+    "clean_display_policy_name",
+]

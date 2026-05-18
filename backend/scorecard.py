@@ -892,7 +892,14 @@ def build_scorecard(policy: dict, insurer_reviews: Optional[dict] = None, profil
     if not isinstance(policy, dict):
         policy = {}
     pid = policy.get("policy_id", "") or ""
-    pname = policy.get("policy_name", "") or ""
+    # BUG #24 — clean the typo-looking lowercase `my:` prefix off the
+    # user-facing name (HDFC ERGO Optima family only) at the scorecard
+    # chokepoint, so every scorecard-derived surface (compare, single &
+    # bulk /api/scorecard) shows "Optima Secure (older variant)" not
+    # "my:Optima Secure (older variant)". Display-only — policy_id below
+    # is untouched, so dedup / resolution are unchanged.
+    from backend.policy_identity import clean_display_policy_name
+    pname = clean_display_policy_name(policy.get("policy_name", "") or "")
     pslug = policy.get("insurer_slug", "") or ""
 
     completeness = compute_data_completeness(policy)

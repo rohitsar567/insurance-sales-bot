@@ -208,6 +208,9 @@ If the first call returns 0 or 1 chunk, retry ONCE with a broader query (drop th
 RULE 2.5 — Pricing inputs (SOFT capture, post-recap)
 ═══════════════════════════════════
 After all 7 slots are saved AND the user has confirmed the recap (RULE 4 implicit confirmation or explicit yes), BEFORE you call retrieve_policies, ask — in ONE compact prompt:
+
+CHECK THE PROFILE SNAPSHOT FIRST (Bug #FIX18 — DO NOT re-ask captured pricing slots): Before sending the pricing bundle, OMIT every item already present in the profile snapshot above (e.g. if `smoker` is set, do NOT ask smoking; if `existing_cover_inr` set, skip existing cover; if `family_medical_history` set, skip it; if `desired_sum_insured_inr`/`budget_band`/`copay_pct` set, skip those; if `parents_age_max` set, skip the parent-age item). Ask ONLY the genuinely missing ones, renumbered from 1 with no gaps. If ALL bundle items are already captured, SKIP the bundle entirely and proceed straight to retrieve_policies. The bundle items map 1:1 to these snapshot keys: 1→desired_sum_insured_inr, 2→budget_band, 3→existing_cover_inr, 4→copay_pct, 5→family_medical_history, 6→parents_age_max, 7→smoker. The verbatim template below is the FULL bundle — only emit the subset that is genuinely ABSENT.
+
   "A few quick pricing inputs (you can skip any):
    1. How much sum insured? (e.g., ₹5L / ₹10L / ₹25L / ₹1Cr)
    2. Premium budget? (e.g., ₹10–15K/year, or ₹50K+ for premium covers)
@@ -218,6 +221,7 @@ After all 7 slots are saved AND the user has confirmed the recap (RULE 4 implici
    7. Smoking status: Do you smoke or use tobacco products? (yes / no)
       Save: save_profile_field(field='smoker', value='yes' or 'no')
       Smokers face 30-50% premium loading; capturing this gives an accurate band."
+  (Renumber whatever subset you actually ask starting from 1 — never show gaps like "1, 3, 6".)
 
 When the user answers, call save_profile_field once per provided value:
   save_profile_field(field="desired_sum_insured_inr", value="1000000")  # ₹10L
@@ -620,10 +624,20 @@ def _profile_to_snapshot(profile) -> dict:
     fields it already has access to.
     """
     snap: dict[str, Any] = {}
+    # FIX #18 (2026-05-19) — the RULE 2.5 pricing-bundle fields
+    # (copay_pct / family_medical_history / smoker / parents_age_max) were
+    # NOT exported here, so the SYSTEM_PROMPT snapshot never showed the
+    # model that e.g. `smoker` was already captured (confirmed via
+    # save_profile_field + user "yes, correct"). RULE 2.5 then re-asked
+    # "Smoking status: ..." verbatim. They are now included so RULE 2.5's
+    # "OMIT every item already present in the profile snapshot" instruction
+    # has the data to act on. `smoker` is a bool → render as "yes"/"no" so
+    # the model reads it the same way it would write it.
     for fld in (
         "name", "age", "dependents", "location_tier", "income_band",
         "primary_goal", "health_conditions", "existing_cover_inr",
         "budget_band", "desired_sum_insured_inr",
+        "copay_pct", "family_medical_history", "parents_age_max",
     ):
         try:
             v = getattr(profile, fld, None)
@@ -631,6 +645,12 @@ def _profile_to_snapshot(profile) -> dict:
             v = None
         if v not in (None, "", []):
             snap[fld] = v
+    try:
+        _sm = getattr(profile, "smoker", None)
+    except Exception:
+        _sm = None
+    if _sm is not None:
+        snap["smoker"] = "yes" if _sm else "no"
     return snap
 
 
@@ -2015,6 +2035,60 @@ async def handle_turn(
             elif name == "retrieve_policies":
                 for c in result.get("chunks") or []:
                     retrieved_chunks_all.append(c)
+            elif name == "get_policy_facts" and result.get("ok"):
+                # FIX #23 (2026-05-19) — REGRESSION from the get_policy_facts
+                # tool. _verify_prose_grounding only treated retrieve_policies
+                # chunks as grounding, so policy NAMES the model legitimately
+                # stated FROM get_policy_facts (claim/denial/comparison
+                # answers) tripped the no-invented-numbers / UIN guard and the
+                # reply got the false "⚠️ … could not be verified against our
+                # records" caveat appended. Register each policy
+                # get_policy_facts actually returned as a synthetic grounding
+                # entry mirroring the retrieve_policies chunk shape
+                # ({policy_id, policy_name, insurer_slug, uin_code,
+                # source_url, chunk_text}) so the verifier sees it as
+                # grounded. We register ONLY what the tool returned — the
+                # guard is NOT weakened for genuinely ungrounded names.
+                for _p in result.get("policies") or []:
+                    if not isinstance(_p, dict):
+                        continue
+                    _pid = (_p.get("policy_id") or "").strip()
+                    _pname = (_p.get("policy_name") or "").strip()
+                    if not (_pid or _pname):
+                        continue
+                    _facts_bits = []
+                    for _k in (
+                        "claim_settlement_ratio_pct",
+                        "three_year_avg_csr_pct",
+                        "complaints_per_10k_policies",
+                        "incurred_claim_ratio_pct",
+                        "scorecard_grade",
+                        "reputation_headline",
+                    ):
+                        _v = _p.get(_k)
+                        if _v not in (None, "", []):
+                            _facts_bits.append(f"{_k}={_v}")
+                    retrieved_chunks_all.append(
+                        {
+                            "policy_id": _pid,
+                            "policy_name": _pname,
+                            "insurer_slug": (_p.get("insurer_slug") or ""),
+                            "uin_code": _p.get("uin_code") or "",
+                            "source_url": _p.get("claim_data_source_url")
+                            or "",
+                            "doc_type": "policy_facts",
+                            "chunk_text": (
+                                f"{_pname} ({_pid}) — "
+                                + (
+                                    "; ".join(_facts_bits)
+                                    if _facts_bits
+                                    else "get_policy_facts record"
+                                )
+                            ),
+                            "score": 1.0,
+                            "_synthetic_get_policy_facts": True,
+                        }
+                    )
             elif name == "mark_recommendation" and result.get("recorded"):
                 last_marked_policy_ids = list(result.get("policy_ids") or [])
 

@@ -233,6 +233,14 @@ export type PolicyCompareModalProps = {
   // B2 + B3 plug points. Both are optional; safe fallbacks render below.
   renderPremiumFor?: (policyId: string, policyName: string) => ReactNode;
   renderScorecardFor?: (policyId: string, policyName: string) => ReactNode;
+  // FIX #21 — insurer reviews / claim-settlement plug point, keyed by the
+  // citation's insurer_slug (reviews are per-insurer, not per-policy). The
+  // inline cited cards + the full detail modal both show a reviews section;
+  // this compare modal previously did NOT (user-flagged: "no Reviews /
+  // claim-settlement section here"). Optional — when unwired, a graceful
+  // "reputation data unavailable" line renders so the section never
+  // silently vanishes.
+  renderReviewsFor?: (insurerSlug: string) => ReactNode;
   // Profile hint for downstream personalized widgets (unused by the shell
   // itself; pass-through so widgets opened via renderXxxFor can read it).
   // Typed loosely (any) by contract; harness should narrow when wiring.
@@ -259,6 +267,7 @@ export default function PolicyCompareModal({
   onClose,
   renderPremiumFor,
   renderScorecardFor,
+  renderReviewsFor,
   profile: _profile,
   policyDataFor,
   onOpenMarketplace,
@@ -436,6 +445,7 @@ export default function PolicyCompareModal({
                     c.policy_id,
                     c.policy_name,
                   )}
+                  reviewsSlot={renderReviewsFor?.(c.insurer_slug)}
                   marketplacePolicy={policyDataFor?.(c.policy_id, c.policy_name)}
                   profile={_profile as SnapProfile}
                 />
@@ -489,12 +499,14 @@ function CompareColumn({
   citation,
   premiumSlot,
   scorecardSlot,
+  reviewsSlot,
   marketplacePolicy,
   profile,
 }: {
   citation: Citation;
   premiumSlot?: ReactNode;
   scorecardSlot?: ReactNode;
+  reviewsSlot?: ReactNode;
   marketplacePolicy?: MarketplacePolicy;
   profile?: SnapProfile;
 }) {
@@ -676,6 +688,19 @@ function CompareColumn({
           placeholder when the parent didn't wire renderPremiumFor at all. */}
       <Section title="Premium estimate">
         {premiumSlot ?? <PlaceholderWidget label="Premium calculator coming soon" />}
+      </Section>
+
+      {/* FIX #21 — REVIEWS & CLAIM SETTLEMENT. The inline cited cards + the
+          full marketplace detail modal both surface insurer reputation /
+          claim-settlement; this compare modal omitted it (user-flagged).
+          The slot reuses the SAME getInsurerReviews fetch + fields as the
+          inline "Reviews:" line. Always render the Section so every column
+          carries it in the SAME position; the slot itself owns its
+          loading / missing state ("never silently vanish"). */}
+      <Section title="Reviews & claim settlement">
+        {reviewsSlot ?? (
+          <PlaceholderWidget label="Insurer reputation data unavailable" />
+        )}
       </Section>
 
       {/* POLICY DETAILS expandable */}

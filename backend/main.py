@@ -1355,6 +1355,7 @@ async def chat(req: ChatRequest, request: Request):
     # an explicit try/except so a malformed citation can never silently
     # bypass our envelope.
     try:
+        from backend.policy_identity import clean_display_policy_name
         safe_citations: list[CitationOut] = []
         for c in turn.citations or []:
             if not isinstance(c, dict):
@@ -1363,7 +1364,9 @@ async def chat(req: ChatRequest, request: Request):
                 safe_citations.append(
                     CitationOut(
                         policy_id=str(c.get("policy_id", "") or ""),
-                        policy_name=str(c.get("policy_name", "") or ""),
+                        policy_name=clean_display_policy_name(
+                            str(c.get("policy_name", "") or "")
+                        ),
                         insurer_slug=str(c.get("insurer_slug", "") or ""),
                         page_start=int(c.get("page_start", 0) or 0),
                         page_end=int(c.get("page_end", 0) or 0),
@@ -1480,6 +1483,7 @@ async def coverage():
     # this refactor: badge = cards = 158 / 19.
     # KI-129 + KI-130 invariants still hold (profile + regulatory excluded).
     import json as _json
+    from backend.policy_identity import clean_display_policy_name
     _DOCTYPE_RANK_COV = {"wordings": 0, "prospectus": 1, "cis": 2, "brochure": 3}
     _doctype_of_cov = lambda stem: stem.rsplit("__", 1)[1] if "__" in stem else ""
     _product_key_of_cov = lambda pid: pid.rsplit("__", 1)[0] if "__" in pid else pid
@@ -1638,7 +1642,7 @@ async def coverage():
         if pkey in seen_product_keys:
             continue
         seen_product_keys.add(pkey)
-        name = data.get("policy_name", "") or pid
+        name = clean_display_policy_name(data.get("policy_name", "") or pid)
         url = data.get("source_pdf_url", "")
         if slug not in by_insurer:
             by_insurer[slug] = {"products": set(), "names": [], "chunks": 0, "aliases": 0}
@@ -1680,7 +1684,9 @@ async def coverage():
         if pkey in seen_product_keys and curated_pid not in ki145_variant_curated_ids_cov:
             continue
         seen_product_keys.add(pkey)
-        name = data.get("policy_name", "") or curated_pid
+        name = clean_display_policy_name(
+            data.get("policy_name", "") or curated_pid
+        )
         url = data.get("source_pdf_url", "")
         if slug not in by_insurer:
             by_insurer[slug] = {"products": set(), "names": [], "chunks": 0, "aliases": 0}
@@ -3100,6 +3106,7 @@ def _marketplace_catalogue(user_profile_dict):
     """
     import json as _json
     from backend.scorecard import build_scorecard
+    from backend.policy_identity import clean_display_policy_name
     corpus_url_index = _build_corpus_url_index()
     curated_facts = _load_curated_facts()
 
@@ -3332,8 +3339,10 @@ def _marketplace_catalogue(user_profile_dict):
             terminal_pkey = _product_key_of(terminal)
         else:
             terminal_pkey = terminal
-        alias_name = (curated_facts.get(curated_policy_id, {}).get("policy_name")
-                      or curated_policy_id)
+        alias_name = clean_display_policy_name(
+            curated_facts.get(curated_policy_id, {}).get("policy_name")
+            or curated_policy_id
+        )
         parent_pkey_aliases.setdefault(terminal_pkey, []).append(alias_name)
         aliased_curated_ids.add(curated_policy_id)
 
@@ -3428,7 +3437,9 @@ def _marketplace_catalogue(user_profile_dict):
             )
             out.append(MarketplacePolicy(
                 policy_id=policy_id,
-                policy_name=data.get("policy_name", fp.stem),
+                policy_name=clean_display_policy_name(
+                    data.get("policy_name", fp.stem)
+                ),
                 insurer_slug=slug,
                 insurer_name=name,
                 insurer_home_url=home,
@@ -3554,7 +3565,9 @@ def _marketplace_catalogue(user_profile_dict):
             )
             out.append(MarketplacePolicy(
                 policy_id=curated_policy_id,
-                policy_name=data.get("policy_name", curated_policy_id),
+                policy_name=clean_display_policy_name(
+                    data.get("policy_name", curated_policy_id)
+                ),
                 insurer_slug=slug,
                 insurer_name=name,
                 insurer_home_url=home,
@@ -3664,6 +3677,7 @@ async def compare_policies(policy_ids: list[str] = None):
     """Side-by-side comparison of 2-4 policies with their scorecards + field diffs."""
     import json as _json
     from backend.scorecard import build_scorecard
+    from backend.policy_identity import clean_display_policy_name
 
     if not policy_ids:
         from fastapi import Query
@@ -3717,7 +3731,9 @@ async def compare_policies(policy_ids: list[str] = None):
         sc = build_scorecard(data, insurer_reviews=ir)
         entries.append(CompareEntry(
             policy_id=pid,
-            policy_name=data.get("policy_name", pid),
+            policy_name=clean_display_policy_name(
+                data.get("policy_name", pid)
+            ),
             insurer_slug=slug or "?",
             fields=data,
             scorecard=ScorecardResponse(

@@ -66,6 +66,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from backend.config import settings
+from backend.policy_identity import clean_display_policy_name
 
 _log = logging.getLogger(__name__)
 
@@ -713,7 +714,9 @@ def _quality_seed_candidates(profile, limit: int = 25) -> list[dict]:
             ch = {
                 "chunk_id": f"{pid}__qseed",
                 "policy_id": pid,
-                "policy_name": data.get("policy_name", pid),
+                "policy_name": clean_display_policy_name(
+                    data.get("policy_name", pid)
+                ),
                 "insurer_slug": data.get("insurer_slug")
                 or (pid.split("__", 1)[0] if "__" in pid else ""),
                 "doc_type": "policy",
@@ -802,7 +805,9 @@ async def _retrieve_uploaded_only(
         uploaded.append({
             "chunk_id": getattr(c, "chunk_id", ""),
             "policy_id": getattr(c, "policy_id", ""),
-            "policy_name": getattr(c, "policy_name", ""),
+            "policy_name": clean_display_policy_name(
+                getattr(c, "policy_name", "")
+            ),
             "insurer_slug": getattr(c, "insurer_slug", "") or "user-upload",
             "doc_type": "user_upload",
             "source_url": getattr(c, "source_url", ""),
@@ -1154,7 +1159,9 @@ async def retrieve_policies(
         chunk_dict = {
             "chunk_id": getattr(c, "chunk_id", ""),
             "policy_id": pid,
-            "policy_name": getattr(c, "policy_name", ""),
+            "policy_name": clean_display_policy_name(
+                getattr(c, "policy_name", "")
+            ),
             "insurer_slug": getattr(c, "insurer_slug", ""),
             "doc_type": doc_type,
             "source_url": getattr(c, "source_url", ""),
@@ -1320,7 +1327,9 @@ def get_policy_facts(session, policy_ids: Optional[list[str]] = None) -> dict:
     for pid in ids:
         cur = curated.get(pid) or {}
         slug = (slug_map.get(pid) or cur.get("insurer_slug") or "").strip()
-        pname = name_by_id.get(pid) or cur.get("policy_name") or pid
+        pname = clean_display_policy_name(
+            name_by_id.get(pid) or cur.get("policy_name") or pid
+        )
         rv = _insurer_reviews(slug) or {}
         cm = rv.get("claim_metrics") or {}
         agg = rv.get("aggregate_score") or {}

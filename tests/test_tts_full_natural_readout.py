@@ -209,17 +209,32 @@ class _FakeResp:
 
 
 class _FakeClient:
-    """Fake Sarvam TTS endpoint.
+    """Fake Sarvam TTS endpoint that simulates REAL Bulbul v2 behaviour.
 
-    Records every chunk it is asked to synthesize and returns a WAV whose
-    frame count == len(text) so the concatenated audio length is a direct
-    proxy for 'how many characters were actually voiced'. Also asserts no
-    single request exceeds Bulbul v2's hard 1500-char limit — a regression
-    to single-shot (whole message in one call) fails LOUDLY here.
+    Records every chunk it is asked to synthesize. Returns a WAV whose
+    frame count == len(voiced text) so the concatenated audio length is a
+    direct proxy for 'how many characters were actually voiced'.
+
+    BUG #19 fidelity: Sarvam v2 does NOT 4xx on an over-limit request — it
+    returns HTTP 200 and voices ONLY THE FIRST SENTENCE of anything past
+    its real (small) per-request limit (the operative limit is far below
+    the 1500-char documented cap). This mirrors the STT test's hard-limit
+    simulation (tests/test_stt_long_audio_chunking.py SARVAM_HARD_LIMIT_MS).
+    So the fix MUST keep every single request at/under the effective
+    ceiling; if it doesn't, the audio frames here collapse to the first
+    sentence and the full-readout assertions fail LOUDLY.
     """
 
     sent_texts: list[str] = []
-    HARD_LIMIT = 1500
+    # The operative single-request limit. Anything longer is silently
+    # voiced as ONLY its first sentence (HTTP 200, partial audio).
+    EFFECTIVE_LIMIT = _tts_char_ceiling("bulbul:v2")
+    # Frames synthesized per voiced char. Picked > 0.030 * 22050 (= 661.5)
+    # so a FULLY-voiced chunk clears the provider's ~30ms/char truncation
+    # guard, while a first-sentence-only (silently truncated) chunk stays
+    # confidently under it and the guard fires LOUDLY — matching real
+    # Sarvam audio density (~45ms/char here).
+    FRAMES_PER_CHAR = 1000
 
     def __init__(self, *a, **k):
         pass
@@ -232,12 +247,15 @@ class _FakeClient:
 
     async def post(self, url, headers=None, json=None, **k):
         text = json["text"]
-        assert len(text) <= self.HARD_LIMIT, (
-            f"chunk of {len(text)} chars exceeds Sarvam Bulbul v2's "
-            f"1500-char hard limit — would be silently truncated"
-        )
         _FakeClient.sent_texts.append(text)
-        wav = _make_wav(max(1, len(text)))
+        # Simulate Sarvam's silent first-sentence truncation: anything past
+        # the effective limit is voiced ONLY up to its first sentence end.
+        if len(text) > self.EFFECTIVE_LIMIT:
+            m = re.search(r"[.!?]\s", text)
+            voiced = text[: m.end()] if m else text[: self.EFFECTIVE_LIMIT]
+        else:
+            voiced = text
+        wav = _make_wav(max(1, len(voiced)) * self.FRAMES_PER_CHAR)
         return _FakeResp({"audios": [base64.b64encode(wav).decode()]})
 
 
@@ -311,19 +329,121 @@ def test_end_to_end_overlong_message_chunks_and_concatenates(patch_httpx):
     assert re.sub(r"\s+", "", " ".join(_FakeClient.sent_texts)) == re.sub(
         r"\s+", "", spoken
     )
-    # Gapless concatenated WAV: frames == sum of per-chunk frames.
+    # Gapless concatenated WAV: frames == sum of per-chunk frames (each
+    # chunk is <= the effective ceiling so it is FULLY voiced — the fake
+    # synthesizes FRAMES_PER_CHAR frames per voiced char).
     with wave.open(io.BytesIO(audio), "rb") as w:
         total = w.getnframes()
-    assert total == sum(len(t) for t in _FakeClient.sent_texts)
+    assert total == sum(
+        len(t) * _FakeClient.FRAMES_PER_CHAR for t in _FakeClient.sent_texts
+    )
 
 
 def test_short_reply_is_single_call_unchanged(patch_httpx):
-    """A sub-ceiling reply must take exactly ONE Sarvam call (no behaviour
-    change / no extra latency for the common case)."""
+    """A genuinely short (<~300 char) reply must take exactly ONE Sarvam
+    call (no behaviour change / no extra latency for the common case)."""
     spoken = tts_preprocess("Yes, that policy covers day-care procedures.")
+    assert len(spoken) < 300, len(spoken)
     tts = SarvamTTS()
     asyncio.run(tts.synthesize_with_mime(spoken, language_code="en-IN"))
     assert len(_FakeClient.sent_texts) == 1, _FakeClient.sent_texts
+
+
+# ---------------------------------------------------------------------------
+# BUG #19 (2026-05-19) — the LIVE symptom: a ~700-char recommendation reply
+# (preamble + 3 numbered policies + smoker caveat + closing question) was
+# voiced as ONLY its first sentence ("Thanks for providing all those
+# details, Rohit!", ~2s) because the code's 1500-char ceiling kept the
+# sentence-seam chunker from EVER engaging on a normal reply. With v2's
+# ceiling at 500 (effective ~300) it now splits into 2-3 chunks, each
+# fully voiced and concatenated.
+#
+# This test FAILS against the old 1500 ceiling: the whole 700-char reply
+# would be sent in ONE call, the fake (mirroring real Sarvam) voices only
+# its first sentence, and (a) the per-chunk truncation guard in
+# _synthesize_one raises, OR (b) the concatenated frame count collapses to
+# the first sentence. It PASSES after change #1 (ceiling -> 500).
+# ---------------------------------------------------------------------------
+RECOMMENDATION_REPLY = (
+    "Thanks for providing all those details, Rohit! Here are three plans "
+    "that fit a non-smoker wanting comprehensive family floater cover.\n"
+    "1. HDFC ERGO Optima Secure: a base cover that doubles from year two, "
+    "with no room-rent cap and day-one cover for day-care procedures.\n"
+    "2. Care Supreme by Care Health: an unlimited automatic recharge, a "
+    "no-claim bonus, and worldwide emergency cover.\n"
+    "3. Niva Bupa ReAssure: a lock-the-clock feature that freezes your "
+    "entry age for pricing, plus a forever refill benefit.\n"
+    "One caveat: if you ever take up smoking or tobacco, declare it at "
+    "renewal, since a non-disclosure can void a future claim. "
+    "Would you like me to compare the maternity and OPD add-ons across "
+    "these three so you can pick the best fit for your family?"
+)
+
+
+def test_bug19_recommendation_reply_synthesized_in_full(patch_httpx):
+    """A realistic ~700-char recommendation reply must be voiced IN FULL:
+    >1 chunk, each <= the effective v2 ceiling, the decoded PCM
+    concatenated to ~full length, and the 3rd policy name + closing
+    question reaching Sarvam. This is RED against the old 1500 ceiling
+    (single over-limit call -> first-sentence-only audio / guard raises)
+    and GREEN after change #1."""
+    spoken = tts_preprocess(RECOMMENDATION_REPLY, language="en")
+    # Realistic recommendation length band (the live symptom was 370-720
+    # chars). Critically it is WELL under the OLD 1500 ceiling, so the
+    # pre-fix code sent it in ONE over-real-limit call -> first-sentence
+    # only audio. The first sentence is the exact ~2s clip the user heard.
+    assert 370 <= len(spoken) <= 760, len(spoken)
+    assert len(spoken) < 1500  # pre-fix code never chunked this reply
+
+    ceiling = _tts_char_ceiling("bulbul:v2")
+    assert ceiling < 1500  # the bug: old code never chunked under 1300
+
+    tts = SarvamTTS()
+    audio, mime = asyncio.run(
+        tts.synthesize_with_mime(spoken, language_code="en-IN")
+    )
+    assert mime == "audio/wav"
+
+    # The reply is split into MULTIPLE Sarvam calls (the bug sent ONE),
+    # each within the effective ceiling so the fake voices it in FULL.
+    assert len(_FakeClient.sent_texts) >= 2, _FakeClient.sent_texts
+    for t in _FakeClient.sent_texts:
+        assert len(t) <= ceiling, (
+            f"chunk of {len(t)} chars > effective ceiling {ceiling} — "
+            f"Sarvam would silently voice only its first sentence"
+        )
+
+    # Every char reached Sarvam (nothing dropped at the seams).
+    assert re.sub(r"\s+", "", " ".join(_FakeClient.sent_texts)) == re.sub(
+        r"\s+", "", spoken
+    )
+    # The 3rd policy name and the closing question — content the live bug
+    # NEVER voiced — must be present in the chunks actually sent.
+    joined_low = " ".join(_FakeClient.sent_texts).lower()
+    assert "niva bupa" in joined_low, _FakeClient.sent_texts
+    assert "reassure" in joined_low, _FakeClient.sent_texts
+    # "OPD" is expanded to "out-patient" by tts_preprocess; assert the
+    # closing-question content (the bug never voiced this) survived.
+    assert "maternity and out-patient" in joined_low, _FakeClient.sent_texts
+    assert "best fit for your family" in joined_low, _FakeClient.sent_texts
+
+    # The concatenated WAV is the FULL readout, not the ~2s first
+    # sentence: frames == sum of per-chunk fully-voiced frames, which is
+    # FAR above the first-sentence-only collapse the bug produced.
+    with wave.open(io.BytesIO(audio), "rb") as w:
+        total_frames = w.getnframes()
+    expected_frames = sum(
+        len(t) * _FakeClient.FRAMES_PER_CHAR for t in _FakeClient.sent_texts
+    )
+    assert total_frames == expected_frames, (total_frames, expected_frames)
+    first_sentence_frames = (
+        len(re.match(r"[^.!?]*[.!?]", spoken).group(0))
+        * _FakeClient.FRAMES_PER_CHAR
+    )
+    assert total_frames > 3 * first_sentence_frames, (
+        f"{total_frames} frames — collapsed toward the ~2s "
+        f"first-sentence-only clip the bug produced"
+    )
 
 
 def test_http_error_on_any_chunk_propagates_loudly(patch_httpx, monkeypatch):
