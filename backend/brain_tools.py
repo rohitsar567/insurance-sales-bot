@@ -851,7 +851,7 @@ def _resolve_named_policy(query: str) -> Optional[str]:
         if len(q) < 8:
             return None
         from backend.main import _marketplace_catalogue  # lazy: avoids cycle
-        scored: list[tuple[int, float, str]] = []
+        scored: list[tuple[int, float, str, str]] = []
         for c in _marketplace_catalogue(None):
             name = (getattr(c, "policy_name", "") or "").lower()
             toks = {
@@ -865,9 +865,29 @@ def _resolve_named_policy(query: str) -> Optional[str]:
             if hit >= 2 and cov >= 0.6:
                 pid = getattr(c, "policy_id", None)
                 if pid:
-                    scored.append((hit, cov, pid))
+                    scored.append((hit, cov, pid, name))
         if not scored:
             return None
+        # VERSION DISAMBIGUATION (#61) — when the user explicitly states a
+        # version ("...Health Companion V2022" / "V22"), the matching card
+        # that carries that exact version token MUST win, even if a shorter
+        # base-name card scores more generic tokens. Without this the base
+        # "Niva Bupa Health Companion" (0 corpus chunks) was chosen over
+        # "Health Companion V2022" (the card the user named, which HAS
+        # chunks) → retrieval returned nothing → "I couldn't find it".
+        _ver = set(_re.findall(r"\bv?\d{2,4}\b", q))
+        if _ver:
+            _vmatch = [
+                s for s in scored
+                if any(v in _re.sub(r"[^a-z0-9 ]", " ",
+                                    s[3]).split() for v in _ver)
+            ]
+            if len(_vmatch) == 1:
+                return _vmatch[0][2]
+            if _vmatch:
+                _vmatch.sort(key=lambda s: (s[0], s[1]), reverse=True)
+                if len(_vmatch) == 1 or _vmatch[0][0] > _vmatch[1][0]:
+                    return _vmatch[0][2]
         scored.sort(key=lambda s: (s[0], s[1]), reverse=True)
         if len(scored) == 1 or scored[0][0] > scored[1][0]:
             return scored[0][2]
