@@ -102,7 +102,7 @@ and it never fabricates.
   range; changing the profile updates the estimate.
 - **Bring your own document.** Upload any policy PDF; it is safely indexed for
   the rest of your session so you can ask questions about *your* document.
-- **Voice.** Speak instead of typing (tap-to-talk on mobile, hold-SPACE on
+- **Voice.** Speak instead of typing (tap-to-talk on mobile, push-to-talk on
   desktop); replies are spoken back. Indian-accent and Hinglish aware.
 
 ---
@@ -197,7 +197,7 @@ The browser shows a live interim transcript via the Web Speech API while
 **Sarvam Bulbul** TTS, with money/Indic shorthand normalised in
 `backend/voice_format.py` before synthesis, and played through an in-DOM
 `<audio>` element (so barge-in can stop it). On touch devices voice is
-tap-to-talk; on desktop, hold-SPACE.
+tap-to-talk; on desktop, push-to-talk (the hold-SPACE shortcut was removed).
 
 ### 4.6 Profile & personalisation
 
