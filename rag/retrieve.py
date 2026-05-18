@@ -460,6 +460,43 @@ async def retrieve(
             # Review boost is additive; failure shouldn't kill the main result
             pass
 
+    # #52 — uploaded-doc global merge pass. A user-uploaded policy that was
+    # added to THE marketplace (doc_type='user_upload', NO session_id — it
+    # is globally visible by design) is usually a 1–few-chunk document, so
+    # it loses the raw-cosine race against the 140+ multi-chunk corpus
+    # policies and never enters the top-k even when it's the best answer to
+    # a question literally about that document. Mirror the regulatory /
+    # review boost passes: run a SECOND query restricted to
+    # doc_type='user_upload', score-boost the hits, and merge. Skipped when
+    # the caller already scoped to specific policies/insurers (then they're
+    # asking about a known corpus policy, not browsing uploaded docs). The
+    # session-scoped quarantine pass above is unaffected — that path serves
+    # the uploader's OWN still-private upload; this serves docs already
+    # promoted to the public marketplace.
+    if not policy_ids and not insurer_slugs:
+        try:
+            up_res = collection.query(
+                query_embeddings=[query_vec],
+                n_results=3,
+                where={"doc_type": "user_upload"},
+            )
+            if up_res["ids"] and up_res["ids"][0]:
+                seen = {c.chunk_id for c in out}
+                up_chunks: list[RetrievedChunk] = []
+                for cid, doc, meta, dist in zip(
+                    up_res["ids"][0], up_res["documents"][0],
+                    up_res["metadatas"][0], up_res["distances"][0],
+                ):
+                    if cid in seen:
+                        continue
+                    boosted = (1.0 - dist) * 1.1
+                    up_chunks.append(_build_chunk(cid, doc, meta, boosted))
+                merged = sorted(out + up_chunks, key=lambda c: c.score, reverse=True)
+                out = merged[:top_k]
+        except Exception:
+            # Uploaded-doc boost is additive; failure must not break retrieval
+            pass
+
     # KI-034 — populate cache with the FINAL merged result so subsequent
     # identical queries skip Voyage embed + Chroma query + boost passes.
     _cache_set(cache_key, out)

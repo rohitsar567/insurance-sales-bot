@@ -524,6 +524,49 @@ async def _startup_single_brain_warmup():
         )
 
 
+@app.on_event("startup")
+async def _startup_reingest_uploaded_docs():
+    """#52 — re-materialise persisted uploaded-policy docs after a restart.
+
+    On the HF Space, rag/vectors is the EPHEMERAL container FS (KI-119):
+    every rebuild pulls a fresh Chroma snapshot, so an uploaded doc's
+    chunks indexed last boot are GONE. The PDF + curated-facts JSON + chunk
+    payload were persisted to the /data disk (settings.UPLOADED_DOCS_DIR),
+    so here we re-embed those chunks back into the fresh `policies`
+    collection. The cards themselves reappear automatically because
+    _load_curated_facts merges the persisted JSON records.
+
+    Wrapped so a re-ingest hiccup never crashes boot — but it logs LOUDLY
+    (no silent failure): an uploaded card with no retrievable chunks is a
+    real degradation operators must see.
+    """
+    try:
+        from backend import uploaded_docs as _udocs
+
+        summary = await _udocs.reingest_persisted_into_policies()
+        if summary.get("docs") or summary.get("skipped"):
+            logging.info(
+                "#52 startup re-ingest: %d uploaded docs / %d chunks "
+                "re-indexed into `policies` (%d skipped)",
+                summary.get("docs", 0), summary.get("chunks", 0),
+                summary.get("skipped", 0),
+            )
+        # Bust the #40 grade cache so the restored cards grade on first hit.
+        try:
+            with _MG_LOCK:
+                _MG_CACHE["sig"] = None
+                _MG_CACHE["index"] = None
+        except Exception:  # noqa: BLE001
+            pass
+    except Exception as e:  # noqa: BLE001 — re-ingest failure must not block boot
+        logging.warning(
+            "#52 startup re-ingest FAILED (%s: %s) — uploaded-doc cards "
+            "will show but their chunks are NOT retrievable until next "
+            "successful re-ingest",
+            type(e).__name__, e,
+        )
+
+
 async def _startup_purge_dangling_profile_chunks():
     """KI-117 — boot-time self-heal of dangling `doc_type='profile'` chunks.
 
@@ -1860,6 +1903,68 @@ async def upload_policy(
             record_accept(sha, sid, len(chunks))
         except Exception:
             pass
+
+        # ---- #52: PERSIST + add to THE (global) marketplace ----------------
+        # The session-scoped quarantine add above is the immediate, private
+        # path. #52 additionally requires the uploaded doc to become a REAL,
+        # GRADED, PERSISTENT marketplace card that survives an HF Space
+        # restart. So we:
+        #   (1) persist the raw PDF + a curated-facts-shaped JSON record +
+        #       the chunk payload under the PERSISTENT UPLOADED_DOCS_DIR,
+        #   (2) add the SAME chunks to the GLOBAL `policies` Chroma
+        #       collection (doc_type='user_upload') so they're retrievable
+        #       for everyone — per spec the doc is added to THE marketplace,
+        #       so global visibility is intentional; only the uploaded
+        #       document itself is exposed, never any session profile,
+        #   (3) invalidate the #40 marketplace-grade cache so the new card
+        #       grades immediately (the curated record flows through the
+        #       EXISTING _marketplace_catalogue Pass-2 + build_scorecard).
+        # ANY failure here MUST surface (no silent failure): a 200 that
+        # didn't persist would violate the #52 contract.
+        from backend import uploaded_docs as _udocs
+
+        _record = _udocs.persist_upload(
+            policy_id=policy_id,
+            policy_name=policy_name,
+            pdf_bytes=contents,
+            full_text=full_text,
+            chunks=chunks,
+            session_id=sid,
+        )
+        # Global-collection ingest (idempotent — keyed by policy_id).
+        from rag.ingest import get_chroma_collection as _get_pol_coll
+        _pol = _get_pol_coll()
+        _g_ids = [f"{policy_id}::chunk{c['chunk_idx']}" for c in chunks]
+        _g_meta = [
+            {
+                "policy_id": policy_id,
+                "insurer_slug": _udocs.UPLOAD_INSURER_SLUG,
+                "policy_name": policy_name,
+                "doc_type": _udocs.UPLOAD_DOC_TYPE,
+                "source_url": "",
+                "page_start": c["page_start"],
+                "page_end": c["page_end"],
+                "chunk_idx": c["chunk_idx"],
+                # GLOBAL by design — NO session_id on these chunks.
+            }
+            for c in chunks
+        ]
+        try:
+            _pol.delete(where={"policy_id": policy_id})
+        except Exception:  # noqa: BLE001 — nothing to delete on first upload
+            pass
+        _pol.add(ids=_g_ids, documents=texts, embeddings=vectors, metadatas=_g_meta)
+        _abort_if_hnsw_bloated()
+        # Bust the #40 grade cache + the corpus-pdf index so the new card
+        # appears immediately with a real grade.
+        try:
+            global _CORPUS_PDF_IDX
+            _CORPUS_PDF_IDX = None
+            with _MG_LOCK:
+                _MG_CACHE["sig"] = None
+                _MG_CACHE["index"] = None
+        except Exception:  # noqa: BLE001 — cache bust is best-effort
+            pass
     except HTTPException:
         raise
     except Exception as e:
@@ -2563,6 +2668,28 @@ def _load_curated_facts() -> dict[str, dict]:
             if isinstance(sib_pid, str) and sib_pid:
                 facts[sib_pid] = chosen
 
+    # #52 — merge PERSISTED user-uploaded docs into the curated layer so each
+    # surfaces as a marketplace card via the EXISTING _marketplace_catalogue
+    # Pass-2 + build_scorecard path (NO grading re-implementation). Records
+    # are already in the curated `{field:{value,source_*}}` shape; run them
+    # through the same _flatten so per-field provenance is preserved. They
+    # have unique `user-upload__*` policy_ids so they can never collide with
+    # a real curated product key. A failure here must NOT break the curated
+    # layer for the 200+ real policies — log + continue.
+    try:
+        from backend import uploaded_docs as _udocs
+
+        for _pid, _rec in _udocs.load_persisted_records().items():
+            if not isinstance(_rec, dict):
+                continue
+            facts[_pid] = _flatten(_rec, _pid)
+    except Exception as e:  # noqa: BLE001 — uploaded layer is additive
+        logging.warning(
+            "uploaded-docs curated merge failed (%s: %s) — "
+            "marketplace falls back to corpus-only cards",
+            type(e).__name__, e,
+        )
+
     return facts
 
 
@@ -2712,6 +2839,22 @@ def _corpus_pdf_index() -> dict[str, str]:
                 if k not in idx or rank < best.get(k, 9):
                     idx[k] = str(ap)
                     best[k] = rank
+
+    # #52 — persisted uploaded docs keep their real PDF in the persistent
+    # UPLOADED_DOCS_DIR (NOT rag/corpus). Map their policy_id → that file so
+    # the marketplace card's /api/policy-pdf link resolves to the exact
+    # document the user uploaded and that the card was graded from.
+    try:
+        for d in sorted(settings.UPLOADED_DOCS_DIR.glob("*/source.pdf")):
+            meta_p = d.parent / "meta.json"
+            try:
+                pid = json.loads(meta_p.read_text()).get("policy_id") or d.parent.name
+            except Exception:  # noqa: BLE001
+                pid = d.parent.name
+            idx[pid] = str(d.resolve())
+    except Exception:  # noqa: BLE001 — uploaded-pdf index is additive
+        pass
+
     _CORPUS_PDF_IDX = idx
     return idx
 
@@ -2749,7 +2892,15 @@ def policy_pdf(policy_id: str):
     if not ap:
         raise HTTPException(status_code=404, detail="No source PDF for this policy")
     p = Path(ap).resolve()
-    if not (p.is_file() and str(p).startswith(str(settings.CORPUS_DIR.resolve()))):
+    # #52 — also allow the persistent uploaded-docs store (the uploaded PDF
+    # lives there, not in rag/corpus). Both roots are server-controlled
+    # directories; the index only ever maps to files inside one of them, so
+    # this stays a strict allowlist (no traversal surface).
+    _allowed_roots = (
+        str(settings.CORPUS_DIR.resolve()),
+        str(settings.UPLOADED_DOCS_DIR.resolve()),
+    )
+    if not (p.is_file() and any(str(p).startswith(r) for r in _allowed_roots)):
         raise HTTPException(status_code=404, detail="Source PDF not found")
     return FileResponse(
         str(p),
@@ -4390,6 +4541,17 @@ def _mg_data_signature() -> tuple:
                 sig.append((fp.name, int(st.st_mtime), st.st_size))
         except Exception:  # noqa: BLE001 — missing dir → empty contribution
             continue
+    # #52 — PERSISTED uploaded-doc records are ALSO grading inputs
+    # (_load_curated_facts merges them). Walk the persistent UPLOADED_DOCS_DIR
+    # so a brand-new upload — or a restart that re-materialised the dir —
+    # invalidates the #40 grade cache and the new card grades immediately.
+    try:
+        for fp in sorted(settings.UPLOADED_DOCS_DIR.glob("*/record.json")):
+            st = fp.stat()
+            sig.append((str(fp.relative_to(settings.UPLOADED_DOCS_DIR)),
+                        int(st.st_mtime), st.st_size))
+    except Exception:  # noqa: BLE001 — missing dir → empty contribution
+        pass
     return tuple(sig)
 
 

@@ -69,6 +69,23 @@ class Settings:
     # (parallel to 70-docs/80-audit).
     DATA_DIR: Path = ROOT / "40-data"
 
+    # #52 — PERSISTENT store for user-uploaded policy docs (raw PDF + the
+    # curated-facts JSON record we derive + the chunk payload to re-index).
+    #
+    # On the HF Space, rag/vectors lives on the EPHEMERAL container FS by
+    # design (KI-119 / entrypoint.sh) so every rebuild pulls a fresh Chroma
+    # snapshot — an uploaded doc indexed only there would vanish on restart.
+    # There IS a persistent `/data` disk on the Space; entrypoint.sh exports
+    # UPLOADED_DOCS_DIR=/data/uploaded_docs when /data is writable. We honour
+    # that env var here so persisted uploads survive a Space rebuild.
+    #
+    # Locally (no /data, env unset) it falls back under DATA_DIR so the exact
+    # same code path works without any HF-specific branching.
+    UPLOADED_DOCS_DIR: Path = Path(
+        os.environ.get("UPLOADED_DOCS_DIR", "")
+        or str(ROOT / "40-data" / "uploaded_docs")
+    )
+
     # Tunables (overrideable via env vars so the hyperparameter sweep can iterate)
     CHUNK_TOKENS: int = int(os.environ.get("CHUNK_TOKENS", "800"))
     CHUNK_OVERLAP_TOKENS: int = int(os.environ.get("CHUNK_OVERLAP_TOKENS", "120"))
