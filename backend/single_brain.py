@@ -712,7 +712,7 @@ def _affirm_or_deny(text: str):
 
 def _system_instruction(
     profile, is_returning_user: bool = False, shortlist_block: str = "",
-    pending_recall: "Optional[dict]" = None,
+    pending_recall: "Optional[dict]" = None, recall_applied: bool = False,
 ) -> dict:
     """Bake the profile snapshot into the system prompt so each turn the
     LLM knows what's already captured. Returned in Gemini's expected
@@ -777,7 +777,35 @@ def _system_instruction(
             "applies or discards the saved profile from their answer — you "
             "never merge anything yourself."
         )
-    text = SYSTEM_PROMPT + extra + recall_block + (shortlist_block or "")
+    restored_block = ""
+    if recall_applied:
+        _rs = json.dumps(snapshot, ensure_ascii=False, sort_keys=True)
+        restored_block = (
+            "\n\n═══════════════════════════════════\n"
+            "RETURNING USER CONFIRMED — PROFILE RESTORED "
+            "(HIGHEST PRIORITY THIS TURN)\n"
+            "═══════════════════════════════════\n"
+            "The user just confirmed they are the SAME returning person. "
+            "Their saved profile is RESTORED and FINAL for every slot "
+            "present here:\n" + _rs + "\n"
+            "Do NOT re-ask, re-confirm, re-verify or 'just double-check' "
+            "ANY slot present above — name, age, dependents, city/location, "
+            "income band, primary goal, health / pre-existing conditions, "
+            "sum insured, existing cover, budget. Re-asking a RESTORED slot "
+            "is a hard error: the entire point of recall is that the user "
+            "does NOT repeat themselves.\n"
+            "Your reply this turn: (1) ONE warm 'welcome back' line, then "
+            "(2) resume exactly where a returning user continues — if the "
+            "RULE 2.5 pricing inputs (sum insured / premium budget / co-pay "
+            "/ smoker / family medical history) are NOT yet captured, ask "
+            "ONLY those via the single RULE 2.5 prompt; otherwise go "
+            "straight to retrieve_policies + recommendations. Ask ONLY for "
+            "a slot that is genuinely ABSENT above — never one present."
+        )
+    text = (
+        SYSTEM_PROMPT + extra + recall_block + restored_block
+        + (shortlist_block or "")
+    )
     return {"parts": [{"text": text}]}
 
 
@@ -1840,6 +1868,7 @@ async def handle_turn(
         is_returning_user=is_returning_user,
         shortlist_block=_shortlist_block,
         pending_recall=_pending_recall,
+        recall_applied=_did_recall_this_turn,
     )
 
     # Bug #108 + #110 — if the user explicitly declines the pricing /

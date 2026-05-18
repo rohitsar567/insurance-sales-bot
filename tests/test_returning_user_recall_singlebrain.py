@@ -172,6 +172,13 @@ class TestHandleTurnIntegration(_StoredProfileFixture):
         self.assertEqual(sess.profile.age, 41,
                          "stored profile was not merged on confirm")
         self.assertIsNone(getattr(sess, "pending_profile_recall", None))
+        # The apply turn MUST carry the PROFILE RESTORED directive so the
+        # model does not re-ask the just-recalled slots (the live bug:
+        # recall merged but turn-2 still asked income + pre-existing).
+        self.assertIn("RETURNING USER CONFIRMED — PROFILE RESTORED",
+                      self.sys_prompts[-1])
+        self.assertIn("Re-asking a RESTORED slot is a hard error",
+                      self.sys_prompts[-1])
 
     def test_no_keeps_session_blank(self):
         sess = SessionState(session_id=f"hti_{uuid.uuid4().hex[:8]}")
