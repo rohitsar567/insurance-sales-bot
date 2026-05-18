@@ -656,8 +656,63 @@ def _build_contents(
     return out
 
 
+# WHOLE-WORD tokens (matched against the tokenised message, NOT as
+# substrings — "no" must not match "k(no)ws", "ya" must not match "Ma(ya)").
+_RECALL_DENY_TOKENS = {
+    "no", "nope", "nah", "naah", "nahi", "wrong", "never", "neither",
+    "nopes", "nahin",
+}
+_RECALL_AFFIRM_TOKENS = {
+    "yes", "yeah", "yep", "yup", "ya", "yaa", "yaah", "yess", "haan",
+    "han", "haa", "correct", "right", "sahi", "bilkul", "sure", "indeed",
+    "absolutely", "exactly", "true", "yup",
+}
+# Multi-word phrases — safe to match as substrings.
+_RECALL_DENY_PHRASES = (
+    "not me", "isn't me", "isnt me", "not the same", "start fresh",
+    "start over", "different person", "new user", "someone else",
+    "not rohit", "first time", "never been", "fresh start", "not him",
+    "not her", "i'm new", "im new", "not that person", "don't know",
+    "dont know", "different one",
+)
+_RECALL_AFFIRM_PHRASES = (
+    "that's me", "thats me", "that is me", "it's me", "its me", "i am",
+    "pick up", "go ahead", "that's right", "thats right", "that's correct",
+    "thats correct", "yes please", "continue where", "same person",
+    "carry on", "of course",
+)
+_RECALL_TOKEN_RE = __import__("re").compile(r"[a-z']+")
+
+
+def _affirm_or_deny(text: str):
+    """Conservative yes/no for the returning-user confirm gate.
+
+    Returns True (affirm), False (deny), or None (ambiguous → re-ask).
+    Deny wins ties: privacy is fail-closed — an ambiguous "no, but…" must
+    NEVER merge a stranger's stored profile (ADR-041 / KI-196). Short
+    tokens are matched whole-word (tokenised), not as substrings, so
+    "who knows" / "i don't know" / "now" are NOT read as "no".
+    """
+    t = (text or "").strip().lower()
+    if not t:
+        return None
+    toks = set(_RECALL_TOKEN_RE.findall(t))
+    deny = bool(toks & _RECALL_DENY_TOKENS) or any(
+        p in t for p in _RECALL_DENY_PHRASES
+    )
+    if deny:
+        return False
+    affirm = bool(toks & _RECALL_AFFIRM_TOKENS) or any(
+        p in t for p in _RECALL_AFFIRM_PHRASES
+    )
+    if affirm:
+        return True
+    return None
+
+
 def _system_instruction(
-    profile, is_returning_user: bool = False, shortlist_block: str = ""
+    profile, is_returning_user: bool = False, shortlist_block: str = "",
+    pending_recall: "Optional[dict]" = None,
 ) -> dict:
     """Bake the profile snapshot into the system prompt so each turn the
     LLM knows what's already captured. Returned in Gemini's expected
@@ -694,7 +749,35 @@ def _system_instruction(
                 "say 'Welcome back'):\n"
                 + json.dumps(snapshot, ensure_ascii=False, sort_keys=True)
             )
-    text = SYSTEM_PROMPT + extra + (shortlist_block or "")
+    recall_block = ""
+    if pending_recall:
+        _nm = (pending_recall.get("name") or "there").strip()
+        _sm = pending_recall.get("summary") or {}
+        _bits = []
+        for _k in ("age", "location_tier", "dependents", "primary_goal",
+                   "health_conditions"):
+            _v = _sm.get(_k)
+            if _v not in (None, "", []):
+                _bits.append(f"{_k.replace('_', ' ')}: {_v}")
+        _summ = "; ".join(_bits) if _bits else "a saved profile"
+        recall_block = (
+            "\n\n═══════════════════════════════════\n"
+            "RETURNING-USER CHECK — HIGHEST PRIORITY THIS TURN "
+            "(overrides RULE 1 / fact-find for this one turn)\n"
+            "═══════════════════════════════════\n"
+            f"A stored profile already exists under the name the user just "
+            f"gave (\"{_nm}\"). Known hints — {_summ}.\n"
+            "Your ENTIRE reply this turn MUST be ONLY the confirmation "
+            "question below. Do NOT call any tool, do NOT save_profile_field, "
+            "do NOT run the 7-question fact-find, do NOT recommend:\n"
+            f"  \"Welcome back — are you the same {_nm} who spoke with us "
+            f"before ({_summ})? If yes, I'll pick up right where we left "
+            f"off. If not, no problem — just say so and we'll start fresh.\"\n"
+            "Then wait for their yes/no on the NEXT turn. The system "
+            "applies or discards the saved profile from their answer — you "
+            "never merge anything yourself."
+        )
+    text = SYSTEM_PROMPT + extra + recall_block + (shortlist_block or "")
     return {"parts": [{"text": text}]}
 
 
@@ -1656,11 +1739,53 @@ async def handle_turn(
     # conversation — not a returning user.
     _current_turn = int(getattr(session, "turn_idx", 1) or 1)
 
-    # The single LLM (RULE 1 → save_profile_field) is the sole fact-find
-    # driver. Explicit returning-user recall is the separate
-    # POST /api/profile/recall-by-name endpoint, so handle_turn never sets
-    # returning_user_recalled True.
+    # ── Returning-user recall (ADR-041 / KI-196), wired into single_brain
+    # 2026-05-19. Previously ORPHANED by the orchestrator→single-LLM
+    # rewrite: extract_potential_name / try_recall_by_name /
+    # apply_pending_recall existed and were unit-tested, but NOTHING on the
+    # live path called them — so a same-name revisit ("Hi, I'm Rohit") was
+    # never recognised and the "are you the same Rohit?" prompt never fired.
+    # Privacy-safe by construction: a name match is only STAGED on
+    # session.pending_profile_recall (never auto-merged); only an explicit
+    # "yes" merges the stored slots, an explicit "no" discards, anything
+    # ambiguous leaves it staged so the LLM re-asks the confirm once.
     _did_recall_this_turn = False
+    try:
+        from backend.profile_persistence import (
+            extract_potential_name,
+            try_recall_by_name,
+        )
+        from backend.session_state import apply_pending_recall
+
+        _pending_recall = getattr(session, "pending_profile_recall", None)
+        if _pending_recall:
+            _ans = _affirm_or_deny(user_text)
+            if _ans is True:
+                _did_recall_this_turn = bool(
+                    apply_pending_recall(session, confirmed=True)
+                )
+                _pending_recall = None
+            elif _ans is False:
+                apply_pending_recall(session, confirmed=False)
+                _pending_recall = None
+            # ambiguous → leave staged; the confirm block is re-injected
+            # below and the LLM re-asks the "are you <name>?" question.
+        elif _current_turn == 1:
+            _nm = extract_potential_name(user_text or "")
+            if _nm:
+                # Stages session.pending_profile_recall iff a stored
+                # profile for this name exists (no match ⇒ no-op, normal
+                # fresh-user flow continues — no false confirm prompt).
+                try_recall_by_name(session, _nm)
+                _pending_recall = getattr(
+                    session, "pending_profile_recall", None
+                )
+    except Exception as _re:  # noqa: BLE001 — recall must never break a turn
+        _log.warning(
+            "returning-user recall wiring failed: %s: %s",
+            type(_re).__name__, str(_re)[:200],
+        )
+        _pending_recall = getattr(session, "pending_profile_recall", None)
 
     _has_prior_profile = any(
         getattr(session.profile, fld, None) not in (None, "", [])
@@ -1714,6 +1839,7 @@ async def handle_turn(
         session.profile,
         is_returning_user=is_returning_user,
         shortlist_block=_shortlist_block,
+        pending_recall=_pending_recall,
     )
 
     # Bug #108 + #110 — if the user explicitly declines the pricing /
