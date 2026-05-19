@@ -2490,6 +2490,27 @@ async def handle_turn(
             "the insurer before relying on it."
         )
 
+    # Bug #25 WRITE-SIDE (2026-05-19) — persist the named profile so a
+    # returning user can actually be recalled. profile_persistence.
+    # auto_persist_session was ORPHANED by the orchestrator→single-LLM
+    # rewrite (same class as the recall LOOKUP helpers + get_policy_facts
+    # + silent-TTS): nothing on the chat path ever called it, so a user
+    # who completed fact-find PURELY BY CHAT was never saved to the named
+    # store and recall had nothing to find — save_profile() only ran from
+    # the POST /api/profile builder UI. Persisting at end-of-turn (after
+    # all save_profile_field tool calls + recall handling have run) closes
+    # the loop. No-ops without a profile.name; swallows all errors so a
+    # stuck disk / Chroma hiccup can never block the chat reply.
+    try:
+        from backend.profile_persistence import auto_persist_session
+
+        await auto_persist_session(session)
+    except Exception as _pe:  # noqa: BLE001 — persistence must NEVER break a turn
+        _log.warning(
+            "auto_persist_session wiring failed: %s: %s",
+            type(_pe).__name__, str(_pe)[:200],
+        )
+
     return TurnResult(
         reply_text=reply_text,
         citations=citations,
