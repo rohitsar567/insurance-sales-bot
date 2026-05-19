@@ -113,7 +113,39 @@ This is the full architecture. It is described here because the architecture
 *is* the product — this README is the single source of truth for how the
 system works today.
 
-### 4.1 The shape, in one paragraph
+### 4.1 The user's journey (plain English — no tech)
+
+Before the engineering detail, here is what actually happens for the
+person using it. No code, no jargon — just the path from opening the app
+to deciding with confidence.
+
+```mermaid
+flowchart TD
+    S["🌐 You open the app — web or mobile, nothing to install"] --> R{"Used it before?"}
+    R -->|"Returning"| WB["👋 &quot;Welcome back, &lt;name&gt;?&quot; — your earlier profile is offered back"]
+    R -->|"First time"| TELL
+    WB -->|"yes, that's me"| KNOWN["Picks up with your saved profile — no re-typing"]
+    WB -->|"no / not me"| TELL
+    KNOWN --> REC
+    TELL["🗣️ Tell it about you — a short chat, typed OR spoken, English / Hindi-Hinglish<br/>age · family · budget · health · what you care about"] --> ASK["❓ It asks just 2–3 clarifying questions<br/>(a real conversation, never a long form)"]
+    ASK --> REC["🎯 A personalised shortlist — plans ranked for YOUR fit, each with the reason it fits"]
+    REC --> WHY["🔍 Open any plan: every fact is backed by the exact clause in the real policy PDF<br/>an honest &quot;not stated in the document&quot; instead of a guess"]
+    WHY --> EXPLORE{"Want to dig deeper?"}
+    EXPLORE -->|"Compare"| CMP["⚖️ Compare up to 4 plans side by side · full scorecard per plan"]
+    EXPLORE -->|"Browse"| MKT["📚 Browse the full indexed marketplace"]
+    EXPLORE -->|"Ask"| QA["💬 Ask follow-up questions — answered only from the actual documents"]
+    EXPLORE -->|"My own policy"| UP["📄 Upload your own policy PDF — ask about YOUR document (private to your session)"]
+    CMP --> PREM
+    MKT --> PREM
+    QA --> PREM
+    UP --> PREM
+    PREM["💸 A live premium estimate that updates as you change your profile"] --> DONE["✅ Decide with confidence — no lead capture, no commission bias"]
+    VOICE["🎙️ Optional the whole way: speak instead of type — it speaks the answers back"] -.-> TELL
+    VOICE -.-> QA
+```
+
+
+### 4.2 The shape, in one paragraph
 
 A **Next.js** browser app talks to a **FastAPI** backend. Every chat turn goes
 to a **single LLM "brain"** (Google **Gemini**) that has been given a small set
@@ -125,7 +157,7 @@ falls back to an **NVIDIA NIM** open-model chain. Voice in/out is handled by
 **Sarvam** (Indian-language STT/TTS). Heavy data (PDF corpus + prebuilt
 vectors) lives in a separate Hugging Face **dataset**, not in the code repo.
 
-### 4.2 Architecture diagrams (every layer, every link)
+### 4.3 Architecture diagrams (every layer, every link)
 
 > These render natively on GitHub. They are the authoritative visual map
 > of the system; a compact plain-text version of the core path is kept
@@ -319,7 +351,7 @@ flowchart LR
 
 ---
 
-### 4.2-text Request flow (a single turn) — plain-text fallback
+### 4.3-text Request flow (a single turn) — plain-text fallback
 
 ```
             ┌──────────────────────────────────────────────┐
@@ -362,7 +394,7 @@ flowchart LR
   Every turn appends one JSON line to logs/turns.jsonl for replay/audit.
 ```
 
-### 4.3 Why a single brain (not a multi-model pipeline)
+### 4.4 Why a single brain (not a multi-model pipeline)
 
 Earlier designs split the work across several LLM passes (a separate
 fact-find brain, a QA brain, a faithfulness-judge). That scaffolding was
@@ -372,7 +404,7 @@ there is exactly **one** brain call per turn plus its tool calls. Faithfulness
 is enforced structurally — the brain can only state what `retrieve_policies`
 returned — rather than by a second grader model.
 
-### 4.4 The fallback chain
+### 4.5 The fallback chain
 
 The brain's primary is Gemini (`gemini-2.5-flash-lite`). On a real Gemini
 failure or a cold-start 503, the turn falls back to an NVIDIA NIM chain of
@@ -383,7 +415,7 @@ user gets an explicit "service degraded" message, never a silently wrong
 answer. (A separate LLM "judge" existed historically and has been retired —
 the single-brain design made it redundant.)
 
-### 4.5 Voice
+### 4.6 Voice
 
 The browser shows a live interim transcript via the Web Speech API while
 `MediaRecorder` captures the authoritative audio, which is sent to
@@ -397,7 +429,7 @@ the bot (barge-in) pauses that audio **and** aborts the in-flight
 push-to-talk (the hold-SPACE shortcut was removed); the live interim
 transcript accumulates the full utterance while you speak.
 
-### 4.6 Profile & personalisation
+### 4.7 Profile & personalisation
 
 Your answers build a session profile (`backend/session_state.py`,
 `profile_store.py`, `profile_persistence.py`). The profile is also embedded as
