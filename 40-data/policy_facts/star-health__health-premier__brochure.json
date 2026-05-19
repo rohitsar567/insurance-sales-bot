@@ -74,7 +74,8 @@
     "unit": null,
     "source_pdf_path": "rag/corpus/star-health/health-premier__brochure.pdf",
     "source_quote": "direct complications shall be excluded until the expiry of 24 months of continuous coverage after the date of inception of the ﬁrst policy with insurer.",
-    "_confidence": "high"
+    "_confidence": "high",
+    "_reconciliation": "Bug #44: authoritative Excl01 PED waiting = 24 months confirmed. No change; reconciled with corrected base."
   },
   "specific_disease_waiting_months": {
     "value": 24,

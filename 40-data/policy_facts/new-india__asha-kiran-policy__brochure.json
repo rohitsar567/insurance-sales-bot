@@ -21,10 +21,10 @@
     "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
-    "value": 48,
+    "value": 36,
     "unit": "months",
-    "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__brochure.pdf",
-    "source_quote": "of a pre-existing Disease (PED) and its direct complications \nshall be excluded until the expiry of 48 months of continuous coverage after the date of \ninception of the first policy with us.",
+    "source_pdf_path": "rag/corpus/new-india/asha-kiran-policy__cis.pdf",
+    "source_quote": "Pre-existing Diseases (Code- Excl01)-36 Months",
     "_confidence": "high"
   },
   "initial_waiting_period_days": {

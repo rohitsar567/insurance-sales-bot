@@ -60,10 +60,10 @@
     "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
-    "value": 36,
+    "value": 24,
     "unit": null,
-    "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__wordings.pdf",
-    "source_quote": "re diagnosed by a physician not more than 36 months prior to the date of commencement of the policy issued by the i",
+    "source_pdf_path": "rag/corpus/sbi-general/super-health-insurance__cis.pdf",
+    "source_quote": "ion. Pre-Existing diseases: Covered after 24 months. Exclusions (Wh",
     "_confidence": "high"
   },
   "specific_disease_waiting_months": {

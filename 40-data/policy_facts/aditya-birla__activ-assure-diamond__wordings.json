@@ -60,11 +60,12 @@
     "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
-    "value": null,
+    "value": 24,
     "unit": "months",
     "source_pdf_path": "rag/corpus/aditya-birla/activ-assure-diamond__wordings.pdf",
-    "source_quote": "not stated in activ-assure-diamond__wordings.pdf",
-    "_confidence": "low"
+    "source_quote": "for Hospitalization in respect of diagnosis/treatment of any Pre-Existing Disease after 24 months, as applicable and mentioned in the Policy Schedule, if continuous coverage has elapsed, since the inception of the first Policy with Us.",
+    "_confidence": "medium",
+    "_reconciliation": "Bug #44: sibling was null ('not stated in ...pdf'). Aligned to the sourced base value 24 (the only concrete PED months figure the wordings PDF states; see base note). NOT an invented number — traces to the verbatim quote above."
   },
   "specific_disease_waiting_months": {
     "value": 24,

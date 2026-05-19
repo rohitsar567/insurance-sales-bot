@@ -34,10 +34,11 @@
     "source_quote": "t, in any case not later than 30 days from the date of receipt of last necessary document. In such cases, We shall settle the claim within 45 days from the date of receipt of last necessary document. "
   },
   "pre_existing_disease_waiting_months": {
-    "value": null,
+    "value": 48,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
-    "source_quote": "not stated in hdfc-ergo__optima-enhance.pdf",
-    "_confidence": "low"
+    "source_quote": "iii) 48 months waiting period from Policy Commencement Date for all Pre-existing Conditions declared and/or accepted at the time of application",
+    "_confidence": "high",
+    "_reconciliation": "Bug #44: base was null ('not stated in ...pdf'). The __wordings sibling carries the unambiguous clause: '48 months waiting period from Policy Commencement Date for all Pre-existing Conditions'. Sourced value 48 filled in."
   },
   "specific_disease_waiting_months": {
     "value": null,

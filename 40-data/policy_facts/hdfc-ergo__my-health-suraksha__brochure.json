@@ -91,11 +91,12 @@
     "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
-    "value": 36,
+    "value": 48,
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
-    "source_quote": "Waiting Period for listed illnesses and Procedures 24 Months Waiting Period for Preexisting conditions 36 Months Option 2 General Waiting Period 30 Days",
-    "_confidence": "high"
+    "source_quote": "pre-existing disease (PED) and its direct complications shall be excluded until the expiry of 48 months of continuous coverage after the date of inception of the first policy with",
+    "_confidence": "high",
+    "_reconciliation": "Bug #44: sibling previously 36 — that figure came from the Option-1/Option-2 plan-comparison grid in the brochure, NOT the base PED Excl01 clause. Corrected to 48 (matches base)."
   },
   "specific_disease_waiting_months": {
     "value": 24,

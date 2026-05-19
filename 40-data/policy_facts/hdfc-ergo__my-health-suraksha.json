@@ -42,7 +42,8 @@
     "value": 48,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-suraksha__brochure.pdf",
     "source_quote": "pre-existing disease (PED) and its direct complications shall be excluded until the expiry of 48 months of continuous coverage after the date of inception of the first policy with",
-    "_confidence": "high"
+    "_confidence": "high",
+    "_reconciliation": "Bug #44: base value 48 confirmed correct (Excl01: 'expiry of 48 months of continuous coverage'; also 'Coverage under the Policy after the expiry of 48 months for any pre-existing disease'). No change."
   },
   "specific_disease_waiting_months": {
     "value": 24,

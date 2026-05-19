@@ -35,10 +35,11 @@
     "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
-    "value": 24,
+    "value": 36,
     "source_pdf_path": "rag/corpus/niva-bupa/health-premia__wordings.pdf",
-    "source_quote": "excluded until the expiry of 24 months of continuous coverage after the date of inception of the first",
-    "_confidence": "high"
+    "source_quote": "Pre-existing Diseases (Code-Excl01) a. Expenses related to the treatment of a Pre-existing Disease (PED) and its direct complications shall be excluded until the expiry of 36 months of continuous coverage after the date",
+    "_confidence": "high",
+    "_reconciliation": "Bug #44: base previously 24 — that quote matched a secondary section (5.1.1.1) variant. The primary Pre-existing Diseases (Code-Excl01) clause and the PED definition ('not more than 36 months') both state 36 months. Corrected to 36 (matches __wordings)."
   },
   "specific_disease_waiting_months": {
     "value": 24,

@@ -36,10 +36,11 @@
     "_confidence": "low"
   },
   "pre_existing_disease_waiting_months": {
-    "value": 36,
+    "value": 24,
     "source_pdf_path": "rag/corpus/star-health/health-premier__wordings.pdf",
-    "source_quote": "\"Pre-existing disease (PED)\" means any condition, ailment, injury or disease: a) that is/are diagnosed by a physician not more than 36 mon",
-    "_confidence": "high"
+    "source_quote": "direct complications shall be excluded until the expiry of 24 months of continuous coverage after the date of inception of the ﬁrst policy with insurer.",
+    "_confidence": "high",
+    "_reconciliation": "Bug #44: base previously 36 — that quote was the PED *definition* ('diagnosed by a physician not more than 36 months prior'), not the waiting period. The Excl01 waiting clause states 24 months (matches both __wordings and __brochure siblings). Corrected to 24."
   },
   "specific_disease_waiting_months": {
     "value": null,

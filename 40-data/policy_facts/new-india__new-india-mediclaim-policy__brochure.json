@@ -20,10 +20,10 @@
     "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
-    "value": 36,
+    "value": 48,
     "unit": "months",
-    "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__brochure.pdf",
-    "source_quote": "of a pre-existing Disease (PED) and its direct \ncomplications shall be excluded until the expiry of 36 months of continuous coverage \nafter the date of inception of the first policy with us.",
+    "source_pdf_path": "rag/corpus/new-india/new-india-mediclaim-policy__wordings.pdf",
+    "source_quote": "of a pre-existing Disease (PED) and its direct \ncomplications shall be excluded until the expiry of 48 months of continuous coverage after \nthe date of inception of the first policy with us.",
     "_confidence": "high"
   },
   "initial_waiting_period_days": {

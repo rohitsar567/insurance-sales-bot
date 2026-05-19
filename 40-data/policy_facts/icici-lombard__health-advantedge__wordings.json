@@ -63,8 +63,9 @@
     "value": 24,
     "unit": null,
     "source_pdf_path": "rag/corpus/icici-lombard/health-advantedge__wordings.pdf",
-    "source_quote": "1. Pre-Existing Diseases - Code- Excl01 a. Expenses related to the treatment of a pre-existing Disease (PED) and its direct complications shall be excluded until the expiry of 0 Months24 months .(depending on plan opted) of",
-    "_confidence": "medium"
+    "source_quote": "Expenses related to the treatment of a pre-existing Disease (PED) and its direct complications shall be excluded until the expiry of 0 Months24 months .(depending on plan opted) of continuous coverage after the date of inception of the first policy with insurer as selected by the Insurer",
+    "_confidence": "medium",
+    "_reconciliation": "Bug #44: representative-plan PED = 24 months (see base file note). No change to value; verbatim garbled clause preserved; reconciled."
   },
   "specific_disease_waiting_months": {
     "value": 24,

@@ -34,10 +34,11 @@
     "source_quote": "rion: please inform us within 30 days from the date of receipt of the policy, failing which the details relating to the person/s covered i. Having at least 5 in-patient beds; would be taken as correct"
   },
   "pre_existing_disease_waiting_months": {
-    "value": 24,
+    "value": 36,
     "source_pdf_path": "rag/corpus/care-health/care-supreme-enhance__wordings.pdf",
-    "source_quote": "treatments shall be excluded until the expiry of 24 months of continuous coverage, as may be the case after the date of inception of the first policy with the Company. This exclusion shall not be applicable f",
-    "_confidence": "high"
+    "source_quote": "Pre-Existing Diseases: Code- Excl01 a. Expenses related to the treatment of a pre-existing Disease (PED) and its direct complications shall be excluded until the expiry of 36 months of contin",
+    "_confidence": "high",
+    "_reconciliation": "Bug #44: base previously 24 but that quote was the Excl02 specified-disease/procedure waiting clause, not PED. True PED is the Excl01 clause: 36 months (matches __wordings sibling + the PED definition 'not more than 36 months')."
   },
   "specific_disease_waiting_months": {
     "value": 24,

@@ -64,7 +64,8 @@
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/optima-enhance__wordings.pdf",
     "source_quote": "iii) 48 months waiting period from Policy Commencement Date for all Pre-existing Conditions declared and/or accepted at the time of application",
-    "_confidence": "high"
+    "_confidence": "high",
+    "_reconciliation": "Bug #44: authoritative 48-month PED confirmed. No change to value; reconciled with corrected base."
   },
   "specific_disease_waiting_months": {
     "value": 24,

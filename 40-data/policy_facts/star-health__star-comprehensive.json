@@ -45,10 +45,11 @@
     "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
-    "value": 12,
+    "value": 36,
     "source_pdf_path": "rag/corpus/star-health/star-comprehensive__wordings.pdf",
-    "source_quote": "ment of a pre-existing Disease (PED) and its direct complications shall be excluded until the expiry of 12 months of continuous coverage after the date of inception of the first policy with insure",
-    "_confidence": "high"
+    "source_quote": "Expenses related to the treatment of a pre-existing Disease (PED) and its direct complications shall be excluded until the expiry of 36 months of continuous coverage after the date of inception of the first policy with insurer.",
+    "_confidence": "high",
+    "_reconciliation": "Bug #44: base previously 12 — that 12-month figure applies only to a narrow set of specifically listed minor conditions (cysts, lipoma, etc.) under a special benefit. The standard Pre-Existing Diseases Code Excl01 clause and the PED definition both state 36 months. Corrected to 36 (matches __wordings)."
   },
   "specific_disease_waiting_months": {
     "value": 24,

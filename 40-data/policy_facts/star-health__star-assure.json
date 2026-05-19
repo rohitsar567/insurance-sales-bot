@@ -36,10 +36,11 @@
     "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
-    "value": 30,
+    "value": 36,
     "source_pdf_path": "rag/corpus/star-health/star-assure__wordings.pdf",
-    "source_quote": "treatment of a pre-existing Disease (PED) and its direct complications shall be excluded until the expiry of 30 months of continuous coverage after the date of inception of the fir",
-    "_confidence": "high"
+    "source_quote": "Expenses related to the treatment of a pre-existing Disease (PED) and its direct complications shall be excluded until the expiry of 36 months of continuous coverage after the date of inception of the first policy with insurer",
+    "_confidence": "high",
+    "_reconciliation": "Bug #44: base previously 30 — that figure is the 3-year-policy-term-only reduced PED. The standard/representative (annual term) PED is 36 months ('...Policy Term: ...shall be excluded until the expiry of 36 months...' and 'after the expiry of 36 months for any pre-existing disease'). Corrected to the representative 36 (matches __wordings)."
   },
   "specific_disease_waiting_months": {
     "value": 24,

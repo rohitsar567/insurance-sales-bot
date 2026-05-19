@@ -66,7 +66,8 @@
     "unit": "months",
     "source_pdf_path": "rag/corpus/bajaj-allianz/silver-health__cis.pdf",
     "source_quote": "Pre-existing diseases waiting period: 12 months 36 months (plan A) & 24 Months (plan B) – for below procedure 1. Joint replacement surgery unless necessitated by accidental Bodily Injury",
-    "_confidence": "high"
+    "_confidence": "high",
+    "_reconciliation": "Bug #44: general PED waiting period = 12 months (36/24 in the source line are joint-replacement procedure-specific sub-waits). Value 12 confirmed; quote/note disambiguated. Matches base."
   },
   "specific_disease_waiting_months": {
     "value": 12,

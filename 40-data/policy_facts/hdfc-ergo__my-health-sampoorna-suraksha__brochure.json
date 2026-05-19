@@ -60,11 +60,12 @@
     "_confidence": "high"
   },
   "pre_existing_disease_waiting_months": {
-    "value": 36,
+    "value": 48,
     "unit": null,
     "source_pdf_path": "rag/corpus/hdfc-ergo/my-health-sampoorna-suraksha__brochure.pdf",
-    "source_quote": "Option 1 General Waiting Period 30 Days Waiting Period for listed illnesses and Procedures 24 Months Waiting Period for Preexisting conditions 36 Months",
-    "_confidence": "high"
+    "source_quote": "pre-existing disease (PED) and its direct complications shall be excluded until the expiry of 48 months of continuous coverage after the date of inception of the first policy with",
+    "_confidence": "high",
+    "_reconciliation": "Bug #44: sibling previously 36 — that figure came from the plan-OPTIONS comparison grid / the my:health Medisure Super Top Up section in the same brochure, NOT the base my:health Suraksha PED clause. Corrected to the Excl01 value 48 (matches base)."
   },
   "specific_disease_waiting_months": {
     "value": 24,
