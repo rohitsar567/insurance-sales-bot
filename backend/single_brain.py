@@ -775,6 +775,7 @@ def _affirm_or_deny(text: str):
 def _system_instruction(
     profile, is_returning_user: bool = False, shortlist_block: str = "",
     pending_recall: "Optional[dict]" = None, recall_applied: bool = False,
+    reconstruct_from_history: bool = False,
 ) -> dict:
     """Bake the profile snapshot into the system prompt so each turn the
     LLM knows what's already captured. Returned in Gemini's expected
@@ -864,9 +865,31 @@ def _system_instruction(
             "straight to retrieve_policies + recommendations. Ask ONLY for "
             "a slot that is genuinely ABSENT above — never one present."
         )
+    reconstruct_block = ""
+    if reconstruct_from_history:
+        reconstruct_block = (
+            "\n\n══════════ STATE-RECOVERY MODE ══════════\n"
+            "Your in-memory session was reset (server restart / idle "
+            "timeout), so the profile snapshot above is empty — BUT the "
+            "CONVERSATION HISTORY in this request still contains every "
+            "fact this user already gave you. This is NOT a new user.\n"
+            "ABSOLUTE RULES this turn:\n"
+            "  1. Do NOT say you 'lost' / 'don't have' their information, "
+            "do NOT apologise for losing it, do NOT say 'let's re-confirm'.\n"
+            "  2. Do NOT re-ask the user's name, age, or ANY fact already "
+            "stated anywhere in the conversation history.\n"
+            "  3. SILENTLY re-capture every profile fact present in the "
+            "history by calling save_profile_field once per fact (name, "
+            "age, dependents, location, income, primary_goal, "
+            "health_conditions, and any pricing slots already given).\n"
+            "  4. THEN continue exactly where the conversation left off — "
+            "answer the user's latest message; if all 7 required slots are "
+            "now captured, proceed straight to retrieve_policies and "
+            "recommendations. The user must never perceive any loss."
+        )
     text = (
-        SYSTEM_PROMPT + extra + recall_block + restored_block
-        + (shortlist_block or "")
+        SYSTEM_PROMPT + extra + recall_block + reconstruct_block
+        + restored_block + (shortlist_block or "")
     )
     return {"parts": [{"text": text}]}
 
@@ -1887,12 +1910,29 @@ async def handle_turn(
                 _pending_recall = None
             # ambiguous → leave staged; the confirm block is re-injected
             # below and the LLM re-asks the "are you <name>?" question.
-        elif _current_turn == 1:
-            _nm = extract_potential_name(user_text or "")
+        elif not getattr(session, "recall_probe_done", False):
+            # Bug #25 (2026-05-19) — recall must fire whenever the user's
+            # NAME first becomes known, NOT only on turn 1. The fact-find
+            # asks for the name in the bot's FIRST reply, so the user
+            # supplies it on turn >=2; the old `_current_turn == 1` gate
+            # skipped recall for the normal flow entirely, so a returning
+            # user was never recognised. The LLM reliably persists the
+            # name via save_profile_field, so `session.profile.name`
+            # (captured on a prior turn) is the robust trigger; we ALSO
+            # keep the free-text sniff for an explicit "I'm X" stated on
+            # the very first message (before save_profile_field has run).
+            _nm = (
+                (getattr(session.profile, "name", None) or "").strip()
+                or (extract_potential_name(user_text or "") or "")
+            )
             if _nm:
+                # One-shot: never re-probe (the captured name won't
+                # change) and never re-stage every subsequent turn.
+                session.recall_probe_done = True
                 # Stages session.pending_profile_recall iff a stored
                 # profile for this name exists (no match ⇒ no-op, normal
                 # fresh-user flow continues — no false confirm prompt).
+                # Still privacy-safe: STAGE only; explicit confirm merges.
                 try_recall_by_name(session, _nm)
                 _pending_recall = getattr(
                     session, "pending_profile_recall", None
@@ -1912,6 +1952,27 @@ async def handle_turn(
         )
     )
     is_returning_user = (_current_turn == 1) and _has_prior_profile
+
+    # Bug #26 (2026-05-19) — mid-conversation profile loss. Sessions are
+    # in-memory only (session_state._TTL_SECONDS = 1h; KI-118 removed disk
+    # persistence) so an HF container restart / >1h idle between turns
+    # makes get_session() return a BLANK SessionState. next_question then
+    # returns the hardcoded "What's your name?" and the LLM narrates "I
+    # seem to have lost some of your profile information." Recovery
+    # (user's chosen design): when the live profile is blank BUT the
+    # client still carries the conversation, silently re-capture the
+    # already-stated facts from chat_history instead of resetting. Guard:
+    # >=2 history messages ⇒ this is NOT the genuine first turn, so a
+    # blank profile means state was lost, not "fresh user".
+    _reconstruct_from_history = (
+        (not _has_prior_profile)
+        and not is_returning_user
+        and not _pending_recall
+        and bool(chat_history)
+        and len([m for m in (chat_history or [])
+                 if (m or {}).get("role") == "user"]) >= 1
+        and len(chat_history) >= 2
+    )
 
     # GOOGLE_API_KEY gate — asserted just before anything that talks to
     # Gemini.
@@ -1958,6 +2019,7 @@ async def handle_turn(
         shortlist_block=_shortlist_block,
         pending_recall=_pending_recall,
         recall_applied=_did_recall_this_turn,
+        reconstruct_from_history=_reconstruct_from_history,
     )
 
     # Bug #108 + #110 — if the user explicitly declines the pricing /

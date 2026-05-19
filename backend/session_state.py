@@ -88,6 +88,13 @@ class SessionState:
     #     explicitly declines the pricing inputs; bypasses the re-ask.
     pricing_bundle_reasked: bool = False
     pricing_bundle_skipped: bool = False
+    # Bug #25 (2026-05-19) — one-shot guard for returning-user recall.
+    # The old wiring only probed on turn 1, but the fact-find asks the
+    # name in the bot's FIRST reply, so the name lands on turn >=2 and
+    # recall never fired. The probe now runs whenever the name is first
+    # known (any turn); this flag stops it re-staging every subsequent
+    # turn and stops a declined recall from being re-offered.
+    recall_probe_done: bool = False
 
     def _flush(self) -> None:
         """No-op. Session state lives only in the in-memory dict; the
@@ -180,7 +187,17 @@ def rehydrate_by_name(session: SessionState, name: str) -> bool:
         from backend.profile_store import load_profile
         stored = load_profile(name)
         if stored is None:
-            return False
+            # Bug #25 (2026-05-19): a multi-token capture ("Rohit Sar")
+            # slugs to "rohit-sar" and misses the stored first-name file
+            # ("rohit.json"). Fall back to the first name token. Still
+            # privacy-safe — this only STAGES a match; the user must
+            # explicitly confirm the identity summary before any merge.
+            _stripped = (name or "").strip()
+            _first = _stripped.split()[0] if _stripped else ""
+            if _first and _first.lower() != _stripped.lower():
+                stored = load_profile(_first)
+            if stored is None:
+                return False
 
         # Build a non-PII-leaking identity summary so the brain can ask
         # "are you <name>?" without putting anything on the live profile.
@@ -238,6 +255,9 @@ def apply_pending_recall(session: SessionState, *, confirmed: bool) -> bool:
         return False
     # Resolve the staging regardless of outcome.
     session.pending_profile_recall = None
+    # Bug #25 (2026-05-19) — a confirmed OR denied recall is final for
+    # this session; never auto-re-stage / re-offer it on a later turn.
+    session.recall_probe_done = True
     if not confirmed:
         return False
     stored_fields = pending.get("stored_fields") or {}
