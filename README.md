@@ -125,7 +125,201 @@ falls back to an **NVIDIA NIM** open-model chain. Voice in/out is handled by
 **Sarvam** (Indian-language STT/TTS). Heavy data (PDF corpus + prebuilt
 vectors) lives in a separate Hugging Face **dataset**, not in the code repo.
 
-### 4.2 Request flow (a single turn)
+### 4.2 Architecture diagrams (every layer, every link)
+
+> These render natively on GitHub. They are the authoritative visual map
+> of the system; a compact plain-text version of the core path is kept
+> after them as a fallback for non-Mermaid renderers.
+
+**A · Single-turn request flow — end to end, all layers**
+
+```mermaid
+flowchart TB
+    subgraph BROWSER["🖥️ Browser — Next.js 16 / React 19 (frontend/src/app/page.tsx)"]
+        UI["Chat · Marketplace · Compare · Profile builder"]
+        VOICEIN["Voice capture<br/>Web Speech (interim) + MediaRecorder (authoritative)"]
+        AUD["In-DOM &lt;audio&gt; playback · barge-in"]
+    end
+
+    subgraph API["⚙️ FastAPI — backend/main.py"]
+        RC["/api/chat"]
+        RT["/api/transcribe"]
+        RU["/api/upload-policy"]
+        RO["/api/coverage · /profile · /policies · /scorecard · /session"]
+    end
+
+    subgraph BRAIN["🧠 THE BRAIN — backend/single_brain.py · Google Gemini (gemini-2.5-flash-lite)"]
+        HT["handle_turn() — one model call + tool loop"]
+        subgraph TOOLS["function-calling tools — backend/brain_tools.py"]
+            T1["retrieve_policies(query, filters, top_k)"]
+            T2["save_profile_field(field, value)"]
+            T3["get_policy_facts(policy_ids)"]
+            T4["mark_recommendation(policy_ids)"]
+        end
+        FB["on Gemini fail / cold-start 503 →<br/>backend/nim_fallback.py (NVIDIA NIM chain)"]
+    end
+
+    subgraph DATA["📚 Retrieval & curated data"]
+        CH["Chroma vector store · BGE-small-en-v1.5 (local, 384-d)<br/>rag/retrieve.py"]
+        SHARED["shared 'policies' collection<br/>~150 plans · ~7.3k chunks · 20 insurers"]
+        QUAR["per-session 'quarantine' collection<br/>uploaded PDFs · 24h TTL · session-isolated"]
+        FACTS["40-data/policy_facts/*.json<br/>curated facts + verbatim source_quote"]
+    end
+
+    subgraph SCORE["🎯 Fit, scoring & pricing"]
+        SC["scorecard.py + retrieval_filters.py<br/>profile-fit gate + grade"]
+        PR["premium_calculator.py + sum_insured.py<br/>illustrative premium range"]
+    end
+
+    subgraph PROF["👤 Profile & persistence"]
+        SS["session_state.py (live profile, recall staging)"]
+        PS["profile_store.py / profile_persistence.py<br/>named profile on disk (recall)"]
+        PRG["profile_rag.py — profile as session-scoped chunk"]
+    end
+
+    subgraph VOICEOUT["🔊 Voice out"]
+        VF["voice_format.py — money/Indic normalisation, sentence chunking"]
+        TTS["Sarvam Bulbul TTS"]
+    end
+
+    UI -->|"text · POST"| RC
+    VOICEIN -->|"audio"| RT
+    RT -->|"Sarvam Saarika STT (authoritative transcript)"| RC
+    UI -->|"upload"| RU
+    UI --> RO
+    RC --> HT
+    HT <-->|"tool calls / results"| TOOLS
+    T1 --> CH
+    T3 --> FACTS
+    CH --> SHARED
+    CH --> QUAR
+    T2 --> SS
+    SS --> PS
+    SS --> PRG
+    PRG -.->|"'given my situation' grounding"| CH
+    HT --> SC
+    SC --> PR
+    RO --> SC
+    RO --> PR
+    HT -. "Gemini down" .-> FB
+    FB --> HT
+    HT -->|"reply + citations"| RC
+    RC -->|"text reply"| UI
+    RC -->|"speak?"| VF
+    VF --> TTS
+    TTS --> AUD
+    AUD -. "barge-in aborts in-flight /api/chat" .-> RC
+    HT -.->|"1 JSON line / turn"| LOG["logs/turns.jsonl (replay/audit)"]
+```
+
+**B · LLM brain + fail-loud fallback chain**
+
+```mermaid
+flowchart LR
+    Q["chat turn"] --> G{"Gemini<br/>gemini-2.5-flash-lite"}
+    G -->|"OK"| ANS["grounded reply<br/>(only from tool results)"]
+    G -->|"real failure / cold-start 503"| H["backend/llm_health.py<br/>background probe + sticky-primary election"]
+    H --> NIM["NVIDIA NIM open-model chain<br/>backend/nim_fallback.py"]
+    NIM -->|"healthy model"| ANS
+    NIM -->|"whole chain down"| LOUD["explicit 'service degraded'<br/>(never a silently wrong answer)"]
+    ANS --> GUARD["prose-grounding guard:<br/>every policy/UIN named is verified<br/>against retrieve_policies + get_policy_facts"]
+    GUARD --> OUT["sent to user"]
+```
+
+**C · Voice pipeline (in / out, with barge-in)**
+
+```mermaid
+flowchart LR
+    MIC["mic — tap-to-talk (touch) / push-to-talk (desktop)"] --> MR["MediaRecorder (authoritative audio)"]
+    MIC -.->|"live interim text"| WS["Web Speech API (display only)"]
+    MR --> STT["/api/transcribe → Sarvam Saarika STT"]
+    STT --> BR["single_brain.handle_turn"]
+    BR --> RPL["reply text + citations"]
+    RPL --> VF["voice_format.py<br/>money/Indic normalise · chunk at sentence bounds"]
+    VF --> BUL["Sarvam Bulbul TTS"]
+    BUL --> PLAY["in-DOM &lt;audio&gt;"]
+    SPK["user speaks over bot"] -.->|"barge-in"| PLAY
+    SPK -.->|"abort in-flight"| BR
+```
+
+**D · Profile, personalisation & returning-user recall**
+
+```mermaid
+flowchart TB
+    A["user answers (chat or profile builder)"] --> SPF["save_profile_field → session_state.profile"]
+    SPF --> ENDT["end of handle_turn"]
+    ENDT --> AP["auto_persist_session()<br/>(no-op if no name; errors swallowed)"]
+    AP --> DISK["profile_store: 40-data/profiles/&lt;name&gt;.json"]
+    AP --> EMB["profile_rag: session-scoped profile chunk"]
+    RV["return visit — user states a name"] --> EX["extract name"]
+    EX --> TR["try_recall_by_name (first-name slug fallback)"]
+    TR --> DISK
+    TR --> STAGE["session.pending_profile_recall (STAGED, never auto-merged)"]
+    STAGE --> ASK["bot: 'Welcome back — are you the same X?'"]
+    ASK -->|"yes"| MERGE["apply_pending_recall → merge stored slots"]
+    ASK -->|"no"| FRESH["discard · continue as new user"]
+    SPF --> FIT["scorecard fit + grade"]
+    SPF --> PREM["illustrative premium"]
+    note1["evicted/blank session + carried chat_history →<br/>STATE-RECOVERY: rebuild profile from history,<br/>never re-ask the name"] -.-> ENDT
+```
+
+**E · Data architecture & offline ingest pipeline**
+
+```mermaid
+flowchart LR
+    subgraph OFFLINE["🛠️ Offline ingest (not on the request path)"]
+        PDF["rag/corpus/ — raw policy PDFs"] --> ING["rag/ingest.py → chunk"]
+        ING --> EXT["rag/extract.py + schema.py → structured facts"]
+        ING --> VEC["embed (BGE-small) → Chroma vectors"]
+        EXT --> PFJSON["40-data/policy_facts/*.json (+ source_quote)"]
+        EXT --> DUCK["policies.duckdb (rollup)"]
+    end
+    subgraph REPOS["Three deliberately-separated repos"]
+        CODE["Code — HF Space (origin) + GitHub mirror<br/>app source only, no blobs"]
+        DSET["Data — HF dataset rohitsar567/insurance-bot-data<br/>PDF corpus + prebuilt Chroma vectors"]
+        CUR["Curated — 40-data/ (versioned with code)<br/>small human-reviewed JSON"]
+    end
+    VEC --> DSET
+    PDF --> DSET
+    PFJSON --> CUR
+    DSET -->|"snapshot_download at Docker build"| RUNTIME["request-time: rag/retrieve.py reads vectors"]
+    CUR -->|"read per request"| RUNTIME
+```
+
+**F · Uploaded-PDF defence — 8 sequential gates**
+
+```mermaid
+flowchart LR
+    UP["/api/upload-policy (public web)"] --> G1["1 File mechanics<br/>%PDF · size band · %%EOF · no exe/JS"]
+    G1 --> G2["2 Content quality<br/>≥1500 chars · ≥3 pp · domain keyword"]
+    G2 --> G3["3 Prompt-injection sweep"]
+    G3 --> G4["4 Per-session rate limit"]
+    G4 --> G5["5 Per-IP rate limit"]
+    G5 --> G6["6 Encrypted/locked → reject"]
+    G6 --> G7["7 Page-count ceiling (>200)"]
+    G7 --> G8["8 Hash dedupe + reject-cache"]
+    G8 -->|"pass"| QC["per-session QUARANTINE Chroma collection<br/>session-scoped · 24h idle TTL · never the shared corpus"]
+    G1 & G2 & G3 & G4 & G5 & G6 & G7 & G8 -->|"fail"| REJ["clean rejection (reason surfaced)"]
+```
+
+**G · Deployment**
+
+```mermaid
+flowchart LR
+    DEV["git push"] --> ORI["HF Space remote (origin)"]
+    DEV --> GH["GitHub mirror (github)"]
+    ORI --> BUILD["HF Space — Docker build"]
+    BUILD --> SNAP["huggingface_hub.snapshot_download<br/>hydrate rag/ (corpus + vectors) from HF dataset"]
+    BUILD --> FE["build Next.js static export"]
+    SNAP --> RUN["entrypoint.sh → uvicorn backend.main:app :7860"]
+    FE --> RUN
+    RUN --> LIVE["live Space (FastAPI also serves the frontend)"]
+    LIVE --> CHK["verify reported build SHA advanced<br/>(LFS/quota push can fail silently)"]
+```
+
+---
+
+### 4.2-text Request flow (a single turn) — plain-text fallback
 
 ```
             ┌──────────────────────────────────────────────┐
@@ -218,11 +412,16 @@ profile drives both recommendation fit and the illustrative premium estimate
 
 There are **three repositories**, deliberately separated:
 
-| Repo | What | Why separate |
-| --- | --- | --- |
-| **Code** — HF Space (`origin`) + GitHub mirror (`github`) | Application source only (no data blobs) | Keeps the deployable image small; the Space repo has a tight size cap |
-| **Data** — HF dataset `rohitsar567/insurance-bot-data` | Policy PDF corpus + prebuilt Chroma vectors + extracted JSON | Large binaries don't belong in the code repo; pulled at build |
-| **Curated facts** — `40-data/` (tracked in the code repo) | Small structured JSON the backend reads at request time | Decision-critical, human-reviewed, small enough to version with code |
+*(You don't need any of this to use the app — just open the live link at
+the top. This section is for someone running or reviewing the code.)*
+
+The data is split into **three places**, each for a clear reason:
+
+| # | Place | What it holds | Why it's separate |
+| - | --- | --- | --- |
+| 1 | **Code repo** (this repo — HF Space + GitHub mirror) | Application source only — no data blobs | Keeps the deployable image small (the Space has a tight size cap) |
+| 2 | **Data dataset** (HF dataset `rohitsar567/insurance-bot-data`) | The big binaries: policy-PDF corpus + prebuilt Chroma vectors | Large files don't belong in code; pulled in automatically at build |
+| 3 | **Curated facts** (`40-data/`, inside this code repo) | Small, human-reviewed JSON the backend reads on every request | Decision-critical and tiny — safe to version alongside the code |
 
 What lives where:
 
@@ -342,6 +541,19 @@ the load-bearing ones.
 
 ## 8. Repository map
 
+**At a glance** — the root is intentionally small; you only need to know
+these:
+
+- **`backend/`** — FastAPI app + the brain, tools, retrieval, scoring, security
+- **`frontend/`** — the Next.js web app
+- **`rag/`** — retrieval + offline ingest (corpus/vectors are git-ignored, pulled at build)
+- **`40-data/`** — curated, human-reviewed policy facts (versioned with code)
+- **`tests/`** — the pytest green gate
+- root files: `Dockerfile`, `entrypoint.sh`, `requirements.txt`, `pytest.ini`, `README.md`
+
+<details>
+<summary><b>Full directory tree</b> — click to expand</summary>
+
 ```
 .
 ├── backend/                  FastAPI app
@@ -379,6 +591,8 @@ the load-bearing ones.
 ├── pytest.ini                scopes pytest to tests/ (clean on a fresh clone)
 └── requirements.txt
 ```
+
+</details>
 
 > ⚠️ **Note on `70-docs/` and ADRs:** these capture design history and
 > rationale; some predate the single-brain rewrite and are being brought into
