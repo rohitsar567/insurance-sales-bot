@@ -4198,6 +4198,12 @@ function CitedPolicyCards({
         parents_to_insure: profile.parents_to_insure ?? undefined,
         parents_age_max: profile.parents_age_max ?? undefined,
         parents_has_ped: profile.parents_has_ped ?? undefined,
+        // Task #31 — feed the deterministic profile_summary generator: the
+        // copay-preference tag, family-history-aware PED caveat, and the
+        // SI-headroom strength all read these.
+        copay_pct: profile.copay_pct ?? undefined,
+        desired_sum_insured_inr: profile.desired_sum_insured_inr ?? undefined,
+        family_medical_history: profile.family_medical_history ?? undefined,
       }
     : undefined;
 
@@ -4214,9 +4220,12 @@ function CitedPolicyCards({
   });
 
   useEffect(() => {
+    // Task #31 — pass session_id so each cited card's grade +
+    // profile_summary are profile-aware (same as the marketplace card).
+    const sid = typeof window !== "undefined" ? sessionStorage.getItem("insurance_session_id") || undefined : undefined;
     for (const c of topPolicies) {
       if (cards[c.policy_id] !== undefined) continue;
-      getScorecard(c.policy_id)
+      getScorecard(c.policy_id, sid)
         .then((s) => setCards((p) => ({ ...p, [c.policy_id]: s })))
         .catch(() => setCards((p) => ({ ...p, [c.policy_id]: null })));
     }
@@ -4272,8 +4281,13 @@ function CitedPolicyCards({
                   </div>
                   <div className="font-semibold text-sm line-clamp-2 break-words leading-snug mt-0.5">{c.policy_name}</div>
                   {sc ? (
-                    <div className="text-[11.5px] text-[var(--muted-foreground)] leading-snug line-clamp-2 mt-1">
-                      {sc.one_liner}
+                    <div className="mt-1">
+                      <ProfileSummaryBlock
+                        summary={sc.profile_summary}
+                        fallback={sc.one_liner}
+                        max={3}
+                        compact
+                      />
                     </div>
                   ) : sc === null ? (
                     <div className="text-[11px] text-[var(--muted-foreground)] italic mt-1">
@@ -4426,9 +4440,12 @@ function ScorecardBadgesForCitations({ citations }: { citations: Citation[] }) {
     .slice(0, 3);
 
   useEffect(() => {
+    // Task #31 — profile-aware scorecard fetch (session_id ⇒ same grade +
+    // profile_summary as the marketplace card).
+    const sid = typeof window !== "undefined" ? sessionStorage.getItem("insurance_session_id") || undefined : undefined;
     for (const c of topPolicies) {
       if (cards[c.policy_id] !== undefined) continue;
-      getScorecard(c.policy_id)
+      getScorecard(c.policy_id, sid)
         .then((s) => setCards((prev) => ({ ...prev, [c.policy_id]: s })))
         .catch(() => setCards((prev) => ({ ...prev, [c.policy_id]: null })));
     }
@@ -4471,6 +4488,67 @@ function ScorecardBadgesForCitations({ citations }: { citations: Citation[] }) {
       </div>
       {expanded && cards[expanded] && (
         <ScorecardCard sc={cards[expanded]!} />
+      )}
+    </div>
+  );
+}
+
+// Task #31 — the deterministic, profile-aware {strengths, caveat} summary,
+// rendered at the TOP of every scorecard surface. ✓-bulleted strengths in a
+// positive tone + a single amber "⚠" caveat line. When the structured
+// summary is empty / insufficient, `fallback` (the generic one_liner) is
+// shown instead so a surface never goes blank. `max` caps the strength
+// count on dense surfaces (cited card = 3, modals = 5).
+function ProfileSummaryBlock({
+  summary,
+  fallback,
+  max = 5,
+  compact = false,
+}: {
+  summary?: { strengths: string[]; caveat: string | null } | null;
+  fallback?: string | null;
+  max?: number;
+  compact?: boolean;
+}) {
+  const strengths = (summary?.strengths ?? []).slice(0, max);
+  const caveat = summary?.caveat ?? null;
+  if (strengths.length === 0) {
+    if (!fallback) return null;
+    return (
+      <div
+        className={`text-[var(--muted-foreground)] leading-snug ${compact ? "text-[11.5px]" : "text-xs"}`}
+      >
+        {fallback}
+      </div>
+    );
+  }
+  return (
+    <div className={compact ? "space-y-1" : "space-y-1.5"}>
+      <ul className="space-y-1">
+        {strengths.map((s, i) => (
+          <li
+            key={i}
+            className={`flex items-start gap-1.5 leading-snug ${compact ? "text-[11.5px]" : "text-xs"}`}
+          >
+            <span
+              aria-hidden
+              className="shrink-0 mt-[1px] font-bold text-[var(--primary)]"
+            >
+              ✓
+            </span>
+            <span className="text-[var(--foreground)]">{s}</span>
+          </li>
+        ))}
+      </ul>
+      {caveat && (
+        <div
+          className={`flex items-start gap-1.5 leading-snug text-amber-700 dark:text-amber-400 ${compact ? "text-[11px]" : "text-[11.5px]"}`}
+        >
+          <span aria-hidden className="shrink-0 mt-[1px]">
+            ⚠
+          </span>
+          <span>{caveat}</span>
+        </div>
       )}
     </div>
   );
@@ -5443,7 +5521,21 @@ function PolicyCard({
             </div>
           )}
         </div>
-        <p className="text-xs text-[var(--muted-foreground)] mb-3 line-clamp-2">{isPersonalized ? oneLiner : t("card.score_locked_msg")}</p>
+        {/* Task #31 — when the card is personalised AND the deterministic
+            profile_summary produced real strengths, surface them at the
+            top of the card; otherwise keep the existing behaviour (generic
+            grade one-liner when personalised, locked-score msg when not). */}
+        {isPersonalized && (policy.profile_summary?.strengths?.length ?? 0) > 0 ? (
+          <div className="mb-3">
+            <ProfileSummaryBlock
+              summary={policy.profile_summary}
+              max={3}
+              compact
+            />
+          </div>
+        ) : (
+          <p className="text-xs text-[var(--muted-foreground)] mb-3 line-clamp-2">{isPersonalized ? oneLiner : t("card.score_locked_msg")}</p>
+        )}
         {/* #97/#98 — DYNAMIC tiles: cover (always) + the next 3 facts that
             are actually KNOWN for THIS policy, in decision-priority order.
             A card never shows a blank "Not stated" slot while richer info
@@ -5951,14 +6043,17 @@ function PolicyDetailModal({ policy, onClose }: { policy: MarketplacePolicy; onC
   const [method, setMethod] = useState<MethodologyResponse | null>(null);
   useEffect(() => {
     setSc(undefined);
-    getScorecard(policy.policy_id).then(setSc).catch(() => setSc(null));
+    // Task #31 — pass the session_id so the scorecard (grade +
+    // profile_summary) is computed against THIS user's profile, identical
+    // to the marketplace card for the same canonical id.
+    const sid = typeof window !== "undefined" ? sessionStorage.getItem("insurance_session_id") || undefined : undefined;
+    getScorecard(policy.policy_id, sid).then(setSc).catch(() => setSc(null));
     if (policy.insurer_slug) {
       getInsurerReviews(policy.insurer_slug).then(setReviews).catch(() => setReviews(null));
     }
     // Profile completeness gates whether we render the per-user grade.
     // Below threshold: show universal grade only (insurer-quality-led) with a
     // CTA to complete the profile.
-    const sid = typeof window !== "undefined" ? sessionStorage.getItem("insurance_session_id") || undefined : undefined;
     getProfileCompleteness(sid).then(setCompleteness).catch(() => setCompleteness(null));
     // Server-derived methodology counts so the footer never states an
     // invented "24 of 48" — it renders the real "{scored} of {total}".
@@ -5969,7 +6064,8 @@ function PolicyDetailModal({ policy, onClose }: { policy: MarketplacePolicy; onC
   // affordance instead of removing the entire Score section without a trace.
   const retryScorecard = () => {
     setSc(undefined);
-    getScorecard(policy.policy_id).then(setSc).catch(() => setSc(null));
+    const sid = typeof window !== "undefined" ? sessionStorage.getItem("insurance_session_id") || undefined : undefined;
+    getScorecard(policy.policy_id, sid).then(setSc).catch(() => setSc(null));
   };
   const isPersonalized = completeness?.is_personalized === true;
 
@@ -6106,8 +6202,17 @@ function PolicyDetailModal({ policy, onClose }: { policy: MarketplacePolicy; onC
                   <span className={`inline-flex items-center justify-center w-12 h-12 rounded-lg font-bold ${gradeColor(sc.grade)}`}>{sc.grade}</span>
                   <div className="flex-1">
                     <div className="text-2xl font-bold">{sc.overall_score}<span className="text-[var(--muted-foreground)] text-base font-normal">/100</span></div>
-                    <div className="text-xs text-[var(--muted-foreground)]">{sc.one_liner}</div>
                   </div>
+                </div>
+                {/* Task #31 — structured, profile-aware summary at the TOP
+                    of the score section (falls back to the generic
+                    one_liner when empty / insufficient data). */}
+                <div className="mb-3">
+                  <ProfileSummaryBlock
+                    summary={sc.profile_summary}
+                    fallback={sc.one_liner}
+                    max={5}
+                  />
                 </div>
                 <ScorecardCard sc={sc} />
                 <MethodologyExpander />

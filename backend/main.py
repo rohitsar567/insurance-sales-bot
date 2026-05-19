@@ -2003,6 +2003,16 @@ class ScorecardSubScore(BaseModel):
     signals: list[str]
 
 
+class ProfileSummaryModel(BaseModel):
+    """Deterministic, profile-aware {strengths, caveat} (see
+    backend.scorecard.build_profile_summary). Rendered at the TOP of every
+    scorecard surface; the frontend falls back to one_liner when strengths
+    is empty / insufficient. Optional with a default so every existing
+    construction path (compare, insufficient-data) stays valid."""
+    strengths: list[str] = Field(default_factory=list)
+    caveat: Optional[str] = None
+
+
 class ProfileCompletenessResponse(BaseModel):
     completeness: float                  # 0.0 - 1.0
     completeness_pct: int                # 0 - 100
@@ -2269,6 +2279,10 @@ class ScorecardResponse(BaseModel):
     # Retry fallback or a fabricated grade. Optional w/ default so the
     # existing /api/policies/compare construction (no flag) stays valid.
     insufficient_data: bool = False
+    # Deterministic, profile-aware {strengths, caveat} computed on the same
+    # pass as the grade. Optional w/ default so every construction path
+    # (compare with no summary, insufficient-data) stays valid.
+    profile_summary: Optional[ProfileSummaryModel] = None
 
 
 class CompareEntry(BaseModel):
@@ -2295,6 +2309,10 @@ class MarketplacePolicy(BaseModel):
     overall_score: int
     one_liner: str
     data_completeness_pct: float
+    # Deterministic, profile-aware {strengths, caveat}. Populated from the
+    # SAME build_scorecard pass that produced `grade`. None when the catalogue
+    # was built profile-neutrally and no facts qualified.
+    profile_summary: Optional[ProfileSummaryModel] = None
     # Headline filterable fields
     min_entry_age: Optional[int] = None
     max_entry_age: Optional[int] = None
@@ -3094,7 +3112,21 @@ def _ki145_material_diffs(curated: dict, extracted: dict) -> int:
     return diffs
 
 
-def _marketplace_catalogue(user_profile_dict):
+def _profile_summary_model(sc) -> Optional[ProfileSummaryModel]:
+    """Adapt the scorecard's ProfileSummary dataclass → the API model.
+
+    None-safe (older Scorecard objects / defensive paths may not carry one).
+    """
+    ps = getattr(sc, "profile_summary", None)
+    if ps is None:
+        return None
+    return ProfileSummaryModel(
+        strengths=list(getattr(ps, "strengths", []) or []),
+        caveat=getattr(ps, "caveat", None),
+    )
+
+
+def _marketplace_catalogue(user_profile_dict, _collect_scorecards=None):
     """SINGLE SOURCE OF TRUTH for the marketplace card set (#40).
 
     The recommendation path (brain_tools._scorecard_signal via
@@ -3103,8 +3135,27 @@ def _marketplace_catalogue(user_profile_dict):
     diverge from the marketplace card grade — including marketing-rename
     alias / KI-145 variant cards. Body is the former inline endpoint
     logic, moved verbatim; fully synchronous.
+
+    Task #31 (single-source-of-truth, option (a)): when `_collect_scorecards`
+    is a dict, it is populated `{surviving_card.policy_id: Scorecard}` with
+    the EXACT `Scorecard` object (full 6 sub_scores + profile_summary +
+    grade) computed here for each card that survives the final dedup. The
+    single /api/policies/{id}/scorecard endpoint serves that object verbatim
+    so its profile_summary / grade / sub_scores are byte-identical to the
+    /api/policies/all card for the same canonical id BY CONSTRUCTION — both
+    flow through this one `build_scorecard` pass on the same chosen sibling's
+    `(data, insurer_reviews, profile)`. (The endpoint's old doctype-rank
+    sibling-reconstruction picked a DIFFERENT sibling than this catalogue's
+    completeness-based `_best` dedup, emitting a different strength set.)
     """
     import json as _json
+    # Task #31 — {id(MarketplacePolicy): Scorecard}. Keyed by the card
+    # OBJECT's identity (NOT its policy_id string — several pre-dedup `out`
+    # entries can share the same curated-canonical policy_id, so a string
+    # key would let a lower-completeness sibling's Scorecard clobber the
+    # survivor's). After `_best` picks the surviving object we map each
+    # survivor's policy_id / canonical `_ident` to ITS OWN Scorecard.
+    _sc_by_obj: dict = {} if _collect_scorecards is not None else None
     from backend.scorecard import build_scorecard
     from backend.policy_identity import clean_display_policy_name
     corpus_url_index = _build_corpus_url_index()
@@ -3435,7 +3486,7 @@ def _marketplace_catalogue(user_profile_dict):
             source_pdf_url = (
                 _cand if _is_credible_pdf_url(_cand) else (_local or _cand)
             )
-            out.append(MarketplacePolicy(
+            _mp = MarketplacePolicy(
                 policy_id=policy_id,
                 policy_name=clean_display_policy_name(
                     data.get("policy_name", fp.stem)
@@ -3448,6 +3499,7 @@ def _marketplace_catalogue(user_profile_dict):
                 overall_score=sc.overall_score,
                 one_liner=sc.one_liner,
                 data_completeness_pct=sc.data_completeness_pct,
+                profile_summary=_profile_summary_model(sc),
                 min_entry_age=data.get("min_entry_age"),
                 max_entry_age=data.get("max_entry_age"),
                 sum_insured_options=si,
@@ -3471,7 +3523,14 @@ def _marketplace_catalogue(user_profile_dict):
                 # KI-141 — merge marketing-rename curated entries onto this
                 # parent card. Sorted for deterministic output.
                 aliases=sorted(parent_pkey_aliases.get(product_key, [])),
-            ))
+            )
+            out.append(_mp)
+            if _sc_by_obj is not None:
+                # Task #31 — bind THIS card object to the exact Scorecard
+                # built above on the catalogue's chosen sibling
+                # `data`/`ir`/profile. Object-keyed so it survives the
+                # post-dedup mapping unambiguously.
+                _sc_by_obj[id(_mp)] = sc
         except Exception as e:
             # One malformed extraction should not kill the whole feed
             print(f"[marketplace] skipping {fp.name}: {type(e).__name__}: {str(e)[:120]}")
@@ -3563,7 +3622,7 @@ def _marketplace_catalogue(user_profile_dict):
             source_pdf_url = (
                 _cand if _is_credible_pdf_url(_cand) else (_local or _cand)
             )
-            out.append(MarketplacePolicy(
+            _mp = MarketplacePolicy(
                 policy_id=curated_policy_id,
                 policy_name=clean_display_policy_name(
                     data.get("policy_name", curated_policy_id)
@@ -3576,6 +3635,7 @@ def _marketplace_catalogue(user_profile_dict):
                 overall_score=sc.overall_score,
                 one_liner=sc.one_liner,
                 data_completeness_pct=sc.data_completeness_pct,
+                profile_summary=_profile_summary_model(sc),
                 min_entry_age=data.get("min_entry_age"),
                 max_entry_age=data.get("max_entry_age"),
                 sum_insured_options=si,
@@ -3600,7 +3660,12 @@ def _marketplace_catalogue(user_profile_dict):
                 # extracted parent owns their UIN. In that case their later
                 # curated siblings alias onto them and surface here.
                 aliases=sorted(parent_pkey_aliases.get(curated_policy_id, [])),
-            ))
+            )
+            out.append(_mp)
+            if _sc_by_obj is not None:
+                # Task #31 — exact Scorecard for this curated-only card,
+                # bound to the card object (see Pass-1 rationale).
+                _sc_by_obj[id(_mp)] = sc
         except Exception as e:
             print(f"[marketplace] skipping curated {curated_policy_id}: {type(e).__name__}: {str(e)[:120]}")
             continue
@@ -3635,6 +3700,24 @@ def _marketplace_catalogue(user_profile_dict):
         else:
             prev.aliases = sorted(set(prev.aliases) | set(p.aliases))
     deduped = list(_best.values())
+
+    if _collect_scorecards is not None:
+        # Task #31 — publish ONLY the post-dedup survivors' Scorecards,
+        # each survivor mapped (by OBJECT identity) to ITS OWN Scorecard,
+        # keyed by the survivor's policy_id AND its canonical
+        # `_ident(policy_id)` so /api/policies/{id}/scorecard resolves a
+        # doctype-suffixed / curated-canonical id onto the SAME card the
+        # catalogue serves — the exact `Scorecard` object built here on the
+        # catalogue's chosen sibling. Parity holds by construction (one
+        # build_scorecard pass feeds both surfaces). Exact policy_id wins
+        # over the canonical-ident fallback (setdefault) so a precise id is
+        # never shadowed by a sibling sharing its _ident.
+        for p in deduped:
+            sc = _sc_by_obj.get(id(p))
+            if sc is None:
+                continue
+            _collect_scorecards[p.policy_id] = sc
+            _collect_scorecards.setdefault(_ident(p.policy_id), sc)
     return deduped
 
 @app.get("/api/policies/all", response_model=MarketplaceResponse)
@@ -3649,18 +3732,26 @@ async def policies_all(session_id: Optional[str] = None):
     from backend.scorecard import build_scorecard, profile_completeness as _completeness
     from backend.session_state import get_session as _get_sess
 
-    # Pull user profile if we have one
+    # Pull user profile if we have one. KI-271 — drive the profile dict off
+    # brain_tools.SLOT_UNION (via union_snapshot) so every captured slot —
+    # including copay_pct, desired_sum_insured_inr, family_medical_history,
+    # health_conditions, age — flows into build_scorecard's profile-aware
+    # {strengths, caveat} generator (task #31). union_snapshot already drops
+    # empty/None/[] slots, so presence == captured.
     user_profile_dict: Optional[dict] = None
     if session_id:
         sess = _get_sess(session_id)
         p = sess.profile
-        profile_dict = {
-            "age": p.age, "dependents": p.dependents, "income_band": p.income_band,
-            "existing_cover_inr": p.existing_cover_inr, "primary_goal": p.primary_goal,
-            "location_tier": p.location_tier, "parents_to_insure": p.parents_to_insure,
-            "parents_age_max": p.parents_age_max, "parents_has_ped": p.parents_has_ped,
-            "health_conditions": p.health_conditions, "budget_band": p.budget_band,
-        }
+        profile_dict = brain_tools.union_snapshot(p)
+        # parents_* are NOT in SLOT_UNION's snapshot if False/None but the
+        # weight-tuner reads parents_to_insure/parents_age_max/parents_has_ped
+        # explicitly — carry them through (None-safe) without overwriting a
+        # snapshot value.
+        for _pf in ("parents_to_insure", "parents_age_max", "parents_has_ped"):
+            if _pf not in profile_dict:
+                _v = getattr(p, _pf, None)
+                if _v is not None:
+                    profile_dict[_pf] = _v
         if _completeness(profile_dict) >= 0.6:
             user_profile_dict = profile_dict
 
@@ -3742,6 +3833,7 @@ async def compare_policies(policy_ids: list[str] = None):
                 sub_scores=[ScorecardSubScore(**s.__dict__) for s in sc.sub_scores],
                 data_completeness_pct=sc.data_completeness_pct,
                 methodology_link=sc.methodology_link,
+                profile_summary=_profile_summary_model(sc),
             ),
         ))
 
@@ -3769,15 +3861,26 @@ async def policy_scorecard(
     age: Optional[int] = None,
     parents_to_insure: Optional[bool] = None,
     budget_band: Optional[str] = None,
+    session_id: Optional[str] = None,
 ):
     """Compute the 6-sub-score A-F scorecard for an extracted policy.
 
     Now also pulls insurer-level reviews (IRDAI claim ratio + complaints) into
     the Claim Experience sub-score. See 70-docs/scorecard-methodology.md.
+
+    §4c (task #31) — when `session_id` is supplied AND that session's profile
+    is populated to ≥0.6 completeness, the policy is scored against THAT full
+    profile (resolved the SAME way /api/policies/all does, via
+    brain_tools.union_snapshot) so this endpoint's grade + profile_summary
+    are byte-identical to the marketplace card for the same canonical id. The
+    standalone `age` / `parents_to_insure` / `budget_band` query params remain
+    a back-compat fallback when no session profile is available.
     """
     import json as _json
 
     from backend.scorecard import build_scorecard
+    from backend.scorecard import profile_completeness as _completeness
+    from backend.session_state import get_session as _get_sess
 
     # ROOT-CAUSE FIX (scorecard 404 for catalogued curated-only products):
     # /api/policies/all catalogues a card for every extracted JSON AND every
@@ -3808,21 +3911,49 @@ async def policy_scorecard(
             _curated.get(policy.get("policy_id", policy_id)) or _curated.get(policy_id),
         )
     else:
-        # No LLM extraction for this product — fall back to the human-curated
-        # facts layer (mirrors /api/policies/all Pass 2). The curated dict
-        # also carries doctype-suffixed alias keys, so try both the canonical
-        # id and the raw lookup key.
-        policy = _curated.get(policy_id) or _curated.get(f"{policy_id}__cis") \
-            or _curated.get(f"{policy_id}__wordings") \
-            or _curated.get(f"{policy_id}__brochure") \
-            or _curated.get(f"{policy_id}__prospectus")
-        if not policy:
-            # Genuinely not in EITHER layer ⇒ this id is not a catalogued
-            # product at all (bad/typo id). 404 is the correct, honest
-            # response here — it is NOT a catalogued policy.
-            raise HTTPException(404, f"No data for policy_id={policy_id}")
-        policy = dict(policy)
-        policy.setdefault("policy_id", policy_id)
+        # No bare `<policy_id>.json` extraction. Task #31 PARITY FIX: the
+        # marketplace card for a doctype-suffixed extracted-only product
+        # (e.g. star-health__star-cardiac-care, whose only extraction is
+        # `...__wordings.json`) is built by /api/policies/all Pass-1 from
+        # that doctype-suffixed EXTRACTED file (preferred over curated via
+        # _DOCTYPE_RANK). The standalone endpoint previously skipped straight
+        # to the curated layer, so its grade + profile_summary diverged from
+        # the card for the SAME canonical id. Mirror the catalogue's doctype
+        # preference (wordings > prospectus > cis > brochure) on the
+        # EXTRACTED layer first, with the same curated-override, before
+        # falling back to a curated-only product.
+        policy = None
+        for _dt in ("wordings", "prospectus", "cis", "brochure"):
+            _ep = settings.EXTRACTED_DIR / f"{policy_id}__{_dt}.json"
+            if _ep.exists():
+                try:
+                    policy = _json.loads(_ep.read_text())
+                except Exception:
+                    policy = None
+                    continue
+                policy = _merge_curated(
+                    policy,
+                    _curated.get(policy.get("policy_id", policy_id))
+                    or _curated.get(f"{policy_id}__{_dt}")
+                    or _curated.get(policy_id),
+                )
+                break
+        if policy is None:
+            # No extraction in ANY doctype — fall back to the human-curated
+            # facts layer (mirrors /api/policies/all Pass 2). The curated
+            # dict also carries doctype-suffixed alias keys, so try the
+            # canonical id and the raw lookup keys.
+            policy = _curated.get(policy_id) or _curated.get(f"{policy_id}__cis") \
+                or _curated.get(f"{policy_id}__wordings") \
+                or _curated.get(f"{policy_id}__brochure") \
+                or _curated.get(f"{policy_id}__prospectus")
+            if not policy:
+                # Genuinely not in EITHER layer ⇒ this id is not a catalogued
+                # product at all (bad/typo id). 404 is the correct, honest
+                # response here — it is NOT a catalogued policy.
+                raise HTTPException(404, f"No data for policy_id={policy_id}")
+            policy = dict(policy)
+            policy.setdefault("policy_id", policy_id)
 
     # Load insurer reviews if present so the Claim Experience sub-score
     # uses authoritative IRDAI data, not just the (mostly-null) per-policy fields.
@@ -3836,12 +3967,66 @@ async def policy_scorecard(
             except Exception:
                 pass
 
+    # §4c — resolve the session profile the SAME way /api/policies/all does
+    # (brain_tools.union_snapshot full dict + parents_* carry-through) so this
+    # endpoint's grade + profile_summary match the marketplace card for the
+    # same canonical id by construction. Only when ≥0.6 complete.
+    #
+    # `catalogue_profile` is EXACTLY what /api/policies/all would pass to
+    # _marketplace_catalogue for this session (the ≥0.6 SLOT_UNION snapshot,
+    # else None) — used below for the catalogue-card parity override. The
+    # back-compat query-param path is a separate, profile-NEUTRAL-vs-catalogue
+    # fallback (the catalogue is never built from loose query params).
+    catalogue_profile: Optional[dict] = None
     profile: dict = {}
-    if age is not None: profile["age"] = age
-    if parents_to_insure is not None: profile["parents_to_insure"] = parents_to_insure
-    if budget_band is not None: profile["budget_band"] = budget_band
+    if session_id:
+        try:
+            _p = _get_sess(session_id).profile
+            _pd = brain_tools.union_snapshot(_p)
+            for _pf in ("parents_to_insure", "parents_age_max", "parents_has_ped"):
+                if _pf not in _pd:
+                    _v = getattr(_p, _pf, None)
+                    if _v is not None:
+                        _pd[_pf] = _v
+            if _completeness(_pd) >= 0.6:
+                profile = _pd
+                catalogue_profile = _pd
+        except Exception:  # noqa: BLE001 — bad/expired session ⇒ back-compat path
+            profile = {}
+            catalogue_profile = None
+    if not profile:
+        # Back-compat: standalone query params when no usable session profile.
+        if age is not None: profile["age"] = age
+        if parents_to_insure is not None: profile["parents_to_insure"] = parents_to_insure
+        if budget_band is not None: profile["budget_band"] = budget_band
 
-    sc = build_scorecard(policy, insurer_reviews=insurer_reviews, profile=profile or None)
+    # TASK #31 — SINGLE SOURCE OF TRUTH (option (a)). When this id IS a
+    # marketplace card, serve the EXACT `Scorecard` object the
+    # /api/policies/all catalogue built for that canonical card under THIS
+    # session's profile — full sub_scores + profile_summary + grade +
+    # data_completeness + one_liner, all from the catalogue's ONE
+    # build_scorecard pass on the catalogue's chosen sibling
+    # `(data, insurer_reviews, profile)`. Parity is byte-identical BY
+    # CONSTRUCTION: the same object feeds both surfaces, so the endpoint can
+    # no longer pick a different doctype sibling than the catalogue's
+    # completeness-based `_best` dedup (the prior bug — the old endpoint
+    # reconstructed `policy` via its own doctype-rank loop and emitted a
+    # different strength set / caveat for the same canonical id).
+    #
+    # `_catalogue_scorecard` returns None ONLY when the id is not a
+    # catalogued product at all — then we fall through to the locally-built
+    # scorecard so the curated-only / back-compat query-param / never-404
+    # behaviour the resolution block above guarantees is fully preserved.
+    cat_sc = None
+    try:
+        cat_sc = _catalogue_scorecard(policy_id, catalogue_profile)
+    except Exception:  # noqa: BLE001 — never let the SSOT resolver 500 a card
+        cat_sc = None
+
+    sc = cat_sc if cat_sc is not None else build_scorecard(
+        policy, insurer_reviews=insurer_reviews, profile=profile or None
+    )
+
     return ScorecardResponse(
         policy_id=sc.policy_id,
         policy_name=sc.policy_name,
@@ -3853,6 +4038,7 @@ async def policy_scorecard(
         data_completeness_pct=sc.data_completeness_pct,
         methodology_link=sc.methodology_link,
         insufficient_data=sc.insufficient_data,
+        profile_summary=_profile_summary_model(sc),
     )
 
 
@@ -3883,6 +4069,9 @@ class BulkScorecardEntry(BaseModel):
     one_liner: str = ""
     # raw signals per sub-score so the widget can pop-out a tooltip with detail
     signals: dict[str, list[str]] = Field(default_factory=dict)
+    # Deterministic, profile-aware {strengths, caveat} — the structured
+    # replacement for the generic one_liner the widget now renders at top.
+    profile_summary: Optional[ProfileSummaryModel] = None
 
 
 class BulkScorecardResponse(BaseModel):
@@ -4108,7 +4297,20 @@ async def scorecard_bulk(req: BulkScorecardRequest):
 
         sub_map = {_slugify_subscore(s.name): s.score for s in sc.sub_scores}
         signal_map = {_slugify_subscore(s.name): s.signals for s in sc.sub_scores}
-        rationale = _profile_rationale_for(policy, profile, sc.sub_scores)
+        psm = _profile_summary_model(sc)
+
+        # Bridge the legacy profile_rationale list off the deterministic
+        # profile_summary so the old field stays populated AND consistent
+        # with the new structured data (strengths + [caveat]). Only fall
+        # back to the heuristic _profile_rationale_for when the deterministic
+        # summary produced too little to be useful (insufficient-data /
+        # profile-neutral with <3 facts) so no surface goes blank.
+        if psm and psm.strengths:
+            rationale = list(psm.strengths)
+            if psm.caveat:
+                rationale.append(psm.caveat)
+        else:
+            rationale = _profile_rationale_for(policy, profile, sc.sub_scores)
 
         out[pid] = BulkScorecardEntry(
             policy_id=sc.policy_id or pid,
@@ -4121,6 +4323,7 @@ async def scorecard_bulk(req: BulkScorecardRequest):
             data_completeness_pct=sc.data_completeness_pct,
             one_liner=sc.one_liner,
             signals=signal_map,
+            profile_summary=psm,
         )
 
     return BulkScorecardResponse(per_policy=out)
@@ -4639,6 +4842,109 @@ def _mg_index() -> dict:
             _MG_CACHE["index"] = _mg_build_index()
             _MG_CACHE["sig"] = sig
         return _MG_CACHE["index"]
+
+
+# Task #31 — profile-keyed {policy_id -> MarketplacePolicy} index so the
+# single /api/policies/{id}/scorecard endpoint can serve the EXACT card the
+# /api/policies/all catalogue produced for that id. This is the only way to
+# guarantee byte-identical profile_summary (and grade / overall_score) for
+# every card id — including doctype-suffixed stems the catalogue's pre-
+# existing #133/#145 dedup picks as the canonical card-id while computing
+# the scorecard from a different-doctype sibling. We do NOT re-architect
+# that dedup (out of scope, protected by test_full_id_universe_parity);
+# instead the endpoint defers to the catalogue, the single source of truth.
+_CAT_CARD_LOCK = _mg_threading.Lock()
+_CAT_CARD_CACHE: dict = {}  # profile_key -> (sig, card_idx, sc_idx)
+
+
+def _profile_cache_key(profile: Optional[dict]) -> str:
+    if not profile:
+        return "∅"
+    import json as _j
+
+    return _j.dumps(
+        {k: profile[k] for k in sorted(profile)},
+        sort_keys=True, default=str,
+    )
+
+
+def _catalogue_indices(profile: Optional[dict]) -> tuple[dict, dict]:
+    """`({policy_id -> MarketplacePolicy}, {policy_id|_ident -> Scorecard})`
+    for `profile`, cached on the data signature + a stable profile key so
+    repeated single-scorecard calls in one render don't rebuild the catalogue
+    per request.
+
+    The Scorecard index is the Task #31 single-source-of-truth: it holds the
+    EXACT `Scorecard` object `_marketplace_catalogue` built for each surviving
+    card (full sub_scores + profile_summary + grade), keyed by the card's
+    policy_id AND its canonical `_ident`. `/api/policies/{id}/scorecard`
+    serves it verbatim, so its scorecard is byte-identical to the
+    /api/policies/all card for the same canonical id by construction."""
+    sig = _mg_data_signature()
+    pkey = _profile_cache_key(profile)
+    with _CAT_CARD_LOCK:
+        entry = _CAT_CARD_CACHE.get(pkey)
+        if entry is None or entry[0] != sig:
+            sc_idx: dict = {}
+            cards = _marketplace_catalogue(profile, _collect_scorecards=sc_idx)
+            card_idx = {c.policy_id: c for c in cards}
+            _CAT_CARD_CACHE[pkey] = (sig, card_idx, sc_idx)
+            # Bound the cache so distinct profiles don't grow it unbounded.
+            if len(_CAT_CARD_CACHE) > 16:
+                for k in list(_CAT_CARD_CACHE.keys())[:-16]:
+                    _CAT_CARD_CACHE.pop(k, None)
+            entry = _CAT_CARD_CACHE[pkey]
+        return entry[1], entry[2]
+
+
+def _catalogue_card_index(profile: Optional[dict]) -> dict:
+    """{policy_id -> MarketplacePolicy} for `profile` (back-compat shim)."""
+    return _catalogue_indices(profile)[0]
+
+
+# Doctype suffixes used to canonicalise a requested policy_id onto the
+# catalogue's surviving card id (mirrors _marketplace_catalogue._ident).
+_SCORECARD_DOCT = ("wordings", "brochure", "cis", "prospectus", "policy")
+
+
+def _canonical_ident(pid: str) -> str:
+    for dt in _SCORECARD_DOCT:
+        if pid.endswith(f"__{dt}"):
+            return pid[: -(len(dt) + 2)]
+    return pid
+
+
+def _catalogue_scorecard(policy_id: str, profile: Optional[dict]):
+    """The EXACT `Scorecard` the /api/policies/all catalogue produced for
+    `policy_id`'s canonical card under `profile`, or None when `policy_id`
+    is not a catalogued product.
+
+    Resolution order (single source of truth — same dedup the catalogue
+    uses): exact policy_id  ->  canonical `_ident(policy_id)`  ->  the
+    canonical id of any catalogue card whose `aliases` contains this id's
+    display name. Returns None (NOT a 404) so the caller keeps its existing
+    curated-only / back-compat / never-404 behaviour for non-card ids."""
+    if not policy_id:
+        return None
+    card_idx, sc_idx = _catalogue_indices(profile)
+    pid = policy_id.strip()
+    sc = sc_idx.get(pid) or sc_idx.get(_canonical_ident(pid))
+    if sc is not None:
+        return sc
+    # Alias path: a marketing-rename id maps onto its canonical card.
+    try:
+        from backend.policy_identity import clean_display_policy_name
+        want = clean_display_policy_name(pid)
+    except Exception:  # noqa: BLE001
+        want = pid
+    for c in card_idx.values():
+        if pid in (c.aliases or []) or want in (c.aliases or []):
+            cand = sc_idx.get(c.policy_id) or sc_idx.get(
+                _canonical_ident(c.policy_id)
+            )
+            if cand is not None:
+                return cand
+    return None
 
 
 def marketplace_grade(policy_id: str) -> dict:

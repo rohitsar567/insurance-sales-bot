@@ -498,17 +498,35 @@ export default function PolicyScorecardWidget({
               </span>
             )}
           </div>
-          {entry.one_liner && (
+          {/* Task #31 — the deterministic profile_summary replaces the
+              generic one_liner here. The first strength reads as the
+              headline takeaway; the full list + caveat live in the
+              "Why this fits you" panel below. Fall back to one_liner only
+              when the structured summary is empty / insufficient. */}
+          {entry.profile_summary && entry.profile_summary.strengths.length > 0 ? (
             <div
               style={{
                 fontSize: 11.5,
-                color: "var(--muted-foreground)",
+                color: "var(--foreground)",
                 marginTop: 3,
                 lineHeight: 1.4,
               }}
             >
-              {entry.one_liner}
+              {entry.profile_summary.strengths[0]}
             </div>
+          ) : (
+            entry.one_liner && (
+              <div
+                style={{
+                  fontSize: 11.5,
+                  color: "var(--muted-foreground)",
+                  marginTop: 3,
+                  lineHeight: 1.4,
+                }}
+              >
+                {entry.one_liner}
+              </div>
+            )
           )}
         </div>
       </div>
@@ -681,100 +699,123 @@ export default function PolicyScorecardWidget({
 
       {/* "Why this fits you" — the headline personalisation payoff. Given
           its own emphatic teal-tinted panel so it reads as the answer to
-          the user's real question, not a footnote under the bars. */}
-      {entry.profile_rationale.length > 0 && (
-        <div
-          style={{
-            background:
-              "linear-gradient(180deg, color-mix(in srgb, var(--primary) 9%, var(--card)) 0%, color-mix(in srgb, var(--primary) 4%, var(--card)) 100%)",
-            border:
-              "1px solid color-mix(in srgb, var(--primary) 28%, var(--border))",
-            borderRadius: 14,
-            padding: "14px 15px",
-            boxShadow:
-              "0 1px 2px color-mix(in srgb, var(--primary) 10%, transparent)",
-          }}
-        >
+          the user's real question, not a footnote under the bars.
+
+          Task #31 — prefer the deterministic profile_summary: strengths
+          render in a positive tone (teal tick), the single caveat in a
+          negative tone (red tick). When the structured summary is empty /
+          insufficient, fall back to the legacy profile_rationale list
+          (tone inferred via the existing rationaleTone()). */}
+      {(() => {
+        const ps = entry.profile_summary;
+        const bullets: { text: string; tone: "pos" | "neg" | "neutral" }[] =
+          ps && ps.strengths.length > 0
+            ? [
+                ...ps.strengths.map(
+                  (s) => ({ text: s, tone: "pos" as const }),
+                ),
+                ...(ps.caveat
+                  ? [{ text: ps.caveat, tone: "neg" as const }]
+                  : []),
+              ]
+            : entry.profile_rationale.map((b) => ({
+                text: b,
+                tone: rationaleTone(b),
+              }));
+        if (bullets.length === 0) return null;
+        return (
           <div
             style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              marginBottom: 10,
+              background:
+                "linear-gradient(180deg, color-mix(in srgb, var(--primary) 9%, var(--card)) 0%, color-mix(in srgb, var(--primary) 4%, var(--card)) 100%)",
+              border:
+                "1px solid color-mix(in srgb, var(--primary) 28%, var(--border))",
+              borderRadius: 14,
+              padding: "14px 15px",
+              boxShadow:
+                "0 1px 2px color-mix(in srgb, var(--primary) 10%, transparent)",
             }}
           >
-            <span
-              aria-hidden
+            <div
               style={{
-                width: 6,
-                height: 6,
-                borderRadius: 999,
-                background: "var(--primary)",
-                flexShrink: 0,
-              }}
-            />
-            <span
-              style={{
-                fontFamily: SERIF,
-                fontOpticalSizing: "auto",
-                fontSize: 14,
-                fontWeight: 600,
-                letterSpacing: "-0.01em",
-                color:
-                  "color-mix(in srgb, var(--primary) 80%, var(--foreground))",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                marginBottom: 10,
               }}
             >
-              Why this fits you
-            </span>
-          </div>
-          <ul
-            style={{
-              margin: 0,
-              padding: 0,
-              listStyle: "none",
-              display: "flex",
-              flexDirection: "column",
-              gap: 8,
-            }}
-          >
-            {entry.profile_rationale.map((b, i) => {
-              const tone = rationaleTone(b);
-              const tickColor =
-                tone === "pos"
-                  ? "var(--primary)"
-                  : tone === "neg"
-                    ? "#cf4b4b"
-                    : "var(--muted-foreground)";
-              return (
-                <li
-                  key={i}
-                  style={{
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: 9,
-                    fontSize: 12.5,
-                    color: "var(--foreground)",
-                    lineHeight: 1.5,
-                  }}
-                >
-                  <span
-                    aria-hidden
+              <span
+                aria-hidden
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: 999,
+                  background: "var(--primary)",
+                  flexShrink: 0,
+                }}
+              />
+              <span
+                style={{
+                  fontFamily: SERIF,
+                  fontOpticalSizing: "auto",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  letterSpacing: "-0.01em",
+                  color:
+                    "color-mix(in srgb, var(--primary) 80%, var(--foreground))",
+                }}
+              >
+                Why this fits you
+              </span>
+            </div>
+            <ul
+              style={{
+                margin: 0,
+                padding: 0,
+                listStyle: "none",
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+              }}
+            >
+              {bullets.map((b, i) => {
+                const tickColor =
+                  b.tone === "pos"
+                    ? "var(--primary)"
+                    : b.tone === "neg"
+                      ? "#cf4b4b"
+                      : "var(--muted-foreground)";
+                return (
+                  <li
+                    key={i}
                     style={{
-                      flex: "none",
-                      marginTop: 6,
-                      width: 6,
-                      height: 6,
-                      borderRadius: 999,
-                      background: tickColor,
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 9,
+                      fontSize: 12.5,
+                      color: "var(--foreground)",
+                      lineHeight: 1.5,
                     }}
-                  />
-                  <span>{b}</span>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      )}
+                  >
+                    <span
+                      aria-hidden
+                      style={{
+                        flex: "none",
+                        marginTop: 6,
+                        width: 6,
+                        height: 6,
+                        borderRadius: 999,
+                        background: tickColor,
+                      }}
+                    />
+                    <span>{b.text}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        );
+      })()}
 
       {/* Limited-data warning — warm amber, single tidy row */}
       {showLimitedWarning && (

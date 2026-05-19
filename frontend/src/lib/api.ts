@@ -250,6 +250,15 @@ export type ScorecardSubScore = {
   signals: string[];
 };
 
+// Deterministic, profile-aware {strengths, caveat} — the structured
+// replacement for the generic grade one-liner. Rendered at the TOP of
+// every scorecard surface; surfaces fall back to one_liner when
+// strengths is empty / insufficient.
+export type ProfileSummary = {
+  strengths: string[];
+  caveat: string | null;
+};
+
 export type ScorecardResponse = {
   policy_id: string;
   policy_name: string;
@@ -260,10 +269,19 @@ export type ScorecardResponse = {
   sub_scores: ScorecardSubScore[];
   data_completeness_pct: number;
   methodology_link: string;
+  profile_summary?: ProfileSummary | null;
 };
 
-export async function getScorecard(policy_id: string): Promise<ScorecardResponse> {
-  const resp = await fetch(`${BACKEND_URL}/api/policies/${encodeURIComponent(policy_id)}/scorecard`);
+export async function getScorecard(
+  policy_id: string,
+  session_id?: string,
+): Promise<ScorecardResponse> {
+  const qs = session_id
+    ? `?session_id=${encodeURIComponent(session_id)}`
+    : "";
+  const resp = await fetch(
+    `${BACKEND_URL}/api/policies/${encodeURIComponent(policy_id)}/scorecard${qs}`,
+  );
   if (!resp.ok) {
     const t = await resp.text();
     throw new Error(`scorecard failed: ${resp.status} ${t}`);
@@ -289,6 +307,12 @@ export type BulkScorecardProfile = {
   parents_to_insure?: boolean;
   parents_age_max?: number;
   parents_has_ped?: boolean;
+  // Task #31 — these now drive the deterministic profile_summary
+  // (copay-preference tag, family-history-aware PED caveat, SI headroom,
+  // 80D-if-tax-goal). Mirrors the backend SLOT_UNION snapshot.
+  copay_pct?: number;
+  desired_sum_insured_inr?: number;
+  family_medical_history?: string[];
 };
 
 export type BulkScorecardEntry = {
@@ -302,6 +326,7 @@ export type BulkScorecardEntry = {
   data_completeness_pct: number;     // 0-100
   one_liner?: string;
   signals?: Record<string, string[]>;
+  profile_summary?: ProfileSummary | null;
 };
 
 export type BulkScorecardResponse = {
@@ -403,6 +428,7 @@ export type MarketplacePolicy = {
   overall_score: number;
   one_liner: string;
   data_completeness_pct: number;
+  profile_summary?: ProfileSummary | null;
   min_entry_age?: number | null;
   max_entry_age?: number | null;
   // SI RATIONALISATION (D1/D3) — these are the SOURCE-QUOTE-CORROBORATED

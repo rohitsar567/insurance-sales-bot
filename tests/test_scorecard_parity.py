@@ -125,5 +125,81 @@ class TestScorecardParity(unittest.TestCase):
         )
 
 
+class TestProfileSummaryEndpointParity(unittest.TestCase):
+    """Task #31 — profile_summary returned by
+    /api/policies/{id}/scorecard?session_id MUST be byte-identical to the
+    same canonical card's profile_summary in /api/policies/all?session_id
+    (both flow through the SAME build_scorecard pass with the SAME resolved
+    profile). Proven across the FULL catalogue for a ≥0.6 profile."""
+
+    @classmethod
+    def setUpClass(cls):
+        from fastapi.testclient import TestClient
+
+        import backend.main as M
+        from backend.session_state import get_session
+
+        cls.M = M
+        cls.client = TestClient(M.app, raise_server_exceptions=False)
+        # Build a ≥0.6-complete session profile so the catalogue is
+        # profile-scored (otherwise both sides are profile-neutral and the
+        # parity is trivial).
+        cls.sid = "pytest-task31-parity"
+        sess = get_session(cls.sid)
+        p = sess.profile
+        p.name = "Parity Tester"
+        p.age = 52
+        p.dependents = "self+spouse"
+        p.income_band = "25L+"
+        p.primary_goal = "upgrade"
+        p.location_tier = "metro"
+        p.health_conditions = ["diabetes"]
+        p.existing_cover_inr = 500000
+        p.copay_pct = 0
+        p.family_medical_history = ["heart"]
+        # Mark them answered so profile_completeness counts them (parity
+        # with the live save path).
+        p.asked = [
+            "name", "age", "dependents", "income_band", "primary_goal",
+            "location_tier", "health_conditions",
+        ]
+
+    def test_endpoint_profile_summary_matches_catalogue(self):
+        M = self.M
+        r = self.client.get(f"/api/policies/all?session_id={self.sid}")
+        self.assertEqual(r.status_code, 200, r.text)
+        cards = r.json()["policies"]
+        self.assertGreater(len(cards), 100, "catalogue collapsed")
+
+        # Confirm the catalogue is actually profile-scored (else the parity
+        # is vacuous): at least one card must carry profile-aware strengths.
+        self.assertTrue(
+            any((c.get("profile_summary") or {}).get("strengths") for c in cards),
+            "no card has a profile_summary — catalogue not profile-scored",
+        )
+
+        mismatches = []
+        for c in cards:
+            pid = c["policy_id"]
+            cat_ps = c.get("profile_summary")
+            er = self.client.get(
+                f"/api/policies/{pid}/scorecard?session_id={self.sid}"
+            )
+            self.assertEqual(er.status_code, 200, (pid, er.text[:200]))
+            ep_ps = er.json().get("profile_summary")
+            if cat_ps != ep_ps:
+                mismatches.append(
+                    f"{pid}: catalogue={cat_ps!r} endpoint={ep_ps!r}"
+                )
+        self.assertEqual(
+            mismatches, [],
+            f"TASK #31 PARITY BROKEN ({len(mismatches)}/{len(cards)}): the "
+            "single-scorecard endpoint diverged from the marketplace card "
+            "profile_summary for the same canonical id. Both MUST resolve "
+            "the session profile identically (brain_tools.union_snapshot) "
+            "and run the SAME build_scorecard.\n  " + "\n  ".join(mismatches[:30]),
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

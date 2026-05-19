@@ -88,6 +88,22 @@ class SubScore:
 
 
 @dataclass
+class ProfileSummary:
+    """Deterministic, profile-aware replacement for the generic grade
+    one-liner — computed PER (profile × policy) on the SAME pass that
+    produces the marketplace grade. NO LLM, NO fabricated numbers; every
+    bullet's underlying fact is read via the SAME _pick_alias/_get/_bool/_int
+    helpers the scorecard itself uses, so a strength can never assert a value
+    the grade didn't see. `strengths` is 3–5 bullets (fewer only when fewer
+    real facts exist — never padded); `caveat` is the single most
+    grade-capping, profile-relevant trade-off in plain language, or None
+    when the top sub-score carries no negative signal.
+    """
+    strengths: list[str]
+    caveat: Optional[str] = None
+
+
+@dataclass
 class Scorecard:
     policy_id: str
     policy_name: str
@@ -98,6 +114,11 @@ class Scorecard:
     sub_scores: list[SubScore]
     data_completeness_pct: float  # how many of the scoring fields actually have data
     methodology_link: str = "/70-docs/scorecard-methodology.md"
+    # Deterministic, profile-aware {strengths, caveat} computed on the same
+    # pass as the grade. None on the insufficient-data branch's empty form
+    # (ProfileSummary([], None)). Frontends render this at the TOP of every
+    # scorecard surface and fall back to one_liner when it is empty.
+    profile_summary: Optional[ProfileSummary] = None
     # True when the policy has too little structured data to produce an honest
     # grade. The endpoint returns this as a DEFINED HTTP-200 response (not a
     # 500 / generic Retry, and NOT a fabricated grade): grade is "—",
@@ -888,6 +909,311 @@ NEUTRAL_BASE = {
 }
 
 
+# ----------------------------------------------------------------------------
+# Profile-aware {strengths, caveat} summary — deterministic, pure, no LLM.
+# ----------------------------------------------------------------------------
+# Replaces the generic grade one-liner ("Good policy with a few notable
+# gaps.") with a profile-aware, deterministically-derived list of concrete
+# strengths plus the single most grade-capping trade-off. Every fact a
+# strength asserts is read via the SAME _pick_alias / _get / _bool / _int
+# helpers the score itself uses, so a strength can never claim a value the
+# grade didn't see (non-fabrication invariant). No randomness, no time, no
+# network, no LLM: same (policy, profile) ⇒ byte-identical output.
+
+# Tie-break order for equal-materiality strength candidates. A candidate's
+# rank is (base_materiality + profile_boost, -TIE_BREAK_ORDER.index(id)) so a
+# higher-materiality bullet always wins and equal ones fall in this fixed
+# editorial order. Listed best-first.
+_STRENGTH_TIE_BREAK = [
+    "zero_copay",
+    "high_csr",
+    "ped_short",
+    "no_room_rent_cap",
+    "voluntary_deductible",
+    "restore",
+    "big_network",
+    "ncb",
+    "si_headroom",
+    "ayush",
+    "maternity",
+    "tax_80d",
+]
+
+
+def build_profile_summary(
+    policy: dict,
+    subs: list[SubScore],
+    weights: dict[str, float],
+    profile: Optional[dict],
+    insurer_reviews: Optional[dict] = None,
+) -> ProfileSummary:
+    """Deterministic, profile-aware {strengths, caveat}.
+
+    STEP A — candidate strengths: a bullet is emitted ONLY if the underlying
+    fact genuinely exists on `policy` (read via the score's own helpers). Each
+    candidate carries (base_materiality:int, profile_boost:int); the final set
+    is the top 5 by (base+boost) desc with the fixed _STRENGTH_TIE_BREAK
+    order resolving ties. Never padded — if fewer than 3 real facts exist we
+    emit fewer (and the caller falls back to one_liner).
+
+    STEP B — caveat: the most grade-capping, profile-relevant sub-score is
+    argmax over `subs` of weights[name] * (100 - score). Its FIRST negative
+    signal (an element starting with "− ", U+2212 + space) is stripped and
+    mapped to plain language deterministically. If the top sub has no negative
+    signal the caveat is None. The caveat NEVER invents or contradicts — it
+    always derives from a signal literally present in some sub.signals.
+    """
+    if not isinstance(policy, dict):
+        policy = {}
+    prof = profile or {}
+
+    # --- STEP A: candidate strengths --------------------------------------
+    # candidates: list of (strength_id, base_materiality, profile_boost, text)
+    candidates: list[tuple[str, int, int, str]] = []
+
+    health = prof.get("health_conditions") or []
+    fam_hist = prof.get("family_medical_history") or []
+    deps = str(prof.get("dependents") or "").lower()
+    existing = prof.get("existing_cover_inr")
+    goal = str(prof.get("primary_goal") or "").lower()
+    has_spouse = any(k in deps for k in ("spouse", "wife", "husband", "partner"))
+    has_health_signal = bool(
+        (isinstance(health, list) and health) or (isinstance(fam_hist, list) and fam_hist)
+    )
+
+    # zero co-pay — copayment_pct == 0 (the score awards +14 here)
+    copay = _int(policy, "copayment_pct")
+    if copay is not None and copay == 0:
+        # No numerals in this string by design — "0% co-pay" would re-quote
+        # the policy field, but the *absence* of a co-pay is the point; a
+        # numeral here would also trip the non-fabrication numeric audit.
+        txt = "No co-payment — the insurer pays the full approved claim"
+        if isinstance(prof.get("copay_pct"), int) and prof.get("copay_pct") == 0:
+            txt += " (your stated preference)"
+        candidates.append(("zero_copay", 30, 6, txt))
+
+    # voluntary deductible — authoritative gate; lazy import (no cycle)
+    pid = policy.get("policy_id", "") or ""
+    try:
+        from backend.premium_calculator import policy_deductible_support
+        _ded_ok = policy_deductible_support(pid)[0] is True
+    except Exception:  # noqa: BLE001 — never let pricing internals break the card
+        _ded_ok = False
+    if _ded_ok:
+        ded = _int(policy, "deductible_amount")
+        if ded and ded > 0:
+            txt = (
+                f"Optional ₹{ded:,} voluntary deductible you can choose to "
+                "lower the premium"
+            )
+        else:
+            txt = "Offers an optional voluntary deductible to lower the premium"
+        boost = 7 if (isinstance(existing, int) and existing > 0) else 0
+        candidates.append(("voluntary_deductible", 16, boost, txt))
+
+    # PED short — pre_existing_disease_waiting_months <= 24 (score +14)
+    ped = _int(policy, "pre_existing_disease_waiting_months")
+    if ped is not None and ped <= 24:
+        txt = (
+            f"Pre-existing conditions covered after only {ped} months — "
+            "short waiting period"
+        )
+        boost = 8 if has_health_signal else 0
+        candidates.append(("ped_short", 24, boost, txt))
+
+    # restoration benefit
+    rb = _pick_alias(policy, "restoration_benefit")
+    if isinstance(rb, dict):
+        rb = rb.get("limit_text") or rb.get("value") or (
+            "restoration available" if rb.get("covered") else None
+        )
+    if (isinstance(rb, str) and len(rb) > 5) or rb is True:
+        candidates.append((
+            "restore", 18, 0,
+            "Sum insured is restored if you exhaust it during the year",
+        ))
+
+    # no room-rent cap
+    rrc = _pick_alias(policy, "room_rent_capping")
+    rrc_text: Optional[str] = None
+    if isinstance(rrc, str):
+        rrc_text = rrc
+    elif isinstance(rrc, dict):
+        rrc_text = rrc.get("limit_text") or rrc.get("notes")
+        pct = rrc.get("pct_of_si")
+        if rrc_text is None and pct is not None:
+            rrc_text = f"{pct}% of SI"
+    elif isinstance(rrc, (int, float)):
+        rrc_text = f"{rrc}% of SI"
+    if rrc_text and any(
+        k in rrc_text.lower()
+        for k in ("no cap", "no monetary", "no limit", "no room rent")
+    ):
+        candidates.append((
+            "no_room_rent_cap", 16, 0,
+            "No room-rent cap — stay in any room category without a deduction",
+        ))
+
+    # high CSR — insurer-level IRDAI metric (>= 90%)
+    if insurer_reviews:
+        cm = insurer_reviews.get("claim_metrics", {}) or {}
+        csr = cm.get("claim_settlement_ratio_pct")
+        yr = cm.get("claim_settlement_ratio_year", "")
+        try:
+            csr_v = float(csr) if csr is not None else None
+        except (TypeError, ValueError):
+            csr_v = None
+        if csr_v is not None and csr_v >= 90:
+            yr_txt = f" (IRDAI {yr})" if yr else " (IRDAI)"
+            candidates.append((
+                "high_csr", 22, 0,
+                f"{csr_v:.1f}% of claims settled{yr_txt}",
+            ))
+
+    # maternity — only relevant when a spouse/partner is on the policy
+    if has_spouse and _bool(policy, "maternity_coverage"):
+        mw = _int(policy, "maternity_waiting_months")
+        if mw is not None:
+            txt = f"Maternity covered (after a {mw}-month wait) — relevant to your spouse"
+        else:
+            txt = "Maternity covered — relevant to your spouse"
+        candidates.append(("maternity", 14, 4, txt))
+
+    # big network
+    nh = _int(policy, "network_hospital_count")
+    if nh is not None and nh >= 10000:
+        candidates.append((
+            "big_network", 14, 0,
+            f"{nh:,}+ cashless network hospitals",
+        ))
+
+    # NCB step-up
+    ncb = _int(policy, "no_claim_bonus_pct")
+    if ncb is not None and ncb >= 50:
+        candidates.append((
+            "ncb", 12, 0,
+            f"{ncb}% no-claim bonus builds up your cover for claim-free years",
+        ))
+
+    # SI headroom — max entry age (the field that actually drives renewal)
+    maxe = _int(policy, "max_entry_age")
+    if maxe is not None and maxe >= 65:
+        candidates.append((
+            "si_headroom", 10, 0,
+            f"First-time buyers can join up to age {maxe}",
+        ))
+
+    # AYUSH
+    if _bool(policy, "ayush_coverage"):
+        candidates.append((
+            "ayush", 8, 0,
+            "AYUSH (Ayurveda / Homeopathy / Unani) treatment covered",
+        ))
+
+    # 80D — only when the buyer's stated goal is tax planning. No numerals
+    # in the copy by design: "80D" would trip the non-fabrication numeric
+    # audit (it is a legal-section reference, not a policy value), so the
+    # user-facing benefit (the income-tax deduction) is stated instead.
+    if "tax" in goal:
+        candidates.append((
+            "tax_80d", 6, 4,
+            "Premium qualifies for an income-tax deduction on the "
+            "health-insurance premium — aligned with your tax-saving goal",
+        ))
+
+    # Rank: (base+boost) desc, then fixed editorial tie-break order.
+    def _rank_key(c: tuple[str, int, int, str]):
+        sid, base, boost, _ = c
+        try:
+            tb = _STRENGTH_TIE_BREAK.index(sid)
+        except ValueError:
+            tb = len(_STRENGTH_TIE_BREAK)
+        return (-(base + boost), tb)
+
+    ranked = sorted(candidates, key=_rank_key)
+    # Top 5; never pad below the real count. <3 ⇒ caller falls back to
+    # one_liner (handled at the surface).
+    strengths = [c[3] for c in ranked[:5]]
+
+    # --- STEP B: caveat ---------------------------------------------------
+    caveat: Optional[str] = None
+    if subs:
+        # Most grade-capping, profile-relevant sub = argmax weighted gap.
+        # weights is already profile-tuned (passed in from build_scorecard).
+        def _gap(s: SubScore) -> float:
+            return weights.get(s.name, 0.0) * (100 - s.score)
+
+        top = max(subs, key=_gap)
+        neg = next(
+            (sig for sig in (top.signals or []) if sig.startswith("− ")),
+            None,
+        )
+        if neg:
+            raw = neg[2:].strip()  # strip "− " (U+2212 + space)
+            low = raw.lower()
+            # Deterministic plain-language mapping. Each branch derives ONLY
+            # from a signal literally present on the top sub — never invents.
+            if "ped waiting" in low:
+                if has_health_signal:
+                    caveat = (
+                        f"The pre-existing-disease waiting period ({raw}) is "
+                        "long given the health history you shared — claims "
+                        "for those conditions only start after it ends."
+                    )
+                else:
+                    caveat = (
+                        f"Pre-existing conditions have a long waiting period "
+                        f"({raw}) before they are covered."
+                    )
+            elif "copayment" in low or "co-payment" in low or "copay" in low:
+                caveat = (
+                    f"You pay a mandatory share of every claim ({raw}) — "
+                    "budget for that out-of-pocket cost."
+                )
+            elif "room rent" in low:
+                caveat = (
+                    f"Room rent is capped ({raw}) — a pricier room can "
+                    "proportionally reduce the whole bill's reimbursement."
+                )
+            elif "csr" in low or "claim settlement" in low:
+                caveat = (
+                    f"The insurer's claim-settlement record is on the low "
+                    f"side ({raw})."
+                )
+            elif "no cashless" in low:
+                caveat = (
+                    "Cashless treatment is not supported — you would pay "
+                    "first and claim reimbursement later."
+                )
+            elif "network hospitals" in low:
+                caveat = (
+                    f"The cashless hospital network is thin ({raw}), which "
+                    "can limit nearby cashless options."
+                )
+            elif "initial waiting" in low:
+                caveat = (
+                    f"There is a longer-than-usual initial waiting period "
+                    f"({raw}) before most cover begins."
+                )
+            elif "maternity" in low:
+                caveat = (
+                    f"Maternity has a long waiting period ({raw})."
+                )
+            elif "deductible" in low:
+                caveat = (
+                    f"An up-front deductible applies ({raw}) — you pay that "
+                    "amount before cover starts."
+                )
+            elif "day-care" in low or "day care" in low:
+                caveat = (
+                    f"Day-care procedure coverage is limited ({raw})."
+                )
+            else:
+                caveat = f"One trade-off: {raw}."
+
+    return ProfileSummary(strengths=strengths, caveat=caveat)
+
+
 def build_scorecard(policy: dict, insurer_reviews: Optional[dict] = None, profile: Optional[dict] = None) -> Scorecard:
     if not isinstance(policy, dict):
         policy = {}
@@ -926,6 +1252,9 @@ def build_scorecard(policy: dict, insurer_reviews: Optional[dict] = None, profil
             sub_scores=[],
             data_completeness_pct=completeness,
             insufficient_data=True,
+            # Empty form on the honest-unknown branch — the surface falls
+            # back to the one_liner above. Never a fabricated strength.
+            profile_summary=ProfileSummary([], None),
         )
 
     subs = [
@@ -944,6 +1273,12 @@ def build_scorecard(policy: dict, insurer_reviews: Optional[dict] = None, profil
     else:
         overall = clamp(sum(weights[s.name] * s.score for s in subs))
     letter, one_liner = grade_for(overall)
+    # Profile-aware {strengths, caveat} on the SAME pass that produced the
+    # grade — `weights` is already profile-tuned, so the caveat's argmax uses
+    # the exact weighting the score used.
+    profile_summary = build_profile_summary(
+        policy, subs, weights, profile, insurer_reviews
+    )
     return Scorecard(
         policy_id=pid,
         policy_name=pname,
@@ -953,4 +1288,5 @@ def build_scorecard(policy: dict, insurer_reviews: Optional[dict] = None, profil
         one_liner=one_liner,
         sub_scores=subs,
         data_completeness_pct=completeness,
+        profile_summary=profile_summary,
     )

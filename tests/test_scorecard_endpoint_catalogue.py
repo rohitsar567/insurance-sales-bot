@@ -126,3 +126,75 @@ def test_non_catalogued_typo_id_still_returns_honest_404():
     honest 404 (not a fabricated scorecard) is the correct response."""
     r = client.get("/api/policies/not-a-real__policy-xyz/scorecard")
     assert r.status_code == 404, r.text
+
+
+def test_every_catalogued_id_has_valid_profile_summary_zero_500s():
+    """Task #31 — EVERY catalogued policy_id returns 200 from the scorecard
+    endpoint with a well-formed profile_summary (0..5 strengths, caveat
+    str|null, empty form on the insufficient-data branch). Zero 500s, zero
+    missing-field validation errors."""
+    bad = []
+    for pid in _catalogued_policy_ids():
+        resp = client.get(f"/api/policies/{pid}/scorecard")
+        if resp.status_code != 200:
+            bad.append((pid, "status", resp.status_code, resp.text[:120]))
+            continue
+        body = resp.json()
+        ps = body.get("profile_summary")
+        if ps is None:
+            bad.append((pid, "profile_summary is None", body.get("grade")))
+            continue
+        st = ps.get("strengths")
+        cv = ps.get("caveat")
+        if not isinstance(st, list) or not (0 <= len(st) <= 5):
+            bad.append((pid, "strengths", st))
+        if not all(isinstance(x, str) and x.strip() for x in st):
+            bad.append((pid, "empty strength", st))
+        if cv is not None and (not isinstance(cv, str) or not cv.strip()):
+            bad.append((pid, "caveat", cv))
+        if any("/100" in x for x in st) or (cv and "/100" in cv):
+            bad.append((pid, "'/100' leaked", st, cv))
+        if body.get("insufficient_data"):
+            if st != [] or cv is not None:
+                bad.append((pid, "insufficient ⇒ must be empty", ps))
+    assert not bad, (
+        f"{len(bad)} catalogued ids returned an invalid/missing "
+        f"profile_summary (must be 0): {bad[:10]}"
+    )
+
+
+def test_session_id_makes_endpoint_profile_aware():
+    """The session_id query param resolves the session profile (the SAME
+    way /api/policies/all does) so the grade is profile-aware. A senior +
+    diabetic profile must produce a profile_summary distinguishable from
+    the profile-neutral one for at least one well-populated policy."""
+    from backend.session_state import get_session
+
+    sid = "pytest-task31-profile-aware"
+    p = get_session(sid).profile
+    p.name = "Aware Tester"
+    p.age = 60
+    p.dependents = "self+spouse"
+    p.income_band = "25L+"
+    p.primary_goal = "upgrade"
+    p.location_tier = "metro"
+    p.health_conditions = ["diabetes"]
+    p.copay_pct = 0
+    p.asked = [
+        "name", "age", "dependents", "income_band", "primary_goal",
+        "location_tier", "health_conditions",
+    ]
+
+    neutral = client.get("/api/policies/star-health__star-assure/scorecard")
+    aware = client.get(
+        f"/api/policies/star-health__star-assure/scorecard?session_id={sid}"
+    )
+    assert neutral.status_code == 200 and aware.status_code == 200
+    nb, ab = neutral.json(), aware.json()
+    assert ab.get("profile_summary") is not None
+    # Profile-aware run must differ from the neutral run on grade and/or the
+    # structured summary (the whole point of the session_id param).
+    assert (
+        nb.get("overall_score") != ab.get("overall_score")
+        or nb.get("profile_summary") != ab.get("profile_summary")
+    ), (nb.get("profile_summary"), ab.get("profile_summary"))
