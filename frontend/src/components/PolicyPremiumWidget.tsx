@@ -47,6 +47,7 @@ import {
   type PreExistingCondition,
   type PremiumEstimateResponse,
 } from "@/lib/api";
+import HelpTip from "@/components/HelpTip";
 
 export type PolicyPremiumWidgetProps = {
   policyId: string;
@@ -351,7 +352,10 @@ export default function PolicyPremiumWidget({
       <div style={sliderGroupStyle}>
         <label style={labelStyle}>
           <span style={labelHeadStyle}>
-            <span style={labelTextStyle}>Sum insured</span>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+              <span style={labelTextStyle}>Sum insured</span>
+              <HelpTip id="sum_insured" />
+            </span>
             <strong style={labelValueStyle}>₹{formatSiLabel(sumInsured)}</strong>
           </span>
           <input
@@ -372,7 +376,10 @@ export default function PolicyPremiumWidget({
 
         <label style={labelStyle}>
           <span style={labelHeadStyle}>
-            <span style={labelTextStyle}>Tenure</span>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+              <span style={labelTextStyle}>Tenure</span>
+              <HelpTip id="tenure" />
+            </span>
             <strong style={labelValueStyle}>
               {tenureYears} {tenureYears === 1 ? "year" : "years"}
             </strong>
@@ -396,7 +403,10 @@ export default function PolicyPremiumWidget({
         {supportsDeductible && (
           <label style={labelStyle}>
             <span style={labelHeadStyle}>
-              <span style={labelTextStyle}>Deductible</span>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                <span style={labelTextStyle}>Deductible</span>
+                <HelpTip id="deductible" />
+              </span>
               <strong style={labelValueStyle}>
                 {formatDeductibleLabel(deductibleInr)}
               </strong>

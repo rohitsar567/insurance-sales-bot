@@ -41,6 +41,7 @@ import type { PremiumBulkProfile, BulkScorecardProfile } from "@/lib/api";
 // remains on disk as a graveyard reference until KI-168 is field-verified.
 import { useStreamingVoice } from "@/lib/useStreamingVoice";
 import { useIsTouch } from "@/lib/useIsTouch";
+import HelpTip from "@/components/HelpTip";
 
 type DisplayMessage = ChatMessage & {
   id: string;
@@ -2708,7 +2709,12 @@ function ProfileBuilderPanel({
             hint={hindi ? "ये premium अनुमान और cover-band की खोज तय करते हैं।" : "These drive the premium estimate and the cover band we search."}
           >
             <RupeeSlider
-              label={hindi ? "आप कितना cover चाहते हैं" : "Sum insured you want"}
+              label={
+                <>
+                  {hindi ? "आप कितना cover चाहते हैं" : "Sum insured you want"}
+                  <HelpTip id="sum_insured" />
+                </>
+              }
               value={desiredSI}
               min={300000}
               max={20000000}
@@ -2719,7 +2725,12 @@ function ProfileBuilderPanel({
             />
 
             <RupeeSlider
-              label={hindi ? "पहले से कोई health insurance?" : "Existing health cover you hold"}
+              label={
+                <>
+                  {hindi ? "पहले से कोई health insurance?" : "Existing health cover you hold"}
+                  <HelpTip id="existing_cover" />
+                </>
+              }
               value={existingCover}
               min={0}
               max={10000000}
@@ -2731,7 +2742,12 @@ function ProfileBuilderPanel({
             />
 
             <RupeeSlider
-              label={hindi ? "हर claim में आपका हिस्सा (co-pay)" : "Your share per claim (co-pay)"}
+              label={
+                <>
+                  {hindi ? "हर claim में आपका हिस्सा (co-pay)" : "Your share per claim (co-pay)"}
+                  <HelpTip id="copay" />
+                </>
+              }
               value={copay}
               min={0}
               max={40}
@@ -2749,7 +2765,12 @@ function ProfileBuilderPanel({
             />
 
             <RupeeSlider
-              label={hindi ? "सालाना premium budget" : "Annual premium budget"}
+              label={
+                <>
+                  {hindi ? "सालाना premium budget" : "Annual premium budget"}
+                  <HelpTip id="budget" />
+                </>
+              }
               value={budgetInr}
               min={5000}
               max={150000}
@@ -5127,7 +5148,7 @@ function PerPolicyPremiumEstimator({ policy, desiredSI }: { policy: MarketplaceP
         </div>
         <div>
           <div className="flex items-center justify-between text-[10px] uppercase tracking-wide text-[var(--muted-foreground)] font-semibold">
-            <span>Sum insured</span><span className="font-mono">{siDisp}</span>
+            <span className="inline-flex items-center gap-1">Sum insured<HelpTip id="sum_insured" /></span><span className="font-mono">{siDisp}</span>
           </div>
           <input type="range" min={300000} max={10000000} step={100000} value={si} onChange={(e) => setSI(parseInt(e.target.value))} className="w-full accent-[var(--primary)]" />
         </div>
@@ -5152,7 +5173,7 @@ function PerPolicyPremiumEstimator({ policy, desiredSI }: { policy: MarketplaceP
         </div>
         <div>
           <div className="flex items-center justify-between text-[10px] uppercase tracking-wide text-[var(--muted-foreground)] font-semibold">
-            <span>Your share per claim</span>
+            <span className="inline-flex items-center gap-1">Your share per claim<HelpTip id="copay" /></span>
             <span className="font-mono">
               {copay === 0 ? (
                 <span className="text-emerald-600">Insurer pays all</span>

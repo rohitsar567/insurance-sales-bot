@@ -1105,3 +1105,78 @@ html, body { max-width: 100%; overflow-x: hidden; }
   font-weight: 400;
   letter-spacing: normal;
 }
+
+/* ─────────────────────────────────────────────────────────────────────
+ * HelpTip — the shared "?" affordance for policy-calculation controls.
+ *
+ * Visual chrome mirrors `.gtip-*` above (14px badge, var(--card) bg,
+ * var(--border) hairline, Fraunces title, soft shadow, small arrow). The
+ * difference is structural: the popover is portalled to <body> and given
+ * `position:fixed` coords by HelpTip.tsx (the surfaces sit in overflow
+ * scroll containers that clip an absolute popover), so this block carries
+ * NO positioning — only appearance and the up/down arrow direction.
+ * ───────────────────────────────────────────────────────────────────── */
+.helptip-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 14px; height: 14px; border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--muted-foreground) 55%, transparent);
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 9px; font-weight: 700; line-height: 1;
+  cursor: help; user-select: none; outline: none; padding: 0;
+  margin-left: 5px;
+  transition: color .15s ease, border-color .15s ease;
+}
+.helptip-badge:hover,
+.helptip-badge:focus-visible,
+.helptip-badge[aria-expanded="true"] {
+  color: var(--primary);
+  border-color: color-mix(in srgb, var(--primary) 60%, transparent);
+}
+.helptip-badge:focus-visible {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 35%, transparent);
+}
+.helptip-pop {
+  width: min(20rem, 74vw);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--foreground) 5%, transparent),
+    0 18px 44px -22px color-mix(in srgb, var(--foreground) 32%, transparent);
+  padding: 11px 13px;
+  text-align: left;
+}
+.helptip-pop::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+}
+.helptip-pop--above::after {
+  top: 100%;
+  border-top-color: var(--card);
+}
+.helptip-pop--below::after {
+  bottom: 100%;
+  border-bottom-color: var(--card);
+}
+.helptip-title {
+  display: block;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 12.5px;
+  letter-spacing: -.01em;
+  color: var(--foreground);
+  margin-bottom: 4px;
+}
+.helptip-body {
+  display: block;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+  text-transform: none;
+  font-weight: 400;
+  letter-spacing: normal;
+}
