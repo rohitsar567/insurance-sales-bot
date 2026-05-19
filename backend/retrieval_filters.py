@@ -859,6 +859,17 @@ def _fit_score(chunk_meta: dict, profile: Any, wants_zero_copay: bool,
             else:
                 score -= 25.0  # shouldn't survive eligibility, belt-and-braces
 
+    # BUG #30 (B1-c) — EXISTING-COVER term. When the user already holds ANY
+    # base cover (even a small ₹1L employer policy), a top-up / super-top-up
+    # is a directly relevant product that the profile-neutral scorecard is
+    # blind to. Surface it: the bonus (+22) clears roughly one letter-grade
+    # gap so a relevant top-up lands alongside the primary indemnity picks
+    # (which are untouched), giving a shortlist that mixes one strong primary
+    # plan with one relevant top-up. Inert when the user holds no base cover.
+    existing = _as_int(_profile_get(profile, "existing_cover_inr"))
+    if existing and existing > 0 and _is_top_up(chunk_meta):
+        score += 22.0
+
     # KI-280 — REQUIRED-FEATURE term. When the profile explicitly needs
     # maternity / newborn cover (P3), a plan whose curated facts CONFIRM it
     # must outrank one that does not, and an UNVERIFIED plan (fact absent)

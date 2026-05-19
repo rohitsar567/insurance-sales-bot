@@ -197,6 +197,20 @@ export default function PolicyPremiumWidget({
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  // BUG #29 — only the ~2 of 148 policies that genuinely offer a
+  // user-selectable voluntary deductible expose the selector. The backend
+  // is authoritative; default to "unsupported" until the estimate arrives.
+  // Declared here (before fetchPremium / the JSX) so both the request
+  // builder and the render read the same value without a TDZ hazard.
+  // Stale-selection reset is handled in the fetch callback (an async event
+  // handler — the React-recommended place to react to a response), not an
+  // effect, so we don't trigger cascading-render lint.
+  const supportsDeductible = resp?.supports_voluntary_deductible === true;
+  const deductibleChoices: readonly number[] =
+    resp?.allowed_deductibles && resp.allowed_deductibles.length
+      ? resp.allowed_deductibles
+      : DEDUCTIBLE_CHOICES;
+
   // Stable string key so we can put `profile` in the effect dep list without
   // triggering refetches on every parent re-render (object identity changes).
   const profileKey = useMemo(() => JSON.stringify(profile ?? {}), [profile]);
@@ -244,10 +258,16 @@ export default function PolicyPremiumWidget({
           pre_existing_conditions: normalisePed(profile?.pre_existing_conditions),
           copayment_pct: 0,
           tenure_years: tenureYears,
-          deductible_inr: deductibleInr,
+          deductible_inr: supportsDeductible ? deductibleInr : 0,
         });
         if (signal.aborted) return;
         setResp(r);
+        // BUG #29 — if this policy does NOT support a voluntary deductible
+        // but a stale non-zero selection carried over from a previously
+        // compared policy, clear it so it can't persist or be re-sent.
+        if (r.supports_voluntary_deductible === false && deductibleInr !== 0) {
+          setDeductibleInr(0);
+        }
         onCalculatedRef.current?.(r.point_estimate_inr);
       } catch (e) {
         if (signal.aborted) return;
@@ -373,28 +393,32 @@ export default function PolicyPremiumWidget({
           </div>
         </label>
 
-        <label style={labelStyle}>
-          <span style={labelHeadStyle}>
-            <span style={labelTextStyle}>Deductible</span>
-            <strong style={labelValueStyle}>
-              {formatDeductibleLabel(deductibleInr)}
-            </strong>
-          </span>
-          <div role="radiogroup" aria-label="Deductible" style={pillRowStyle}>
-            {DEDUCTIBLE_CHOICES.map((d) => (
-              <button
-                key={d}
-                type="button"
-                role="radio"
-                aria-checked={deductibleInr === d}
-                onClick={() => setDeductibleInr(d)}
-                style={pillStyle(deductibleInr === d)}
-              >
-                {formatDeductibleLabel(d)}
-              </button>
-            ))}
-          </div>
-        </label>
+        {supportsDeductible && (
+          <label style={labelStyle}>
+            <span style={labelHeadStyle}>
+              <span style={labelTextStyle}>Deductible</span>
+              <strong style={labelValueStyle}>
+                {formatDeductibleLabel(deductibleInr)}
+              </strong>
+            </span>
+            <div role="radiogroup" aria-label="Deductible" style={pillRowStyle}>
+              {deductibleChoices.map((d) => (
+                <button
+                  key={d}
+                  type="button"
+                  role="radio"
+                  aria-checked={deductibleInr === d}
+                  onClick={() =>
+                    setDeductibleInr(d as 0 | 25000 | 50000 | 100000)
+                  }
+                  style={pillStyle(deductibleInr === d)}
+                >
+                  {formatDeductibleLabel(d)}
+                </button>
+              ))}
+            </div>
+          </label>
+        )}
       </div>
 
       <div style={resultBoxStyle} aria-live="polite">

@@ -418,6 +418,7 @@ def _per_lakh_band(policy_id: str) -> tuple[float, float]:
 
 
 _ptype_cache: dict = {}
+_ded_support_cache: dict = {}
 
 
 # Traceable overrides for genuinely-ambiguous IRDAI products the generic
@@ -495,6 +496,55 @@ def _policy_product_type(policy_id: Optional[str]) -> str:
             t = "cash"
     _ptype_cache[pid] = t
     return t
+
+
+def policy_deductible_support(policy_id: Optional[str]) -> tuple[bool, list[int]]:
+    """Authoritative answer to "does THIS policy genuinely offer a voluntary
+    deductible the user can pick to lower the premium?" (BUG #29).
+
+    Rule: a policy supports a voluntary deductible iff it has a curated
+    `deductible_amount > 0` AND it is NOT a top-up / super-top-up (whose
+    "deductible" is a structural threshold, not a user-selectable knob).
+    Across the full 148-policy catalogue this is exactly
+    {bajaj-allianz__health-guard, star-health__star-assure}.
+
+    Returns (supports, allowed_deductibles). `allowed_deductibles` always
+    includes 0 (the no-deductible baseline) plus the curated amount when
+    supported. Never raises — pricing must never break, so any failure
+    degrades to (False, [0]). Cached per policy_id."""
+    pid = (policy_id or "").strip()
+    if not pid:
+        return (False, [0])
+    if pid in _ded_support_cache:
+        return _ded_support_cache[pid]
+    result: tuple[bool, list[int]] = (False, [0])
+    try:
+        from backend.brain_tools import _load_policy_facts  # lazy: no cycle
+
+        f = _load_policy_facts(pid) or {}
+        pt = str(
+            f.get("policy_type")
+            or f.get("policy_type_indemnity_or_fixed")
+            or ""
+        ).lower()
+        ded = f.get("deductible_amount")
+        try:
+            ded = float(ded) if ded not in (None, "", []) else 0.0
+        except (TypeError, ValueError):
+            ded = 0.0
+        is_topup = (
+            _policy_product_type(pid) == "topup"
+            or "top" in pt
+            or "super_top" in pt
+        )
+        if ded > 0 and not is_topup:
+            result = (True, sorted({0, int(ded)}))
+        else:
+            result = (False, [0])
+    except Exception:  # noqa: BLE001 — facts optional; never break pricing
+        result = (False, [0])
+    _ded_support_cache[pid] = result
+    return result
 
 
 def _type_rel_cap(policy_id: Optional[str]) -> float:
@@ -1029,6 +1079,14 @@ def bulk_estimate(
         if deductible_inr not in BULK_DEDUCTIBLE_DISCOUNT:
             # snap to nearest known bucket
             deductible_inr = min(BULK_DEDUCTIBLE_DISCOUNT.keys(), key=lambda d: abs(d - deductible_inr))
+        # BUG #29 — only the ~2 policies that genuinely offer a voluntary
+        # deductible may receive the discount. For every other policy a
+        # caller-supplied deductible is meaningless: force it to 0 so
+        # ded_mult resolves to 1.0 (no phantom discount) AND the echoed
+        # BulkPolicyPremium.deductible_inr is honest.
+        _ded_supported, _ded_allowed = policy_deductible_support(pid)
+        if not _ded_supported or deductible_inr not in _ded_allowed:
+            deductible_inr = 0
 
         notes: list[str] = []
         assumed = True

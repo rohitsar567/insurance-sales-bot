@@ -663,6 +663,22 @@ def save_profile_field(session, field: str, value: Any) -> dict:
 
 
 _qseed_cache: dict = {}  # (profile_sig) -> [seed chunk dicts]
+# BUG #30 (B1-c) — per-signature count of TRAILING existing-cover top-up
+# seeds in `_qseed_cache[sig]`. They sit AFTER the primary window and must
+# survive the final `[:limit]` slice so a relevant super-top-up is never
+# truncated out of contention for a user who already holds base cover.
+_qseed_topup_n: dict = {}
+
+
+def _qseed_slice(rows: list[dict], sig: str, limit: int) -> list[dict]:
+    """Return up to `limit` primary seeds PLUS all existing-cover top-up
+    seeds (which trail the list), so the top-up seeds are never cut."""
+    n_top = _qseed_topup_n.get(sig, 0)
+    if n_top <= 0:
+        return rows[:limit]
+    primaries = rows[:-n_top] if n_top < len(rows) else []
+    topups = rows[-n_top:]
+    return primaries[:limit] + topups
 
 
 def _quality_seed_candidates(profile, limit: int = 25) -> list[dict]:
@@ -684,7 +700,7 @@ def _quality_seed_candidates(profile, limit: int = 25) -> list[dict]:
             )
         )) if profile is not None else "none"
         if prof_sig in _qseed_cache:
-            return _qseed_cache[prof_sig][:limit]
+            return _qseed_slice(_qseed_cache[prof_sig], prof_sig, limit)
         cur = _curated_facts_all()
         scored: list[tuple[float, str, dict, dict]] = []
         seen: set[str] = set()
@@ -710,7 +726,41 @@ def _quality_seed_candidates(profile, limit: int = 25) -> list[dict]:
                 continue
             scored.append((ovf, pid, data, sig))
         scored.sort(key=lambda t: -t[0])
-        for ovf, pid, data, sig in scored[: max(limit, 25)]:
+        # BUG #30 (B1-c) — when the user already holds ANY base cover, also
+        # union-in the top-N top-up / super-top-up policies even if they fall
+        # outside the profile-neutral top-25 window, so a directly relevant
+        # super-top-up is seeded into contention (filter_pipeline then ranks
+        # the union via _fit_score, which now carries the existing-cover term).
+        # Deterministic: drawn from the already-sorted `scored` list, no RNG.
+        _existing = getattr(profile, "existing_cover_inr", None) \
+            if profile is not None else None
+        try:
+            _existing_int = int(str(_existing).replace(",", "").strip()) \
+                if _existing not in (None, "") else 0
+        except (TypeError, ValueError):
+            _existing_int = 0
+        window = max(limit, 25)
+        primary_rows = scored[:window]
+        extra: list[tuple[float, str, dict, dict]] = []
+        if _existing_int > 0:
+            from backend.retrieval_filters import _is_top_up as _rf_is_top_up
+            in_window = {pid for _, pid, _, _ in primary_rows}
+            _TOPUP_SEED_MAX = 3  # bounded extra seeds; keeps pool deterministic
+            for ovf, pid, data, sig in scored[window:]:
+                if pid in in_window:
+                    continue
+                probe = {
+                    "policy_name": data.get("policy_name", pid),
+                    **_load_policy_facts(pid),
+                }
+                if _rf_is_top_up(probe):
+                    extra.append((ovf, pid, data, sig))
+                    if len(extra) >= _TOPUP_SEED_MAX:
+                        break
+        # `_n_topup_seeds` is preserved on the cached list so the final
+        # slice keeps the existing-cover top-up seeds (they sit AFTER the
+        # primary window and would otherwise be cut by `out[:limit]`).
+        for ovf, pid, data, sig in primary_rows + extra:
             ch = {
                 "chunk_id": f"{pid}__qseed",
                 "policy_id": pid,
@@ -731,6 +781,8 @@ def _quality_seed_candidates(profile, limit: int = 25) -> list[dict]:
             ch.update(sig)
             out.append(ch)
         _qseed_cache[prof_sig] = out
+        _qseed_topup_n[prof_sig] = len(extra)
+        return _qseed_slice(out, prof_sig, limit)
     except Exception as e:  # noqa: BLE001 — seeding must never break retrieval
         _log.warning("quality-seed failed: %s", e)
     return out[:limit]

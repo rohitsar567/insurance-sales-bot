@@ -4211,6 +4211,12 @@ class PremiumEstimateResponse(BaseModel):
     # callers (PremiumCalculatorPanel ignores both).
     tenure_years: Optional[int] = None
     deductible_inr: Optional[int] = None
+    # BUG #29 — whether THIS policy genuinely offers a user-selectable
+    # voluntary deductible (curated deductible_amount > 0 AND not a
+    # top-up). Only ~2 of 148 do. The widget hides the deductible selector
+    # entirely when False; allowed_deductibles is the exact pill set.
+    supports_voluntary_deductible: bool = False
+    allowed_deductibles: list[int] = [0]
     # True when the underlying estimate() anchored to a curated quote sample.
     # PolicyPremiumWidget uses this (instead of bulk_estimate's `assumed` flag)
     # to decide whether to show its "Estimate" badge.
@@ -4255,8 +4261,17 @@ async def premium_estimate(req: PremiumEstimateRequest):
         point = int(round(point * tenure_mult))
         low = int(round(low * tenure_mult))
         high = int(round(high * tenure_mult))
+    # BUG #29 — resolve whether this policy genuinely supports a voluntary
+    # deductible. Only ~2 of 148 do; for every other policy a caller-supplied
+    # deductible must NOT discount the premium.
+    from backend.premium_calculator import policy_deductible_support
+    _supports, _allowed = policy_deductible_support(req.policy_id)
     if req.deductible_inr is not None:
-        if req.deductible_inr in BULK_DEDUCTIBLE_DISCOUNT:
+        if not _supports or req.deductible_inr not in _allowed:
+            # Unsupported policy (or a value outside this policy's allowed
+            # set) — no phantom discount, honest echo.
+            effective_ded = 0
+        elif req.deductible_inr in BULK_DEDUCTIBLE_DISCOUNT:
             effective_ded = req.deductible_inr
         else:
             effective_ded = min(
@@ -4292,6 +4307,8 @@ async def premium_estimate(req: PremiumEstimateRequest):
         sources=e.sources or [],
         tenure_years=effective_tenure,
         deductible_inr=effective_ded,
+        supports_voluntary_deductible=_supports,
+        allowed_deductibles=_allowed,
         base_sample_used=e.base_sample_used is not None,
         sum_insured_disclosure=si_disclosure,
     )

@@ -4060,16 +4060,21 @@ function CompareReviewsCell({ insurerSlug }: { insurerSlug: string }) {
       </div>
     );
   }
+  // FIX #32 — render the SAME FULL reputation section the policy DETAIL
+  // modal shows (page.tsx:6169-6171) instead of a condensed summary.
+  // Reuse the existing InsurerReviewsBlock component (no duplication);
+  // mirror the detail modal's guard exactly: full 6-bucket block when
+  // the payload has at least one headline metric, otherwise the same
+  // one-line graceful fallback (never a blank box — #76).
   const s = rv.aggregate_score || {};
   const cm = rv.claim_metrics || {};
   const csr = cm.claim_settlement_ratio_pct;
-  const bits: string[] = [];
-  if (s.letter_grade) bits.push(s.letter_grade);
-  if (s.value_0_100 != null) bits.push(`${s.value_0_100}/100`);
-  if (csr != null) bits.push(`${csr}% claims settled`);
-  // If the reviews payload came back but every headline metric is empty,
-  // still say so explicitly rather than rendering a blank box.
-  if (bits.length === 0 && !s.headline) {
+  const hasHeadlineMetric =
+    !!s.letter_grade ||
+    s.value_0_100 != null ||
+    csr != null ||
+    !!s.headline;
+  if (!hasHeadlineMetric) {
     return (
       <div
         style={{
@@ -4082,51 +4087,7 @@ function CompareReviewsCell({ insurerSlug }: { insurerSlug: string }) {
       </div>
     );
   }
-  return (
-    <div style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--foreground)" }}>
-      {bits.length > 0 && (
-        <div style={{ fontWeight: 600 }}>{bits.join(" · ")}</div>
-      )}
-      {s.headline && (
-        <div
-          style={{
-            marginTop: bits.length > 0 ? 4 : 0,
-            color: "var(--muted-foreground)",
-          }}
-        >
-          {s.headline}
-        </div>
-      )}
-      {csr != null && cm.claim_settlement_ratio_year && (
-        <div
-          style={{
-            marginTop: 4,
-            fontSize: 11,
-            color: "var(--muted-foreground)",
-          }}
-        >
-          Claim settlement ratio · FY {cm.claim_settlement_ratio_year}
-          {cm.source_irdai_url ? (
-            <>
-              {" · "}
-              <a
-                href={cm.source_irdai_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  color: "var(--primary)",
-                  textDecoration: "underline",
-                  textUnderlineOffset: 2,
-                }}
-              >
-                IRDAI source
-              </a>
-            </>
-          ) : null}
-        </div>
-      )}
-    </div>
-  );
+  return <InsurerReviewsBlock reviews={rv} />;
 }
 
 // CitedPolicyCards — structured per-policy cards rendered BELOW the

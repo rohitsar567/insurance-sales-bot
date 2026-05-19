@@ -362,6 +362,12 @@ export type PremiumEstimateResponse = {
   // Echoed back when caller passed tenure / deductible overrides.
   tenure_years?: number | null;
   deductible_inr?: number | null;
+  // BUG #29 — whether THIS policy genuinely offers a user-selectable
+  // voluntary deductible (only ~2 of 148 do). When false the widget hides
+  // the deductible selector entirely; allowed_deductibles is the exact set
+  // of pills to render when true.
+  supports_voluntary_deductible?: boolean;
+  allowed_deductibles?: number[];
   // True when the backend anchored the base to a curated quote sample (i.e.
   // the policy is in illustrative_premiums.json). Drives the widget's
   // "Estimate" badge — replaces bulk_estimate's `assumed` flag.

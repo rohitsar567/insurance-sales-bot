@@ -187,7 +187,7 @@ Required ingredients:
   age band (e.g., "adult 30-40"),
   health-condition keywords — every captured condition by name ("diabetes", "hypertension", "heart disease") OR the literal "no PED" when health_conditions == ["none"],
   primary goal keyword,
-  existing cover signal — when existing_cover_inr > 0 add "top-up over existing X lakh cover"; when 0 add "fresh base policy",
+  existing cover signal (MANDATORY, threshold-free — BUG #30) — existing_cover_inr ANY positive value, no matter how small (even a ₹1 lakh employer policy), MUST be treated as held base cover. When existing_cover_inr > 0 you MUST (a) add the literal phrase "super top-up plan layered over existing N lakh base cover" to the retrieve_policies query (substitute N with the cover in lakh), AND (b) in the recommendation prose, state for EVERY pick how it relates to the user's existing ₹N cover — either "works as your PRIMARY plan; your ₹N employer cover supplements it" OR "this is a TOP-UP that sits above your ₹N existing cover". A recommendation that does NOT state its relation to the user's existing cover is INCOMPLETE and must not be presented. When existing_cover_inr == 0 add "fresh standalone base policy",
   parents-cover signal — when dependents mentions parents add "parents age ~XX" using parents_age_max (if captured),
   family-history rider boost — if family_medical_history is non-empty, INCLUDE keywords in the query that bias retrieval toward policies with relevant coverage:
     - "cancer" → "critical illness rider cancer cover"
@@ -201,6 +201,13 @@ Worked example A (no PED, no existing cover). Profile = {age=34, location_tier=m
 
 Worked example B (diabetes + employer top-up + parents). Profile = {age=42, location_tier=metro, dependents=self+spouse+parents, primary_goal=upgrade, health_conditions=["diabetes"], desired_sum_insured_inr=2500000, existing_cover_inr=500000, parents_age_max=68}:
   retrieve_policies(query="family floater plan metro sum insured 25 lakh adult 40-50 with spouse and parents diabetes managed top-up over existing 5 lakh employer cover parents age 68 upgrade plan", top_k=8)
+
+Worked example C (BUG #30 — small ₹1L employer cover + first-buy + smoker + family diabetes). Profile = {age=29, location_tier=metro, income_band=25L+, primary_goal=first_buy, health_conditions=["none"], desired_sum_insured_inr=2000000, existing_cover_inr=100000, family_medical_history="diabetes", smoker=yes}:
+  retrieve_policies(query="comprehensive base health plan individual metro sum insured 20 lakh adult 20-30 no PED first-time buyer super top-up plan layered over existing 1 lakh employer base cover diabetes short waiting period reduced PED wait smoker family history", top_k=8)
+  Model prose answer MUST surface BOTH a primary plan and a relevant super-top-up, each framed against the existing ₹1L cover, e.g.:
+    "1. <Primary indemnity plan> — this works as your PRIMARY plan; your ₹1L employer cover supplements it. Strong for a 29-yr-old first-time buyer at ₹20L SI; shorter diabetes-related waiting given your family history; smoker loading is priced in.
+     2. <Super top-up> — this is a TOP-UP that sits above your ₹1L existing cover, giving high catastrophic headroom at a low premium because it only pays above your deductible."
+  (Even though ₹1L is small, it is positive, so RULE 2's existing-cover signal fires: the query carries the "super top-up ... layered over existing 1 lakh employer base cover" phrase AND every pick is framed relative to the ₹1L cover.)
 
 If the first call returns 0 or 1 chunk, retry ONCE with a broader query (drop the most specific filter or broaden SI band by one tier) before asking the user to relax criteria.
 
@@ -261,11 +268,46 @@ is worse than honestly presenting fewer. Never describe a clearly weak
 plan with recommendation language ("great pick", "top option") — be
 honest about where it falls short.
 
+BUG #30 — EXISTING-COVER FRAMING IS MANDATORY: when the user holds ANY
+existing cover (existing_cover_inr > 0, even a small ₹1L employer policy),
+EVERY pick you present MUST be framed relative to that existing cover —
+explicitly state whether it is the PRIMARY plan (their existing cover
+supplements it / sits below it), is LAYERED over it, or is a TOP-UP that
+sits ABOVE it. Never present a plan without saying how it interacts with
+cover the user already holds; a pick with no stated relation to existing
+cover is incomplete and must not be shown.
+
 ═══════════════════════════════════
 RULE 3 — Follow-ups + mark_recommendation
 ═══════════════════════════════════
 - After producing a ranked shortlist, call mark_recommendation(policy_ids=[...ordered IDs you cited...]).
 - For "tell me about #2" / "second one" follow-ups, call retrieve_policies(query, policy_filter_ids=[policy_id_of_#2]) to narrow to that policy.
+- BUG #30 (B3) — MATERIALLY-DIFFERENT RE-EVAL: when the user asks you to
+  reconsider in light of their existing cover (or any standing profile fact
+  — "but I already have ₹1L employer cover", "given my smoking", "factor in
+  my family diabetes"), you MUST issue a NEW retrieve_policies whose query
+  MATERIALLY DIFFERS from the prior turn's query — add the existing-cover /
+  top-up phrasing per RULE 2 (the "super top-up plan layered over existing N
+  lakh base cover" phrase) and any newly-emphasised fact. Do NOT just
+  re-narrate the ACTIVE SHORTLIST with the same wording. The revised set
+  MUST differ from the prior set by at least ONE pick UNLESS you explicitly
+  justify why the prior set is still optimal AND name the existing-cover
+  reasoning that led you there.
+
+═══════════════════════════════════
+RULE 3.7 — NEVER PROMISE WITHOUT PERFORMING (BUG #30 B2/B3)
+═══════════════════════════════════
+If your reply would say or imply that you will re-evaluate, re-check, look
+into, search again, find better options, or "take another look", you MUST
+call the tool(s) (retrieve_policies, and mark_recommendation if you are
+recommending) THIS turn and return the ACTUAL result. Never end a turn on a
+forward-looking promise ("let me re-evaluate", "let me check", "I'll look
+into it", "give me a moment"). Either DO it now and present the concrete
+result, or ask ONE specific clarifying question — never a bare promise.
+When the user asked you to reconsider in light of existing cover (or any
+standing profile fact), the re-evaluation MUST be a NEW retrieve_policies
+whose query materially differs from the prior turn's per RULE 2 / RULE 3
+(B3); re-narrating the prior shortlist verbatim is NOT a re-evaluation.
 
 ═══════════════════════════════════
 RULE 3.5 — Claims / denials / complaints / reputation / comparison → get_policy_facts (NEVER refuse)
@@ -877,6 +919,32 @@ def _user_skipped_pricing_inputs(user_text: str) -> bool:
     if not t:
         return False
     return any(p in t for p in _PRICING_SKIP_PHRASES)
+
+
+_PROMISSORY_NO_ACTION_PHRASES: tuple[str, ...] = (
+    "let me re-evaluate",
+    "let me check",
+    "let me look",
+    "i'll look into",
+    "i will re-evaluate",
+    "let me search",
+    "let me find",
+    "give me a moment",
+    "i'll check",
+    "let me see if",
+)
+
+
+def _is_promissory_no_action(text: str) -> bool:
+    """BUG #30 (B2) — True when the model's reply merely PROMISES to
+    re-evaluate / re-check / look into / search again instead of doing it.
+    A turn that ends on such a forward-looking promise without performing
+    the tool call is a 'promise without action' failure; the loop guard
+    re-prompts exactly once to force the actual work this turn."""
+    t = (text or "").strip().lower()
+    if not t:
+        return False
+    return any(p in t for p in _PROMISSORY_NO_ACTION_PHRASES)
 
 
 def _classify_intent(user_text: str, tool_calls_made: list[str]) -> str:
@@ -1582,6 +1650,7 @@ _CONSTRAINT_FIELD_PHRASES: dict[str, str] = {
     "parents_age_max": "of the parents' age",
     "health_conditions": "of the health condition you mentioned",
     "smoker": "of the tobacco-use detail you shared",
+    "existing_cover_inr": "of the existing cover you already hold",
 }
 
 
@@ -1929,6 +1998,10 @@ async def handle_turn(
     # Defensive counter to break runaway loops.
     last_text: str = ""
     last_payload: dict = {}
+    # BUG #30 (B2) — fires at most ONCE per turn so a promissory no-tool
+    # reply ("let me re-evaluate") is re-prompted into actually calling the
+    # tool, with no risk of an infinite loop.
+    _b2_reprompted: bool = False
 
     for it in range(MAX_ITERATIONS):
         # Issue A instrumentation (KI-Z6-LATENCY, 2026-05-15) — Priya T3
@@ -1979,6 +2052,44 @@ async def handle_turn(
         if not function_calls:
             if text:
                 last_text = text
+            # BUG #30 (B2) — NEVER PROMISE WITHOUT PERFORMING. If the model
+            # ended the turn on a forward-looking promise ("let me
+            # re-evaluate / check / search") but called NO tool, re-prompt
+            # exactly once to force it to actually call the tool(s) THIS
+            # turn. Guarded by `_b2_reprompted` (fires ≤1/turn) and the
+            # iteration budget (only when a further iteration is available)
+            # so there is no infinite loop.
+            if (
+                text
+                and _is_promissory_no_action(text)
+                and not _b2_reprompted
+                and it < MAX_ITERATIONS - 1
+            ):
+                _b2_reprompted = True
+                _log.info(
+                    "single_brain iter=%d B2 promissory-no-action detected "
+                    "— re-prompting to force tool call",
+                    it,
+                )
+                contents.append({"role": "model", "parts": parts})
+                contents.append(
+                    {
+                        "role": "user",
+                        "parts": [
+                            {
+                                "text": (
+                                    "You said you would re-evaluate/search "
+                                    "but called no tool. Do it NOW: call "
+                                    "retrieve_policies (existing-cover-aware "
+                                    "query) and mark_recommendation, then "
+                                    "present the revised shortlist. Do not "
+                                    "reply with another promise."
+                                )
+                            }
+                        ],
+                    }
+                )
+                continue
             _log.info(
                 "single_brain iter=%d gemini=%.2fs tools=%.2fs "
                 "tool_calls=[] final_text=True",
