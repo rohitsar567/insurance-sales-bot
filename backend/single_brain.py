@@ -1293,6 +1293,19 @@ def _verify_prose_grounding(
             ):
                 if v:
                     grounded.update(uin_re.findall(str(v).upper()))
+        # #43 (2026-05-21) — a genuine catalogue UIN is verified BY
+        # DEFINITION: it is a real IRDAI string we hold on file, even if
+        # THIS turn's retrieved chunks did not echo it verbatim (e.g. a
+        # comparison table naming UINs from a prior shortlist). Only a UIN
+        # that is neither grounded in a chunk NOR a known catalogue UIN is
+        # a genuine fabrication. Lazy import — avoids a main↔single_brain
+        # import cycle.
+        try:
+            from backend.main import _catalogue_uin_index
+
+            grounded.update(_catalogue_uin_index().keys())
+        except Exception:  # noqa: BLE001
+            pass
         ungrounded = sorted(u for u in emitted if u not in grounded)
         if ungrounded:
             return False, [

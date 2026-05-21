@@ -116,6 +116,80 @@ _FACT_KEYS = (
     "maternity_coverage",
     "newborn_coverage",
 )
+
+# Bug #44 (2026-05-19) — DECISION-CRITICAL coverage fields that MUST be
+# resolved from the SAME canonical curated entry the marketplace
+# scorecard / #31 profile-summary path uses, so a verbal answer (or a
+# comparison TABLE the LLM builds from get_policy_facts) can never
+# contradict the scorecard card for the same policy.
+#
+# Root cause: each product has a base 40-data/policy_facts/<id>.json AND
+# doctype siblings (__wordings/__cis/__brochure/__prospectus). The
+# scorecard path resolves via main._load_curated_facts() (KI-219/KI-251
+# canonical precedence). get_policy_facts previously surfaced facts via
+# _load_policy_facts() — a DIFFERENT _candidate_stems resolver whose
+# 7-key _FACT_KEYS doesn't even include PED — so the two paths could
+# read different files and disagree on PED waiting (a live audit found
+# the comparison table said 24mo while the #31 card said "0 months").
+#
+# Fix: these specific fields are taken from the canonical curated entry
+# (`_curated_facts_all()[pid]`, the EXACT dict main._load_curated_facts()
+# feeds build_scorecard) so both surfaces agree BY CONSTRUCTION. This
+# mirrors the existing _scorecard_signal → marketplace_grade single-
+# source pattern (#40 / KI-219). The guard
+# tests/test_policy_facts_source_consistency.py asserts catalogue-wide
+# agreement.
+_DECISION_CRITICAL_FACT_KEYS = (
+    "pre_existing_disease_waiting_months",
+    "initial_waiting_period_days",
+    "copayment_pct",
+    "room_rent_capping",
+    "claim_settlement_ratio",
+)
+
+
+def canonical_decision_facts(policy_id: str) -> dict:
+    """Decision-critical coverage facts for `policy_id`, resolved from the
+    SAME canonical curated entry the marketplace scorecard path uses
+    (main._load_curated_facts via _curated_facts_all). Returns only the
+    keys in _DECISION_CRITICAL_FACT_KEYS that have a non-empty value.
+
+    Single source of truth (Bug #44): the scorecard / #31 path and
+    get_policy_facts BOTH read these fields from this one canonical entry,
+    so they cannot drift. Read-only; never raises (returns {} on any
+    failure so the tool degrades gracefully)."""
+    pid = (policy_id or "").strip()
+    if not pid:
+        return {}
+    try:
+        all_cur = _curated_facts_all() or {}
+    except Exception:  # noqa: BLE001 — curated layer optional
+        return {}
+    entry = all_cur.get(pid)
+    if entry is None:
+        # Curated layer registers every doctype-suffix permutation +
+        # each sibling stem/policy_id pointing at the canonical entry
+        # (main._load_curated_facts Pass-2). Fall back to the canonical
+        # (doctype-stripped) form for callers holding a suffixed id.
+        for suf in _DOCTYPE_SUFFIXES:
+            if pid.endswith(suf):
+                entry = all_cur.get(pid[: -len(suf)])
+                break
+    if not isinstance(entry, dict):
+        return {}
+    out: dict = {}
+    for k in _DECISION_CRITICAL_FACT_KEYS:
+        v = entry.get(k)
+        # _load_curated_facts already unwraps {value, source_*} to scalar;
+        # accept the wrapped shape too, defensively.
+        if isinstance(v, dict) and "value" in v:
+            v = v.get("value")
+        if v in (None, "", []):
+            continue
+        out[k] = v
+    return out
+
+
 _facts_cache: dict[str, dict] = {}
 
 
@@ -427,9 +501,14 @@ def _unresolved_pricing_bundle(profile, session) -> list[str]:
     bundle = list(_PRICING_BUNDLE_CORE)
     if _profile_has_parents(profile):
         bundle.append("parents_age_max")
+    # #41 (2026-05-21) — a slot the user has ANSWERED is resolved even if
+    # the answer coerces to an empty value (family_medical_history="none"
+    # → []). profile.asked records answered slots, so an empty-but-asked
+    # slot is NOT re-asked.
+    asked = set(getattr(profile, "asked", None) or [])
     unresolved: list[str] = []
     for slot in bundle:
-        if getattr(profile, slot, None) in (None, "", []):
+        if getattr(profile, slot, None) in (None, "", []) and slot not in asked:
             unresolved.append(slot)
     return unresolved
 
@@ -596,6 +675,27 @@ def save_profile_field(session, field: str, value: Any) -> dict:
     # with a Gemini turn that "didn't extract anything". Universal rule
     # from KI-091/094 (extractor null overwrite).
     if normalized in (None, "", []):
+        # #41 (2026-05-21) — an explicit NEGATIVE family-history answer
+        # ("none") legitimately coerces to []. Do NOT silently drop it as
+        # "extracted nothing": record the field on profile.asked so the
+        # post-recap pricing-bundle gate (_unresolved_pricing_bundle)
+        # treats it RESOLVED and never re-asks a slot the user answered.
+        if fld == "family_medical_history" and value is not None and str(value).strip().lower() in (
+            "none", "no", "nil", "nothing", "n/a", "na", "none.",
+            "no family history", "no family medical history",
+            "no family medical history.", "no family history.",
+        ):
+            try:
+                if fld not in profile.asked:
+                    profile.asked.append(fld)
+            except Exception:  # noqa: BLE001
+                pass
+            return {
+                "saved": True,
+                "field": fld,
+                "value": [],
+                "profile_complete": _profile_complete(profile),
+            }
         return {
             "saved": False,
             "field": fld,
@@ -1419,8 +1519,16 @@ def get_policy_facts(session, policy_ids: Optional[list[str]] = None) -> dict:
                     or cm.get("source_secondary_url")
                     or cm.get("source_complaints_url")
                 ),
+                # Bug #44 — decision-critical fields (PED waiting, initial
+                # waiting, copay, room-rent cap, CSR) are resolved from the
+                # SAME canonical curated entry the scorecard / #31 path
+                # uses, so a verbal answer / comparison table built from
+                # this tool can never contradict the policy's scorecard
+                # card. They OVERRIDE the divergent _load_policy_facts
+                # 7-key resolver for these keys, agreeing by construction.
                 "key_coverage_facts": {
-                    k: v for k, v in facts.items() if v not in (None, "", [])
+                    **{k: v for k, v in facts.items() if v not in (None, "", [])},
+                    **canonical_decision_facts(pid),
                 },
                 "reviews_available": bool(rv),
             }
