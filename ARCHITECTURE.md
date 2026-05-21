@@ -20,7 +20,8 @@ authority.
   `/api/admin/*`.
 - **Brain** — one LLM call per turn: Google Gemini
   (`gemini-2.5-flash`) + function-calling tools
-  (`save_profile_field`, `retrieve_policies`, `mark_recommendation`) in
+  (`save_profile_field`, `retrieve_policies`, `get_policy_facts`,
+  `mark_recommendation`) in
   `backend/single_brain.py` / `backend/brain_tools.py`. A single call owns
   the whole turn: fact-find, retrieval, QA, and recommendation. On a
   transient Gemini error / cold-start 503 → small `backend/nim_fallback.py`

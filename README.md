@@ -375,6 +375,7 @@ flowchart LR
             │  tools (backend/brain_tools.py):              │
             │   • retrieve_policies(query, filters, top_k)  │
             │   • save_profile_field(...)                   │
+            │   • get_policy_facts(policy_ids)              │
             │   • mark_recommendation(...)                  │
             │  └ on Gemini failure / first-turn 503 →       │
             │    backend/nim_fallback.py  (NIM chain,       │
@@ -497,6 +498,11 @@ before the file is ever embedded or shown to the model:
 6. **Encrypted/locked PDF** — rejected cleanly rather than stored opaque.
 7. **Page-count ceiling** — >200 pages is an abuse/bundle vector.
 8. **Hash dedupe + reject-cache** — identical re-uploads short-circuit.
+
+Beyond identical-file dedup, a **UIN net-new check** runs on every upload:
+if the PDF's IRDAI UIN already belongs to a catalogued policy, the upload
+is recognised as *not* net-new and the caller is pointed at the existing
+marketplace card instead of a duplicate being indexed.
 
 Accepted uploads are embedded into a **separate, per-session quarantine**
 Chroma collection (never the shared corpus), scoped by `session_id` so one
