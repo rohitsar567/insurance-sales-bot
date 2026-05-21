@@ -237,6 +237,88 @@ class UploadResponse(BaseModel):
     chunks_added: int
     pages_indexed: int
     elapsed_ms: int
+    # #47 (2026-05-21) — UIN net-new dedup. When the uploaded PDF's IRDAI
+    # UIN already belongs to a catalogue policy, the upload is NOT indexed
+    # as a new card; these fields point the caller at the existing policy.
+    already_in_catalogue: bool = False
+    existing_policy_id: Optional[str] = None
+    existing_policy_name: Optional[str] = None
+
+
+# ---------------------------------------------------------------------------
+# #47 (2026-05-21) — UIN net-new dedup for user uploads. Before a freshly
+# uploaded PDF is indexed as a brand-new marketplace card, check whether its
+# IRDAI UIN already belongs to a catalogued policy; if so it is NOT net-new
+# and the caller is pointed at the existing card. All imports are lazy — the
+# upload route imports `re` locally, so `re` is not module-level here.
+_UIN_PATTERN = r"\b[A-Z]{5,9}\d{5}V\d{6}\b"
+_catalogue_uin_cache = None  # type: Optional[dict]
+
+
+def _catalogue_uin_index() -> dict:
+    """Map every catalogue policy's IRDAI UIN -> (policy_id, policy_name).
+    Built once from 40-data/policy_facts/*.json, then cached."""
+    global _catalogue_uin_cache
+    if _catalogue_uin_cache is not None:
+        return _catalogue_uin_cache
+    import json as _json
+    import pathlib as _pl
+    import re as _re
+
+    def _find_uin(o):
+        if isinstance(o, dict):
+            if "uin_code" in o:
+                v = o["uin_code"]
+                return v.get("value") if isinstance(v, dict) else v
+            for x in o.values():
+                r = _find_uin(x)
+                if r:
+                    return r
+        elif isinstance(o, list):
+            for x in o:
+                r = _find_uin(x)
+                if r:
+                    return r
+        return None
+
+    idx: dict = {}
+    pf_dir = _pl.Path(__file__).resolve().parent.parent / "40-data" / "policy_facts"
+    for fp in sorted(pf_dir.glob("*.json")):
+        try:
+            uin = _find_uin(_json.loads(fp.read_text()))
+        except Exception:
+            continue
+        if not uin or not isinstance(uin, str):
+            continue
+        uin = uin.strip().upper()
+        # Only index modern-format IRDAI UINs — those are the only ones the
+        # uploaded-text matcher (_UIN_PATTERN) can ever extract. Legacy
+        # registration codes (e.g. "IRDAI/HLT/CTTK/...") are unmatchable,
+        # so indexing them would be dead weight.
+        if not _re.fullmatch(r"[A-Z]{5,9}\d{5}V\d{6}", uin):
+            continue
+        stem = fp.stem
+        for suf in ("__wordings", "__cis", "__brochure", "__prospectus"):
+            if stem.endswith(suf):
+                stem = stem[: -len(suf)]
+        nm = stem.split("__")[-1].replace("-", " ").title()
+        idx.setdefault(uin, (stem, nm))
+    _catalogue_uin_cache = idx
+    return idx
+
+
+def _match_catalogue_uin(text: str):
+    """Return (policy_id, policy_name) if `text` carries the IRDAI UIN of an
+    already-catalogued policy; else None."""
+    import re as _re
+
+    idx = _catalogue_uin_index()
+    # Case-insensitive extraction — a UIN may appear in any case in the
+    # uploaded text / after PDF extraction; normalise to upper for lookup.
+    for u in {m.upper() for m in _re.findall(_UIN_PATTERN, text or "", _re.IGNORECASE)}:
+        if u in idx:
+            return idx[u]
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -1815,6 +1897,22 @@ async def upload_policy(
         # Run 8-gate security check (dedupe + mechanics + encrypted + content +
         # page ceiling + injection + per-session + per-IP rate limit + LLM judge)
         full_text = "\n".join(t for _, t in pages)
+        # #47 — UIN net-new dedup: if the uploaded PDF's IRDAI UIN already
+        # belongs to a catalogue policy it is NOT net-new — return the
+        # existing card instead of indexing a duplicate. `indexed_ok` stays
+        # False so the finally block deletes the freshly-written temp file.
+        _uin_hit = _match_catalogue_uin(full_text)
+        if _uin_hit:
+            return UploadResponse(
+                policy_id=_uin_hit[0],
+                policy_name=_uin_hit[1],
+                chunks_added=0,
+                pages_indexed=len(pages),
+                elapsed_ms=int((_time.time() - t0) * 1000),
+                already_in_catalogue=True,
+                existing_policy_id=_uin_hit[0],
+                existing_policy_name=_uin_hit[1],
+            )
         client_ip = (request.client.host if request and request.client else "") or request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
         verdict = await check_upload(
             content=contents,

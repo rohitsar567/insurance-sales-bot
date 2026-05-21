@@ -101,6 +101,14 @@ class _FirstNameStoredFixture(unittest.TestCase):
         try:
             import json
             for fp in _PROFILES_DIR.glob("*.json"):
+                # Bug-#45 test hygiene: handle_turn now auto-persists ANY
+                # captured name, so the hard-coded "unknown name" used by
+                # test_unknown_name_no_false_recall_later_turn leaks a
+                # zzqxnobody*.json. Clean it (and this fixture's own files)
+                # so a re-run starts from a true no-stored-profile state.
+                if fp.stem.startswith("zzqxnobody"):
+                    fp.unlink(missing_ok=True)
+                    continue
                 try:
                     d = json.loads(fp.read_text())
                 except Exception:
