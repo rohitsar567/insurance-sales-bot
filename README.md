@@ -144,6 +144,27 @@ flowchart TD
     VOICE -.-> QA
 ```
 
+**What this diagram traces.** A first-time user opens the app and ends the
+session having decided on a plan with confidence — and how the system loops
+through compare / browse / Q&A / upload along the way. No backend in this
+view; just the human path.
+
+- **Returning-user check up front.** If the app recognises your name from
+  before, it offers to restore your saved profile (so you never re-type);
+  *no* takes you down the same path as a first-time user.
+- **Conversational fact-find.** A short typed-or-spoken back-and-forth
+  (English or Hindi-Hinglish) captures age, family, budget, health and
+  what you care about — instead of a long form.
+- **Personalised shortlist + a "why".** Plans are ranked for *your* fit;
+  every fact about a plan is backed by the exact clause in the real
+  policy PDF, never invented.
+- **Branches from the shortlist.** Compare side by side, browse the full
+  marketplace, ask follow-up questions, or upload your *own* policy PDF
+  and ask about your document (kept private to your session).
+- **Live premium.** Updates as you change the profile.
+- **Decision.** No lead capture and no commission bias — the path ends at
+  *decide*, not at a sales handoff.
+
 
 ### 4.2 The shape, in one paragraph
 
@@ -244,6 +265,45 @@ flowchart TB
     HT -.->|"1 JSON line / turn"| LOG["logs/turns.jsonl (replay/audit)"]
 ```
 
+**What this diagram traces.** Everything that happens between a keystroke
+(or spoken word) in the browser and a reply (with optional voice playback)
+coming back — drawn across every layer the request crosses.
+
+- **Browser (Next.js / React).** The page renders chat, marketplace,
+  compare and the profile builder. For voice, Web Speech shows a live
+  *interim* transcript on screen while `MediaRecorder` captures the
+  *authoritative* audio.
+- **FastAPI (`backend/main.py`).** Four endpoint groups: `/api/transcribe`
+  (Sarvam STT), `/api/chat` (the brain), `/api/upload-policy` (the 8
+  security gates → quarantine), and the supporting
+  `/api/coverage · /profile · /policies · /scorecard · /session`.
+- **The brain (`single_brain.py`, Gemini).** Exactly **one** Gemini call
+  per turn with four function-calling tools: `retrieve_policies`,
+  `save_profile_field`, `get_policy_facts`, `mark_recommendation`. The
+  brain is *only* allowed to state what its tools returned.
+- **Fit, scoring & pricing.** `scorecard.py` + `retrieval_filters.py`
+  grade each plan for the user's profile; `premium_calculator.py` +
+  `sum_insured.py` produce a live illustrative premium range.
+- **Profile & persistence.** `session_state.py` holds the live profile;
+  `profile_store.py` / `profile_persistence.py` write a `<name>.json` at
+  end of turn so a returning user can be recognised; `profile_rag.py`
+  also embeds the profile as a session-scoped chunk so the brain can
+  ground "given my situation" references.
+- **Retrieval & curated data.** A Chroma vector store (BGE-small,
+  local, 384-d) with the shared "policies" collection (~150 plans,
+  ~7.3 k chunks, 20 insurers) and a per-session "quarantine" collection
+  for user-uploaded PDFs (24 h TTL, session-isolated); plus the
+  request-time curated facts in `40-data/policy_facts/`.
+- **Voice out.** `voice_format.py` normalises money / Indic shorthand
+  and chunks at sentence bounds (so long answers are spoken in full);
+  Sarvam Bulbul TTS plays the reply through an in-DOM `<audio>` element.
+- **Barge-in.** The user speaking over the bot pauses playback *and*
+  aborts the in-flight `/api/chat`.
+- **Fallback.** On a real Gemini failure or cold-start 503, the turn
+  transparently routes to `nim_fallback.py` (NVIDIA NIM chain) — see
+  diagram B.
+- **Audit.** Every turn appends one JSON line to `logs/turns.jsonl`.
+
 **B · LLM brain + fail-loud fallback chain**
 
 ```mermaid
@@ -257,6 +317,23 @@ flowchart LR
     ANS --> GUARD["prose-grounding guard:<br/>every policy/UIN named is verified<br/>against retrieve_policies + get_policy_facts"]
     GUARD --> OUT["sent to user"]
 ```
+
+**What this diagram traces.** How a chat turn is served by the primary
+LLM, what happens when it fails, and the structural guard that prevents a
+silently wrong answer.
+
+- **Primary path.** Gemini (`gemini-2.5-flash-lite`). On a healthy
+  response → the reply is built *only* from what the tools returned.
+- **Fallback path (fail-loud).** A real Gemini failure or a cold-start
+  503 routes through `backend/llm_health.py` (a background probe with
+  sticky-primary election) to the NVIDIA NIM open-model chain
+  (`nim_fallback.py`). One healthy model in that chain serves the turn.
+- **Last resort.** If the whole chain is down, the user gets an explicit
+  *"service degraded"* message — never a silently wrong answer.
+- **Prose-grounding guard.** Before a reply is sent, every policy / UIN
+  named in the prose is verified against the same `retrieve_policies`
+  and `get_policy_facts` results the brain saw (with an exemption for
+  genuine catalogue UINs). Faithfulness is structural, not bolt-on.
 
 **C · Voice pipeline (in / out, with barge-in)**
 
@@ -273,6 +350,23 @@ flowchart LR
     SPK["user speaks over bot"] -.->|"barge-in"| PLAY
     SPK -.->|"abort in-flight"| BR
 ```
+
+**What this diagram traces.** How spoken input becomes a chat turn, how
+the reply becomes speech back, and how the user can interrupt mid-answer.
+
+- **Capture.** Tap-to-talk (touch) or push-to-talk (desktop) starts
+  `MediaRecorder` (the authoritative audio) and Web Speech (a live
+  interim transcript shown on screen but never trusted for the turn).
+- **STT.** The authoritative audio is sent to `/api/transcribe`
+  (Sarvam Saarika — Indian-accent + Hinglish aware).
+- **Brain → reply.** The transcript runs through `single_brain.handle_turn`
+  exactly like a typed turn.
+- **TTS.** `voice_format.py` normalises money / Indic shorthand and chunks
+  at sentence bounds (so long replies are spoken in full); Sarvam Bulbul
+  speaks; an in-DOM `<audio>` element plays.
+- **Barge-in.** The user speaking over the bot pauses playback **and**
+  aborts the in-flight `/api/chat`, so the bot stops mid-thought rather
+  than over-talking.
 
 **D · Profile, personalisation & returning-user recall**
 
@@ -294,6 +388,29 @@ flowchart TB
     SPF --> PREM["illustrative premium"]
     note1["evicted/blank session + carried chat_history →<br/>STATE-RECOVERY: rebuild profile from history,<br/>never re-ask the name"] -.-> ENDT
 ```
+
+**What this diagram traces.** How the system captures a profile during a
+conversation, persists it for the user's next visit, recalls it *safely* on
+return, and recovers when the server forgot it.
+
+- **Capture.** Every answer (chat or profile-builder) is persisted via
+  `save_profile_field` into the live `session_state.profile`.
+- **End-of-turn persist.** `auto_persist_session` writes a
+  `<name>.json` to disk **and** embeds the profile as a session-scoped
+  chunk — so a returning user can be recognised, and "given my situation"
+  references can be grounded.
+- **Privacy-safe recall.** On a return visit the captured name is matched
+  against the stored profile; a match is **staged** on
+  `pending_profile_recall` and the bot asks *"Welcome back — are you the
+  same X?"*. Only an explicit *yes* merges the stored slots (so a name
+  collision never auto-restores a stranger's profile); *no* discards the
+  stage and the user continues fresh.
+- **State recovery.** If the server's in-memory session was evicted /
+  restarted but the browser still carries `chat_history`, the brain
+  enters **STATE-RECOVERY MODE** — silently re-captures the profile from
+  the conversation history instead of asking the user's name again.
+- **Drives scoring + pricing.** The same profile feeds the scorecard
+  fit-and-grade and the live premium estimate.
 
 **E · Data architecture & offline ingest pipeline**
 
@@ -318,6 +435,25 @@ flowchart LR
     CUR -->|"read per request"| RUNTIME
 ```
 
+**What this diagram traces.** Where the policy data lives, how it's
+built *once*, offline, and how it's read at request time.
+
+- **Three repositories, deliberately separated.** *Code* — this repo,
+  mirrored to the HF Space (`origin`) and GitHub, application source only.
+  *Data dataset* — `rohitsar567/insurance-bot-data` — the heavy binaries:
+  PDF corpus + prebuilt Chroma vectors, pulled at Docker build via
+  `huggingface_hub.snapshot_download`. *Curated facts* — `40-data/` —
+  small human-reviewed JSON, versioned with the code.
+- **Offline ingest** (not on the request path). PDFs → `rag/ingest.py`
+  chunks → `rag/extract.py` + `schema.py` produce structured facts (every
+  value carrying a verbatim `source_quote`) → `40-data/policy_facts/*.json`;
+  the same chunks are embedded (BGE-small, local, 384-d) into the Chroma
+  vector store.
+- **Runtime reads.** `rag/retrieve.py` queries the vector store on every
+  chat turn; the backend reads `40-data/policy_facts/` directly for
+  grading + citations. No live LLM extraction on the hot path —
+  everything heavy was done offline.
+
 **F · Uploaded-PDF defence — 8 sequential gates**
 
 ```mermaid
@@ -334,6 +470,30 @@ flowchart LR
     G1 & G2 & G3 & G4 & G5 & G6 & G7 & G8 -->|"fail"| REJ["clean rejection (reason surfaced)"]
 ```
 
+**What this diagram traces.** Every check a user-uploaded PDF passes
+before its content is allowed to touch the vector store, and where rejected
+files go.
+
+- **The 8 gates, in order.** (1) **File mechanics** — `%PDF` magic, 5 KB–25 MB
+  size band, well-formed `%%EOF`, no embedded executables / JavaScript /
+  launch actions. (2) **Content quality** — ≥1500 extractable chars,
+  ≥3 pages, at least one insurance-domain keyword. (3) **Prompt-injection
+  sweep** — "ignore previous instructions", "reveal your system prompt",
+  jailbreak patterns. (4) **Per-session rate limit.** (5) **Per-IP rate
+  limit** (catches session-ID rotation). (6) **Encrypted/locked PDF** —
+  rejected cleanly. (7) **Page-count ceiling** (>200 pages — an
+  abuse/bundle vector). (8) **Hash dedupe + reject-cache** — identical
+  re-uploads short-circuit.
+- **Beyond identical-file dedup.** A **UIN net-new check** also runs — if
+  the PDF's IRDAI UIN already belongs to a catalogued policy, the caller
+  is pointed at the existing marketplace card instead of indexing a
+  duplicate.
+- **On pass.** Chunks land in a per-session **quarantine** Chroma
+  collection — session-isolated, 24 h idle TTL — *never* the shared
+  `policies` corpus.
+- **On fail.** A clean rejection naming the gate; the file is deleted;
+  nothing is embedded.
+
 **G · Deployment**
 
 ```mermaid
@@ -348,6 +508,23 @@ flowchart LR
     RUN --> LIVE["live Space (FastAPI also serves the frontend)"]
     LIVE --> CHK["verify reported build SHA advanced<br/>(LFS/quota push can fail silently)"]
 ```
+
+**What this diagram traces.** How a `git push` becomes a live Space, end
+to end.
+
+- **Two remotes.** `origin` = the Hugging Face Space (a push here
+  triggers the Docker rebuild). `github` = the public mirror reviewers
+  read.
+- **Build.** The HF Space rebuilds the image, installs the backend,
+  builds the Next.js static frontend, and runs
+  `huggingface_hub.snapshot_download` to hydrate `rag/` (PDF corpus +
+  prebuilt vectors) from the `insurance-bot-data` dataset — so the Space
+  repo itself stays code-only and small.
+- **Start.** `entrypoint.sh` launches `uvicorn backend.main:app` on
+  `$PORT` (default 7860); FastAPI also serves the exported frontend.
+- **Verify.** Always confirm the Space's reported build SHA actually
+  advanced before trusting that new code is live — an LFS/quota push
+  can fail without surfacing an error.
 
 ---
 
