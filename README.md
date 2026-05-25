@@ -24,10 +24,7 @@ upload your own policy PDF and ask questions about it.
 
 Live: **https://rohitsar567-insurancebot.hf.space**
 
-> **Reading this cold?** §1 is plain English. §2 walks you from a user-flow
-> diagram through the full architecture (each diagram followed by a plain
-> explanation). §3 explains every key function in layman terms. §4–§9 are
-> data, safety, stack, repo map, run-it-locally, and deployment.
+> **Reading this cold?** §1 is plain English. §2 walks you down four levels of abstraction: the user journey (§2.1), the building blocks (§2.2), the functional abstraction inside each block (§2.3), then deep-dives per building block (§2.4–§2.9). §3 gives a function-by-function sequence-diagram view of the six most important jobs. §4–§8 are safety, stack, repo map, run-it-locally, and deployment.
 
 ---
 
@@ -36,12 +33,11 @@ Live: **https://rohitsar567-insurancebot.hf.space**
 1. [What this is](#1-what-this-is)
 2. [How it works, end to end](#2-how-it-works-end-to-end)
 3. [Key functions in plain language](#3-key-functions-in-plain-language)
-4. [Data architecture](#4-data-architecture)
-5. [Safety & quality](#5-safety--quality)
-6. [Tech stack & key decisions](#6-tech-stack--key-decisions)
-7. [Repository map](#7-repository-map)
-8. [Run it locally](#8-run-it-locally)
-9. [Deployment](#9-deployment)
+4. [Safety & quality](#4-safety--quality)
+5. [Tech stack & key decisions](#5-tech-stack--key-decisions)
+6. [Repository map](#6-repository-map)
+7. [Run it locally](#7-run-it-locally)
+8. [Deployment](#8-deployment)
 
 ---
 ## 1. What this is
@@ -114,10 +110,12 @@ open-model chain. Voice in/out is handled by **Sarvam** (Indian-language
 STT/TTS). Heavy data (PDF corpus + prebuilt vectors) lives in a separate
 Hugging Face **dataset**, not the code repo.
 
-The rest of this section walks you through that, **plain-English first**
-(§2.1 user flow, §2.2 system at a glance), then the **deep architecture
-per subsystem** (§2.3 onwards). Every diagram is followed by an
-explanation of what it shows and what each block / edge means.
+The rest of this section walks you down four levels of abstraction:
+§2.1 the user's journey (plain English, no tech); §2.2 the building
+blocks at the highest level (the four canonical buckets); §2.3 the
+functional abstraction — what happens inside each bucket; and §2.4–§2.9
+the deep dives per building block. Every diagram is followed by a
+≤50-word summary and a hierarchical *how it flows* breakdown.
 
 ### 2.1 The user's journey (plain English — no tech)
 
@@ -150,10 +148,12 @@ flowchart TD
     VOICE -.-> QA
 ```
 
-**What this diagram traces.** A first-time user opens the app and ends the
+**Summary.** A first-time user opens the app and ends the
 session having decided on a plan with confidence — and how the system loops
 through compare / browse / Q&A / upload along the way. No backend in this
 view; just the human path.
+
+**How it flows:**
 
 - **Returning-user check up front.** If the app recognises your name from
   before, it offers to restore your saved profile (so you never re-type);
@@ -227,7 +227,17 @@ flowchart LR
     SCORE <--> PROF
 ```
 
-**Reading every diagram in this section.** A consistent legend:
+**Summary.** Four building blocks talk over HTTP / JSON: Frontend (the chat UI you see), Voice (Sarvam STT in + TTS out), Backend (FastAPI with four sub-blocks — orchestration, LLM Brain, Scoring + Pricing, Profile & Persistence), and the Data layer (Chroma vectors + curated JSON facts).
+
+**How it flows:**
+
+- **1. Frontend (browser · Next.js).** Renders chat, marketplace, compare, and the profile builder. Sends typed text and audio over HTTP, plays the synthesised reply.
+- **2. Voice.** `Sarvam STT (in)` turns spoken audio into a text turn; `Sarvam TTS (out)` turns the reply text back into spoken audio.
+- **3. Backend (FastAPI).** Four sub-blocks — **3a** HTTP endpoints + orchestration (`backend/main.py`); **3b** LLM Brain (Gemini + function-calling tools; NIM fallback on failure); **3c** Scoring + Pricing (`scorecard.py` + `premium_calculator.py`); **3d** Profile & Persistence (`session_state` + `profile_store`).
+- **4. Data layer.** Two stores — the Chroma **vector DB** (shared policy chunks + per-session quarantine for uploads) and curated **JSON facts** at `40-data/policy_facts/*.json`. The brain, scoring, and pricing all read from these.
+
+**Diagram legend (used throughout §2):**
+
 
 - **Solid arrow (`→`)** = a real call / data flow on the request path.
 - **Double arrow (`⇄`)** = bidirectional — one side calls, the other returns.
@@ -239,152 +249,105 @@ flowchart LR
 - Edge labels (e.g. *"retrieve_policies"*) name the actual function or
   signal carried on that edge.
 
-With that, you can read every diagram below without reverse-engineering
-its lines.
 
-### 2.3 Single-turn request flow — end to end, all layers
+### 2.3 Functional abstraction — what happens inside each building block
 
 ```mermaid
 flowchart TB
-    subgraph BROWSER["🖥️ Browser — Next.js / React (frontend/src/app/page.tsx)"]
-        UI["Chat · Marketplace · Compare · Profile builder"]
-        VOICEIN["Voice capture<br/>Web Speech (interim) + MediaRecorder (authoritative)"]
-        AUD["In-DOM &lt;audio&gt; playback · barge-in"]
+    subgraph FE["1. Frontend"]
+        direction TB
+        F1["capture_input<br/>typed text · spoken audio"]
+        F2["render_reply<br/>chat · cards · scorecard · audio"]
     end
 
-    subgraph API["⚙️ FastAPI — backend/main.py"]
-        RC["/api/chat"]
-        RT["/api/transcribe"]
-        RU["/api/upload-policy"]
-        RO["/api/coverage · /profile · /policies · /scorecard · /session"]
+    subgraph V["2. Voice"]
+        direction TB
+        V1["transcribe<br/>Sarvam Saarika STT"]
+        V2["synthesize<br/>voice_format → Sarvam Bulbul TTS"]
     end
 
-    subgraph BRAIN["🧠 THE BRAIN — backend/single_brain.py · Google Gemini"]
-        HT["handle_turn() — one model call + tool loop"]
-        subgraph TOOLS["function-calling tools — backend/brain_tools.py"]
-            T1["retrieve_policies(query, filters, top_k)"]
-            T2["save_profile_field(field, value)"]
-            T3["get_policy_facts(policy_ids)"]
-            T4["mark_recommendation(policy_ids)"]
+    subgraph BE["3. Backend"]
+        direction TB
+        subgraph BE_API["3a. HTTP + orchestration"]
+            A1["route_request"]
+            A2["orchestrate_turn"]
         end
-        FB["on Gemini fail / cold-start 503 →<br/>backend/nim_fallback.py (NVIDIA NIM chain)"]
+        subgraph BE_BRAIN["3b. LLM Brain"]
+            B1["handle_turn<br/>one Gemini call + tool loop"]
+            B2["fact_find<br/>save_profile_field"]
+            B3["retrieve<br/>retrieve_policies"]
+            B4["lookup_facts<br/>get_policy_facts"]
+            B5["recommend<br/>mark_recommendation"]
+        end
+        subgraph BE_SCORE["3c. Scoring + Pricing"]
+            SC1["grade_per_profile<br/>scorecard.py"]
+            SC2["estimate_premium<br/>premium_calculator.py"]
+        end
+        subgraph BE_PROF["3d. Profile & Persistence"]
+            P1["update_session_profile"]
+            P2["persist_to_disk<br/>end of turn"]
+            P3["recall_by_name<br/>returning user"]
+        end
     end
 
-    subgraph DATA["📚 Retrieval & curated data"]
-        CH["Chroma vector store · BGE-small (local, 384-d)<br/>rag/retrieve.py"]
-        SHARED["shared 'policies' collection<br/>~150 plans · ~7.3k chunks · 20 insurers"]
-        QUAR["per-session 'quarantine' collection<br/>uploaded PDFs · 24h TTL · session-isolated"]
-        FACTS["40-data/policy_facts/*.json<br/>curated facts + verbatim source_quote"]
+    subgraph DATA["4. Data layer"]
+        direction TB
+        D1["vector_search<br/>Chroma · BGE-small"]
+        D2["fact_lookup<br/>40-data/policy_facts/*.json"]
+        D3["read_user_profile<br/>40-data/profiles/&lt;name&gt;.json"]
     end
 
-    subgraph SCORE["🎯 Fit, scoring & pricing"]
-        SC["scorecard.py + retrieval_filters.py<br/>profile-fit gate + grade"]
-        PR["premium_calculator.py + sum_insured.py<br/>illustrative premium range"]
-    end
+    %% forward edges (input / down the pipeline)
+    F1 -->|"audio"| V1
+    F1 -->|"text · JSON"| A1
+    V1 --> A1
+    A1 --> A2
+    A2 --> B1
+    B1 --> B2
+    B1 --> B3
+    B1 --> B4
+    B1 --> B5
+    B2 --> P1
+    B3 --> D1
+    B4 --> D2
+    P3 --> D3
+    A2 --> SC1
+    A2 --> SC2
+    SC1 -->|"reads"| D2
+    SC2 -->|"reads"| D2
+    SC1 -->|"reads"| P1
+    SC2 -->|"reads"| P1
+    P1 -.->|"end of turn"| P2
 
-    subgraph PROF["👤 Profile & persistence"]
-        SS["session_state.py (live profile, recall staging)"]
-        PS["profile_store.py / profile_persistence.py<br/>named profile on disk (recall)"]
-        PRG["profile_rag.py — profile as session-scoped chunk"]
-    end
+    %% return edges (output / back to caller)
+    D1 -.->|"top-k chunks"| B3
+    D2 -.->|"per-policy facts"| B4
+    D3 -.->|"saved profile"| P3
+    SC1 -.->|"grade"| A2
+    SC2 -.->|"premium range"| A2
+    B1 -.->|"reply + citations"| A2
+    A2 -.->|"text"| F2
+    A2 -.->|"speak?"| V2
+    V2 -.->|"audio"| F2
 
-    subgraph VOICEOUT["🔊 Voice out"]
-        VF["voice_format.py — money/Indic normalisation, chunking"]
-        TTS["Sarvam Bulbul TTS"]
-    end
-
-    UI -->|"text · POST"| RC
-    VOICEIN -->|"audio"| RT
-    RT -->|"Sarvam Saarika STT (authoritative transcript)"| RC
-    UI -->|"upload"| RU
-    UI --> RO
-    RC --> HT
-    HT <-->|"tool calls / results"| TOOLS
-
-    %% retrieval: query out + chunks back
-    T1 -->|"query + filters"| CH
-    CH -->|"top-k chunks (back to brain)"| T1
-    CH --- SHARED
-    CH --- QUAR
-
-    %% curated facts: out + facts back, and fed into scoring + pricing
-    T3 -->|"policy_ids"| FACTS
-    FACTS -->|"facts (CSR, complaints, grade)"| T3
-    FACTS -->|"per-policy fields"| SC
-    FACTS -->|"pricing inputs"| PR
-
-    %% profile: capture + restore (returning user)
-    T2 -->|"new value"| SS
-    SS <-->|"end-of-turn persist · on-return restore"| PS
-    SS --> PRG
-    PRG -.->|"'given my situation' grounding"| CH
-
-    %% scoring/pricing read live profile + write back results to the reply via the brain
-    HT --> SC
-    HT --> PR
-    SC <-->|"profile-aware grade"| PROF
-    PR <-->|"profile-aware range"| PROF
-    SC -->|"reply payload"| HT
-    PR -->|"reply payload"| HT
-    RO --> SC
-    RO --> PR
-
-    %% fallback
-    HT -. "Gemini down" .-> FB
-    FB --> HT
-
-    %% reply + voice out
-    HT -->|"reply + citations"| RC
-    RC -->|"text reply"| UI
-    RC -->|"speak?"| VF
-    VF --> TTS
-    TTS --> AUD
-    AUD -. "barge-in aborts in-flight /api/chat" .-> RC
-
-    %% audit
-    HT -.->|"1 JSON line / turn"| LOG["logs/turns.jsonl (replay/audit)"]
+    %% blue solid = forward · orange dashed = return
+    linkStyle 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18 stroke:#1565c0,stroke-width:2px
+    linkStyle 19,20,21,22,23,24,25,26,27 stroke:#e65100,stroke-width:2px,stroke-dasharray:6 3
 ```
 
-**What this diagram traces.** Everything that happens between a keystroke
-(or spoken word) in the browser and a reply (with optional voice playback)
-coming back. Drawn across every layer the request crosses.
+**Legend.** Blue solid = forward flow (input / call down the pipeline). Orange dashed = return flow (result / reply back up).
 
-- **Browser (Next.js / React).** The user types or speaks; the page
-  renders chat, marketplace, compare and the profile builder. For voice,
-  Web Speech shows a live *interim* transcript while `MediaRecorder`
-  captures the *authoritative* audio.
-- **FastAPI.** Four endpoint groups: `/api/transcribe` (Sarvam STT),
-  `/api/chat` (the brain), `/api/upload-policy` (the 8 security gates →
-  quarantine), and the supporting
-  `/api/coverage · /profile · /policies · /scorecard · /session`.
-- **The brain.** One Gemini call per turn with four function-calling
-  tools: `retrieve_policies`, `save_profile_field`, `get_policy_facts`,
-  `mark_recommendation`. The brain may *only* state what its tools
-  returned.
-- **Retrieval (Chroma).** Two arrows now shown explicitly — the brain
-  sends a query *out*, and the vector store sends the top-k chunks *back*.
-  Shared "policies" collection for the catalogue; per-session
-  "quarantine" for uploaded PDFs.
-- **Curated facts JSON (`40-data/policy_facts/`).** Two arrows out: the
-  brain reads it via `get_policy_facts`, **and** the scoring and pricing
-  modules read from it directly (this fixes the earlier
-  expert-review gap where only the brain's path was drawn).
-- **Scoring + pricing.** `scorecard.py` / `retrieval_filters.py` grade
-  each plan for *this* profile (live, not stored); `premium_calculator.py`
-  + `sum_insured.py` produce the live illustrative premium range.
-- **Profile & persistence.** The brain calls `save_profile_field` which
-  writes to `session_state`. End-of-turn, `auto_persist_session` writes
-  a `<name>.json` to disk; on a returning user, the same store is read
-  back to recognise them. `profile_rag.py` also embeds the profile as a
-  session-scoped chunk so the brain can ground "given my situation".
-- **Voice out.** `voice_format.py` normalises money / Indic shorthand and
-  chunks at sentence bounds; Sarvam Bulbul speaks; an in-DOM `<audio>`
-  plays. The user speaking over the bot (barge-in) pauses playback *and*
-  aborts the in-flight `/api/chat`.
-- **Fallback.** On a real Gemini failure or cold-start 503, the turn
-  transparently routes to `nim_fallback.py` — fail-loud, never silently
-  wrong. (Detail in §2.4.)
-- **Audit.** Every turn appends one JSON line to `logs/turns.jsonl`.
+**Summary.** Inside each building block from §2.2, a small set of named functions fires per turn — Frontend captures and renders, Voice transcribes and synthesises, the four Backend sub-blocks orchestrate / decide / score / remember, and the Data layer answers their reads.
+
+**How it flows:**
+
+- **1. Frontend.** `capture_input` accepts typed text or recorded audio; `render_reply` paints chat + marketplace cards + scorecard + audio playback.
+- **2. Voice.** `transcribe` is the inbound path (Sarvam Saarika STT); `synthesize` is the outbound path (`voice_format` normalises money / Indic shorthand → Sarvam Bulbul TTS).
+- **3a. HTTP + orchestration.** `route_request` maps the URL to a handler; `orchestrate_turn` is the per-turn supervisor — it owns the request lifecycle and ties brain + scoring + voice + persistence together.
+- **3b. LLM Brain.** One `handle_turn` per turn calls Gemini, which chooses which of `fact_find` / `retrieve` / `lookup_facts` / `recommend` to run as tools. The brain may only state what its tools returned.
+- **3c. Scoring + Pricing.** `grade_per_profile` and `estimate_premium` read curated facts **and** the live profile, compute on every request (never stored), and hand back to `orchestrate_turn`.
+- **3d. Profile & Persistence.** `update_session_profile` reflects each `fact_find` write into the live session; `persist_to_disk` runs end-of-turn so the next visit can call `recall_by_name`.
+- **4. Data layer.** Three reads — `vector_search` for free-form Q&A, `fact_lookup` for decision-critical numbers with verbatim quotes, and `read_user_profile` for returning-user recall. The data layer does no writes during a request; those happen offline (vectors) or end-of-turn (profile).
 
 ### 2.4 LLM brain + fail-loud fallback chain
 
@@ -400,9 +363,11 @@ flowchart LR
     GUARD --> OUT["sent to user"]
 ```
 
-**What this diagram traces.** How a chat turn is served by the primary
+**Summary.** How a chat turn is served by the primary
 LLM, what happens when it fails, and the structural guard that prevents a
 silently wrong answer.
+
+**How it flows:**
 
 - **Primary path.** Gemini (`gemini-2.5-flash-lite`). On a healthy
   response → the reply is built *only* from what the tools returned.
@@ -416,7 +381,6 @@ silently wrong answer.
   named in the prose is verified against the same `retrieve_policies`
   and `get_policy_facts` results the brain saw (with an exemption for
   genuine catalogue UINs). Faithfulness is structural, not bolt-on.
-
 
 **Why a single brain (not a multi-model pipeline).** Earlier designs split
 the work across several LLM passes (a separate fact-find brain, a QA
@@ -453,8 +417,10 @@ flowchart LR
     SPK -.->|"abort in-flight"| BR
 ```
 
-**What this diagram traces.** How spoken input becomes a chat turn, how
+**Summary.** How spoken input becomes a chat turn, how
 the reply becomes speech back, and how the user can interrupt mid-answer.
+
+**How it flows:**
 
 - **Capture.** Tap-to-talk (touch) or push-to-talk (desktop) starts
   `MediaRecorder` (the authoritative audio) and Web Speech (a live
@@ -469,7 +435,6 @@ the reply becomes speech back, and how the user can interrupt mid-answer.
 - **Barge-in.** The user speaking over the bot pauses playback **and**
   aborts the in-flight `/api/chat`, so the bot stops mid-thought rather
   than over-talking.
-
 
 **More on voice.** The browser shows a live *interim* transcript via the
 Web Speech API while `MediaRecorder` captures the **authoritative** audio,
@@ -504,9 +469,11 @@ flowchart TB
     note1["evicted/blank session + carried chat_history →<br/>STATE-RECOVERY: rebuild profile from history,<br/>never re-ask the name"] -.-> ENDT
 ```
 
-**What this diagram traces.** How the system captures a profile during a
+**Summary.** How the system captures a profile during a
 conversation, persists it for the user's next visit, recalls it *safely* on
 return, and recovers when the server forgot it.
+
+**How it flows:**
 
 - **Capture.** Every answer (chat or profile-builder) is persisted via
   `save_profile_field` into the live `session_state.profile`.
@@ -527,7 +494,6 @@ return, and recovers when the server forgot it.
 - **Drives scoring + pricing.** The same profile feeds the scorecard
   fit-and-grade and the live premium estimate.
 
-
 **More on profile & personalisation.** Your answers build a session
 profile (`backend/session_state.py`, `profile_store.py`,
 `profile_persistence.py`). The profile is also embedded as a
@@ -538,23 +504,41 @@ illustrative premium estimate (`backend/premium_calculator.py`,
 `sum_insured.py`) — see §3.2 and §3.3 for what each function actually
 computes.
 
-### 2.7 Data architecture & offline ingest pipeline
+### 2.7 Data architecture — where the JSON lives, where the vectors live
 
-The previous version of this diagram conflated two different things —
-*where data physically lives* (laptop / GitHub / HF Space / HF Dataset)
-versus *what kind of data each piece is* (code / vectors / curated JSON).
-This version separates them into two readable views.
+**Summary.** Two complementary kinds of data power the bot: small JSON files of human-reviewed facts versioned with the code, and a Chroma vector database of the full policy text held in a separate HF dataset. JSON answers exact-number questions; vectors answer free-form Q&A.
 
-#### 2.7.1 Where it physically lives
+#### 2.7.1 The two data kinds, side by side
+
+| | **JSON files** | **Vector database (Chroma)** |
+|---|---|---|
+| **What's in it** | Per-policy curated structured fields — CSR%, ICR%, complaints/10k, room-rent rule, waiting periods, sub-limits, grade — **each value carries its verbatim `source_quote` from the PDF** | Full text of every policy PDF, chunked into ~500-token overlapping pieces, embedded as 384-d vectors with BGE-small-en-v1.5 |
+| **File location** | `40-data/policy_facts/*.json` — inside the **code repo**, versioned in git | `rag/vectors/` — git-**ignored** on the laptop, lives in the **HF dataset** `rohitsar567/insurance-bot-data`, pulled at Docker build via `huggingface_hub.snapshot_download` |
+| **Size** | ~150 files × few KB each — tiny, fits in git | ~7.3 k chunks × 384 dims + raw PDFs (hundreds of MB) — too big for git |
+| **Built by** | Offline ingest (`rag/extract.py` + `schema.py`) — LLM-assisted extraction, **human-reviewed**, committed to git | Offline ingest (`rag/ingest.py`) — chunked + embedded once, published to HF dataset |
+| **Read by (at request time)** | `get_policy_facts` tool (LLM brain) · `scorecard.py` · `premium_calculator.py` · marketplace-card renderer | `retrieve_policies` tool (LLM brain) — only |
+| **Used for** | Decision-critical exact numbers cited on cards, in the scorecard, and in pricing — with the verbatim PDF quote shown | Free-form Q&A grounded in actual policy wording — *"what does this plan cover during pregnancy?"* |
+
+#### 2.7.2 Other data files (smaller, supporting)
+
+- **`40-data/reviews/`** — sourced insurer reviews (claims stories, regulator notes).
+- **`40-data/premiums/`** — illustrative public rate-card combinations consumed by the multivariate premium estimator (§3.3).
+- **`40-data/insurer_network.json`** — hospital-network counts per insurer.
+- **`40-data/profiles/<name>.json`** — saved user profiles for returning-user recall. Per-named-user, server-side, never indexed into the shared corpus.
+
+All four sit in the **code repo** (under `40-data/`) because they're small, human-reviewed, and decision-critical — safe to version alongside the code.
+
+#### 2.7.3 Where each piece physically lives
 
 ```mermaid
 flowchart LR
-    LAPTOP["💻 Local dev laptop<br/>(source of truth before any push)"]
+    LAPTOP["💻 Local dev laptop<br/>source of truth before any push"]
     subgraph CODE["📁 Code repository (mirrored to two remotes)"]
+        direction TB
         GH["GitHub — public mirror<br/>rohitsar567/insurance-sales-bot"]
         HFS["HF Space — code + running app<br/>rohitsar567/InsuranceBot"]
     end
-    HFD["🤗 HF Dataset<br/>rohitsar567/insurance-bot-data<br/>(PDF corpus + prebuilt Chroma vectors)"]
+    HFD["🤗 HF Dataset<br/>rohitsar567/insurance-bot-data<br/>PDF corpus + prebuilt Chroma vectors"]
     APP["🌐 Live app (HF Space container)"]
 
     LAPTOP -->|"git push github"| GH
@@ -562,80 +546,48 @@ flowchart LR
     LAPTOP -.->|"offline ingest publishes here"| HFD
     HFS -->|"Docker build"| APP
     HFD -.->|"snapshot_download at build"| APP
+
+    linkStyle 0,1,3 stroke:#1565c0,stroke-width:2px
+    linkStyle 2,4 stroke:#e65100,stroke-width:2px,stroke-dasharray:6 3
 ```
 
-- **Local laptop** is the source of truth before any push.
-- **Code repo** lives in **two remotes**: GitHub (a public mirror for
-  reviewers) and the HF Space's own repo (`origin`, which is what HF
-  rebuilds the running container from on every push).
-- **HF dataset** holds the *heavy binaries* (PDF corpus + prebuilt
-  vectors) — kept out of the code repo so the deployable image stays
-  small. The Space's Docker build pulls it via
-  `huggingface_hub.snapshot_download`.
+**Summary.** Three physical homes: the laptop (source of truth before any push), the code repo (mirrored to two git remotes — GitHub for reviewers and the HF Space's own repo for deployment), and the HF dataset (the heavy binaries).
 
-#### 2.7.2 What kind of data lives in each piece
+**How it flows:**
 
-```mermaid
-flowchart LR
-    subgraph CODEC["📁 Code repo (small, versioned with the code)"]
-        SRC["Application source<br/>backend/, frontend/, rag/, tools/"]
-        FACTS["40-data/policy_facts/*.json<br/>curated facts + verbatim source_quote"]
-        REVIEWS["40-data/reviews/, premiums/, insurer_network.json"]
-    end
-    subgraph DSET["🤗 HF dataset (heavy binaries)"]
-        PDFS["rag/corpus/<br/>raw policy PDFs"]
-        VEC["rag/vectors/<br/>prebuilt Chroma vector store"]
-    end
-    subgraph LIVE["🟢 Runtime-only (not stored)"]
-        GRADE["The user's per-policy grade<br/>(computed live, profile × policy)"]
-        PRICE["The user's premium range<br/>(computed live, profile × policy)"]
-        SESS["Live session state in memory"]
-    end
-    subgraph USER["👤 Per-named-user (on disk, server-side)"]
-        UPROF["40-data/profiles/&lt;name&gt;.json<br/>(so a returning user is recognised)"]
-    end
-```
+- **Local laptop.** Single source of truth before any push. All editing happens here.
+- **Code repo — two remotes.** `git push github` updates the GitHub public mirror (for reviewers). `git push origin` updates the HF Space's own repo and **triggers the Docker rebuild**.
+- **HF dataset (offline channel).** Heavy binaries — PDF corpus + prebuilt Chroma vectors — are published here separately from the code so the deployable image stays small.
+- **Live container.** On every Docker build, `huggingface_hub.snapshot_download` hydrates `rag/corpus/` and `rag/vectors/` from the HF dataset; the FastAPI app then has both data kinds available.
 
-- **Code repo** holds three kinds of files: application source,
-  per-policy curated facts JSON (small, decision-critical, human-reviewed
-  → versioned with code), and insurer-level reviews / premium baselines /
-  network counts.
-- **HF dataset** holds the things that are too big to version with code:
-  the raw policy PDFs and the prebuilt Chroma vector store.
-- **Runtime-only (never stored)** — the *grade* and *premium* for a
-  particular policy × particular profile are computed fresh each request.
-  Two different users will see two different grades and prices for the
-  same policy.
-- **Per-named-user** — only the user's *profile* itself is persisted by
-  name (so a returning user is recognised). Their grades and prices are
-  not.
-
-#### 2.7.3 Offline ingest pipeline (built once, not on the request path)
+#### 2.7.4 Offline ingest pipeline (built once, not on the request path)
 
 ```mermaid
 flowchart LR
     PDF["📄 Raw policy PDFs<br/>rag/corpus/"] --> ING["rag/ingest.py<br/>chunk pages"]
-    ING --> EMB["embed (BGE-small, local, 384-d)"]
+    ING --> EMB["embed<br/>BGE-small · local · 384-d"]
     EMB --> VEC["Chroma vector store<br/>rag/vectors/"]
     ING --> XT["rag/extract.py + schema.py<br/>structured fact extraction (LLM-assisted)"]
     XT --> JSON["40-data/policy_facts/*.json<br/>+ verbatim source_quote"]
-    XT --> DUCK["policies.duckdb<br/>(structured rollup)"]
+    XT --> DUCK["policies.duckdb<br/>structured rollup"]
     VEC -.->|"published to"| HFD["HF dataset"]
     PDF -.->|"published to"| HFD
     JSON -->|"versioned with code"| CODE["Code repo"]
+
+    linkStyle 0,1,2,3,4,5,8 stroke:#1565c0,stroke-width:2px
+    linkStyle 6,7 stroke:#e65100,stroke-width:2px,stroke-dasharray:6 3
 ```
 
-**Why split ingest from extraction.** *Chunking* breaks each PDF into
-overlapping text chunks for semantic retrieval. *Extraction* pulls
-structured fields (waiting periods, room-rent caps, CSR%, etc.) into a
-schema-validated JSON, **with the verbatim source_quote that justifies
-each value**. The chunks power free-form Q&A; the JSON powers the
-marketplace cards, scoring and pricing.
+**Summary.** A single offline pipeline turns each raw PDF into two artefacts: chunked embeddings for free-form retrieval, and a structured JSON of decision-critical fields with verbatim quotes. Vectors → HF dataset; JSON → code repo.
 
-**Provenance rule:** every policy fact shown to a user traces to a real
-clause in a real PDF. Where a document genuinely doesn't state something,
-it is recorded as a sourced-null (*"not stated in &lt;file&gt;.pdf"*) —
-never invented or back-filled.
+**How it flows:**
+
+- **Chunking + embedding.** `rag/ingest.py` splits each PDF into overlapping ~500-token chunks; BGE-small encodes each chunk into a 384-d vector; Chroma persists them to `rag/vectors/`.
+- **Extraction.** `rag/extract.py` + `schema.py` run an LLM-assisted pass to pull structured fields (waiting periods, room-rent caps, CSR%, etc.) into a schema-validated JSON — **with the verbatim `source_quote` that justifies each value**.
+- **Two destinations.** Vectors and raw PDFs are published to the HF dataset (too big for git); JSON files are versioned with the code so a reviewer can see exactly what facts feed the marketplace cards.
+- **Why split.** Chunks power free-form Q&A; the JSON powers the marketplace cards, scoring, and pricing — two different queries, two different data shapes.
+
+**Provenance rule.** Every policy fact shown to a user traces to a real clause in a real PDF. Where a document genuinely doesn't state something, it is recorded as a sourced-null (*"not stated in &lt;file&gt;.pdf"*) — never invented or back-filled.
 
 ### 2.8 Uploaded-PDF defence — 8 sequential gates
 
@@ -653,9 +605,11 @@ flowchart LR
     G1 & G2 & G3 & G4 & G5 & G6 & G7 & G8 -->|"fail"| REJ["clean rejection (reason surfaced)"]
 ```
 
-**What this diagram traces.** Every check a user-uploaded PDF passes
+**Summary.** Every check a user-uploaded PDF passes
 before its content is allowed to touch the vector store, and where rejected
 files go.
+
+**How it flows:**
 
 - **The 8 gates, in order.** (1) **File mechanics** — `%PDF` magic, 5 KB–25 MB
   size band, well-formed `%%EOF`, no embedded executables / JavaScript /
@@ -677,7 +631,6 @@ files go.
 - **On fail.** A clean rejection naming the gate; the file is deleted;
   nothing is embedded.
 
-
 ### 2.9 Deployment
 
 ```mermaid
@@ -693,8 +646,10 @@ flowchart LR
     LIVE --> CHK["verify reported build SHA advanced<br/>(LFS/quota push can fail silently)"]
 ```
 
-**What this diagram traces.** How a `git push` becomes a live Space, end
+**Summary.** How a `git push` becomes a live Space, end
 to end.
+
+**How it flows:**
 
 - **Two remotes.** `origin` = the Hugging Face Space (a push here
   triggers the Docker rebuild). `github` = the public mirror reviewers
@@ -710,158 +665,190 @@ to end.
   advanced before trusting that new code is live — an LFS/quota push
   can fail without surfacing an error.
 
-
 ---
 
 ## 3. Key functions in plain language
 
-**The short answer.** The bot has six internal "jobs". Each one is
-defined by its inputs, what it does, and what it returns — in plain
-language. A seventh subsection makes explicit *what is stored vs what is
-live-only*, because that's the question reviewers most often miss.
+**Summary.** Six internal jobs make the bot work. Each one gets a sequence diagram showing what calls what, a ≤50-word summary, and a step-by-step explanation. A seventh subsection makes explicit *what is stored vs what is live-only*.
 
 ### 3.1 Profile construction
-- **Job.** Turn the user's conversation (or profile-builder answers) into
-  a structured profile object.
-- **Inputs.** Raw text from `/api/chat` or `/api/profile`.
-- **How.** The LLM brain calls `save_profile_field(field, value)` once
-  per fact captured (name, age, dependants, location_tier, income_band,
-  primary_goal, health_conditions, family_medical_history, smoker,
-  desired_sum_insured_inr, budget_band, existing_cover_inr, copay_pct,
-  parents_age_max).
-- **Output.** The live `session.profile`.
-- **Persistence.** In memory during the session, **and** persisted to
-  disk as `40-data/profiles/<name>.json` at end of turn (so a returning
-  user can be recognised next visit — see §3.6).
 
-### 3.2 Profile-aware scoring (per-policy grade)
-- **Job.** Grade every policy *for this user*, so the shortlist is
-  ranked by fit and a single A–E letter grade is shown on every card.
-- **Inputs.** The live profile + the policy's curated facts
-  (`40-data/policy_facts/<policy>.json`) + insurer-level review data.
-- **How.** `backend/scorecard.py :: build_scorecard(policy, insurer_reviews, profile)`
-  computes six sub-scores (coverage, predictability, claims, network,
-  renewal, terms), assembles a letter grade, and produces a
-  **profile-personalised summary** (top strengths for *this* user + the
-  one honest caveat that caps the grade).
-- **Output.** The grade, six sub-scores, and the summary shown on the
-  marketplace card and in the in-chat policy card.
-- **Storage.** Computed live per request — **not stored**. Two different
-  users get two different grades for the *same* policy because the
-  weighting and the summary are profile-aware.
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant API as 3a. /api/chat
+    participant B as 3b. LLM Brain
+    participant T as save_profile_field tool
+    participant S as 3d. session_state
+    U->>API: typed / spoken reply
+    API->>B: handle_turn(text, profile)
+    B->>T: save_profile_field("age", 32)
+    T->>S: session.profile.age = 32
+    S-->>T: ok
+    T-->>B: saved
+    B-->>API: next question (or proceed to scoring + pricing)
+```
 
-### 3.3 Profile-aware pricing (illustrative premium)
-- **Job.** Show a ballpark premium range for a policy *for this user*.
-- **Inputs.** The profile (age, family size, location, smoker, deductible,
-  co-pay, sum insured) + the policy's pricing characteristics.
-- **How.** `backend/premium_calculator.py :: estimate` runs a
-  **multivariate regression-style ballpark** over public rate-card
-  combinations — age band × metro/non-metro × smoker / non-smoker × PED
-  / no-PED × chosen co-pay / chosen deductible / chosen sum insured.
-- **Output.** A range like *"₹12,500 – ₹17,200 / yr, point ≈ ₹14,800"*
-  with a clear illustrative-only disclaimer.
-- **Honest caveat.** This is **not** real underwriting. It's a
-  directional ballpark from public rate cards. The final premium depends
-  on the insurer's underwriting + your medicals + IRDAI-filed loadings.
-- **Storage.** Computed live per request — **not stored**.
+**Summary.** Every user reply runs the brain, which extracts one fact at a time and saves it via the `save_profile_field` tool into the live `session_state.profile`. No regex, no separate extractor model — extraction is a tool call.
 
-### 3.4 Retrieval (over the policy corpus)
-- **Job.** When the brain needs to *cite* a policy fact, fetch the actual
-  clause from the actual PDF.
-- **Inputs.** A search query the brain composes from the profile + the
-  user's question.
-- **How.** `retrieve_policies(query, filters, top_k)` embeds the query
-  with **BGE-small** (local, 384-d) and looks up the Chroma vector store
-  of pre-chunked policy PDFs (~150 plans, ~7.3 k chunks, 20 insurers).
-  The **shared** "policies" collection serves all users; a **per-session
-  "quarantine"** collection holds uploaded PDFs (isolated, 24 h TTL).
-- **Output.** The top-k matching chunks with their source PDF, page, and
-  policy_id.
-- **Faithfulness.** The brain may *only* state what these chunks (or
-  `get_policy_facts`) returned — see §2.4.
+**How it flows:**
 
-### 3.5 Policy-facts lookup (numbers without retrieval)
-- **Job.** Answer questions about *already-curated* policy fields —
-  claim-settlement ratio, complaints volume, the scorecard, room-rent
-  rules, waiting periods, etc. — without doing free-form retrieval.
-- **Inputs.** One or more `policy_id`s.
-- **How.** `get_policy_facts(policy_ids)` reads
-  `40-data/policy_facts/<id>.json` directly.
-- **Output.** Structured fields (CSR%, ICR%, complaints/10k, grade) the
-  brain cites in its answer.
-- **Why both this and §3.4 exist.** The vector store is for free-form
-  Q&A over policy wording. The curated JSON is for fast, exact, source-
-  cited lookups of decision-critical numbers without an embedding hop.
+- **User reply arrives** at `/api/chat` (typed text or post-STT transcript).
+- **Brain runs.** `handle_turn` calls Gemini with the reply + the current profile + the tool schema.
+- **Tool call.** When Gemini decides a fact is captured, it calls `save_profile_field(field, value)` — one call per fact.
+- **Write.** The tool sets the field on `session.profile` (in memory). All fact-find captures are concentrated here; there is no second LLM pass.
+- **Continue.** Brain returns the next question, or — if the profile is complete enough — proceeds to scoring + pricing.
+- **Persistence is later.** End-of-turn, the whole profile is auto-persisted to disk by the orchestrator (see §3.6).
+
+### 3.2 Profile-aware scoring
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant API as 3a. /api/scorecard
+    participant SC as 3c. scorecard.py
+    participant J as 4. policy_facts JSON
+    participant R as 4. reviews JSON
+    participant P as 3d. session.profile
+    API->>SC: build_scorecard(policy_id, profile)
+    SC->>J: read curated facts (CSR, room-rent, waitings)
+    SC->>R: read insurer reviews
+    SC->>P: read live profile (age, family, conditions)
+    SC->>SC: 6 sub-scores → letter grade + personalised summary
+    SC-->>API: grade · sub-scores · summary
+```
+
+**Summary.** Scoring grades every policy *for this user* — same policy, two users, two grades. Six sub-scores roll up into a letter, with a personalised one-line summary naming the strengths for this profile and the one honest caveat.
+
+**How it flows:**
+
+- **Trigger.** Brain (or `/api/scorecard` directly) asks for a per-policy grade.
+- **Three reads.** `scorecard.py` reads (a) the policy's `policy_facts` JSON, (b) the insurer's reviews JSON, and (c) the live profile from `session_state`.
+- **Six sub-scores.** Coverage · predictability · claims · network · renewal · terms — each weighted against this profile (e.g. a smoker is penalised more in pricing predictability; an elder is penalised more in waiting-period structure).
+- **Letter grade + summary.** A grade band (A–E) and a one-line summary listing this user's top strengths and the one capping caveat.
+- **Live, not stored.** Recomputed per request. Storage would be wrong here — the grade depends on *who is asking*.
+
+### 3.3 Profile-aware pricing — the multivariate ballpark
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant API as 3a. /api/coverage
+    participant PR as 3c. premium_calculator.py
+    participant J as 4. policy_facts JSON
+    participant RC as 4. rate-card combinations<br/>age × metro × smoker × PED ×<br/>co-pay × deductible × tenure
+    participant P as 3d. session.profile
+    API->>PR: estimate(policy_id, profile)
+    PR->>J: read pricing structure
+    PR->>P: read profile (7 dimensions)
+    PR->>RC: match combination → rate range
+    PR->>PR: interpolate + apply caveats
+    PR-->>API: ₹low – ₹high · point ≈ ₹X (illustrative)
+```
+
+**Summary.** Pricing is a multivariate ballpark from public rate-card combinations — age × metro × smoker × PED × chosen co-pay × deductible × sum insured. Same plan, two users, two ranges. Explicitly **not** real underwriting.
+
+**How it flows:**
+
+- **Inputs.** The user's profile (seven dimensions) and the policy's pricing characteristics.
+- **Multivariate match.** `premium_calculator.estimate` looks up combinations across the seven dimensions and interpolates within bands.
+- **Output.** A range (e.g. ₹12 500 – ₹17 200 / yr) with a midpoint and a clear illustrative-only disclaimer.
+- **Honest caveat.** Final premium depends on the insurer's underwriting + medicals + IRDAI-filed loadings — this is a directional ballpark, not a quote.
+- **Live, not stored.** Same as scoring — recomputed per request because the answer is a function of *this* user.
+
+### 3.4 Retrieval — `retrieve_policies` over the vector store
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant B as 3b. LLM Brain
+    participant T as retrieve_policies tool
+    participant E as BGE-small embedder
+    participant C as 4. Chroma<br/>shared 'policies' +<br/>per-session 'quarantine'
+    B->>T: retrieve_policies(query, filters, top_k)
+    T->>E: encode(query) → 384-d vector
+    T->>C: nearest-neighbour + metadata filter
+    C-->>T: top-k chunks (text · pdf · page · policy_id)
+    T-->>B: chunks — the brain may quote only from these
+```
+
+**Summary.** When the brain needs to *cite* policy wording, it asks the retrieval tool. The query is embedded with BGE-small, looked up in Chroma, and the top-k chunks come back with their source PDF, page, and policy_id. The brain may state nothing the tool did not return.
+
+**How it flows:**
+
+- **Query.** Brain composes a query from the user's question + the profile.
+- **Embed.** Local BGE-small turns the query into a 384-d vector (no API hop, no rate limit).
+- **Search.** Chroma returns nearest chunks, scoped to either the shared `policies` collection (catalogue) or the per-session `quarantine` collection (user-uploaded PDFs — never crosses sessions, 24 h TTL).
+- **Faithfulness.** The brain may *only* state what these chunks (or `get_policy_facts`) returned. Anything else is a violation of the structural grounding guard (§2.4).
+
+### 3.5 Curated facts — `get_policy_facts` (no embedding hop)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant B as 3b. LLM Brain
+    participant T as get_policy_facts tool
+    participant F as 4. 40-data/policy_facts/&lt;id&gt;.json
+    B->>T: get_policy_facts([policy_id_1, policy_id_2])
+    T->>F: read JSON file(s) directly
+    F-->>T: CSR · complaints · grade · source_quote
+    T-->>B: structured fields with verbatim PDF quote
+```
+
+**Summary.** For decision-critical numbers (claim-settlement ratio, complaints volume, waiting periods, room-rent rule, grade), the brain calls `get_policy_facts` which reads the curated JSON directly — no embedding hop, no LLM, exact values with the verbatim PDF quote.
+
+**How it flows:**
+
+- **Why this exists alongside §3.4.** Retrieval is for free-form text Q&A; this is for exact, fast, source-cited number lookups. Different query shape, different mechanism.
+- **No LLM in the path.** A plain file read of `40-data/policy_facts/<id>.json`. The brain quotes the value (and the `source_quote`) verbatim.
+- **Used by more than the brain.** `scorecard.py` and `premium_calculator.py` also read these JSON files directly — see §2.3 (the brain's edge is not the only edge into the JSON).
 
 ### 3.6 Returning-user recall
-- **Job.** Recognise a returning user safely and offer to restore their
-  saved profile.
-- **How.** When the captured name matches a stored
-  `40-data/profiles/<name>.json`, the match is **staged** on
-  `pending_profile_recall` (never auto-merged) and the bot asks
-  *"Welcome back — are you the same X?"*. An explicit *yes* merges the
-  stored slots; an explicit *no* discards the stage and the user
-  continues as a brand-new visitor.
-- **Why staged + confirm.** A bare name is a weak, shared key.
-  Auto-restoring would silently leak a stranger's profile if names
-  collide. The confirm gate prevents that.
-- **Bonus — state recovery.** If the server's in-memory session was
-  evicted / restarted but the browser still carries `chat_history`, the
-  brain enters **STATE-RECOVERY MODE** — it silently re-captures the
-  profile from the conversation history rather than asking the user's
-  name again. The user never perceives a loss.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant B as 3b. LLM Brain
+    participant T as save_profile_field
+    participant S as 3d. session_state
+    participant D as 4. 40-data/profiles/&lt;name&gt;.json
+    U->>B: "Hi, I'm Neha"
+    B->>T: save_profile_field("name", "Neha")
+    T->>S: write name
+    S->>D: try_recall_by_name("Neha")
+    D-->>S: stored profile (staged on pending_profile_recall)
+    S-->>B: "Welcome back — are you the same Neha?"
+    U->>B: "yes" / "no"
+    alt yes
+        B->>S: apply_pending_recall → merge stored slots
+    else no
+        B->>S: discard stage · continue as fresh user
+    end
+```
+
+**Summary.** When a returning user gives a name that matches a stored profile, the match is **staged**, never auto-merged — the bot asks "are you the same Neha?" and only an explicit *yes* restores the saved slots. This prevents a name collision from leaking a stranger's profile.
+
+**How it flows:**
+
+- **Capture name.** Same path as any other fact (§3.1).
+- **Lookup.** `try_recall_by_name` checks `40-data/profiles/<slug>.json` with a first-name slug fallback.
+- **Stage, don't merge.** A match goes on `session.pending_profile_recall` — *not* into `session.profile`.
+- **Confirm gate.** The bot asks the user to confirm. *yes* → merge stored slots into the live profile. *no* → discard the stage and continue as a fresh user.
+- **Bonus: state recovery.** If the server's in-memory session was evicted but the browser still carries `chat_history`, the brain enters **STATE-RECOVERY MODE** and silently rebuilds the profile from history rather than asking for the name again.
 
 ### 3.7 What is stored vs what is live-only
 
 | What | Where | Why |
-| --- | --- | --- |
-| Policy PDFs + their vector chunks | `rag/corpus/`, Chroma store — both pulled from the HF dataset at Docker build | Built once, offline; read every request |
-| Curated policy facts (per policy) | `40-data/policy_facts/*.json` (in the code repo) | Small, human-reviewed, versioned with code |
-| The user's saved profile (by name) | `40-data/profiles/<name>.json` (server-side, per-named-user) | So a returning user can be recognised |
-| The user's per-policy **grade / scorecard** | **Not stored — live per request** | Two users get two grades for the same policy (profile-aware) |
-| The user's **premium range** for a policy | **Not stored — live per request** | Same reason as the grade |
+|---|---|---|
+| Policy PDFs + vector chunks | `rag/corpus/` + Chroma store (HF dataset → pulled at build) | Built once, offline; read every request |
+| Curated policy facts (per policy) | `40-data/policy_facts/*.json` (code repo) | Small, human-reviewed, versioned with code |
+| Saved user profile (by name) | `40-data/profiles/<name>.json` (server-side, per-named-user) | So a returning user can be recognised |
+| Per-policy **grade / scorecard** | **Not stored — live per request** | Two users get two grades for the same policy (profile-aware) |
+| **Premium range** for a policy | **Not stored — live per request** | Same reason as the grade |
 | Uploaded PDFs | Per-session Chroma quarantine, **24 h TTL** | Isolated to the uploader, never the shared corpus |
-| The reasoning the brain showed this turn | `logs/turns.jsonl` (one JSON line per turn) | Replay / audit; never echoed back to other users |
-
----
-
-## 4. Data architecture
-
-There are **three repositories**, deliberately separated:
-
-*(You don't need any of this to use the app — just open the live link at
-the top. This section is for someone running or reviewing the code.)*
-
-The data is split into **three places**, each for a clear reason:
-
-| # | Place | What it holds | Why it's separate |
-| - | --- | --- | --- |
-| 1 | **Code repo** (this repo — HF Space + GitHub mirror) | Application source only — no data blobs | Keeps the deployable image small (the Space has a tight size cap) |
-| 2 | **Data dataset** (HF dataset `rohitsar567/insurance-bot-data`) | The big binaries: policy-PDF corpus + prebuilt Chroma vectors | Large files don't belong in code; pulled in automatically at build |
-| 3 | **Curated facts** (`40-data/`, inside this code repo) | Small, human-reviewed JSON the backend reads on every request | Decision-critical and tiny — safe to version alongside the code |
-
-What lives where:
-
-- **`rag/corpus/`** — raw policy PDFs. Git-ignored; hydrated at Docker build
-  from the data dataset via `huggingface_hub.snapshot_download`.
-- **`rag/vectors/`** — persisted Chroma store (BGE-small-en-v1.5, local CPU,
-  384-d). Git-ignored; from the data dataset.
-- **`40-data/policy_facts/*.json`** — per-policy curated facts, each value
-  carrying its verbatim `source_quote`. Powers the marketplace cards and
-  scorecards.
-- **`40-data/reviews/`, `premiums/`, `insurer_network.json`** — sourced
-  insurer reviews, illustrative premium baselines, hospital-network counts.
-- **`rag/ingest.py` / `extract.py` / `schema.py` / `policies.duckdb`** — the
-  *offline* ingestion + structured-extraction pipeline (download → chunk →
-  embed → extract). Not on the request hot path; used to (re)build the data
-  dataset.
-
-**Provenance rule:** every policy fact shown to a user traces to a real clause
-in a real PDF. Where a document genuinely doesn't state something, it is
-recorded as an honest sourced-null ("not stated in `<file>.pdf`"), never
-invented or back-filled.
-
----
+| Per-turn reasoning | `logs/turns.jsonl` (one JSON line per turn) | Replay / audit; never echoed to other users |
 
 ## 4. Safety & quality
 
@@ -922,7 +909,7 @@ These are real and stated up front rather than buried:
   Upload → graded marketplace card → grounded Q&A about the PDF all work
   live within a running container. But the Hugging Face Space's working
   filesystem is ephemeral by design (a fresh Chroma snapshot is pulled on
-  every rebuild — see §4), and in practice an uploaded doc does **not**
+  every rebuild — see §2.7), and in practice an uploaded doc does **not**
   survive a Space rebuild/restart: the marketplace reverts to its
   curated/extracted baseline. Treat uploads as session-scoped. An
   operator/abuse prune endpoint exists (`POST /api/admin/uploaded-docs/
@@ -941,7 +928,7 @@ These are real and stated up front rather than buried:
 
 ---
 
-## 4. Tech stack & key decisions
+## 5. Tech stack & key decisions
 
 | Layer | Choice | One-line why |
 | --- | --- | --- |
@@ -961,7 +948,7 @@ the load-bearing ones.
 
 ---
 
-## 4. Repository map
+## 6. Repository map
 
 **At a glance** — the root is intentionally small; you only need to know
 these:
@@ -1023,7 +1010,7 @@ these:
 
 ---
 
-## 4. Run it locally
+## 7. Run it locally
 
 **Prerequisites:** Python 3.11+, Node 20+, the API keys below.
 
@@ -1063,7 +1050,7 @@ pytest                                          # collects tests/ only
 
 ---
 
-## 4. Deployment
+## 8. Deployment
 
 Hosting is a **Hugging Face Space** running the `Dockerfile`:
 
@@ -1077,7 +1064,7 @@ Hosting is a **Hugging Face Space** running the `Dockerfile`:
 
 The code repo is mirrored to **both** the HF Space remote (`origin`) and a
 GitHub remote (`github`); the heavy data is updated on the HF **dataset**
-side. Space repository secrets supply the API keys listed in §4. After any
+side. Space repository secrets supply the API keys listed in §7. After any
 deploy, verify the Space's reported build SHA actually advanced before
 trusting that new code is live (a quota/LFS push can fail without surfacing
 an error).
