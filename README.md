@@ -789,7 +789,7 @@ sequenceDiagram
     autonumber
     participant B as 3b. LLM Brain
     participant T as get_policy_facts tool
-    participant F as 4. 40-data/policy_facts/&lt;id&gt;.json
+    participant F as 4. policy_facts JSON file
     B->>T: get_policy_facts([policy_id_1, policy_id_2])
     T->>F: read JSON file(s) directly
     F-->>T: CSR · complaints · grade · source_quote
@@ -813,7 +813,7 @@ sequenceDiagram
     participant B as 3b. LLM Brain
     participant T as save_profile_field
     participant S as 3d. session_state
-    participant D as 4. 40-data/profiles/&lt;name&gt;.json
+    participant D as 4. saved profile JSON file
     U->>B: "Hi, I'm Neha"
     B->>T: save_profile_field("name", "Neha")
     T->>S: write name
