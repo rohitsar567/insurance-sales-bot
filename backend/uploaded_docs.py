@@ -853,39 +853,30 @@ async def extract_one_for_upload(
             ChatMessage(role="user", content=prompt),
         ]
 
-        # Two-tier attempt: Gemini primary (native JSON mode, steady-state
-        # brain) → NIM chain fallback (older path, multi-candidate failover).
-        try:
-            llm_primary = GoogleGeminiLLM(timeout=180.0)
-            primary_label = "gemini-2.5-flash"
-        except Exception as e:  # noqa: BLE001 — should never happen at __init__
-            _log.warning(
-                "[upload-extract] Gemini init failed (%s) — falling back to NIM",
-                type(e).__name__,
-            )
-            llm_primary = get_brain_llm()
-            primary_label = "nim-chain"
+        # ROLLBACK (2026-05-27 — late session) — the Gemini-primary swap
+        # in commit 7ef3ca3 broke live extraction (both Gemini and the
+        # NIM-on-fallback raised, surfacing as "LLM returned no valid
+        # HealthPolicy after primary + fallback retries"). Reverting to
+        # NIM as primary (the proven-working path that yielded grade=C
+        # score=65 on Sarvah Param earlier today). Gemini will be
+        # re-attempted as a follow-up after proper debugging of its
+        # JSON-mode response shape against the EXTRACT prompt.
+        llm_primary = get_brain_llm()
         llm_fallback = get_brain_llm()
 
         raw = ""
         policy: Optional[HealthPolicy] = None
         for attempt, (llm, label) in enumerate(
-            [(llm_primary, primary_label), (llm_fallback, "nim-chain")]
+            [(llm_primary, "nim-primary"), (llm_fallback, "nim-fallback")]
         ):
             try:
                 attempt_timeout = 180 if attempt == 0 else 120
-                chat_kwargs = {
-                    "messages": messages,
-                    "temperature": 0.0,
-                    "max_tokens": 2048,
-                }
-                # Gemini supports native JSON mode via response_format —
-                # forces the model to emit a JSON object the schema parser
-                # can validate without prose-cleanup. Harmless on the NIM
-                # path (the kwarg is absorbed by **kwargs).
-                chat_kwargs["response_format"] = {"type": "json_object"}
                 res = await asyncio.wait_for(
-                    llm.chat(**chat_kwargs),
+                    llm.chat(
+                        messages=messages,
+                        temperature=0.0,
+                        max_tokens=2048,
+                    ),
                     timeout=attempt_timeout,
                 )
                 raw = res.text
