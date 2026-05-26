@@ -1283,6 +1283,18 @@ export default function Page() {
           // unknown). Prefer the SR fallback transcript when present so the
           // turn still goes through; otherwise surface the friendly
           // user_message and DO NOT call send() with empty text.
+          // ADR-044 — defensive: suppress voice-driven send() during the
+          // upload-index window AND while the background LLM extraction
+          // is still running. Even an explicit PTT press shouldn't drop
+          // a chat turn into the middle of the wait — the user can
+          // re-press once the card lands. Mirrors the voiceSubmitRef
+          // guard for the browser SpeechRecognition path.
+          const __voiceBlocked = uploadStatus || extractionInFlight;
+          if (__voiceBlocked) {
+            setInput("");
+            maybeResumeLive();
+            return;
+          }
           if (tr.error_code) {
             if (srFallback) {
               setInputFromTranscript(srFallback);
