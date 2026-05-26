@@ -933,6 +933,53 @@ async def extract_one_for_upload(
         out_json = _settings.EXTRACTED_DIR / f"{policy_id}.json"
         out_json.write_text(policy.model_dump_json(indent=2))
 
+        # ALSO merge the LLM output INTO the persisted record.json so the
+        # marketplace catalogue's _load_curated_facts() pass sees the
+        # combined heuristic-baseline + LLM-extracted fields (rather than
+        # just the LLM payload, which may be sparser than the heuristic
+        # for non-standard PDFs). Heuristic stays as the fallback; LLM
+        # values override where present + non-empty. This is the same
+        # "curated overlay" model the catalogued 148 use via
+        # 40-data/policy_facts/.
+        try:
+            doc_dir = _doc_dir(policy_id)
+            rec_path = doc_dir / "record.json"
+            if rec_path.exists():
+                existing = json.loads(rec_path.read_text())
+                llm_dump = policy.model_dump()
+                # Carry over LLM scalar values + verbatim source_quotes
+                # into the heuristic record. Skip null/empty/empty-list
+                # so heuristic stays intact where the LLM was silent.
+                for k, v in llm_dump.items():
+                    if k in ("policy_id", "policy_name", "insurer_slug", "insurer_name"):
+                        continue
+                    if v in (None, "", [], {}):
+                        continue
+                    # Already in cell-shape ({value, source_quote, ...}) on
+                    # the heuristic side; lift the LLM scalar into the
+                    # value field, preserving the heuristic's source_quote
+                    # / source_pdf_path if the LLM didn't supply one.
+                    if isinstance(existing.get(k), dict) and "value" in existing[k]:
+                        existing[k] = {**existing[k], "value": v}
+                    else:
+                        existing[k] = v
+                # Also carry over the LLM's confidence + insurer_name if
+                # detected, both for downstream provenance.
+                if getattr(policy, "extraction_confidence_pct", None) is not None:
+                    existing["_llm_extraction_confidence_pct"] = policy.extraction_confidence_pct
+                tmp = rec_path.with_suffix(".json.tmp")
+                tmp.write_text(json.dumps(existing, indent=2, ensure_ascii=False, default=str))
+                tmp.replace(rec_path)
+                _log.info(
+                    "[upload-extract] merged LLM extraction into record.json for %s",
+                    policy_id,
+                )
+        except Exception as _merge_err:  # noqa: BLE001
+            _log.warning(
+                "[upload-extract] record.json merge failed for %s: %s",
+                policy_id, _merge_err,
+            )
+
         # Persist into DuckDB so admin / re-render paths see the new card.
         try:
             upsert_policy(
