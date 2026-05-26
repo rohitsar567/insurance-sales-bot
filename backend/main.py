@@ -1941,10 +1941,14 @@ async def upload_policy(
         from rag.ingest import get_chroma_collection as _get_pol_coll
         _pol = _get_pol_coll()
         _g_ids = [f"{policy_id}::chunk{c['chunk_idx']}" for c in chunks]
+        # Use whatever insurer_slug build_record resolved (detected from
+        # PDF text via detect_insurer_slug, or UPLOAD_INSURER_SLUG on no
+        # match) so chunk metadata + scorecard reviews lookup agree.
+        _resolved_insurer_slug = _record.get("insurer_slug", _udocs.UPLOAD_INSURER_SLUG)
         _g_meta = [
             {
                 "policy_id": policy_id,
-                "insurer_slug": _udocs.UPLOAD_INSURER_SLUG,
+                "insurer_slug": _resolved_insurer_slug,
                 "policy_name": policy_name,
                 "doc_type": _udocs.UPLOAD_DOC_TYPE,
                 "source_url": "",
@@ -1970,6 +1974,34 @@ async def upload_policy(
                 _MG_CACHE["sig"] = None
                 _MG_CACHE["index"] = None
         except Exception:  # noqa: BLE001 — cache bust is best-effort
+            pass
+
+        # ── Fire LLM-assisted extraction in background (ADR-044) ─────────
+        # Same extractor as the catalogued 148. Runs ~30-60s; the upload
+        # HTTP response returns now and the frontend polls the scorecard
+        # endpoint to refresh the card in place when extraction lands.
+        # Fail-silent: a failed LLM pass leaves the heuristic record
+        # intact, so the card still has SOMETHING to show — never blocks
+        # the user. NEVER blocks this request.
+        try:
+            from pathlib import Path as _PathLib2
+            _persisted_pdf = _udocs.uploaded_docs_dir() / policy_id / "source.pdf"
+            _detected_insurer_name = _record.get(
+                "insurer_name",
+                _udocs.detected_insurer_name(_resolved_insurer_slug)
+                if _resolved_insurer_slug != _udocs.UPLOAD_INSURER_SLUG
+                else _udocs.UPLOAD_INSURER_NAME,
+            )
+            asyncio.create_task(
+                _udocs.extract_one_for_upload(
+                    policy_id=policy_id,
+                    pdf_path=_persisted_pdf,
+                    policy_name=policy_name,
+                    insurer_slug=_resolved_insurer_slug,
+                    insurer_name=_detected_insurer_name,
+                )
+            )
+        except Exception:  # noqa: BLE001 — extraction is async + optional
             pass
     except HTTPException:
         raise

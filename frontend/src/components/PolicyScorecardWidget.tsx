@@ -817,7 +817,12 @@ export default function PolicyScorecardWidget({
         );
       })()}
 
-      {/* Limited-data warning — warm amber, single tidy row */}
+      {/* Limited-data warning — warm amber, single tidy row.
+          Copy is branched per source: catalogued insurer cards reflect
+          gaps in the insurer's own filings, but USER-UPLOADED PDFs are
+          missing fields because OUR extractor couldn't pull them from
+          the PDF text. Saying "the insurer hasn't published…" on an
+          uploaded doc is just wrong — flip to honest copy there. */}
       {showLimitedWarning && (
         <div
           style={{
@@ -836,9 +841,20 @@ export default function PolicyScorecardWidget({
         >
           <span style={{ fontWeight: 700, flexShrink: 0 }}>Partial information ·</span>
           <span>
-            The insurer hasn&apos;t published every term for this policy yet,
-            so this grade is an early read — open the policy PDF for the full
-            wording before you decide.
+            {policyId.startsWith("user-upload__") ? (
+              <>
+                Some fields couldn&apos;t be pulled from this PDF
+                automatically — open the document for the full wording
+                before you decide. (Re-grading in the background as more
+                fields are extracted.)
+              </>
+            ) : (
+              <>
+                The insurer hasn&apos;t published every term for this policy
+                yet, so this grade is an early read — open the policy PDF
+                for the full wording before you decide.
+              </>
+            )}
           </span>
         </div>
       )}

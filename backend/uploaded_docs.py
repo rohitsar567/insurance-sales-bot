@@ -82,6 +82,98 @@ UPLOAD_INSURER_NAME = "User-uploaded document"
 
 
 # ---------------------------------------------------------------------------
+# Insurer detection from PDF text (2026-05-27).
+#
+# Pre-this-change, every upload was stamped insurer_slug="user-upload",
+# which short-circuits the Claim Experience scorecard sub-score (no
+# matching reviews JSON under 40-data/reviews/<slug>.json) and leaves
+# the card showing "reputation data being compiled" forever.
+#
+# Strategy: regex-match the first ~3 pages of the PDF against the
+# canonical legal names of the 21 insurers we already have reviews
+# data for. On a confident hit, flip insurer_slug to the real slug so
+# the scorecard's Claim-Experience pass uses the real reviews data
+# (claim_ratio, complaints, network) — same path as a catalogued card.
+#
+# Fail-closed: no match ⇒ stays "user-upload". Score still works,
+# Claim Experience just falls back to a generic mid-range number.
+# ---------------------------------------------------------------------------
+
+# Each entry: (slug, [name_patterns]). Order matters — first hit wins,
+# so put the most specific patterns first (e.g. "future generali" before
+# bare "generali" — though we don't have a generali reviews file today).
+# Patterns are matched case-insensitive against the first ~3 pages of
+# PDF text (first ~6000 chars).
+_INSURER_NAME_PATTERNS: list[tuple[str, list[str]]] = [
+    ("acko",                ["acko general insurance", "acko general", "acko gen ins", "acko gi"]),
+    ("aditya-birla",        ["aditya birla health insurance", "abhicl", "aditya birla health", "aditya birla"]),
+    ("bajaj-allianz",       ["bajaj allianz general insurance", "bajaj allianz general", "bajaj allianz"]),
+    ("care-health",         ["care health insurance", "religare health insurance"]),
+    ("cholamandalam",       ["cholamandalam ms general insurance", "cholamandalam ms general", "cholamandalam ms", "chola ms"]),
+    ("go-digit",            ["go digit general insurance", "go digit", "godigit"]),
+    ("hdfc-ergo",           ["hdfc ergo general insurance", "hdfc ergo health", "hdfc ergo"]),
+    ("icici-lombard",       ["icici lombard general insurance", "icici lombard"]),
+    ("iffco-tokio",         ["iffco tokio general insurance", "iffco tokio"]),
+    ("indusind-general",    ["indusind general insurance", "indusind general"]),
+    ("manipalcigna",        ["manipalcigna health insurance", "manipal cigna health insurance", "manipalcigna", "manipal cigna"]),
+    ("national-insurance",  ["national insurance company", "national insurance"]),
+    ("new-india",           ["new india assurance company", "new india assurance", "the new india assurance"]),
+    ("niva-bupa",           ["niva bupa health insurance", "niva bupa", "max bupa"]),
+    ("oriental-insurance",  ["oriental insurance company", "the oriental insurance", "oriental insurance"]),
+    ("reliance-general",    ["reliance general insurance"]),
+    ("royal-sundaram",      ["royal sundaram general insurance", "royal sundaram"]),
+    ("sbi-general",         ["sbi general insurance", "sbi gen"]),
+    ("star-health",         ["star health and allied insurance", "star health and allied", "star health"]),
+    ("tata-aig",            ["tata aig general insurance", "tata aig"]),
+]
+
+
+def detect_insurer_slug(full_text: str) -> Optional[str]:
+    """Return the matching insurer slug (one of 21) or None.
+
+    Scans only the first ~6 000 chars (typically the cover + Part I) since
+    the insurer's legal name is in the header / footer of every IRDAI PDF.
+    Case-insensitive substring match in pattern-priority order. Fail-closed.
+    """
+    if not full_text:
+        return None
+    head = full_text[:6000].lower()
+    for slug, patterns in _INSURER_NAME_PATTERNS:
+        for pat in patterns:
+            if pat in head:
+                return slug
+    return None
+
+
+def detected_insurer_name(slug: str) -> str:
+    """Pretty-display name for a detected slug — used in the persisted
+    record so the card header reads "ManipalCigna" not "manipalcigna".
+    """
+    return {
+        "acko":                "Acko",
+        "aditya-birla":        "Aditya Birla Health",
+        "bajaj-allianz":       "Bajaj Allianz",
+        "care-health":         "Care Health",
+        "cholamandalam":       "Cholamandalam MS",
+        "go-digit":            "Go Digit",
+        "hdfc-ergo":           "HDFC ERGO",
+        "icici-lombard":       "ICICI Lombard",
+        "iffco-tokio":         "IFFCO Tokio",
+        "indusind-general":    "IndusInd General",
+        "manipalcigna":        "ManipalCigna",
+        "national-insurance":  "National Insurance",
+        "new-india":           "New India Assurance",
+        "niva-bupa":           "Niva Bupa",
+        "oriental-insurance":  "Oriental Insurance",
+        "reliance-general":    "Reliance General",
+        "royal-sundaram":      "Royal Sundaram",
+        "sbi-general":         "SBI General",
+        "star-health":         "Star Health",
+        "tata-aig":            "Tata AIG",
+    }.get(slug, slug)
+
+
+# ---------------------------------------------------------------------------
 # Storage layout
 # ---------------------------------------------------------------------------
 
@@ -398,12 +490,23 @@ def build_record(
         if isinstance(cell, dict) and "source_pdf_path" in cell:
             cell["source_pdf_path"] = rel_pdf
 
+    # 2026-05-27 — detect the actual insurer from the PDF text and flip the
+    # insurer_slug off the generic "user-upload" so the scorecard's Claim
+    # Experience sub-score pulls the real reviews JSON
+    # (40-data/reviews/<slug>.json). Fail-closed: no match ⇒ keep
+    # UPLOAD_INSURER_SLUG.
+    detected = detect_insurer_slug(full_text)
+    slug = detected or UPLOAD_INSURER_SLUG
+
     record: dict[str, Any] = {
         "policy_id": policy_id,
         "policy_name": policy_name or _derive_policy_name(full_text, policy_id),
-        "insurer_slug": UPLOAD_INSURER_SLUG,
+        "insurer_slug": slug,
         "_uploaded_doc": True,  # provenance flag (ignored by scorecard)
     }
+    if detected:
+        # Pretty name for any card renderer that reads from this record.
+        record["insurer_name"] = detected_insurer_name(detected)
     record.update(fields)
     return record
 
@@ -455,7 +558,9 @@ def persist_upload(
         meta = {
             "policy_id": policy_id,
             "policy_name": record["policy_name"],
-            "insurer_slug": UPLOAD_INSURER_SLUG,
+            # Use whatever build_record resolved — the detected insurer
+            # slug if we matched one, else UPLOAD_INSURER_SLUG.
+            "insurer_slug": record.get("insurer_slug", UPLOAD_INSURER_SLUG),
             "sha256": hashlib.sha256(pdf_bytes).hexdigest(),
             "uploaded_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "session_id": session_id,  # audit only — NEVER a visibility gate
@@ -610,3 +715,161 @@ async def reingest_persisted_into_policies() -> dict:
                 policy_id, type(e).__name__, e,
             )
     return summary
+
+
+# ---------------------------------------------------------------------------
+# LLM-assisted extraction for uploaded PDFs (2026-05-27, ADR-044).
+#
+# Parity with the catalogued 148: same LLM (get_brain_llm), same EXTRACT
+# prompt, same HealthPolicy schema, same downstream merge into the
+# marketplace catalogue. Pre-this-change the upload path only ran the
+# deterministic-heuristic `extract_fields_from_text` over the PDF, which
+# is why uploaded cards stalled at 13-48% data_completeness vs the
+# 74% median for catalogued. After this change uploaded cards land in
+# the same completeness band by construction.
+#
+# Runs as a background asyncio task fired from the upload endpoint —
+# the upload's HTTP response returns immediately with the heuristic
+# record (sub-second), and the LLM pass (~30-60s) lands in the
+# background. The frontend polls /api/policies/{id}/scorecard after
+# the upload and refreshes the card in place when completeness jumps.
+# ---------------------------------------------------------------------------
+
+
+async def extract_one_for_upload(
+    policy_id: str,
+    pdf_path: Path,
+    policy_name: str,
+    insurer_slug: str,
+    insurer_name: str,
+) -> bool:
+    """Run the same LLM extractor used for the catalogued 148 against an
+    uploaded PDF. On success, writes `rag/extracted/<policy_id>.json` and
+    invalidates the marketplace grade cache so the next /api/policies/all
+    + /api/policies/{id}/scorecard call returns the LLM-graded card.
+
+    Returns True iff a HealthPolicy was successfully extracted and written.
+    Swallows all errors (returns False) — a failed LLM pass must NEVER
+    affect the upload's HTTP response, which has already returned.
+    """
+    try:
+        # Lazy imports — these touch the LLM client + DuckDB; we don't
+        # want to pay that cost at module import time.
+        from rag.extract import (
+            EXTRACT_SYSTEM,
+            build_extract_prompt,
+            schema_excerpt,
+            read_full_text,
+            json_from_llm_text,
+            upsert_policy,
+        )
+        from rag.schema import HealthPolicy
+        from backend.providers.base import ChatMessage
+        from backend.providers.nvidia_nim_llm import get_brain_llm
+
+        _log.info(
+            "[upload-extract] starting LLM extraction for %s (insurer=%s)",
+            policy_id, insurer_slug,
+        )
+
+        # Read text from the persisted PDF (same as extract_one).
+        try:
+            text = read_full_text(pdf_path)
+        except Exception as e:  # noqa: BLE001
+            _log.warning(
+                "[upload-extract] read_full_text failed %s: %s: %s",
+                policy_id, type(e).__name__, e,
+            )
+            return False
+
+        prompt = build_extract_prompt(text, schema_excerpt(), policy_id)
+        messages = [
+            ChatMessage(role="system", content=EXTRACT_SYSTEM),
+            ChatMessage(role="user", content=prompt),
+        ]
+
+        llm_primary = get_brain_llm()
+        llm_fallback = get_brain_llm()
+
+        raw = ""
+        policy: Optional[HealthPolicy] = None
+        for attempt, llm in enumerate([llm_primary, llm_fallback]):
+            try:
+                attempt_timeout = 180 if attempt == 0 else 120
+                res = await asyncio.wait_for(
+                    llm.chat(messages=messages, temperature=0.0, max_tokens=2048),
+                    timeout=attempt_timeout,
+                )
+                raw = res.text
+                data = json_from_llm_text(raw)
+                # Force-fill identity fields (REQUIRED by the schema, the
+                # LLM frequently emits null for these because they're not
+                # in the truncated text). Use what the upload path
+                # already resolved.
+                if not data.get("policy_id"):
+                    data["policy_id"] = policy_id
+                if not data.get("insurer_slug"):
+                    data["insurer_slug"] = insurer_slug
+                if not data.get("insurer_name"):
+                    data["insurer_name"] = insurer_name
+                if not data.get("policy_name"):
+                    data["policy_name"] = policy_name
+                policy = HealthPolicy(**data)
+                break
+            except Exception as e:  # noqa: BLE001
+                _log.warning(
+                    "[upload-extract] attempt %d failed for %s: %s: %s",
+                    attempt + 1, policy_id, type(e).__name__, str(e)[:200],
+                )
+                continue
+
+        if policy is None:
+            _log.warning(
+                "[upload-extract] no policy extracted for %s after retries; "
+                "card stays on heuristic record", policy_id,
+            )
+            return False
+
+        # Write rag/extracted/<policy_id>.json — same shape as catalogued.
+        from backend.config import settings as _settings
+        _settings.EXTRACTED_DIR.mkdir(parents=True, exist_ok=True)
+        out_json = _settings.EXTRACTED_DIR / f"{policy_id}.json"
+        out_json.write_text(policy.model_dump_json(indent=2))
+
+        # Persist into DuckDB so admin / re-render paths see the new card.
+        try:
+            upsert_policy(
+                policy,
+                source_pdf_path=str(pdf_path),
+                source_pdf_url="",
+            )
+        except Exception as e:  # noqa: BLE001 — DB write is best-effort
+            _log.warning(
+                "[upload-extract] upsert_policy failed for %s: %s: %s",
+                policy_id, type(e).__name__, e,
+            )
+
+        # Invalidate the #40 marketplace grade cache so the next
+        # /api/policies/all / scorecard call returns the LLM-graded card.
+        try:
+            import backend.main as _bm
+            with _bm._MG_LOCK:
+                _bm._MG_CACHE["sig"] = None
+                _bm._MG_CACHE["index"] = None
+        except Exception as e:  # noqa: BLE001 — cache miss is fine
+            _log.debug(
+                "[upload-extract] could not invalidate _MG_CACHE for %s: %s",
+                policy_id, e,
+            )
+
+        _log.info(
+            "[upload-extract] OK %s (extraction_confidence_pct=%s)",
+            policy_id, getattr(policy, "extraction_confidence_pct", "n/a"),
+        )
+        return True
+    except Exception as e:  # noqa: BLE001 — top-level catch-all
+        _log.warning(
+            "[upload-extract] unexpected failure for %s: %s: %s",
+            policy_id, type(e).__name__, str(e)[:400],
+        )
+        return False

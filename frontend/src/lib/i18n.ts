@@ -28,7 +28,7 @@ export const UI_STRINGS = {
     "welcome.source_link": "Every fact you see has a source link.",
     "welcome.trust_title": "Tell me the truth — even on the hard things.",
     "welcome.trust_body": "When I ask about your health later, please don't hide a condition to lower your premium. Insurers cross-check disclosed history against hospital records at claim time. The ₹500/month you save today turns into an ₹8 lakh denied claim later. Your honest answers stay in this chat — they're not shared with any insurer until you choose to buy.",
-    "welcome.coverage_template": "${policies} policies across ${insurers} insurers indexed. Or upload your own policy PDF — I'll analyse it the same way.",
+    "welcome.coverage_template": "${policies} policies across ${insurers} insurers — already loaded and ready. Or upload your own policy PDF and I'll analyse it the same way.",
 
     // Input bar
     "input.placeholder": "Ask about coverage, waiting periods, exclusions, or compare policies…",
@@ -38,11 +38,11 @@ export const UI_STRINGS = {
     "input.voice_input": "Voice input",
     "input.upload": "Upload your own policy PDF",
     "input.enter_to_send": "Enter to send · 📎 to upload your own PDF",
-    "upload.indexing": "Indexing ${name}…",
-    "upload.success": "✓ Indexed “${name}” — ${chunks} chunks from ${pages} pages (${secs}s). It's now searchable in this chat. Ask me about it.",
+    "upload.indexing": "Reading ${name}…",
+    "upload.success": "✓ “${name}” is ready. Ask me anything about it.",
     "upload.error": "✗ Upload failed: ${err}",
     "upload.user_msg": "📎 Uploaded: ${name}",
-    "upload.chat_ack": "Got it — I've indexed **${name}** (${chunks} chunks from ${pages} pages, in ${secs}s). Here's how it grades against what we know about you so far:",
+    "upload.chat_ack": "Got it — I've read **${name}**. Here's how it grades against what we know about you so far:",
     "upload.chat_choice": "How would you like to proceed?\n\n• **Tell me more about yourself** — finish the short profile (age, family, location, budget, health) so I can speak to this policy more personally.\n• **Dive into the PDF first** — ask questions about coverage, waiting periods, exclusions, anything in the document.\n\nEither works. The more I know about you, the more useful the discussion of this policy will be.",
 
     // Marketplace panel
@@ -150,7 +150,7 @@ export const UI_STRINGS = {
     "welcome.source_link": "हर तथ्य का source link है।",
     "welcome.trust_title": "सच बताइए — मुश्किल बातें भी।",
     "welcome.trust_body": "जब मैं आपकी सेहत के बारे में पूछूं, premium कम करने के लिए कोई condition मत छिपाइए। बीमाकर्ता claim time पर hospital records से check करते हैं। आज के ₹500/महीने की बचत बाद में ₹8 लाख का denied claim बन जाती है। आपके ईमानदार जवाब इसी chat में रहते हैं — किसी insurer के साथ शेयर नहीं होते।",
-    "welcome.coverage_template": "${policies} पॉलिसियाँ, ${insurers} बीमाकर्ताओं से indexed हैं। अपनी policy PDF भी upload कर सकते हैं।",
+    "welcome.coverage_template": "${policies} पॉलिसियाँ, ${insurers} बीमाकर्ताओं से — सब तैयार। अपनी policy PDF भी upload कर सकते हैं।",
 
     "input.placeholder": "Coverage, waiting period, exclusion, या तुलना के बारे में पूछिए…",
     "input.send": "भेजें",
@@ -159,11 +159,11 @@ export const UI_STRINGS = {
     "input.voice_input": "आवाज़ input",
     "input.upload": "अपनी policy PDF upload करें",
     "input.enter_to_send": "Enter दबाकर भेजें · 📎 से PDF upload",
-    "upload.indexing": "${name} index हो रही है…",
-    "upload.success": "✓ “${name}” index हो गई — ${pages} पेज से ${chunks} chunks (${secs}s)। अब यह इसी chat में search हो सकती है। इसके बारे में पूछिए।",
+    "upload.indexing": "${name} पढ़ रहा हूँ…",
+    "upload.success": "✓ “${name}” तैयार है। इसके बारे में कुछ भी पूछिए।",
     "upload.error": "✗ Upload विफल: ${err}",
     "upload.user_msg": "📎 Upload किया: ${name}",
-    "upload.chat_ack": "मिल गया — **${name}** index हो गई (${pages} पेज से ${chunks} chunks, ${secs}s में)। यह policy आपके profile के हिसाब से कैसी है:",
+    "upload.chat_ack": "मिल गया — **${name}** पढ़ ली। यह आपके profile के हिसाब से कैसी है:",
     "upload.chat_choice": "आगे कैसे बढ़ें?\n\n• **अपने बारे में बताएं** — short profile पूरा करें (उम्र, परिवार, location, बजट, health) ताकि मैं इस policy पर आपको personally बात कर सकूं।\n• **पहले PDF पर बात करें** — coverage, waiting periods, exclusions — कुछ भी पूछें।\n\nदोनों ठीक हैं। जितना मैं आपके बारे में जानूंगा, इस policy की चर्चा उतनी useful होगी।",
 
     "mp.heading": "स्वास्थ्य बीमा बाज़ार",

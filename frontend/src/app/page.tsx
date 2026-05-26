@@ -971,6 +971,14 @@ export default function Page() {
     voiceSubmitRef.current = (text: string) => {
       const t = text.trim();
       if (t.length < 2) return;
+      // Suppress voice auto-submit while a PDF upload is in flight or
+      // just-completed (uploadStatus is non-null for ~8s after success
+      // / failure). A long upload + active mic + bot's TTS playing
+      // through speakers can otherwise auto-transcribe ambient sound
+      // and fire an "unprompted analysis" chat turn that drowns the
+      // upload-flow's choice prompt. Real user input still goes
+      // through the typed-input path / explicit Push-to-talk press.
+      if (uploadStatus) return;
       // V4 FIX 2 — dedup repeated finals within 500ms.
       const { text: prevText, at: prevAt } = lastFinalTextRef.current;
       const now = Date.now();
@@ -986,7 +994,7 @@ export default function Page() {
     // send() reads `messages` / `sessionId` / `ttsLang` / view flags via
     // closure; rebind whenever they change so the latest values are used.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [messages, sessionId, ttsLang, openPolicy, showMarketplace, showProfile, showPremium]);
+  }, [messages, sessionId, ttsLang, openPolicy, showMarketplace, showProfile, showPremium, uploadStatus]);
 
   async function startRecording() {
     // KI-222 FIX 1 — silence any prior bot TTS BEFORE PTT recording starts.
@@ -1440,24 +1448,20 @@ export default function Page() {
   async function handleFile(ev: React.ChangeEvent<HTMLInputElement>) {
     const f = ev.target.files?.[0];
     if (!f) return;
-    // Push a user-side breadcrumb so the chat transcript shows the upload
-    // happened (helps the user track context — and it's part of the
-    // history the next /api/chat turn sends back to the brain).
-    pushUser(t("upload.user_msg", { name: f.name }));
+    // Earlier iteration also pushUser'd a "📎 Uploaded: <name>" breadcrumb
+    // into the transcript. That leaked into chat_history so a subsequent
+    // voice auto-fire (mic catching ambient sound during the long index
+    // wait) could trigger the brain to "analyse" the upload unprompted.
+    // Removed: the card rendered below the ack message is itself the
+    // user-visible breadcrumb that the upload happened. uploadStatus
+    // gates the voice-submit path during the indexing window.
     setUploadStatus(t("upload.indexing", { name: f.name }));
     try {
       // Pass the live chat session so the backend scopes the uploaded doc
       // to this user — the assistant can then answer questions about it
       // for the rest of THIS conversation.
       const r = await uploadPolicy(f, sessionId);
-      setUploadStatus(
-        t("upload.success", {
-          name: r.policy_name,
-          chunks: r.chunks_added,
-          pages: r.pages_indexed,
-          secs: (r.elapsed_ms / 1000).toFixed(1),
-        }),
-      );
+      setUploadStatus(t("upload.success", { name: r.policy_name }));
       // ── In-chat acknowledgment + inline scorecard card ──────────────
       // Push two assistant messages:
       //   1. The "got it, here's the card" ack with a `citations` array
@@ -1469,12 +1473,7 @@ export default function Page() {
       //   2. The proceed-choice prompt — telling the user they can
       //      finish their profile OR dive into the PDF, and noting that
       //      a fuller profile makes the policy discussion more useful.
-      const ackText = t("upload.chat_ack", {
-        name: r.policy_name,
-        chunks: r.chunks_added,
-        pages: r.pages_indexed,
-        secs: (r.elapsed_ms / 1000).toFixed(1),
-      });
+      const ackText = t("upload.chat_ack", { name: r.policy_name });
       pushAssistant(ackText, {
         citations: [
           {
@@ -4287,6 +4286,53 @@ function CitedPolicyCards({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [citations.map((c) => c.policy_id).join("|")]);
+
+  // ── Re-fetch loop for USER-UPLOADED policies (ADR-044, 2026-05-27) ──
+  // The upload endpoint kicks off LLM-assisted extraction in a
+  // background asyncio task that lands ~30-60s later. Re-poll each
+  // uploaded card every 5s for up to 90s so the chat card refreshes
+  // in place when the new extraction → higher completeness lands.
+  // Catalogued cards never enter this loop (their extraction was done
+  // offline; the initial fetch above is the final state).
+  useEffect(() => {
+    const sid = typeof window !== "undefined" ? sessionStorage.getItem("insurance_session_id") || undefined : undefined;
+    const uploaded = topPolicies.filter((c) => c.policy_id.startsWith("user-upload__"));
+    if (uploaded.length === 0) return;
+    let cancelled = false;
+    let tries = 0;
+    const MAX_TRIES = 18; // 18 × 5s ≈ 90s
+    const tick = () => {
+      if (cancelled) return;
+      tries += 1;
+      Promise.all(
+        uploaded.map((c) =>
+          getScorecard(c.policy_id, sid)
+            .then((s) => {
+              if (cancelled) return null;
+              const prev = cards[c.policy_id];
+              const completenessJumped = s?.data_completeness_pct != null
+                && (prev == null || (s.data_completeness_pct ?? 0) > (prev.data_completeness_pct ?? 0));
+              if (completenessJumped) {
+                setCards((p) => ({ ...p, [c.policy_id]: s }));
+                return true;
+              }
+              return false;
+            })
+            .catch(() => false),
+        ),
+      ).then(() => {
+        if (!cancelled && tries < MAX_TRIES) {
+          setTimeout(tick, 5000);
+        }
+      });
+    };
+    const handle = setTimeout(tick, 5000); // first re-fetch 5s after initial
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [topPolicies.filter((c) => c.policy_id.startsWith("user-upload__")).map((c) => c.policy_id).join("|")]);
 
   // Insurer reputation / reviews. The full detail modal shows a reviews
   // section; the inline cited cards omitted it (user-flagged — same class
