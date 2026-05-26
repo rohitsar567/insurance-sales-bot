@@ -401,6 +401,20 @@ explicit *"service degraded"* message, never a silently wrong answer.
 (A separate LLM "judge" existed historically and has been retired — the
 single-brain design made it redundant.)
 
+**Sticky-session retry policy (hardened 2026-05-27).** Once a session
+has completed at least one successful single-brain turn, it stays on
+single_brain for the rest of its lifetime — cross-fading to
+`nim_fallback` mid-stream would discard `last_recommendation_ids /
+last_retrieved_chunks / slug_to_insurer`. To absorb Gemini's
+intermittent "high demand" 503 bursts on sticky sessions,
+`_gemini_call` now uses an adaptive retry schedule: **non-sticky**
+session keeps 1 retry with a 1.5 s backoff (fast-fail to NIM on
+cold-start); **sticky** session gets 2 retries with jittered
+exponential backoffs (1.5 s → 3 s, ±25 % jitter). If the chain still
+fails after retries, the user sees a plain, honest reply *"My model
+service had a brief blip on that turn — please send the same message
+again."* (no more misleading *"could you say that again?"*).
+
 ### 2.5 Voice pipeline (in / out, with barge-in)
 
 ```mermaid
@@ -461,8 +475,9 @@ flowchart TB
     EX --> TR["try_recall_by_name (first-name slug fallback)"]
     TR --> DISK
     TR --> STAGE["session.pending_profile_recall (STAGED, never auto-merged)"]
-    STAGE --> ASK["bot: 'Welcome back — are you the same X?'"]
-    ASK -->|"yes"| MERGE["apply_pending_recall → merge stored slots"]
+    STAGE --> ASK["bot: 'Welcome back — have we spoken before? Please share your age'<br/>(stored attrs NEVER disclosed to an unconfirmed identity)"]
+    ASK -->|"yes + matching age"| MERGE["apply_pending_recall (match-before-merge) → merge stored slots"]
+    ASK -->|"yes + mismatching age"| DROP["same-turn age contradiction → discard staged · fresh fact-find"]
     ASK -->|"no"| FRESH["discard · continue as new user"]
     SPF --> FIT["scorecard fit + grade"]
     SPF --> PREM["illustrative premium"]
@@ -481,12 +496,17 @@ return, and recovers when the server forgot it.
   `<name>.json` to disk **and** embeds the profile as a session-scoped
   chunk — so a returning user can be recognised, and "given my situation"
   references can be grounded.
-- **Privacy-safe recall.** On a return visit the captured name is matched
-  against the stored profile; a match is **staged** on
-  `pending_profile_recall` and the bot asks *"Welcome back — are you the
-  same X?"*. Only an explicit *yes* merges the stored slots (so a name
-  collision never auto-restores a stranger's profile); *no* discards the
-  stage and the user continues fresh.
+- **Privacy-safe recall (hardened 2026-05-27).** On a return visit the
+  captured name is matched against the stored profile; a match is
+  **staged** on `pending_profile_recall` and the bot asks *"Welcome
+  back — have we spoken before? Please share your age."* The prompt
+  **never discloses** the staged attributes (age / dependents /
+  location / goal) — a stranger sharing the name slug can't learn the
+  prior visitor's profile from the prompt alone. Only an explicit *yes*
+  with a **matching age** merges stored slots (`apply_pending_recall`
+  runs a *match-before-merge* contradiction guard against both prior
+  live-session captures *and* the just-said `user_text`); a *no* or a
+  mismatching age discards the stage and the user continues fresh.
 - **State recovery.** If the server's in-memory session was evicted /
   restarted but the browser still carries `chat_history`, the brain
   enters **STATE-RECOVERY MODE** — silently re-captures the profile from
@@ -925,6 +945,15 @@ These are real and stated up front rather than buried:
 - **Recommendation vs. factual lookup.** A factual question that names a
   specific policy is answerable on a cold session; broad "recommend me a
   plan" requests still require the short fact-find first (by design).
+- **Admin LLM Chain — manual *Refresh now* and 30 s auto-poll
+  (hardened 2026-05-27).** `POST /api/admin/probe` runs a real
+  serial probe of every candidate model and updates `tested_at` on each
+  `ModelHealth` row; the admin UI's `Refresh now` button and the LLM
+  Chain tab's 30 s poll now both re-fetch `/api/admin/health` and call
+  `renderUpdatedLabel()` so the top-left *"Last refresh / Next in"*
+  timer reflects the actual just-completed probe (previously it stayed
+  frozen at the login-time snapshot, so the operator could not tell
+  from the timer whether probing had actually happened).
 
 ---
 
