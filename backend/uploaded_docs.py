@@ -853,33 +853,46 @@ async def extract_one_for_upload(
             ChatMessage(role="user", content=prompt),
         ]
 
-        # ROLLBACK (2026-05-27 — late session) — the Gemini-primary swap
-        # in commit 7ef3ca3 broke live extraction (both Gemini and the
-        # NIM-on-fallback raised, surfacing as "LLM returned no valid
-        # HealthPolicy after primary + fallback retries"). Reverting to
-        # NIM as primary (the proven-working path that yielded grade=C
-        # score=65 on Sarvah Param earlier today). Gemini will be
-        # re-attempted as a follow-up after proper debugging of its
-        # JSON-mode response shape against the EXTRACT prompt.
-        llm_primary = get_brain_llm()
+        # Gemini-primary (user directive 2026-05-27) — same brain the
+        # live chat uses (ADR-040), native JSON-mode via
+        # response_mime_type=application/json. NIM stays as the
+        # transport-level fallback for: GOOGLE_API_KEY missing, 5xx
+        # outage, or quota exhaustion. Key fix vs the earlier broken
+        # swap: max_tokens bumped 2048 → 8192 so the full HealthPolicy
+        # JSON (23 nested fields + verbatim quotes) doesn't get
+        # truncated mid-emission, which was the actual failure mode.
+        llm_primary = GoogleGeminiLLM(timeout=180.0)
         llm_fallback = get_brain_llm()
 
         raw = ""
         policy: Optional[HealthPolicy] = None
         for attempt, (llm, label) in enumerate(
-            [(llm_primary, "nim-primary"), (llm_fallback, "nim-fallback")]
+            [(llm_primary, "gemini-2.5-flash"), (llm_fallback, "nim-fallback")]
         ):
             try:
                 attempt_timeout = 180 if attempt == 0 else 120
+                chat_kwargs = {
+                    "messages": messages,
+                    "temperature": 0.0,
+                    "max_tokens": 8192,
+                }
+                # Native JSON mode on the Gemini path — forces a single
+                # JSON object response that json_from_llm_text can parse
+                # without prose-stripping. Absorbed by **kwargs on the
+                # NIM provider (it doesn't honor response_format the same
+                # way; rely on the EXTRACT_SYSTEM prompt's JSON-only
+                # instruction there).
+                if label.startswith("gemini"):
+                    chat_kwargs["response_format"] = {"type": "json_object"}
                 res = await asyncio.wait_for(
-                    llm.chat(
-                        messages=messages,
-                        temperature=0.0,
-                        max_tokens=2048,
-                    ),
+                    llm.chat(**chat_kwargs),
                     timeout=attempt_timeout,
                 )
                 raw = res.text
+                _log.info(
+                    "[upload-extract] %s returned %d chars; parsing JSON…",
+                    label, len(raw or ""),
+                )
                 data = json_from_llm_text(raw)
                 # Force-fill identity fields (REQUIRED by the schema, the
                 # LLM frequently emits null for these because they're not
