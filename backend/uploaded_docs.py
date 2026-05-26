@@ -770,6 +770,49 @@ def get_extraction_status(policy_id: str) -> Optional[dict]:
     return _UPLOAD_EXTRACTION_STATUS.get(policy_id)
 
 
+# ---------------------------------------------------------------------------
+# Tier-2 optimisations (ADR-044, 2026-05-27):
+#   - Content-hash cache:  same sha256(pdf_bytes) → reuse prior extraction
+#                          instead of re-running the LLM.
+#   - (Per-section extraction is deferred to a future iteration — full
+#     implementation requires schema partitioning + retryable merge, and
+#     the bigger immediate win for parity is the hash cache + the Tier-1
+#     stability fixes that just landed.)
+# ---------------------------------------------------------------------------
+
+
+def _find_cached_extraction(content_sha: str, current_policy_id: str) -> Optional[Path]:
+    """Look for a prior successful extraction of the same content (sha256
+    match) under a DIFFERENT policy_id. Returns the path to the existing
+    rag/extracted/<other_pid>.json if found, else None.
+
+    This handles the legitimate "user uploads the same PDF twice (maybe
+    in two browser tabs / two sessions)" case — the second upload should
+    get the identical extracted JSON without paying the LLM cost again.
+    Fail-closed: any I/O error → None (caller runs a fresh extraction).
+    """
+    if not content_sha:
+        return None
+    try:
+        from backend.config import settings as _settings
+        for meta_path in uploaded_docs_dir().glob("*/meta.json"):
+            try:
+                meta = json.loads(meta_path.read_text())
+            except Exception:
+                continue
+            if meta.get("sha256") != content_sha:
+                continue
+            other_pid = meta.get("policy_id") or meta_path.parent.name
+            if other_pid == current_policy_id:
+                continue  # ignore our own meta if it's already written
+            cached = _settings.EXTRACTED_DIR / f"{other_pid}.json"
+            if cached.exists():
+                return cached
+    except Exception:  # noqa: BLE001
+        pass
+    return None
+
+
 async def extract_one_for_upload(
     policy_id: str,
     pdf_path: Path,
@@ -784,6 +827,11 @@ async def extract_one_for_upload(
 
     Status is mirrored to `_UPLOAD_EXTRACTION_STATUS[policy_id]` at every
     phase change so the frontend's poll loop sees progress in real time.
+
+    Hash-cache short-circuit (Tier-2 ADR-044): if a prior upload with the
+    same `sha256(pdf_bytes)` already has a successful `rag/extracted/
+    <other_pid>.json`, that file is COPIED to this policy's path without
+    re-running the LLM. Same content, same extraction — guaranteed.
 
     Returns True iff a HealthPolicy was successfully extracted and written.
     Swallows all errors (returns False) — a failed LLM pass must NEVER
@@ -801,6 +849,64 @@ async def extract_one_for_upload(
         overall_grade=None,
         error=None,
     )
+
+    # ─── Tier-2 hash-cache short-circuit (ADR-044) ─────────────────
+    # If we've previously extracted a PDF with the same content hash,
+    # reuse that extraction. Same content → same fields by construction.
+    # Saves 30-60s + a Gemini call.
+    try:
+        meta_path = _doc_dir(policy_id) / "meta.json"
+        if meta_path.exists():
+            meta = json.loads(meta_path.read_text())
+            content_sha = meta.get("sha256") or ""
+            if content_sha:
+                cached_path = _find_cached_extraction(content_sha, policy_id)
+                if cached_path is not None:
+                    _log.info(
+                        "[upload-extract] hash-cache HIT for %s "
+                        "(reusing %s) — skipping LLM",
+                        policy_id, cached_path.name,
+                    )
+                    # Copy the prior extraction to this policy's path so
+                    # /api/policies/{id}/scorecard finds it under the
+                    # right id.
+                    from backend.config import settings as _settings_a
+                    _settings_a.EXTRACTED_DIR.mkdir(parents=True, exist_ok=True)
+                    dest = _settings_a.EXTRACTED_DIR / f"{policy_id}.json"
+                    dest.write_text(cached_path.read_text())
+                    # Mark status complete with whatever completeness the
+                    # marketplace scorecard now computes.
+                    _final_comp = None
+                    _final_grade = None
+                    try:
+                        from rag.schema import HealthPolicy
+                        from backend.scorecard import build_scorecard as _bs
+                        _doc = json.loads(dest.read_text())
+                        _sc = _bs(_doc, profile=None)
+                        if _sc is not None:
+                            _final_comp = float(_sc.data_completeness_pct)
+                            _final_grade = _sc.overall_grade
+                    except Exception:
+                        pass
+                    # Bust the #40 grade cache so /api/policies/all
+                    # picks up the new card.
+                    try:
+                        import backend.main as _bm
+                        with _bm._MG_LOCK:
+                            _bm._MG_CACHE["sig"] = None
+                            _bm._MG_CACHE["index"] = None
+                    except Exception:
+                        pass
+                    await _set_extraction_status(
+                        policy_id, status="complete",
+                        completed_at=_now(),
+                        completeness_pct=_final_comp,
+                        overall_grade=_final_grade,
+                    )
+                    return True
+    except Exception as e:  # noqa: BLE001 — cache miss is fine, run fresh
+        _log.debug("[upload-extract] hash-cache lookup failed: %s", e)
+
     try:
         # Lazy imports — these touch the LLM client + DuckDB; we don't
         # want to pay that cost at module import time.
