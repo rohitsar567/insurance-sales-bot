@@ -556,6 +556,20 @@ async def _startup_quarantine_ttl_purge():
 
 
 @app.on_event("startup")
+async def _startup_upload_extraction_backfill():
+    """ADR-044 (2026-05-27) — on every container boot, run LLM-assisted
+    extraction on any persisted upload that doesn't yet have a
+    `rag/extracted/<policy_id>.json` file. This upgrades old uploads
+    (persisted before the LLM-extraction pipeline was wired, OR before
+    a fix to the pipeline was deployed) to the same data depth a fresh
+    upload now gets. Idempotent: extracts that already exist are skipped.
+    Fire-and-forget so it doesn't delay app readiness.
+    """
+    from backend import uploaded_docs as _udocs
+    asyncio.create_task(_udocs.backfill_extractions(force=False))
+
+
+@app.on_event("startup")
 async def _startup_single_brain_warmup():
     """Pre-warm the Gemini single-brain connection so the FIRST /api/chat turn
     doesn't eat 4-5s of cold-start latency (TLS + auth + cache init).
@@ -2065,6 +2079,26 @@ class ExtractionStatusResponse(BaseModel):
     completeness_pct: Optional[float] = None
     overall_grade: Optional[str] = None
     error: Optional[str] = None
+
+
+@app.post("/api/admin/upload/reextract")
+async def admin_reextract_uploads(
+    request: Request,
+    x_admin_password: Optional[str] = Header(default=None, alias="X-Admin-Password"),
+    force: bool = False,
+):
+    """Run LLM-assisted extraction on every persisted upload that doesn't
+    yet have a `rag/extracted/<id>.json` (or `force=true` to re-extract all).
+    Admin-gated; fires synchronously so the response carries the summary.
+
+    Use when an upload was persisted before the LLM-extraction pipeline was
+    wired and needs to be upgraded without re-uploading.
+    """
+    from backend.admin import _check_admin
+    _check_admin(request, x_admin_password)
+    from backend import uploaded_docs as _udocs
+    summary = await _udocs.backfill_extractions(force=force)
+    return summary
 
 
 @app.get(

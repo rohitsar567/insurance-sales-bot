@@ -957,8 +957,63 @@ async def extract_one_for_upload(
             )
         except Exception:
             pass
+        # fall through to the existing _log.warning that follows
         _log.warning(
             "[upload-extract] unexpected failure for %s: %s: %s",
             policy_id, type(e).__name__, str(e)[:400],
         )
         return False
+
+
+async def backfill_extractions(*, force: bool = False) -> dict:
+    """Run LLM-assisted extraction for every persisted upload that doesn't
+    yet have a corresponding `rag/extracted/<policy_id>.json` (or force=True
+    to re-extract every upload). Fires sequentially so we don't fan-out the
+    LLM chain. Returns a {processed, skipped, failed} summary.
+
+    Designed to be called once at server startup (to upgrade old uploads
+    that were persisted before the LLM-extraction pipeline was wired) AND
+    as the backing for POST /api/admin/upload/reextract.
+    """
+    from backend.config import settings as _settings
+    summary: dict = {"processed": 0, "skipped": 0, "failed": 0, "policies": []}
+    records = load_persisted_records()
+    for policy_id, record in records.items():
+        try:
+            out_json = _settings.EXTRACTED_DIR / f"{policy_id}.json"
+            if out_json.exists() and not force:
+                summary["skipped"] += 1
+                continue
+            pdf_path = _doc_dir(policy_id) / "source.pdf"
+            if not pdf_path.exists():
+                _log.warning(
+                    "[backfill] missing source.pdf for %s — skipping", policy_id,
+                )
+                summary["skipped"] += 1
+                continue
+            policy_name = record.get("policy_name") or policy_id
+            insurer_slug = record.get("insurer_slug") or UPLOAD_INSURER_SLUG
+            insurer_name = record.get("insurer_name") or detected_insurer_name(insurer_slug)
+            ok = await extract_one_for_upload(
+                policy_id=policy_id,
+                pdf_path=pdf_path,
+                policy_name=policy_name,
+                insurer_slug=insurer_slug,
+                insurer_name=insurer_name,
+            )
+            if ok:
+                summary["processed"] += 1
+                summary["policies"].append(policy_id)
+            else:
+                summary["failed"] += 1
+        except Exception as e:  # noqa: BLE001
+            _log.warning(
+                "[backfill] failed for %s: %s: %s",
+                policy_id, type(e).__name__, str(e)[:200],
+            )
+            summary["failed"] += 1
+    _log.info(
+        "[backfill] done: processed=%d skipped=%d failed=%d",
+        summary["processed"], summary["skipped"], summary["failed"],
+    )
+    return summary
