@@ -876,14 +876,15 @@ async def extract_one_for_upload(
                     "temperature": 0.0,
                     "max_tokens": 8192,
                 }
-                # Native JSON mode on the Gemini path — forces a single
-                # JSON object response that json_from_llm_text can parse
-                # without prose-stripping. Absorbed by **kwargs on the
-                # NIM provider (it doesn't honor response_format the same
-                # way; rely on the EXTRACT_SYSTEM prompt's JSON-only
-                # instruction there).
-                if label.startswith("gemini"):
-                    chat_kwargs["response_format"] = {"type": "json_object"}
+                # NOTE — we DON'T set response_format here. The
+                # EXTRACT_SYSTEM prompt already mandates JSON-only output
+                # ("Single object. No whitespace beyond what's needed.").
+                # Setting Gemini's responseMimeType=application/json was
+                # silently producing payloads that json_from_llm_text /
+                # HealthPolicy schema validation rejected. Letting the
+                # model emit JSON natively (and using json_from_llm_text's
+                # tolerant front-strip of fences + <think> blocks) is the
+                # path the catalogued 148 used successfully.
                 res = await asyncio.wait_for(
                     llm.chat(**chat_kwargs),
                     timeout=attempt_timeout,
