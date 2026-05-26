@@ -240,10 +240,20 @@ def apply_pending_recall(session: SessionState, *, confirmed: bool) -> bool:
     profile into a live session. Called after the user explicitly answers
     the "are you <name>?" confirm prompt.
 
+    PRIVACY HARDENING (2026-05-27). The brain prompt no longer discloses
+    staged attrs (single_brain.py recall_block). To compensate for the
+    accidental / mistaken "yes" path, we now run a **match-before-merge**
+    contradiction check: if the live profile has captured any identity
+    fact in this conversation that CONTRADICTS the staged recall (e.g.
+    user said age=29 but staged.age=34), we discard the staged recall
+    entirely — no partial merge. Empty live slots (no contradiction
+    possible) are still filled from staged on confirmed=True.
+
     confirmed=True  — the user affirmed it's them. Stored fields fill any
-                      EMPTY slot on the live profile (already-captured slots
-                      from THIS conversation win — the user may have given
-                      fresher facts). Returns True iff a profile was applied.
+                      EMPTY slot on the live profile — UNLESS any live slot
+                      contradicts the staged value (then the whole staged
+                      recall is dropped). Returns True iff a profile was
+                      applied.
     confirmed=False — the user denied / it isn't them. The staged recall is
                       discarded. The live session stays blank. Returns False.
 
@@ -263,6 +273,28 @@ def apply_pending_recall(session: SessionState, *, confirmed: bool) -> bool:
     stored_fields = pending.get("stored_fields") or {}
     if not stored_fields:
         return False
+    # PRIVACY HARDENING (2026-05-27) — match-before-merge guard.
+    # Fields chosen here are decision-critical identity facts where a
+    # mismatch unambiguously means "different person" (vs. e.g.
+    # health_conditions which evolves between visits).
+    _GUARD_FIELDS = (
+        "age", "dependents", "income_band", "location_tier",
+        "primary_goal", "parents_age_max",
+    )
+    for fld in _GUARD_FIELDS:
+        live_v = getattr(session.profile, fld, None)
+        staged_v = stored_fields.get(fld)
+        if live_v in (None, "", []) or staged_v in (None, "", []):
+            continue
+        # Normalise to compare. Int and string forms of age both common.
+        if str(live_v).strip().lower() != str(staged_v).strip().lower():
+            _log.info(
+                "apply_pending_recall: contradiction on %s "
+                "(live=%r, staged=%r) — discarding staged recall, "
+                "no merge",
+                fld, live_v, staged_v,
+            )
+            return False
     for fld, new in stored_fields.items():
         try:
             if fld not in Profile.__dataclass_fields__:

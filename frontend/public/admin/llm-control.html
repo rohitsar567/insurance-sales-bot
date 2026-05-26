@@ -1686,9 +1686,17 @@
         // tab. fetchHealth/fetchChains/fetchUsage targeted DOM elements that
         // no longer exist (#counters, #chains-grid, #health-tbody) so they're
         // no longer called. fetchLlmHealth + renderLlmHealth feed the 2 tables.
-        return fetchLlmHealth().then(function () {
+        //
+        // KI-296 (2026-05-27) — fetchHealth IS called again here so STATE.health
+        // (source for the top-left "Last refresh / Next in" timer at L1623-1652)
+        // reflects the actual last-probe timestamp on tab entry, not the
+        // login-time snapshot. The DOM elements fetchHealth used to feed are
+        // gone, but the JSON it returns still drives the consolidated header
+        // row's timing display.
+        return Promise.all([fetchHealth(), fetchLlmHealth()]).then(function () {
           renderLlmHealth();
           setLastUpdated();
+          renderUpdatedLabel();
           STATE.chainLoaded = true;
         });
       }
@@ -2274,12 +2282,20 @@
       // faster than that because credit + degraded-window state changes
       // sub-tick (chat hot path stamps both) and the operator needs to see
       // those without manually clicking Refresh.
+      //
+      // KI-296 (2026-05-27) — also re-fetch /api/admin/health so STATE.health
+      // (source for the top-left "Last refresh / Next in" timer) stays in
+      // sync with whatever the background_probe_loop just did. Without
+      // this, the timer projects "Next in: 5min" from a stale login-time
+      // anchor and never re-syncs with reality.
       var LLM_HEALTH_POLL_INTERVAL_MS = 30000;
       function startLlmHealthPolling() {
         stopLlmHealthPolling();
         STATE.llmHealthPollTimer = setInterval(function () {
           if (STATE.activeTab !== 'chain') return;
-          fetchLlmHealth().then(renderLlmHealth).catch(function () { /* swallow */ });
+          Promise.all([fetchHealth(), fetchLlmHealth()])
+            .then(function () { renderLlmHealth(); renderUpdatedLabel(); })
+            .catch(function () { /* swallow */ });
         }, LLM_HEALTH_POLL_INTERVAL_MS);
       }
       function stopLlmHealthPolling() {
@@ -3120,7 +3136,11 @@
           } else {
             // Tab already loaded — refresh just the KI-086 panel on re-entry
             // so the operator immediately sees fresh credits / sin-bin state.
-            fetchLlmHealth().then(renderLlmHealth).catch(function () { /* swallow */ });
+            // KI-296 (2026-05-27) — also re-fetch /api/admin/health for the
+            // top-left timer (renderUpdatedLabel reads STATE.health.updated_at).
+            Promise.all([fetchHealth(), fetchLlmHealth()])
+              .then(function () { renderLlmHealth(); renderUpdatedLabel(); })
+              .catch(function () { /* swallow */ });
           }
           startLlmHealthPolling();
         }
@@ -3283,6 +3303,14 @@
         // state from /api/admin/llm-health, which is refreshed by a 5-min
         // background loop. User clicked Refresh expecting current state but
         // got cached state. Now: POST /api/admin/probe → then re-fetch.
+        //
+        // KI-296 (2026-05-27) — also re-fetch /api/admin/health so STATE.health
+        // (the source for the top-left "Last refresh / Next in" timer at
+        // L1623-1652) reflects the just-completed probe. Without this, the
+        // POST + the LlmHealth GET refreshed the table + the bottom-right
+        // FRESH badge but the top-left timer kept ticking from the
+        // login-time snapshot — making the user (correctly) suspect that
+        // probing wasn't happening at all.
         var llmHealthBtn = $('btn-refresh-llm-health');
         if (llmHealthBtn) {
           llmHealthBtn.onclick = function () {
@@ -3291,8 +3319,12 @@
             btn.textContent = 'Refreshing…';
             apiPost('/api/admin/probe', null)
               .catch(function () { /* tolerate probe failure; still re-fetch cached state */ })
-              .then(function () { return fetchLlmHealth(); })
-              .then(function () { renderLlmHealth(); toast('LLM health refreshed', 'success'); })
+              .then(function () { return Promise.all([fetchHealth(), fetchLlmHealth()]); })
+              .then(function () {
+                renderLlmHealth();
+                renderUpdatedLabel();
+                toast('LLM health refreshed', 'success');
+              })
               .catch(handleFetchErr)
               .then(function () { btn.disabled = false; btn.textContent = 'Refresh now'; });
           };

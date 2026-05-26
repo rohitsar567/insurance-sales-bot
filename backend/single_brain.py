@@ -27,6 +27,7 @@ import asyncio
 import json
 import logging
 import os
+import random
 import time
 from dataclasses import dataclass, field
 from typing import Any, Optional
@@ -62,15 +63,33 @@ PER_CALL_TIMEOUT_SEC = 25.0
 # user turn.
 MAX_ITERATIONS = 8
 
-# Transient-error retry policy (2026-05-15 / KI-singlebrain-503).
+# Transient-error retry policy (2026-05-15 / KI-singlebrain-503; extended
+# 2026-05-27 for sticky-session hardening).
 # Live HF Space logs (rohitsar567/InsuranceBot, 2026-05-15 08:15Z) show
 # Gemini intermittently returns HTTP 503 "model is currently experiencing
-# high demand" — sometimes 3 in a row on the same session — which immediately
-# tripped the orchestrator fallback. We retry ONCE on these transient codes
-# with a short backoff before raising SingleBrainError so the legacy
-# orchestrator only takes over on a genuinely sustained outage.
+# high demand" — sometimes 3 in a row on the same session — which previously
+# tripped the orchestrator fallback after a SINGLE retry (1.5s). Backoff
+# schedule below is sized so non-sticky sessions still fail-fast (~3s →
+# nim_fallback) but sticky sessions (where falling back would discard
+# last_recommendation_ids / last_retrieved_chunks / slug_to_insurer) get
+# 2 retries with jittered exponential backoff, soaking up the ~6-10s 503
+# storms that produced the user-visible "could you say that again?" canned
+# reply at main.py:976. Jitter ±25% prevents synchronized retry storms
+# across concurrent sessions.
 _TRANSIENT_HTTP_CODES = {429, 500, 502, 503, 504}
-_TRANSIENT_RETRY_BACKOFF_SEC = 1.5
+_TRANSIENT_RETRY_BACKOFFS_NON_STICKY = (1.5,)            # 1 retry
+_TRANSIENT_RETRY_BACKOFFS_STICKY = (1.5, 3.0)            # 2 retries, exp
+_TRANSIENT_RETRY_JITTER_FRAC = 0.25                       # ±25%
+
+
+def _jittered_backoff(base_sec: float) -> float:
+    """Return base_sec scaled by a uniform random factor in
+    [1 - JITTER, 1 + JITTER]. Pure helper so the retry loop stays flat.
+    """
+    return base_sec * random.uniform(
+        1.0 - _TRANSIENT_RETRY_JITTER_FRAC,
+        1.0 + _TRANSIENT_RETRY_JITTER_FRAC,
+    )
 
 
 SYSTEM_PROMPT = """You are an Indian health-insurance advisor speaking with a customer.
@@ -815,30 +834,43 @@ def _system_instruction(
     recall_block = ""
     if pending_recall:
         _nm = (pending_recall.get("name") or "there").strip()
-        _sm = pending_recall.get("summary") or {}
-        _bits = []
-        for _k in ("age", "location_tier", "dependents", "primary_goal",
-                   "health_conditions"):
-            _v = _sm.get(_k)
-            if _v not in (None, "", []):
-                _bits.append(f"{_k.replace('_', ' ')}: {_v}")
-        _summ = "; ".join(_bits) if _bits else "a saved profile"
+        # PRIVACY HARDENING (2026-05-27). Previously this prompt echoed the
+        # staged profile's age / dependents / location_tier / primary_goal
+        # into the user-visible "are you the same <name> (age 34, metro,
+        # kids, first_buy)?" question. That disclosed a prior visitor's
+        # identity facts to ANY stranger who happened to share the name
+        # slug — the recall key is name-only, so two different Rohits
+        # collide on rohit.json. The leak is independent of the merge
+        # gate (apply_pending_recall) because the disclosure happened in
+        # the prompt itself before any user answer.
+        #
+        # New design: do NOT disclose stored attrs. Ask the user to
+        # RE-STATE one identifying fact (their age). On the next turn,
+        # session_state.apply_pending_recall runs a match-before-merge
+        # contradiction check against whatever the user just saved via
+        # save_profile_field — a wrong "yes" plus a contradicting age
+        # discards the staged recall, so a stranger can't inherit prior
+        # attrs even by mis-clicking "yes".
         recall_block = (
             "\n\n═══════════════════════════════════\n"
             "RETURNING-USER CHECK — HIGHEST PRIORITY THIS TURN "
             "(overrides RULE 1 / fact-find for this one turn)\n"
             "═══════════════════════════════════\n"
-            f"A stored profile already exists under the name the user just "
-            f"gave (\"{_nm}\"). Known hints — {_summ}.\n"
+            f"A stored profile may exist under the name the user just "
+            f"gave (\"{_nm}\"). DO NOT disclose any stored attribute "
+            "(age, dependents, location, goal, conditions, etc.) in your "
+            "reply — disclosing them to an unconfirmed identity is a "
+            "privacy leak. Stay neutral.\n"
             "Your ENTIRE reply this turn MUST be ONLY the confirmation "
             "question below. Do NOT call any tool, do NOT save_profile_field, "
             "do NOT run the 7-question fact-find, do NOT recommend:\n"
-            f"  \"Welcome back — are you the same {_nm} who spoke with us "
-            f"before ({_summ})? If yes, I'll pick up right where we left "
-            f"off. If not, no problem — just say so and we'll start fresh.\"\n"
-            "Then wait for their yes/no on the NEXT turn. The system "
-            "applies or discards the saved profile from their answer — you "
-            "never merge anything yourself."
+            f"  \"Welcome back — have we spoken before? If yes, please "
+            f"share your age so I can pull up the right profile. If not, "
+            f"no problem — just say so and we'll start fresh.\"\n"
+            "Then wait for their answer on the NEXT turn. If they share "
+            "an age (or other fact), save_profile_field captures it and "
+            "the system runs a match-before-merge check against the "
+            "staged recall — you never merge anything yourself."
         )
     restored_block = ""
     if recall_applied:
@@ -993,16 +1025,22 @@ async def _gemini_call(
     contents: list[dict],
     tools: list[dict],
     timeout_sec: float,
+    *,
+    is_sticky: bool = False,
 ) -> dict:
     """Single non-streaming Gemini generateContent call. Returns the raw
     JSON payload. Raises SingleBrainError on any 4xx/5xx/transport error.
 
-    Internal retry: on transient failures (HTTP 429/5xx, httpx
-    TimeoutException, httpx.HTTPError) we retry ONCE after a short
-    backoff before raising. This soaks up the brief Gemini "high demand"
-    503 bursts observed live (2026-05-15) so we don't fall through to
-    the legacy orchestrator mid-session for what is usually a sub-second
-    blip on the provider side.
+    Internal retry policy (2026-05-15 → extended 2026-05-27):
+      - Non-sticky session (no prior successful single_brain turn): 1 retry
+        with a 1.5s backoff. Fast-fail to nim_fallback on sustained outage
+        (cold-start 503 is exactly what nim_fallback exists for).
+      - Sticky session (prior successful turn exists, brain state would be
+        lost on cross-fade): 2 retries with jittered exponential backoffs
+        (1.5s → 3s, ±25% jitter). Soaks up the ~6-10s Gemini "high demand"
+        503 storms that previously surfaced as the user-visible
+        sticky_graceful_retry canned reply at main.py:976.
+      Transient = HTTP 429/5xx, httpx.TimeoutException, httpx.HTTPError.
     """
     url = f"{GEMINI_BASE_URL}/{model}:generateContent?key={api_key}"
     body: dict = {
@@ -1033,8 +1071,15 @@ async def _gemini_call(
 
     last_err: Optional[str] = None
     last_status: Optional[int] = None
-    # 2 attempts total: initial + 1 retry on transient failure.
-    for attempt in range(2):
+    # Sticky path: initial + 2 retries (3 attempts). Non-sticky: initial + 1.
+    backoffs = (
+        _TRANSIENT_RETRY_BACKOFFS_STICKY
+        if is_sticky
+        else _TRANSIENT_RETRY_BACKOFFS_NON_STICKY
+    )
+    max_attempts = 1 + len(backoffs)
+    for attempt in range(max_attempts):
+        is_last_attempt = attempt == max_attempts - 1
         async with httpx.AsyncClient(timeout=client_timeout) as client:
             try:
                 resp = await client.post(url, headers=headers, json=body)
@@ -1045,13 +1090,14 @@ async def _gemini_call(
                     f"Gemini timeout after {timeout_sec:.1f}s (model={model})"
                 )
                 last_status = None
-                if attempt == 0:
+                if not is_last_attempt:
+                    _backoff = _jittered_backoff(backoffs[attempt])
                     _log.warning(
-                        "single_brain transient timeout (attempt=1); "
-                        "retrying once after %.1fs backoff",
-                        _TRANSIENT_RETRY_BACKOFF_SEC,
+                        "single_brain transient timeout (attempt=%d/%d, "
+                        "sticky=%s); retrying after %.2fs backoff",
+                        attempt + 1, max_attempts, is_sticky, _backoff,
                     )
-                    await asyncio.sleep(_TRANSIENT_RETRY_BACKOFF_SEC)
+                    await asyncio.sleep(_backoff)
                     continue
                 raise SingleBrainError(last_err) from e
             except httpx.HTTPError as e:
@@ -1060,13 +1106,16 @@ async def _gemini_call(
                     f"({type(e).__name__}): {str(e)[:200]}"
                 )
                 last_status = None
-                if attempt == 0:
+                if not is_last_attempt:
+                    _backoff = _jittered_backoff(backoffs[attempt])
                     _log.warning(
                         "single_brain transient transport error "
-                        "(attempt=1, %s); retrying once after %.1fs backoff",
-                        type(e).__name__, _TRANSIENT_RETRY_BACKOFF_SEC,
+                        "(attempt=%d/%d, sticky=%s, %s); retrying "
+                        "after %.2fs backoff",
+                        attempt + 1, max_attempts, is_sticky,
+                        type(e).__name__, _backoff,
                     )
-                    await asyncio.sleep(_TRANSIENT_RETRY_BACKOFF_SEC)
+                    await asyncio.sleep(_backoff)
                     continue
                 raise SingleBrainError(last_err) from e
 
@@ -1078,18 +1127,20 @@ async def _gemini_call(
                 pass
             last_status = resp.status_code
             last_err = f"Gemini HTTP {resp.status_code}: {detail}"
-            # Transient → retry once. Permanent (4xx like 400/401/403/404) →
-            # raise immediately; retrying won't help.
+            # Transient → retry per schedule. Permanent (4xx like
+            # 400/401/403/404) → raise immediately; retrying won't help.
             if (
-                attempt == 0
+                not is_last_attempt
                 and resp.status_code in _TRANSIENT_HTTP_CODES
             ):
+                _backoff = _jittered_backoff(backoffs[attempt])
                 _log.warning(
-                    "single_brain transient HTTP %d (attempt=1); "
-                    "retrying once after %.1fs backoff",
-                    resp.status_code, _TRANSIENT_RETRY_BACKOFF_SEC,
+                    "single_brain transient HTTP %d (attempt=%d/%d, "
+                    "sticky=%s); retrying after %.2fs backoff",
+                    resp.status_code, attempt + 1, max_attempts,
+                    is_sticky, _backoff,
                 )
-                await asyncio.sleep(_TRANSIENT_RETRY_BACKOFF_SEC)
+                await asyncio.sleep(_backoff)
                 continue
             raise SingleBrainError(last_err)
 
@@ -2078,6 +2129,13 @@ async def handle_turn(
     # tool, with no risk of an infinite loop.
     _b2_reprompted: bool = False
 
+    # 2026-05-27 — sticky sessions get the extended retry schedule in
+    # _gemini_call. A failed call mid-stream on a sticky session can't fall
+    # back to nim_fallback without discarding last_recommendation_ids /
+    # last_retrieved_chunks / slug_to_insurer (see main.py:965-992), so we
+    # absorb transient Gemini 503 bursts more aggressively here.
+    _is_sticky_session = bool(getattr(session, "single_brain_sticky", False))
+
     for it in range(MAX_ITERATIONS):
         # Issue A instrumentation (KI-Z6-LATENCY, 2026-05-15) — Priya T3
         # timed at 18.7s vs an 8s budget. We need per-iteration breakdown
@@ -2094,6 +2152,7 @@ async def handle_turn(
                 contents=contents,
                 tools=TOOL_SCHEMAS,
                 timeout_sec=PER_CALL_TIMEOUT_SEC,
+                is_sticky=_is_sticky_session,
             )
         except SingleBrainError:
             raise

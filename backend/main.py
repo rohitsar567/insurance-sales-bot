@@ -975,8 +975,16 @@ async def chat(req: ChatRequest, request: Request):
                     )
                     turn = single_brain.TurnResult(
                         reply_text=(
-                            "Sorry, I'm having trouble — could you say "
-                            "that again?"
+                            # 2026-05-27 — honest copy. Previous text falsely
+                            # blamed comprehension ("could you say that
+                            # again?") when the actual cause was an upstream
+                            # Gemini transient (HTTP 503 / timeout / etc.)
+                            # that survived the internal retry schedule.
+                            # Tells the user exactly what to do (resend the
+                            # same message) and locates blame correctly.
+                            "My model service had a brief blip on that turn "
+                            "— please send the same message again, it should "
+                            "go through now."
                         ),
                         citations=[],
                         retrieved_chunk_ids=[],
