@@ -56,6 +56,7 @@ ONE doc must not abort boot, but the failure is logged loudly).
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 import logging
