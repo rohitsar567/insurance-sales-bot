@@ -1965,12 +1965,19 @@ async def handle_turn(
         if _pending_recall:
             _ans = _affirm_or_deny(user_text)
             if _ans is True:
+                # 2026-05-27 — user_text plumbed in so the same-turn age
+                # contradiction guard inside apply_pending_recall can
+                # discard a wrong-person "Yes I'm 35" reply before merging.
                 _did_recall_this_turn = bool(
-                    apply_pending_recall(session, confirmed=True)
+                    apply_pending_recall(
+                        session, confirmed=True, user_text=user_text,
+                    )
                 )
                 _pending_recall = None
             elif _ans is False:
-                apply_pending_recall(session, confirmed=False)
+                apply_pending_recall(
+                    session, confirmed=False, user_text=user_text,
+                )
                 _pending_recall = None
             # ambiguous → leave staged; the confirm block is re-injected
             # below and the LLM re-asks the "are you <name>?" question.

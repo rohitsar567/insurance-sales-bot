@@ -30,6 +30,7 @@ Public API:
 from __future__ import annotations
 
 import logging
+import re
 import time
 from dataclasses import dataclass, field
 from threading import Lock
@@ -38,6 +39,37 @@ from typing import Optional
 from typing import Any, Dict
 
 from backend.needs_finder import Profile, record_answer
+
+
+# 2026-05-27 — best-effort age extractor for the same-turn match-before-merge
+# guard inside `apply_pending_recall`. The LLM is the canonical extractor
+# (save_profile_field), but it runs AFTER apply_pending_recall in the turn
+# pipeline — so a "Yes I'm 35" reply would otherwise merge the staged
+# profile before the LLM had a chance to capture the contradicting age.
+# Tight pattern: matches "I'm 29", "I am 29", "age 29", "age: 29",
+# "aged 29", "29 years old", "29 yrs", "29 y/o". Range-gated to 18-99.
+_AGE_HINT_RE = re.compile(
+    r"\b(?:age\s*[:=]?\s*|i'?m\s+|i\s+am\s+|aged\s+|aged\s*[:=]?\s*)?(\d{2})"
+    r"\s*(?:years?\s*old|yrs?|y/?o)?\b",
+    re.IGNORECASE,
+)
+
+
+def _extract_age_from_text(text: str) -> Optional[int]:
+    """Best-effort age extraction from a free-form user reply.
+    Returns int in [18, 99] or None. Picks the FIRST plausible match —
+    in practice the user states their age once, near the start.
+    """
+    if not text:
+        return None
+    for m in _AGE_HINT_RE.finditer(text):
+        try:
+            v = int(m.group(1))
+            if 18 <= v <= 99:
+                return v
+        except Exception:
+            continue
+    return None
 
 _log = logging.getLogger(__name__)
 
@@ -233,7 +265,12 @@ def rehydrate_by_name(session: SessionState, name: str) -> bool:
         return False
 
 
-def apply_pending_recall(session: SessionState, *, confirmed: bool) -> bool:
+def apply_pending_recall(
+    session: SessionState,
+    *,
+    confirmed: bool,
+    user_text: str = "",
+) -> bool:
     """Resolve a staged cross-session profile recall.
 
     PRIVACY FIX (2026-05-16). The ONLY path that merges a stored, name-keyed
@@ -289,12 +326,35 @@ def apply_pending_recall(session: SessionState, *, confirmed: bool) -> bool:
         # Normalise to compare. Int and string forms of age both common.
         if str(live_v).strip().lower() != str(staged_v).strip().lower():
             _log.info(
-                "apply_pending_recall: contradiction on %s "
+                "apply_pending_recall: prior-turn contradiction on %s "
                 "(live=%r, staged=%r) — discarding staged recall, "
                 "no merge",
                 fld, live_v, staged_v,
             )
             return False
+    # PRIVACY HARDENING v2 (2026-05-27) — same-turn age contradiction.
+    # _affirm_or_deny + apply_pending_recall fire BEFORE the LLM iteration
+    # that runs save_profile_field, so a user reply like "Yes I'm 35"
+    # against a staged Rohit at age=29 would otherwise slip through the
+    # prior-turn guard (live.age=None at this point) and merge the wrong
+    # profile. Best-effort age parse from user_text closes that gap —
+    # mis-parses lose nothing (returns None → no extra check fires).
+    if user_text:
+        user_age = _extract_age_from_text(user_text)
+        staged_age = stored_fields.get("age")
+        if user_age is not None and staged_age not in (None, "", []):
+            try:
+                staged_age_int = int(staged_age)
+            except Exception:
+                staged_age_int = None
+            if staged_age_int is not None and staged_age_int != user_age:
+                _log.info(
+                    "apply_pending_recall: same-turn age contradiction "
+                    "(user_text age=%d, staged.age=%s) — discarding "
+                    "staged recall, no merge",
+                    user_age, staged_age,
+                )
+                return False
     for fld, new in stored_fields.items():
         try:
             if fld not in Profile.__dataclass_fields__:
