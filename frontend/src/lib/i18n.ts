@@ -43,6 +43,9 @@ export const UI_STRINGS = {
     "upload.error": "✗ Upload failed: ${err}",
     "upload.user_msg": "📎 Uploaded: ${name}",
     "upload.chat_ack": "Got it — I've read **${name}**. Here's how it grades against what we know about you so far:",
+    "upload.chat_ack_reading": "Got it — I've received **${name}**. Give me a moment to read it through fully (about 30–60 seconds) and I'll bring back a complete picture for you.",
+    "upload.chat_card_ready": "Here's the full picture of **${name}** — graded against what we know about you so far:",
+    "upload.chat_extraction_failed": "I couldn't pull a full analysis from this PDF this time. You can still ask me about anything inside the document — I have the full text indexed and can quote the exact wording.",
     "upload.chat_choice": "How would you like to proceed?\n\n• **Tell me more about yourself** — finish the short profile (age, family, location, budget, health) so I can speak to this policy more personally.\n• **Dive into the PDF first** — ask questions about coverage, waiting periods, exclusions, anything in the document.\n\nEither works. The more I know about you, the more useful the discussion of this policy will be.",
 
     // Marketplace panel
@@ -164,6 +167,9 @@ export const UI_STRINGS = {
     "upload.error": "✗ Upload विफल: ${err}",
     "upload.user_msg": "📎 Upload किया: ${name}",
     "upload.chat_ack": "मिल गया — **${name}** पढ़ ली। यह आपके profile के हिसाब से कैसी है:",
+    "upload.chat_ack_reading": "मिल गया — **${name}** मिल गई। थोड़ी देर दें (~30-60 सेकंड), पूरी तरह पढ़कर पूरा analysis लाता हूँ।",
+    "upload.chat_card_ready": "**${name}** का पूरा analysis — आपके profile के हिसाब से:",
+    "upload.chat_extraction_failed": "इस PDF का पूरा analysis इस बार नहीं निकाल पाया। फिर भी आप document के बारे में कुछ भी पूछ सकते हैं — पूरा text indexed है, exact wording quote कर सकता हूँ।",
     "upload.chat_choice": "आगे कैसे बढ़ें?\n\n• **अपने बारे में बताएं** — short profile पूरा करें (उम्र, परिवार, location, बजट, health) ताकि मैं इस policy पर आपको personally बात कर सकूं।\n• **पहले PDF पर बात करें** — coverage, waiting periods, exclusions — कुछ भी पूछें।\n\nदोनों ठीक हैं। जितना मैं आपके बारे में जानूंगा, इस policy की चर्चा उतनी useful होगी।",
 
     "mp.heading": "स्वास्थ्य बीमा बाज़ार",

@@ -728,12 +728,45 @@ async def reingest_persisted_into_policies() -> dict:
 # 74% median for catalogued. After this change uploaded cards land in
 # the same completeness band by construction.
 #
-# Runs as a background asyncio task fired from the upload endpoint —
-# the upload's HTTP response returns immediately with the heuristic
-# record (sub-second), and the LLM pass (~30-60s) lands in the
-# background. The frontend polls /api/policies/{id}/scorecard after
-# the upload and refreshes the card in place when completeness jumps.
+# Runs as a background asyncio task fired from the upload endpoint.
+# The upload's HTTP response returns immediately (sub-second) with the
+# heuristic record; the LLM pass (~30-60s) lands in the background.
+# A new GET /api/upload/extraction-status/{policy_id} endpoint exposes
+# in-flight state to the frontend so the chat flow can wait for
+# extraction → THEN render the card with full data (no partial render).
 # ---------------------------------------------------------------------------
+
+
+# In-memory status dict — one entry per uploaded policy_id.
+# Shape:
+#   {
+#     "status": "pending" | "running" | "complete" | "failed",
+#     "policy_id": str,
+#     "policy_name": str,
+#     "insurer_slug": str,
+#     "started_at": ISO-8601 UTC,
+#     "completed_at": ISO-8601 UTC | None,
+#     "completeness_pct": float | None,  # populated on complete
+#     "overall_grade": str | None,
+#     "error": str | None,
+#   }
+# Survives only the live process — fine for the UX use case (the
+# frontend polls within ~120s of upload).
+_UPLOAD_EXTRACTION_STATUS: dict[str, dict] = {}
+_UPLOAD_EXTRACTION_LOCK = asyncio.Lock()
+
+
+async def _set_extraction_status(policy_id: str, **fields) -> None:
+    async with _UPLOAD_EXTRACTION_LOCK:
+        cur = _UPLOAD_EXTRACTION_STATUS.get(policy_id, {})
+        cur.update(fields)
+        cur["policy_id"] = policy_id
+        _UPLOAD_EXTRACTION_STATUS[policy_id] = cur
+
+
+def get_extraction_status(policy_id: str) -> Optional[dict]:
+    """Public read accessor used by the /api/upload/extraction-status endpoint."""
+    return _UPLOAD_EXTRACTION_STATUS.get(policy_id)
 
 
 async def extract_one_for_upload(
@@ -748,10 +781,25 @@ async def extract_one_for_upload(
     invalidates the marketplace grade cache so the next /api/policies/all
     + /api/policies/{id}/scorecard call returns the LLM-graded card.
 
+    Status is mirrored to `_UPLOAD_EXTRACTION_STATUS[policy_id]` at every
+    phase change so the frontend's poll loop sees progress in real time.
+
     Returns True iff a HealthPolicy was successfully extracted and written.
     Swallows all errors (returns False) — a failed LLM pass must NEVER
     affect the upload's HTTP response, which has already returned.
     """
+    _now = lambda: time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    await _set_extraction_status(
+        policy_id,
+        status="running",
+        policy_name=policy_name,
+        insurer_slug=insurer_slug,
+        started_at=_now(),
+        completed_at=None,
+        completeness_pct=None,
+        overall_grade=None,
+        error=None,
+    )
     try:
         # Lazy imports — these touch the LLM client + DuckDB; we don't
         # want to pay that cost at module import time.
@@ -779,6 +827,11 @@ async def extract_one_for_upload(
             _log.warning(
                 "[upload-extract] read_full_text failed %s: %s: %s",
                 policy_id, type(e).__name__, e,
+            )
+            await _set_extraction_status(
+                policy_id, status="failed",
+                completed_at=_now(),
+                error=f"read_full_text: {type(e).__name__}: {str(e)[:160]}",
             )
             return False
 
@@ -828,6 +881,11 @@ async def extract_one_for_upload(
                 "[upload-extract] no policy extracted for %s after retries; "
                 "card stays on heuristic record", policy_id,
             )
+            await _set_extraction_status(
+                policy_id, status="failed",
+                completed_at=_now(),
+                error="LLM returned no valid HealthPolicy after primary + fallback retries",
+            )
             return False
 
         # Write rag/extracted/<policy_id>.json — same shape as catalogued.
@@ -866,8 +924,38 @@ async def extract_one_for_upload(
             "[upload-extract] OK %s (extraction_confidence_pct=%s)",
             policy_id, getattr(policy, "extraction_confidence_pct", "n/a"),
         )
+
+        # Resolve the freshly-graded card so the status can report
+        # the actual completeness + grade the chat card will show.
+        _final_completeness = None
+        _final_grade = None
+        try:
+            import backend.main as _bm2
+            from backend.scorecard import build_scorecard as _bs
+            _doc = policy.model_dump()
+            _sc = _bs(_doc, profile=None)
+            if _sc is not None:
+                _final_completeness = float(_sc.data_completeness_pct)
+                _final_grade = _sc.overall_grade
+        except Exception:  # noqa: BLE001
+            pass
+
+        await _set_extraction_status(
+            policy_id, status="complete",
+            completed_at=_now(),
+            completeness_pct=_final_completeness,
+            overall_grade=_final_grade,
+        )
         return True
     except Exception as e:  # noqa: BLE001 — top-level catch-all
+        try:
+            await _set_extraction_status(
+                policy_id, status="failed",
+                completed_at=_now(),
+                error=f"{type(e).__name__}: {str(e)[:200]}",
+            )
+        except Exception:
+            pass
         _log.warning(
             "[upload-extract] unexpected failure for %s: %s: %s",
             policy_id, type(e).__name__, str(e)[:400],

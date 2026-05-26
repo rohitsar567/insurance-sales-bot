@@ -1978,8 +1978,9 @@ async def upload_policy(
 
         # ── Fire LLM-assisted extraction in background (ADR-044) ─────────
         # Same extractor as the catalogued 148. Runs ~30-60s; the upload
-        # HTTP response returns now and the frontend polls the scorecard
-        # endpoint to refresh the card in place when extraction lands.
+        # HTTP response returns now and the frontend polls
+        # /api/upload/extraction-status/{policy_id} (see below) to know
+        # when the card-bearing chat message should be pushed.
         # Fail-silent: a failed LLM pass leaves the heuristic record
         # intact, so the card still has SOMETHING to show — never blocks
         # the user. NEVER blocks this request.
@@ -1991,6 +1992,20 @@ async def upload_policy(
                 _udocs.detected_insurer_name(_resolved_insurer_slug)
                 if _resolved_insurer_slug != _udocs.UPLOAD_INSURER_SLUG
                 else _udocs.UPLOAD_INSURER_NAME,
+            )
+            # Pre-stamp "pending" so a frontend poll that arrives BEFORE
+            # extract_one_for_upload's first await still sees a known
+            # state instead of HTTP 404.
+            await _udocs._set_extraction_status(
+                policy_id,
+                status="pending",
+                policy_name=policy_name,
+                insurer_slug=_resolved_insurer_slug,
+                started_at=None,
+                completed_at=None,
+                completeness_pct=None,
+                overall_grade=None,
+                error=None,
             )
             asyncio.create_task(
                 _udocs.extract_one_for_upload(
@@ -2025,6 +2040,58 @@ async def upload_policy(
         chunks_added=len(chunks),
         pages_indexed=len(pages),
         elapsed_ms=int((_time.time() - t0) * 1000),
+    )
+
+
+# ---------------------------------------------------------------------------
+# GET /api/upload/extraction-status/{policy_id} — frontend poll target
+# (ADR-044, 2026-05-27).
+#
+# After the upload endpoint returns, the chat flow needs to know when
+# the background LLM extraction completes so it can push the card-bearing
+# assistant message into chat with the FULL data (not the heuristic
+# stub). This endpoint exposes _UPLOAD_EXTRACTION_STATUS so the
+# frontend can poll every ~3s for up to ~120s.
+# ---------------------------------------------------------------------------
+
+
+class ExtractionStatusResponse(BaseModel):
+    policy_id: str
+    status: str  # "pending" | "running" | "complete" | "failed" | "unknown"
+    policy_name: Optional[str] = None
+    insurer_slug: Optional[str] = None
+    started_at: Optional[str] = None
+    completed_at: Optional[str] = None
+    completeness_pct: Optional[float] = None
+    overall_grade: Optional[str] = None
+    error: Optional[str] = None
+
+
+@app.get(
+    "/api/upload/extraction-status/{policy_id}",
+    response_model=ExtractionStatusResponse,
+)
+async def upload_extraction_status(policy_id: str):
+    """Return the live status of a per-upload LLM-assisted extraction.
+
+    Returns `status="unknown"` for an unrecognised policy_id (e.g. the
+    frontend polled a stale id or a policy that was uploaded on a prior
+    container) so the client can stop polling without ambiguity.
+    """
+    from backend import uploaded_docs as _udocs
+    state = _udocs.get_extraction_status(policy_id)
+    if not state:
+        return ExtractionStatusResponse(policy_id=policy_id, status="unknown")
+    return ExtractionStatusResponse(
+        policy_id=policy_id,
+        status=state.get("status", "unknown"),
+        policy_name=state.get("policy_name"),
+        insurer_slug=state.get("insurer_slug"),
+        started_at=state.get("started_at"),
+        completed_at=state.get("completed_at"),
+        completeness_pct=state.get("completeness_pct"),
+        overall_grade=state.get("overall_grade"),
+        error=state.get("error"),
     )
 
 

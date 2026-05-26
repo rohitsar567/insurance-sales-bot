@@ -196,6 +196,12 @@ export default function Page() {
     }
   }, [messages]);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
+  // ADR-044 (2026-05-27) — extractionInFlight stays true from the moment
+  // a PDF starts uploading until the background LLM extraction either
+  // completes or hits its hard timeout. Voice auto-submit is gated on
+  // this so ambient noise / TTS playback during the 30-60s extraction
+  // window can no longer fire an unprompted chat turn.
+  const [extractionInFlight, setExtractionInFlight] = useState<boolean>(false);
   // KI-027 (2026-05-14) — voice UX simplification. The legacy `handsFree`
   // mode (its own VAD auto-cutoff + post-turn mic re-open loop) has been
   // removed. We now have exactly two voice paths, mutually exclusive:
@@ -971,14 +977,14 @@ export default function Page() {
     voiceSubmitRef.current = (text: string) => {
       const t = text.trim();
       if (t.length < 2) return;
-      // Suppress voice auto-submit while a PDF upload is in flight or
-      // just-completed (uploadStatus is non-null for ~8s after success
-      // / failure). A long upload + active mic + bot's TTS playing
-      // through speakers can otherwise auto-transcribe ambient sound
-      // and fire an "unprompted analysis" chat turn that drowns the
-      // upload-flow's choice prompt. Real user input still goes
-      // through the typed-input path / explicit Push-to-talk press.
-      if (uploadStatus) return;
+      // Suppress voice auto-submit while a PDF upload is in flight OR
+      // while the background LLM extraction is still running (ADR-044).
+      // A long upload + active mic + bot's TTS playing through speakers
+      // can otherwise auto-transcribe ambient sound and fire an
+      // "unprompted analysis" chat turn that drowns the upload-flow's
+      // choice prompt. Real user input still goes through the
+      // typed-input path / explicit Push-to-talk press.
+      if (uploadStatus || extractionInFlight) return;
       // V4 FIX 2 — dedup repeated finals within 500ms.
       const { text: prevText, at: prevAt } = lastFinalTextRef.current;
       const now = Date.now();
@@ -994,7 +1000,7 @@ export default function Page() {
     // send() reads `messages` / `sessionId` / `ttsLang` / view flags via
     // closure; rebind whenever they change so the latest values are used.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [messages, sessionId, ttsLang, openPolicy, showMarketplace, showProfile, showPremium, uploadStatus]);
+  }, [messages, sessionId, ttsLang, openPolicy, showMarketplace, showProfile, showPremium, uploadStatus, extractionInFlight]);
 
   async function startRecording() {
     // KI-222 FIX 1 — silence any prior bot TTS BEFORE PTT recording starts.
@@ -1448,57 +1454,106 @@ export default function Page() {
   async function handleFile(ev: React.ChangeEvent<HTMLInputElement>) {
     const f = ev.target.files?.[0];
     if (!f) return;
-    // Earlier iteration also pushUser'd a "📎 Uploaded: <name>" breadcrumb
-    // into the transcript. That leaked into chat_history so a subsequent
-    // voice auto-fire (mic catching ambient sound during the long index
-    // wait) could trigger the brain to "analyse" the upload unprompted.
-    // Removed: the card rendered below the ack message is itself the
-    // user-visible breadcrumb that the upload happened. uploadStatus
-    // gates the voice-submit path during the indexing window.
+    // ADR-044 (2026-05-27) — new staged upload flow:
+    //   1. POST /api/upload-policy → indexes + persists + kicks the
+    //      background LLM extraction.
+    //   2. push assistant ack (NO card yet — we don't render the card
+    //      on the partial heuristic record).
+    //   3. push choice prompt (finish profile / dive into PDF).
+    //   4. poll /api/upload/extraction-status/{id} every 3s for up to
+    //      120s. While polling, `extractionInFlight=true` blocks voice
+    //      auto-submit so ambient sound during the wait can't trigger
+    //      an "unprompted please-upload" chat turn.
+    //   5. when status === "complete", push a NEW assistant message
+    //      with the citations → card renders inline at that point
+    //      with FULL data (catalogued-grade depth).
+    //   6. on "failed" / timeout, push a fallback ack with whatever
+    //      heuristic data we have, so the user is never stranded.
     setUploadStatus(t("upload.indexing", { name: f.name }));
+    setExtractionInFlight(true);
     try {
       // Pass the live chat session so the backend scopes the uploaded doc
       // to this user — the assistant can then answer questions about it
       // for the rest of THIS conversation.
       const r = await uploadPolicy(f, sessionId);
       setUploadStatus(t("upload.success", { name: r.policy_name }));
-      // ── In-chat acknowledgment + inline scorecard card ──────────────
-      // Push two assistant messages:
-      //   1. The "got it, here's the card" ack with a `citations` array
-      //      carrying the uploaded policy_id. The existing chat renderer
-      //      reads citations from an assistant message and fires
-      //      `getScorecard(policy_id, session_id)` per cited policy, so
-      //      the scorecard card appears inline under the bubble — same
-      //      treatment as a recommendation card.
-      //   2. The proceed-choice prompt — telling the user they can
-      //      finish their profile OR dive into the PDF, and noting that
-      //      a fuller profile makes the policy discussion more useful.
-      const ackText = t("upload.chat_ack", { name: r.policy_name });
-      pushAssistant(ackText, {
-        citations: [
-          {
-            policy_id: r.policy_id,
-            policy_name: r.policy_name,
-            insurer_slug: "user-upload",
-            page_start: 1,
-            page_end: r.pages_indexed,
-            source_url: "",
-            score: 1.0,
-          },
-        ],
-      });
+      // Step 2 — ack (NO citations yet → no card rendered)
+      pushAssistant(t("upload.chat_ack_reading", { name: r.policy_name }));
+      // Step 3 — choice prompt
       pushAssistant(t("upload.chat_choice"));
       // Refresh coverage so the uploaded doc shows up
       getCoverage().then(setCoverage).catch(() => {});
+
+      // Step 4 — poll extraction status
+      const POLL_INTERVAL_MS = 3000;
+      const MAX_TRIES = 40; // 40 × 3s = 120s
+      let landed = false;
+      let finalCompleteness: number | null = null;
+      let finalGrade: string | null = null;
+      let finalInsurerSlug: string = r.policy_id.startsWith("user-upload__") ? "user-upload" : "";
+      for (let i = 0; i < MAX_TRIES; i++) {
+        try {
+          const resp = await fetch(
+            `${BACKEND_URL}/api/upload/extraction-status/${encodeURIComponent(r.policy_id)}`,
+          );
+          if (resp.ok) {
+            const s = await resp.json();
+            if (s.status === "complete") {
+              landed = true;
+              finalCompleteness = s.completeness_pct ?? null;
+              finalGrade = s.overall_grade ?? null;
+              finalInsurerSlug = s.insurer_slug || finalInsurerSlug;
+              break;
+            }
+            if (s.status === "failed") {
+              break;
+            }
+            // pending / running / unknown — keep polling
+            if (s.insurer_slug) finalInsurerSlug = s.insurer_slug;
+          }
+        } catch (_) {
+          // tolerant of transient fetch errors; keep polling
+        }
+        await new Promise((res) => setTimeout(res, POLL_INTERVAL_MS));
+      }
+
+      // Step 5 — push the card-bearing assistant message
+      if (landed) {
+        pushAssistant(
+          t("upload.chat_card_ready", { name: r.policy_name }),
+          {
+            citations: [
+              {
+                policy_id: r.policy_id,
+                policy_name: r.policy_name,
+                insurer_slug: finalInsurerSlug || "user-upload",
+                page_start: 1,
+                page_end: r.pages_indexed,
+                source_url: "",
+                score: 1.0,
+              },
+            ],
+          },
+        );
+      } else {
+        // Step 6 — fallback. We DON'T render a card on the heuristic
+        // stub (per user directive — "lets generate the card inline
+        // ONLY after full data extraction"), so on timeout / failure
+        // just tell the user the deep-analysis didn't complete and
+        // they can ask questions about the PDF directly.
+        pushAssistant(
+          t("upload.chat_extraction_failed", { name: r.policy_name }),
+        );
+      }
     } catch (e: unknown) {
       const errMsg = e instanceof Error ? e.message : String(e);
       setUploadStatus(t("upload.error", { err: errMsg }));
-      // Surface the failure in chat too — a transient banner alone is
-      // easy to miss (originally reported as "no acknowledgment").
+      // Surface the failure in chat too.
       pushAssistant(t("upload.error", { err: errMsg }));
     } finally {
       if (fileInputRef.current) fileInputRef.current.value = "";
       setTimeout(() => setUploadStatus(null), 8000);
+      setExtractionInFlight(false);
     }
   }
 
