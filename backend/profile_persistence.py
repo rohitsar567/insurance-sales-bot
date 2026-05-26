@@ -230,7 +230,7 @@ def extract_potential_name(text: str) -> Optional[str]:
     return raw
 
 
-def try_recall_by_name(session, name: str) -> bool:
+def try_recall_by_name(session, name: str, *, user_text: str = "") -> bool:
     """Look up a stored profile by name and STAGE it for confirmation.
 
     PRIVACY FIX (2026-05-16). Wraps session_state.rehydrate_by_name, which
@@ -238,21 +238,28 @@ def try_recall_by_name(session, name: str) -> bool:
     auto-merging it into `session.profile`. Nothing is applied to the live
     session here.
 
+    PRIVACY HARDENING v4 (2026-05-27, ADR-042 follow-up #1) — `user_text`
+    is threaded through so the two-fact gate inside rehydrate_by_name can
+    parse same-turn identity facts (age/dependents/location/income) to
+    decide whether to stage / defer / fail-closed. Callers that don't have
+    user_text on hand (rare) still get the prior-turn live-profile path.
+
     Returns:
         Always False — the stored profile is NEVER auto-applied. The
         single_brain caller therefore never stamps `is_returning_user` /
         a "Welcome back" greeting off a bare name on a fresh session.
         Whether a match was *staged* is observable on
-        `session.pending_profile_recall`; the brain surfaces an "are you
-        <name>?" confirm and calls session_state.apply_pending_recall on
-        the user's explicit answer.
+        `session.pending_profile_recall`; whether the probe was *deferred*
+        (no facts to disambiguate yet) is on `session.recall_match_deferred`.
+        The brain surfaces an "are you <name>?" confirm and calls
+        session_state.apply_pending_recall on the user's explicit answer.
     """
     if not name or not name.strip():
         return False
     try:
         from backend.session_state import rehydrate_by_name
 
-        return bool(rehydrate_by_name(session, name))
+        return bool(rehydrate_by_name(session, name, user_text=user_text))
     except Exception as e:  # noqa: BLE001
         _log.warning(
             "try_recall_by_name failed (name=%r): %s: %s",

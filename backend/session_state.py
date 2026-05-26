@@ -41,13 +41,25 @@ from typing import Any, Dict
 from backend.needs_finder import Profile, record_answer
 
 
-# 2026-05-27 — best-effort age extractor for the same-turn match-before-merge
-# guard inside `apply_pending_recall`. The LLM is the canonical extractor
-# (save_profile_field), but it runs AFTER apply_pending_recall in the turn
-# pipeline — so a "Yes I'm 35" reply would otherwise merge the staged
-# profile before the LLM had a chance to capture the contradicting age.
-# Tight pattern: matches "I'm 29", "I am 29", "age 29", "age: 29",
-# "aged 29", "29 years old", "29 yrs", "29 y/o". Range-gated to 18-99.
+# 2026-05-27 — best-effort identity-fact extractors for the same-turn
+# match-before-merge guard inside `apply_pending_recall` AND for the
+# two-fact gate inside `rehydrate_by_name`. The LLM is the canonical
+# extractor (save_profile_field), but it runs AFTER both call sites in
+# the turn pipeline — so a "Yes I'm 35" / "Hi I'm Rohit, I'm in
+# Mumbai" reply would otherwise either merge the wrong profile or fail
+# to stage a legitimate same-turn recall. Mis-parses return None and
+# cost nothing.
+#
+# Coverage:
+#   age            — _extract_age_from_text
+#   dependents     — _extract_dependents_from_text  (delegates to
+#                    brain_tools._normalize_dependents_inline so the
+#                    canonical bucket set is honored)
+#   location_tier  — _extract_location_tier_from_text  (Indian-city
+#                    name → metro / tier1 / tier2 / tier3 lookup)
+#   income_band    — _extract_income_band_from_text  (delegates to
+#                    needs_finder._parse_income_band)
+
 _AGE_HINT_RE = re.compile(
     r"\b(?:age\s*[:=]?\s*|i'?m\s+|i\s+am\s+|aged\s+|aged\s*[:=]?\s*)?(\d{2})"
     r"\s*(?:years?\s*old|yrs?|y/?o)?\b",
@@ -70,6 +82,122 @@ def _extract_age_from_text(text: str) -> Optional[int]:
         except Exception:
             continue
     return None
+
+
+def _extract_dependents_from_text(text: str) -> Optional[str]:
+    """Best-effort dependents bucket from free-form text.
+    Delegates to brain_tools._normalize_dependents_inline so the
+    canonical bucket set ("self", "self+spouse", "self+spouse+kids",
+    "self+parents", "self+spouse+parents", "self+spouse+kids+parents",
+    "self+kids") is honored. Returns None on no match.
+    """
+    if not text:
+        return None
+    try:
+        # Lazy import to avoid load-order issues at module init.
+        from backend.brain_tools import _normalize_dependents_inline
+    except Exception:
+        return None
+    try:
+        return _normalize_dependents_inline(text)
+    except Exception:
+        return None
+
+
+# Indian-city → tier lookup. Tier-1 list per the IRDAI / RBI city
+# classification (Mumbai/Delhi/Bangalore/Chennai/Kolkata/Hyderabad =
+# Tier-1 "metro" in insurance vernacular). Bot's pricing uses "metro"
+# as the high-tier loading bucket — keep that as the alias here so a
+# user typing "Mumbai" maps to the same bucket the LLM would store.
+_LOCATION_TIER_MAP: dict[str, str] = {
+    # Metro / Tier-1
+    "mumbai": "metro", "bombay": "metro",
+    "delhi": "metro", "new delhi": "metro",
+    "bangalore": "metro", "bengaluru": "metro",
+    "kolkata": "metro", "calcutta": "metro",
+    "chennai": "metro", "madras": "metro",
+    "hyderabad": "metro",
+    "metro": "metro", "tier 1": "tier1", "tier1": "tier1", "tier-1": "tier1",
+    # Tier-2
+    "pune": "tier2", "ahmedabad": "tier2", "jaipur": "tier2",
+    "lucknow": "tier2", "kanpur": "tier2", "nagpur": "tier2",
+    "indore": "tier2", "thane": "tier2", "bhopal": "tier2",
+    "visakhapatnam": "tier2", "vizag": "tier2",
+    "patna": "tier2", "vadodara": "tier2", "baroda": "tier2",
+    "ghaziabad": "tier2", "ludhiana": "tier2", "agra": "tier2",
+    "nashik": "tier2", "faridabad": "tier2", "meerut": "tier2",
+    "rajkot": "tier2", "varanasi": "tier2", "srinagar": "tier2",
+    "aurangabad": "tier2", "amritsar": "tier2", "navi mumbai": "tier2",
+    "allahabad": "tier2", "prayagraj": "tier2", "ranchi": "tier2",
+    "howrah": "tier2", "coimbatore": "tier2", "jabalpur": "tier2",
+    "gwalior": "tier2", "vijayawada": "tier2", "jodhpur": "tier2",
+    "raipur": "tier2", "kota": "tier2", "chandigarh": "tier2",
+    "guwahati": "tier2", "solapur": "tier2", "hubli": "tier2",
+    "mysore": "tier2", "mysuru": "tier2",
+    "tier 2": "tier2", "tier2": "tier2", "tier-2": "tier2",
+    # Tier-3 buckets (rest)
+    "tier 3": "tier3", "tier3": "tier3", "tier-3": "tier3",
+    "small town": "tier3", "village": "tier3", "rural": "tier3",
+}
+
+
+def _extract_location_tier_from_text(text: str) -> Optional[str]:
+    """Best-effort location_tier from a free-form user reply.
+    Returns "metro" / "tier1" / "tier2" / "tier3" or None.
+    Matches whole tokens / phrases against _LOCATION_TIER_MAP.
+    """
+    if not text:
+        return None
+    s = text.lower()
+    # Longest-key-first so "navi mumbai" beats "mumbai".
+    for key in sorted(_LOCATION_TIER_MAP.keys(), key=len, reverse=True):
+        # Word-boundary match for single-word keys; substring for
+        # multi-word keys (which already have natural boundaries).
+        if " " in key:
+            if key in s:
+                return _LOCATION_TIER_MAP[key]
+        else:
+            if re.search(rf"\b{re.escape(key)}\b", s):
+                return _LOCATION_TIER_MAP[key]
+    return None
+
+
+def _extract_income_band_from_text(text: str) -> Optional[str]:
+    """Best-effort income_band from free-form text.
+    Delegates to needs_finder._parse_income_band so the canonical
+    bucket set (under_5L / 5L-10L / 10L-25L / 25L+) is honored.
+    """
+    if not text:
+        return None
+    try:
+        from backend.needs_finder import _parse_income_band
+    except Exception:
+        return None
+    try:
+        return _parse_income_band(text)
+    except Exception:
+        return None
+
+
+def _parse_user_text_facts(user_text: str) -> Dict[str, Any]:
+    """Run all four identity-fact extractors against user_text. Returns
+    a dict of only the fields that successfully parsed. Used by both
+    the two-fact recall gate (rehydrate_by_name) and the same-turn
+    match-before-merge guard (apply_pending_recall).
+    """
+    if not user_text:
+        return {}
+    out: Dict[str, Any] = {}
+    for fld, fn in (
+        ("age", _extract_age_from_text),
+        ("dependents", _extract_dependents_from_text),
+        ("location_tier", _extract_location_tier_from_text),
+        ("income_band", _extract_income_band_from_text),
+    ):
+        v = fn(user_text)
+        if v not in (None, "", []):
+            out[fld] = v
+    return out
 
 _log = logging.getLogger(__name__)
 
@@ -127,6 +255,16 @@ class SessionState:
     # known (any turn); this flag stops it re-staging every subsequent
     # turn and stops a declined recall from being re-offered.
     recall_probe_done: bool = False
+    # ADR-042 follow-up #1 (2026-05-27) — two-fact recall gate. When
+    # rehydrate_by_name finds a stored profile under the captured name
+    # but the live session has NO identity-fact match (and user_text
+    # carried no parseable fact either), it sets this flag instead of
+    # staging. The caller (single_brain.py) sees this and DOES NOT set
+    # recall_probe_done=True, so the probe retries on subsequent turns
+    # as more facts come in via save_profile_field. Reset to False by
+    # the caller every retry. Prevents the slug-collision Welcome-Back
+    # leak from ever firing on a bare-name intro.
+    recall_match_deferred: bool = False
 
     def _flush(self) -> None:
         """No-op. Session state lives only in the in-memory dict; the
@@ -185,7 +323,12 @@ _RECALL_SUMMARY_FIELDS: tuple[str, ...] = (
 )
 
 
-def rehydrate_by_name(session: SessionState, name: str) -> bool:
+def rehydrate_by_name(
+    session: SessionState,
+    name: str,
+    *,
+    user_text: str = "",
+) -> bool:
     """Cross-session re-entry point — STAGE a name match for confirmation.
 
     PRIVACY FIX (2026-05-16, audit). Previously this AUTO-MERGED the stored
@@ -195,6 +338,21 @@ def rehydrate_by_name(session: SessionState, name: str) -> bool:
     common first name — was silently served a stranger's captured profile
     and greeted "Welcome back, <name>!". A fresh, no-cookie session must
     NEVER inherit another session's profile from a weak/shared key.
+
+    PRIVACY HARDENING v4 (2026-05-27, ADR-042 follow-up #1) — TWO-FACT
+    GATE. Even with the explicit confirm gate in apply_pending_recall, a
+    bare-name "Hi I'm Rohit" would still LEAK staged attrs in the
+    Welcome Back prompt (the brain's recall_block was redacted in v1/v2,
+    but the very *existence* of a Welcome Back prompt telegraphs that
+    SOMEONE under this name has used the bot before). The two-fact gate
+    blocks the staging entirely unless at least ONE identity fact —
+    drawn from live `session.profile` (prior-turn captures) OR parsed
+    from `user_text` (same-turn, via _parse_user_text_facts) — MATCHES
+    the stored profile. If a parsed fact CONTRADICTS, staging is also
+    refused (no leak to a different person sharing the name slug). If
+    no identity facts are available yet (bare name), staging is
+    DEFERRED — `session.recall_match_deferred=True` signals the caller
+    to retry on a later turn as more facts come in.
 
     Safe design (KI-196 / ADR-041, specced via `pending_profile_recall` but
     previously never wired): a name match is STAGED on
@@ -209,7 +367,8 @@ def rehydrate_by_name(session: SessionState, name: str) -> bool:
         False  — always. The stored profile is NEVER auto-applied here, so
                  callers must treat False as "do not flag a returning user
                  / do not greet Welcome back". Whether a match was *staged*
-                 is observable via `session.pending_profile_recall`.
+                 is observable via `session.pending_profile_recall`; the
+                 deferred-retry signal is `session.recall_match_deferred`.
 
     Failures are logged but never raise — a fresh chat must always proceed.
     """
@@ -229,7 +388,80 @@ def rehydrate_by_name(session: SessionState, name: str) -> bool:
             if _first and _first.lower() != _stripped.lower():
                 stored = load_profile(_first)
             if stored is None:
+                # No stored profile under this name. Done — no recall
+                # opportunity, no deferral needed.
+                session.recall_match_deferred = False
                 return False
+
+        # ─── TWO-FACT GATE (v4, 2026-05-27) ───────────────────────────
+        # Require at least ONE non-name identity fact to match the
+        # stored profile before staging. Sources for the fact:
+        #   (1) session.profile — already-captured live facts (any
+        #       prior turn of this same session)
+        #   (2) user_text — same-turn parse via _parse_user_text_facts
+        # Any CONTRADICTION fails closed (no stage). No fact available
+        # ⇒ defer (set session.recall_match_deferred=True so the
+        # single_brain caller does NOT mark recall_probe_done, and the
+        # probe retries next turn as more facts come in).
+        same_turn_facts = _parse_user_text_facts(user_text)
+        matched_fact = False
+        contradicted_fact = False
+        for fld in ("age", "dependents", "location_tier", "income_band"):
+            stored_v = getattr(stored, fld, None)
+            if stored_v in (None, "", []):
+                continue
+            # Source 1: prior-turn live capture
+            live_v = getattr(session.profile, fld, None)
+            if live_v not in (None, "", []):
+                if fld == "age":
+                    try:
+                        if int(live_v) == int(stored_v):
+                            matched_fact = True
+                        else:
+                            contradicted_fact = True
+                    except Exception:
+                        pass
+                else:
+                    if str(live_v).strip().lower() == str(stored_v).strip().lower():
+                        matched_fact = True
+                    else:
+                        contradicted_fact = True
+                continue
+            # Source 2: same-turn parse from user_text
+            user_v = same_turn_facts.get(fld)
+            if user_v not in (None, "", []):
+                if fld == "age":
+                    try:
+                        if int(user_v) == int(stored_v):
+                            matched_fact = True
+                        else:
+                            contradicted_fact = True
+                    except Exception:
+                        pass
+                else:
+                    if str(user_v).strip().lower() == str(stored_v).strip().lower():
+                        matched_fact = True
+                    else:
+                        contradicted_fact = True
+
+        if contradicted_fact:
+            # Any contradicting identity fact ⇒ fail-closed. No stage.
+            # Mark probe done so we don't try again — the stored
+            # profile is for a DIFFERENT person sharing this name slug.
+            session.recall_match_deferred = False
+            _log.info(
+                "rehydrate_by_name: identity-fact contradiction for "
+                "name=%r — fail-closed, no stage", name,
+            )
+            return False
+        if not matched_fact:
+            # No fact to confirm a match yet. Defer staging until a
+            # later turn has captured a fact via save_profile_field.
+            session.recall_match_deferred = True
+            session.last_touched = time.time()
+            return False
+
+        # ─── At this point: stored exists AND ≥1 fact matches. Stage. ─
 
         # Build a non-PII-leaking identity summary so the brain can ask
         # "are you <name>?" without putting anything on the live profile.
@@ -254,6 +486,7 @@ def rehydrate_by_name(session: SessionState, name: str) -> bool:
             "stored_fields": staged_fields,
             "staged_at": time.time(),
         }
+        session.recall_match_deferred = False
         session.last_touched = time.time()
         # Deliberately False: nothing merged, no Welcome-back greeting.
         return False
@@ -332,29 +565,47 @@ def apply_pending_recall(
                 fld, live_v, staged_v,
             )
             return False
-    # PRIVACY HARDENING v2 (2026-05-27) — same-turn age contradiction.
+    # PRIVACY HARDENING v2 (2026-05-27) — same-turn contradiction guard.
     # _affirm_or_deny + apply_pending_recall fire BEFORE the LLM iteration
     # that runs save_profile_field, so a user reply like "Yes I'm 35"
     # against a staged Rohit at age=29 would otherwise slip through the
-    # prior-turn guard (live.age=None at this point) and merge the wrong
-    # profile. Best-effort age parse from user_text closes that gap —
-    # mis-parses lose nothing (returns None → no extra check fires).
+    # prior-turn guard (live.<fld>=None at this point) and merge the
+    # wrong profile.
+    #
+    # PRIVACY HARDENING v3 (2026-05-27, ADR-042 follow-up #2): extended
+    # from age-only to all four decision-critical identity facts
+    # (age / dependents / location_tier / income_band) via
+    # _parse_user_text_facts. Mis-parses return None and cost nothing.
     if user_text:
-        user_age = _extract_age_from_text(user_text)
-        staged_age = stored_fields.get("age")
-        if user_age is not None and staged_age not in (None, "", []):
-            try:
-                staged_age_int = int(staged_age)
-            except Exception:
-                staged_age_int = None
-            if staged_age_int is not None and staged_age_int != user_age:
-                _log.info(
-                    "apply_pending_recall: same-turn age contradiction "
-                    "(user_text age=%d, staged.age=%s) — discarding "
-                    "staged recall, no merge",
-                    user_age, staged_age,
-                )
-                return False
+        same_turn_facts = _parse_user_text_facts(user_text)
+        for fld, user_v in same_turn_facts.items():
+            staged_v = stored_fields.get(fld)
+            if staged_v in (None, "", []):
+                continue
+            # Normalise. Age is the only numeric; the rest are strings.
+            if fld == "age":
+                try:
+                    staged_norm = int(staged_v)
+                    user_norm = int(user_v)
+                except Exception:
+                    continue
+                if staged_norm != user_norm:
+                    _log.info(
+                        "apply_pending_recall: same-turn age contradiction "
+                        "(user_text age=%d, staged.age=%s) — discarding "
+                        "staged recall, no merge",
+                        user_norm, staged_v,
+                    )
+                    return False
+            else:
+                if str(user_v).strip().lower() != str(staged_v).strip().lower():
+                    _log.info(
+                        "apply_pending_recall: same-turn %s contradiction "
+                        "(user_text=%r, staged=%r) — discarding staged "
+                        "recall, no merge",
+                        fld, user_v, staged_v,
+                    )
+                    return False
     for fld, new in stored_fields.items():
         try:
             if fld not in Profile.__dataclass_fields__:

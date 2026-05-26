@@ -1997,14 +1997,28 @@ async def handle_turn(
                 or (extract_potential_name(user_text or "") or "")
             )
             if _nm:
-                # One-shot: never re-probe (the captured name won't
-                # change) and never re-stage every subsequent turn.
-                session.recall_probe_done = True
                 # Stages session.pending_profile_recall iff a stored
-                # profile for this name exists (no match ⇒ no-op, normal
-                # fresh-user flow continues — no false confirm prompt).
+                # profile for this name exists AND the two-fact gate
+                # (ADR-042 follow-up #1) is satisfied — i.e., at least
+                # one identity fact (age / dependents / location /
+                # income) MATCHES between stored and the live/parsed
+                # user state. No match yet ⇒ session.recall_match_
+                # deferred=True and we DON'T flip recall_probe_done so
+                # the probe retries next turn when more facts come in.
                 # Still privacy-safe: STAGE only; explicit confirm merges.
-                try_recall_by_name(session, _nm)
+                try_recall_by_name(session, _nm, user_text=user_text)
+                _deferred = bool(
+                    getattr(session, "recall_match_deferred", False)
+                )
+                if not _deferred:
+                    # Probe was conclusive (staged / contradicted / no
+                    # stored profile under this name). Mark done — name
+                    # won't change, no point re-probing.
+                    session.recall_probe_done = True
+                # Else: leave recall_probe_done as-is (False) so the
+                # next turn's gate re-enters this branch after the LLM
+                # has captured another identity fact via
+                # save_profile_field.
                 _pending_recall = getattr(
                     session, "pending_profile_recall", None
                 )
