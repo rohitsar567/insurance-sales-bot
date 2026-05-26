@@ -779,6 +779,12 @@ export default function Page() {
     // explicit early-return here so the guard survives any future change
     // that bypasses the input-clear path.
     if (!text.trim() || busy) return;
+    // ADR-044 defense-in-depth (2026-05-27) — fail-closed during the
+    // upload + extraction window. The Send button is also disabled
+    // via the `disabled` prop AND every voice path is gated, but
+    // this is the last-line guard so a programmatic / future path
+    // can never race the upload-staging flow.
+    if (uploadStatus || extractionInFlight) return;
     // KI-204 (2026-05-15) — silence any prior bot TTS BEFORE submitting.
     // User starting a new turn always takes precedence over the bot's
     // current reply audio. Covers typed sends, voice barge-in, manual Send
@@ -1489,14 +1495,18 @@ export default function Page() {
       // for the rest of THIS conversation.
       const r = await uploadPolicy(f, sessionId);
       setUploadStatus(t("upload.success", { name: r.policy_name }));
-      // Step 2 — ack (NO citations yet → no card rendered)
+      // Step 2 — ack ONLY (no card, no choice prompt yet). Per user
+      // directive: nothing else surfaces in chat until the card is
+      // fully populated and ready to render.
       pushAssistant(t("upload.chat_ack_reading", { name: r.policy_name }));
-      // Step 3 — choice prompt
-      pushAssistant(t("upload.chat_choice"));
       // Refresh coverage so the uploaded doc shows up
       getCoverage().then(setCoverage).catch(() => {});
 
-      // Step 4 — poll extraction status
+      // Step 4 — poll extraction status until COMPLETE / FAILED / TIMEOUT.
+      // Per user directive (2026-05-27): NO choice prompt, NO card,
+      // NOTHING else fires during this wait — the user is asked to wait,
+      // the Send button + voice paths are all gated by extractionInFlight,
+      // and the chat only progresses once the card data is fully populated.
       const POLL_INTERVAL_MS = 3000;
       const MAX_TRIES = 40; // 40 × 3s = 120s
       let landed = false;
@@ -1529,7 +1539,10 @@ export default function Page() {
         await new Promise((res) => setTimeout(res, POLL_INTERVAL_MS));
       }
 
-      // Step 5 — push the card-bearing assistant message
+      // Step 5 — push the card-bearing assistant message + THEN the
+      // choice prompt. Order matters — the user explicitly directed
+      // (2026-05-27): no choice prompt until the card has landed, so
+      // they see the full picture before being asked what to do next.
       if (landed) {
         pushAssistant(
           t("upload.chat_card_ready", { name: r.policy_name }),
@@ -1547,15 +1560,17 @@ export default function Page() {
             ],
           },
         );
+        // Choice prompt fires AFTER the card, not before — that was the
+        // race the previous flow exhibited.
+        pushAssistant(t("upload.chat_choice"));
       } else {
-        // Step 6 — fallback. We DON'T render a card on the heuristic
-        // stub (per user directive — "lets generate the card inline
-        // ONLY after full data extraction"), so on timeout / failure
-        // just tell the user the deep-analysis didn't complete and
-        // they can ask questions about the PDF directly.
+        // Failure / timeout fallback: surface honestly + still defer the
+        // choice prompt (we never want to ask the user to "dive into the
+        // PDF" before they can SEE the analysis).
         pushAssistant(
           t("upload.chat_extraction_failed", { name: r.policy_name }),
         );
+        pushAssistant(t("upload.chat_choice"));
       }
     } catch (e: unknown) {
       const errMsg = e instanceof Error ? e.message : String(e);
@@ -1957,7 +1972,7 @@ export default function Page() {
               // overflow. overflowY starts hidden; the effect manages it.
               className="flex-1 resize-none scrollbar-thin bg-transparent outline-none text-sm sm:text-base px-2 py-2 min-h-[40px]"
               style={{ overflowY: "hidden" }}
-              disabled={busy}
+              disabled={busy || extractionInFlight}
             />
             {/* Hidden file input — the visible 📎 control drives it. PDF
                 only; the backend rejects non-PDF magic bytes anyway, but
@@ -1974,11 +1989,13 @@ export default function Page() {
             {/* Attach-PDF control. Same 44px tap height + radius language
                 as the Send button (.btn-primary → 12px radius, h-11); a
                 hairline-bordered secondary so it reads as a companion to
-                Send, not a competing primary. */}
+                Send, not a competing primary.
+                ADR-044 (2026-05-27): also disabled while an extraction is
+                in flight so the user can't queue a second upload mid-wait. */}
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              disabled={busy}
+              disabled={busy || extractionInFlight}
               aria-label={t("input.upload")}
               title={t("input.upload")}
               className="shrink-0 h-11 px-3.5 rounded-xl border border-[var(--border)] bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--primary)] hover:border-[var(--primary)] transition-colors flex items-center gap-1.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1989,8 +2006,9 @@ export default function Page() {
             <button
               type="button"
               onClick={() => send(input)}
-              disabled={busy || !input.trim()}
+              disabled={busy || !input.trim() || extractionInFlight}
               className="btn-primary shrink-0 h-11 px-5 text-sm"
+              title={extractionInFlight ? "Reading the uploaded PDF — a moment, please." : undefined}
             >
               Send
             </button>
