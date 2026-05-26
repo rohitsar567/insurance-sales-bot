@@ -604,10 +604,10 @@ flowchart LR
 
 **Provenance rule.** Every policy fact shown to a user traces to a real clause in a real PDF. Where a document genuinely doesn't state something, it is recorded as a sourced-null (*"not stated in &lt;file&gt;.pdf"*) — never invented or back-filled.
 
-### 2.8 Uploaded-PDF defence — 8 sequential gates
+### 2.8 Uploaded-PDF flow — 8 security gates → catalogued-grade card
 
 ```mermaid
-flowchart LR
+flowchart TB
     UP["/api/upload-policy (public web)"] --> G1["1 File mechanics<br/>%PDF · size band · %%EOF · no exe/JS"]
     G1 --> G2["2 Content quality<br/>≥1500 chars · ≥3 pp · domain keyword"]
     G2 --> G3["3 Prompt-injection sweep"]
@@ -616,7 +616,13 @@ flowchart LR
     G5 --> G6["6 Encrypted/locked → reject"]
     G6 --> G7["7 Page-count ceiling (>200)"]
     G7 --> G8["8 Hash dedupe + reject-cache"]
-    G8 -->|"pass"| QC["per-session QUARANTINE Chroma collection<br/>session-scoped · 24h idle TTL · never the shared corpus"]
+    G8 -->|"pass"| QC["per-session QUARANTINE Chroma + global policies collection<br/>BGE-small embeddings · 24h idle TTL"]
+    QC --> HEUR["Heuristic baseline (synchronous, sub-second)<br/>regex/keyword over PDF text<br/>writes UPLOADED_DOCS_DIR/&lt;pid&gt;/record.json @ ~30-50% completeness"]
+    HEUR --> ACK["HTTP 200 → frontend pushes ack 'Reading it through, ~30-60s'<br/>EVERY chat input gated during the wait"]
+    HEUR -.->|"detect_insurer_slug<br/>match against 21 known insurers"| INS["insurer_slug = manipalcigna / hdfc-ergo / ...<br/>(or 'user-upload' on no match — fail-closed)"]
+    ACK --> LLM["Background asyncio task: extract_one_for_upload<br/>Gemini 2.5-flash (3 retries, exp backoff) → NIM fallback<br/>writes rag/extracted/&lt;pid&gt;.json"]
+    LLM --> MERGE["Merge LLM output INTO heuristic record.json<br/>LLM wins per-field where non-empty, heuristic stays where LLM silent"]
+    MERGE --> CARD["Card-ready: card renders inline in chat<br/>same shape as the 148 catalogued (grade, 6 sub-scores, signals, reviews)"]
     G1 & G2 & G3 & G4 & G5 & G6 & G7 & G8 -->|"fail"| REJ["clean rejection (reason surfaced)"]
 ```
 
@@ -1019,6 +1025,21 @@ these:
 │   ├── premium_calculator.py profile → illustrative premium
 │   │   sum_insured.py
 │   ├── session_state.py      per-session profile (in-memory only, ADR-043)
+│   ├── uploaded_docs.py      user-uploaded PDF pipeline (ADR-044):
+│   │                          - persist_upload() — heuristic baseline +
+│   │                            sha256 of PDF bytes
+│   │                          - detect_insurer_slug() — match PDF text
+│   │                            against 21 known insurer name patterns
+│   │                          - extract_one_for_upload() — Gemini-primary
+│   │                            (3 retries, exp backoff) → NIM fallback,
+│   │                            content-hash cache, raw-response logging,
+│   │                            LLM-into-heuristic merge
+│   │                          - backfill_extractions() — startup hook
+│   │                            re-runs LLM extraction on every
+│   │                            existing UPLOADED_DOCS_DIR/<pid>/ that
+│   │                            doesn't yet have rag/extracted/<pid>.json
+│   │                          - _UPLOAD_EXTRACTION_STATUS + endpoint
+│   │                            GET /api/upload/extraction-status/{pid}
 │   ├── voice_format.py       TTS pre-processing (money/Indic normalisation)
 │   ├── admin.py              /api/admin/* (health, telemetry)
 │   └── providers/            thin clients: google_gemini, nvidia_nim, sarvam_*,

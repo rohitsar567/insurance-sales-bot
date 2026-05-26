@@ -1013,6 +1013,14 @@ async def extract_one_for_upload(
                     "[upload-extract] %s returned %d chars; parsing JSON…",
                     label, len(raw or ""),
                 )
+                # Record provider + response size on the status dict so the
+                # operator can prove WHICH LLM landed the extraction without
+                # needing HF Space stdout access.
+                await _set_extraction_status(
+                    policy_id,
+                    llm_used=label,
+                    llm_response_chars=len(raw or ""),
+                )
                 # Persist raw response for ops visibility (always — both
                 # successful + failed parses get a copy).
                 try:

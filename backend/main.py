@@ -2079,6 +2079,11 @@ class ExtractionStatusResponse(BaseModel):
     completeness_pct: Optional[float] = None
     overall_grade: Optional[str] = None
     error: Optional[str] = None
+    # 2026-05-27 — provenance: which LLM landed the extraction
+    # ('gemini-2.5-flash#1' / 'gemini-2.5-flash#2' / 'gemini-2.5-flash#3' /
+    #  'nim-fallback' / None on heuristic-only fallback).
+    llm_used: Optional[str] = None
+    llm_response_chars: Optional[int] = None
 
 
 @app.post("/api/admin/upload/reextract")
@@ -2126,6 +2131,8 @@ async def upload_extraction_status(policy_id: str):
         completeness_pct=state.get("completeness_pct"),
         overall_grade=state.get("overall_grade"),
         error=state.get("error"),
+        llm_used=state.get("llm_used"),
+        llm_response_chars=state.get("llm_response_chars"),
     )
 
 
