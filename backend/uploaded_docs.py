@@ -814,6 +814,17 @@ async def extract_one_for_upload(
         )
         from rag.schema import HealthPolicy
         from backend.providers.base import ChatMessage
+
+        # 2026-05-27 — switched from NIM (get_brain_llm) to Gemini
+        # 2.5-flash with native JSON-mode (response_mime_type=
+        # application/json). Gemini is the steady-state primary
+        # chat brain (ADR-040) and gives schema-locked structured
+        # output, which is exactly what the EXTRACT prompt needs.
+        # NIM stays as the fallback for the (a) missing-GOOGLE_API_KEY
+        # case or (b) Gemini 5xx/quota path. Same prompt, same schema,
+        # same downstream HealthPolicy parse + writes — only the
+        # transport changes.
+        from backend.providers.google_gemini_llm import GoogleGeminiLLM
         from backend.providers.nvidia_nim_llm import get_brain_llm
 
         _log.info(
@@ -842,16 +853,39 @@ async def extract_one_for_upload(
             ChatMessage(role="user", content=prompt),
         ]
 
-        llm_primary = get_brain_llm()
+        # Two-tier attempt: Gemini primary (native JSON mode, steady-state
+        # brain) → NIM chain fallback (older path, multi-candidate failover).
+        try:
+            llm_primary = GoogleGeminiLLM(timeout=180.0)
+            primary_label = "gemini-2.5-flash"
+        except Exception as e:  # noqa: BLE001 — should never happen at __init__
+            _log.warning(
+                "[upload-extract] Gemini init failed (%s) — falling back to NIM",
+                type(e).__name__,
+            )
+            llm_primary = get_brain_llm()
+            primary_label = "nim-chain"
         llm_fallback = get_brain_llm()
 
         raw = ""
         policy: Optional[HealthPolicy] = None
-        for attempt, llm in enumerate([llm_primary, llm_fallback]):
+        for attempt, (llm, label) in enumerate(
+            [(llm_primary, primary_label), (llm_fallback, "nim-chain")]
+        ):
             try:
                 attempt_timeout = 180 if attempt == 0 else 120
+                chat_kwargs = {
+                    "messages": messages,
+                    "temperature": 0.0,
+                    "max_tokens": 2048,
+                }
+                # Gemini supports native JSON mode via response_format —
+                # forces the model to emit a JSON object the schema parser
+                # can validate without prose-cleanup. Harmless on the NIM
+                # path (the kwarg is absorbed by **kwargs).
+                chat_kwargs["response_format"] = {"type": "json_object"}
                 res = await asyncio.wait_for(
-                    llm.chat(messages=messages, temperature=0.0, max_tokens=2048),
+                    llm.chat(**chat_kwargs),
                     timeout=attempt_timeout,
                 )
                 raw = res.text
@@ -872,8 +906,8 @@ async def extract_one_for_upload(
                 break
             except Exception as e:  # noqa: BLE001
                 _log.warning(
-                    "[upload-extract] attempt %d failed for %s: %s: %s",
-                    attempt + 1, policy_id, type(e).__name__, str(e)[:200],
+                    "[upload-extract] attempt %d (%s) failed for %s: %s: %s",
+                    attempt + 1, label, policy_id, type(e).__name__, str(e)[:200],
                 )
                 continue
 
