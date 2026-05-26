@@ -125,13 +125,8 @@ to deciding with confidence.
 
 ```mermaid
 flowchart TD
-    S["🌐 You open the app — web or mobile, nothing to install"] --> R{"Used it before?"}
-    R -->|"Returning"| WB["👋 &quot;Welcome back, &lt;name&gt;?&quot; — your earlier profile is offered back"]
-    R -->|"First time"| TELL
-    WB -->|"yes, that's me"| KNOWN["Picks up with your saved profile — no re-typing"]
-    WB -->|"no / not me"| TELL
-    KNOWN --> REC
-    TELL["🗣️ Tell it about you — a short chat, typed OR spoken, English / Hindi-Hinglish<br/>age · family · budget · health · what you care about"] --> ASK["❓ It asks just 2–3 clarifying questions<br/>(a real conversation, never a long form)"]
+    S["🌐 You open the app — web or mobile, nothing to install"] --> TELL["🗣️ Tell it about you — a short chat, typed OR spoken, English / Hindi-Hinglish<br/>age · family · budget · health · what you care about"]
+    TELL --> ASK["❓ It asks just 2–3 clarifying questions<br/>(a real conversation, never a long form)"]
     ASK --> REC["🎯 A personalised shortlist — plans ranked for YOUR fit, each with the reason it fits"]
     REC --> WHY["🔍 Open any plan: every fact is backed by the exact clause in the real policy PDF<br/>an honest &quot;not stated in the document&quot; instead of a guess"]
     WHY --> EXPLORE{"Want to dig deeper?"}
@@ -148,16 +143,14 @@ flowchart TD
     VOICE -.-> QA
 ```
 
-**Summary.** A first-time user opens the app and ends the
-session having decided on a plan with confidence — and how the system loops
-through compare / browse / Q&A / upload along the way. No backend in this
-view; just the human path.
+**Summary.** A user opens the app and ends the session having decided on
+a plan with confidence — and how the system loops through compare /
+browse / Q&A / upload along the way. No backend in this view; just the
+human path. Every session starts fresh — there is no cross-session
+memory; closing the tab forgets you (privacy-by-design, see ADR-043).
 
 **How it flows:**
 
-- **Returning-user check up front.** If the app recognises your name from
-  before, it offers to restore your saved profile (so you never re-type);
-  *no* takes you down the same path as a first-time user.
 - **Conversational fact-find.** A short typed-or-spoken back-and-forth
   (English or Hindi-Hinglish) captures age, family, budget, health and
   what you care about — instead of a long form.
@@ -204,7 +197,7 @@ flowchart LR
         API["HTTP endpoints + orchestration<br/>backend/main.py"]
         BRAIN["🧠 LLM Brain<br/>Google Gemini + function-calling tools<br/>(NIM fallback chain on failure)"]
         SCORE["🎯 Scoring + Pricing<br/>scorecard.py · premium_calculator.py"]
-        PROF["👤 Profile & Persistence<br/>session_state · profile_store"]
+        PROF["👤 Profile (in-memory only)<br/>session_state.SessionState · 1h idle TTL"]
     end
     subgraph DATA["📚 Data layer"]
         VEC["Vector DB (Chroma) — policy chunks<br/>+ per-session quarantine (uploads)"]
@@ -233,7 +226,7 @@ flowchart LR
 
 - **1. Frontend (browser · Next.js).** Renders chat, marketplace, compare, and the profile builder. Sends typed text and audio over HTTP, plays the synthesised reply.
 - **2. Voice.** `Sarvam STT (in)` turns spoken audio into a text turn; `Sarvam TTS (out)` turns the reply text back into spoken audio.
-- **3. Backend (FastAPI).** Four sub-blocks — **3a** HTTP endpoints + orchestration (`backend/main.py`); **3b** LLM Brain (Gemini + function-calling tools; NIM fallback on failure); **3c** Scoring + Pricing (`scorecard.py` + `premium_calculator.py`); **3d** Profile & Persistence (`session_state` + `profile_store`).
+- **3. Backend (FastAPI).** Four sub-blocks — **3a** HTTP endpoints + orchestration (`backend/main.py`); **3b** LLM Brain (Gemini + function-calling tools; NIM fallback on failure); **3c** Scoring + Pricing (`scorecard.py` + `premium_calculator.py`); **3d** Profile (in-memory only — `session_state.SessionState`, no disk).
 - **4. Data layer.** Two stores — the Chroma **vector DB** (shared policy chunks + per-session quarantine for uploads) and curated **JSON facts** at `40-data/policy_facts/*.json`. The brain, scoring, and pricing all read from these.
 
 **Diagram legend (used throughout §2):**
@@ -283,10 +276,9 @@ flowchart TB
             SC1["grade_per_profile<br/>scorecard.py"]
             SC2["estimate_premium<br/>premium_calculator.py"]
         end
-        subgraph BE_PROF["3d. Profile & Persistence"]
-            P1["update_session_profile"]
-            P2["persist_to_disk<br/>end of turn"]
-            P3["recall_by_name<br/>returning user"]
+        subgraph BE_PROF["3d. Profile (in-memory)"]
+            P1["update_session_profile<br/>session_state.SessionState"]
+            P2["evict_on_idle<br/>1h TTL · no disk"]
         end
     end
 
@@ -294,7 +286,6 @@ flowchart TB
         direction TB
         D1["vector_search<br/>Chroma · BGE-small"]
         D2["fact_lookup<br/>40-data/policy_facts/*.json"]
-        D3["read_user_profile<br/>40-data/profiles/&lt;name&gt;.json"]
     end
 
     %% forward edges (input / down the pipeline)
@@ -310,19 +301,17 @@ flowchart TB
     B2 --> P1
     B3 --> D1
     B4 --> D2
-    P3 --> D3
     A2 --> SC1
     A2 --> SC2
     SC1 -->|"reads"| D2
     SC2 -->|"reads"| D2
     SC1 -->|"reads"| P1
     SC2 -->|"reads"| P1
-    P1 -.->|"end of turn"| P2
+    P1 -.->|"idle 1h"| P2
 
     %% return edges (output / back to caller)
     D1 -.->|"top-k chunks"| B3
     D2 -.->|"per-policy facts"| B4
-    D3 -.->|"saved profile"| P3
     SC1 -.->|"grade"| A2
     SC2 -.->|"premium range"| A2
     B1 -.->|"reply + citations"| A2
@@ -331,8 +320,8 @@ flowchart TB
     V2 -.->|"audio"| F2
 
     %% blue solid = forward · orange dashed = return
-    linkStyle 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18 stroke:#1565c0,stroke-width:2px
-    linkStyle 19,20,21,22,23,24,25,26,27 stroke:#e65100,stroke-width:2px,stroke-dasharray:6 3
+    linkStyle 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17 stroke:#1565c0,stroke-width:2px
+    linkStyle 18,19,20,21,22,23,24,25 stroke:#e65100,stroke-width:2px,stroke-dasharray:6 3
 ```
 
 **Legend.** Blue solid = forward flow (input / call down the pipeline). Orange dashed = return flow (result / reply back up).
@@ -346,8 +335,8 @@ flowchart TB
 - **3a. HTTP + orchestration.** `route_request` maps the URL to a handler; `orchestrate_turn` is the per-turn supervisor — it owns the request lifecycle and ties brain + scoring + voice + persistence together.
 - **3b. LLM Brain.** One `handle_turn` per turn calls Gemini, which chooses which of `fact_find` / `retrieve` / `lookup_facts` / `recommend` to run as tools. The brain may only state what its tools returned.
 - **3c. Scoring + Pricing.** `grade_per_profile` and `estimate_premium` read curated facts **and** the live profile, compute on every request (never stored), and hand back to `orchestrate_turn`.
-- **3d. Profile & Persistence.** `update_session_profile` reflects each `fact_find` write into the live session; `persist_to_disk` runs end-of-turn so the next visit can call `recall_by_name`.
-- **4. Data layer.** Three reads — `vector_search` for free-form Q&A, `fact_lookup` for decision-critical numbers with verbatim quotes, and `read_user_profile` for returning-user recall. The data layer does no writes during a request; those happen offline (vectors) or end-of-turn (profile).
+- **3d. Profile (in-memory).** `update_session_profile` reflects each `fact_find` write into the live `SessionState.profile`. State lives in process memory only; an idle session is evicted after 1 h. There is no disk persistence and no cross-session recall (see ADR-043, 2026-05-27).
+- **4. Data layer.** Two reads — `vector_search` for free-form Q&A, and `fact_lookup` for decision-critical numbers with verbatim quotes. The data layer does no writes during a request — those happen offline only (vector ingest, curated-facts edits).
 
 ### 2.4 LLM brain + fail-loud fallback chain
 
@@ -462,67 +451,60 @@ over the bot (**barge-in**) pauses that audio **and** aborts the in-flight
 push-to-talk; the live interim transcript accumulates the full utterance
 while you speak.
 
-### 2.6 Profile, personalisation & returning-user recall
+### 2.6 Profile & personalisation (in-memory only)
 
 ```mermaid
 flowchart TB
-    A["user answers (chat or profile builder)"] --> SPF["save_profile_field → session_state.profile"]
-    SPF --> ENDT["end of handle_turn"]
-    ENDT --> AP["auto_persist_session()<br/>(no-op if no name; errors swallowed)"]
-    AP --> DISK["profile_store: 40-data/profiles/&lt;name&gt;.json"]
-    AP --> EMB["profile_rag: session-scoped profile chunk"]
-    RV["return visit — user states a name"] --> EX["extract name"]
-    EX --> TR["try_recall_by_name (first-name slug fallback)"]
-    TR --> DISK
-    TR --> STAGE["session.pending_profile_recall (STAGED, never auto-merged)"]
-    STAGE --> ASK["bot: 'Welcome back — have we spoken before? Please share your age'<br/>(stored attrs NEVER disclosed to an unconfirmed identity)"]
-    ASK -->|"yes + matching age"| MERGE["apply_pending_recall (match-before-merge) → merge stored slots"]
-    ASK -->|"yes + mismatching age"| DROP["same-turn age contradiction → discard staged · fresh fact-find"]
-    ASK -->|"no"| FRESH["discard · continue as new user"]
-    SPF --> FIT["scorecard fit + grade"]
-    SPF --> PREM["illustrative premium"]
-    note1["evicted/blank session + carried chat_history →<br/>STATE-RECOVERY: rebuild profile from history,<br/>never re-ask the name"] -.-> ENDT
+    A["user answers (chat or profile builder)"] --> SPF["save_profile_field → SessionState.profile<br/>(in-memory dict only)"]
+    SPF --> FIT["scorecard fit + grade<br/>(reads live profile)"]
+    SPF --> PREM["illustrative premium<br/>(reads live profile)"]
+    SPF --> TURN["next chat turn<br/>(brain sees full live profile)"]
+    SPF -.->|"1h idle"| EVICT["session evicted from memory<br/>profile gone forever"]
+    SPF -.->|"close tab"| EVICT
+    RECOV["server restart / 1h idle WHILE tab still open<br/>+ chat_history carried by browser"] -.-> SR["STATE-RECOVERY MODE<br/>brain rebuilds profile from chat_history<br/>(in-session only · never reads disk)"]
+    SR --> SPF
 ```
 
-**Summary.** How the system captures a profile during a
-conversation, persists it for the user's next visit, recalls it *safely* on
-return, and recovers when the server forgot it.
+**Summary.** The profile is captured into a per-session in-memory dict
+(`SessionState.profile`), feeds scoring + pricing + the next turn's
+brain prompt, and is discarded the moment the session evicts (1 h idle
+or "Clear chat"). There is no on-disk persistence and no cross-session
+recall. The in-session **STATE-RECOVERY** path covers container
+restarts by rebuilding the profile from the chat history the browser
+still carries — it never touches disk.
 
 **How it flows:**
 
-- **Capture.** Every answer (chat or profile-builder) is persisted via
-  `save_profile_field` into the live `session_state.profile`.
-- **End-of-turn persist.** `auto_persist_session` writes a
-  `<name>.json` to disk **and** embeds the profile as a session-scoped
-  chunk — so a returning user can be recognised, and "given my situation"
-  references can be grounded.
-- **Privacy-safe recall (hardened 2026-05-27).** On a return visit the
-  captured name is matched against the stored profile; a match is
-  **staged** on `pending_profile_recall` and the bot asks *"Welcome
-  back — have we spoken before? Please share your age."* The prompt
-  **never discloses** the staged attributes (age / dependents /
-  location / goal) — a stranger sharing the name slug can't learn the
-  prior visitor's profile from the prompt alone. Only an explicit *yes*
-  with a **matching age** merges stored slots (`apply_pending_recall`
-  runs a *match-before-merge* contradiction guard against both prior
-  live-session captures *and* the just-said `user_text`); a *no* or a
-  mismatching age discards the stage and the user continues fresh.
-- **State recovery.** If the server's in-memory session was evicted /
-  restarted but the browser still carries `chat_history`, the brain
-  enters **STATE-RECOVERY MODE** — silently re-captures the profile from
-  the conversation history instead of asking the user's name again.
+- **Capture.** Every answer (chat or profile-builder form) is written via
+  `save_profile_field` (or the `POST /api/profile` endpoint) into the
+  live `SessionState.profile`. This is a regular Python dataclass field
+  on the in-memory session object.
 - **Drives scoring + pricing.** The same profile feeds the scorecard
-  fit-and-grade and the live premium estimate.
+  fit-and-grade (§3.2) and the live premium estimate (§3.3) on every
+  request — both reads, never persisted.
+- **Evicted on idle / close.** A session is evicted from the
+  `_sessions` dict after 1 h of inactivity (`_TTL_SECONDS`). Hitting
+  *Clear chat* (`POST /api/session/clear`) evicts immediately. Closing
+  the tab disconnects the browser — the server-side session ages out on
+  the same TTL.
+- **State recovery (in-session only).** If the server restarted or the
+  session evicted *while the browser still has the chat open*, the
+  client re-sends its `chat_history` with the next turn. The brain
+  enters **STATE-RECOVERY MODE** and silently re-captures the facts
+  already stated in history — without ever asking the user's name
+  again. This is **not** cross-session; it only resolves the case
+  where the user is still in the same conversation.
 
-**More on profile & personalisation.** Your answers build a session
-profile (`backend/session_state.py`, `profile_store.py`,
-`profile_persistence.py`). The profile is also embedded as a
-*session-scoped* chunk (`backend/profile_rag.py`) so the brain can ground
-"given my situation" references, with strict per-session isolation. The
-*same* profile drives both recommendation fit (scorecard) and the
-illustrative premium estimate (`backend/premium_calculator.py`,
-`sum_insured.py`) — see §3.2 and §3.3 for what each function actually
-computes.
+**Why no cross-session recall (ADR-043, 2026-05-27).** An earlier
+design persisted profiles to `40-data/profiles/<name>.json` and offered
+a "Welcome back, <name>?" prompt on return. The name-only slug key
+collided across distinct users (every "Rohit" wrote to the same file),
+which required four sequential hardening passes — prompt redaction,
+match-before-merge guards, same-turn fact extractors, a two-fact gate —
+to keep contained. The cost/benefit for an insurance-shopping app
+(rare-purchase, return sessions uncommon) didn't justify the surface.
+The simpler "session is in-memory only" model matches the privacy story
+the product wants to tell.
 
 ### 2.7 Data architecture — where the JSON lives, where the vectors live
 
@@ -544,9 +526,9 @@ computes.
 - **`40-data/reviews/`** — sourced insurer reviews (claims stories, regulator notes).
 - **`40-data/premiums/`** — illustrative public rate-card combinations consumed by the multivariate premium estimator (§3.3).
 - **`40-data/insurer_network.json`** — hospital-network counts per insurer.
-- **`40-data/profiles/<name>.json`** — saved user profiles for returning-user recall. Per-named-user, server-side, never indexed into the shared corpus.
+_Pre-ADR-043 there was also a `40-data/profiles/<name>.json` directory of saved user profiles for cross-session recall. That mechanism was removed (see §2.6 — sessions are now in-memory only)._
 
-All four sit in the **code repo** (under `40-data/`) because they're small, human-reviewed, and decision-critical — safe to version alongside the code.
+All three remaining stores sit in the **code repo** (under `40-data/`) because they're small, human-reviewed, and decision-critical — safe to version alongside the code.
 
 #### 2.7.3 Where each piece physically lives
 
@@ -824,39 +806,38 @@ sequenceDiagram
 - **No LLM in the path.** A plain file read of `40-data/policy_facts/<id>.json`. The brain quotes the value (and the `source_quote`) verbatim.
 - **Used by more than the brain.** `scorecard.py` and `premium_calculator.py` also read these JSON files directly — see §2.3 (the brain's edge is not the only edge into the JSON).
 
-### 3.6 Returning-user recall
+### 3.6 In-session state recovery (server restart resilience)
 
 ```mermaid
 sequenceDiagram
     autonumber
     participant U as User
+    participant Br as Browser (carries chat_history)
     participant B as 3b. LLM Brain
-    participant T as save_profile_field
-    participant S as 3d. session_state
-    participant D as 4. saved profile JSON file
-    U->>B: "Hi, I'm Neha"
-    B->>T: save_profile_field("name", "Neha")
-    T->>S: write name
-    S->>D: try_recall_by_name("Neha")
-    D-->>S: stored profile (staged on pending_profile_recall)
-    S-->>B: "Welcome back — are you the same Neha?"
-    U->>B: "yes" / "no"
-    alt yes
-        B->>S: apply_pending_recall → merge stored slots
-    else no
-        B->>S: discard stage · continue as fresh user
-    end
+    participant S as 3d. SessionState (in-memory)
+    U->>Br: "what about premium?"
+    Br->>B: chat turn + chat_history[N msgs]
+    B->>S: get_session(session_id)
+    Note over S: session was evicted<br/>(1h idle / restart)<br/>profile = BLANK
+    B->>B: STATE-RECOVERY MODE<br/>chat_history has prior facts
+    B->>S: save_profile_field for each fact in history
+    B-->>Br: reply that picks up where it left off<br/>(never re-asks the name)
 ```
 
-**Summary.** When a returning user gives a name that matches a stored profile, the match is **staged**, never auto-merged — the bot asks "are you the same Neha?" and only an explicit *yes* restores the saved slots. This prevents a name collision from leaking a stranger's profile.
+**Summary.** Sessions are in-memory only (`_TTL_SECONDS = 1h`), so a
+container restart or long idle wipes the server-side profile. When the
+browser still carries the conversation, the brain silently rebuilds the
+profile from the chat history instead of starting over. No disk read,
+no cross-session memory — purely a same-conversation resilience path.
 
 **How it flows:**
 
-- **Capture name.** Same path as any other fact (§3.1).
-- **Lookup.** `try_recall_by_name` checks `40-data/profiles/<slug>.json` with a first-name slug fallback.
-- **Stage, don't merge.** A match goes on `session.pending_profile_recall` — *not* into `session.profile`.
-- **Confirm gate.** The bot asks the user to confirm. *yes* → merge stored slots into the live profile. *no* → discard the stage and continue as a fresh user.
-- **Bonus: state recovery.** If the server's in-memory session was evicted but the browser still carries `chat_history`, the brain enters **STATE-RECOVERY MODE** and silently rebuilds the profile from history rather than asking for the name again.
+- **Detect.** `get_session()` returns a blank `SessionState`, but `chat_history` arrives with ≥2 messages including a prior user turn → state was lost, not "fresh user".
+- **Re-capture from history.** A high-priority **STATE-RECOVERY MODE** prompt block tells the LLM: do not say you lost anything, do not re-ask the name, instead call `save_profile_field` for every fact present in the conversation so far, then continue.
+- **Resume.** From the LLM's point of view the next reply is just the next turn in an ongoing chat — the user never perceives the eviction.
+
+(There is no cross-session recall — see §2.6 and ADR-043 for why that
+was removed.)
 
 ### 3.7 What is stored vs what is live-only
 
@@ -864,7 +845,7 @@ sequenceDiagram
 |---|---|---|
 | Policy PDFs + vector chunks | `rag/corpus/` + Chroma store (HF dataset → pulled at build) | Built once, offline; read every request |
 | Curated policy facts (per policy) | `40-data/policy_facts/*.json` (code repo) | Small, human-reviewed, versioned with code |
-| Saved user profile (by name) | `40-data/profiles/<name>.json` (server-side, per-named-user) | So a returning user can be recognised |
+| User profile (current session) | **In-memory only — `SessionState.profile` (1 h idle TTL, no disk)** | Closing the tab / clearing chat forgets the profile by design (ADR-043) |
 | Per-policy **grade / scorecard** | **Not stored — live per request** | Two users get two grades for the same policy (profile-aware) |
 | **Premium range** for a policy | **Not stored — live per request** | Same reason as the grade |
 | Uploaded PDFs | Per-session Chroma quarantine, **24 h TTL** | Isolated to the uploader, never the shared corpus |
@@ -1005,8 +986,7 @@ these:
 │   │   retrieval_filters.py
 │   ├── premium_calculator.py profile → illustrative premium
 │   │   sum_insured.py
-│   ├── session_state.py /    per-session profile + persistence
-│   │   profile_store.py / profile_persistence.py / profile_rag.py
+│   ├── session_state.py      per-session profile (in-memory only, ADR-043)
 │   ├── voice_format.py       TTS pre-processing (money/Indic normalisation)
 │   ├── admin.py              /api/admin/* (health, telemetry)
 │   └── providers/            thin clients: google_gemini, nvidia_nim, sarvam_*,

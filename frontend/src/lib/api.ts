@@ -565,32 +565,9 @@ export async function getPredictedPremiumBand(
   return resp.json();
 }
 
-// KI-Z7 (2026-05-15) — Feature B. POST /api/profile/recall-by-name.
-// Asks the backend to look up a stored named-profile and hydrate the live
-// session_id with it. The chat path runs the same recall server-side on
-// turn 1, so this client helper is only needed for non-chat triggers (e.g.
-// the user types their name into the profile builder AFTER turn 1).
-export type RecallByNameResponse = {
-  found: boolean;
-  profile: Record<string, unknown> | null;
-  predicted_band:
-    | { min_inr: number; median_inr: number; max_inr: number; sample_size: number; assumed: boolean }
-    | null;
-  session_id: string;
-};
-
-export async function postProfileRecallByName(args: {
-  name: string;
-  session_id: string;
-}): Promise<RecallByNameResponse> {
-  const resp = await fetch(`${BACKEND_URL}/api/profile/recall-by-name`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name: args.name, session_id: args.session_id }),
-  });
-  if (!resp.ok) throw new Error(`profile recall failed: ${resp.status}`);
-  return resp.json();
-}
+// /api/profile/recall-by-name + postProfileRecallByName were REMOVED in
+// ADR-043 (2026-05-27). Cross-session profile recall no longer exists —
+// closing the tab discards the session profile entirely.
 
 export async function postProfileUpdate(req: UserProfile & { session_id: string }): Promise<ProfileCompletenessResponse> {
   const resp = await fetch(`${BACKEND_URL}/api/profile`, {

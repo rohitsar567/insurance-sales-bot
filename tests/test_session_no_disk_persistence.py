@@ -9,10 +9,10 @@ side was:
   2. A privacy and operational liability (orphan files accumulate, schema
      drift hits old files, cross-session memory leak surface).
 
-KI-118 rip-out: session_state is in-memory only. Cross-session memory is
-strictly name-based (returning user provides their name → fact_find brain
-captures it → `rehydrate_by_name` pulls the named profile from
-`40-data/profiles/`).
+KI-118 rip-out: session_state is in-memory only. ADR-043 (2026-05-27)
+went further and removed the cross-session name-keyed recall too, so
+there is now no on-disk profile store of any kind — `40-data/profiles/`
+is gone.
 
 This test pins the contract: a session lifecycle (get, mutate, set_awaiting,
 record_answer, update_profile_field, reset) MUST NOT create ANY file under

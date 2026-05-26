@@ -62,6 +62,7 @@ from __future__ import annotations
 
 import json as _json
 import logging
+import time
 from pathlib import Path
 from typing import Any, Optional
 
@@ -1619,45 +1620,41 @@ def mark_recommendation(
     # No profile name → no JSON file to write to (anonymous session). No
     # insurer resolution for a slug → skip that slug. All errors swallowed
     # so a logging failure never breaks the tool reply back to Gemini.
+    # ADR-043 (2026-05-27) — record_policy_event used to write the shown
+    # policy onto the named-profile JSON for cross-session "have I shown
+    # this before" tracking. Cross-session persistence is gone; the
+    # in-memory equivalent (avoid re-pitching within the same session)
+    # is handled by session.last_recommendation_ids / shown_policies on
+    # the live Profile dataclass.
     try:
         profile = getattr(session, "profile", None)
-        profile_name = getattr(profile, "name", None) if profile else None
-        if profile_name and cleaned:
-            from backend.profile_store import record_policy_event
-
+        if profile is not None and cleaned:
+            shown = list(getattr(profile, "shown_policies", None) or [])
+            existing_slugs = {(e or {}).get("policy_slug") for e in shown}
             slug_to_insurer = dict(getattr(session, "slug_to_insurer", {}) or {})
-            seen_slugs: set[str] = set()
             turn_idx = int(getattr(session, "turn_idx", 0) or 0)
             session_id = getattr(session, "session_id", None)
+            now_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
             for slug in cleaned:
-                if not slug or slug in seen_slugs:
+                if not slug or slug in existing_slugs:
                     continue
                 insurer = slug_to_insurer.get(slug)
                 if not insurer:
-                    # Couldn't resolve insurer this turn — skip rather than
-                    # write a malformed event.
                     continue
-                seen_slugs.add(slug)
-                try:
-                    record_policy_event(
-                        persona_id_or_name=profile_name,
-                        profile=profile,
-                        event_type="shown",
-                        policy_slug=slug,
-                        insurer=insurer,
-                        session_id=session_id,
-                        reason="shown_in_recommendation",
-                        turn_idx=turn_idx,
-                    )
-                except Exception as inner:  # noqa: BLE001
-                    _log.warning(
-                        "X7 mark_recommendation record_policy_event "
-                        "failed (slug=%s): %s: %s",
-                        slug, type(inner).__name__, str(inner)[:200],
-                    )
+                shown.append({
+                    "policy_slug": slug,
+                    "insurer": insurer,
+                    "event_at": now_iso,
+                    "session_id": session_id,
+                    "reason": "shown_in_recommendation",
+                    "turn_idx": turn_idx,
+                })
+                existing_slugs.add(slug)
+            profile.shown_policies = shown
     except Exception as e:  # noqa: BLE001 — never break the tool reply
         _log.warning(
-            "X7 mark_recommendation shown-event logging failed: %s: %s",
+            "mark_recommendation shown-event logging (in-memory) failed: "
+            "%s: %s",
             type(e).__name__, str(e)[:200],
         )
 

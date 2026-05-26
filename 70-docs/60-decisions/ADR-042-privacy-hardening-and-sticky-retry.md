@@ -1,9 +1,8 @@
 # ADR-042 — Privacy hardening (recall redaction + match-before-merge), sticky-retry schedule, honest canned-failure copy, admin refresh wiring
 
 **Date:** 2026-05-27
-**Status:** Accepted
-**Supersedes:** Extends ADR-041 (`session-profile-lifecycle.md`) on the recall confirm gate; does not replace it.
-**Commits:** `2acdc9e` (v1), `10e6843` (v2 same-turn age contradiction).
+**Status:** **PARTIALLY SUPERSEDED by [ADR-043](ADR-043-remove-cross-session-recall.md) (same day).** The recall-prompt redaction (D3), match-before-merge guard (D4), v3 extended extractors and v4 two-fact gate are obsolete — cross-session recall was removed entirely. The sticky-retry schedule (D1), honest canned-failure copy (D2) and admin refresh wiring (D5) are KEPT and remain in production.
+**Commits:** `2acdc9e` (v1), `10e6843` (v2 same-turn age contradiction), `2be56b4` (v3+v4 extended extractors + two-fact gate).
 
 ## Context
 

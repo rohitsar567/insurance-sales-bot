@@ -1,9 +1,10 @@
 # ADR-041 — Session & profile lifecycle (KI-196)
 
-**Status:** Accepted — 2026-05-15
+**Status:** **SUPERSEDED by [ADR-043](ADR-043-remove-cross-session-recall.md) (2026-05-27).** The two-tier persona_id + name-slug pointer store described below was removed entirely. Sessions are now in-memory only. Kept here for historical record.
+**Originally accepted:** 2026-05-15
 **Owner:** Rohit Saraf
 **Related KIs:** KI-020 (legacy clear-chat), KI-040 (silent name-based recall), KI-062 (persona_id keying), KI-077 (named profile recovery), KI-118 (in-memory-only sessions + cross-session name match), KI-167 (LLM-driven sales brain)
-**Related ADRs:** [ADR-022](ADR-022-conversational-profile-updates.md), [ADR-039](ADR-039-llm-driven-sales-brain.md)
+**Related ADRs:** [ADR-022](ADR-022-conversational-profile-updates.md), [ADR-039](ADR-039-llm-driven-sales-brain.md), [ADR-043](ADR-043-remove-cross-session-recall.md) (supersedes this ADR)
 
 ## Context
 

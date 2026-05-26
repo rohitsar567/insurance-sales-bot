@@ -422,40 +422,11 @@ async def _quarantine_purge_loop() -> None:
 
 # Single source of truth for "is this profile ready to recommend against".
 # brain_tools._profile_complete uses the same _REQUIRED_FOR_READY tuple; we
-# mirror the call here instead of duplicating the slot list so a future
-# addition (e.g. risk_appetite) only needs to be applied in brain_tools.
-# Distinguishes "first-time capture on turn 1" from "stored profile
-# recalled on turn 1". Both end with a
-# non-empty Profile on the session; only the latter should flip
-# returning_user_recalled. Heuristic: if EVERY currently-filled slot was
-# written THIS turn (i.e. lives in `profile_updates`), the user just typed
-# their facts — NOT a recall. If at least one filled slot is NOT in
-# profile_updates, those slots came from the recall hydration.
-_FEATURE_B_SLOT_LIST: tuple[str, ...] = (
-    "name", "age", "dependents", "location_tier",
-    "income_band", "primary_goal", "health_conditions",
-)
-
-
-def _every_filled_slot_was_set_this_turn(profile, profile_updates: dict) -> bool:
-    """Return True iff every populated slot on `profile` was also set in
-    `profile_updates` this turn. Used by the recall detector to suppress
-    the banner when the user just freshly introduced themselves.
-    """
-    if not isinstance(profile_updates, dict):
-        profile_updates = {}
-    pu = set(profile_updates.keys())
-    any_filled = False
-    for fld in _FEATURE_B_SLOT_LIST:
-        v = getattr(profile, fld, None)
-        if v in (None, "", []):
-            continue
-        any_filled = True
-        if fld not in pu:
-            return False
-    # If nothing was filled at all, "every filled" is vacuously True →
-    # detector should NOT flip returning_user_recalled.
-    return True if any_filled else True
+# _FEATURE_B_SLOT_LIST + _every_filled_slot_was_set_this_turn were the
+# heuristic that distinguished "first-time capture on turn 1" from
+# "stored profile recalled on turn 1" for the returning-user banner.
+# Removed in ADR-043 (2026-05-27) — no cross-session recall, so there is
+# no banner to flip.
 
 
 def _compute_profile_complete(session_id: str) -> bool:
@@ -915,10 +886,6 @@ async def chat(req: ChatRequest, request: Request):
     if preferred_codec not in _allowed_codecs:
         preferred_codec = "audio/wav"
     t_chat0 = time.time()
-    # Pre-turn snapshot for the returning-user-recall detector below.
-    # Defaults match the "no session yet" case.
-    _pre_turn_name: str = ""
-    _pre_turn_idx: int = 0
     # Never let an inner TimeoutError / unhandled exception bubble out of
     # handle_turn as a 500. The whole call is wrapped in an outer 45s
     # budget so even a pathological hang inside handle_turn surfaces as a
@@ -934,13 +901,6 @@ async def chat(req: ChatRequest, request: Request):
             from backend.session_state import get_session
 
             _sb_session = get_session(session_id)
-            # KI-Z7 — snapshot the pre-turn (name, turn_idx) so we can tell
-            # AFTER handle_turn whether the turn-1 name heuristic actually
-            # recalled a stored profile (and stamp ChatResponse accordingly).
-            _pre_turn_name = (
-                getattr(_sb_session.profile, "name", None) or ""
-            ).strip()
-            _pre_turn_idx = int(getattr(_sb_session, "turn_idx", 0) or 0)
             # Once a session has had ANY successful single_brain turn, it
             # must stay on single_brain for the rest of its lifetime.
             # Switching brains mid-stream would discard everything
@@ -1363,75 +1323,9 @@ async def chat(req: ChatRequest, request: Request):
     except Exception:  # noqa: BLE001 — log IO must never block a reply
         pass
 
-    # KI-Z7 (2026-05-15) — Feature A. Auto-persist the live profile to disk
-    # + Chroma AFTER handle_turn returns. brain_tools.save_profile_field
-    # only mutates the in-memory Profile; this flushes the union to the
-    # canonical name-keyed JSON and refreshes the user's profile chunk so a
-    # NEW session can recover the full profile via the turn-1 name recall.
-    # Wrapped in try/except — persistence failure NEVER breaks the reply.
+    # Cross-session profile persistence + returning-user detection removed
+    # in ADR-043 (2026-05-27). Sessions are in-memory only.
     _returning_user_recalled = False
-    try:
-        from backend.session_state import get_session as _get_session_p
-        from backend.profile_persistence import auto_persist_session
-
-        _persist_session = _get_session_p(session_id)
-        await auto_persist_session(_persist_session)
-
-        # KI-Z7 — Feature B detection. The pre-turn snapshot (captured before
-        # single_brain.handle_turn ran) lets us tell whether the turn-1 name
-        # heuristic actually hydrated a stored profile. Conditions:
-        #   (a) this WAS the first turn (pre_turn_idx == 0),
-        #   (b) no name on the profile BEFORE the turn ("" → recalled),
-        #   (c) a name AND at least one other slot are present AFTER the turn.
-        # Frontend uses this flag to render the "Welcome back" banner.
-        if USE_SINGLE_BRAIN:
-            try:
-                # KI-RECALL-FIX (2026-05-16) — PREFER the deterministic signal
-                # single_brain sets on the turn where the user explicitly
-                # affirmed a staged cross-session recall (the confirmation
-                # gate resolves on a LATER turn, so the old turn-1-only
-                # heuristic below could NEVER fire for the real flow — the
-                # banner was unreachable even once recall worked).
-                if getattr(turn, "returning_user_recalled", False):
-                    _returning_user_recalled = True
-                else:
-                    # Legacy heuristic — kept as a fallback for any
-                    # non-confirmation recall path (e.g. a direct hydrate via
-                    # the /api/profile/recall-by-name escape hatch) that
-                    # populates the profile on the first turn without a
-                    # confirm round-trip.
-                    _post_name = (
-                        getattr(_persist_session.profile, "name", None) or ""
-                    ).strip()
-                    _post_has_other_slots = any(
-                        getattr(_persist_session.profile, fld, None) not in (None, "", [])
-                        for fld in (
-                            "age", "dependents", "location_tier",
-                            "income_band", "primary_goal", "health_conditions",
-                        )
-                    )
-                    if (
-                        _pre_turn_idx == 0
-                        and not _pre_turn_name
-                        and _post_name
-                        and _post_has_other_slots
-                        # save_profile_field captures a NEW name on turn 1 too
-                        # — only flag as returning when prior slots came from
-                        # the recall path, NOT from in-this-turn extraction.
-                        # If EVERY filled slot is in profile_updates, it's a
-                        # first-time capture, NOT a recall.
-                        and not _every_filled_slot_was_set_this_turn(
-                            _persist_session.profile, turn.profile_updates,
-                        )
-                    ):
-                        _returning_user_recalled = True
-            except Exception:  # noqa: BLE001
-                pass
-    except Exception as _persist_err:  # noqa: BLE001
-        logging.warning(
-            "auto_persist_session failed (session=%s): %s: %s",
-            session_id, type(_persist_err).__name__, _persist_err,
-        )
 
     # Bug B defense — CitationOut requires page_start/page_end as ints, but
     # single_brain.TurnResult.citations dicts don't carry those fields (its
@@ -2178,15 +2072,13 @@ class SessionClearResponse(BaseModel):
 
 @app.post("/api/session/clear", response_model=SessionClearResponse)
 async def session_clear(req: SessionClearRequest):
-    """KI-196 (ADR-041) — Clean Clear-chat semantic. Wipes the in-memory
-    session state for the supplied session_id and ALWAYS returns a freshly
-    minted UUID the frontend must adopt as its new session_id going forward.
+    """Clean Clear-chat semantic. Wipes the in-memory session state for the
+    supplied session_id and ALWAYS returns a freshly minted UUID the
+    frontend must adopt as its new session_id going forward.
 
-    The on-disk profile JSON under `40-data/profiles/` is intentionally NOT
-    touched — it remains durable user data keyed by persona_id / name slug.
-    The next time the user volunteers their name in conversation, the
-    confirmation-gated recall flow (see session_state's
-    `pending_profile_recall`) will ask before merging the prior captures.
+    Post-ADR-043 (2026-05-27) there is nothing to preserve across sessions
+    — there is no on-disk profile to "leave intact". A clear is a complete
+    forget.
 
     Body : {session_id: str}
     Reply: {cleared: bool, new_session_id: str}
@@ -2237,7 +2129,6 @@ async def profile_update(req: ProfileUpdateRequest):
     """
     from backend.scorecard import profile_completeness as _completeness
     from backend.session_state import get_session
-    from backend.profile_rag import upsert_profile_chunk
 
     sess = get_session(req.session_id)
     # Update only fields the client explicitly sent (non-None) — keeps partial
@@ -2261,14 +2152,9 @@ async def profile_update(req: ProfileUpdateRequest):
         if field_name not in sess.profile.asked:
             sess.profile.asked.append(field_name)
 
-    # KI-077 — if name is set, also persist to the named-profile store so a
-    # returning visitor's profile is recoverable across sessions.
-    if req.name:
-        try:
-            from backend.profile_store import save_profile
-            save_profile(req.name, sess.profile, session_id=req.session_id)
-        except Exception as e:
-            print(f"[profile_store] save failed for {req.name}: {type(e).__name__}: {e}")
+    # ADR-043 (2026-05-27) — cross-session persistence + profile_rag
+    # upsert removed. The captured fields live only in the in-memory
+    # SessionState for this session's lifetime (1 h idle TTL).
 
     p = sess.profile
     # KI-271 — SLOT_UNION-driven profile_dict (15 fields) so copay_pct +
@@ -2286,20 +2172,8 @@ async def profile_update(req: ProfileUpdateRequest):
     collected = [k for k, v in profile_dict.items() if k in answered and v not in (None, "", [], False)]
     missing = [k for k, v in profile_dict.items() if k not in answered or v in (None, "", [])]
 
-    # Ingest the profile into the RAG store so the brain sees user context
-    # at retrieval time alongside policy + regulatory chunks. Fire-and-forget
-    # — a profile upsert failure shouldn't block the API response.
-    # KI-118 (2026-05-15) — gated on a known name; anonymous saves don't
-    # write to Chroma. The chunk is keyed by canonical name slug, not the
-    # session_id which is now opaque/in-memory.
-    try:
-        if p.name:
-            from backend.profile_store import _normalise_name
-            name_slug = _normalise_name(p.name)
-            if name_slug:
-                await upsert_profile_chunk(name_slug, profile_dict)
-    except Exception as e:
-        print(f"[profile_rag] upsert failed for {req.session_id}: {type(e).__name__}: {e}")
+    # profile_rag upsert removed in ADR-043 (2026-05-27). Captured fields
+    # remain in the in-memory SessionState only.
 
     return ProfileCompletenessResponse(
         completeness=c,
@@ -4783,56 +4657,11 @@ async def predicted_premium_band(session_id: Optional[str] = None):
     return PredictedPremiumBandResponse(**band)
 
 
-# ---------------------------------------------------------------------------
-# KI-Z7 (2026-05-15) — Feature B. POST /api/profile/recall-by-name.
-#
-# The chat hot path runs the same recall heuristic server-side inside
-# single_brain.handle_turn (turn-1 name sniff + try_recall_by_name) and
-# stamps `returning_user_recalled` on the ChatResponse, so the frontend
-# usually doesn't need this endpoint. It exists as an explicit, idempotent
-# escape hatch — e.g. the user types their name into the profile builder
-# AFTER turn 1 and we want to load their stored facts without sending a
-# chat turn. The hydration is server-side: the in-memory session_state for
-# `session_id` is mutated in place, so the next /api/chat turn already sees
-# the recalled slots.
-# ---------------------------------------------------------------------------
-class RecallByNameRequest(BaseModel):
-    name: str = Field(..., description="User-provided name (display form OK).")
-    session_id: str = Field(..., description="Session id to hydrate on a hit.")
-
-
-class RecallByNameResponse(BaseModel):
-    found: bool
-    # The endpoint does not hydrate the session off a bare name (weak/shared
-    # key → stranger-PII leak). When a stored profile matches, the response
-    # asks the UI to confirm identity FIRST. `profile`/`predicted_band` are
-    # never returned pre-confirmation.
-    requires_confirmation: bool = False
-    name: Optional[str] = None          # stored display name, for the prompt
-    summary: Optional[dict] = None      # non-PII identity hints, for the prompt
-    profile: Optional[dict] = None      # always None until user confirms
-    predicted_band: Optional[dict] = None  # always None until user confirms
-    session_id: str
-
-
-@app.post("/api/profile/recall-by-name", response_model=RecallByNameResponse)
-async def recall_profile_by_name(req: RecallByNameRequest):
-    """Stage a stored named-profile match for `session_id` (if any).
-
-    A bare name is a weak, shared, guessable key, so this endpoint does not
-    auto-hydrate the session — a second user on a shared browser/IP, or
-    anyone stating a common first name, must not be silently served a
-    stranger's stored profile. When a match exists the response carries
-    `found=True, requires_confirmation=True, name, summary` so the UI
-    renders an explicit "are you <name>?" prompt. The stored fields are
-    applied to the session only after the user confirms (handled on the
-    chat affirmation path via session_state.apply_pending_recall). Returns
-    `found=False` when the slug doesn't resolve to a stored file.
-    """
-    from backend.profile_persistence import recall_by_name_payload
-
-    payload = await recall_by_name_payload(req.name, req.session_id)
-    return RecallByNameResponse(**payload)
+# /api/profile/recall-by-name was REMOVED in ADR-043 (2026-05-27).
+# Cross-session profile recall is gone — sessions are in-memory only, so
+# there is nothing to "recall" off a bare name. The frontend api.ts caller
+# that wrapped this endpoint has also been removed. Old clients still
+# pinging the path get a 404, which is the correct degraded behaviour.
 
 
 # ---- Static frontend (served alongside /api on the same port for HF Spaces) ----

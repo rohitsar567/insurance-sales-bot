@@ -737,63 +737,15 @@ def _build_contents(
     return out
 
 
-# WHOLE-WORD tokens (matched against the tokenised message, NOT as
-# substrings — "no" must not match "k(no)ws", "ya" must not match "Ma(ya)").
-_RECALL_DENY_TOKENS = {
-    "no", "nope", "nah", "naah", "nahi", "wrong", "never", "neither",
-    "nopes", "nahin",
-}
-_RECALL_AFFIRM_TOKENS = {
-    "yes", "yeah", "yep", "yup", "ya", "yaa", "yaah", "yess", "haan",
-    "han", "haa", "correct", "right", "sahi", "bilkul", "sure", "indeed",
-    "absolutely", "exactly", "true", "yup",
-}
-# Multi-word phrases — safe to match as substrings.
-_RECALL_DENY_PHRASES = (
-    "not me", "isn't me", "isnt me", "not the same", "start fresh",
-    "start over", "different person", "new user", "someone else",
-    "not rohit", "first time", "never been", "fresh start", "not him",
-    "not her", "i'm new", "im new", "not that person", "don't know",
-    "dont know", "different one",
-)
-_RECALL_AFFIRM_PHRASES = (
-    "that's me", "thats me", "that is me", "it's me", "its me", "i am",
-    "pick up", "go ahead", "that's right", "thats right", "that's correct",
-    "thats correct", "yes please", "continue where", "same person",
-    "carry on", "of course",
-)
-_RECALL_TOKEN_RE = __import__("re").compile(r"[a-z']+")
-
-
-def _affirm_or_deny(text: str):
-    """Conservative yes/no for the returning-user confirm gate.
-
-    Returns True (affirm), False (deny), or None (ambiguous → re-ask).
-    Deny wins ties: privacy is fail-closed — an ambiguous "no, but…" must
-    NEVER merge a stranger's stored profile (ADR-041 / KI-196). Short
-    tokens are matched whole-word (tokenised), not as substrings, so
-    "who knows" / "i don't know" / "now" are NOT read as "no".
-    """
-    t = (text or "").strip().lower()
-    if not t:
-        return None
-    toks = set(_RECALL_TOKEN_RE.findall(t))
-    deny = bool(toks & _RECALL_DENY_TOKENS) or any(
-        p in t for p in _RECALL_DENY_PHRASES
-    )
-    if deny:
-        return False
-    affirm = bool(toks & _RECALL_AFFIRM_TOKENS) or any(
-        p in t for p in _RECALL_AFFIRM_PHRASES
-    )
-    if affirm:
-        return True
-    return None
+# Returning-user recall machinery was removed in ADR-043 (2026-05-27).
+# Sessions are in-memory only; closing the tab discards the profile.
+# Bug #26 STATE-RECOVERY-from-chat_history (an in-session container-restart
+# resilience path) is the only profile-rebuild mechanism that remains — it
+# is NOT cross-session and never reads disk.
 
 
 def _system_instruction(
     profile, is_returning_user: bool = False, shortlist_block: str = "",
-    pending_recall: "Optional[dict]" = None, recall_applied: bool = False,
     reconstruct_from_history: bool = False,
 ) -> dict:
     """Bake the profile snapshot into the system prompt so each turn the
@@ -831,72 +783,13 @@ def _system_instruction(
                 "say 'Welcome back'):\n"
                 + json.dumps(snapshot, ensure_ascii=False, sort_keys=True)
             )
-    recall_block = ""
-    if pending_recall:
-        _nm = (pending_recall.get("name") or "there").strip()
-        # PRIVACY HARDENING (2026-05-27). Previously this prompt echoed the
-        # staged profile's age / dependents / location_tier / primary_goal
-        # into the user-visible "are you the same <name> (age 34, metro,
-        # kids, first_buy)?" question. That disclosed a prior visitor's
-        # identity facts to ANY stranger who happened to share the name
-        # slug — the recall key is name-only, so two different Rohits
-        # collide on rohit.json. The leak is independent of the merge
-        # gate (apply_pending_recall) because the disclosure happened in
-        # the prompt itself before any user answer.
-        #
-        # New design: do NOT disclose stored attrs. Ask the user to
-        # RE-STATE one identifying fact (their age). On the next turn,
-        # session_state.apply_pending_recall runs a match-before-merge
-        # contradiction check against whatever the user just saved via
-        # save_profile_field — a wrong "yes" plus a contradicting age
-        # discards the staged recall, so a stranger can't inherit prior
-        # attrs even by mis-clicking "yes".
-        recall_block = (
-            "\n\n═══════════════════════════════════\n"
-            "RETURNING-USER CHECK — HIGHEST PRIORITY THIS TURN "
-            "(overrides RULE 1 / fact-find for this one turn)\n"
-            "═══════════════════════════════════\n"
-            f"A stored profile may exist under the name the user just "
-            f"gave (\"{_nm}\"). DO NOT disclose any stored attribute "
-            "(age, dependents, location, goal, conditions, etc.) in your "
-            "reply — disclosing them to an unconfirmed identity is a "
-            "privacy leak. Stay neutral.\n"
-            "Your ENTIRE reply this turn MUST be ONLY the confirmation "
-            "question below. Do NOT call any tool, do NOT save_profile_field, "
-            "do NOT run the 7-question fact-find, do NOT recommend:\n"
-            f"  \"Welcome back — have we spoken before? If yes, please "
-            f"share your age so I can pull up the right profile. If not, "
-            f"no problem — just say so and we'll start fresh.\"\n"
-            "Then wait for their answer on the NEXT turn. If they share "
-            "an age (or other fact), save_profile_field captures it and "
-            "the system runs a match-before-merge check against the "
-            "staged recall — you never merge anything yourself."
-        )
-    restored_block = ""
-    if recall_applied:
-        _rs = json.dumps(snapshot, ensure_ascii=False, sort_keys=True)
-        restored_block = (
-            "\n\n═══════════════════════════════════\n"
-            "RETURNING USER CONFIRMED — PROFILE RESTORED "
-            "(HIGHEST PRIORITY THIS TURN)\n"
-            "═══════════════════════════════════\n"
-            "The user just confirmed they are the SAME returning person. "
-            "Their saved profile is RESTORED and FINAL for every slot "
-            "present here:\n" + _rs + "\n"
-            "Do NOT re-ask, re-confirm, re-verify or 'just double-check' "
-            "ANY slot present above — name, age, dependents, city/location, "
-            "income band, primary goal, health / pre-existing conditions, "
-            "sum insured, existing cover, budget. Re-asking a RESTORED slot "
-            "is a hard error: the entire point of recall is that the user "
-            "does NOT repeat themselves.\n"
-            "Your reply this turn: (1) ONE warm 'welcome back' line, then "
-            "(2) resume exactly where a returning user continues — if the "
-            "RULE 2.5 pricing inputs (sum insured / premium budget / co-pay "
-            "/ smoker / family medical history) are NOT yet captured, ask "
-            "ONLY those via the single RULE 2.5 prompt; otherwise go "
-            "straight to retrieve_policies + recommendations. Ask ONLY for "
-            "a slot that is genuinely ABSENT above — never one present."
-        )
+    # Cross-session "Welcome Back" / "Profile Restored" blocks were
+    # removed in ADR-043 (2026-05-27). Sessions are in-memory only —
+    # closing the tab discards the profile. Only the in-session
+    # STATE-RECOVERY-MODE block below survives, because it never
+    # touches disk (it rebuilds the live profile from the chat_history
+    # the browser still carries when the server's session memory was
+    # evicted mid-conversation).
     reconstruct_block = ""
     if reconstruct_from_history:
         reconstruct_block = (
@@ -920,8 +813,8 @@ def _system_instruction(
             "recommendations. The user must never perceive any loss."
         )
     text = (
-        SYSTEM_PROMPT + extra + recall_block + reconstruct_block
-        + restored_block + (shortlist_block or "")
+        SYSTEM_PROMPT + extra + reconstruct_block
+        + (shortlist_block or "")
     )
     return {"parts": [{"text": text}]}
 
@@ -1935,99 +1828,14 @@ async def handle_turn(
     model = _resolve_model()
     language = _detect_language(user_text)
 
-    # KI-255 — detect "returning user" so RULE 4 (Welcome Back greeting)
-    # only fires when the profile was actually loaded from a prior session.
-    # Signal: session.turn_idx == 1 (first turn of this session_id) AND the
-    # profile already has a captured slot (hydrated from prior persistence).
-    # turn_idx > 1 ⇒ slots filled by save_profile_field within THIS
-    # conversation — not a returning user.
     _current_turn = int(getattr(session, "turn_idx", 1) or 1)
 
-    # ── Returning-user recall (ADR-041 / KI-196), wired into single_brain
-    # 2026-05-19. Previously ORPHANED by the orchestrator→single-LLM
-    # rewrite: extract_potential_name / try_recall_by_name /
-    # apply_pending_recall existed and were unit-tested, but NOTHING on the
-    # live path called them — so a same-name revisit ("Hi, I'm Rohit") was
-    # never recognised and the "are you the same Rohit?" prompt never fired.
-    # Privacy-safe by construction: a name match is only STAGED on
-    # session.pending_profile_recall (never auto-merged); only an explicit
-    # "yes" merges the stored slots, an explicit "no" discards, anything
-    # ambiguous leaves it staged so the LLM re-asks the confirm once.
-    _did_recall_this_turn = False
-    try:
-        from backend.profile_persistence import (
-            extract_potential_name,
-            try_recall_by_name,
-        )
-        from backend.session_state import apply_pending_recall
-
-        _pending_recall = getattr(session, "pending_profile_recall", None)
-        if _pending_recall:
-            _ans = _affirm_or_deny(user_text)
-            if _ans is True:
-                # 2026-05-27 — user_text plumbed in so the same-turn age
-                # contradiction guard inside apply_pending_recall can
-                # discard a wrong-person "Yes I'm 35" reply before merging.
-                _did_recall_this_turn = bool(
-                    apply_pending_recall(
-                        session, confirmed=True, user_text=user_text,
-                    )
-                )
-                _pending_recall = None
-            elif _ans is False:
-                apply_pending_recall(
-                    session, confirmed=False, user_text=user_text,
-                )
-                _pending_recall = None
-            # ambiguous → leave staged; the confirm block is re-injected
-            # below and the LLM re-asks the "are you <name>?" question.
-        elif not getattr(session, "recall_probe_done", False):
-            # Bug #25 (2026-05-19) — recall must fire whenever the user's
-            # NAME first becomes known, NOT only on turn 1. The fact-find
-            # asks for the name in the bot's FIRST reply, so the user
-            # supplies it on turn >=2; the old `_current_turn == 1` gate
-            # skipped recall for the normal flow entirely, so a returning
-            # user was never recognised. The LLM reliably persists the
-            # name via save_profile_field, so `session.profile.name`
-            # (captured on a prior turn) is the robust trigger; we ALSO
-            # keep the free-text sniff for an explicit "I'm X" stated on
-            # the very first message (before save_profile_field has run).
-            _nm = (
-                (getattr(session.profile, "name", None) or "").strip()
-                or (extract_potential_name(user_text or "") or "")
-            )
-            if _nm:
-                # Stages session.pending_profile_recall iff a stored
-                # profile for this name exists AND the two-fact gate
-                # (ADR-042 follow-up #1) is satisfied — i.e., at least
-                # one identity fact (age / dependents / location /
-                # income) MATCHES between stored and the live/parsed
-                # user state. No match yet ⇒ session.recall_match_
-                # deferred=True and we DON'T flip recall_probe_done so
-                # the probe retries next turn when more facts come in.
-                # Still privacy-safe: STAGE only; explicit confirm merges.
-                try_recall_by_name(session, _nm, user_text=user_text)
-                _deferred = bool(
-                    getattr(session, "recall_match_deferred", False)
-                )
-                if not _deferred:
-                    # Probe was conclusive (staged / contradicted / no
-                    # stored profile under this name). Mark done — name
-                    # won't change, no point re-probing.
-                    session.recall_probe_done = True
-                # Else: leave recall_probe_done as-is (False) so the
-                # next turn's gate re-enters this branch after the LLM
-                # has captured another identity fact via
-                # save_profile_field.
-                _pending_recall = getattr(
-                    session, "pending_profile_recall", None
-                )
-    except Exception as _re:  # noqa: BLE001 — recall must never break a turn
-        _log.warning(
-            "returning-user recall wiring failed: %s: %s",
-            type(_re).__name__, str(_re)[:200],
-        )
-        _pending_recall = getattr(session, "pending_profile_recall", None)
+    # Cross-session returning-user recall was REMOVED in ADR-043
+    # (2026-05-27). Sessions are in-memory only — closing the tab
+    # discards the profile, no on-disk lookup happens. `is_returning_user`
+    # remains a tracked flag but it is always False now (kept so
+    # downstream code that may inspect it doesn't break).
+    is_returning_user = False
 
     _has_prior_profile = any(
         getattr(session.profile, fld, None) not in (None, "", [])
@@ -2036,7 +1844,6 @@ async def handle_turn(
             "income_band", "primary_goal", "health_conditions",
         )
     )
-    is_returning_user = (_current_turn == 1) and _has_prior_profile
 
     # Bug #26 (2026-05-19) — mid-conversation profile loss. Sessions are
     # in-memory only (session_state._TTL_SECONDS = 1h; KI-118 removed disk
@@ -2049,10 +1856,12 @@ async def handle_turn(
     # already-stated facts from chat_history instead of resetting. Guard:
     # >=2 history messages ⇒ this is NOT the genuine first turn, so a
     # blank profile means state was lost, not "fresh user".
+    #
+    # NOTE: this is an IN-SESSION recovery path. It rebuilds the live
+    # profile from the chat_history the BROWSER still carries — it never
+    # reads from disk. Compatible with ADR-043's no-cross-session model.
     _reconstruct_from_history = (
         (not _has_prior_profile)
-        and not is_returning_user
-        and not _pending_recall
         and bool(chat_history)
         and len([m for m in (chat_history or [])
                  if (m or {}).get("role") == "user"]) >= 1
@@ -2102,8 +1911,6 @@ async def handle_turn(
         session.profile,
         is_returning_user=is_returning_user,
         shortlist_block=_shortlist_block,
-        pending_recall=_pending_recall,
-        recall_applied=_did_recall_this_turn,
         reconstruct_from_history=_reconstruct_from_history,
     )
 
@@ -2583,26 +2390,10 @@ async def handle_turn(
             "the insurer before relying on it."
         )
 
-    # Bug #25 WRITE-SIDE (2026-05-19) — persist the named profile so a
-    # returning user can actually be recalled. profile_persistence.
-    # auto_persist_session was ORPHANED by the orchestrator→single-LLM
-    # rewrite (same class as the recall LOOKUP helpers + get_policy_facts
-    # + silent-TTS): nothing on the chat path ever called it, so a user
-    # who completed fact-find PURELY BY CHAT was never saved to the named
-    # store and recall had nothing to find — save_profile() only ran from
-    # the POST /api/profile builder UI. Persisting at end-of-turn (after
-    # all save_profile_field tool calls + recall handling have run) closes
-    # the loop. No-ops without a profile.name; swallows all errors so a
-    # stuck disk / Chroma hiccup can never block the chat reply.
-    try:
-        from backend.profile_persistence import auto_persist_session
-
-        await auto_persist_session(session)
-    except Exception as _pe:  # noqa: BLE001 — persistence must NEVER break a turn
-        _log.warning(
-            "auto_persist_session wiring failed: %s: %s",
-            type(_pe).__name__, str(_pe)[:200],
-        )
+    # End-of-turn disk persistence removed in ADR-043 (2026-05-27). The
+    # profile lives only in the in-memory SessionState for the duration
+    # of this session (1 h idle TTL), then evicts. No on-disk JSON, no
+    # Chroma profile chunk, no cross-session recall.
 
     return TurnResult(
         reply_text=reply_text,
@@ -2618,7 +2409,7 @@ async def handle_turn(
         blocked=False,
         profile_updates=profile_updates,
         followup_policy_id=followup_policy_id,
-        returning_user_recalled=_did_recall_this_turn,
+        returning_user_recalled=False,
     )
 
 

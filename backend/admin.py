@@ -280,7 +280,7 @@ async def admin_usage(
 
 
 # ---------------------------------------------------------------------------
-# /api/admin/profiles — list every named profile + summary
+# /api/admin/profiles — live-session snapshot (ADR-043, 2026-05-27)
 # ---------------------------------------------------------------------------
 
 @router.get("/api/admin/profiles")
@@ -288,37 +288,49 @@ async def admin_profiles(
     request: Request,
     x_admin_password: Optional[str] = Header(default=None, alias="X-Admin-Password"),
 ):
-    """List every named profile in the JSON store + lightweight summary.
+    """List every CURRENTLY LIVE in-memory session + lightweight summary.
 
-    Returned shape:
-      {
-        "profiles": [ {name_display, name_slug, first_seen, last_seen,
-                       session_count, profile_complete_fields}, ... ],
-        "total": N,
-        "snapshot_ts": "2026-05-14T..."
-      }
+    Pre-ADR-043 this read from `40-data/profiles/<name>.json` and exposed a
+    cross-session audit of every named visitor. The on-disk store is gone;
+    operators get the live picture instead — every session that is in
+    `session_state._sessions` right now (i.e. hasn't been idle-evicted).
+    Returned shape stays close to the prior schema so the existing admin
+    UI keeps rendering without changes.
     """
     _check_admin(request, x_admin_password)
 
-    from backend import profile_store
-    profiles = profile_store.list_profiles()
-    return {
-        "profiles": profiles,
-        "total": len(profiles),
-        "snapshot_ts": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-    }
+    from backend import session_state as _ss
+    now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    rows = []
+    with _ss._lock:
+        for sid, s in list(_ss._sessions.items()):
+            p = s.profile
+            name = (getattr(p, "name", None) or "").strip()
+            filled = sum(
+                1 for fld in (
+                    "name", "age", "dependents", "income_band",
+                    "location_tier", "primary_goal", "health_conditions",
+                )
+                if getattr(p, fld, None) not in (None, "", [])
+            )
+            rows.append({
+                "name_display": name or "(anonymous)",
+                "name_slug": name.lower().replace(" ", "-") if name else "",
+                "session_id": sid,
+                "last_seen": datetime.fromtimestamp(s.last_touched, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "session_count": 1,
+                "profile_complete_fields": filled,
+            })
+    return {"profiles": rows, "total": len(rows), "snapshot_ts": now_iso}
 
 
 # ---------------------------------------------------------------------------
-# KI-063 (2026-05-15) — user-facing profile-event endpoints.
+# /api/profile/select + /api/profile/reject — IN-MEMORY shortlist tracker
+# (ADR-043, 2026-05-27)
 #
-# These are NOT admin-gated — they're invoked by the frontend when a logged-
-# in user (one with a stored profile.name) clicks the select/reject buttons
-# on a policy card. Both look up the session, validate that the session has
-# a named profile, then append the event through `profile_store.record_policy_event`.
-#
-# Anonymous sessions (no profile.name) get 400 — there's no key to persist
-# against. The frontend should hide the buttons in that case.
+# Pre-ADR-043 these appended events to the named-profile JSON file. They
+# now mutate only the live SessionState. Closes the tab ⇒ shortlist gone.
+# The frontend's shortlist UI continues to work within one session.
 # ---------------------------------------------------------------------------
 
 
@@ -329,46 +341,51 @@ class _PolicyEventBody(BaseModel):
     reason: Optional[str] = None
 
 
+_EVENT_TYPE_TO_FIELD = {
+    "selected": "selected_policies",
+    "rejected": "rejected_policies",
+}
+
+
 def _do_record_policy_event(body: _PolicyEventBody, event_type: str) -> dict:
-    """Shared handler for /api/profile/select + /api/profile/reject."""
+    """Append a shortlist event to the LIVE in-memory profile."""
     if not body.session_id or not body.policy_slug or not body.insurer:
         raise HTTPException(
             status_code=400,
             detail="session_id, policy_slug, and insurer are required",
         )
+    if event_type not in _EVENT_TYPE_TO_FIELD:
+        raise HTTPException(status_code=400, detail="invalid event_type")
     from backend.session_state import get_session
-    from backend.profile_store import record_policy_event
 
     session = get_session(body.session_id)
-    if not session.profile.name:
-        raise HTTPException(
-            status_code=400,
-            detail="No named profile on this session — cannot persist event.",
-        )
-    ok = record_policy_event(
-        persona_id_or_name=session.profile.name,
-        profile=session.profile,
-        event_type=event_type,  # type: ignore[arg-type]
-        policy_slug=body.policy_slug,
-        insurer=body.insurer,
-        session_id=body.session_id,
-        reason=body.reason,
+    p = session.profile
+    field_name = _EVENT_TYPE_TO_FIELD[event_type]
+    entries: list[dict] = list(getattr(p, field_name, None) or [])
+    # Dedup on policy_slug — bump timestamp + reason on repeat clicks.
+    dedup_idx = next(
+        (i for i, e in enumerate(entries)
+         if (e or {}).get("policy_slug") == body.policy_slug),
+        None,
     )
-    if not ok:
-        raise HTTPException(status_code=500, detail="profile save failed")
-    # Also persist via the session flush so an in-memory consumer (e.g. the
-    # welcome-back greeter) reads the same state without a full disk reload.
-    session._flush()
-    field_name = {
-        "shown": "shown_policies",
-        "selected": "selected_policies",
-        "rejected": "rejected_policies",
-    }[event_type]
+    now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    payload = {
+        "policy_slug": body.policy_slug,
+        "insurer": body.insurer,
+        "event_at": now_iso,
+        "session_id": body.session_id,
+        "reason": body.reason or ("user_clicked_select" if event_type == "selected" else "user_clicked_reject"),
+    }
+    if dedup_idx is not None:
+        entries[dedup_idx] = {**entries[dedup_idx], **payload}
+    else:
+        entries.append(payload)
+    setattr(p, field_name, entries)
     return {
         "ok": True,
         "event_type": event_type,
         "policy_slug": body.policy_slug,
-        "count": len(getattr(session.profile, field_name, []) or []),
+        "count": len(entries),
     }
 
 
@@ -1011,37 +1028,32 @@ async def admin_persona_drift(
     request: Request,
     x_admin_password: Optional[str] = Header(default=None, alias="X-Admin-Password"),
 ):
-    """Return slot-capture completeness for the last 20 personas, newest first.
+    """Slot-capture completeness for LIVE in-memory sessions (newest first).
 
-    Each row: { persona_id, name_display, last_seen, captured_slots,
-                completeness_pct, missing_slots }
-    The frontend highlights any row with completeness_pct < 50.
+    Pre-ADR-043 this walked `40-data/profiles/*.json` and showed every
+    named visitor's slot-capture progress. The on-disk store is gone;
+    operators now see the live picture only.
     """
     _check_admin(request, x_admin_password)
-    if not _PROFILES_DIR_FOR_DRIFT.exists():
-        return {"personas": [], "total": 0,
-                "snapshot_ts": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}
+    from backend import session_state as _ss
 
     rows: list[dict] = []
-    for p in _PROFILES_DIR_FOR_DRIFT.glob("*.json"):
-        try:
-            raw = json.loads(p.read_text())
-        except Exception:
-            continue
-        profile = raw.get("profile") or {}
-        asked = profile.get("asked") or []
-        captured = [s for s in _PERSONA_DRIFT_SLOTS if _slot_captured(profile, s, asked)]
-        missing = [s for s in _PERSONA_DRIFT_SLOTS if s not in captured]
-        rows.append({
-            "persona_id":       raw.get("persona_id") or raw.get("name_slug") or p.stem,
-            "name_display":     raw.get("name_display") or "—",
-            "last_seen":        raw.get("last_seen"),
-            "captured_slots":   captured,
-            "missing_slots":    missing,
-            "completeness_pct": round(100.0 * len(captured) / len(_PERSONA_DRIFT_SLOTS), 1),
-            "session_count":    len(raw.get("sessions") or []),
-        })
-    # Newest first by last_seen (None sorts last)
+    with _ss._lock:
+        for sid, s in list(_ss._sessions.items()):
+            p = s.profile
+            profile_dict = {fld: getattr(p, fld, None) for fld in _PERSONA_DRIFT_SLOTS}
+            asked = list(getattr(p, "asked", None) or [])
+            captured = [s_ for s_ in _PERSONA_DRIFT_SLOTS if _slot_captured(profile_dict, s_, asked)]
+            missing = [s_ for s_ in _PERSONA_DRIFT_SLOTS if s_ not in captured]
+            rows.append({
+                "persona_id":       sid,
+                "name_display":     (getattr(p, "name", None) or "—"),
+                "last_seen":        datetime.fromtimestamp(s.last_touched, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "captured_slots":   captured,
+                "missing_slots":    missing,
+                "completeness_pct": round(100.0 * len(captured) / len(_PERSONA_DRIFT_SLOTS), 1),
+                "session_count":    1,
+            })
     rows.sort(key=lambda r: (r["last_seen"] or ""), reverse=True)
     rows = rows[:20]
     return {
@@ -1050,36 +1062,6 @@ async def admin_persona_drift(
         "slots":       list(_PERSONA_DRIFT_SLOTS),
         "snapshot_ts": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
-
-
-# Cached path resolver — re-uses profile_store's _PROFILES_DIR but we import
-# lazily to avoid a circular import at module top.
-def _resolve_profiles_dir() -> Path:
-    from backend import profile_store
-    return profile_store._PROFILES_DIR
-
-
-# Lazy-evaluated singleton — instantiate on first call. We can't reference
-# profile_store at module top because admin.py imports llm_health which
-# may not yet have its config wired during tests.
-class _LazyProfilesDir:
-    def __init__(self) -> None:
-        self._p: Optional[Path] = None
-    def __getattr__(self, name: str):
-        if self._p is None:
-            self._p = _resolve_profiles_dir()
-        return getattr(self._p, name)
-    def exists(self) -> bool:
-        if self._p is None:
-            self._p = _resolve_profiles_dir()
-        return self._p.exists()
-    def glob(self, pat: str):
-        if self._p is None:
-            self._p = _resolve_profiles_dir()
-        return self._p.glob(pat)
-
-
-_PROFILES_DIR_FOR_DRIFT = _LazyProfilesDir()
 
 
 # ---------------------------------------------------------------------------
@@ -1092,46 +1074,35 @@ async def admin_recommendation_history(
     request: Request,
     x_admin_password: Optional[str] = Header(default=None, alias="X-Admin-Password"),
 ):
-    """Return the last 10 policy-event entries across every profile,
-    newest first.
+    """Last 10 policy-event entries across LIVE in-memory sessions.
 
-    Each row: { persona_id, name_display, event_type, policy_slug, insurer,
-                event_at, session_id, outcome }
-    outcome: 'selected' / 'rejected' / 'shown' (passthrough from event_type;
-             callers may map 'shown' → 'abandoned' if no follow-up exists,
-             but we leave the raw label so the operator can decide).
+    Pre-ADR-043 this walked `40-data/profiles/*.json` and surfaced every
+    historical shown/selected/rejected event the bot had ever logged. The
+    on-disk store is gone; this now reflects the current container's live
+    sessions only — historical events evict with the session.
     """
     _check_admin(request, x_admin_password)
+    from backend import session_state as _ss
     events: list[dict] = []
-    if not _PROFILES_DIR_FOR_DRIFT.exists():
-        return {"events": [], "total": 0,
-                "snapshot_ts": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}
-
-    for p in _PROFILES_DIR_FOR_DRIFT.glob("*.json"):
-        try:
-            raw = json.loads(p.read_text())
-        except Exception:
-            continue
-        profile = raw.get("profile") or {}
-        persona_id = raw.get("persona_id") or raw.get("name_slug") or p.stem
-        name_display = raw.get("name_display") or "—"
-        for evt_type, field_name in (("shown", "shown_policies"),
-                                     ("selected", "selected_policies"),
-                                     ("rejected", "rejected_policies")):
-            for entry in (profile.get(field_name) or []):
-                events.append({
-                    "persona_id":   persona_id,
-                    "name_display": name_display,
-                    "event_type":   evt_type,
-                    "policy_slug":  entry.get("policy_slug"),
-                    "insurer":      entry.get("insurer"),
-                    "event_at":     entry.get("event_at"),
-                    "session_id":   entry.get("session_id"),
-                    "reason":       entry.get("reason"),
-                    # Outcome label is the raw event_type — operator decides
-                    # what 'shown without follow-up' means in their context.
-                    "outcome":      evt_type,
-                })
+    with _ss._lock:
+        for sid, s in list(_ss._sessions.items()):
+            p = s.profile
+            name_display = (getattr(p, "name", None) or "—")
+            for evt_type, field_name in (("shown", "shown_policies"),
+                                         ("selected", "selected_policies"),
+                                         ("rejected", "rejected_policies")):
+                for entry in (getattr(p, field_name, None) or []):
+                    events.append({
+                        "persona_id":   sid,
+                        "name_display": name_display,
+                        "event_type":   evt_type,
+                        "policy_slug":  (entry or {}).get("policy_slug"),
+                        "insurer":      (entry or {}).get("insurer"),
+                        "event_at":     (entry or {}).get("event_at"),
+                        "session_id":   (entry or {}).get("session_id"),
+                        "reason":       (entry or {}).get("reason"),
+                        "outcome":      evt_type,
+                    })
     events.sort(key=lambda e: (e["event_at"] or ""), reverse=True)
     events = events[:10]
     return {
