@@ -41,6 +41,9 @@ export const UI_STRINGS = {
     "upload.indexing": "Indexing ${name}…",
     "upload.success": "✓ Indexed “${name}” — ${chunks} chunks from ${pages} pages (${secs}s). It's now searchable in this chat. Ask me about it.",
     "upload.error": "✗ Upload failed: ${err}",
+    "upload.user_msg": "📎 Uploaded: ${name}",
+    "upload.chat_ack": "Got it — I've indexed **${name}** (${chunks} chunks from ${pages} pages, in ${secs}s). Here's how it grades against what we know about you so far:",
+    "upload.chat_choice": "How would you like to proceed?\n\n• **Tell me more about yourself** — finish the short profile (age, family, location, budget, health) so I can speak to this policy more personally.\n• **Dive into the PDF first** — ask questions about coverage, waiting periods, exclusions, anything in the document.\n\nEither works. The more I know about you, the more useful the discussion of this policy will be.",
 
     // Marketplace panel
     "mp.heading": "Health insurance marketplace",
@@ -159,6 +162,9 @@ export const UI_STRINGS = {
     "upload.indexing": "${name} index हो रही है…",
     "upload.success": "✓ “${name}” index हो गई — ${pages} पेज से ${chunks} chunks (${secs}s)। अब यह इसी chat में search हो सकती है। इसके बारे में पूछिए।",
     "upload.error": "✗ Upload विफल: ${err}",
+    "upload.user_msg": "📎 Upload किया: ${name}",
+    "upload.chat_ack": "मिल गया — **${name}** index हो गई (${pages} पेज से ${chunks} chunks, ${secs}s में)। यह policy आपके profile के हिसाब से कैसी है:",
+    "upload.chat_choice": "आगे कैसे बढ़ें?\n\n• **अपने बारे में बताएं** — short profile पूरा करें (उम्र, परिवार, location, बजट, health) ताकि मैं इस policy पर आपको personally बात कर सकूं।\n• **पहले PDF पर बात करें** — coverage, waiting periods, exclusions — कुछ भी पूछें।\n\nदोनों ठीक हैं। जितना मैं आपके बारे में जानूंगा, इस policy की चर्चा उतनी useful होगी।",
 
     "mp.heading": "स्वास्थ्य बीमा बाज़ार",
     "mp.summary": "${total} पॉलिसियाँ, ${insurers} प्रमुख भारतीय बीमाकर्ताओं से। पूरी रेटिंग और source document के लिए किसी भी पॉलिसी पर click करें।",

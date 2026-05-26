@@ -1440,6 +1440,10 @@ export default function Page() {
   async function handleFile(ev: React.ChangeEvent<HTMLInputElement>) {
     const f = ev.target.files?.[0];
     if (!f) return;
+    // Push a user-side breadcrumb so the chat transcript shows the upload
+    // happened (helps the user track context — and it's part of the
+    // history the next /api/chat turn sends back to the brain).
+    pushUser(t("upload.user_msg", { name: f.name }));
     setUploadStatus(t("upload.indexing", { name: f.name }));
     try {
       // Pass the live chat session so the backend scopes the uploaded doc
@@ -1454,14 +1458,45 @@ export default function Page() {
           secs: (r.elapsed_ms / 1000).toFixed(1),
         }),
       );
+      // ── In-chat acknowledgment + inline scorecard card ──────────────
+      // Push two assistant messages:
+      //   1. The "got it, here's the card" ack with a `citations` array
+      //      carrying the uploaded policy_id. The existing chat renderer
+      //      reads citations from an assistant message and fires
+      //      `getScorecard(policy_id, session_id)` per cited policy, so
+      //      the scorecard card appears inline under the bubble — same
+      //      treatment as a recommendation card.
+      //   2. The proceed-choice prompt — telling the user they can
+      //      finish their profile OR dive into the PDF, and noting that
+      //      a fuller profile makes the policy discussion more useful.
+      const ackText = t("upload.chat_ack", {
+        name: r.policy_name,
+        chunks: r.chunks_added,
+        pages: r.pages_indexed,
+        secs: (r.elapsed_ms / 1000).toFixed(1),
+      });
+      pushAssistant(ackText, {
+        citations: [
+          {
+            policy_id: r.policy_id,
+            policy_name: r.policy_name,
+            insurer_slug: "user-upload",
+            page_start: 1,
+            page_end: r.pages_indexed,
+            source_url: "",
+            score: 1.0,
+          },
+        ],
+      });
+      pushAssistant(t("upload.chat_choice"));
       // Refresh coverage so the uploaded doc shows up
       getCoverage().then(setCoverage).catch(() => {});
     } catch (e: unknown) {
-      setUploadStatus(
-        t("upload.error", {
-          err: e instanceof Error ? e.message : String(e),
-        }),
-      );
+      const errMsg = e instanceof Error ? e.message : String(e);
+      setUploadStatus(t("upload.error", { err: errMsg }));
+      // Surface the failure in chat too — a transient banner alone is
+      // easy to miss (originally reported as "no acknowledgment").
+      pushAssistant(t("upload.error", { err: errMsg }));
     } finally {
       if (fileInputRef.current) fileInputRef.current.value = "";
       setTimeout(() => setUploadStatus(null), 8000);
