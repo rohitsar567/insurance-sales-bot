@@ -133,11 +133,15 @@ flowchart TD
     EXPLORE -->|"Compare"| CMP["⚖️ Compare up to 4 plans side by side · full scorecard per plan"]
     EXPLORE -->|"Browse"| MKT["📚 Browse the full indexed marketplace"]
     EXPLORE -->|"Ask"| QA["💬 Ask follow-up questions — answered only from the actual documents"]
-    EXPLORE -->|"My own policy"| UP["📄 Upload your own policy PDF — ask about YOUR document (private to your session)"]
+    EXPLORE -->|"My own policy"| UP["📄 Upload your own policy PDF"]
+    UP --> UPIDX["⏳ Quick ack — 'Reading it through, ~30–60 s'<br/>(everything in chat is gated while the analysis runs)"]
+    UPIDX --> UPCARD["📊 Inline scorecard card with FULL data:<br/>grade letter · 6 sub-scores · verbatim signals · insurer reputation"]
+    UPCARD --> UPCHOICE{"How would you like to proceed?"}
+    UPCHOICE -->|"Finish profile"| TELL
+    UPCHOICE -->|"Dive into the PDF"| QA
     CMP --> PREM
     MKT --> PREM
     QA --> PREM
-    UP --> PREM
     PREM["💸 A live premium estimate that updates as you change your profile"] --> DONE["✅ Decide with confidence — no lead capture, no commission bias"]
     VOICE["🎙️ Optional the whole way: speak instead of type — it speaks the answers back"] -.-> TELL
     VOICE -.-> QA
@@ -160,6 +164,15 @@ memory; closing the tab forgets you (privacy-by-design, see ADR-043).
 - **Branches from the shortlist.** Compare side by side, browse the full
   marketplace, ask follow-up questions, or upload your *own* policy PDF
   and ask about your document (kept private to your session).
+- **Upload-PDF flow is a staged sequence** (ADR-044, 2026-05-27):
+  upload → bot says *"reading it through, ~30–60 s"* → all chat input is
+  gated during the wait (Send button, textarea, voice paths all blocked
+  so nothing can interrupt the staging) → bot pushes the inline
+  scorecard card with FULL extracted data once the LLM pass lands → bot
+  then asks whether you'd like to finish your profile or dive into the
+  PDF. The card is the same shape as any catalogued policy card — six
+  sub-scores, verbatim signals, real claim-settlement data when the
+  insurer is recognised.
 - **Live premium.** Updates as you change the profile.
 - **Decision.** No lead capture and no commission bias — the path ends at
   *decide*, not at a sales handoff.
@@ -915,10 +928,29 @@ These are real and stated up front rather than buried:
   curated/extracted baseline. Treat uploads as session-scoped. An
   operator/abuse prune endpoint exists (`POST /api/admin/uploaded-docs/
   prune`, password-gated) to remove a persisted upload by id or prefix.
-- **Uploaded-PDF field extraction is deterministic-heuristic, not LLM.**
-  A standard IRDAI-format wording yields a real (non-sentinel) grade; a
-  scanned-image or non-standard PDF with little extractable text honestly
-  shows the data-starved sentinel rather than a fabricated grade.
+- **Uploaded-PDF field extraction is LLM-assisted, with a deterministic
+  heuristic floor (ADR-044, 2026-05-27).** Every upload runs through two
+  passes:
+  - **Heuristic baseline** — regex + keyword extraction over the PDF text,
+    runs synchronously inside the upload HTTP call (sub-second), populates
+    common fields like waiting periods and room-rent rule. Yields
+    ~30–50 % data_completeness.
+  - **LLM-assisted extraction** — fires as a background asyncio task
+    after the upload returns. Same `get_brain_llm()` chain the catalogued
+    148 use offline (Gemini 2.5-flash primary, NVIDIA NIM fallback);
+    same `EXTRACT_SYSTEM` prompt; same `HealthPolicy` Pydantic schema;
+    output written to `rag/extracted/<policy_id>.json` and merged INTO
+    the persisted `record.json` (LLM values override where present,
+    heuristic stays where the LLM was silent). ~10–60 s.
+  The frontend polls `GET /api/upload/extraction-status/<policy_id>`
+  during the wait and renders the inline scorecard card ONLY after the
+  LLM pass either completes or hits its 120 s timeout. The card is
+  catalogued-grade — same `PolicyScorecardWidget`, same six sub-scores,
+  same insurer reputation data (because `detect_insurer_slug` matches
+  the PDF's legal name against the 21 known insurer slugs we have
+  reviews data for and flips `insurer_slug` off the generic `user-upload`
+  on a hit). On any LLM-pass failure the heuristic floor still produces a
+  real grade, never a fabricated one or a data-starved sentinel.
 - **Live (BETA) voice mode** uses the browser's in-built speech
   recognition and is labelled unstable; **push-to-talk** is the reliable
   path (warm-armed mic + pre-roll so the first word is never clipped, and

@@ -853,38 +853,51 @@ async def extract_one_for_upload(
             ChatMessage(role="user", content=prompt),
         ]
 
-        # Gemini-primary (user directive 2026-05-27) — same brain the
-        # live chat uses (ADR-040), native JSON-mode via
-        # response_mime_type=application/json. NIM stays as the
-        # transport-level fallback for: GOOGLE_API_KEY missing, 5xx
-        # outage, or quota exhaustion. Key fix vs the earlier broken
-        # swap: max_tokens bumped 2048 → 8192 so the full HealthPolicy
-        # JSON (23 nested fields + verbatim quotes) doesn't get
-        # truncated mid-emission, which was the actual failure mode.
-        llm_primary = GoogleGeminiLLM(timeout=180.0)
-        llm_fallback = get_brain_llm()
+        # Tier-1 Gemini-stability hardening (ADR-044, 2026-05-27):
+        #   1. Bumped retry count from 1 → 3 on the Gemini primary path
+        #      with jittered exp backoffs (2s/4s/8s ±25%). Mirrors the
+        #      _TRANSIENT_RETRY_BACKOFFS_STICKY pattern from single_brain
+        #      (ADR-042) that proved effective for Gemini's 429/5xx tail.
+        #   2. NIM is the FINAL fallback after Gemini exhausts retries.
+        #   3. Raw LLM responses are captured to disk on each failed
+        #      attempt — UPLOADED_DOCS_DIR/<pid>/llm_raw_<n>.txt — so the
+        #      operator can SEE why a Gemini call failed (was it a 429,
+        #      truncated mid-emission, returned with markdown fences,
+        #      etc.). Previously the failure was a black box.
+        import random as _random
+        _GEMINI_BACKOFFS = (2.0, 4.0, 8.0)
+        _GEMINI_JITTER = 0.25
+        def _jit(b: float) -> float:
+            return b * _random.uniform(1 - _GEMINI_JITTER, 1 + _GEMINI_JITTER)
 
+        llm_gemini = GoogleGeminiLLM(timeout=180.0)
+        llm_nim = get_brain_llm()
         raw = ""
         policy: Optional[HealthPolicy] = None
-        for attempt, (llm, label) in enumerate(
-            [(llm_primary, "gemini-2.5-flash"), (llm_fallback, "nim-fallback")]
-        ):
+        attempts: list[tuple[object, str]] = [
+            (llm_gemini, "gemini-2.5-flash#1"),
+            (llm_gemini, "gemini-2.5-flash#2"),
+            (llm_gemini, "gemini-2.5-flash#3"),
+            (llm_nim, "nim-fallback"),
+        ]
+        for attempt, (llm, label) in enumerate(attempts):
             try:
-                attempt_timeout = 180 if attempt == 0 else 120
+                # Backoff BEFORE every attempt after the first Gemini try.
+                # First attempt: no wait. Subsequent Gemini attempts: jittered
+                # exp. NIM fallback: no extra backoff (Gemini already gave up).
+                if 1 <= attempt <= len(_GEMINI_BACKOFFS):
+                    _bo = _jit(_GEMINI_BACKOFFS[attempt - 1])
+                    _log.info(
+                        "[upload-extract] sleeping %.1fs before %s retry",
+                        _bo, label,
+                    )
+                    await asyncio.sleep(_bo)
+                attempt_timeout = 180 if label.startswith("gemini") else 120
                 chat_kwargs = {
                     "messages": messages,
                     "temperature": 0.0,
                     "max_tokens": 8192,
                 }
-                # NOTE — we DON'T set response_format here. The
-                # EXTRACT_SYSTEM prompt already mandates JSON-only output
-                # ("Single object. No whitespace beyond what's needed.").
-                # Setting Gemini's responseMimeType=application/json was
-                # silently producing payloads that json_from_llm_text /
-                # HealthPolicy schema validation rejected. Letting the
-                # model emit JSON natively (and using json_from_llm_text's
-                # tolerant front-strip of fences + <think> blocks) is the
-                # path the catalogued 148 used successfully.
                 res = await asyncio.wait_for(
                     llm.chat(**chat_kwargs),
                     timeout=attempt_timeout,
@@ -894,6 +907,12 @@ async def extract_one_for_upload(
                     "[upload-extract] %s returned %d chars; parsing JSON…",
                     label, len(raw or ""),
                 )
+                # Persist raw response for ops visibility (always — both
+                # successful + failed parses get a copy).
+                try:
+                    (_doc_dir(policy_id) / f"llm_raw_{attempt + 1}_{label.replace('#','-')}.txt").write_text(raw or "")
+                except Exception:
+                    pass
                 data = json_from_llm_text(raw)
                 # Force-fill identity fields (REQUIRED by the schema, the
                 # LLM frequently emits null for these because they're not
