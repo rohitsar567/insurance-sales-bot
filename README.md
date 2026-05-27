@@ -988,14 +988,17 @@ sequenceDiagram
     alt cache hit
         CK-->>UD: copy prior rag/extracted/&lt;other_pid&gt;.json
         UD->>UD: llm_used='hash-cache'
-    else cache miss
-        UD->>G: chat(prompt, schema) — attempt 1
+    else cache miss + text ≥25K chars
+        Note over UD,G: MULTI-PASS (KI-332): 7 sections in parallel via asyncio.gather
+        UD->>G: identity / eligibility / financial / waiting / coverage / limits / network
+        G-->>UD: 7 partial JSONs (any landing = success)
+        UD->>UD: merge sections · llm_used='gemini-2.5-flash-multipass'
+    else cache miss + text <25K chars
+        UD->>G: single-pass chat(full schema)
         alt success
             G-->>UD: HealthPolicy JSON · llm_used='gemini-2.5-flash#1'
         else timeout / malformed JSON
-            UD->>G: retry attempt 2 (2s backoff ± 25%)
-            G-->>UD: HealthPolicy OR fail
-            UD->>G: retry attempt 3 (4s backoff ± 25%)
+            UD->>G: retry #2 (2s ± 25%) → retry #3 (4s ± 25%)
             G-->>UD: HealthPolicy OR fail
             UD->>N: NIM fallback (single attempt)
             N-->>UD: HealthPolicy OR all-fail
@@ -1213,28 +1216,53 @@ these:
 │   │                          - persist_upload() — heuristic baseline
 │   │                            (sub-second regex/keyword) + sha256 of
 │   │                            PDF bytes → record.json + meta.json
-│   │                          - build_record() — heuristic floor; ~30–50%
-│   │                            completeness; guaranteed before LLM fires
+│   │                          - build_record() — heuristic floor;
+│   │                            guaranteed BEFORE any LLM fires
+│   │                          - extract_fields_from_text() — 28+ regex
+│   │                            patterns (KI-332 expansion 2026-05-27):
+│   │                            sum_insured_options_inr ladder, policy_type,
+│   │                            min/max entry age, child entry days,
+│   │                            lifelong renewability flag, grace period,
+│   │                            free-look period, geographic_coverage,
+│   │                            ICU capping, deductible, NCB cap,
+│   │                            organ/CI/preventive/domiciliary/newborn
+│   │                            presence, premium payment modes — lifts
+│   │                            floor from ~47.8% to ~65-70% even when
+│   │                            ALL LLM passes fail
 │   │                          - detect_insurer_slug() — match PDF text
 │   │                            against 21 known insurer patterns; flips
 │   │                            insurer_slug off 'user-upload' on hit
+│   │                          - _multipass_extract_with_gemini() —
+│   │                            (KI-332) 7-section parallel extraction:
+│   │                            identity/eligibility/financial/waiting/
+│   │                            coverage/limits/network_claims, each as
+│   │                            its own Gemini 2.5-flash call via
+│   │                            asyncio.gather. Fires for PDFs ≥25K chars
+│   │                            where single-pass would truncate.
 │   │                          - extract_one_for_upload() — background
-│   │                            asyncio task: hash-cache → Gemini
-│   │                            2.5-flash (3 jittered retries 2/4/8s ±25%)
-│   │                            → NIM fallback → heuristic floor. Writes
-│   │                            rag/extracted/<pid>.json, merges LLM
-│   │                            scalars INTO record.json (LLM wins where
-│   │                            non-empty, heuristic stays where silent)
+│   │                            asyncio task. Resolution order:
+│   │                              1. hash-cache (sha256 hit)
+│   │                              2. multi-pass per-section (≥25K chars)
+│   │                              3. single-pass Gemini (3 jittered retries)
+│   │                              4. NIM fallback (single attempt)
+│   │                              5. heuristic floor (always wins
+│   │                                 because record.json already exists)
+│   │                            Writes rag/extracted/<pid>.json, merges
+│   │                            LLM scalars INTO record.json (LLM wins
+│   │                            where non-empty, heuristic stays where
+│   │                            silent)
 │   │                          - _find_cached_extraction() — sha256
 │   │                            lookup across UPLOADED_DOCS_DIR/*/meta.json
 │   │                            for prior successful extractions
 │   │                          - _set_extraction_status() — finalises
 │   │                            status using main._catalogue_scorecard(pid)
 │   │                            so completeness_pct + overall_grade match
-│   │                            the card endpoint BY CONSTRUCTION
+│   │                            the card endpoint BY CONSTRUCTION (success
+│   │                            path AND fail path, post-KI-333)
 │   │                          - Provenance fields: llm_used
-│   │                            (gemini-2.5-flash#N | nim-fallback |
-│   │                            hash-cache) + llm_response_chars
+│   │                            (gemini-2.5-flash#N | gemini-2.5-flash-multipass
+│   │                             | nim-fallback | hash-cache) +
+│   │                            llm_response_chars
 │   │                          - backfill_extractions() — startup hook
 │   │                            re-runs LLM extraction on every
 │   │                            UPLOADED_DOCS_DIR/<pid>/ missing
