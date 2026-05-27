@@ -1518,7 +1518,11 @@ export default function Page() {
       // the Send button + voice paths are all gated by extractionInFlight,
       // and the chat only progresses once the card data is fully populated.
       const POLL_INTERVAL_MS = 3000;
-      const MAX_TRIES = 40; // 40 × 3s = 120s
+      // 2026-05-27 — bumped from 40 (120s) to 50 (150s) after a live
+      // 8MB-PDF audit showed Gemini retry #3 sometimes lands at ~130s,
+      // i.e. just past the prior cutoff. 15s extra buffer eliminates
+      // the borderline-miss case.
+      const MAX_TRIES = 50; // 50 × 3s = 150s
       let landed = false;
       let finalCompleteness: number | null = null;
       let finalGrade: string | null = null;
@@ -1577,12 +1581,41 @@ export default function Page() {
         // race the previous flow exhibited.
         pushAssistant(t("upload.chat_choice"));
       } else {
-        // Failure / timeout fallback: surface honestly + still defer the
-        // choice prompt (we never want to ask the user to "dive into the
-        // PDF" before they can SEE the analysis).
+        // KI-331 (2026-05-27) — fail/timeout no longer hides the
+        // heuristic-floor card. The heuristic baseline (~47.8% comp,
+        // grade C) was written synchronously inside the upload HTTP
+        // call BEFORE the LLM ever fired — so a /api/policies/{pid}/
+        // scorecard request right now will return a real card with 6
+        // sub-scores. Earlier behaviour pushed only a prose
+        // "couldn't pull a full analysis" message and left the user
+        // staring at no data. Now we push the SAME card-bearing
+        // assistant message + a soft caveat below, so the user can
+        // still see what we extracted and the choice prompt has
+        // visible context.
+        pushAssistant(
+          t("upload.chat_card_ready", { name: r.policy_name }),
+          {
+            citations: [
+              {
+                policy_id: r.policy_id,
+                policy_name: r.policy_name,
+                insurer_slug: finalInsurerSlug || "user-upload",
+                page_start: 1,
+                page_end: r.pages_indexed,
+                source_url: "",
+                score: 1.0,
+              },
+            ],
+          },
+        );
+        // Soft caveat — honest about which path we landed on.
         pushAssistant(
           t("upload.chat_extraction_failed", { name: r.policy_name }),
         );
+        // Same dive-in target flag as the success path so the brain's
+        // ACTIVE POLICY DIVE-IN block fires on the next chat turn even
+        // when the LLM extraction missed.
+        setActiveUploadPid(r.policy_id);
         pushAssistant(t("upload.chat_choice"));
       }
     } catch (e: unknown) {
