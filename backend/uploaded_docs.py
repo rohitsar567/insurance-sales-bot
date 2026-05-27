@@ -874,22 +874,9 @@ async def extract_one_for_upload(
                     _settings_a.EXTRACTED_DIR.mkdir(parents=True, exist_ok=True)
                     dest = _settings_a.EXTRACTED_DIR / f"{policy_id}.json"
                     dest.write_text(cached_path.read_text())
-                    # Mark status complete with whatever completeness the
-                    # marketplace scorecard now computes.
-                    _final_comp = None
-                    _final_grade = None
-                    try:
-                        from rag.schema import HealthPolicy
-                        from backend.scorecard import build_scorecard as _bs
-                        _doc = json.loads(dest.read_text())
-                        _sc = _bs(_doc, profile=None)
-                        if _sc is not None:
-                            _final_comp = float(_sc.data_completeness_pct)
-                            _final_grade = _sc.overall_grade
-                    except Exception:
-                        pass
                     # Bust the #40 grade cache so /api/policies/all
-                    # picks up the new card.
+                    # picks up the new card BEFORE we resolve the
+                    # catalogue scorecard for status reporting.
                     try:
                         import backend.main as _bm
                         with _bm._MG_LOCK:
@@ -897,11 +884,54 @@ async def extract_one_for_upload(
                             _bm._MG_CACHE["index"] = None
                     except Exception:
                         pass
+                    # Mark status complete with the EXACT completeness +
+                    # grade the chat card will render. Mirror the live
+                    # scorecard endpoint's resolution order (catalogue
+                    # primary → bare-policy fallback with insurer_reviews).
+                    # Earlier draft of this branch called
+                    # build_scorecard(_doc, profile=None) without reviews
+                    # and read `.overall_grade` instead of `.grade`, so
+                    # cache-hit uploads always reported comp≈17.4 + grade
+                    # None even when the actual card was 47.8% / grade C
+                    # (the 2026-05-27 multi-PDF audit caught this).
+                    _final_comp = None
+                    _final_grade = None
+                    try:
+                        from backend.scorecard import build_scorecard as _bs
+                        # PRIMARY — catalogue scorecard (matches /api/policies/{id}/scorecard).
+                        _sc = _bm._catalogue_scorecard(policy_id, None)
+                        if _sc is None:
+                            # FALLBACK — bare-policy build_scorecard with reviews.
+                            _doc = json.loads(dest.read_text())
+                            _ir = None
+                            if insurer_slug:
+                                from backend.config import settings as _settings_b
+                                _rp = _settings_b.DATA_DIR / "reviews" / f"{insurer_slug}.json"
+                                if _rp.exists():
+                                    try:
+                                        _ir = json.loads(_rp.read_text())
+                                    except Exception:
+                                        _ir = None
+                            _sc = _bs(_doc, insurer_reviews=_ir, profile=None)
+                        if _sc is not None:
+                            _final_comp = float(_sc.data_completeness_pct)
+                            _final_grade = _sc.grade  # NOT overall_grade
+                    except Exception as _sc_err:  # noqa: BLE001
+                        _log.warning(
+                            "[upload-extract] cache-hit status resolve failed for %s: %s",
+                            policy_id, _sc_err,
+                        )
                     await _set_extraction_status(
                         policy_id, status="complete",
                         completed_at=_now(),
                         completeness_pct=_final_comp,
                         overall_grade=_final_grade,
+                        # Provenance — operator sees WHY no LLM ran: the
+                        # SHA256 of pdf_bytes matched a prior extraction
+                        # so we reused it. Distinct from the gemini-2.5-
+                        # flash#N / nim-fallback labels.
+                        llm_used="hash-cache",
+                        llm_response_chars=len((dest.read_text() or "")),
                     )
                     return True
     except Exception as e:  # noqa: BLE001 — cache miss is fine, run fresh
