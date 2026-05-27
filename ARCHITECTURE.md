@@ -30,9 +30,12 @@ authority.
   separate faithfulness judge / profile_extractor / tiered brain) was
   removed — it does not exist in the codebase.
 - **Retrieval** — Chroma vector store, BGE-small-en-v1.5 local 384-d
-  embeddings (`rag/retrieve.py`). Shared "policies" collection (~150 plans,
-  ~7.3k chunks, 20 insurers) + a per-session "quarantine" collection for
-  user-uploaded PDFs (24h TTL, session-isolated).
+  embeddings (`rag/retrieve.py`). Shared `policies` collection (148
+  catalogued plans across 21 insurers, ~7.3K chunks) + a per-session
+  `user_uploads_quarantine` collection (24h TTL, session-isolated). Per
+  ADR-044 (2026-05-27), uploaded PDFs dual-write into both collections —
+  the upload becomes a first-class marketplace card with the same
+  scorecard / premium / RAG endpoints as the catalogued 148.
 - **Upload safety** — `backend/security.py`, 8 gates, before any embedding.
 - **Data** — three repos: code (HF Space `origin` + GitHub `github`
   mirror), the `rohitsar567/insurance-bot-data` HF dataset (corpus +

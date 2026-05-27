@@ -115,7 +115,7 @@ Every architectural decision in `70-docs/decisions.md` produces a specific artif
 | --- | --- |
 | D-001 Vertical slice scope | `kb/policies/` (10 categories only Health) |
 | D-002 Health category | `40-data/corpus_urls.md` (76 health PDFs) |
-| D-003 Curated corpus | `rag/corpus/` (no user uploads in v1, expanded in v1.1 with security gates) |
+| D-003 Curated corpus + user-upload pipeline (ADR-044, 2026-05-27) | `rag/corpus/` for catalogued + `backend/uploaded_docs.py` + `backend/security.py` for user uploads (8-gate defence, heuristic floor + Gemini extraction with multi-pass for big PDFs) |
 | D-004 Hybrid structured + unstructured | `rag/policies.duckdb` + `rag/vectors/` |
 | D-005 Next.js + FastAPI | `frontend/` + `backend/main.py` |
 | D-006 Sarvam-first | `backend/providers/sarvam_*.py` |

@@ -10,7 +10,7 @@ ADR numbers map 1:1 to the original `D-NNN` entries that lived in the legacy `70
 |---|---|---|
 | [ADR-001](ADR-001-vertical-slice-scope.md) | Vertical slice scope, not full platform | Locked |
 | [ADR-002](ADR-002-health-category-vertical.md) | Health as the v1 vertical category | Locked |
-| [ADR-003](ADR-003-curated-corpus.md) | Curated corpus over user-uploads | Locked |
+| [ADR-003](ADR-003-curated-corpus.md) | Curated corpus over user-uploads | Locked (partially superseded by ADR-044) |
 | [ADR-004](ADR-004-hybrid-structured-vector.md) | Hybrid structured + vector retrieval | Locked |
 | [ADR-005](ADR-005-nextjs-fastapi-frontend.md) | Next.js 14 + FastAPI (superseded original Streamlit pick) | Locked (revised) |
 | [ADR-006](ADR-006-sarvam-first-stack.md) | Sarvam-first STT/TTS/LLM defaults | Partially superseded by ADR-019 |

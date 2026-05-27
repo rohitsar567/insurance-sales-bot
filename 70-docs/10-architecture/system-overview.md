@@ -37,9 +37,10 @@ authoritative architecture description:
   transient Gemini error → small `backend/nim_fallback.py` (NVIDIA NIM) so
   the turn completes. Fail-loud.
 - Retrieval: **structured + vector over Chroma + BGE-small local 384-d**
-  (`rag/retrieve.py`) with a profile-tuned scorecard; shared policies
-  collection + per-session 24h quarantine for user-uploaded PDFs (8
-  security gates in `backend/security.py`).
+  (`rag/retrieve.py`) with a profile-tuned scorecard; shared `policies`
+  collection + per-session 24h quarantine for user-uploaded PDFs (per
+  ADR-044, uploads dual-write into both so they become first-class
+  marketplace cards). 8 security gates in `backend/security.py`.
 - **Next.js 16 / FastAPI**, deployed as an HF Space (Docker, `uvicorn`,
   port 7860); heavy data pulled at build from the `insurance-bot-data` HF
   dataset; curated facts in `40-data/`.

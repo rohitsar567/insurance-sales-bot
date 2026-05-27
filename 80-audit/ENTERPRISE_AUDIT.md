@@ -354,4 +354,10 @@ The 2026-05-14 scoreboard rows for "Voice UX", "Fact-find robotic tone", and the
 
 ---
 
-*This file regenerates as new evidence lands. Last updated: 2026-05-15 (sprint KI-167 → KI-179 landed; ADR-039 + ADR-040 ship).*
+### Sprint 2026-05-27 (KI-225..KI-333) — Single-brain consolidation + upload-pipeline rebuild
+
+Single-brain rewrite (KI-225, ~5,200 LOC removed) collapses the old sales+qa+faithfulness chain into one Gemini-with-function-calling call per turn; faithfulness is now structural (brain quotes only what `retrieve_policies` + `get_policy_facts` returned). Upload pipeline rebuilt to ADR-044 parity: 8-gate defence in `backend/security.py` + heuristic floor (~65-70% post KI-332) + Gemini single-pass / multi-pass / NIM / floor extraction chain + status↔scorecard parity by construction (KI-333) + ACTIVE POLICY DIVE-IN block via `view_context.active_policy_id` (KI-330) + heuristic-floor card on LLM-fail path (KI-331). All shipped on commits 2a58c28, 993bcd5, d92f07a, 2ec48b7; currently live on `e7f799a`. No new defects introduced — the D-001..D-010 register from this audit remains the live defect set; none are upload-pipeline regressions.
+
+---
+
+*This file regenerates as new evidence lands. Last updated: 2026-05-27 (sprint KI-225 → KI-333 landed; ADR-044 ships).*

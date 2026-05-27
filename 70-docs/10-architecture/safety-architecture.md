@@ -149,7 +149,7 @@ In a regulated BFSI domain, the worst failure isn't "the bot looks slow" — it'
 
 ### F-13 — User uploads a malicious PDF (XSS / macro)
 
-**Description:** Not applicable — user does not upload PDFs in v1 (D-003 — curated corpus).
+**Description:** F-13 is LIVE per ADR-044 (2026-05-27). Mitigated by the 8 gates in `backend/security.py` (file mechanics / dangerous PDF features / content quality / prompt injection / per-session rate limit / per-IP rate limit / encrypted-PDF reject / page-ceiling / hash dedupe). Failed uploads are logged to `logs/upload_blocks.jsonl`. The 8-gate state is the same one this file's top banner already lists.
 
 ### F-14 — User asks for medical advice ("should I get this surgery?")
 

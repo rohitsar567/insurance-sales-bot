@@ -2,20 +2,28 @@
 
 _Auto-generated. Source modules: `backend/security.py` + `backend/faithfulness.py`._
 
-## Upload security — 5 gates
+## Upload security — 8 gates
 
 Every PDF uploaded via `/api/upload-policy` runs through these gates before
-indexing. Failure logs to `logs/upload_blocks.jsonl`.
+indexing. Pipeline lives in `backend/uploaded_docs.py` + `backend/security.py`,
+governed by ADR-044 (2026-05-27). Failure logs to `logs/upload_blocks.jsonl`.
 
 | # | Gate | Check |
 | --- | --- | --- |
-| 1 | Mechanics | Magic bytes `%PDF`; size 5KB-25MB; `%%EOF` present; dangerous PDF features (`/JavaScript`, `/Launch`, `/OpenAction`, `/EmbeddedFile`, `/SubmitForm`, `/AA`, `/RichMedia`, `/Movie`, `/Sound`, `/GoToR`); embedded executable signatures (Windows PE, Linux ELF, Mach-O, Java class, shell, HTML/JS, PHP) |
+| 1 | File mechanics | Magic bytes `%PDF`; size 5KB-25MB; `%%EOF` present; dangerous PDF features (`/JavaScript`, `/Launch`, `/OpenAction`, `/EmbeddedFile`, `/SubmitForm`, `/AA`, `/RichMedia`, `/Movie`, `/Sound`, `/GoToR`); embedded executable signatures (Windows PE, Linux ELF, Mach-O, Java class, shell, HTML/JS, PHP) |
 | 2 | Content quality | ≥1,500 chars text; ≥3 pages; ≥1 insurance keyword match (catches "garbage PDF" uploads) |
-| 3 | Prompt injection | 11 regex patterns scanning for "ignore previous instructions", "system prompt reveal", jailbreak markers, role-takeover patterns, im_start/im_end tokens |
-| 4 | Session rate limit | 5 uploads/hour/session; 200 chunks/session lifetime |
-| 5 | IP rate limit | 10 uploads/hour/IP (per X-Forwarded-For or peer IP) |
+| 3 | Prompt injection | Regex sweep for "ignore previous instructions", "system prompt reveal", jailbreak markers, role-takeover patterns, im_start/im_end tokens |
+| 4 | Per-session rate limit | 5 uploads/hour/session; 200 chunks/session lifetime |
+| 5 | Per-IP rate limit | 10 uploads/hour/IP (per X-Forwarded-For or peer IP) |
+| 6 | Encrypted / locked PDF reject | Refuse any PDF that is password-protected or has restrictive permissions blocking text extraction |
+| 7 | Page-count ceiling | Reject PDFs with >200 pages |
+| 8 | Hash dedupe + reject-cache | Re-uploads of an already-accepted PDF are deduped; re-uploads of a previously-rejected hash are short-circuited |
 
-All gates run for EVERY upload. Block on any failure; the audit trail captures the reason set.
+Beyond the 8, a **UIN net-new check** + **PDF-text fuzzy match** against the
+catalogued 148 also run — uploads that match an existing catalogued policy
+short-circuit to the catalogued card.
+
+All gates run for EVERY upload. Block on any failure; the audit trail captures the reason set. See README §2.8 and `70-docs/60-decisions/ADR-044-uploaded-pdf-parity.md` for the dual-write model and the heuristic-floor / Gemini extraction chain.
 
 ## Hallucination defense — 5 gates (runtime, per-turn)
 

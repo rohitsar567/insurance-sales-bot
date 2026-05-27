@@ -37,6 +37,7 @@ Every meaningful technical and product decision, with alternatives considered an
 **Chose:** Pre-acquired
 **Reasoning:** Removes biggest source of input variance (bad uploads); enables cross-policy comparison/recommendation; positions the corpus as a product moat vs. generic RAG-over-anything.
 **Revisit at scale:** Same approach, larger corpus + scheduled refresh.
+**Note:** Partially superseded by ADR-044 (2026-05-27) — user uploads now first-class via 8-gate defence + heuristic floor + Gemini extraction; the curated-corpus moat survives, the "uploads excluded" clause does not.
 
 ---
 

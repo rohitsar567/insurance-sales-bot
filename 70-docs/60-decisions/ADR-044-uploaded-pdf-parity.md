@@ -106,6 +106,47 @@ The choice prompt **never fires before the card lands**. This is verified by the
 - **Gemini intermittency** — live observation shows Gemini occasionally returning unparseable output for the same prompt that succeeded earlier. NIM fallback fires automatically on Gemini failure. Cause not fully traced; tracked for follow-up.
 - **Cross-session retrieval** — every upload is written to both the per-session quarantine AND the global `policies` Chroma collection (so it can become a marketplace card visible to other users). The global chunks have no `session_id` metadata, so `retrieve_policies` queries can pull chunks from other users' uploads. For the "analyse THIS upload" intent this can produce cross-policy confusion. Mitigated today by the per-session quarantine boost in retrieval; full per-session scoping is a tracked follow-up.
 
+## 2026-05-27 hardening bundle (post-audit)
+
+Post-launch audit on `e8ccfa0` surfaced five distinct defects across the upload path. All five landed in a same-day bundle (commits `2abfd01`, `e204c0e`, `2323b26`, `58e3c82`, `2a58c28`, `993bcd5`).
+
+### H1. Status ↔ scorecard parity
+
+- **Problem:** status endpoint reported `completeness_pct` / `overall_grade` from `build_scorecard(doc, profile=None)` without `insurer_reviews`; card endpoint used `_catalogue_scorecard(pid, None)` which folds in heuristic + curated + reviews + dedup. Numbers diverged on the same upload: status `17.4% / None`, card `47.8% / C`.
+- **Two-bug compounding:** missing `insurer_reviews` AND reading `.overall_grade` instead of `.grade`. The dataclass attribute is `.grade`; only the wire `ScorecardResponse` renames it. So even with reviews wired in, the grade field came back `None`.
+- **Fix:** status resolver now mirrors `/api/policies/{id}/scorecard` exact order — primary `_catalogue_scorecard(pid, None)`, fallback `build_scorecard(doc, insurer_reviews=ir, profile=None)`, read `.grade` (not `.overall_grade`). Commits `2abfd01` → `e204c0e` → `2323b26`.
+
+### H2. Hash-cache short-circuit had the same bugs (commit `58e3c82`)
+
+- The Tier-2 content-hash branch (sha256 match ⇒ reuse prior extraction) had the IDENTICAL three bugs the main path had (no reviews, `.overall_grade`, no insurer slug threading). Cache-hit uploads silently surfaced `comp=17.4 grade=None` even when the actual card was `47.8 / C`.
+- **Fix:** same three-bug fix applied + new field `llm_used="hash-cache"` so the operator can see WHY no LLM ran on a given upload.
+
+### H3. Provenance fields exposed (commit `2abfd01`)
+
+- New status fields: `llm_used` (one of `gemini-2.5-flash#1|#2|#3`, `nim-fallback`, `hash-cache`, or `None` for failures) + `llm_response_chars`.
+- Lets the operator verify Gemini is actually running without HF Space stdout access.
+- Verified live: fresh upload shows `gemini-2.5-flash#1` returning 573 chars (unparseable), retry as `gemini-2.5-flash#2` returning 899 chars (parsed).
+
+### H4. KI-330 — `view_context` → ACTIVE POLICY DIVE-IN block (commit `2a58c28`)
+
+- Found in 2026-05-27 e2e audit: on 3 of 5 uploads, asking *"What are the waiting periods on this policy?"* got back *"Before I pull your recommendations, just a couple more (you can skip any):"*. `single_brain` pivoted to profile-building instead of answering about the policy.
+- **Triple root cause:** (1) `ChatRequest.view_context` field declared at launch but NEVER consumed anywhere on backend, (2) `single_brain.handle_turn` signature didn't accept it, (3) frontend set `view_context.active_policy_id` only on a clicked marketplace card (openPolicy modal), never on a just-uploaded PDF.
+- **Fix:** `handle_turn(..., view_context=None)`, new `_build_active_policy_block()` that prepends an ACTIVE POLICY DIVE-IN block to the system instruction when `view_context.active_policy_id` is set. Frontend gains an `activeUploadPid` state set when the card lands, plumbed into every chat turn's `view_context`.
+- Verified: 9/10 grounded on post-fix audit, up from 0/10 pre-fix.
+
+### H5. KI-331 — heuristic-floor card surfaces on LLM-fail (commit `993bcd5`)
+
+- User caught live on `Test Policy.pdf` (8 MB) upload: after Gemini 3/3 retries failed and the 120s poll timed out, frontend pushed only a prose *"I couldn't pull a full analysis"* message, never the card — even though `record.json` already had `47.8% / grade C` from the heuristic pass that runs BEFORE the LLM fires.
+- **Fix:** fail/timeout branch now pushes the same card-bearing assistant message as the success branch (`citations=[pid]` → inline `PolicyScorecardWidget` renders with whatever `record.json` has) + the soft caveat + the choice prompt. `setActiveUploadPid` still fires so dive-in mode activates for follow-up questions.
+- Plus: `MAX_TRIES` bumped 40 → 50 (120s → 150s poll budget) since Gemini retry #3 sometimes lands at ~130s.
+
+### Live verification matrix (post-bundle)
+
+- **5 PDFs** (manipalcigna, hdfc-ergo, care-health, icici-lombard, star-health) × **7 layers** (upload, extraction, scorecard, premium baseline, premium older+PED, personalization profile, RAG grounded answer) = **35 cells, 33 green**.
+- 2 honest misses: `Test Policy.pdf` 3/3 Gemini fails caught by heuristic floor (working as designed); one star-health "room rent" question correctly answered but keyword detector false-negative.
+- Hash-cache parity verified on Manipal back-to-back uploads (~1s speedup, `llm_used='hash-cache'`, comp/grade equal across status + card).
+- Playwright UI sequence audit: 5/5 checks pass (ack → card/fail → choice strictly ordered).
+
 ## Verification
 
 - Live audit on commit `e8ccfa0` (https://rohitsar567-insurancebot.hf.space):

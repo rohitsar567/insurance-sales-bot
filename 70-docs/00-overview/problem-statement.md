@@ -146,7 +146,7 @@ Hindi and Hinglish are designed-in from day one, not retrofitted. The advisor op
 
 ### 5.4 Curated corpus is the product's moat
 
-The user does not upload PDFs. We pre-acquire, normalise, and structurally extract from the corpus so quality is under our control. The corpus is the product's defensibility relative to a generic RAG-over-anything bot.
+**v1 design intent:** The user does not upload PDFs (we pre-acquire, normalise, and structurally extract from the curated corpus so quality is under our control). **As of 2026-05-27 (ADR-044):** uploads are now first-class via an 8-gate defence + a deterministic heuristic floor + the same Gemini extraction chain the catalogued 148 use offline. The curated-corpus quality moat is preserved; uploads add a per-user surface area we control via the gates + the floor. The corpus is the product's defensibility relative to a generic RAG-over-anything bot.
 
 ### 5.5 Architecture is built for category expansion from day one
 
@@ -189,7 +189,7 @@ To protect against scope creep — and to give the interviewer something to grad
 - **Real-time quote pulls from insurer APIs.** Out of scope; possibly out of reach commercially. We use aggregated public data and label pricing as illustrative.
 - **Categories beyond Health.** Life, Motor, Travel, Cyber, etc. are explicitly v2. The architecture accommodates them; we do not populate them.
 - **Multi-user / multi-tenant deployment.** v1 is single-user demo. Stateless services + canonical DB make v2 multi-tenant tractable.
-- **User-uploaded PDFs.** Corpus is curated. (See §5.4.)
+- **Cross-session retrieval scoping for uploaded PDFs.** Live uploads dual-write into the global `policies` Chroma collection per ADR-044 (2026-05-27); full per-session scoping is a tracked follow-up. (See §5.4.)
 - **Mobile-native deployment.** v1 is desktop browser. Mobile responsive is a stretch goal.
 - **Real-time co-browsing with a human advisor.** v2 handoff feature.
 - **Persistent user accounts across sessions.** v1 is session-scoped.
