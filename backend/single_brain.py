@@ -744,9 +744,55 @@ def _build_contents(
 # is NOT cross-session and never reads disk.
 
 
+def _build_active_policy_block(view_context: Optional[dict]) -> str:
+    """KI-330 (2026-05-27) — when the frontend tells us the user is
+    actively viewing / has just uploaded a specific policy
+    (view_context.active_policy_id), tell the model to ANSWER ABOUT IT
+    using retrieve_policies + get_policy_facts. Do NOT pivot to the
+    profile-building / recommendation flow.
+
+    Origin: 2026-05-27 multi-PDF e2e audit. On 3 of 5 uploads, asking
+    "What are the waiting periods on this policy?" got back "Before I
+    pull your recommendations, just a couple more (you can skip any):"
+    — the model didn't realise it was in deep-dive-on-this-policy mode
+    because the view_context field on /api/chat (declared in
+    ChatRequest since launch) had never actually been consumed
+    anywhere on the backend.
+    """
+    if not view_context:
+        return ""
+    pid = (view_context or {}).get("active_policy_id") or ""
+    if not pid:
+        return ""
+    return (
+        "\n\n═══════════ ACTIVE POLICY DIVE-IN MODE ═══════════\n"
+        f"The user is currently focused on policy_id={pid} "
+        "(either just uploaded that PDF or opened that card). For this "
+        "turn:\n"
+        "  1. If the user's question is ABOUT that policy "
+        "(waiting periods, coverage, exclusions, claim ratio, room "
+        "rent, sub-limits, AYUSH, network hospitals, premium, anything "
+        "policy-specific) — answer it directly using "
+        "retrieve_policies(query=user_text, policy_filter_ids=["
+        f"'{pid}']) AND/OR get_policy_facts(policy_ids=['{pid}']). "
+        "Cite the policy.\n"
+        "  2. Do NOT pivot to 'let me pull your recommendations' or "
+        "'a few quick pricing inputs' on this turn unless the user "
+        "EXPLICITLY asks for recommendations. The user is dive-in mode.\n"
+        "  3. Profile-building is allowed only if the user's question "
+        "REQUIRES a profile fact you don't have (e.g. they ask 'is this "
+        "worth it for my age' and age is missing — then ask for that "
+        "one fact AFTER answering the policy-specific part).\n"
+        "  4. If retrieve_policies returns nothing relevant, say so "
+        "honestly ('I can't see that detail in this policy's wording') "
+        "— never invent."
+    )
+
+
 def _system_instruction(
     profile, is_returning_user: bool = False, shortlist_block: str = "",
     reconstruct_from_history: bool = False,
+    view_context: Optional[dict] = None,
 ) -> dict:
     """Bake the profile snapshot into the system prompt so each turn the
     LLM knows what's already captured. Returned in Gemini's expected
@@ -812,9 +858,14 @@ def _system_instruction(
             "now captured, proceed straight to retrieve_policies and "
             "recommendations. The user must never perceive any loss."
         )
+    # KI-330 (2026-05-27) — active-policy dive-in block. See
+    # _build_active_policy_block for full rationale. Goes LAST so it has
+    # the strongest recency bias in the system instruction.
+    active_policy_block = _build_active_policy_block(view_context)
     text = (
         SYSTEM_PROMPT + extra + reconstruct_block
         + (shortlist_block or "")
+        + active_policy_block
     )
     return {"parts": [{"text": text}]}
 
@@ -1805,6 +1856,7 @@ async def handle_turn(
     session,
     user_text: str,
     chat_history: Optional[list[dict]] = None,
+    view_context: Optional[dict] = None,
 ) -> TurnResult:
     """Single-LLM turn handler — replaces orchestrator.handle_turn behaviour
     when USE_SINGLE_BRAIN is enabled.
@@ -1812,6 +1864,13 @@ async def handle_turn(
     Returns a TurnResult whose shape matches orchestrator.TurnResult.
     Raises SingleBrainError on unrecoverable Gemini failure so the api.py
     caller falls through to the legacy orchestrator.
+
+    `view_context` is the frontend-supplied snapshot of what the user is
+    looking at (`{active_view, active_policy_id, filters}`) — wired
+    through 2026-05-27 (KI-330) so the system_instruction can include
+    an ACTIVE POLICY DIVE-IN block when the user is focused on a
+    specific policy (just-uploaded PDF or opened card). See
+    _build_active_policy_block for the full rationale.
     """
     t0 = time.time()
 
@@ -1912,6 +1971,7 @@ async def handle_turn(
         is_returning_user=is_returning_user,
         shortlist_block=_shortlist_block,
         reconstruct_from_history=_reconstruct_from_history,
+        view_context=view_context,
     )
 
     # Bug #108 + #110 — if the user explicitly declines the pricing /

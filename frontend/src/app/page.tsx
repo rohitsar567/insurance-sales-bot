@@ -202,6 +202,12 @@ export default function Page() {
   // this so ambient noise / TTS playback during the 30-60s extraction
   // window can no longer fire an unprompted chat turn.
   const [extractionInFlight, setExtractionInFlight] = useState<boolean>(false);
+  // KI-330 (2026-05-27) — once an uploaded PDF's card lands inline in
+  // chat, that policy_id becomes the "active focus" so the chat brain's
+  // ACTIVE POLICY DIVE-IN block fires on subsequent turns and answers
+  // questions about THIS policy instead of pivoting to recommendations.
+  // Cleared when the user navigates away (marketplace / profile builder).
+  const [activeUploadPid, setActiveUploadPid] = useState<string | null>(null);
   // KI-027 (2026-05-14) — voice UX simplification. The legacy `handsFree`
   // mode (its own VAD auto-cutoff + post-turn mic re-open loop) has been
   // removed. We now have exactly two voice paths, mutually exclusive:
@@ -867,7 +873,11 @@ export default function Page() {
         signal: controller.signal,
         view_context: {
           active_view,
-          active_policy_id: openPolicy?.policy_id,
+          // KI-330 (2026-05-27) — when an uploaded PDF's card has just
+          // landed AND the user hasn't opened a different policy modal,
+          // make the upload the active focus so the brain enters DIVE-IN
+          // mode. openPolicy (a clicked marketplace card) takes priority.
+          active_policy_id: openPolicy?.policy_id || activeUploadPid || undefined,
         },
         onRetry: (attempt) => {
           // Show transient "warming up" hint while postChat retries the
@@ -1560,6 +1570,9 @@ export default function Page() {
             ],
           },
         );
+        // KI-330 (2026-05-27) — flag THIS upload as the dive-in target
+        // so subsequent chat turns ground in this policy via view_context.
+        setActiveUploadPid(r.policy_id);
         // Choice prompt fires AFTER the card, not before — that was the
         // race the previous flow exhibited.
         pushAssistant(t("upload.chat_choice"));

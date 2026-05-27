@@ -927,6 +927,12 @@ async def chat(req: ChatRequest, request: Request):
                         session=_sb_session,
                         user_text=req.user_text,
                         chat_history=req.chat_history,
+                        # KI-330 (2026-05-27) — pipe view_context through so
+                        # single_brain can build an ACTIVE POLICY DIVE-IN
+                        # block when the frontend tells us the user is
+                        # focused on a specific policy. Field was declared
+                        # on ChatRequest since launch but never consumed.
+                        view_context=req.view_context or None,
                     ),
                     timeout=45.0,
                 )
