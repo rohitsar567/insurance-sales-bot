@@ -34,3 +34,7 @@ Given the vertical-slice scope (ADR-001), one insurance category had to be chose
 ## Revisit at scale
 
 v2 adds Life (term + ULIP + endowment) and Motor (private car + two-wheeler). The 48-field Health schema generalises with ~70% reuse — most additions are category-specific waiting/exclusion fields.
+
+---
+
+*(Current state per [ADR-044](ADR-044-uploaded-pdf-parity.md): corpus expanded to 21 catalogued insurer slugs / 148 marketplace cards; the 19-insurer baseline this ADR was scoped against captured the original launch corpus.)*

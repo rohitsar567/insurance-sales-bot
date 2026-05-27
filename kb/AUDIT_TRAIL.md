@@ -75,7 +75,7 @@ RESPONSE                  TTS                       UI RENDER
 | 9 SCORECARD | per-policy grade | `kb/policies/<policy_id>.md` (live in code via `backend/scorecard.py`) | `rag/build_kb.py` + `backend/scorecard.py` | re-run `build_kb` |
 | 10 RETRIEVAL (runtime) | top-k chunks | _ephemeral, logged_ | `rag/retrieve.py` | replay query against Chroma |
 | 11 ORCHESTRATION (runtime) | classified intent + brain | _logged_ | `backend/orchestrator.py` | `logs/turns.jsonl` |
-| 12 FAITHFULNESS (runtime) | gate verdict | _logged_ | `backend/faithfulness.py` | `logs/hallucinations.jsonl` |
+| 12 STRUCTURAL GROUNDING (runtime) | brain output | _structural — brain quotes only what tools returned_ | `backend/single_brain.py` | `logs/turns.jsonl` |
 | 13 RESPONSE | bot reply + cited chunks | _returned to UI_ | `backend/main.py:/api/chat` | curl the API |
 | 14 TTS (runtime) | base64 WAV | _returned to UI_ | `backend/providers/sarvam_tts.py` | save + play |
 | 15 UI (runtime) | rendered chat | _browser DOM_ | `frontend/src/app/page.tsx` | browser dev-tools |
@@ -120,7 +120,7 @@ Every architectural decision in `70-docs/decisions.md` produces a specific artif
 | D-005 Next.js + FastAPI | `frontend/` + `backend/main.py` |
 | D-006 Sarvam-first | `backend/providers/sarvam_*.py` |
 | D-007 Pricing illustrative only | (no `actual_premium` field anywhere) |
-| D-008 Consultative persona | `backend/persona.py` |
+| D-008 Consultative persona | `backend/single_brain.py` (SYSTEM_PROMPT — consultative persona is folded into the single-brain prompt) |
 | D-009 10 insurers / all health policies | `40-data/corpus_urls.md` (75 URLs) |
 | D-010 Secret handling | `.env` (chmod 600 + gitignored) |
 | D-011 Voyage embeddings | _superseded by local BGE; see D-011 revision_ |
@@ -206,7 +206,7 @@ Three back-to-back curation passes brought the `40-data/policy_facts/` directory
 
 The day's sprint produced a chain-level rewrite, a provider integration, and a fact-find rip-out. See [`70-docs/40-evaluation/quality-sprint-2026-05-14.md`](../70-docs/40-evaluation/quality-sprint-2026-05-14.md) (Follow-on sprint section) for the full KI list.
 
-- **KI-167 / [ADR-039](../70-docs/60-decisions/ADR-039-llm-driven-sales-brain.md)** — Ripped out `backend/fact_find_brain.py` (441 LOC) + `_canonical_fallback` + the `<FF>{...}</FF>` trailer convention. Replaced with `backend/sales_brain.py` — one LLM call per turn against `FAST_BRAIN_CHAIN` using native provider JSON mode (`response_mime_type=application/json` on Gemini, `response_format={"type":"json_object"}` on NIM). New deterministic post-processor `backend/sales_brain_normalizer.py` validates and normalises captured fields.
+- **KI-167 / [ADR-039](../70-docs/60-decisions/ADR-039-llm-driven-sales-brain.md)** — Ripped out `backend/fact_find_brain.py` (441 LOC) + `_canonical_fallback` + the `<FF>{...}</FF>` trailer convention. Replaced with `backend/sales_brain.py` — one LLM call per turn against `FAST_BRAIN_CHAIN` using native provider JSON mode (`response_mime_type=application/json` on Gemini, `response_format={"type":"json_object"}` on NIM). New deterministic post-processor `backend/sales_brain_normalizer.py` validates and normalises captured fields. **Subsequent KI-225 (2026-05-15) further consolidated:** `sales_brain.py` + `qa_brain.py` + `faithfulness.py` + `persona.py` + `translator.py` + `profile_extractor.py` + `orchestrator.py` were all removed (~5,200 LOC net) and replaced by `backend/single_brain.py` — one Gemini-with-function-calling call per turn. Structural grounding replaced the faithfulness gate.
 - **KI-168** — Hybrid voice capture: Web Speech API streams interim transcripts to chat input (live UX feel) while `MediaRecorder` runs in parallel; on browser silence-detect the audio blob is POSTed to `/api/transcribe` (Sarvam Saarika v2.5) for the authoritative transcript. Auto-submits the Sarvam result; falls back to Web Speech only if Sarvam errors.
 - **KI-171** — Skip faithfulness Gate 4 (LLM judge) on `fact_find` + `recommendation` intents — no retrieved context to grade against on those turns.
 - **KI-173 / KI-174** — Voice heartbeat + `visibilitychange` / `focus` revival keeps the mic alive across tab / app switches.

@@ -1,6 +1,6 @@
 # ADR-009: 19 insurers × all health policies; 48-field structured schema
 
-**Status:** Locked
+**Status:** Locked (historical scope). Current state per [ADR-044](ADR-044-uploaded-pdf-parity.md): 21 catalogued insurer slugs / 148 marketplace cards / 7,317 Chroma chunks. The 48-field structured schema (`rag/schema.py::HealthPolicy`) is unchanged.
 **Date:** 2026-05-13
 
 ## Context

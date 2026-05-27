@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Document type | Source-methodology catalog (data-provenance audit) |
-| Subject data files | `40-data/reviews/<slug>.json` (20 insurer files) |
+| Subject data files | `40-data/reviews/<slug>.json` (21 insurer files) |
 | Companion data | `40-data/reviews/INDEX.md` (leaderboard) |
 | Generated (this doc) | 2026-05-18 |
 | Premium analogue | [`premium-source-map.md`](premium-source-map.md) |
@@ -22,7 +22,7 @@ This document does **not** modify any JSON or code — it is read-only documenta
 
 | Metric | Value |
 | --- | --- |
-| Insurer review files documented | 20 |
+| Insurer review files documented | 21 |
 | Distinct source domains (CSR provenance) | 7 |
 | Files MISSING a source_url | 0 (none) |
 | Files MISSING a CSR data year | 0 (none) |
@@ -30,7 +30,7 @@ This document does **not** modify any JSON or code — it is read-only documenta
 | Marketplace policies replayed (Deliverable 2) | 148 |
 | Policies with a non-null Claim-Experience sub-score | 148 / 148 |
 | Distinct Claim-Experience sub-score values observed | 19 (differentiates: YES) |
-| CSR↑ ⇒ CE↑ monotonicity | CSR-COMPONENT STRICTLY MONOTONE (the CSR term of the sub-score is non-decreasing in CSR across all 20 insurers — verified PASS); 61 raw mean-CE pairwise non-monotonicities remain and are EXPECTED — the sub-score also blends complaints/10k, cashless support and network size, which vary independently of CSR (scorecard.py §315-363) |
+| CSR↑ ⇒ CE↑ monotonicity | CSR-COMPONENT STRICTLY MONOTONE (the CSR term of the sub-score is non-decreasing in CSR across all 21 insurers — verified PASS); 61 raw mean-CE pairwise non-monotonicities remain and are EXPECTED — the sub-score also blends complaints/10k, cashless support and network size, which vary independently of CSR (scorecard.py §315-363) |
 
 Source domains: `irdai.gov.in`, `joinditto.in`, `web.archive.org`, `www.beshak.org`, `www.business-standard.com`, `www.policybazaar.com`, `www.policyx.com`.
 
@@ -222,9 +222,9 @@ Each row is one marketplace policy from `asyncio.run(policies_all()).dict()['pol
 
 - **Non-null contribution:** PASS — 148/148 policies yield a non-null, non-zeroed Claim-Experience sub-score.
 - **Differentiation:** PASS — 19 distinct sub-score values across the 148 policies (min 47, max 100); the contribution is NOT uniform across insurers.
-- **CSR consistency (monotone):** PASS — CSR-COMPONENT STRICTLY MONOTONE (the CSR term of the sub-score is non-decreasing in CSR across all 20 insurers — verified PASS); 61 raw mean-CE pairwise non-monotonicities remain and are EXPECTED — the sub-score also blends complaints/10k, cashless support and network size, which vary independently of CSR (scorecard.py §315-363).
+- **CSR consistency (monotone):** PASS — CSR-COMPONENT STRICTLY MONOTONE (the CSR term of the sub-score is non-decreasing in CSR across all 21 insurers — verified PASS); 61 raw mean-CE pairwise non-monotonicities remain and are EXPECTED — the sub-score also blends complaints/10k, cashless support and network size, which vary independently of CSR (scorecard.py §315-363).
 
-  The load-bearing reconciliation is the **CSR component in isolation**: replaying the exact CSR branch (`scorecard.py` §332-337) over all 20 insurers sorted by ascending CSR yields a strictly non-decreasing point contribution (−20 → −6 → +5 → +12 → +20 across the 75/85/90/95 bands). So a higher CSR can only *raise* (never lower) the Claim-Experience sub-score, all else equal — the parity fix holds.
+  The load-bearing reconciliation is the **CSR component in isolation**: replaying the exact CSR branch (`scorecard.py` §332-337) over all 21 insurers sorted by ascending CSR yields a strictly non-decreasing point contribution (−20 → −6 → +5 → +12 → +20 across the 75/85/90/95 bands). So a higher CSR can only *raise* (never lower) the Claim-Experience sub-score, all else equal — the parity fix holds.
 
   The 61 raw mean-CE pairwise non-monotonicities below are EXPECTED and correct: the sub-score also blends complaints/10k (±16), cashless support (±18) and network-hospital count (±18) (`scorecard.py` §315-363), which vary independently of CSR. e.g. Bajaj Allianz (CSR 92.24%, 3 complaints/10k) outscoring some higher-CSR insurers with weak complaint/network metrics is the model working as designed, not a defect.
 

@@ -16,7 +16,7 @@ ADR numbers map 1:1 to the original `D-NNN` entries that lived in the legacy `70
 | [ADR-006](ADR-006-sarvam-first-stack.md) | Sarvam-first STT/TTS/LLM defaults | Partially superseded by ADR-019 |
 | [ADR-007](ADR-007-illustrative-pricing.md) | Illustrative pricing, not real-time quotes | Locked |
 | [ADR-008](ADR-008-consultative-advisor-persona.md) | Consultative-advisor persona | Locked |
-| [ADR-009](ADR-009-19-insurer-comprehensive-schema.md) | 19 insurers × all health policies; 48-field schema | Locked |
+| [ADR-009](ADR-009-19-insurer-comprehensive-schema.md) | 19 insurers × all health policies; 48-field schema | Locked (historical scope; current 21/148) |
 | [ADR-010](ADR-010-secret-handling.md) | Secret handling: `.env` chmod 600, gitignored | Locked |
 | [ADR-011](ADR-011-bge-local-embeddings.md) | Local BGE-small embeddings (Voyage was original) | Locked |
 | [ADR-012](ADR-012-render-then-hf-space-deploy.md) | Render → HF Space migration | Superseded |

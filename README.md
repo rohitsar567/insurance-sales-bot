@@ -58,7 +58,7 @@ mobile.
 Buying health insurance in India is hard for an ordinary person. A
 first-time buyer faces three concrete problems:
 
-1. **Too much to compare.** ~150 plans across 20 insurers, each with
+1. **Too much to compare.** ~148 plans across 21 insurers, each with
    dozens of decision-relevant fields (waiting periods, room-rent caps,
    co-pay, maternity, sub-limits, network size). No human reads them all.
 2. **The truth is buried.** The number that decides whether a plan is

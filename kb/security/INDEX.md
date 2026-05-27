@@ -25,20 +25,16 @@ short-circuit to the catalogued card.
 
 All gates run for EVERY upload. Block on any failure; the audit trail captures the reason set. See README §2.8 and `70-docs/60-decisions/ADR-044-uploaded-pdf-parity.md` for the dual-write model and the heuristic-floor / Gemini extraction chain.
 
-## Hallucination defense — 5 gates (runtime, per-turn)
+## Hallucination defense — structural grounding (post-KI-225, 2026-05-15)
 
-| # | Gate | What it catches |
-| --- | --- | --- |
-| 1 | Retrieval floor | Top-1 cosine < 0.30 OR avg top-5 < 0.22 → refuse outright |
-| 2 | Citation integrity | Any `[Source:…]` in the bot's reply must point to a real retrieved chunk's policy_name |
-| 3 | Numeric grounding | Every ₹, %, day/month/year in the reply must appear in retrieved chunks (regex) |
-| 4 | LLM-judge faithfulness | NIM Mistral Large 3 675B (primary judge per D-022) + Llama-4 Maverick (fallback) inspects the reply against retrieved chunks; outputs strict JSON; different family from Qwen 3-Next 80B brain (primary per D-022) + DeepSeek-V4 (fallback) → non-circular eval (D-019). |
-| 5 (Indic) | Hinglish drift LLM-judge | Same idea on the Hinglish back-translation vs the English source |
+The single brain (`backend/single_brain.py`) quotes only what its tools returned:
 
-Plus **regex anchors + back-translate cosine** as additional drift checks
-when the bot replies in Hinglish.
+| Tool | What it returns | Where the brain reads it |
+|---|---|---|
+| `retrieve_policies` | top-k policy-wording chunks from Chroma | `backend/brain_tools.py::retrieve_policies` |
+| `get_policy_facts` | curated structured facts + verbatim `source_quote` | `backend/brain_tools.py::get_policy_facts` |
 
-All blocked replies → `logs/hallucinations.jsonl` with the reason set.
+The brain's system prompt enforces "cite only what the tools returned" as a structural invariant. The pre-KI-225 architecture had a separate `backend/faithfulness.py` 4-gate post-hoc verifier — that module was removed in the single-brain consolidation because the single LLM's tool-grounded output flow makes the post-hoc verification structurally unnecessary. Source: ADR-040 + KI-225.
 
 ## What WE can't (yet) check
 
