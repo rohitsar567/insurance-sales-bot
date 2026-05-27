@@ -1557,9 +1557,61 @@ async def extract_one_for_upload(
                 "[upload-extract] no policy extracted for %s after retries; "
                 "card stays on heuristic record", policy_id,
             )
+            # KI-333 (2026-05-27) — even on total LLM failure, the heuristic
+            # record.json already produced a card (now ~65-70% post KI-332).
+            # Surface the SAME completeness + grade the chat card will show,
+            # so the operator-visible status matches user-visible card.
+            # Previously the fail path left comp=None/grade=None while the
+            # card showed C/65% — confusing parity gap.
+            _final_comp = None
+            _final_grade = None
+            try:
+                # Bust the marketplace grade cache so _catalogue_scorecard
+                # rebuilds with the new heuristic record.
+                import backend.main as _bm_f
+                with _bm_f._MG_LOCK:
+                    _bm_f._MG_CACHE["sig"] = None
+                    _bm_f._MG_CACHE["index"] = None
+                _sc_f = _bm_f._catalogue_scorecard(policy_id, None)
+                if _sc_f is None:
+                    # Fallback path — bare scorecard on the heuristic record.json
+                    # if catalogue indices haven't rebuilt yet.
+                    from backend.scorecard import build_scorecard as _bs_f
+                    rec_path = _doc_dir(policy_id) / "record.json"
+                    if rec_path.exists():
+                        rec = json.loads(rec_path.read_text())
+                        # Flatten cell-shape {value, ...} dicts to scalars for build_scorecard.
+                        flat = {}
+                        for k, v in rec.items():
+                            if isinstance(v, dict) and "value" in v:
+                                flat[k] = v["value"]
+                            else:
+                                flat[k] = v
+                        flat.setdefault("policy_id", policy_id)
+                        flat.setdefault("insurer_slug", insurer_slug)
+                        flat.setdefault("insurer_name", insurer_name)
+                        flat.setdefault("policy_name", policy_name)
+                        _ir_f = None
+                        if insurer_slug:
+                            from backend.config import settings as _settings_f
+                            _rp_f = _settings_f.DATA_DIR / "reviews" / f"{insurer_slug}.json"
+                            if _rp_f.exists():
+                                try: _ir_f = json.loads(_rp_f.read_text())
+                                except Exception: _ir_f = None
+                        _sc_f = _bs_f(flat, insurer_reviews=_ir_f, profile=None)
+                if _sc_f is not None:
+                    _final_comp = float(_sc_f.data_completeness_pct)
+                    _final_grade = _sc_f.grade  # NOT overall_grade
+            except Exception as _sc_err_f:  # noqa: BLE001
+                _log.warning(
+                    "[upload-extract] fail-path heuristic-scorecard resolve "
+                    "failed for %s: %s", policy_id, _sc_err_f,
+                )
             await _set_extraction_status(
                 policy_id, status="failed",
                 completed_at=_now(),
+                completeness_pct=_final_comp,
+                overall_grade=_final_grade,
                 error="LLM returned no valid HealthPolicy after primary + fallback retries",
             )
             return False

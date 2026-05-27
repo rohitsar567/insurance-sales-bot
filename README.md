@@ -604,7 +604,7 @@ flowchart LR
 
 **Provenance rule.** Every policy fact shown to a user traces to a real clause in a real PDF. Where a document genuinely doesn't state something, it is recorded as a sourced-null (*"not stated in &lt;file&gt;.pdf"*) — never invented or back-filled.
 
-### 2.8 Uploaded-PDF flow — 8 security gates → catalogued-grade card
+### 2.8 Uploaded-PDF flow — 8 security gates → Gemini extraction → catalogued-grade card
 
 ```mermaid
 flowchart TB
@@ -618,39 +618,139 @@ flowchart TB
     G7 --> G8["8 Hash dedupe + reject-cache"]
     G8 -->|"pass"| QC["per-session QUARANTINE Chroma + global policies collection<br/>BGE-small embeddings · 24h idle TTL"]
     QC --> HEUR["Heuristic baseline (synchronous, sub-second)<br/>regex/keyword over PDF text<br/>writes UPLOADED_DOCS_DIR/&lt;pid&gt;/record.json @ ~30-50% completeness"]
-    HEUR --> ACK["HTTP 200 → frontend pushes ack 'Reading it through, ~30-60s'<br/>EVERY chat input gated during the wait"]
     HEUR -.->|"detect_insurer_slug<br/>match against 21 known insurers"| INS["insurer_slug = manipalcigna / hdfc-ergo / ...<br/>(or 'user-upload' on no match — fail-closed)"]
-    ACK --> LLM["Background asyncio task: extract_one_for_upload<br/>Gemini 2.5-flash (3 retries, exp backoff) → NIM fallback<br/>writes rag/extracted/&lt;pid&gt;.json"]
-    LLM --> MERGE["Merge LLM output INTO heuristic record.json<br/>LLM wins per-field where non-empty, heuristic stays where LLM silent"]
-    MERGE --> CARD["Card-ready: card renders inline in chat<br/>same shape as the 148 catalogued (grade, 6 sub-scores, signals, reviews)"]
+    HEUR --> ACK["HTTP 200 returns immediately<br/>frontend pushes ack 'Got it — reading X, ~30-60s'<br/>EVERY chat input GATED via extractionInFlight"]
+    ACK --> CACHE{"sha256(pdf_bytes)<br/>seen before?"}
+    CACHE -->|"hit"| COPY["copy prior rag/extracted/&lt;other_pid&gt;.json → this pid<br/>llm_used='hash-cache' · ~1s"]
+    CACHE -->|"miss"| LLM["Background extract_one_for_upload<br/>Gemini 2.5-flash · 3 retries (2/4/8s ± 25% jitter)<br/>llm_used='gemini-2.5-flash#N'<br/>llm_response_chars logged for ops"]
+    LLM -->|"all fail"| NIM["NIM fallback chain<br/>llm_used='nim-fallback'"]
+    LLM -->|"success"| WRITE["write rag/extracted/&lt;pid&gt;.json"]
+    NIM -->|"success"| WRITE
+    NIM -->|"fail"| FLOOR["heuristic record.json wins<br/>status='failed' but card still renders at ~47% / grade C"]
+    WRITE --> MERGE["merge LLM scalars INTO record.json<br/>LLM value wins where non-empty<br/>heuristic stays where LLM silent"]
+    COPY --> MERGE
+    MERGE --> BUST["invalidate _MG_CACHE (marketplace grade cache)"]
+    BUST --> RESOLVE["_catalogue_scorecard(pid, None)<br/>SAME resolver /api/policies/&lcub;id&rcub;/scorecard uses"]
+    RESOLVE --> STATUS["_set_extraction_status(complete, comp, grade, llm_used, llm_response_chars)<br/>BY CONSTRUCTION equal to card endpoint"]
+    FLOOR --> STATUS
+    STATUS --> POLL["frontend GET /api/upload/extraction-status/&lcub;pid&rcub;<br/>every 3s, max 120s"]
+    POLL --> CARD["pushAssistant(card_ready, citations=[&lcub;pid&rcub;])<br/>then pushAssistant(choice_prompt)<br/>setActiveUploadPid(pid) · setExtractionInFlight(false)"]
+    CARD --> ENABLE["Send + textarea + PDF + voice all re-enabled<br/>view_context.active_policy_id=&lcub;pid&rcub; on next chat turn<br/>→ single_brain enters ACTIVE POLICY DIVE-IN mode (KI-330)"]
     G1 & G2 & G3 & G4 & G5 & G6 & G7 & G8 -->|"fail"| REJ["clean rejection (reason surfaced)"]
 ```
 
-**Summary.** Every check a user-uploaded PDF passes
-before its content is allowed to touch the vector store, and where rejected
-files go.
+**Summary.** The full pipeline an uploaded PDF traverses to become a
+catalogued-grade card with the same data depth as the 148 pre-curated policies
+— from HTTP request through Gemini extraction through inline chat card.
 
 **How it flows:**
 
-- **The 8 gates, in order.** (1) **File mechanics** — `%PDF` magic, 5 KB–25 MB
-  size band, well-formed `%%EOF`, no embedded executables / JavaScript /
-  launch actions. (2) **Content quality** — ≥1500 extractable chars,
-  ≥3 pages, at least one insurance-domain keyword. (3) **Prompt-injection
-  sweep** — "ignore previous instructions", "reveal your system prompt",
-  jailbreak patterns. (4) **Per-session rate limit.** (5) **Per-IP rate
-  limit** (catches session-ID rotation). (6) **Encrypted/locked PDF** —
-  rejected cleanly. (7) **Page-count ceiling** (>200 pages — an
-  abuse/bundle vector). (8) **Hash dedupe + reject-cache** — identical
-  re-uploads short-circuit.
-- **Beyond identical-file dedup.** A **UIN net-new check** also runs — if
-  the PDF's IRDAI UIN already belongs to a catalogued policy, the caller
-  is pointed at the existing marketplace card instead of indexing a
-  duplicate.
+- **The 8 security gates, in order.** (1) **File mechanics** — `%PDF`
+  magic, 5 KB–25 MB size band, well-formed `%%EOF`, no embedded
+  executables / JavaScript / launch actions. (2) **Content quality** —
+  ≥1500 extractable chars, ≥3 pages, at least one insurance-domain
+  keyword. (3) **Prompt-injection sweep** — "ignore previous
+  instructions", "reveal your system prompt", jailbreak patterns.
+  (4) **Per-session rate limit.** (5) **Per-IP rate limit** (catches
+  session-ID rotation). (6) **Encrypted/locked PDF** — rejected
+  cleanly. (7) **Page-count ceiling** (>200 pages — an abuse/bundle
+  vector). (8) **Hash dedupe + reject-cache** — identical re-uploads
+  short-circuit.
+- **Beyond identical-file dedup.** A **UIN net-new check** also runs —
+  if the PDF's IRDAI UIN already belongs to a catalogued policy, the
+  caller is pointed at the existing marketplace card instead of indexing
+  a duplicate. **PDF-text fuzzy matching** also runs — if the upload
+  content identifies as a known catalogued product (matching insurer +
+  product-name patterns), the upload endpoint resolves to the existing
+  `<insurer-slug>__<product>` id and reuses the curated card, skipping
+  fresh extraction entirely (best UX for known products).
 - **On pass.** Chunks land in a per-session **quarantine** Chroma
-  collection — session-isolated, 24 h idle TTL — *never* the shared
-  `policies` corpus.
+  collection — session-isolated, 24 h idle TTL — AND in the shared
+  `policies` collection so the upload can become a marketplace card.
+- **The locked chat sequence (ADR-044).** ack → gated wait → card →
+  choice. The frontend's `extractionInFlight` flag disables Send,
+  textarea, PDF button, and EVERY voice path (PTT / Sarvam / voice
+  auto-submit) for the entire wait window. The choice prompt NEVER
+  fires before the card-bearing message lands. Live-verified by
+  Playwright: ack at idx 155 → card/fail at idx 315 → choice at idx
+  500, strictly ordered. Inputs re-enable in the same render as the
+  choice prompt.
+- **The two LLM fast paths.** *Hash-cache* — `sha256(pdf_bytes)` matches
+  a prior successful extraction → copy that `rag/extracted/<pid>.json`
+  to this pid, surface `llm_used="hash-cache"`, ~1 s. *Gemini path* —
+  3 retries with jittered exponential backoff (2/4/8 s ± 25 %),
+  surfaces `llm_used="gemini-2.5-flash#N"` where N is the successful
+  attempt, plus `llm_response_chars` so the operator can see WHICH LLM
+  landed the extraction without HF Space stdout access.
+- **The heuristic floor is a hard guarantee, now significantly fatter
+  (KI-332, 2026-05-27).** `build_record()` runs synchronously inside
+  the upload HTTP call (sub-second) and writes `record.json` BEFORE
+  the LLM ever fires. The pattern set was expanded from ~16 fields to
+  ~28+ on the 2026-05-27 hardening pass: sum-insured ladder detection
+  (`₹3L / ₹5L / ₹10L` → list), policy_type, min entry age, child entry
+  days, lifelong-renewability flag, grace period, free-look period,
+  geographic coverage, ICU capping, deductible amount, NCB cap %,
+  organ donor / critical illness / preventive checkup / domiciliary /
+  newborn presence booleans, premium payment modes. Local synthetic
+  test hits 32 fields. Expected upload completeness on LLM-fail rises
+  from ~47.8 % to ~65–70 %. If Gemini fails all 3 retries AND the NIM
+  fallback fails, the card still renders at this richer floor — never
+  fabricated, never a generic "Retry" placeholder. Verified on a hard
+  Test Policy.pdf (8 MB) where Gemini 3/3 retries returned malformed
+  JSON: card still landed with the expanded heuristic data.
+- **Multi-pass per-section extraction for big PDFs (KI-332, 2026-05-27).**
+  For uploads with ≥ 25 K chars of extracted text (e.g. dense
+  100+ page policy wordings, 8 MB PDFs), the single-pass Gemini call
+  reliably truncates JSON mid-emission — the HealthPolicy schema has
+  ~40 fields and a complete output with verbatim quotes can exceed
+  Gemini 2.5-flash's reliable output budget. **Solution:** split the
+  schema into 7 logical sections (identity, eligibility, financial,
+  waiting periods, coverage, limits, network+claims) and run each as
+  its own smaller Gemini call IN PARALLEL via `asyncio.gather`. Each
+  call carries ~15 % of the schema → fits comfortably in budget.
+  Failure-isolated: 6/7 sections landing produces a partial extraction
+  strictly better than the heuristic floor. Same wall-clock cost as
+  single-pass (parallel). On total multi-pass failure, falls through
+  to the legacy single-pass + NIM chain (heuristic floor still wins).
+  Activation: `len(text) ≥ 25_000` triggers multi-pass; smaller PDFs
+  keep using single-pass (faster, cheaper, works fine).
+- **Status endpoint == scorecard endpoint by construction.** When the
+  background extraction finalises, it calls the SAME
+  `_catalogue_scorecard(pid, None)` resolver that `/api/policies/{id}/
+  scorecard` uses. The `completeness_pct` and `overall_grade` on
+  `GET /api/upload/extraction-status/{pid}` are therefore byte-
+  identical to what the inline card renders. Same applies to the
+  hash-cache short-circuit (which had to be fixed separately —
+  earlier draft of the cache branch called `build_scorecard(...)`
+  without `insurer_reviews` AND read `.overall_grade` instead of
+  `.grade`, silently reporting status=17.4 % / grade None while the
+  card showed 47.8 % / C). 2026-05-27 multi-PDF audit (commit
+  `58e3c82`) confirmed parity across manipalcigna, hdfc-ergo,
+  care-health, icici-lombard, star-health, Test Policy.pdf.
+- **Post-card dive-in mode (KI-330).** After the card lands the
+  frontend sets `activeUploadPid` and plumbs it into every chat
+  turn's `view_context.active_policy_id`. `single_brain.handle_turn`
+  reads that and prepends an ACTIVE POLICY DIVE-IN block to the
+  system instruction, forcing the brain to answer policy-specific
+  questions via `retrieve_policies` + `get_policy_facts` on that
+  pid instead of pivoting to "let me pull your recommendations".
+  Verified 9/10 on the post-fix audit (up from 0/10 pre-fix).
 - **On fail.** A clean rejection naming the gate; the file is deleted;
   nothing is embedded.
+
+**Operator endpoints (admin-only):**
+
+- `POST /api/admin/upload/reextract?force=<bool>` — re-runs
+  `extract_one_for_upload` for every persisted upload that lacks a
+  `rag/extracted/<pid>.json`, or for ALL persisted uploads with
+  `force=true`. Wired to a startup hook so every container boot
+  upgrades legacy uploads automatically.
+- `GET /api/upload/extraction-status/{policy_id}` — the live state of
+  the in-memory `_UPLOAD_EXTRACTION_STATUS` dict. Fields: `status`
+  (`pending | running | complete | failed | unknown`), `llm_used`
+  (`gemini-2.5-flash#N | nim-fallback | hash-cache`),
+  `llm_response_chars`, `completeness_pct`, `overall_grade`,
+  `started_at`, `completed_at`, `error`.
 
 ### 2.9 Deployment
 
@@ -690,7 +790,7 @@ to end.
 
 ## 3. Key functions in plain language
 
-**Summary.** Six internal jobs make the bot work. Each one gets a sequence diagram showing what calls what, a ≤50-word summary, and a step-by-step explanation. A seventh subsection makes explicit *what is stored vs what is live-only*.
+**Summary.** Seven internal jobs make the bot work. Each one gets a sequence diagram showing what calls what, a ≤50-word summary, and a step-by-step explanation. An eighth subsection makes explicit *what is stored vs what is live-only*.
 
 ### 3.1 Profile construction
 
@@ -858,7 +958,75 @@ no cross-session memory — purely a same-conversation resilience path.
 (There is no cross-session recall — see §2.6 and ADR-043 for why that
 was removed.)
 
-### 3.7 What is stored vs what is live-only
+### 3.7 Uploaded-PDF LLM extraction (the §2.8 pipeline in code terms)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant FE as Frontend (page.tsx)
+    participant API as /api/upload-policy
+    participant SEC as security.py (8 gates)
+    participant UD as uploaded_docs.py
+    participant H as heuristic build_record()
+    participant CK as hash cache lookup
+    participant G as Gemini 2.5-flash (3 retries)
+    participant N as NIM fallback chain
+    participant SC as scorecard.py + main._catalogue_scorecard
+    participant ST as _UPLOAD_EXTRACTION_STATUS dict
+    participant FE2 as Frontend poller
+    FE->>API: POST multipart (PDF + session_id)
+    API->>SEC: run 8 gates
+    SEC-->>API: pass | reject
+    API->>UD: persist_upload() → UPLOADED_DOCS_DIR/&lt;pid&gt;/{source.pdf, meta.json}
+    UD->>H: build_record() — regex/keyword over text
+    H-->>UD: record.json @ ~30-50% completeness
+    UD-->>FE: HTTP 200 {policy_id, ...}
+    FE->>FE: setExtractionInFlight(true) · gate ALL inputs · pushAssistant(ack)
+    UD->>UD: asyncio.create_task(extract_one_for_upload)
+    Note over UD: _set_extraction_status(status='running')
+    UD->>CK: _find_cached_extraction(sha256(pdf_bytes))
+    alt cache hit
+        CK-->>UD: copy prior rag/extracted/&lt;other_pid&gt;.json
+        UD->>UD: llm_used='hash-cache'
+    else cache miss
+        UD->>G: chat(prompt, schema) — attempt 1
+        alt success
+            G-->>UD: HealthPolicy JSON · llm_used='gemini-2.5-flash#1'
+        else timeout / malformed JSON
+            UD->>G: retry attempt 2 (2s backoff ± 25%)
+            G-->>UD: HealthPolicy OR fail
+            UD->>G: retry attempt 3 (4s backoff ± 25%)
+            G-->>UD: HealthPolicy OR fail
+            UD->>N: NIM fallback (single attempt)
+            N-->>UD: HealthPolicy OR all-fail
+        end
+        UD->>UD: write rag/extracted/&lt;pid&gt;.json
+        UD->>UD: merge LLM scalars INTO record.json
+    end
+    UD->>SC: _catalogue_scorecard(pid, None) — same as /api/policies/.../scorecard
+    SC-->>UD: Scorecard{grade, data_completeness_pct, sub_scores}
+    UD->>ST: _set_extraction_status(complete, comp, grade, llm_used, llm_response_chars)
+    loop every 3s up to 120s
+        FE2->>UD: GET /api/upload/extraction-status/{pid}
+        UD-->>FE2: status snapshot
+    end
+    FE2->>FE2: pushAssistant(card_ready, citations=[{pid}])
+    FE2->>FE2: setActiveUploadPid(pid)
+    FE2->>FE2: pushAssistant(choice_prompt) · setExtractionInFlight(false)
+```
+
+**Summary.** When a user uploads a PDF the backend writes a heuristic-baseline record first (sub-second), HTTP returns, and a background asyncio task either copies a prior extraction (hash cache hit) or runs Gemini 2.5-flash with 3 jittered retries → NIM fallback → heuristic floor. The status endpoint reports the SAME `completeness_pct` + `overall_grade` the card endpoint serves, by construction.
+
+**How it flows:**
+
+- **HTTP returns before extraction starts.** `extract_one_for_upload` is fired with `asyncio.create_task` so the user sees the card-ready ack inside one second, not after 30–60 s.
+- **Provenance, always.** Every `_set_extraction_status` call carries `llm_used` (`gemini-2.5-flash#1 | #2 | #3 | nim-fallback | hash-cache`) and `llm_response_chars`. The operator can see WHICH LLM landed the extraction without HF Space stdout access — verified live on 2026-05-27.
+- **Hash cache short-circuit.** `_find_cached_extraction(sha256(pdf_bytes))` looks for a prior successful extraction with the same content. On hit, the prior `rag/extracted/<other_pid>.json` is copied to this pid in ~1 s.
+- **Retries are jittered exponential.** 2 s / 4 s / 8 s backoffs each multiplied by `random.uniform(0.75, 1.25)` so repeated transient blips on a single Gemini instance don't synchronise.
+- **Merge model.** LLM output is merged INTO the heuristic record (LLM wins per-field where non-empty, heuristic stays where LLM silent) — the same "extracted + curated overlay" model the catalogued 148 use via `40-data/policy_facts/`.
+- **Status == card by construction.** The status endpoint calls `_catalogue_scorecard(pid, None)` — the SAME resolver `/api/policies/{id}/scorecard` uses. If they differ, that's a bug; today they match across 5 verified uploads.
+
+### 3.8 What is stored vs what is live-only
 
 | What | Where | Why |
 |---|---|---|
@@ -935,28 +1103,44 @@ These are real and stated up front rather than buried:
   operator/abuse prune endpoint exists (`POST /api/admin/uploaded-docs/
   prune`, password-gated) to remove a persisted upload by id or prefix.
 - **Uploaded-PDF field extraction is LLM-assisted, with a deterministic
-  heuristic floor (ADR-044, 2026-05-27).** Every upload runs through two
-  passes:
-  - **Heuristic baseline** — regex + keyword extraction over the PDF text,
-    runs synchronously inside the upload HTTP call (sub-second), populates
+  heuristic floor (ADR-044, 2026-05-27 hardening bundle).** Every upload
+  runs through two passes with a hash-cache fast path:
+  - **Heuristic baseline** — regex + keyword extraction over the PDF
+    text, synchronous inside the upload HTTP call (sub-second), populates
     common fields like waiting periods and room-rent rule. Yields
-    ~30–50 % data_completeness.
-  - **LLM-assisted extraction** — fires as a background asyncio task
-    after the upload returns. Same `get_brain_llm()` chain the catalogued
-    148 use offline (Gemini 2.5-flash primary, NVIDIA NIM fallback);
-    same `EXTRACT_SYSTEM` prompt; same `HealthPolicy` Pydantic schema;
-    output written to `rag/extracted/<policy_id>.json` and merged INTO
+    ~30–50 % `data_completeness`.
+  - **Gemini extraction (3 jittered retries)** — fires as a background
+    asyncio task after the upload returns. Same Gemini 2.5-flash + same
+    `EXTRACT_SYSTEM` prompt + same `HealthPolicy` Pydantic schema the
+    catalogued 148 use offline. Backoffs 2 / 4 / 8 s ± 25 % jitter. On
+    success, writes `rag/extracted/<policy_id>.json` and merges INTO
     the persisted `record.json` (LLM values override where present,
-    heuristic stays where the LLM was silent). ~10–60 s.
+    heuristic stays where the LLM was silent). ~10–60 s total.
+  - **NIM fallback** — single attempt if all three Gemini retries fail.
+  - **Heuristic floor** — if NIM also fails, the card still renders at
+    the heuristic baseline (~47.8 %, grade C). Verified live on Test
+    Policy.pdf (8 MB) where Gemini 3/3 retries returned malformed JSON.
+  - **Hash-cache short-circuit** — if `sha256(pdf_bytes)` matches a
+    prior successful extraction, that file is copied (~1 s) with
+    `llm_used="hash-cache"` surfaced for ops.
   The frontend polls `GET /api/upload/extraction-status/<policy_id>`
   during the wait and renders the inline scorecard card ONLY after the
-  LLM pass either completes or hits its 120 s timeout. The card is
+  LLM pass completes / fails / hits its 120 s timeout. The card is
   catalogued-grade — same `PolicyScorecardWidget`, same six sub-scores,
-  same insurer reputation data (because `detect_insurer_slug` matches
-  the PDF's legal name against the 21 known insurer slugs we have
-  reviews data for and flips `insurer_slug` off the generic `user-upload`
-  on a hit). On any LLM-pass failure the heuristic floor still produces a
-  real grade, never a fabricated one or a data-starved sentinel.
+  same insurer-reputation data (`detect_insurer_slug` matches the PDF's
+  legal name against the 21 known insurer slugs we have reviews data
+  for and flips `insurer_slug` off the generic `user-upload` on a hit).
+  **Status ↔ card parity by construction:** the status endpoint and the
+  card endpoint both call `_catalogue_scorecard(pid, None)`, so
+  `completeness_pct` + `overall_grade` are byte-identical. **Operator
+  provenance**: every status response carries `llm_used` (`gemini-2.5-
+  flash#N | nim-fallback | hash-cache`) and `llm_response_chars` so the
+  question "did Gemini actually run?" is answerable without HF Space
+  stdout access. **Post-card dive-in mode (KI-330)**: the just-uploaded
+  pid becomes `view_context.active_policy_id` on the next chat turn,
+  so `single_brain` answers policy-specific questions via
+  `retrieve_policies` + `get_policy_facts` instead of pivoting to
+  recommendations.
 - **Live (BETA) voice mode** uses the browser's in-built speech
   recognition and is labelled unstable; **push-to-talk** is the reliable
   path (warm-armed mic + pre-roll so the first word is never clipped, and
@@ -1026,20 +1210,39 @@ these:
 │   │   sum_insured.py
 │   ├── session_state.py      per-session profile (in-memory only, ADR-043)
 │   ├── uploaded_docs.py      user-uploaded PDF pipeline (ADR-044):
-│   │                          - persist_upload() — heuristic baseline +
-│   │                            sha256 of PDF bytes
+│   │                          - persist_upload() — heuristic baseline
+│   │                            (sub-second regex/keyword) + sha256 of
+│   │                            PDF bytes → record.json + meta.json
+│   │                          - build_record() — heuristic floor; ~30–50%
+│   │                            completeness; guaranteed before LLM fires
 │   │                          - detect_insurer_slug() — match PDF text
-│   │                            against 21 known insurer name patterns
-│   │                          - extract_one_for_upload() — Gemini-primary
-│   │                            (3 retries, exp backoff) → NIM fallback,
-│   │                            content-hash cache, raw-response logging,
-│   │                            LLM-into-heuristic merge
+│   │                            against 21 known insurer patterns; flips
+│   │                            insurer_slug off 'user-upload' on hit
+│   │                          - extract_one_for_upload() — background
+│   │                            asyncio task: hash-cache → Gemini
+│   │                            2.5-flash (3 jittered retries 2/4/8s ±25%)
+│   │                            → NIM fallback → heuristic floor. Writes
+│   │                            rag/extracted/<pid>.json, merges LLM
+│   │                            scalars INTO record.json (LLM wins where
+│   │                            non-empty, heuristic stays where silent)
+│   │                          - _find_cached_extraction() — sha256
+│   │                            lookup across UPLOADED_DOCS_DIR/*/meta.json
+│   │                            for prior successful extractions
+│   │                          - _set_extraction_status() — finalises
+│   │                            status using main._catalogue_scorecard(pid)
+│   │                            so completeness_pct + overall_grade match
+│   │                            the card endpoint BY CONSTRUCTION
+│   │                          - Provenance fields: llm_used
+│   │                            (gemini-2.5-flash#N | nim-fallback |
+│   │                            hash-cache) + llm_response_chars
 │   │                          - backfill_extractions() — startup hook
 │   │                            re-runs LLM extraction on every
-│   │                            existing UPLOADED_DOCS_DIR/<pid>/ that
-│   │                            doesn't yet have rag/extracted/<pid>.json
-│   │                          - _UPLOAD_EXTRACTION_STATUS + endpoint
+│   │                            UPLOADED_DOCS_DIR/<pid>/ missing
+│   │                            rag/extracted/<pid>.json
+│   │                          - _UPLOAD_EXTRACTION_STATUS dict + endpoint
 │   │                            GET /api/upload/extraction-status/{pid}
+│   │                          - Admin endpoint
+│   │                            POST /api/admin/upload/reextract?force=...
 │   ├── voice_format.py       TTS pre-processing (money/Indic normalisation)
 │   ├── admin.py              /api/admin/* (health, telemetry)
 │   └── providers/            thin clients: google_gemini, nvidia_nim, sarvam_*,
