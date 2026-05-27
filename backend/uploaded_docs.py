@@ -1147,27 +1147,39 @@ async def extract_one_for_upload(
 
         # Resolve the freshly-graded card so the status can report the
         # actual completeness + grade the CHAT CARD will show. Mirror
-        # the /api/policies/{id}/scorecard endpoint's resolution path
-        # byte-for-byte: load the same EXTRACTED_DIR/<pid>.json we just
-        # wrote AND pass the same insurer_reviews. Without the reviews
-        # arg the Claim Experience sub-score (and downstream completeness
-        # accounting) diverges from what the card endpoint serves — that
-        # was the 2026-05-27 "17.4% status vs 52.2% card" false-regression
-        # the operator saw on the proof upload.
+        # the /api/policies/{id}/scorecard endpoint's resolution order
+        # byte-for-byte: PRIMARY path is the marketplace catalogue
+        # scorecard (_catalogue_scorecard) which folds in the heuristic
+        # record.json + curated overlay + insurer reviews + product
+        # dedup — that's what produces the 52.2%/grade-C the user sees
+        # on the inline card. The fallback path (build_scorecard on the
+        # bare extracted JSON) reads 17.4% because it doesn't see the
+        # heuristic merge or reviews-driven sub-scores.
         _final_completeness = None
         _final_grade = None
         try:
-            from backend.scorecard import build_scorecard as _bs
-            _doc_for_sc = json.loads(out_json.read_text())
-            _ir = None
-            if insurer_slug:
-                _rp = _settings.DATA_DIR / "reviews" / f"{insurer_slug}.json"
-                if _rp.exists():
-                    try:
-                        _ir = json.loads(_rp.read_text())
-                    except Exception:
-                        _ir = None
-            _sc = _bs(_doc_for_sc, insurer_reviews=_ir, profile=None)
+            # PRIMARY — same call /api/policies/{id}/scorecard makes first.
+            # Bust the marketplace grade cache first (we invalidated _MG_CACHE
+            # above, but _catalogue_indices builds off the latest record.json
+            # + extracted JSON on each call so this becomes a fresh build).
+            import backend.main as _bm2
+            _sc = _bm2._catalogue_scorecard(policy_id, None)
+            if _sc is None:
+                # FALLBACK — same path the endpoint falls through to for
+                # non-catalogued ids. For user uploads this is just defensive;
+                # the upload IS a marketplace card by design (record.json is
+                # persisted under UPLOADED_DOCS_DIR/<pid>/).
+                from backend.scorecard import build_scorecard as _bs
+                _doc_for_sc = json.loads(out_json.read_text())
+                _ir = None
+                if insurer_slug:
+                    _rp = _settings.DATA_DIR / "reviews" / f"{insurer_slug}.json"
+                    if _rp.exists():
+                        try:
+                            _ir = json.loads(_rp.read_text())
+                        except Exception:
+                            _ir = None
+                _sc = _bs(_doc_for_sc, insurer_reviews=_ir, profile=None)
             if _sc is not None:
                 _final_completeness = float(_sc.data_completeness_pct)
                 _final_grade = _sc.overall_grade
