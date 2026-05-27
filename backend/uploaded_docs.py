@@ -1182,7 +1182,12 @@ async def extract_one_for_upload(
                 _sc = _bs(_doc_for_sc, insurer_reviews=_ir, profile=None)
             if _sc is not None:
                 _final_completeness = float(_sc.data_completeness_pct)
-                _final_grade = _sc.overall_grade
+                # 2026-05-27 — Scorecard dataclass attr is `.grade`, NOT
+                # `.overall_grade` (only the ScorecardResponse wire field
+                # is renamed). Earlier draft of this resolver used the
+                # wire name and silently logged grade=None on every
+                # upload — the parity audit caught it.
+                _final_grade = _sc.grade
         except Exception as _sc_err:  # noqa: BLE001
             _log.warning(
                 "[upload-extract] status-card resolve failed for %s: %s: %s",
