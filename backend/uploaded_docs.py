@@ -1145,20 +1145,37 @@ async def extract_one_for_upload(
             policy_id, getattr(policy, "extraction_confidence_pct", "n/a"),
         )
 
-        # Resolve the freshly-graded card so the status can report
-        # the actual completeness + grade the chat card will show.
+        # Resolve the freshly-graded card so the status can report the
+        # actual completeness + grade the CHAT CARD will show. Mirror
+        # the /api/policies/{id}/scorecard endpoint's resolution path
+        # byte-for-byte: load the same EXTRACTED_DIR/<pid>.json we just
+        # wrote AND pass the same insurer_reviews. Without the reviews
+        # arg the Claim Experience sub-score (and downstream completeness
+        # accounting) diverges from what the card endpoint serves — that
+        # was the 2026-05-27 "17.4% status vs 52.2% card" false-regression
+        # the operator saw on the proof upload.
         _final_completeness = None
         _final_grade = None
         try:
-            import backend.main as _bm2
             from backend.scorecard import build_scorecard as _bs
-            _doc = policy.model_dump()
-            _sc = _bs(_doc, profile=None)
+            _doc_for_sc = json.loads(out_json.read_text())
+            _ir = None
+            if insurer_slug:
+                _rp = _settings.DATA_DIR / "reviews" / f"{insurer_slug}.json"
+                if _rp.exists():
+                    try:
+                        _ir = json.loads(_rp.read_text())
+                    except Exception:
+                        _ir = None
+            _sc = _bs(_doc_for_sc, insurer_reviews=_ir, profile=None)
             if _sc is not None:
                 _final_completeness = float(_sc.data_completeness_pct)
                 _final_grade = _sc.overall_grade
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception as _sc_err:  # noqa: BLE001
+            _log.warning(
+                "[upload-extract] status-card resolve failed for %s: %s: %s",
+                policy_id, type(_sc_err).__name__, str(_sc_err)[:160],
+            )
 
         await _set_extraction_status(
             policy_id, status="complete",
