@@ -976,44 +976,44 @@ sequenceDiagram
     participant FE2 as Frontend poller
     FE->>API: POST multipart (PDF + session_id)
     API->>SEC: run 8 gates
-    SEC-->>API: pass | reject
-    API->>UD: persist_upload() → UPLOADED_DOCS_DIR/&lt;pid&gt;/{source.pdf, meta.json}
-    UD->>H: build_record() — regex/keyword over text
-    H-->>UD: record.json @ ~30-50% completeness
-    UD-->>FE: HTTP 200 {policy_id, ...}
+    SEC-->>API: pass or reject
+    API->>UD: persist_upload — writes source.pdf + meta.json to UPLOADED_DOCS_DIR/pid/
+    UD->>H: build_record — regex/keyword over text
+    H-->>UD: record.json at ~30-50% completeness
+    UD-->>FE: HTTP 200 with policy_id
     FE->>FE: setExtractionInFlight(true) · gate ALL inputs · pushAssistant(ack)
     UD->>UD: asyncio.create_task(extract_one_for_upload)
     Note over UD: _set_extraction_status(status='running')
     UD->>CK: _find_cached_extraction(sha256(pdf_bytes))
     alt cache hit
-        CK-->>UD: copy prior rag/extracted/&lt;other_pid&gt;.json
+        CK-->>UD: copy prior rag/extracted/other_pid.json
         UD->>UD: llm_used='hash-cache'
     else cache miss + text ≥25K chars
         Note over UD,G: MULTI-PASS (KI-332): 7 sections in parallel via asyncio.gather
         UD->>G: identity / eligibility / financial / waiting / coverage / limits / network
-        G-->>UD: 7 partial JSONs (any landing = success)
+        G-->>UD: 7 partial JSONs (any landing counts as success)
         UD->>UD: merge sections · llm_used='gemini-2.5-flash-multipass'
-    else cache miss + text <25K chars
-        UD->>G: single-pass chat(full schema)
+    else cache miss + text under 25K chars
+        UD->>G: single-pass chat with full schema
         alt success
             G-->>UD: HealthPolicy JSON · llm_used='gemini-2.5-flash#1'
-        else timeout / malformed JSON
-            UD->>G: retry #2 (2s ± 25%) → retry #3 (4s ± 25%)
-            G-->>UD: HealthPolicy OR fail
+        else timeout or malformed JSON
+            UD->>G: retry #2 (2s ± 25%) then retry #3 (4s ± 25%)
+            G-->>UD: HealthPolicy or fail
             UD->>N: NIM fallback (single attempt)
-            N-->>UD: HealthPolicy OR all-fail
+            N-->>UD: HealthPolicy or all-fail
         end
-        UD->>UD: write rag/extracted/&lt;pid&gt;.json
+        UD->>UD: write rag/extracted/pid.json
         UD->>UD: merge LLM scalars INTO record.json
     end
     UD->>SC: _catalogue_scorecard(pid, None) — same as /api/policies/.../scorecard
-    SC-->>UD: Scorecard{grade, data_completeness_pct, sub_scores}
+    SC-->>UD: Scorecard (grade, data_completeness_pct, sub_scores)
     UD->>ST: _set_extraction_status(complete, comp, grade, llm_used, llm_response_chars)
     loop every 3s up to 120s
-        FE2->>UD: GET /api/upload/extraction-status/{pid}
+        FE2->>UD: GET /api/upload/extraction-status/pid
         UD-->>FE2: status snapshot
     end
-    FE2->>FE2: pushAssistant(card_ready, citations=[{pid}])
+    FE2->>FE2: pushAssistant(card_ready, citations include pid)
     FE2->>FE2: setActiveUploadPid(pid)
     FE2->>FE2: pushAssistant(choice_prompt) · setExtractionInFlight(false)
 ```
