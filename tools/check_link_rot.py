@@ -163,8 +163,63 @@ def head_check(url: str, client: httpx.Client) -> tuple[int, str]:
 # ---------- auto-fix strategies ----------
 
 
+def _looks_like_pdf_url(url: str) -> bool:
+    """Heuristic: corpus expects a PDF at this URL."""
+    # Direct .pdf paths
+    if ".pdf" in url.lower().split("?", 1)[0]:
+        return True
+    # Wayback-wrapped originals: https://web.archive.org/web/<ts>/<original>
+    if "web.archive.org/web/" in url and ".pdf" in url.lower():
+        return True
+    return False
+
+
+def _validate_pdf_candidate(url: str, client: httpx.Client) -> bool:
+    """Confirm a candidate URL ACTUALLY serves a PDF (Bug #X 2026-05-28).
+
+    Background: HEAD on the same path can return 200 with text/html (server
+    interstitial) while GET returns 200 with %PDF — and vice versa on
+    transient failures. The previous auto-fix accepted any candidate that
+    returned 200 to a HEAD, which silently downgraded https→http and
+    swapped live URLs for HTML-only Wayback wrappers. Validate by
+    GET-Range and check the file magic.
+    """
+    try:
+        r = client.get(
+            url,
+            headers={**HEADERS, "Range": "bytes=0-31"},
+            follow_redirects=True,
+            timeout=15,
+        )
+        if r.status_code not in (200, 206):
+            return False
+        ct = (r.headers.get("Content-Type") or "").lower()
+        body = r.content[:4]
+        # Accept either explicit PDF content-type OR %PDF magic — some
+        # CDNs send octet-stream / generic types for PDF assets.
+        return body == b"%PDF" or "pdf" in ct
+    except (httpx.HTTPError, ValueError):
+        return False
+
+
+def _wayback_raw_variant(url: str) -> str:
+    """Rewrite a Wayback snapshot URL to its `id_` raw variant so the
+    archive serves the original PDF bytes instead of the HTML wrapper.
+    https://web.archive.org/web/<ts>/<orig>  -->
+    https://web.archive.org/web/<ts>id_/<orig>"""
+    m = re.match(r"^(https?://web\.archive\.org/web/\d+)(/.+)$", url)
+    if not m:
+        return url
+    return f"{m.group(1)}id_{m.group(2)}"
+
+
 def try_wayback(url: str, client: httpx.Client) -> str | None:
-    """Return a working Wayback Machine snapshot URL, or None."""
+    """Return a working Wayback Machine snapshot URL, or None.
+
+    For PDF URLs, rewrite to the `id_` raw variant and verify the
+    snapshot actually serves the PDF bytes (some snapshots are HTML
+    error pages with status 200).
+    """
     try:
         r = client.get(
             "https://archive.org/wayback/available",
@@ -175,15 +230,27 @@ def try_wayback(url: str, client: httpx.Client) -> str | None:
         if r.status_code != 200:
             return None
         snap = r.json().get("archived_snapshots", {}).get("closest", {})
-        if snap.get("available") and snap.get("status", "").startswith("2"):
-            return snap.get("url")
+        if not (snap.get("available") and snap.get("status", "").startswith("2")):
+            return None
+        candidate = snap.get("url")
+        if not candidate:
+            return None
+        if _looks_like_pdf_url(url):
+            candidate = _wayback_raw_variant(candidate)
+            if not _validate_pdf_candidate(candidate, client):
+                return None
+        return candidate
     except (httpx.HTTPError, ValueError):
         return None
-    return None
 
 
 def try_canonicalise(url: str, client: httpx.Client) -> str | None:
-    """Strip query strings, flip http<->https."""
+    """Strip query strings, flip http<->https.
+
+    For PDF URLs, the candidate MUST serve actual PDF bytes (not just
+    return HTTP 200) — HEAD alone is too credulous on servers that
+    answer interstitial HTML for HEAD but real PDF for GET.
+    """
     candidates = []
     if "?" in url:
         candidates.append(url.split("?", 1)[0])
@@ -191,10 +258,14 @@ def try_canonicalise(url: str, client: httpx.Client) -> str | None:
         candidates.append("https://" + url[len("http://") :])
     elif url.startswith("https://"):
         candidates.append("http://" + url[len("https://") :])
+    expect_pdf = _looks_like_pdf_url(url)
     for c in candidates:
         s, _ = head_check(c, client)
-        if 200 <= s < 400:
-            return c
+        if not (200 <= s < 400):
+            continue
+        if expect_pdf and not _validate_pdf_candidate(c, client):
+            continue
+        return c
     return None
 
 

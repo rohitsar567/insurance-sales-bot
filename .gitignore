@@ -91,6 +91,12 @@ README.pdf
 # Runtime + heavy binary: never commit
 40-data/policies/
 40-data/sessions/
+# Process-local LLM probe snapshot — written by backend/llm_health.py on
+# every probe tick. Local-dev probebacks would otherwise stage hundreds
+# of stale "down" rows that overwrite the HF Space's live snapshot. The
+# backend tolerates missing (llm_health.py:389) and rebuilds
+# chains/candidates/recent_turns on first probe after startup.
+40-data/llm_health.json
 80-audit/full_*/
 80-audit/postfix_*/
 MUST_FIX.md
